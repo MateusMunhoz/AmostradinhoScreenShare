@@ -1,0 +1,12 @@
+# Instalado pelo npm install
+node_modules/
+
+# Gerado pelo npm run dist / npm run publicar (o .exe vai nas Releases do GitHub)
+dist/
+pack/*
+!pack/.gitkeep
+*.exe
+!bin/audiocap.exe
+
+# Anotações locais
+Explicacao.txt

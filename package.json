@@ -1,0 +1,47 @@
+{
+  "name": "tela-p2p",
+  "version": "1.1.2",
+  "description": "Compartilhamento de tela com áudio, peer to peer, pela Radmin VPN",
+  "main": "boot.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable",
+    "publicar": "node publicar.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.telap2p.app",
+    "productName": "Tela P2P",
+    "files": [
+      "boot.js",
+      "main.js",
+      "preload.js",
+      "signaling.js",
+      "github.js",
+      "index.html",
+      "styles.css",
+      "renderer.js",
+      "pcm-worklet.js"
+    ],
+    "win": {
+      "target": "portable",
+      "signAndEditExecutable": false
+    },
+    "extraResources": [
+      {
+        "from": "bin",
+        "to": "bin"
+      },
+      {
+        "from": "pack",
+        "to": "pack"
+      }
+    ]
+  }
+}

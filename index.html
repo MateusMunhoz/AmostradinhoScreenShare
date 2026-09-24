@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; img-src 'self' data:; style-src 'self'; connect-src ws:; media-src 'self' blob: mediastream:">
+  <title>Tela P2P</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main>
+    <!-- Início -->
+    <section id="home" class="screen">
+      <div class="home">
+        <h1>Tela P2P</h1>
+        <p class="lead">Uma sala para transmitir telas com os amigos, direto de PC para PC pela Radmin VPN.</p>
+        <label class="field">
+          <span>Seu nome</span>
+          <input id="name" maxlength="32" placeholder="Como os outros vão te ver">
+        </label>
+        <div class="choices">
+          <button class="choice host" id="goCreate">
+            <strong>Criar sala</strong>
+            <span>Os amigos entram pelo seu endereço</span>
+          </button>
+          <button class="choice" id="goJoin">
+            <strong>Entrar numa sala</strong>
+            <span>Usar o endereço de quem criou</span>
+          </button>
+        </div>
+        <div class="update-notice" role="status" hidden>
+          <span class="update-text"></span>
+          <button class="btn small primary update-restart" type="button">Reiniciar agora</button>
+        </div>
+        <div id="githubUpdate" class="github-notice" role="status" hidden>
+          <span id="githubText" class="update-text"></span>
+          <button class="btn small primary" id="githubBtn" type="button">Baixar atualização</button>
+        </div>
+        <p class="version">
+          <span id="appVersion"></span>
+          <button class="link-btn" id="checkUpdates" type="button">Procurar atualização</button>
+        </p>
+      </div>
+    </section>
+
+    <!-- Criar sala -->
+    <section id="create-room" class="screen" hidden>
+      <div class="bar">
+        <button class="btn ghost back">Voltar</button>
+        <h2>Criar sala</h2>
+        <span></span>
+      </div>
+      <div class="form-card">
+        <label class="field">
+          <span>Porta</span>
+          <input id="roomPort" type="number" value="8765" min="1024" max="65535">
+        </label>
+        <label class="field">
+          <span>Senha (opcional)</span>
+          <input id="roomPassword" type="password" placeholder="Vazio = sem senha">
+        </label>
+        <button class="btn primary" id="createBtn">Criar sala</button>
+        <p class="hint">A sala fica aberta enquanto você estiver nela. Quando você sair, ela é encerrada para todos.</p>
+      </div>
+    </section>
+
+    <!-- Entrar na sala -->
+    <section id="join-room" class="screen" hidden>
+      <div class="bar">
+        <button class="btn ghost back">Voltar</button>
+        <h2>Entrar numa sala</h2>
+        <span></span>
+      </div>
+      <div class="form-card">
+        <label class="field">
+          <span>Endereço da sala</span>
+          <input id="roomAddr" placeholder="26.123.45.67:8765">
+        </label>
+        <label class="field">
+          <span>Senha</span>
+          <input id="joinPassword" type="password" placeholder="Só se a sala tiver uma">
+        </label>
+        <button class="btn primary" id="joinBtn">Entrar</button>
+        <p class="hint">O endereço aparece na tela de quem criou a sala.</p>
+      </div>
+    </section>
+
+    <!-- Sala -->
+    <section id="room" class="screen" hidden>
+      <div class="room-grid">
+        <div class="stage-area">
+          <div id="emptyStage" class="empty-stage"><p id="emptyText"></p></div>
+          <div id="tiles" class="tiles" hidden></div>
+        </div>
+
+        <aside class="panel">
+          <div class="update-notice" role="status" hidden>
+            <span class="update-text"></span>
+            <button class="btn small primary update-restart" type="button">Reiniciar agora (sai da sala)</button>
+          </div>
+          <div class="block">
+            <h3>Endereço da sala</h3>
+            <div id="roomAddress"></div>
+            <p id="noRadmin" class="warn" hidden>Nenhum IP da Radmin VPN (26.x.x.x) encontrado. Ligue a Radmin e entre na rede.</p>
+          </div>
+
+          <div class="block">
+            <h3>Na sala: <span id="memberCount">1</span></h3>
+            <ul id="members" class="members"></ul>
+            <p id="downloadInfo" class="hint"></p>
+          </div>
+
+          <div class="block share-box">
+            <div id="shareIdle">
+              <button class="btn primary wide" id="shareBtn">Transmitir minha tela</button>
+            </div>
+            <div id="shareLive" hidden>
+              <div class="mini">
+                <video id="myPreview" autoplay muted playsinline></video>
+                <p id="previewPaused" class="mini-note" hidden>Prévia pausada enquanto você usa outro app, para não pesar no jogo. A transmissão continua normal.</p>
+                <span class="live-badge">Ao vivo</span>
+              </div>
+              <p id="watcherInfo" class="hint"></p>
+              <p id="encoderInfo" class="hint"></p>
+              <p id="noAudio" class="warn" hidden>Transmitindo sem áudio.</p>
+              <button class="btn danger wide" id="stopShareBtn">Parar transmissão</button>
+            </div>
+          </div>
+
+          <button class="btn ghost leave" id="leaveBtn">Sair da sala</button>
+        </aside>
+      </div>
+
+      <!-- Escolher o que transmitir -->
+      <div id="shareDialog" class="modal" hidden>
+        <div class="dialog" role="dialog" aria-label="Escolha o que transmitir">
+          <div class="dialog-head">
+            <h2>Escolha o que transmitir</h2>
+            <button class="btn small" id="refreshSources" type="button">Atualizar lista</button>
+          </div>
+          <div id="sources" class="sources"></div>
+          <div class="settings">
+            <label class="field">
+              <span>Qualidade</span>
+              <select id="quality">
+                <option value="720p30">720p, 30 fps (internet mais fraca)</option>
+                <option value="720p60">720p, 60 fps (jogos, mais leve)</option>
+                <option value="1080p30" selected>1080p, 30 fps</option>
+                <option value="1080p60">1080p, 60 fps (jogos, mais pesado)</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Áudio</span>
+              <select id="audioMode">
+                <option value="all">Todo o som do PC</option>
+                <option value="none">Sem áudio</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Prioridade do app</span>
+              <select id="priority">
+                <option value="normal">Normal (o jogo vem primeiro)</option>
+                <option value="above">Acima do normal (recomendado)</option>
+                <option value="high">Alta (a transmissão vem primeiro)</option>
+              </select>
+            </label>
+            <div class="field full" id="excludeField">
+              <div class="field-head">
+                <span id="excludeLabel">Ignorar o som destes apps (opcional)</span>
+                <button class="btn small" id="refreshApps" type="button">Atualizar lista</button>
+              </div>
+              <div id="excludeApps" class="app-list" role="group" aria-labelledby="excludeLabel"></div>
+            </div>
+            <p id="audioNote" class="hint full">O som das telas que você está assistindo nunca vai para a sua transmissão, então ninguém se ouve de volta.</p>
+            <div class="actions">
+              <button class="btn ghost" id="cancelShare">Cancelar</button>
+              <button class="btn primary" id="startBtn" disabled>Iniciar transmissão</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Confirmar antes de derrubar todo mundo -->
+      <div id="closeDialog" class="modal" hidden>
+        <div class="dialog narrow" role="alertdialog" aria-modal="true" aria-labelledby="closeTitle" aria-describedby="closeText">
+          <h2 id="closeTitle">Encerrar a sala para todos?</h2>
+          <p id="closeText" class="hint">Todo mundo sai da sala e as transmissões param. Para voltar, crie a sala de novo e passe o endereço.</p>
+          <div class="actions">
+            <button class="btn ghost" id="cancelClose" type="button">Cancelar</button>
+            <button class="btn danger" id="confirmClose" type="button">Encerrar sala</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status"></div>
+  <script src="renderer.js"></script>
+</body>
+</html>

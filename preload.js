@@ -1,0 +1,22 @@
+const { contextBridge, ipcRenderer } = require('electron');
+
+contextBridge.exposeInMainWorld('api', {
+  getSources: () => ipcRenderer.invoke('get-sources'),
+  selectSource: (id, withSystemAudio) => ipcRenderer.invoke('select-source', id, withSystemAudio),
+  listAudioApps: () => ipcRenderer.invoke('list-audio-apps'),
+  startAppAudio: (exes) => ipcRenderer.invoke('start-app-audio', exes),
+  stopAppAudio: () => ipcRenderer.invoke('stop-app-audio'),
+  onPcm: (cb) => ipcRenderer.on('pcm', (_e, data) => cb(data)),
+  offPcm: () => ipcRenderer.removeAllListeners('pcm'),
+  getIps: () => ipcRenderer.invoke('get-ips'),
+  getVersion: () => ipcRenderer.invoke('get-version'),
+  setPriority: (level) => ipcRenderer.invoke('set-priority', level),
+  getOwnPack: () => ipcRenderer.invoke('get-own-pack'),
+  installUpdate: (pack, sig) => ipcRenderer.invoke('install-update', pack, sig),
+  restartApp: () => ipcRenderer.invoke('restart-app'),
+  githubCheck: () => ipcRenderer.invoke('github-check'),
+  githubInstall: () => ipcRenderer.invoke('github-install'),
+  openGithub: (url) => ipcRenderer.invoke('open-github', url),
+  startServer: (port, password) => ipcRenderer.invoke('start-server', port, password),
+  stopServer: () => ipcRenderer.invoke('stop-server'),
+});
