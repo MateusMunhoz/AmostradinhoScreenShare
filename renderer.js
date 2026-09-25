@@ -33,6 +33,8 @@ const state = {
   // O que eu estou assistindo
   in: new Map(),           // id de quem transmite -> { pc, chain, tile, lastBytes, lastTs }
   focus: null,             // id da transmissão em destaque (as outras ficam pausadas para mim)
+  main: null,              // id da tela grande quando há 2 ou mais abertas (as outras ficam na coluna)
+  pips: new Map(),         // id da transmissão -> a janela flutuante dela (pode haver várias)
   statsTimer: null,
   outStatsTimer: null,
 };
@@ -767,7 +769,7 @@ function memberRow(id, name, sharing) {
   const status = document.createElement('span');
   status.className = 'mstatus';
   const paused = id && state.focus && state.focus !== id && state.in.has(id);
-  const inPip = id && state.pip && state.pip.id === id;
+  const inPip = id && state.pips.has(id);
   status.textContent = !sharing ? 'Na sala' : inPip ? 'Transmitindo · na janela flutuante' : paused ? 'Transmitindo, em pausa para você' : 'Transmitindo';
   info.append(nameEl, status);
   li.append(dot, info);
@@ -877,7 +879,7 @@ function createTile(id, name) {
   pipBack.type = 'button';
   pipBack.className = 'btn primary';
   pipBack.textContent = 'Trazer de volta';
-  pipBack.onclick = () => closePip();
+  pipBack.onclick = () => closePip(id);
   const pipAdjust = document.createElement('button');
   pipAdjust.type = 'button';
   pipAdjust.className = 'btn';
@@ -947,7 +949,7 @@ function stopWatching(id, notify = true) {
   const link = state.in.get(id);
   if (!link) return;
   if (notify) sendSignal(id, { side: 'viewer', unsubscribe: true });
-  if (state.pip && state.pip.id === id) closePip();
+  if (state.pips.has(id)) closePip(id);
   if (document.fullscreenElement === link.tile.el) document.exitFullscreen().catch(() => {});
   closeOnceReceiver(link);
   link.pc.close();
@@ -1321,12 +1323,13 @@ function chatMemberLeft(id) {
 // A página abre a janela (about:blank, mesmo processo) e monta nela um <video> com o mesmo MediaStream do
 // tile: nada é decodificado de novo. O processo principal cuida de deixar a janela por cima, sem foco e,
 // travada, com o clique atravessando.
+// Cada transmissão pode ter a sua janela; o nome da janela leva o id para o processo principal saber de quem é
 function togglePip(id) {
-  if (state.pip && state.pip.id === id) return closePip();
-  if (state.pip && !state.pip.win.closed) return setPipStream(id);
-  const win = window.open('', 'tela-pip');
+  if (state.pips.has(id)) return closePip(id);
+  const win = window.open('', `tela-pip-${id}`);
   if (!win) return toast('Não foi possível abrir a janela flutuante.', 'error');
-  state.pip = buildPip(win);
+  const p = buildPip(win, id);
+  state.pips.set(id, p);
   setPipStream(id);
 }
 
@@ -1344,7 +1347,7 @@ function pipButton(d, text, onClick, primary) {
 }
 
 // Tudo por CSSOM: a página herda a regra de segurança do app, que não deixa estilo escrito em HTML
-function buildPip(win) {
+function buildPip(win, id) {
   const d = win.document;
   d.documentElement.style.height = '100%';
   Object.assign(d.body.style, {
@@ -1374,12 +1377,12 @@ function buildPip(win) {
   Object.assign(sizes.style, { display: 'flex', gap: '2px', padding: '2px', background: '#111111', borderRadius: '6px' });
   sizes.style.setProperty('-webkit-app-region', 'no-drag');
   for (const key of ['P', 'M', 'G']) {
-    const b = pipButton(d, key, () => window.api.pipSize(key), false);
+    const b = pipButton(d, key, () => window.api.pipSize(id, key), false);
     Object.assign(b.style, { width: '28px', height: '24px', padding: '0', border: '0', borderRadius: '4px', background: 'transparent', color: '#a3a3a3' });
     b.title = { P: 'Pequena', M: 'Média', G: 'Grande' }[key];
     sizes.append(b);
   }
-  top.append(name, sizes, pipButton(d, 'Travar', () => window.api.pipSetEdit(false), true), pipButton(d, 'Fechar', () => closePip(), false));
+  top.append(name, sizes, pipButton(d, 'Travar', () => window.api.pipSetEdit(false), true), pipButton(d, 'Fechar', () => closePip(id), false));
   const bottom = d.createElement('div');
   Object.assign(bottom.style, { display: 'flex', flexDirection: 'column', gap: '6px', background: 'rgba(0, 0, 0, .72)', margin: '0 -8px -8px', padding: '8px 10px' });
   const opacityRow = d.createElement('label');
@@ -1391,10 +1394,10 @@ function buildPip(win) {
   opacity.max = '100';
   opacity.value = '100';
   Object.assign(opacity.style, { flex: '1', accentColor: '#8ab4ff' });
-  opacity.oninput = () => window.api.pipOpacity(Number(opacity.value) / 100);
+  opacity.oninput = () => window.api.pipOpacity(id, Number(opacity.value) / 100);
   opacityRow.append('Transparência', opacity);
   const hint = d.createElement('span');
-  hint.textContent = 'Arraste para mover · puxe um canto para redimensionar · Ctrl+Shift+E trava';
+  hint.textContent = 'Arraste para mover · puxe um canto para redimensionar · Ctrl+Shift+E trava todas';
   Object.assign(hint.style, { lineHeight: '1.35', color: '#d0d0d0' });
   bottom.append(opacityRow, hint);
   edit.append(top, bottom);
@@ -1412,16 +1415,13 @@ function buildPip(win) {
     fontSize: '12px', padding: '6px 10px', borderRadius: '8px', background: 'rgba(17, 17, 17, .88)', border: '1px solid #2e2e2e',
   });
   d.body.append(video, edit, lockTag, notice);
-  return { win, id: null, video, edit, name, opacity, lockTag, notice, noticeTimer: null };
+  return { win, id, video, edit, name, opacity, lockTag, notice, noticeTimer: null };
 }
 
 function setPipStream(id) {
   const link = state.in.get(id);
-  const p = state.pip;
+  const p = state.pips.get(id);
   if (!link || !p || p.win.closed) return;
-  const before = state.in.get(p.id);
-  p.id = id;
-  if (before && before !== link) refreshTileStream(before); // a anterior volta para o app
   refreshTileStream(link);
   p.name.textContent = link.tile.name;
   p.lockTag.textContent = link.tile.name;
@@ -1430,9 +1430,9 @@ function setPipStream(id) {
   renderPipButtons();
 }
 
-function closePip() {
-  const p = state.pip;
-  state.pip = null;
+function closePip(id) {
+  const p = state.pips.get(id);
+  state.pips.delete(id);
   if (p && !p.win.closed) p.win.close();
   pipClosed(p);
 }
@@ -1447,15 +1447,16 @@ function pipClosed(p) {
 
 function renderPipButtons() {
   for (const [id, link] of state.in) {
-    const on = !!state.pip && state.pip.id === id;
+    const on = state.pips.has(id);
     setIcon(link.tile.pipBtn, 'pip', on ? 'Fechar a janela flutuante' : 'Abrir em janela flutuante (fica por cima do jogo)');
     link.tile.pipBtn.classList.toggle('on', on);
     link.tile.pipNote.hidden = !on;
   }
-  // Barra: qual transmissão está na janela flutuante, com o atalho e o X
-  const p = state.pip;
-  $('pipChip').hidden = !p || !state.in.has(p.id);
-  if (p && state.in.has(p.id)) $('pipChipText').textContent = `Janela flutuante: ${state.in.get(p.id).tile.name}`;
+  // Barra: quais transmissões estão em janela flutuante, com o atalho e o X (fecha todas)
+  const names = [...state.pips.keys()].filter((id) => state.in.has(id)).map((id) => state.in.get(id).tile.name);
+  $('pipChip').hidden = !names.length;
+  $('pipChipText').textContent = names.length === 1 ? `Janela flutuante: ${names[0]}` : `Janelas flutuantes: ${names.join(', ')}`;
+  setIcon($('pipChipClose'), 'close', names.length > 1 ? 'Fechar as janelas flutuantes' : 'Fechar a janela flutuante');
   if (state.myId) renderMembers();
 }
 
@@ -1468,11 +1469,16 @@ function setPipLocked(p, locked) {
 }
 
 window.api.onPip((m) => {
-  if (m.type === 'edit' && state.pip && !state.pip.win.closed) {
-    setPipLocked(state.pip, !m.on);
-    if (typeof m.opacity === 'number') state.pip.opacity.value = String(Math.round(m.opacity * 100));
+  // O modo de ajuste vale para todas as janelas ao mesmo tempo
+  if (m.type === 'edit') {
+    for (const [id, p] of state.pips) {
+      if (p.win.closed) continue;
+      setPipLocked(p, !m.on);
+      const o = m.opacity && m.opacity[id];
+      if (typeof o === 'number') p.opacity.value = String(Math.round(o * 100));
+    }
   }
-  else if (m.type === 'closed' && state.pip) { const p = state.pip; state.pip = null; pipClosed(p); }
+  else if (m.type === 'closed' && state.pips.has(m.id)) { const p = state.pips.get(m.id); state.pips.delete(m.id); pipClosed(p); }
   else if (m.type === 'shortcut-busy') toast('Outro programa já usa Ctrl+Shift+E. Trave pelo botão Travar da janela; para ajustar de novo, feche e abra a janela flutuante pelo botão do vídeo.', 'error');
 });
 
@@ -1626,7 +1632,7 @@ function setIncomingVideo(on) {
 function syncIncomingVideo() {
   for (const [id, link] of state.in) {
     // Na janela flutuante, o vídeo continua vindo mesmo com o app escondido (é para ver enquanto joga)
-    const inPip = !!state.pip && state.pip.id === id;
+    const inPip = state.pips.has(id);
     const on = inPip || (appVisible && (!state.focus || state.focus === id));
     if (link.videoOn === on) continue;
     link.videoOn = on;
@@ -2339,8 +2345,8 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden && ch
 $('dockAddr').onclick = async () => {
   try { await navigator.clipboard.writeText(state.roomAddr); toast('Endereço copiado.'); } catch { toast('Não foi possível copiar.', 'error'); }
 };
-setIcon($('pipChipClose'), 'close', 'Fechar a janela flutuante');
-$('pipChipClose').onclick = () => closePip();
+setIcon($('pipChipClose'), 'close', 'Fechar as janelas flutuantes');
+$('pipChipClose').onclick = () => { for (const id of [...state.pips.keys()]) closePip(id); };
 setIcon($('chatAttach'), 'attach', 'Mandar arquivo (até 200 MB)');
 setIcon($('chatSend'), 'send', 'Enviar');
 $('chatForm').onsubmit = (e) => { e.preventDefault(); sendChat(); };

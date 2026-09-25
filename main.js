@@ -308,71 +308,110 @@ function cleanOldUpdates() {
 }
 
 // ---------- Janela flutuante (picture in picture) ----------
-// Uma transmissão numa janela pequena, sempre por cima (inclusive de jogo em tela cheia sem bordas).
-// Travada, o mouse passa por ela (o clique vai para o jogo) e ela nunca pega o foco. No modo de ajuste
-// dá para arrastar e redimensionar. Ctrl+Shift+E troca entre os dois, de dentro do jogo.
+// Cada transmissão pode ir para a sua janela pequena, sempre por cima (inclusive de jogo em tela cheia sem
+// bordas). Travadas, o mouse passa por elas (o clique vai para o jogo) e elas nunca pegam o foco. No modo de
+// ajuste dá para arrastar e redimensionar. Ctrl+Shift+E troca todas entre os dois, de dentro do jogo.
+// Cada vaga (1ª, 2ª, 3ª janela aberta...) lembra a própria posição, tamanho e transparência.
 const PIP_KEY = 'CommandOrControl+Shift+E';
 let mainWin = null;
-let pip = null;
+const pips = new Map(); // id da transmissão -> { win, slot, opacity }
 let pipEdit = false;
 const pipFile = () => path.join(app.getPath('userData'), 'janela-flutuante.json');
 
-// Última posição e tamanho, se ainda couber numa das telas; senão, canto de baixo à direita
-function pipBounds() {
+// Arquivo: { slots: [{ x, y, width, height, opacity }, ...] }. O formato antigo (uma janela só) vira a vaga 0.
+function readPipSlots() {
   try {
-    const b = JSON.parse(fs.readFileSync(pipFile(), 'utf8'));
-    const ok = ['x', 'y', 'width', 'height'].every((k) => Number.isFinite(b[k])) && b.width >= 192 && b.height >= 108;
-    const visible = ok && screen.getAllDisplays().some(({ workArea: w }) =>
-      b.x < w.x + w.width - 40 && b.x + b.width > w.x + 40 && b.y < w.y + w.height - 40 && b.y + b.height > w.y + 40);
-    if (visible) return { x: b.x, y: b.y, width: b.width, height: b.height };
-  } catch {}
+    const data = JSON.parse(fs.readFileSync(pipFile(), 'utf8'));
+    return Array.isArray(data.slots) ? data.slots : [data];
+  } catch { return []; }
+}
+let pipSlots = null;
+const slots = () => (pipSlots ??= readPipSlots());
+
+// Última posição e tamanho da vaga, se ainda couber numa das telas; senão, empilhadas a partir do canto de
+// baixo à direita (subindo, e depois numa coluna mais à esquerda)
+function pipBounds(slot) {
+  const b = slots()[slot];
+  const ok = b && ['x', 'y', 'width', 'height'].every((k) => Number.isFinite(b[k])) && b.width >= 192 && b.height >= 108;
+  const visible = ok && screen.getAllDisplays().some(({ workArea: w }) =>
+    b.x < w.x + w.width - 40 && b.x + b.width > w.x + 40 && b.y < w.y + w.height - 40 && b.y + b.height > w.y + 40);
+  if (visible) return { x: b.x, y: b.y, width: b.width, height: b.height };
   const wa = screen.getPrimaryDisplay().workArea;
-  return { width: 480, height: 270, x: wa.x + wa.width - 480 - 24, y: wa.y + wa.height - 270 - 24 };
+  const width = 480, height = 270, gap = 12;
+  const perCol = Math.max(1, Math.floor((wa.height - 24) / (height + gap)));
+  const col = Math.floor(slot / perCol), row = slot % perCol;
+  return {
+    width, height,
+    x: Math.max(wa.x, wa.x + wa.width - 24 - width - col * (width + gap)),
+    y: wa.y + wa.height - 24 - height - row * (height + gap),
+  };
+}
+
+function freeSlot() {
+  const used = new Set([...pips.values()].map((p) => p.slot));
+  let slot = 0;
+  while (used.has(slot)) slot++;
+  return slot;
 }
 
 function sendMain(msg) {
   if (mainWin && !mainWin.isDestroyed()) mainWin.webContents.send('pip', msg);
 }
 
+const livePip = (id) => { const p = pips.get(String(id)); return p && !p.win.isDestroyed() ? p : null; };
+
 // Tamanhos rápidos (P, M, G) mantendo o canto de baixo à direita no lugar
 const PIP_SIZES = { P: 320, M: 480, G: 640 };
-function setPipSize(key) {
-  if (!pip || pip.isDestroyed() || !PIP_SIZES[key]) return;
-  const b = pip.getBounds();
+function setPipSize(id, key) {
+  const p = livePip(id);
+  if (!p || !PIP_SIZES[key]) return;
+  const b = p.win.getBounds();
   const width = PIP_SIZES[key];
   const height = Math.round(width * 9 / 16);
-  pip.setBounds({ x: b.x + b.width - width, y: b.y + b.height - height, width, height });
+  p.win.setBounds({ x: b.x + b.width - width, y: b.y + b.height - height, width, height });
 }
 
-let pipOpacity = 1;
-function setPipOpacity(v) {
-  if (!pip || pip.isDestroyed()) return;
-  pipOpacity = Math.min(1, Math.max(0.4, Number(v) || 1));
-  pip.setOpacity(pipOpacity);
-  savePip();
+function setPipOpacity(id, v) {
+  const p = livePip(id);
+  if (!p) return;
+  p.opacity = Math.min(1, Math.max(0.4, Number(v) || 1));
+  p.win.setOpacity(p.opacity);
+  savePip(p);
 }
 
-function savePip() {
-  if (pip && !pip.isDestroyed()) fs.writeFile(pipFile(), JSON.stringify({ ...pip.getBounds(), opacity: pipOpacity }), () => {});
+function savePip(p) {
+  if (p.win.isDestroyed()) return;
+  const list = slots();
+  list[p.slot] = { ...p.win.getBounds(), opacity: p.opacity };
+  for (let i = 0; i < list.length; i++) list[i] ??= {};
+  fs.writeFile(pipFile(), JSON.stringify({ slots: list }), () => {});
+}
+
+function pipOpacities() {
+  const out = {};
+  for (const [id, p] of pips) out[id] = p.opacity;
+  return out;
 }
 
 function setPipEdit(on) {
-  if (!pip || pip.isDestroyed()) return;
   pipEdit = !!on;
-  pip.setIgnoreMouseEvents(!pipEdit); // travada: o clique atravessa para o que estiver embaixo
-  sendMain({ type: 'edit', on: pipEdit, opacity: pipOpacity });
+  for (const p of pips.values()) {
+    if (!p.win.isDestroyed()) p.win.setIgnoreMouseEvents(!pipEdit); // travada: o clique atravessa
+  }
+  sendMain({ type: 'edit', on: pipEdit, opacity: pipOpacities() });
 }
 
-function setupPip(child) {
-  pip = child;
+function setupPip(child, id, slot) {
+  const saved = slots()[slot];
+  const p = { win: child, slot, opacity: Math.min(1, Math.max(0.4, Number(saved && saved.opacity) || 1)) };
+  pips.set(id, p);
   child.setAlwaysOnTop(true, 'screen-saver');
   child.setAspectRatio(16 / 9);
-  try { pipOpacity = Math.min(1, Math.max(0.4, Number(JSON.parse(fs.readFileSync(pipFile(), 'utf8')).opacity) || 1)); } catch { pipOpacity = 1; }
-  child.setOpacity(pipOpacity);
+  child.setOpacity(p.opacity);
   let saveTimer = null;
   const save = () => {
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(savePip, 400);
+    saveTimer = setTimeout(() => savePip(p), 400);
   };
   child.on('moved', save);
   child.on('resized', save);
@@ -380,11 +419,11 @@ function setupPip(child) {
     sendMain({ type: 'shortcut-busy' });
   }
   child.on('closed', () => {
-    if (pip === child) pip = null;
-    globalShortcut.unregister(PIP_KEY);
-    sendMain({ type: 'closed' });
+    if (pips.get(id) === p) pips.delete(id);
+    if (!pips.size) globalShortcut.unregister(PIP_KEY);
+    sendMain({ type: 'closed', id });
   });
-  setPipEdit(true); // abre no modo de ajuste: posicione e trave
+  setPipEdit(true); // abre no modo de ajuste (todas juntas): posicione e trave
 }
 
 // Reabre o app depois de instalar uma atualização. O .exe portátil apaga a pasta temporária quando
@@ -424,13 +463,19 @@ function createWindow() {
     cleanOldUpdates();
   });
   mainWin = win;
-  // A única janela que a página pode abrir é a flutuante; ela nasce sem moldura, por cima e sem foco
+  // A única janela que a página pode abrir é a flutuante (uma por transmissão, "tela-pip-<id>"); ela nasce
+  // sem moldura, por cima e sem foco
+  const pipId = (frameName) => (/^tela-pip-([\w-]{1,40})$/.exec(frameName) || [])[1];
+  const opening = new Map(); // id -> vaga escolhida ao abrir
   win.webContents.setWindowOpenHandler(({ frameName }) => {
-    if (frameName !== 'tela-pip') return { action: 'deny' };
+    const id = pipId(frameName);
+    if (!id || livePip(id)) return { action: 'deny' };
+    const slot = freeSlot();
+    opening.set(id, slot);
     return {
       action: 'allow',
       overrideBrowserWindowOptions: {
-        ...pipBounds(), minWidth: 192, minHeight: 108,
+        ...pipBounds(slot), minWidth: 192, minHeight: 108,
         frame: false, alwaysOnTop: true, skipTaskbar: true, focusable: false, resizable: true,
         minimizable: false, maximizable: false, fullscreenable: false, hasShadow: false,
         backgroundColor: '#000000', title: 'Tela P2P · janela flutuante',
@@ -438,9 +483,13 @@ function createWindow() {
     };
   });
   win.webContents.on('did-create-window', (child, { frameName }) => {
-    if (frameName === 'tela-pip') setupPip(child);
+    const id = pipId(frameName);
+    if (!id) return;
+    const slot = opening.has(id) ? opening.get(id) : freeSlot();
+    opening.delete(id);
+    setupPip(child, id, slot);
   });
-  win.on('closed', () => { if (pip && !pip.isDestroyed()) pip.close(); });
+  win.on('closed', () => { for (const p of pips.values()) if (!p.win.isDestroyed()) p.win.close(); });
   win.loadFile(path.join(__dirname, 'index.html'));
 }
 
@@ -513,8 +562,8 @@ app.whenReady().then(() => {
   ipcMain.handle('github-install', () => github.install(updater));
   ipcMain.handle('open-github', (_e, url) => github.openPage(url));
   ipcMain.handle('pip-edit', (_e, on) => setPipEdit(on));
-  ipcMain.handle('pip-size', (_e, key) => setPipSize(key));
-  ipcMain.handle('pip-opacity', (_e, v) => setPipOpacity(v));
+  ipcMain.handle('pip-size', (_e, id, key) => setPipSize(id, key));
+  ipcMain.handle('pip-opacity', (_e, id, v) => setPipOpacity(id, v));
   ipcMain.handle('open-link', (_e, url) => {
     if (typeof url === 'string' && /^https?:\/\/[^\s]+$/i.test(url)) shell.openExternal(url);
   });

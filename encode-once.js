@@ -554,11 +554,11 @@ function setVideoTrack(link, track) {
 // só com o som (não desenha o mesmo vídeo duas vezes)
 function refreshTileStream(link) {
   const video = link.tile.video;
-  const inPip = state.pip && !state.pip.win.closed && state.in.get(state.pip.id) === link;
+  const pip = [...state.pips].find(([id, p]) => !p.win.closed && state.in.get(id) === link)?.[1];
   const full = new MediaStream(link.tracks);
-  if (inPip) {
-    state.pip.video.srcObject = full;
-    state.pip.video.play().catch(() => {});
+  if (pip) {
+    pip.video.srcObject = full;
+    pip.video.play().catch(() => {});
     video.srcObject = new MediaStream(link.tracks.filter((t) => t.kind === 'audio'));
   } else {
     video.srcObject = full;
