@@ -97,6 +97,15 @@ function publish(requested, { notes = '', github = true } = {}) {
 
   const pkgPath = path.join(ROOT, 'package.json');
   const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+
+  // O .exe novo substitui o da pasta dist: se ele estiver aberto, o Windows não deixa. Confere antes de mexer em nada.
+  const dist = path.join(ROOT, 'dist');
+  for (const f of fs.existsSync(dist) ? fs.readdirSync(dist) : []) {
+    if (!f.startsWith(pkg.build.productName) || !f.endsWith('.exe')) continue;
+    try { fs.closeSync(fs.openSync(path.join(dist, f), 'r+')); } catch (e) {
+      if (e.code === 'EBUSY' || e.code === 'EPERM') fail(`O "${f}" da pasta dist está aberto. Feche o app e rode de novo.`);
+    }
+  }
   const [maj, min, pat] = pkg.version.split('.').map(Number);
   const version = requested || `${maj}.${min}.${pat + 1}`;
   if (!/^\d+\.\d+\.\d+$/.test(version) || !newer(version, pkg.version)) fail(`A versão ${version} precisa ser maior que a atual (${pkg.version}).`);
@@ -114,7 +123,6 @@ function publish(requested, { notes = '', github = true } = {}) {
   console.log(`Versão ${version} assinada (${Math.round(pack.length / 1024)} KB). O app deste PC já usa ela na próxima vez que abrir.`);
 
   // O .exe tem sempre o mesmo nome: o da versão anterior (e os antigos, com a versão no nome) saem
-  const dist = path.join(ROOT, 'dist');
   for (const f of fs.existsSync(dist) ? fs.readdirSync(dist) : []) {
     if (f.startsWith(pkg.build.productName) && f.endsWith('.exe')) fs.rmSync(path.join(dist, f), { force: true });
   }
