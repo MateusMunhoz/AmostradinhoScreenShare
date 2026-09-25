@@ -160,6 +160,13 @@
               </select>
             </label>
             <label class="field">
+              <span>Codificação</span>
+              <select id="encodeMode" aria-describedby="encodeNote">
+                <option value="per">Uma para cada pessoa (padrão)</option>
+                <option value="once">Uma vez só para todos (experimental)</option>
+              </select>
+            </label>
+            <label class="field">
               <span>Prioridade do app</span>
               <select id="priority">
                 <option value="normal">Normal (o jogo vem primeiro)</option>
@@ -174,6 +181,7 @@
               </div>
               <div id="excludeApps" class="app-list" role="group" aria-labelledby="excludeLabel"></div>
             </div>
+            <p id="encodeNote" class="hint full" hidden></p>
             <p id="audioNote" class="hint full">O som das telas que você está assistindo nunca vai para a sua transmissão, então ninguém se ouve de volta.</p>
             <div class="actions">
               <button class="btn ghost" id="cancelShare">Cancelar</button>
@@ -224,6 +232,7 @@
   </div>
 
   <div id="toast" class="toast" role="status"></div>
+  <script src="encode-once.js"></script>
   <script src="renderer.js"></script>
 </body>
 </html>

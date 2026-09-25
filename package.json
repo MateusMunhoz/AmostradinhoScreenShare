@@ -1,6 +1,6 @@
 {
   "name": "tela-p2p",
-  "version": "1.1.3",
+  "version": "1.2.0",
   "description": "Compartilhamento de tela com áudio, peer to peer, pela Radmin VPN",
   "main": "boot.js",
   "scripts": {
@@ -27,6 +27,7 @@
       "index.html",
       "styles.css",
       "renderer.js",
+      "encode-once.js",
       "pcm-worklet.js"
     ],
     "win": {

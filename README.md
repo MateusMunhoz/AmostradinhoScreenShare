@@ -112,6 +112,19 @@ Clique em **Estatísticas**, na tela inicial (ao lado da versão) ou na sala (em
 
 Se "Codificação de vídeo, PC inteiro" estiver alta com o app parado, é outro programa usando o codificador da placa (por exemplo, o Replay Instantâneo da NVIDIA ou uma live do Discord).
 
+### Codificar uma vez só (experimental)
+
+No modo normal, cada pessoa que assiste tem uma conexão própria, e o WebRTC codifica o vídeo uma vez para cada conexão, pelo processador. Com 3 amigos assistindo, são 3 codificações.
+
+Na tela de transmitir, **Codificação > Uma vez só para todos (experimental)** codifica o vídeo uma vez só, pela placa de vídeo quando ela suporta, e manda o mesmo vídeo para todos. O peso não aumenta quando mais gente entra. Como funciona:
+
+- **Se o app de quem assiste é de uma versão antiga,** essa pessoa recebe no modo normal, na mesma transmissão.
+- **Se a internet de alguém não dá conta,** só essa pessoa pula quadros até o próximo quadro completo. Os outros não travam.
+- **Se a placa de vídeo parar de codificar,** o app tenta pelo processador, ainda uma vez só. Se também falhar, todos voltam para o modo normal sem a transmissão cair.
+- **Para conferir,** abra **Estatísticas**. Ela mostra "H.264 com WebCodecs (placa de vídeo), 1 codificação para N pessoas".
+
+Se o PC não conseguir codificar desse jeito, a opção fica desativada.
+
 ### Jogo em tela cheia
 
 Com o jogo em tela cheia, a taxa de envio pode cair por três motivos:
@@ -131,7 +144,7 @@ O que você pode ajustar:
   - Não existe "Tempo real" de propósito. Sem administrador o Windows ignora; com administrador, pode travar mouse, teclado e o som do próprio jogo.
 
 - **Qualidade:** 720p 60 fps tem menos da metade dos pixels de 1080p 60 fps e continua fluido para jogos. É a opção mais leve para quem joga e transmite ao mesmo tempo.
-- **Cada pessoa assistindo é uma codificação a mais.** Com 3 pessoas, a placa de vídeo codifica 3 vezes. Se pesar, use 720p ou 30 fps.
+- **Cada pessoa assistindo é uma codificação a mais** no modo normal. Com 3 pessoas, são 3 codificações. Se pesar, use **Uma vez só para todos** (acima), 720p ou 30 fps.
 - **Transmita a janela do jogo** em vez da tela inteira quando der. Se o monitor for maior que 1080p (1440p ou 4K), o app precisa reduzir a imagem antes de codificar, e isso usa o processador.
 - **Codificação pelo processador:** hoje o painel deve dizer "pelo processador" (veja Codec, acima). Enquanto for assim, 720p é o ajuste que mais alivia o jogo.
 - **Senha:** é opcional, mas recomendada se a rede da Radmin tiver mais gente.

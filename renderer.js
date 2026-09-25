@@ -300,12 +300,13 @@ function onRoomMessage(m) {
 function handleSignal(from, data) {
   if (data.side === 'viewer') {
     // Mensagem de alguém que assiste (ou quer assistir) a minha tela
-    if (data.subscribe) return addWatcher(from);
+    if (data.subscribe) return addWatcher(from, data.once === true);
     if (data.unsubscribe) return closeOut(from);
     const link = state.out.get(from);
     if (!link) return;
     if (typeof data.video === 'boolean') {
       link.videoOff = !data.video;
+      if (data.video) onceVideoResumed(link);
       renderWatchers();
       link.chain = link.chain.then(() => applyBitrate(link)).catch(console.error);
       return;
@@ -544,8 +545,16 @@ async function renderCodecInfo() {
     }
     return seen;
   };
-  const enc = await describe(state.out.values(), 'outbound-rtp', 'encoderImplementation', 'powerEfficientEncoder');
-  const dec = await describe(state.in.values(), 'inbound-rtp', 'decoderImplementation', 'powerEfficientDecoder');
+  const enc = await describe([...state.out.values()].filter((l) => !l.dc), 'outbound-rtp', 'encoderImplementation', 'powerEfficientEncoder');
+  const dec = await describe([...state.in.values()].filter((l) => !l.once), 'inbound-rtp', 'decoderImplementation', 'powerEfficientDecoder');
+  const where = (h) => (h ? 'placa de vídeo' : 'processador');
+  const onceOut = [...state.out.values()].filter((l) => l.dc && l.dc.readyState === 'open').length;
+  if (once.active && onceOut) {
+    parts.push(`Transmitindo: H.264 com WebCodecs (${where(once.hardware)}), ${once.width}×${once.height}, 1 codificação para ${onceOut} ${onceOut > 1 ? 'pessoas' : 'pessoa'}.`);
+  }
+  for (const link of state.in.values()) {
+    if (link.once?.decoder) dec.push(`H.264 com WebCodecs (${where(link.once.hardware)}), ${link.once.width}×${link.once.height}`);
+  }
   if (enc.length) parts.push(`Transmitindo: ${[...new Set(enc)].join(', ')}${enc.length > 1 ? ` (${enc.length} codificações, uma por pessoa)` : ''}.`);
   if (dec.length) parts.push(`Assistindo: ${[...new Set(dec)].join(', ')}.`);
   $('stCodec').textContent = parts.join(' ') || 'Sem vídeo agora. Transmita ou assista uma tela para ver qual codificador está em uso.';
@@ -698,13 +707,15 @@ function watch(id) {
   if (state.in.has(id) || !state.members.get(id)?.sharing) return;
   const pc = new RTCPeerConnection(RTC_CONFIG);
   const tile = createTile(id, nameOf(id));
-  const link = { pc, chain: Promise.resolve(), tile, lastBytes: 0, lastTs: 0, videoOn: true };
+  const link = { pc, chain: Promise.resolve(), tile, lastBytes: 0, lastTs: 0, videoOn: true, tracks: [], once: null };
   state.in.set(id, link);
 
   pc.ontrack = (e) => {
-    if (tile.video.srcObject !== e.streams[0]) tile.video.srcObject = e.streams[0];
-    tile.video.play().catch(() => {});
+    if (e.track.kind === 'video') setVideoTrack(link, e.track);
+    else { link.tracks.push(e.track); refreshTileStream(link); }
   };
+  // Quem transmite no modo "uma vez só" manda o vídeo já codificado por este canal
+  pc.ondatachannel = (e) => { if (e.channel.label === 'video') setupOnceReceiver(link, e.channel); };
   pc.onicecandidate = (e) => { if (e.candidate) sendSignal(id, { side: 'viewer', candidate: e.candidate }); };
   pc.onconnectionstatechange = () => {
     const s = pc.connectionState;
@@ -720,7 +731,7 @@ function watch(id) {
     }
   };
 
-  sendSignal(id, { side: 'viewer', subscribe: true });
+  sendSignal(id, { side: 'viewer', subscribe: true, once: onceSupportedForViewer() });
   if (document.hidden) onVisibility(); // começou a assistir com a janela já oculta: pausa o vídeo também
   renderMembers();
   updateStage();
@@ -732,6 +743,7 @@ function stopWatching(id, notify = true) {
   if (!link) return;
   if (notify) sendSignal(id, { side: 'viewer', unsubscribe: true });
   if (document.fullscreenElement === link.tile.el) document.exitFullscreen().catch(() => {});
+  closeOnceReceiver(link);
   link.pc.close();
   link.tile.video.srcObject = null;
   link.tile.el.remove();
@@ -748,6 +760,17 @@ function ensureStats() {
     let total = 0;
     for (const link of state.in.values()) {
       if (link.pc.connectionState !== 'connected') continue;
+      const r = link.once;
+      if (r) {
+        const now = performance.now();
+        const secs = link.onceTs ? (now - link.onceTs) / 1000 : 0;
+        const mbps = secs ? ((r.bytes - link.onceBytes) * 8) / secs / 1e6 : 0;
+        const fps = secs ? (r.decoded - link.onceFrames) / secs : 0;
+        Object.assign(link, { onceTs: now, onceBytes: r.bytes, onceFrames: r.decoded });
+        total += mbps;
+        link.tile.stats.textContent = `H.264 (1x), ${r.width || '–'}×${r.height || '–'}, ${Math.round(fps)} fps, ${mbps.toFixed(1)} Mbps`;
+        continue;
+      }
       let report;
       try { report = await link.pc.getStats(); } catch { continue; }
       report.forEach((r) => {
@@ -813,6 +836,31 @@ function openShareDialog() {
   $('shareDialog').hidden = false;
   loadSources();
   syncAudioMode();
+  checkEncodeOnce();
+}
+
+// A opção "uma vez só" só fica disponível se o PC codifica H.264 pelo WebCodecs
+let encodeOnceSupport = null;
+async function checkEncodeOnce() {
+  if (encodeOnceSupport === null) {
+    const q = QUALITY['1080p60'];
+    encodeOnceSupport = await pickEncoderConfig(q, q.w, q.h);
+  }
+  const opt = $('encodeMode').querySelector('option[value="once"]');
+  opt.disabled = !encodeOnceSupport;
+  if (!encodeOnceSupport) $('encodeMode').value = 'per';
+  syncEncodeNote();
+}
+
+function syncEncodeNote() {
+  const note = $('encodeNote');
+  if (encodeOnceSupport === null) return;
+  note.hidden = false;
+  note.textContent = !encodeOnceSupport
+    ? 'Este PC não consegue codificar uma vez só para todos, então cada pessoa recebe a própria codificação.'
+    : $('encodeMode').value === 'once'
+      ? `Codifica o vídeo uma vez só${encodeOnceSupport.hardware ? ', pela placa de vídeo' : ', pelo processador'}, e manda o mesmo para todos: o peso não aumenta quando mais gente assiste. Quem tem versão antiga do app recebe no modo normal.`
+      : 'O processador codifica o vídeo uma vez para cada pessoa que assiste. Com vários amigos assistindo, experimente "Uma vez só para todos".';
 }
 function closeShareDialog() { $('shareDialog').hidden = true; }
 
@@ -946,6 +994,8 @@ async function startSharing() {
   state.quality = $('quality').value;
   const q = QUALITY[state.quality];
   const audioMode = $('audioMode').value;
+  const encodeMode = $('encodeMode').value;
+  save('encodeMode', encodeMode);
   const excluded = audioMode === 'none' ? [] : appsLoaded() ? checkedApps() : savedExcludes();
   save('quality', state.quality);
   save('audioMode', audioMode);
@@ -989,6 +1039,9 @@ async function startSharing() {
   if (vTrack) {
     vTrack.contentHint = 'motion';
     vTrack.onended = () => stopSharing('A captura foi encerrada (a janela foi fechada?).');
+    if (encodeMode === 'once' && !(await startOnceEncoder(vTrack))) {
+      toast('Este PC não conseguiu codificar uma vez só. Transmitindo no modo normal.', 'error');
+    }
   }
 
   state.sharing = true;
@@ -1005,6 +1058,7 @@ async function startSharing() {
 function stopSharing(reason) {
   if (!state.sharing) return;
   state.sharing = false;
+  stopOnceEncoder();
   stopOutStats();
   for (const id of [...state.out.keys()]) closeOut(id);
   stopTracks();
@@ -1016,15 +1070,23 @@ function stopSharing(reason) {
 }
 
 // Alguém clicou em Assistir na minha transmissão: só agora a conexão é criada
-function addWatcher(id) {
+// Se eu transmito no modo "uma vez só" e o app da pessoa entende, o vídeo vai pelo canal de dados;
+// senão (ex.: versão antiga), vai como faixa WebRTC normal, com o codificador próprio dessa conexão.
+function addWatcher(id, wantsOnce) {
   if (!state.sharing || !state.stream) return sendSignal(id, { side: 'sharer', unavailable: true });
   closeOut(id);
   const pc = new RTCPeerConnection(RTC_CONFIG);
-  const link = { pc, chain: Promise.resolve() };
+  const link = { pc, chain: Promise.resolve(), dc: null };
   state.out.set(id, link);
 
-  state.stream.getTracks().forEach((t) => pc.addTrack(t, state.stream));
-  preferH264(pc);
+  const useOnce = wantsOnce && once.active;
+  state.stream.getTracks().filter((t) => !useOnce || t.kind !== 'video').forEach((t) => pc.addTrack(t, state.stream));
+  if (useOnce) {
+    link.dc = pc.createDataChannel('video');
+    setupOnceSender(link);
+  } else {
+    preferH264(pc);
+  }
   pc.onicecandidate = (e) => { if (e.candidate) sendSignal(id, { side: 'sharer', candidate: e.candidate }); };
   pc.onconnectionstatechange = () => {
     if (pc.connectionState === 'connected') link.chain = link.chain.then(() => applyBitrate(link)).catch(console.error);
@@ -1042,6 +1104,7 @@ function addWatcher(id) {
 function closeOut(id) {
   const link = state.out.get(id);
   if (!link) return;
+  if (link.dc) link.dc.close();
   link.pc.close();
   state.out.delete(id);
   renderWatchers();
@@ -1077,10 +1140,29 @@ function awayReport() {
 // Mostra para quem transmite qual codec está em uso e se a placa de vídeo está codificando
 function startOutStats() {
   stopOutStats();
+  const last = { ts: performance.now(), captured: 0, encoded: 0, dropped: 0, sent: 0, behind: 0 };
   state.outStatsTimer = setInterval(async () => {
-    const links = [...state.out.values()].filter((l) => l.pc.connectionState === 'connected' && !l.videoOff);
-    if (!links.length) { if (!document.hidden) $('encoderInfo').textContent = ''; return; }
+    const active = [...state.out.values()].filter((l) => l.pc.connectionState === 'connected' && !l.videoOff);
+    const links = active.filter((l) => !l.dc);
+    const onceCount = active.length - links.length;
+    if (!active.length) { if (!document.hidden) $('encoderInfo').textContent = ''; return; }
     let codec = '', hw = null, limit = 'none', captureFps = 0, sentFps = 0, mbps = 0;
+
+    // Modo "uma vez só": contadores próprios, já que não há faixa de vídeo WebRTC
+    const now = performance.now();
+    const secs = (now - last.ts) / 1000;
+    const behind = active.reduce((t, l) => t + (l.behind || 0), 0);
+    if (once.active && secs > 0) {
+      captureFps = (once.captured - last.captured) / secs;
+      if (onceCount) {
+        sentFps = (once.encoded - last.encoded) / secs;
+        mbps = ((once.sentBytes - last.sent) * 8) / secs / 1e6;
+        if (once.dropped > last.dropped) limit = 'cpu';
+        else if (behind > last.behind) limit = 'bandwidth';
+      }
+    }
+    Object.assign(last, { ts: now, captured: once.captured, encoded: once.encoded, dropped: once.dropped, sent: once.sentBytes, behind });
+
     for (const link of links) {
       let report;
       try { report = await link.pc.getStats(); } catch { continue; }
@@ -1092,7 +1174,7 @@ function startOutStats() {
         if (h !== null) hw = hw === null ? h : hw && h;
         if (r.qualityLimitationReason === 'cpu') limit = 'cpu';
         else if (r.qualityLimitationReason === 'bandwidth' && limit !== 'cpu') limit = 'bandwidth';
-        sentFps += (r.framesPerSecond || 0) / links.length;
+        sentFps += (r.framesPerSecond || 0) / active.length;
         if (link.lastTs) mbps += ((r.bytesSent - link.lastBytes) * 8) / (r.timestamp - link.lastTs) / 1000;
         link.lastBytes = r.bytesSent;
         link.lastTs = r.timestamp;
@@ -1102,10 +1184,17 @@ function startOutStats() {
       away.samples.push({ captureFps, sentFps, mbps, limit }); // ninguém está vendo o painel agora
       return;
     }
-    if (!codec) return;
-    const where = hw === true ? 'pela placa de vídeo' : hw === false ? 'pelo processador' : '';
-    let text = `Codificando em ${codec}${where ? ' ' + where : ''}.`;
-    if (links.length > 1) text += ` São ${links.length} codificações, uma para cada pessoa.`;
+    const place = (h) => (h === true ? ' pela placa de vídeo' : h === false ? ' pelo processador' : '');
+    let text = '';
+    if (onceCount) {
+      text = `Codificando em H.264 uma vez só${onceCount > 1 ? ` para ${onceCount} pessoas,` : ''}${place(once.hardware)}.`;
+    }
+    if (codec) {
+      const n = links.length;
+      text += `${text ? ' ' : ''}Codificando em ${codec}${place(hw)}${onceCount ? ` para quem tem versão antiga` : ''}.`;
+      if (n > 1) text += ` São ${n} codificações, uma para cada pessoa.`;
+    }
+    if (!text) return;
     if (limit === 'cpu') text += ' O processador está no limite, então a qualidade foi reduzida.';
     else if (limit === 'bandwidth') text += ' A internet está limitando a qualidade.';
     $('encoderInfo').textContent = text;
@@ -1140,7 +1229,9 @@ $('name').addEventListener('input', () => save('name', $('name').value));
 $('roomPort').value = load('roomPort', '8765');
 $('roomAddr').value = load('roomAddr');
 $('quality').value = load('quality', '1080p30');
-$('audioMode').value = load('audioMode', 'all') === 'none' ? 'none' : 'all'; // "exclude" da versão antiga vira "all"
+$('audioMode').value = load('audioMode', 'all') === 'none' ? 'none' : 'all';
+$('encodeMode').value = load('encodeMode', 'per') === 'once' ? 'once' : 'per';
+$('encodeMode').addEventListener('change', syncEncodeNote); // "exclude" da versão antiga vira "all"
 // Prioridade vale para o app inteiro e já na abertura, não só durante a transmissão
 $('priority').value = load('priority', 'above');
 window.api.setPriority($('priority').value);
