@@ -226,16 +226,26 @@ kbd { font-family: Consolas, monospace; font-size: 11px; color: var(--muted); bo
 .chat-head { display: flex; align-items: center; justify-content: space-between; }
 .chat-head h3 { margin: 0; }
 .chat-head .btn.icon { width: 30px; height: 30px; }
-.chat-list { flex: 1; min-height: 0; overflow-y: auto; list-style: none; margin: 0; padding: 0 2px; display: flex; flex-direction: column; gap: 3px; }
-.msg { max-width: 88%; align-self: flex-start; display: flex; flex-direction: column; gap: 3px; margin-top: 8px; font-size: 14px; }
+.chat-list { flex: 1; min-height: 0; overflow-y: auto; list-style: none; margin: 0 -8px 0 0; padding: 0 8px 0 2px; display: flex; flex-direction: column; gap: 2px; }
+/* Barra fina que some: invisível parada, 4 px ao rolar ou com o mouse, 8 px com o mouse na barra */
+.chat-list::-webkit-scrollbar { width: 8px; }
+.chat-list::-webkit-scrollbar-track { background: transparent; }
+.chat-list::-webkit-scrollbar-thumb { border-radius: 999px; border: 2px solid transparent; background: transparent; background-clip: padding-box; }
+.chat-list:hover::-webkit-scrollbar-thumb, .chat-list.scrolling::-webkit-scrollbar-thumb { background-color: var(--field-line); }
+.chat-list::-webkit-scrollbar-thumb:hover, .chat-list::-webkit-scrollbar-thumb:active { border-width: 0; background-color: var(--muted); }
+/* Lista compacta: inicial com a cor da pessoa, nome colorido, tudo à esquerda */
+.msg { display: flex; gap: 10px; margin-top: 10px; font-size: 14px; }
 .msg.grouped { margin-top: 0; }
 .msg.grouped .msg-head { display: none; }
-.msg.mine { align-self: flex-end; align-items: flex-end; }
-.msg-head { display: flex; align-items: baseline; gap: 6px; font-size: 12px; color: var(--muted); }
-.msg-head strong { color: var(--text); font-size: 12px; }
-.bubble { padding: 8px 11px; border-radius: 4px 12px 12px 12px; background: var(--panel-2); }
-.msg.grouped .bubble { border-radius: 12px; }
-.msg.mine .bubble { border-radius: 12px 4px 12px 12px; background: var(--accent-soft); }
+.msg.grouped .avatar { visibility: hidden; height: 0; }
+.avatar {
+  width: 28px; height: 28px; flex: none; border-radius: 50%; background: var(--person, var(--muted));
+  color: var(--bg); font-size: 13px; font-weight: 700; display: grid; place-items: center;
+}
+.msg-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.msg-head { display: flex; align-items: baseline; gap: 8px; font-size: 12px; color: var(--muted); }
+.msg-head strong { color: var(--person, var(--text)); font-size: 13px; }
+.msg-body .file-card { margin-top: 2px; }
 .msg-text { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.4; }
 .msg-text a { color: var(--accent); cursor: pointer; }
 .new-divider { display: flex; align-items: center; gap: 8px; margin: 8px 0 2px; font-size: 12px; font-weight: 600; color: var(--accent); }
@@ -279,9 +289,7 @@ kbd { font-family: Consolas, monospace; font-size: 11px; color: var(--muted); bo
 .addr code { font-size: 15px; font-weight: 600; color: var(--accent); flex: 1; font-family: Consolas, monospace; }
 .members { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .member { display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: 14px; }
-.member .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line); flex: none; }
-.member.live .dot { background: var(--live); }
-.member:not(.live) .dot { background: var(--ok); }
+.member .avatar { width: 24px; height: 24px; font-size: 11px; }
 .member .info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .member .mname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .member .mstatus { font-size: 12px; color: var(--muted); }

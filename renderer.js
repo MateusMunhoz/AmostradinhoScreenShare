@@ -737,11 +737,28 @@ async function renderRoomAddress() {
   $('dockAddr').hidden = chat.open || !state.roomAddr;
 }
 
+// Cada pessoa tem uma cor (a mesma no chat e na lista); você é sempre azul
+const PERSON_COLORS = ['#f2a65a', '#6fcf97', '#c490f0', '#5fd0d6', '#f28bb4', '#e0c85a'];
+function personColor(id) {
+  if (!id || id === state.myId) return 'var(--accent)';
+  let h = 0;
+  for (const c of String(id)) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return PERSON_COLORS[h % PERSON_COLORS.length];
+}
+
+function avatar(name) {
+  const el = document.createElement('span');
+  el.className = 'avatar';
+  el.textContent = (name.trim()[0] || '?').toUpperCase();
+  el.setAttribute('aria-hidden', 'true');
+  return el;
+}
+
 function memberRow(id, name, sharing) {
   const li = document.createElement('li');
   li.className = 'member' + (sharing ? ' live' : '');
-  const dot = document.createElement('span');
-  dot.className = 'dot';
+  li.style.setProperty('--person', personColor(id));
+  const dot = avatar(id ? name : getName());
   const info = document.createElement('div');
   info.className = 'info';
   const nameEl = document.createElement('span');
@@ -1064,28 +1081,27 @@ function appendMessage(m, live) {
   const grouped = !!prev && prev.from === m.from && m.ts - prev.ts < 5 * 60 * 1000;
   const li = document.createElement('li');
   li.className = 'msg' + (mine ? ' mine' : '') + (grouped ? ' grouped' : '');
+  const name = mine ? 'Você' : m.name;
+  li.style.setProperty('--person', personColor(m.from));
+  const body = document.createElement('div');
+  body.className = 'msg-body';
   const head = document.createElement('div');
   head.className = 'msg-head';
   const d = new Date(m.ts);
+  const who = document.createElement('strong');
+  who.textContent = name;
   const when = document.createElement('span');
   when.textContent = `${two(d.getHours())}:${two(d.getMinutes())}`;
-  if (!mine) {
-    const who = document.createElement('strong');
-    who.textContent = m.name;
-    head.append(who, ' · ');
-  }
-  head.append(when);
-  li.append(head);
+  head.append(who, when);
+  body.append(head);
   if (m.text) {
-    const bubble = document.createElement('div');
-    bubble.className = 'bubble';
     const p = document.createElement('p');
     p.className = 'msg-text';
     textWithLinks(p, m.text);
-    bubble.append(p);
-    li.append(bubble);
+    body.append(p);
   }
-  if (m.file) li.append(fileCard(m, live));
+  if (m.file) body.append(fileCard(m, live));
+  li.append(avatar(m.name), body);
   $('chatList').append(li);
   chat.lastMsg = { from: m.from, ts: m.ts };
 }
@@ -2285,6 +2301,13 @@ setIcon($('chatCollapse'), 'chevron', 'Recolher o painel da sala');
 $('chatCollapse').onclick = () => setPanelOpen(false);
 $('chatJump').onclick = () => { scrollChatToEnd(); markRead(); };
 $('chatList').addEventListener('scroll', () => { if (chatAtBottom() && chat.open && !document.hidden) markRead(); else renderUnread(); });
+// A barra de rolagem fica escondida e aparece enquanto rola (e com o mouse em cima, pelo CSS)
+let chatScrollTimer = 0;
+$('chatList').addEventListener('scroll', () => {
+  $('chatList').classList.add('scrolling');
+  clearTimeout(chatScrollTimer);
+  chatScrollTimer = setTimeout(() => $('chatList').classList.remove('scrolling'), 900);
+}, { passive: true });
 document.addEventListener('visibilitychange', () => { if (!document.hidden && chat.open && chatAtBottom()) markRead(); });
 $('dockAddr').onclick = async () => {
   try { await navigator.clipboard.writeText(state.roomAddr); toast('Endereço copiado.'); } catch { toast('Não foi possível copiar.', 'error'); }
