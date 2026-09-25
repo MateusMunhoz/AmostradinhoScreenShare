@@ -25,6 +25,8 @@ const state = {
   sharing: false,
   quality: '1080p30',
   selectedSource: null,
+  sources: [],             // telas e janelas da última busca
+  sourceTab: 'screens',    // aba aberta na janela de transmitir: 'screens' ou 'windows'
   appAudio: null,
   out: new Map(),          // id de quem me assiste -> { pc, chain }
 
@@ -47,6 +49,7 @@ const update = {
 // ---------- Utilidades ----------
 function show(id) {
   document.querySelectorAll('.screen').forEach((s) => { s.hidden = s.id !== id; });
+  if (id === 'home') renderHome();
 }
 
 let toastTimer;
@@ -81,6 +84,7 @@ const ICON = {
   volume: svg('M11 5 6 9H2v6h4l5 4V5zM15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14'),
   muted: svg('M11 5 6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6'),
   close: svg('M18 6 6 18M6 6l12 12'),
+  refresh: svg('M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6'),
   stats: svg('M22 12h-4l-3 9L9 3l-3 9H2'),                 // pulso: estatísticas
   focus: svg('M3 5h18v14H3zM7 9h10v6H7z'),                  // um quadro dentro do outro: destacar
   grid: svg('M3 3h8v8H3zM13 3h8v8h-8zM3 13h8v8H3zM13 13h8v8h-8z'), // grade: mostrar todas
@@ -933,16 +937,33 @@ function openShareDialog() {
   loadSources();
   syncAudioMode();
   checkEncodeOnce();
+  renderShareSummary();
 }
 
-// A opção "uma vez só" só fica disponível se o PC codifica H.264 pelo WebCodecs
+const QUALITY_SPEC = { '720p30': '720p 30 fps', '720p60': '720p 60 fps', '1080p30': '1080p 30 fps', '1080p60': '1080p 60 fps' };
+function radioValue(name) { return document.querySelector(`input[name="${name}"]:checked`)?.value || ''; }
+function setRadio(name, value) {
+  const el = document.querySelector(`input[name="${name}"][value="${value}"]`);
+  if (el && !el.disabled) el.checked = true;
+}
+// "Discord", "Discord e Spotify", "Discord, Spotify e Chrome"
+function joinNames(list) { return list.length < 2 ? list.join('') : `${list.slice(0, -1).join(', ')} e ${list[list.length - 1]}`; }
+// Com um monitor só, o Chromium chama a tela de "Tela cheia" / "Entire screen": fica só "Tela inteira"
+function sourceLabel(s) {
+  if (!s.id.startsWith('screen')) return s.name;
+  return /^(tela cheia|tela inteira|entire screen)$/i.test(s.name.trim()) ? 'Tela inteira' : `Tela inteira: ${s.name}`;
+}
+
+// A opção "uma vez só" só fica disponível se o PC codifica H.264 pelo NVENC ou pelo WebCodecs
 let encodeOnceSupport = null;
 async function checkEncodeOnce() {
   if (encodeOnceSupport === null) encodeOnceSupport = await onceSupport();
-  const opt = $('encodeMode').querySelector('option[value="once"]');
-  opt.disabled = !encodeOnceSupport;
-  if (!encodeOnceSupport) $('encodeMode').value = 'per';
+  const once = document.querySelector('input[name="encodeMode"][value="once"]');
+  once.disabled = !encodeOnceSupport;
+  $('encodeOnceLabel').textContent = encodeOnceSupport?.engine === 'nvenc' ? 'Uma vez só (NVENC direto)' : 'Uma vez só';
+  if (!encodeOnceSupport) { once.checked = false; setRadio('encodeMode', 'per'); }
   syncEncodeNote();
+  renderShareSummary();
 }
 
 function syncEncodeNote() {
@@ -951,43 +972,108 @@ function syncEncodeNote() {
   note.hidden = false;
   note.textContent = !encodeOnceSupport
     ? 'Este PC não consegue codificar uma vez só para todos, então cada pessoa recebe a própria codificação.'
-    : $('encodeMode').value === 'once'
+    : radioValue('encodeMode') === 'once'
       ? `Codifica o vídeo uma vez só${encodeOnceSupport.engine === 'nvenc' ? ', direto no NVENC da placa NVIDIA (a imagem nem passa pelo processador)' : encodeOnceSupport.hardware ? ', pela placa de vídeo' : ', pelo processador'}, e manda o mesmo para todos: o peso não aumenta quando mais gente assiste. Quem tem versão antiga do app recebe no modo normal.`
-      : 'O processador codifica o vídeo uma vez para cada pessoa que assiste. Com vários amigos assistindo, experimente "Uma vez só para todos".';
+      : 'O processador codifica o vídeo uma vez para cada pessoa que assiste. Com vários amigos assistindo, experimente "Uma vez só".';
 }
+
+function encodeText() {
+  if (radioValue('encodeMode') !== 'once' || !encodeOnceSupport) return 'uma codificação por pessoa';
+  return encodeOnceSupport.engine === 'nvenc' ? 'NVENC direto' : encodeOnceSupport.hardware ? 'uma vez só pela placa' : 'uma vez só pelo processador';
+}
+
+function soundText() {
+  if (!$('soundOn').checked) return 'sem som';
+  const names = appsLoaded()
+    ? [...$('excludeApps').querySelectorAll('input:checked')].map((i) => i.parentElement.textContent.trim())
+    : savedExcludes().map((exe) => exe.replace(/\.exe$/i, ''));
+  return names.length ? `som sem ${joinNames(names)}` : 'todo o som do PC';
+}
+
+// Rodapé: o que vai acontecer ao clicar em Iniciar; e o resumo do Avançado quando está fechado
+function renderShareSummary() {
+  const src = state.sources.find((s) => s.id === state.selectedSource);
+  $('shareSummary').classList.toggle('ready', !!src);
+  $('shareSummaryText').textContent = src
+    ? [sourceLabel(src), QUALITY_SPEC[radioValue('quality')], encodeText(), soundText()].join(' · ')
+    : 'Escolha uma tela ou janela para começar';
+  $('shareSummary').title = $('shareSummaryText').textContent; // texto inteiro, se não couber
+  $('startBtn').disabled = !src;
+  const open = $('advToggle').getAttribute('aria-expanded') === 'true';
+  const prio = document.querySelector('input[name="priority"]:checked')?.nextElementSibling?.textContent || '';
+  $('advSummary').textContent = open ? '' : `${encodeText()} · prioridade ${prio.toLowerCase()}`;
+}
+
+function setAdvanced(open) {
+  $('advToggle').setAttribute('aria-expanded', String(open));
+  $('advPanel').hidden = !open;
+  renderShareSummary();
+}
+
 function closeShareDialog() { $('shareDialog').hidden = true; }
 
 async function loadSources() {
-  const grid = $('sources');
-  grid.innerHTML = '<p class="hint">Carregando telas e janelas…</p>';
+  $('sources').innerHTML = '<p class="hint">Carregando telas e janelas…</p>';
   let sources = [];
   try { sources = await window.api.getSources(); } catch (e) { console.error(e); }
-  grid.innerHTML = '';
-  if (!sources.length) {
-    grid.innerHTML = '<p class="hint">Nenhuma tela encontrada. Clique em "Atualizar lista".</p>';
-    return;
-  }
-  if (!sources.some((s) => s.id === state.selectedSource)) state.selectedSource = null;
-  $('startBtn').disabled = !state.selectedSource;
+  state.sources = sources;
+  const sel = sources.find((s) => s.id === state.selectedSource);
+  if (!sel) state.selectedSource = null;
+  else state.sourceTab = sel.id.startsWith('screen') ? 'screens' : 'windows';
+  renderSources();
+}
 
-  for (const s of sources) {
+function selectSource(id) {
+  state.selectedSource = id;
+  for (const el of $('shareDialog').querySelectorAll('[data-source]')) {
+    const on = el.dataset.source === id;
+    el.classList.toggle('selected', on);
+    el.setAttribute('aria-pressed', String(on));
+  }
+  renderShareSummary();
+}
+
+// Abas Telas | Janelas. Janelas que saem pretas (administrador, protegidas ou minimizadas) ficam à parte.
+function renderSources() {
+  const grid = $('sources');
+  const screens = state.sources.filter((s) => s.id.startsWith('screen'));
+  const windows = state.sources.filter((s) => !s.id.startsWith('screen') && !s.dark);
+  const blocked = state.sources.filter((s) => !s.id.startsWith('screen') && s.dark);
+  $('countScreens').textContent = screens.length || '';
+  $('countWindows').textContent = windows.length || '';
+  $('tabScreens').setAttribute('aria-selected', String(state.sourceTab === 'screens'));
+  $('tabWindows').setAttribute('aria-selected', String(state.sourceTab === 'windows'));
+  const shown = state.sourceTab === 'screens' ? screens : windows;
+
+  grid.innerHTML = '';
+  if (!shown.length) {
+    grid.innerHTML = state.sources.length
+      ? '<p class="hint">Nenhuma janela aberta agora.</p>'
+      : '<p class="hint">Nenhuma tela encontrada. Clique em atualizar.</p>';
+  }
+  for (const s of shown) {
     const btn = document.createElement('button');
-    btn.className = 'source' + (s.id === state.selectedSource ? ' selected' : '');
+    btn.type = 'button';
+    btn.className = 'source';
+    btn.dataset.source = s.id;
     const img = document.createElement('img');
     img.src = s.thumbnail;
     img.alt = '';
     const label = document.createElement('span');
-    label.textContent = s.id.startsWith('screen') ? `Tela inteira: ${s.name}` : s.name;
+    label.textContent = sourceLabel(s);
     btn.append(img, label);
-    btn.onclick = () => {
-      state.selectedSource = s.id;
-      grid.querySelectorAll('.source').forEach((b) => b.classList.remove('selected'));
-      btn.classList.add('selected');
-      $('startBtn').disabled = false;
-    };
+    btn.onclick = () => selectSource(s.id);
     btn.ondblclick = () => startSharing();
     grid.append(btn);
   }
+
+  const note = $('blockedNote');
+  note.hidden = state.sourceTab !== 'windows' || !blocked.length;
+  if (!note.hidden) {
+    $('blockedTitle').textContent = `Aparecem pretas (${blocked.length})`;
+    $('blockedText').textContent = `${joinNames(blocked.map((s) => s.name))}: janela de administrador, protegida ou minimizada. Se estiver minimizada, abra a janela e clique em atualizar; senão, transmita a Tela inteira.`;
+  }
+  selectSource(state.selectedSource);
 }
 
 // Apps marcados da última vez. Sem nada salvo, o Discord já vem marcado (a voz da call não vai
@@ -1035,12 +1121,12 @@ async function loadAudioApps() {
     chip.append(input, text);
     box.append(chip);
   }
+  renderShareSummary();
 }
 
 function syncAudioMode() {
-  const withAudio = $('audioMode').value !== 'none';
+  const withAudio = $('soundOn').checked;
   $('excludeField').hidden = !withAudio;
-  $('audioNote').hidden = !withAudio;
   if (withAudio && !appsLoaded()) loadAudioApps();
 }
 
@@ -1084,10 +1170,10 @@ async function startSharing() {
   const btn = $('startBtn');
   setBusy(btn, true, 'Iniciando…');
 
-  state.quality = $('quality').value;
+  state.quality = QUALITY[radioValue('quality')] ? radioValue('quality') : '1080p30';
   const q = QUALITY[state.quality];
-  const audioMode = $('audioMode').value;
-  const encodeMode = $('encodeMode').value;
+  const audioMode = $('soundOn').checked ? 'all' : 'none';
+  const encodeMode = radioValue('encodeMode') || 'per';
   save('encodeMode', encodeMode);
   const excluded = audioMode === 'none' ? [] : appsLoaded() ? checkedApps() : savedExcludes();
   save('quality', state.quality);
@@ -1382,17 +1468,66 @@ $('name').value = load('name');
 $('name').addEventListener('input', () => save('name', $('name').value));
 $('roomPort').value = load('roomPort', '8765');
 $('roomAddr').value = load('roomAddr');
-$('quality').value = load('quality', '1080p30');
-$('audioMode').value = load('audioMode', 'all') === 'none' ? 'none' : 'all';
-$('encodeMode').value = load('encodeMode', 'per') === 'once' ? 'once' : 'per';
-$('encodeMode').addEventListener('change', syncEncodeNote); // "exclude" da versão antiga vira "all"
+// "720p 30 fps" saiu das opções: quem usava fica na Leve (720p 60 fps)
+const savedQuality = load('quality', '1080p30');
+setRadio('quality', savedQuality === '720p30' ? '720p60' : savedQuality);
+if (!radioValue('quality')) setRadio('quality', '1080p30');
+$('soundOn').checked = load('audioMode', 'all') !== 'none'; // "exclude" da versão antiga conta como com som
+setRadio('encodeMode', load('encodeMode', 'per') === 'once' ? 'once' : 'per');
 // Prioridade vale para o app inteiro e já na abertura, não só durante a transmissão
-$('priority').value = load('priority', 'above');
-window.api.setPriority($('priority').value);
-$('priority').addEventListener('change', () => {
-  save('priority', $('priority').value);
-  window.api.setPriority($('priority').value);
+setRadio('priority', load('priority', 'above'));
+if (!radioValue('priority')) setRadio('priority', 'above');
+window.api.setPriority(radioValue('priority'));
+
+// Qualquer mudança na janela de transmitir atualiza o resumo do rodapé
+$('shareDialog').addEventListener('change', (e) => {
+  const t = e.target;
+  if (t.name === 'priority') {
+    save('priority', t.value);
+    window.api.setPriority(t.value);
+  } else if (t.name === 'encodeMode') {
+    syncEncodeNote();
+  } else if (t.id === 'soundOn') {
+    syncAudioMode();
+  }
+  renderShareSummary();
 });
+$('tabScreens').onclick = () => { state.sourceTab = 'screens'; renderSources(); };
+$('tabWindows').onclick = () => { state.sourceTab = 'windows'; renderSources(); };
+$('advToggle').onclick = () => setAdvanced($('advToggle').getAttribute('aria-expanded') !== 'true');
+setIcon($('closeShare'), 'close', 'Fechar');
+setIcon($('refreshSources'), 'refresh', 'Atualizar lista');
+$('closeShare').onclick = closeShareDialog;
+
+// Tela inicial: Radmin VPN, última sala e "Entrar numa sala" aberto ali mesmo
+async function renderRadmin() {
+  let ips = [];
+  try { ips = await window.api.getIps(); } catch {}
+  const r = ips.find((i) => i.radmin);
+  $('radminDot').className = 'dot ' + (r ? 'ok' : 'warn');
+  $('radminTitle').textContent = r ? 'Radmin VPN conectada' : 'Radmin VPN não encontrada';
+  $('radminDetail').textContent = r ? r.address : 'Ligue a Radmin e entre na rede';
+}
+
+function renderLastRoom() {
+  const last = load('roomAddr');
+  $('lastRoom').hidden = !last;
+  $('lastRoomAddr').textContent = last;
+}
+
+function renderHome() {
+  renderRadmin();
+  renderLastRoom();
+}
+
+function setJoinOpen(open) {
+  $('joinPanel').hidden = !open;
+  $('goJoin').hidden = open;
+  $('goJoin').setAttribute('aria-expanded', String(open));
+  $('homeCard').classList.toggle('joining', open);
+  (open ? $('roomAddr') : $('goJoin')).focus();
+}
+window.addEventListener('focus', () => { if (!$('home').hidden) renderRadmin(); });
 
 window.api.getVersion().then((v) => {
   update.myVersion = v;
@@ -1403,7 +1538,13 @@ $('checkUpdates').onclick = () => checkGithub(true);
 document.querySelectorAll('.update-restart').forEach((b) => { b.onclick = () => window.api.restartApp(); });
 
 $('goCreate').onclick = () => show('create-room');
-$('goJoin').onclick = () => { show('join-room'); $('roomAddr').focus(); };
+$('goJoin').onclick = () => setJoinOpen(true);
+$('cancelJoin').onclick = () => setJoinOpen(false);
+$('rejoinBtn').onclick = () => {
+  $('roomAddr').value = load('roomAddr');
+  setJoinOpen(true);
+  joinRoom();
+};
 document.querySelectorAll('.back').forEach((b) => { b.onclick = () => show('home'); });
 
 $('createBtn').onclick = createRoom;
@@ -1432,11 +1573,9 @@ $('stopShareBtn').onclick = () => stopSharing();
 $('cancelShare').onclick = closeShareDialog;
 $('startBtn').onclick = startSharing;
 $('refreshSources').onclick = loadSources;
-$('audioMode').addEventListener('change', syncAudioMode);
 $('refreshApps').onclick = loadAudioApps;
-// Ícone das Estatísticas: na tela inicial ao lado da versão, na sala ao lado de Sair da sala
-for (const id of ['openStatsHome', 'openStatsRoom']) setIcon($(id), 'stats', 'Estatísticas: uso de processador e placa de vídeo');
-$('openStatsHome').onclick = openStats;
+// Ícone das Estatísticas, na sala ao lado de Sair da sala
+setIcon($('openStatsRoom'), 'stats', 'Estatísticas: uso de processador e placa de vídeo');
 $('openStatsRoom').onclick = openStats;
 $('closeStats').onclick = closeStats;
 document.addEventListener('keydown', (e) => {
@@ -1445,6 +1584,7 @@ document.addEventListener('keydown', (e) => {
   else if (!$('closeDialog').hidden) closeCloseDialog();
   else if (!$('shareDialog').hidden) closeShareDialog();
   else if (state.focus && !document.fullscreenElement) setFocus(null);
+  else if (!$('home').hidden && !$('joinPanel').hidden) setJoinOpen(false);
 });
 document.addEventListener('fullscreenchange', () => {
   for (const link of state.in.values()) setFsIcon(link.tile.fs, document.fullscreenElement === link.tile.el);

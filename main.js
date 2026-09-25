@@ -306,7 +306,7 @@ function createWindow() {
     height: 780,
     minWidth: 820,
     minHeight: 560,
-    backgroundColor: '#161b26',
+    backgroundColor: '#111111',
     autoHideMenuBar: true,
     title: 'Tela P2P',
     webPreferences: {

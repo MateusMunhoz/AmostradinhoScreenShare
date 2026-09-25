@@ -10,37 +10,73 @@
 <body>
   <main>
     <!-- Início -->
-    <section id="home" class="screen">
-      <div class="home">
-        <h1>Tela P2P</h1>
-        <p class="lead">Uma sala para transmitir telas com os amigos, direto de PC para PC pela Radmin VPN.</p>
-        <label class="field">
-          <span>Seu nome</span>
-          <input id="name" maxlength="32" placeholder="Como os outros vão te ver">
-        </label>
-        <div class="choices">
-          <button class="choice host" id="goCreate">
-            <strong>Criar sala</strong>
-            <span>Os amigos entram pelo seu endereço</span>
-          </button>
-          <button class="choice" id="goJoin">
+    <section id="home" class="screen home-screen">
+      <div class="home-brand">
+        <div class="brand-mark">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h13v10H3zM8 19h13V9"/></svg>
+          <span>Tela P2P</span>
+        </div>
+        <div class="home-hero">
+          <h1>Sua tela,<br>direto no PC dos amigos.</h1>
+          <p class="lead">Uma sala para transmitir telas com os amigos, de PC para PC pela Radmin VPN.</p>
+        </div>
+        <div class="home-status">
+          <div class="update-notice" role="status" hidden>
+            <span class="update-text"></span>
+            <button class="btn small primary update-restart" type="button">Reiniciar agora</button>
+          </div>
+          <div id="githubUpdate" class="github-notice" role="status" hidden>
+            <span id="githubText" class="update-text"></span>
+            <button class="btn small primary" id="githubBtn" type="button">Baixar atualização</button>
+          </div>
+          <p class="status-line">
+            <span id="radminDot" class="dot"></span>
+            <strong id="radminTitle">Procurando a Radmin VPN…</strong>
+            <span id="radminDetail" class="status-detail"></span>
+          </p>
+          <p class="status-line version">
+            <span class="dot hollow"></span>
+            <span id="appVersion"></span>
+            <span aria-hidden="true">·</span>
+            <button class="link-btn" id="checkUpdates" type="button">Procurar atualização</button>
+          </p>
+        </div>
+      </div>
+
+      <div class="home-actions">
+        <div class="home-card" id="homeCard">
+          <label class="field">
+            <span>Seu nome</span>
+            <input id="name" maxlength="32" placeholder="Como os outros vão te ver">
+          </label>
+          <div class="create-block">
+            <button class="btn primary big" id="goCreate" type="button">Criar sala</button>
+            <span class="hint center">Os amigos entram pelo seu endereço</span>
+          </div>
+          <button class="btn big" id="goJoin" type="button" aria-expanded="false" aria-controls="joinPanel">Entrar numa sala</button>
+          <div id="joinPanel" class="join-panel" hidden>
             <strong>Entrar numa sala</strong>
-            <span>Usar o endereço de quem criou</span>
-          </button>
+            <label class="field">
+              <span>Endereço de quem criou</span>
+              <input id="roomAddr" class="mono" placeholder="26.123.45.67:8765">
+            </label>
+            <label class="field">
+              <span>Senha</span>
+              <input id="joinPassword" type="password" placeholder="Só se a sala tiver uma">
+            </label>
+            <div class="join-actions">
+              <button class="btn ghost" id="cancelJoin" type="button">Cancelar</button>
+              <button class="btn primary grow" id="joinBtn" type="button">Entrar</button>
+            </div>
+          </div>
+          <div id="lastRoom" class="last-room" hidden>
+            <div class="last-room-info">
+              <span class="hint">Última sala</span>
+              <code id="lastRoomAddr"></code>
+            </div>
+            <button class="btn" id="rejoinBtn" type="button">Entrar de novo</button>
+          </div>
         </div>
-        <div class="update-notice" role="status" hidden>
-          <span class="update-text"></span>
-          <button class="btn small primary update-restart" type="button">Reiniciar agora</button>
-        </div>
-        <div id="githubUpdate" class="github-notice" role="status" hidden>
-          <span id="githubText" class="update-text"></span>
-          <button class="btn small primary" id="githubBtn" type="button">Baixar atualização</button>
-        </div>
-        <p class="version">
-          <span id="appVersion"></span>
-          <button class="link-btn" id="checkUpdates" type="button">Procurar atualização</button>
-          <button class="btn icon ghost stats-btn" id="openStatsHome" type="button" title="Estatísticas: uso de processador e placa de vídeo" aria-label="Estatísticas: uso de processador e placa de vídeo"></button>
-        </p>
       </div>
     </section>
 
@@ -62,27 +98,6 @@
         </label>
         <button class="btn primary" id="createBtn">Criar sala</button>
         <p class="hint">A sala fica aberta enquanto você estiver nela. Quando você sair, ela é encerrada para todos.</p>
-      </div>
-    </section>
-
-    <!-- Entrar na sala -->
-    <section id="join-room" class="screen" hidden>
-      <div class="bar">
-        <button class="btn ghost back">Voltar</button>
-        <h2>Entrar numa sala</h2>
-        <span></span>
-      </div>
-      <div class="form-card">
-        <label class="field">
-          <span>Endereço da sala</span>
-          <input id="roomAddr" placeholder="26.123.45.67:8765">
-        </label>
-        <label class="field">
-          <span>Senha</span>
-          <input id="joinPassword" type="password" placeholder="Só se a sala tiver uma">
-        </label>
-        <button class="btn primary" id="joinBtn">Entrar</button>
-        <p class="hint">O endereço aparece na tela de quem criou a sala.</p>
       </div>
     </section>
 
@@ -139,57 +154,100 @@
 
       <!-- Escolher o que transmitir -->
       <div id="shareDialog" class="modal" hidden>
-        <div class="dialog" role="dialog" aria-label="Escolha o que transmitir">
-          <div class="dialog-head">
-            <h2>Escolha o que transmitir</h2>
-            <button class="btn small" id="refreshSources" type="button">Atualizar lista</button>
+        <div class="dialog share" role="dialog" aria-modal="true" aria-labelledby="shareTitle">
+          <div class="share-head">
+            <div class="share-title">
+              <h2 id="shareTitle">Transmitir</h2>
+              <span class="hint">Escolha o que os outros vão ver</span>
+            </div>
+            <button class="btn icon" id="closeShare" type="button"></button>
           </div>
-          <div id="sources" class="sources"></div>
-          <div class="settings">
-            <label class="field">
-              <span>Qualidade</span>
-              <select id="quality">
-                <option value="720p30">720p, 30 fps (internet mais fraca)</option>
-                <option value="720p60">720p, 60 fps (jogos, mais leve)</option>
-                <option value="1080p30" selected>1080p, 30 fps</option>
-                <option value="1080p60">1080p, 60 fps (jogos, mais pesado)</option>
-              </select>
-            </label>
-            <label class="field">
-              <span>Áudio</span>
-              <select id="audioMode">
-                <option value="all">Todo o som do PC</option>
-                <option value="none">Sem áudio</option>
-              </select>
-            </label>
-            <label class="field">
-              <span>Codificação</span>
-              <select id="encodeMode" aria-describedby="encodeNote">
-                <option value="per">Uma para cada pessoa (padrão)</option>
-                <option value="once">Uma vez só para todos (experimental)</option>
-              </select>
-            </label>
-            <label class="field">
-              <span>Prioridade do app</span>
-              <select id="priority">
-                <option value="normal">Normal (o jogo vem primeiro)</option>
-                <option value="above">Acima do normal (recomendado)</option>
-                <option value="high">Alta (a transmissão vem primeiro)</option>
-              </select>
-            </label>
-            <div class="field full" id="excludeField">
-              <div class="field-head">
-                <span id="excludeLabel">Ignorar o som destes apps (opcional)</span>
-                <button class="btn small" id="refreshApps" type="button">Atualizar lista</button>
+
+          <div class="share-body">
+            <div class="share-sources">
+              <div class="share-tabs-row">
+                <div class="seg" role="tablist" aria-label="O que transmitir">
+                  <button type="button" role="tab" id="tabScreens" aria-selected="true">Telas <span class="count" id="countScreens"></span></button>
+                  <button type="button" role="tab" id="tabWindows" aria-selected="false">Janelas <span class="count" id="countWindows"></span></button>
+                </div>
+                <button class="btn icon" id="refreshSources" type="button"></button>
               </div>
-              <div id="excludeApps" class="app-list" role="group" aria-labelledby="excludeLabel"></div>
+              <div id="sources" class="sources" role="tabpanel"></div>
+              <div id="blockedNote" class="blocked-note" hidden>
+                <strong id="blockedTitle"></strong>
+                <span id="blockedText" class="hint"></span>
+              </div>
             </div>
-            <p id="encodeNote" class="hint full" hidden></p>
-            <p id="audioNote" class="hint full">O som das telas que você está assistindo nunca vai para a sua transmissão, então ninguém se ouve de volta.</p>
-            <div class="actions">
-              <button class="btn ghost" id="cancelShare">Cancelar</button>
-              <button class="btn primary" id="startBtn" disabled>Iniciar transmissão</button>
+
+            <div class="share-settings">
+              <fieldset class="group">
+                <legend class="group-title">Qualidade</legend>
+                <label class="q-card">
+                  <input type="radio" name="quality" value="720p60">
+                  <span class="q-dot" aria-hidden="true"></span>
+                  <span class="q-text"><strong>Leve <span class="spec">· 720p 60 fps</span></strong><span class="hint">Para jogar e transmitir ao mesmo tempo</span></span>
+                </label>
+                <label class="q-card">
+                  <input type="radio" name="quality" value="1080p30">
+                  <span class="q-dot" aria-hidden="true"></span>
+                  <span class="q-text"><strong>Equilibrada <span class="spec">· 1080p 30 fps</span></strong><span class="hint">Filmes, séries e programas</span></span>
+                </label>
+                <label class="q-card">
+                  <input type="radio" name="quality" value="1080p60">
+                  <span class="q-dot" aria-hidden="true"></span>
+                  <span class="q-text"><strong>Máxima <span class="spec">· 1080p 60 fps</span></strong><span class="hint">Jogos, com a placa de vídeo sobrando</span></span>
+                </label>
+              </fieldset>
+
+              <div class="group">
+                <div class="group-head">
+                  <span class="group-title" id="soundLabel">Som do PC</span>
+                  <label class="switch">
+                    <input type="checkbox" id="soundOn" role="switch" aria-labelledby="soundLabel">
+                    <span class="track" aria-hidden="true"></span>
+                  </label>
+                </div>
+                <div id="excludeField" class="exclude">
+                  <div class="field-head">
+                    <span class="hint" id="excludeLabel">Ignorar o som destes apps</span>
+                    <button class="link-btn" id="refreshApps" type="button">Atualizar lista</button>
+                  </div>
+                  <div id="excludeApps" class="app-list" role="group" aria-labelledby="excludeLabel"></div>
+                  <p id="audioNote" class="hint">O som das telas que você está assistindo nunca vai para a sua transmissão, então ninguém se ouve de volta.</p>
+                </div>
+              </div>
+
+              <div class="group advanced">
+                <button type="button" class="adv-toggle" id="advToggle" aria-expanded="false" aria-controls="advPanel">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+                  <span class="adv-title">Avançado</span>
+                  <span class="hint" id="advSummary"></span>
+                </button>
+                <div id="advPanel" class="adv-panel" hidden>
+                  <span class="hint" id="encodeLabel">Codificação</span>
+                  <div class="seg" role="radiogroup" aria-labelledby="encodeLabel">
+                    <label><input type="radio" name="encodeMode" value="once"><span id="encodeOnceLabel">Uma vez só</span></label>
+                    <label><input type="radio" name="encodeMode" value="per"><span>Uma por pessoa</span></label>
+                  </div>
+                  <p id="encodeNote" class="hint" hidden></p>
+                  <span class="hint" id="priorityLabel">Prioridade do app</span>
+                  <div class="seg" role="radiogroup" aria-labelledby="priorityLabel">
+                    <label><input type="radio" name="priority" value="normal"><span>Normal</span></label>
+                    <label><input type="radio" name="priority" value="above"><span>Acima do normal</span></label>
+                    <label><input type="radio" name="priority" value="high"><span>Alta</span></label>
+                  </div>
+                </div>
+              </div>
             </div>
+          </div>
+
+          <div class="share-foot">
+            <p class="share-summary" id="shareSummary">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v12H3zM8 21h8M12 17v4"/></svg>
+              <span id="shareSummaryText"></span>
+            </p>
+            <button class="btn ghost" id="cancelShare" type="button">Cancelar</button>
+            <button class="btn live" id="startBtn" type="button" disabled>Iniciar transmissão</button>
           </div>
         </div>
       </div>
