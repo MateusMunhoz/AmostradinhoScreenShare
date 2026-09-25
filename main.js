@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, desktopCapturer, session, screen, globalShortcut } = require('electron');
+const { app, BrowserWindow, ipcMain, desktopCapturer, session, screen, globalShortcut, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -491,6 +491,9 @@ app.whenReady().then(() => {
   ipcMain.handle('github-install', () => github.install(updater));
   ipcMain.handle('open-github', (_e, url) => github.openPage(url));
   ipcMain.handle('pip-edit', (_e, on) => setPipEdit(on));
+  ipcMain.handle('open-link', (_e, url) => {
+    if (typeof url === 'string' && /^https?:\/\/[^\s]+$/i.test(url)) shell.openExternal(url);
+  });
   ipcMain.handle('restart-app', () => {
     stopServer();
     stopAppAudio();

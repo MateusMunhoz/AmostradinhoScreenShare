@@ -7,6 +7,18 @@ let pingTimer = null;
 
 const LOCAL = ['127.0.0.1', '::1', '::ffff:127.0.0.1'];
 const MAX_MEMBERS = 12;
+const CHAT_KEEP = 100;                        // mensagens que quem entra depois recebe
+const CHAT_MAX_FILE = 200 * 1024 * 1024;      // o arquivo vai de quem mandou direto para quem baixar
+
+// Cartão de arquivo do chat: só os dados para mostrar e pedir (o arquivo nunca passa pelo servidor inteiro)
+function chatFile(f) {
+  if (!f || typeof f !== 'object' || !/^[\w-]{8,64}$/.test(String(f.id))) return null;
+  const size = Math.floor(Number(f.size));
+  if (!(size > 0 && size <= CHAT_MAX_FILE)) return null;
+  const name = String(f.name || '').replace(/[\\/:*?"<>|\x00-\x1f]/g, '_').replace(/^[.\s]+/, '').slice(0, 120) || 'arquivo';
+  const mime = /^[\w.+-]+\/[\w.+-]+$/.test(String(f.mime || '')) ? String(f.mime) : '';
+  return { id: String(f.id), name, size, mime };
+}
 
 function send(ws, msg) {
   if (ws && ws.readyState === 1) ws.send(JSON.stringify(msg));
@@ -18,6 +30,8 @@ function startServer(port, password = '') {
     const server = new WebSocketServer({ port, host: '0.0.0.0', maxPayload: 256 * 1024 });
     const members = new Map(); // id -> { ws, name, sharing }
     let nextId = 1;
+    const chatLog = [];
+    let nextMsg = 1;
 
     const broadcast = (msg, exceptId) => {
       for (const [id, m] of members) if (id !== exceptId) send(m.ws, msg);
@@ -73,6 +87,8 @@ function startServer(port, password = '') {
             type: 'welcome',
             id,
             members: [...members].map(([mid, m]) => ({ id: mid, name: m.name, sharing: m.sharing, version: m.version })),
+            features: ['chat'],
+            chat: chatLog,
           });
           members.set(id, me);
           broadcast({ type: 'member-joined', id, name: me.name, version }, id);
@@ -82,6 +98,16 @@ function startServer(port, password = '') {
         if (msg.type === 'share') {
           me.sharing = !!msg.sharing;
           broadcast({ type: 'share-state', id, sharing: me.sharing }, id);
+        } else if (msg.type === 'chat') {
+          const text = typeof msg.text === 'string' ? msg.text.trim().slice(0, 2000) : '';
+          const file = chatFile(msg.file);
+          if (!text && !file) return;
+          const entry = { id: String(nextMsg++), from: id, name: me.name, ts: Date.now() };
+          if (text) entry.text = text;
+          if (file) entry.file = file;
+          chatLog.push(entry);
+          if (chatLog.length > CHAT_KEEP) chatLog.shift();
+          broadcast({ type: 'chat', ...entry }); // para todos, inclusive quem mandou
         } else if (msg.type === 'signal' && msg.to !== id && members.has(msg.to)) {
           send(members.get(msg.to).ws, { type: 'signal', from: id, data: msg.data });
         }

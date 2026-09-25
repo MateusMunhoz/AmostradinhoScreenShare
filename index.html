@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; img-src 'self' data:; style-src 'self'; connect-src ws:; media-src 'self' blob: mediastream:">
+        content="default-src 'self'; img-src 'self' data: blob:; style-src 'self'; connect-src ws:; media-src 'self' blob: mediastream:">
   <title>Tela P2P</title>
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -111,6 +111,11 @@
         </div>
 
         <aside class="panel">
+          <div class="seg panel-tabs" role="tablist" aria-label="Painel da sala">
+            <button type="button" role="tab" id="tabRoomBtn" aria-selected="true" aria-controls="roomTab">Sala</button>
+            <button type="button" role="tab" id="tabChatBtn" aria-selected="false" aria-controls="chatTab">Chat <span id="chatUnread" class="unread" hidden></span></button>
+          </div>
+          <div id="roomTab" class="panel-tab" role="tabpanel" aria-labelledby="tabRoomBtn">
           <div class="update-notice" role="status" hidden>
             <span class="update-text"></span>
             <button class="btn small primary update-restart" type="button">Reiniciar agora (sai da sala)</button>
@@ -143,6 +148,19 @@
               <p id="noAudio" class="warn" hidden>Transmitindo sem áudio.</p>
               <button class="btn danger wide" id="stopShareBtn">Parar transmissão</button>
             </div>
+          </div>
+          </div>
+
+          <div id="chatTab" class="panel-tab chat" role="tabpanel" aria-labelledby="tabChatBtn" hidden>
+            <p id="chatOff" class="warn" hidden>Quem criou a sala precisa atualizar o app para usar o chat.</p>
+            <p id="chatEmpty" class="hint">Nenhuma mensagem ainda. Para mandar um arquivo, use o clipe ou arraste o arquivo para cá.</p>
+            <ul id="chatList" class="chat-list" aria-live="polite"></ul>
+            <form id="chatForm" class="chat-form">
+              <button type="button" class="btn icon" id="chatAttach"></button>
+              <textarea id="chatInput" rows="1" maxlength="2000" placeholder="Mensagem" aria-label="Mensagem"></textarea>
+              <button type="submit" class="btn primary icon" id="chatSend"></button>
+              <input type="file" id="chatFile" multiple hidden>
+            </form>
           </div>
 
           <div class="panel-foot">

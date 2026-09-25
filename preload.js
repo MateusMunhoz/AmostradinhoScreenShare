@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('api', {
   stopAppAudio: () => ipcRenderer.invoke('stop-app-audio'),
   onPcm: (cb) => ipcRenderer.on('pcm', (_e, data) => cb(data)),
   pipSetEdit: (on) => ipcRenderer.invoke('pip-edit', on),
+  openLink: (url) => ipcRenderer.invoke('open-link', url),
   onPip: (cb) => {
     ipcRenderer.removeAllListeners('pip');
     ipcRenderer.on('pip', (_e, msg) => cb(msg));

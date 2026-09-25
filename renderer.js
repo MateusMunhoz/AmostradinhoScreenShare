@@ -85,6 +85,8 @@ const ICON = {
   muted: svg('M11 5 6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6'),
   close: svg('M18 6 6 18M6 6l12 12'),
   refresh: svg('M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6'),
+  attach: svg('M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48'),
+  send: svg('M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z'),
   stats: svg('M22 12h-4l-3 9L9 3l-3 9H2'),                 // pulso: estatísticas
   focus: svg('M3 5h18v14H3zM7 9h10v6H7z'),
   pip: svg('M3 5h18v14H3zM12 11h7v6h-7z'),                   // janelinha no canto: janela flutuante                  // um quadro dentro do outro: destacar
@@ -238,6 +240,7 @@ function enterRoom(welcome, owner, host, port) {
   state.members.clear();
   for (const m of welcome.members) state.members.set(m.id, { name: m.name, sharing: m.sharing, version: m.version });
   $('leaveBtn').textContent = owner ? 'Encerrar sala' : 'Sair da sala';
+  resetChat(welcome);
   renderRoomAddress();
   renderMembers();
   renderShareBox();
@@ -260,6 +263,7 @@ function leaveRoom(reason, kind = 'info') {
   closeStats();
   perfStop();
   if (state.isOwner) window.api.stopServer();
+  resetChat(null);
   state.members.clear();
   state.myId = null;
   state.isOwner = false;
@@ -283,6 +287,7 @@ function onRoomMessage(m) {
     case 'member-left': {
       const name = nameOf(m.id);
       if (update.busy?.from === m.id) cancelDownload();
+      chatMemberLeft(m.id);
       closeOut(m.id);
       stopWatching(m.id, false);
       state.members.delete(m.id);
@@ -303,6 +308,9 @@ function onRoomMessage(m) {
     }
     case 'signal':
       handleSignal(m.from, m.data || {});
+      break;
+    case 'chat':
+      onChatMessage(m);
       break;
   }
 }
@@ -333,6 +341,8 @@ function handleSignal(from, data) {
     }).catch(console.error);
   } else if (data.side === 'update') {
     onUpdateSignal(from, data);
+  } else if (data.side === 'file') {
+    onFileSignal(from, data);
   } else if (data.side === 'sharer') {
     // Mensagem de quem transmite uma tela que eu pedi para assistir
     const link = state.in.get(from);
@@ -351,6 +361,12 @@ function handleSignal(from, data) {
       }
     }).catch(console.error);
   }
+}
+
+// Pedaços grandes pela sala (atualizações e arquivos do chat): sem pausa fixa entre as partes, porque com a
+// janela minimizada o Chromium atrasa timers para 1 por segundo. Só espera se a conexão estiver muito cheia.
+async function waitRoomBuffer() {
+  while (state.ws && state.ws.bufferedAmount > 1_000_000) await new Promise((r) => setTimeout(r, 50));
 }
 
 // ---------- Atualizações pela sala ----------
@@ -394,9 +410,7 @@ async function sendUpdate(to, want) {
     const msg = { side: 'update', version: want, part, total, data: pack.pack.slice(part * CHUNK, (part + 1) * CHUNK) };
     if (part === 0) msg.sig = pack.sig;
     sendSignal(to, msg);
-    // Sem pausa fixa entre as partes: com a janela minimizada o Chromium atrasa timers para 1 por segundo.
-    // Só espera se a conexão com a sala estiver muito cheia.
-    while (state.ws && state.ws.bufferedAmount > 1_000_000) await new Promise((r) => setTimeout(r, 50));
+    await waitRoomBuffer();
   }
   update.sending.delete(to);
 }
@@ -898,6 +912,274 @@ function stopWatching(id, notify = true) {
   renderFocus();
   renderMembers();
   updateStage();
+}
+
+// ---------- Chat ----------
+// Mensagens passam pelo servidor da sala (que guarda as últimas 100 para quem entrar depois). Um arquivo
+// anexado fica no PC de quem mandou; quem clica em Baixar recebe direto dele, em pedaços, pela sala.
+const CHAT_MAX_FILE = 200 * 1024 * 1024;
+const CHAT_AUTO_IMAGE = 8 * 1024 * 1024;
+const CHAT_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
+const FILE_CHUNK = 48 * 1024;
+const chat = {
+  tab: 'room',
+  supported: false,
+  unread: 0,
+  files: new Map(),       // id -> File que eu anexei (disponível enquanto eu estiver na sala)
+  downloads: new Map(),   // id -> { from, file, chunks, got, bytes, card }
+  cards: new Map(),       // id do arquivo -> partes do cartão na tela
+  urls: [],               // blob: criados, para liberar ao sair
+};
+
+const two = (n) => String(n).padStart(2, '0');
+function formatBytes(n) {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(0)} KB`;
+  return `${(n / 1024 / 1024).toFixed(1).replace('.', ',')} MB`;
+}
+
+function setPanelTab(tab) {
+  chat.tab = tab;
+  $('tabRoomBtn').setAttribute('aria-selected', String(tab === 'room'));
+  $('tabChatBtn').setAttribute('aria-selected', String(tab === 'chat'));
+  $('roomTab').hidden = tab !== 'room';
+  $('chatTab').hidden = tab !== 'chat';
+  if (tab === 'chat') {
+    chat.unread = 0;
+    renderUnread();
+    const list = $('chatList');
+    list.scrollTop = list.scrollHeight;
+    if (chat.supported) $('chatInput').focus();
+  }
+}
+
+function renderUnread() {
+  $('chatUnread').hidden = !chat.unread;
+  $('chatUnread').textContent = chat.unread > 99 ? '99+' : String(chat.unread);
+  $('tabChatBtn').setAttribute('aria-label', chat.unread ? `Chat, ${chat.unread} mensagens novas` : 'Chat');
+}
+
+function resetChat(welcome) {
+  for (const u of chat.urls) URL.revokeObjectURL(u);
+  chat.urls = [];
+  chat.files.clear();
+  chat.downloads.clear();
+  chat.cards.clear();
+  chat.unread = 0;
+  chat.supported = !!welcome && Array.isArray(welcome.features) && welcome.features.includes('chat');
+  $('chatList').innerHTML = '';
+  $('chatOff').hidden = !welcome || chat.supported;
+  $('chatInput').disabled = $('chatSend').disabled = $('chatAttach').disabled = !chat.supported;
+  for (const m of (welcome && welcome.chat) || []) appendMessage(m, false);
+  $('chatEmpty').hidden = !!$('chatList').children.length || !chat.supported;
+  renderUnread();
+  setPanelTab('room');
+}
+
+function onChatMessage(m) {
+  const list = $('chatList');
+  const atBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 40;
+  appendMessage(m, true);
+  $('chatEmpty').hidden = true;
+  if (atBottom || m.from === state.myId) list.scrollTop = list.scrollHeight;
+  if (m.from === state.myId) return;
+  if (chat.tab !== 'chat' || document.hidden) {
+    chat.unread++;
+    renderUnread();
+    if (chat.tab !== 'chat') toast(`${m.name}: ${m.text || `mandou ${m.file.name}`}`);
+  }
+}
+
+// Texto sempre como texto; só endereços http(s) viram link, que abre no navegador
+function textWithLinks(p, text) {
+  for (const part of text.split(/(https?:\/\/[^\s]+)/i)) {
+    if (!/^https?:\/\//i.test(part)) { p.append(part); continue; }
+    const a = document.createElement('a');
+    a.href = '#';
+    a.textContent = part;
+    a.title = 'Abrir no navegador';
+    a.onclick = (e) => { e.preventDefault(); window.api.openLink(part); };
+    p.append(a);
+  }
+}
+
+function appendMessage(m, live) {
+  const mine = m.from === state.myId;
+  const li = document.createElement('li');
+  li.className = 'msg' + (mine ? ' mine' : '');
+  const head = document.createElement('div');
+  head.className = 'msg-head';
+  const who = document.createElement('strong');
+  who.textContent = mine ? 'Você' : m.name;
+  const when = document.createElement('span');
+  const d = new Date(m.ts);
+  when.textContent = `${two(d.getHours())}:${two(d.getMinutes())}`;
+  head.append(who, when);
+  li.append(head);
+  if (m.text) {
+    const p = document.createElement('p');
+    p.className = 'msg-text';
+    textWithLinks(p, m.text);
+    li.append(p);
+  }
+  if (m.file) li.append(fileCard(m, live));
+  $('chatList').append(li);
+}
+
+function fileCard(m, live) {
+  const f = m.file;
+  const mine = m.from === state.myId;
+  const card = document.createElement('div');
+  card.className = 'file-card';
+  const name = document.createElement('span');
+  name.className = 'file-name';
+  name.textContent = f.name;
+  name.title = f.name;
+  const meta = document.createElement('span');
+  meta.className = 'file-meta';
+  const bar = document.createElement('progress');
+  bar.max = 1;
+  bar.hidden = true;
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'btn small';
+  btn.textContent = 'Baixar';
+  card.append(name, meta, bar);
+  const parts = { card, meta, bar, btn, f, from: m.from };
+  chat.cards.set(f.id, parts);
+
+  const local = mine && chat.files.get(f.id);
+  if (local) {
+    meta.textContent = `${formatBytes(f.size)} · disponível enquanto você estiver na sala`;
+    if (CHAT_IMAGE_TYPES.includes(f.mime)) showImage(parts, URL.createObjectURL(local));
+  } else if (mine) {
+    meta.textContent = `${formatBytes(f.size)} · enviado antes de você reabrir o app, não está mais disponível`;
+  } else if (!state.members.has(m.from)) {
+    meta.textContent = `${formatBytes(f.size)} · quem mandou saiu da sala`;
+  } else {
+    meta.textContent = formatBytes(f.size);
+    btn.onclick = () => requestFile(m.from, f);
+    card.append(btn);
+    // Imagem pequena chega sozinha e aparece no chat
+    if (live && CHAT_IMAGE_TYPES.includes(f.mime) && f.size <= CHAT_AUTO_IMAGE) requestFile(m.from, f);
+  }
+  return card;
+}
+
+function showImage(parts, url) {
+  if (!chat.urls.includes(url)) chat.urls.push(url);
+  const img = document.createElement('img');
+  img.src = url;
+  img.alt = parts.f.name;
+  parts.card.insertBefore(img, parts.card.firstChild);
+}
+
+function sendChat() {
+  const input = $('chatInput');
+  const text = input.value.trim();
+  if (!text || !chat.supported) return;
+  send({ type: 'chat', text });
+  input.value = '';
+  fitChatInput();
+}
+
+function attachFiles(list) {
+  if (!chat.supported) return;
+  for (const file of list) {
+    if (!file.size) continue;
+    if (file.size > CHAT_MAX_FILE) { toast(`${file.name} passa de 200 MB e não pode ser enviado pelo chat.`, 'error'); continue; }
+    const id = crypto.randomUUID();
+    chat.files.set(id, file);
+    send({ type: 'chat', file: { id, name: file.name, size: file.size, mime: file.type } });
+  }
+}
+
+function fitChatInput() {
+  const t = $('chatInput');
+  t.style.height = 'auto';
+  t.style.height = `${Math.min(t.scrollHeight, 120)}px`;
+}
+
+function requestFile(from, f) {
+  if (chat.downloads.has(f.id)) return;
+  const parts = chat.cards.get(f.id);
+  chat.downloads.set(f.id, { from, file: f, chunks: [], got: 0, bytes: 0 });
+  if (parts) {
+    parts.btn.disabled = true;
+    parts.btn.textContent = 'Baixando…';
+    parts.bar.hidden = false;
+    parts.bar.value = 0;
+  }
+  sendSignal(from, { side: 'file', want: f.id });
+}
+
+function fileFailed(id, text) {
+  chat.downloads.delete(id);
+  const parts = chat.cards.get(id);
+  if (!parts) return;
+  parts.bar.hidden = true;
+  parts.btn.remove();
+  parts.meta.textContent = `${formatBytes(parts.f.size)} · ${text}`;
+}
+
+async function streamFile(to, id, file) {
+  const total = Math.max(1, Math.ceil(file.size / FILE_CHUNK));
+  for (let part = 0; part < total && state.members.has(to) && chat.files.has(id); part++) {
+    const buf = new Uint8Array(await file.slice(part * FILE_CHUNK, (part + 1) * FILE_CHUNK).arrayBuffer());
+    let bin = '';
+    for (let i = 0; i < buf.length; i += 8192) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 8192));
+    sendSignal(to, { side: 'file', fileId: id, part, total, data: btoa(bin) });
+    await waitRoomBuffer();
+  }
+}
+
+function onFileSignal(from, data) {
+  if (typeof data.want === 'string') {
+    const file = chat.files.get(data.want);
+    if (!file) return sendSignal(from, { side: 'file', fileId: data.want, unavailable: true });
+    streamFile(from, data.want, file).catch((e) => console.warn(e));
+    return;
+  }
+  const dl = chat.downloads.get(data.fileId);
+  if (!dl || dl.from !== from) return;
+  if (data.unavailable) return fileFailed(data.fileId, 'não está mais disponível (quem mandou reabriu o app)');
+  if (!Number.isInteger(data.part) || data.part !== dl.got || typeof data.data !== 'string') return fileFailed(data.fileId, 'o download falhou, tente de novo');
+  const bin = atob(data.data);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  dl.chunks.push(bytes);
+  dl.got++;
+  dl.bytes += bytes.length;
+  const parts = chat.cards.get(data.fileId);
+  if (parts) parts.bar.value = dl.bytes / dl.file.size;
+  if (dl.got < data.total) return;
+
+  chat.downloads.delete(data.fileId);
+  if (dl.bytes !== dl.file.size) return fileFailed(data.fileId, 'chegou incompleto, tente de novo');
+  const blob = new Blob(dl.chunks, { type: dl.file.mime || 'application/octet-stream' });
+  const url = URL.createObjectURL(blob);
+  chat.urls.push(url);
+  if (!parts) return;
+  parts.bar.hidden = true;
+  parts.btn.remove();
+  parts.meta.textContent = `${formatBytes(dl.file.size)} · recebido`;
+  if (CHAT_IMAGE_TYPES.includes(dl.file.mime)) showImage(parts, url);
+  // Salvar: o Electron pergunta onde guardar
+  const save = document.createElement('a');
+  save.className = 'btn small';
+  save.href = url;
+  save.download = dl.file.name;
+  save.textContent = 'Salvar';
+  parts.card.append(save);
+  parts.blob = blob;
+}
+
+// Quem saiu leva os arquivos: downloads em andamento e botões Baixar dele param
+function chatMemberLeft(id) {
+  for (const [fid, dl] of chat.downloads) if (dl.from === id) fileFailed(fid, 'quem mandou saiu da sala');
+  for (const [fid, parts] of chat.cards) {
+    if (parts.from === id && parts.btn.isConnected && !parts.btn.disabled) fileFailed(fid, 'quem mandou saiu da sala');
+  }
 }
 
 // ---------- Janela flutuante ----------
@@ -1824,6 +2106,29 @@ $('refreshApps').onclick = loadAudioApps;
 // Ícone das Estatísticas, na sala ao lado de Sair da sala
 setIcon($('openStatsRoom'), 'stats', 'Estatísticas: uso de processador e placa de vídeo');
 $('openStatsRoom').onclick = openStats;
+
+// Chat
+$('tabRoomBtn').onclick = () => setPanelTab('room');
+$('tabChatBtn').onclick = () => setPanelTab('chat');
+setIcon($('chatAttach'), 'attach', 'Mandar arquivo (até 200 MB)');
+setIcon($('chatSend'), 'send', 'Enviar');
+$('chatForm').onsubmit = (e) => { e.preventDefault(); sendChat(); };
+$('chatInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+});
+$('chatInput').addEventListener('input', fitChatInput);
+$('chatAttach').onclick = () => $('chatFile').click();
+$('chatFile').onchange = () => { attachFiles([...$('chatFile').files]); $('chatFile').value = ''; };
+// Arrastar arquivo para o chat; fora dele, soltar um arquivo não faz a janela abrir o arquivo
+document.addEventListener('dragover', (e) => e.preventDefault());
+document.addEventListener('drop', (e) => e.preventDefault());
+$('chatTab').addEventListener('dragover', (e) => { e.preventDefault(); $('chatTab').classList.add('dragging'); });
+$('chatTab').addEventListener('dragleave', (e) => { if (!$('chatTab').contains(e.relatedTarget)) $('chatTab').classList.remove('dragging'); });
+$('chatTab').addEventListener('drop', (e) => {
+  e.preventDefault();
+  $('chatTab').classList.remove('dragging');
+  attachFiles([...e.dataTransfer.files]);
+});
 $('closeStats').onclick = closeStats;
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;

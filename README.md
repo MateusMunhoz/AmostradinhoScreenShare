@@ -37,6 +37,11 @@ Para gerar um `.exe` portátil sem publicar nada: `npm run dist` (o arquivo apar
 - **Parar de assistir:** clique em Parar na lista ou no X da própria tela. A conexão é fechada e o download para na hora.
 - **Barra do vídeo:** aparece nos primeiros segundos, ao passar o mouse ou ao navegar com Tab. Tem o alto-falante (silenciar), o volume, a tela cheia (as duas setinhas) e o X. Também dá para entrar em tela cheia clicando duas vezes no vídeo. Cada tela tem o próprio volume.
 - **Destacar uma tela:** assistindo duas ou mais pessoas, o botão de destacar (um quadro dentro do outro) na barra do vídeo faz essa tela ocupar toda a área de vídeo. As outras ficam em pausa só para você, sem vídeo e sem som. Quem transmite para de mandar o vídeo para você, e o seu PC deixa de decodificar. A faixa de cima mostra quem está em pausa: clique num nome para trocar o destaque na hora, ou em Mostrar todas (ou Esc) para voltar ao lado a lado.
+- **Chat:** no painel da sala, a aba **Chat** mostra um número quando chegam mensagens novas.
+  - **Mensagens:** Enter envia e Shift+Enter quebra a linha. Links abrem no navegador.
+  - **Arquivos:** use o clipe ou arraste o arquivo para o chat, até 200 MB. Quem clica em **Baixar** recebe direto de quem mandou e depois clica em **Salvar**. Imagens pequenas aparecem sozinhas no chat.
+  - O arquivo fica disponível enquanto quem mandou estiver na sala. Quem entra depois vê as últimas 100 mensagens.
+  - Funciona se quem criou a sala tiver a versão 1.7.0 ou mais nova.
 - **Janela flutuante (para ver enquanto joga):** o botão da janelinha na barra do vídeo abre essa transmissão numa janela pequena que fica sempre por cima, até do jogo. Ela abre no modo de ajuste: arraste para mover e puxe as bordas para redimensionar. Depois clique em **Travar** ou aperte **Ctrl+Shift+E**. Travada, o mouse passa direto por ela: o clique vai para o jogo, e ela nunca tira o foco dele. Aperte Ctrl+Shift+E de novo, até de dentro do jogo, para ajustar. O app lembra a posição e o tamanho. O som continua saindo pelo app, com o volume daquela tela, e o vídeo continua chegando com o app minimizado. Não aparece por cima de jogo em tela cheia **exclusiva**: use o modo janela sem bordas do jogo.
 
 ## Atualizações
