@@ -14,3 +14,6 @@ native/obj/
 
 # Anotações locais
 Explicacao.txt
+
+# Configuração local do app do Claude
+.claude/
