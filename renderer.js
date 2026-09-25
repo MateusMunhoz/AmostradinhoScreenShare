@@ -817,6 +817,7 @@ function createTile(id, name) {
   const label = document.createElement('span');
   label.className = 'tile-name';
   label.textContent = name;
+  label.style.setProperty('--person', personColor(id));
   const bar = document.createElement('div');
   bar.className = 'tile-bar';
   const stats = document.createElement('span');
@@ -888,7 +889,12 @@ function createTile(id, name) {
   pipHint.textContent = 'ou Ctrl+Shift+E de dentro do jogo';
   pipNote.append(pipIcon, pipTitle, pipText, pipActions, pipHint);
   el.append(video, overlay, pipNote, label, bar);
-  el.addEventListener('dblclick', (e) => { if (!bar.contains(e.target)) toggleFullscreen(el); });
+  el.addEventListener('dblclick', (e) => { if (!bar.contains(e.target) && !el.classList.contains('small')) toggleFullscreen(el); });
+  // Na coluna ao lado, clicar (ou Enter) numa tela pequena põe ela em destaque
+  el.addEventListener('click', () => { if (el.classList.contains('small')) setMain(id); });
+  el.addEventListener('keydown', (e) => {
+    if (el.classList.contains('small') && e.target === el && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setMain(id); }
+  });
   $('tiles').append(el);
   return { el, video, overlay, pipNote, stats, fs, focusBtn, pipBtn, syncMute, name, paused: false, mutedBefore: false };
 }
@@ -1475,18 +1481,39 @@ window.api.onPip((m) => {
 // transmite para de mandar o vídeo (o mesmo pedido da janela minimizada) e o som fica mudo.
 function setFocus(id) {
   state.focus = id && state.in.has(id) ? id : null;
+  if (state.focus) state.main = state.focus; // ao sair do destaque, ela continua sendo a grande
   renderFocus();
   renderMembers();
 }
 
+// Com 2 ou mais telas: uma grande à esquerda e as outras numa coluna ao lado, todas ao vivo
+function setMain(id) {
+  if (!state.in.has(id)) return;
+  state.main = id;
+  renderFocus();
+}
+
 function renderFocus() {
   if (state.focus && (!state.in.has(state.focus) || state.in.size < 2)) state.focus = null;
+  if (!state.in.has(state.main)) state.main = state.in.keys().next().value || null;
   const focus = state.focus;
-  $('tiles').classList.toggle('focused', !!focus);
+  const column = !focus && state.in.size > 1;
+  const tiles = $('tiles');
+  tiles.classList.toggle('focused', !!focus);
+  tiles.classList.toggle('column', column);
+  // Linhas vazias em cima e embaixo deixam a coluna centralizada ao lado da tela grande
+  tiles.style.gridTemplateRows = column ? `minmax(0, 1fr) repeat(${state.in.size - 1}, auto) minmax(0, 1fr)` : '';
+  let row = 2;
   for (const [id, link] of state.in) {
     const t = link.tile;
     const paused = !!focus && id !== focus;
+    const small = column && id !== state.main;
     t.el.classList.toggle('focus', id === focus);
+    t.el.classList.toggle('small', small);
+    t.el.style.gridColumn = !column ? '' : small ? '2' : '1';
+    t.el.style.gridRow = !column ? '' : small ? String(row++) : '1 / -1';
+    t.el.tabIndex = small ? 0 : -1;
+    t.el.title = small ? `Pôr ${t.name} em destaque` : '';
     t.el.hidden = paused;
     setTilePaused(t, paused);
     t.focusBtn.hidden = state.in.size < 2;

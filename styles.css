@@ -178,6 +178,16 @@ kbd { font-family: Consolas, monospace; font-size: 11px; color: var(--muted); bo
 }
 /* Destaque: uma transmissão ocupa toda a área de vídeo; as outras ficam pausadas na faixa de cima */
 .tiles.focused { grid-template-columns: 1fr; }
+/* Destaque com coluna: uma grande à esquerda (linha 1 até a última) e as outras pequenas ao lado */
+.tiles.column { grid-template-columns: minmax(0, 1fr) clamp(180px, 26%, 320px); gap: 8px 10px; }
+.tile.small { min-height: 0; aspect-ratio: 16 / 9; border-radius: 10px; cursor: pointer; }
+.tile.small .tile-bar { display: none; }
+.tile.small .tile-name { top: 6px; left: 6px; padding: 3px 8px; font-size: 12px; }
+.tile.small:hover, .tile.small:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.tile.small .tile-overlay { padding: 8px; font-size: 12px; }
+.tile.small .tile-pip-note { padding: 8px; }
+.tile.small .tile-pip-note > :not(:first-child) { display: none; }
+.tile.small .tile-pip-note svg { width: 24px; height: 24px; }
 .paused-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .paused-label { font-size: 13px; color: var(--muted); }
 .tile { position: relative; background: #000; border-radius: var(--radius); overflow: hidden; min-height: 180px; }
@@ -189,7 +199,9 @@ kbd { font-family: Consolas, monospace; font-size: 11px; color: var(--muted); bo
 .tile-name {
   position: absolute; top: 10px; left: 10px; background: rgba(0, 0, 0, .6);
   font-size: 13px; font-weight: 600; padding: 4px 10px; border-radius: 6px;
+  display: inline-flex; align-items: center; gap: 6px;
 }
+.tile-name::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--person, var(--live)); }
 .tile-bar {
   position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 8px;
   padding: 10px 12px; background: linear-gradient(transparent, rgba(0, 0, 0, .75)); transition: opacity .2s;
