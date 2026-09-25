@@ -318,15 +318,26 @@ const pips = new Map(); // id da transmissão -> { win, slot, opacity }
 let pipEdit = false;
 const pipFile = () => path.join(app.getPath('userData'), 'janela-flutuante.json');
 
-// Arquivo: { slots: [{ x, y, width, height, opacity }, ...] }. O formato antigo (uma janela só) vira a vaga 0.
-function readPipSlots() {
+// Arquivo: { slots: [{ x, y, width, height, opacity }, ...], group }. O formato antigo (uma janela só) vira a vaga 0.
+// group: linked = todas do mesmo tamanho (mexer numa muda todas e reorganiza); layout 'coluna' ou 'linha';
+// corner = canto da tela onde a fila começa (tl, tr, bl, br).
+function readPipFile() {
   try {
     const data = JSON.parse(fs.readFileSync(pipFile(), 'utf8'));
-    return Array.isArray(data.slots) ? data.slots : [data];
-  } catch { return []; }
+    return data && typeof data === 'object' ? data : {};
+  } catch { return {}; }
 }
 let pipSlots = null;
-const slots = () => (pipSlots ??= readPipSlots());
+const slots = () => (pipSlots ??= (() => { const d = readPipFile(); return Array.isArray(d.slots) ? d.slots : d.width ? [d] : []; })());
+let pipGroup = null;
+const group = () => (pipGroup ??= (() => {
+  const g = readPipFile().group || {};
+  return {
+    linked: !!g.linked,
+    layout: g.layout === 'linha' ? 'linha' : 'coluna',
+    corner: ['tl', 'tr', 'bl', 'br'].includes(g.corner) ? g.corner : 'br',
+  };
+})());
 
 // Última posição e tamanho da vaga, se ainda couber numa das telas; senão, empilhadas a partir do canto de
 // baixo à direita (subindo, e depois numa coluna mais à esquerda)
@@ -368,7 +379,61 @@ function setPipSize(id, key) {
   const b = p.win.getBounds();
   const width = PIP_SIZES[key];
   const height = Math.round(width * 9 / 16);
+  markArranging();
   p.win.setBounds({ x: b.x + b.width - width, y: b.y + b.height - height, width, height });
+  if (group().linked) arrangePips(id);
+}
+
+// Mudanças feitas pelo app (não pelo mouse) não disparam uma nova arrumação
+let arrangingUntil = 0;
+const markArranging = () => { arrangingUntil = Date.now() + 500; };
+
+// Enfileira as janelas a partir do canto escolhido, em coluna ou em linha, sem uma cobrir a outra.
+// Quando a fila não cabe na tela, continua numa coluna (ou linha) ao lado. Com "todas do mesmo tamanho",
+// todas ficam do tamanho da janela que você mexeu.
+function arrangePips(anchorId) {
+  const list = [...pips.values()].filter((p) => !p.win.isDestroyed()).sort((a, b) => a.slot - b.slot);
+  if (!list.length) return;
+  const anchor = livePip(anchorId) || list[0];
+  const g = group();
+  const ab = anchor.win.getBounds();
+  const wa = screen.getDisplayMatching(ab).workArea;
+  const margin = 24, gap = 12;
+  const right = g.corner.endsWith('r'), bottom = g.corner.startsWith('b');
+  let along = 0, across = 0, acrossMax = 0;
+  markArranging();
+  for (const p of list) {
+    const own = p.win.getBounds();
+    const w = g.linked ? ab.width : own.width;
+    const h = g.linked ? ab.height : own.height;
+    let dx, dy;
+    if (g.layout === 'coluna') {
+      if (along > 0 && along + h > wa.height - 2 * margin) { across += acrossMax + gap; along = 0; acrossMax = 0; }
+      dx = across; dy = along; along += h + gap; acrossMax = Math.max(acrossMax, w);
+    } else {
+      if (along > 0 && along + w > wa.width - 2 * margin) { across += acrossMax + gap; along = 0; acrossMax = 0; }
+      dx = along; dy = across; along += w + gap; acrossMax = Math.max(acrossMax, h);
+    }
+    p.win.setBounds({
+      width: w, height: h,
+      x: right ? wa.x + wa.width - margin - w - dx : wa.x + margin + dx,
+      y: bottom ? wa.y + wa.height - margin - h - dy : wa.y + margin + dy,
+    });
+  }
+  for (const p of list) savePip(p);
+}
+
+function setPipGroup(id, patch) {
+  const g = group();
+  if (patch && typeof patch === 'object') {
+    if (typeof patch.linked === 'boolean') g.linked = patch.linked;
+    if (patch.layout === 'coluna' || patch.layout === 'linha') g.layout = patch.layout;
+    if (['tl', 'tr', 'bl', 'br'].includes(patch.corner)) g.corner = patch.corner;
+  }
+  // Ligar "mesmo tamanho" ou escolher arrumação/canto já arruma na hora
+  if (patch && (patch.linked === true || patch.layout || patch.corner)) arrangePips(id);
+  else savePipFile();
+  sendMain({ type: 'group', group: g });
 }
 
 function setPipOpacity(id, v) {
@@ -384,7 +449,13 @@ function savePip(p) {
   const list = slots();
   list[p.slot] = { ...p.win.getBounds(), opacity: p.opacity };
   for (let i = 0; i < list.length; i++) list[i] ??= {};
-  fs.writeFile(pipFile(), JSON.stringify({ slots: list }), () => {});
+  savePipFile();
+}
+
+let pipSaveTimer = null;
+function savePipFile() {
+  clearTimeout(pipSaveTimer);
+  pipSaveTimer = setTimeout(() => fs.writeFile(pipFile(), JSON.stringify({ slots: slots(), group: group() }), () => {}), 50);
 }
 
 function pipOpacities() {
@@ -398,7 +469,7 @@ function setPipEdit(on) {
   for (const p of pips.values()) {
     if (!p.win.isDestroyed()) p.win.setIgnoreMouseEvents(!pipEdit); // travada: o clique atravessa
   }
-  sendMain({ type: 'edit', on: pipEdit, opacity: pipOpacities() });
+  sendMain({ type: 'edit', on: pipEdit, opacity: pipOpacities(), group: group() });
 }
 
 function setupPip(child, id, slot) {
@@ -414,7 +485,16 @@ function setupPip(child, id, slot) {
     saveTimer = setTimeout(() => savePip(p), 400);
   };
   child.on('moved', save);
-  child.on('resized', save);
+  child.on('resized', () => {
+    save();
+    // Com "todas do mesmo tamanho", redimensionar uma com o mouse muda todas e reorganiza a fila
+    if (group().linked && Date.now() > arrangingUntil) arrangePips(id);
+  });
+  // Nova janela com "todas do mesmo tamanho": entra na fila com o tamanho das outras
+  if (group().linked && pips.size > 1) {
+    const other = [...pips.values()].find((o) => o !== p && !o.win.isDestroyed());
+    if (other) arrangePips([...pips].find(([, o]) => o === other)[0]);
+  }
   if (!globalShortcut.isRegistered(PIP_KEY) && !globalShortcut.register(PIP_KEY, () => setPipEdit(!pipEdit))) {
     sendMain({ type: 'shortcut-busy' });
   }
@@ -564,6 +644,7 @@ app.whenReady().then(() => {
   ipcMain.handle('pip-edit', (_e, on) => setPipEdit(on));
   ipcMain.handle('pip-size', (_e, id, key) => setPipSize(id, key));
   ipcMain.handle('pip-opacity', (_e, id, v) => setPipOpacity(id, v));
+  ipcMain.handle('pip-group', (_e, id, patch) => setPipGroup(id, patch));
   ipcMain.handle('open-link', (_e, url) => {
     if (typeof url === 'string' && /^https?:\/\/[^\s]+$/i.test(url)) shell.openExternal(url);
   });
@@ -575,8 +656,8 @@ app.whenReady().then(() => {
     relaunch();
   });
 
-  ipcMain.handle('start-server', (_e, port, password) => startServer(port, password));
-  ipcMain.handle('stop-server', () => stopServer());
+  ipcMain.handle('start-server', (_e, port, password, seed) => startServer(port, password, seed || {}));
+  ipcMain.handle('stop-server', (_e, endRoom) => stopServer({ endRoom: !!endRoom }));
 
   createWindow();
 });

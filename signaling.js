@@ -24,14 +24,23 @@ function send(ws, msg) {
   if (ws && ws.readyState === 1) ws.send(JSON.stringify(msg));
 }
 
-function startServer(port, password = '') {
+// Endereços IPv4 que a pessoa diz ter (para os outros acharem ela se ela virar o host)
+function cleanAddrs(list) {
+  return (Array.isArray(list) ? list : []).map(String).filter((a) => /^\d{1,3}(\.\d{1,3}){3}$/.test(a)).slice(0, 8);
+}
+
+// seed: quando a sala passa para outra pessoa, o novo servidor continua a conversa e a numeração
+function startServer(port, password = '', seed = {}) {
   stopServer();
   return new Promise((resolve) => {
     const server = new WebSocketServer({ port, host: '0.0.0.0', maxPayload: 256 * 1024 });
-    const members = new Map(); // id -> { ws, name, sharing }
-    let nextId = 1;
-    const chatLog = [];
-    let nextMsg = 1;
+    const members = new Map(); // id -> { ws, name, sharing, version, addrs }
+    let nextId = Math.max(1, Math.floor(Number(seed.nextId)) || 1);
+    const chatLog = (Array.isArray(seed.chat) ? seed.chat : []).slice(-CHAT_KEEP);
+    let nextMsg = chatLog.reduce((n, e) => Math.max(n, (Number(e.id) || 0) + 1), 1);
+    // Quem roda este servidor: numa sala nova, a primeira conexão do próprio PC; depois de uma troca,
+    // já vem definido (os outros podem chegar antes do próprio novo host)
+    let hostId = /^\d{1,6}$/.test(String(seed.hostId || '')) ? String(seed.hostId) : null;
 
     const broadcast = (msg, exceptId) => {
       for (const [id, m] of members) if (id !== exceptId) send(m.ws, msg);
@@ -60,7 +69,7 @@ function startServer(port, password = '') {
     });
 
     server.on('connection', (ws, req) => {
-      const id = String(nextId++);
+      let id = null;
       const isLocal = LOCAL.includes(req.socket.remoteAddress);
       let me = null;
       ws.isAlive = true;
@@ -82,16 +91,28 @@ function startServer(port, password = '') {
           }
           // A versão de cada um serve para os apps baixarem atualizações uns dos outros
           const version = /^\d+\.\d+\.\d+$/.test(msg.version) ? msg.version : '';
-          me = { ws, name: String(msg.name || 'Anônimo').slice(0, 32), sharing: false, version };
+          // Voltando depois da troca de host: fica com o mesmo número, e as conexões diretas continuam valendo
+          const resume = String(msg.resume || '');
+          if (/^\d{1,6}$/.test(resume) && !members.has(resume)) {
+            id = resume;
+            nextId = Math.max(nextId, Number(resume) + 1);
+          } else {
+            while (members.has(String(nextId))) nextId++;
+            id = String(nextId++);
+          }
+          if (!hostId && isLocal) hostId = id;
+          me = { ws, name: String(msg.name || 'Anônimo').slice(0, 32), sharing: !!(resume && msg.sharing), version, addrs: cleanAddrs(msg.addrs) };
+          const info = (mid, m) => ({ id: mid, name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs });
           send(ws, {
             type: 'welcome',
             id,
-            members: [...members].map(([mid, m]) => ({ id: mid, name: m.name, sharing: m.sharing, version: m.version })),
-            features: ['chat'],
+            hostId,
+            members: [...members].map(([mid, m]) => info(mid, m)),
+            features: ['chat', 'handoff'],
             chat: chatLog,
           });
           members.set(id, me);
-          broadcast({ type: 'member-joined', id, name: me.name, version }, id);
+          broadcast({ type: 'member-joined', ...info(id, me), resumed: !!resume }, id);
           return;
         }
 
@@ -122,12 +143,13 @@ function startServer(port, password = '') {
   });
 }
 
-function stopServer() {
+// endRoom: o host encerrou para todos. Sem ele (saiu, fechou o app), quem ficou passa a sala adiante.
+function stopServer({ endRoom = false } = {}) {
   clearInterval(pingTimer);
   pingTimer = null;
   if (wss) {
     for (const ws of wss.clients) {
-      ws.close(1000, 'room-closed');
+      ws.close(1000, endRoom ? 'room-closed' : 'host-left');
       setTimeout(() => ws.terminate(), 1000);
     }
     wss.close();

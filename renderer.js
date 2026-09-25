@@ -18,7 +18,13 @@ const state = {
   isOwner: false,
   host: '',
   port: 8765,
-  members: new Map(),      // id -> { name, sharing }  (outras pessoas na sala)
+  members: new Map(),      // id -> { name, sharing, version, addrs }  (outras pessoas na sala)
+  // Troca de host: quem roda o servidor, a ordem de chegada (o mais antigo assume) e a senha para voltar
+  hostId: null,
+  handoff: false,          // o servidor da sala sabe passar a sala adiante
+  order: [],               // ids na ordem em que entraram, inclusive o meu
+  password: '',
+  migrating: false,
 
   // Minha transmissão
   stream: null,
@@ -168,16 +174,25 @@ async function applyBitrate(link) {
 }
 
 // ---------- Criar / entrar / sair da sala ----------
-function connectRoom(url, hello) {
+// Meus endereços (Radmin primeiro): a sala guarda para me achar se eu virar o host
+async function myAddrs() {
+  try {
+    const ips = await window.api.getIps();
+    return ips.map((i) => i.address);
+  } catch { return []; }
+}
+
+async function connectRoom(url, hello, timeoutMs = 8000) {
+  const addrs = await myAddrs();
   return new Promise((resolve, reject) => {
     const ws = new WebSocket(url);
     let joined = false;
     let errMsg = null;
     const timer = setTimeout(() => {
       if (!joined) { errMsg = 'Tempo esgotado. Confira o endereço e se a Radmin VPN está ligada.'; ws.close(); }
-    }, 8000);
+    }, timeoutMs);
 
-    ws.onopen = () => ws.send(JSON.stringify({ type: 'hello', ...hello, version: update.myVersion }));
+    ws.onopen = () => ws.send(JSON.stringify({ type: 'hello', ...hello, addrs, version: update.myVersion }));
     ws.onmessage = (e) => {
       let m;
       try { m = JSON.parse(e.data); } catch { return; }
@@ -193,7 +208,9 @@ function connectRoom(url, hello) {
       if (!joined) {
         reject(new Error(errMsg || 'Não foi possível conectar. Confira o endereço e se a Radmin VPN está ligada nos dois PCs.'));
       } else if (state.ws === ws) {
-        leaveRoom(e.reason === 'room-closed' ? 'Quem criou a sala encerrou a sala.' : 'A conexão com a sala caiu.', 'error');
+        // Sem quem roda o servidor, a sala passa para quem está nela há mais tempo
+        if (e.reason !== 'room-closed' && state.handoff) migrateRoom(e.reason);
+        else leaveRoom(e.reason === 'room-closed' ? 'O host encerrou a sala.' : 'A conexão com a sala caiu.', 'error');
       }
     };
   });
@@ -210,6 +227,7 @@ async function createRoom() {
     if (!res.ok) throw new Error(res.error);
     try {
       const welcome = await connectRoom(`ws://127.0.0.1:${port}`, { name: getName(), password });
+      state.password = password;
       enterRoom(welcome, true, '127.0.0.1', port);
     } catch (err) {
       await window.api.stopServer();
@@ -232,6 +250,7 @@ async function joinRoom() {
   setBusy(btn, true, 'Entrando…');
   try {
     const welcome = await connectRoom(`ws://${host}:${port}`, { name: getName(), password: $('joinPassword').value });
+    state.password = $('joinPassword').value;
     enterRoom(welcome, false, host, port);
   } catch (err) {
     toast(err.message, 'error');
@@ -246,8 +265,11 @@ function enterRoom(welcome, owner, host, port) {
   state.host = host;
   state.port = port;
   state.members.clear();
-  for (const m of welcome.members) state.members.set(m.id, { name: m.name, sharing: m.sharing, version: m.version });
-  setIcon($('leaveBtn'), 'leave', owner ? 'Encerrar sala (sai todo mundo)' : 'Sair da sala');
+  for (const m of welcome.members) state.members.set(m.id, { name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs || [] });
+  state.hostId = welcome.hostId || null;
+  state.handoff = (welcome.features || []).includes('handoff');
+  state.order = [...welcome.members.map((m) => m.id), welcome.id];
+  renderLeaveBtn();
   resetChat(welcome);
   renderRoomAddress();
   renderMembers();
@@ -260,21 +282,26 @@ function enterRoom(welcome, owner, host, port) {
   checkUpdates();
 }
 
-function leaveRoom(reason, kind = 'info') {
+// endRoom: o host encerra para todos; sem isso, ao sair ele passa a sala para quem está há mais tempo
+function leaveRoom(reason, kind = 'info', endRoom = false) {
   if (!state.myId) return;
   const ws = state.ws;
   state.ws = null;
+  state.migrating = false;
+  clearTimeout(state.graceTimer);
   if (ws) { ws.onclose = null; ws.close(); }
   stopSharing();
   for (const id of [...state.in.keys()]) stopWatching(id, false);
   stopStats();
   closeStats();
   perfStop();
-  if (state.isOwner) window.api.stopServer();
+  if (state.isOwner) window.api.stopServer(endRoom);
   resetChat(null);
   state.members.clear();
   state.myId = null;
   state.isOwner = false;
+  state.hostId = null;
+  state.order = [];
   closeShareDialog();
   $('closeDialog').hidden = true;
   if (update.busy) { clearTimeout(update.busy.timer); update.busy = null; }
@@ -284,16 +311,132 @@ function leaveRoom(reason, kind = 'info') {
   if (reason) toast(reason, kind);
 }
 
+function renderLeaveBtn() {
+  const endsRoom = state.isOwner && !state.handoff;
+  setIcon($('leaveBtn'), 'leave', endsRoom ? 'Encerrar sala (sai todo mundo)' : 'Sair da sala');
+}
+
+// Quem assume se o host sair: o mais antigo na sala (sem contar o host)
+function successors() {
+  return state.order.filter((id) => id !== state.hostId && (id === state.myId || state.members.has(id)));
+}
+
+// ---------- Troca de host ----------
+// O servidor da sala roda no app do host. Se ele sai ou o app fecha, todo mundo calcula a mesma
+// pessoa (a mais antiga): ela abre um servidor novo, na mesma porta, e os outros se conectam nela
+// pelos endereços que ela tinha avisado. Cada um volta com o mesmo número, então as conexões diretas
+// (quem assiste quem) continuam de pé e a tela não cai.
+async function migrateRoom(reason) {
+  const myId = state.myId;
+  state.ws = null;
+  state.migrating = true;
+  const oldHost = state.hostId;
+  const hostName = oldHost && oldHost !== myId ? nameOf(oldHost) : 'O host';
+  // Talvez só a minha conexão tenha caído: tenta voltar para o mesmo host antes de trocar
+  if (reason !== 'host-left' && !state.isOwner) {
+    for (let i = 0; i < 2 && state.migrating; i++) {
+      if (await rejoin(`${state.host}`, 2500)) return;
+      await new Promise((r) => setTimeout(r, 800));
+    }
+  }
+  if (!state.migrating || state.myId !== myId) return;
+  if (oldHost && oldHost !== myId && state.members.has(oldHost)) onRoomMessage({ type: 'member-left', id: oldHost });
+  state.hostId = null;
+  const line = successors();
+  toast(`${hostName} saiu. Passando a sala para ${line[0] === myId ? 'você' : nameOf(line[0])}…`);
+  for (const id of line) {
+    if (!state.migrating || state.myId !== myId) return;
+    if (id === myId) {
+      if (await becomeHost()) return;
+      continue;
+    }
+    // Espera o próximo abrir a sala (até ~15 s), tentando cada endereço que ele avisou
+    const addrs = (state.members.get(id)?.addrs || []).slice(0, 4);
+    const until = Date.now() + 15000;
+    while (Date.now() < until && state.migrating && state.members.has(id)) {
+      for (const addr of addrs) if (await rejoin(addr, 2500)) return;
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+  }
+  if (state.migrating && state.myId === myId) leaveRoom('Não foi possível continuar a sala depois que o host saiu.', 'error');
+}
+
+async function becomeHost() {
+  const known = [...state.members.keys(), state.myId].map(Number).filter(Number.isFinite);
+  // Se o app do host acabou de cair, a porta pode levar um instante para ficar livre
+  let res;
+  for (let i = 0; i < 6; i++) {
+    res = await window.api.startServer(state.port, state.password, { chat: chat.log, nextId: Math.max(0, ...known) + 1, hostId: state.myId });
+    if (res.ok || !state.migrating) break;
+    await new Promise((r) => setTimeout(r, 1000));
+  }
+  if (!res.ok) { toast(res.error, 'error'); return false; }
+  const ok = await rejoin('127.0.0.1', 4000);
+  if (!ok) { await window.api.stopServer(); return false; }
+  return true;
+}
+
+// Entra no servidor novo com o mesmo número e avisa se estou transmitindo
+async function rejoin(host, timeoutMs) {
+  const myId = state.myId;
+  let welcome;
+  try {
+    welcome = await connectRoom(`ws://${host}:${state.port}`, { name: getName(), password: state.password, resume: myId, sharing: state.sharing }, timeoutMs);
+  } catch { return false; }
+  if (!state.migrating || state.myId !== myId) { state.ws?.close(); return false; }
+  if (welcome.id !== myId) { // o servidor não aceitou o número: melhor sair do que misturar as conexões
+    state.migrating = false;
+    leaveRoom('Não foi possível continuar a sala depois que o host saiu.', 'error');
+    return true;
+  }
+  state.migrating = false;
+  const sameHost = !!state.hostId && state.hostId === welcome.hostId;
+  state.isOwner = host === '127.0.0.1';
+  state.host = host;
+  state.hostId = welcome.hostId || null;
+  state.handoff = (welcome.features || []).includes('handoff');
+  if (!state.isOwner) save('roomAddr', `${host}:${state.port}`);
+  const present = new Set(welcome.members.map((m) => m.id));
+  for (const m of state.members.values()) delete m.back;
+  for (const m of welcome.members) {
+    const before = state.members.get(m.id);
+    state.members.set(m.id, { name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs || [], back: true });
+    if (!state.order.includes(m.id)) state.order.push(m.id);
+    if (before && before.sharing && !m.sharing) stopWatching(m.id, false);
+  }
+  // Quem ainda não voltou tem um tempo para voltar; depois disso, conta como quem saiu
+  clearTimeout(state.graceTimer);
+  state.graceTimer = setTimeout(() => {
+    for (const id of [...state.members.keys()]) {
+      if (!state.members.get(id).back) onRoomMessage({ type: 'member-left', id });
+    }
+  }, 20000);
+  renderLeaveBtn();
+  renderRoomAddress();
+  renderMembers();
+  renderShareBox();
+  updateStage();
+  toast(sameHost ? 'Conexão com a sala de volta.' : state.isOwner ? 'Você agora é o host da sala.' : `${nameOf(state.hostId)} agora é o host da sala.`);
+  return true;
+}
+
 function onRoomMessage(m) {
   switch (m.type) {
-    case 'member-joined':
-      state.members.set(m.id, { name: m.name, sharing: false, version: m.version });
+    case 'member-joined': {
+      // Quem volta depois da troca de host continua de onde estava (mesmo número, mesmas conexões)
+      const back = state.members.get(m.id);
+      state.members.set(m.id, { name: m.name, sharing: !!m.sharing, version: m.version, addrs: m.addrs || [], back: true });
+      if (!state.order.includes(m.id)) state.order.push(m.id);
+      if (back && back.sharing && !m.sharing) stopWatching(m.id, false);
       renderMembers();
-      toast(`${m.name} entrou na sala`);
+      updateStage();
+      if (!back) toast(`${m.name} entrou na sala`);
       checkUpdates();
       break;
+    }
     case 'member-left': {
       const name = nameOf(m.id);
+      state.order = state.order.filter((id) => id !== m.id);
       if (update.busy?.from === m.id) cancelDownload();
       chatMemberLeft(m.id);
       closeOut(m.id);
@@ -771,6 +914,7 @@ function memberRow(id, name, sharing) {
   const paused = id && state.focus && state.focus !== id && state.in.has(id);
   const inPip = id && state.pips.has(id);
   status.textContent = !sharing ? 'Na sala' : inPip ? 'Transmitindo · na janela flutuante' : paused ? 'Transmitindo, em pausa para você' : 'Transmitindo';
+  if ((id || state.myId) === state.hostId) status.textContent = `Host · ${status.textContent}`;
   info.append(nameEl, status);
   li.append(dot, info);
 
@@ -971,6 +1115,7 @@ const CHAT_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
 const FILE_CHUNK = 48 * 1024;
 const chat = {
   open: true,             // painel (pessoas + chat) aberto
+  log: [],                // as últimas 100 mensagens, como vieram do servidor
   lastMsg: null,          // para agrupar mensagens seguidas da mesma pessoa
   divider: null,          // linha "N mensagens novas"
   sending: new Set(),     // "pessoa|arquivo" que estou mandando agora (Cancelar do outro lado para)
@@ -1038,6 +1183,7 @@ function resetChat(welcome) {
   chat.lastMsg = null;
   chat.divider = null;
   chat.supported = !!welcome && Array.isArray(welcome.features) && welcome.features.includes('chat');
+  chat.log = ((welcome && welcome.chat) || []).slice(-100);
   $('chatList').innerHTML = '';
   $('chatOff').hidden = !welcome || chat.supported;
   $('chatInput').disabled = $('chatSend').disabled = $('chatAttach').disabled = !chat.supported;
@@ -1048,6 +1194,10 @@ function resetChat(welcome) {
 }
 
 function onChatMessage(m) {
+  // Cópia da conversa: se eu virar o host, o novo servidor continua daqui
+  const { type, ...entry } = m;
+  chat.log.push(entry);
+  if (chat.log.length > 100) chat.log.shift();
   const wasBottom = chatAtBottom();
   const unseen = m.from !== state.myId && (!chat.open || document.hidden || !wasBottom);
   if (unseen && !chat.unread) {
@@ -1396,10 +1546,47 @@ function buildPip(win, id) {
   Object.assign(opacity.style, { flex: '1', accentColor: '#8ab4ff' });
   opacity.oninput = () => window.api.pipOpacity(id, Number(opacity.value) / 100);
   opacityRow.append('Transparência', opacity);
+
+  // Com 2 ou mais janelas: mesmo tamanho para todas e como enfileirar (coluna ou linha, a partir de qual canto)
+  const groupRow = d.createElement('div');
+  Object.assign(groupRow.style, { display: 'none', flexWrap: 'wrap', alignItems: 'center', gap: '6px 10px', color: '#d0d0d0' });
+  groupRow.style.setProperty('-webkit-app-region', 'no-drag');
+  const linkedLabel = d.createElement('label');
+  Object.assign(linkedLabel.style, { display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' });
+  const linked = d.createElement('input');
+  linked.type = 'checkbox';
+  linked.style.accentColor = '#8ab4ff';
+  linked.onchange = () => window.api.pipGroup(id, { linked: linked.checked });
+  linkedLabel.append(linked, 'Todas do mesmo tamanho');
+  const seg = (items, onPick) => {
+    const box = d.createElement('div');
+    Object.assign(box.style, { display: 'flex', gap: '2px', padding: '2px', background: '#111111', borderRadius: '6px' });
+    const btns = {};
+    for (const [key, text, title] of items) {
+      const b = pipButton(d, text, () => onPick(key), false);
+      Object.assign(b.style, { minWidth: '26px', height: '24px', padding: '0 7px', border: '0', borderRadius: '4px' });
+      b.title = title;
+      b.setAttribute('aria-label', title);
+      btns[key] = b;
+      box.append(b);
+    }
+    return { box, btns };
+  };
+  const layoutSeg = seg([['coluna', 'Coluna', 'Enfileirar em coluna'], ['linha', 'Linha', 'Enfileirar em linha']],
+    (layout) => window.api.pipGroup(id, { layout }));
+  const cornerSeg = seg([['tl', '↖', 'Começar no canto de cima à esquerda'], ['tr', '↗', 'Começar no canto de cima à direita'],
+    ['bl', '↙', 'Começar no canto de baixo à esquerda'], ['br', '↘', 'Começar no canto de baixo à direita']],
+    (corner) => window.api.pipGroup(id, { corner }));
+  groupRow.append(linkedLabel, layoutSeg.box, cornerSeg.box);
+
   const hint = d.createElement('span');
   hint.textContent = 'Arraste para mover · puxe um canto para redimensionar · Ctrl+Shift+E trava todas';
   Object.assign(hint.style, { lineHeight: '1.35', color: '#d0d0d0' });
-  bottom.append(opacityRow, hint);
+  bottom.append(groupRow, opacityRow, hint);
+  // Janela baixa (tamanho P): a dica sai para caber o resto
+  const fitHint = () => { hint.style.display = win.innerHeight < 230 ? 'none' : ''; };
+  win.addEventListener('resize', fitHint);
+  fitHint();
   edit.append(top, bottom);
 
   // Travada: só uma etiqueta pequena com o nome; ao travar, um aviso rápido
@@ -1415,7 +1602,27 @@ function buildPip(win, id) {
     fontSize: '12px', padding: '6px 10px', borderRadius: '8px', background: 'rgba(17, 17, 17, .88)', border: '1px solid #2e2e2e',
   });
   d.body.append(video, edit, lockTag, notice);
-  return { win, id, video, edit, name, opacity, lockTag, notice, noticeTimer: null };
+  return { win, id, video, edit, name, opacity, lockTag, notice, noticeTimer: null, groupRow, linked, layoutSeg, cornerSeg };
+}
+
+// Os controles de grupo aparecem só com 2 ou mais janelas, e mostram a escolha atual em todas
+let pipGroupState = { linked: false, layout: 'coluna', corner: 'br' };
+function renderPipGroup() {
+  const many = state.pips.size > 1;
+  const g = pipGroupState;
+  for (const p of state.pips.values()) {
+    if (p.win.closed) continue;
+    p.groupRow.style.display = many ? 'flex' : 'none';
+    p.linked.checked = g.linked;
+    for (const [segKey, seg] of [['layout', p.layoutSeg], ['corner', p.cornerSeg]]) {
+      for (const [key, b] of Object.entries(seg.btns)) {
+        const on = g[segKey] === key;
+        b.style.background = on ? 'rgba(138, 180, 255, .18)' : 'transparent';
+        b.style.color = on ? '#8ab4ff' : '#a3a3a3';
+        b.setAttribute('aria-pressed', String(on));
+      }
+    }
+  }
 }
 
 function setPipStream(id) {
@@ -1453,6 +1660,7 @@ function renderPipButtons() {
     link.tile.pipNote.hidden = !on;
   }
   // Barra: quais transmissões estão em janela flutuante, com o atalho e o X (fecha todas)
+  renderPipGroup();
   const names = [...state.pips.keys()].filter((id) => state.in.has(id)).map((id) => state.in.get(id).tile.name);
   $('pipChip').hidden = !names.length;
   $('pipChipText').textContent = names.length === 1 ? `Janela flutuante: ${names[0]}` : `Janelas flutuantes: ${names.join(', ')}`;
@@ -1470,6 +1678,7 @@ function setPipLocked(p, locked) {
 
 window.api.onPip((m) => {
   // O modo de ajuste vale para todas as janelas ao mesmo tempo
+  if (m.group) { pipGroupState = m.group; renderPipGroup(); }
   if (m.type === 'edit') {
     for (const [id, p] of state.pips) {
       if (p.win.closed) continue;
@@ -2302,10 +2511,18 @@ $('joinBtn').onclick = joinRoom;
 $('roomAddr').addEventListener('keydown', (e) => { if (e.key === 'Enter') joinRoom(); });
 $('joinPassword').addEventListener('keydown', (e) => { if (e.key === 'Enter') joinRoom(); });
 
-// Quem criou a sala derruba todo mundo ao sair: pede confirmação se tiver mais alguém
+// O host, ao sair com mais gente na sala: passa a sala para o mais antigo ou encerra para todos
 function openCloseDialog() {
+  const next = successors().find((id) => id !== state.myId);
+  const handoff = state.handoff && !!next;
+  $('closeTitle').textContent = handoff ? 'Sair da sala?' : 'Encerrar a sala para todos?';
+  $('closeText').textContent = handoff
+    ? `Você é o host. Se sair, ${nameOf(next)} vira o host e a sala continua para os outros, sem as transmissões caírem. Ou encerre a sala para todo mundo.`
+    : 'Todo mundo sai da sala e as transmissões param. Para voltar, crie a sala de novo e passe o endereço.';
+  $('handoffLeave').hidden = !handoff;
+  $('confirmClose').textContent = handoff ? 'Encerrar para todos' : 'Encerrar sala';
   $('closeDialog').hidden = false;
-  $('cancelClose').focus();
+  (handoff ? $('handoffLeave') : $('cancelClose')).focus();
 }
 function closeCloseDialog() {
   $('closeDialog').hidden = true;
@@ -2316,7 +2533,8 @@ $('leaveBtn').onclick = () => {
   else leaveRoom(state.isOwner ? 'Sala encerrada.' : null);
 };
 $('cancelClose').onclick = closeCloseDialog;
-$('confirmClose').onclick = () => leaveRoom('Sala encerrada.');
+$('confirmClose').onclick = () => leaveRoom('Sala encerrada.', 'info', true);
+$('handoffLeave').onclick = () => leaveRoom(`Você saiu. ${nameOf(successors().find((id) => id !== state.myId))} agora é o host da sala.`);
 $('shareBtn').onclick = openShareDialog;
 $('stopShareBtn').onclick = () => stopSharing();
 $('cancelShare').onclick = closeShareDialog;

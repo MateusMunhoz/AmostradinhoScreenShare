@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('api', {
   pipSetEdit: (on) => ipcRenderer.invoke('pip-edit', on),
   pipSize: (id, key) => ipcRenderer.invoke('pip-size', String(id), key),
   pipOpacity: (id, v) => ipcRenderer.invoke('pip-opacity', String(id), v),
+  pipGroup: (id, patch) => ipcRenderer.invoke('pip-group', String(id), patch),
   openLink: (url) => ipcRenderer.invoke('open-link', url),
   onPip: (cb) => {
     ipcRenderer.removeAllListeners('pip');
@@ -40,6 +41,6 @@ contextBridge.exposeInMainWorld('api', {
   githubCheck: () => ipcRenderer.invoke('github-check'),
   githubInstall: () => ipcRenderer.invoke('github-install'),
   openGithub: (url) => ipcRenderer.invoke('open-github', url),
-  startServer: (port, password) => ipcRenderer.invoke('start-server', port, password),
-  stopServer: () => ipcRenderer.invoke('stop-server'),
+  startServer: (port, password, seed) => ipcRenderer.invoke('start-server', port, password, seed),
+  stopServer: (endRoom) => ipcRenderer.invoke('stop-server', !!endRoom),
 });

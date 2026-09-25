@@ -296,14 +296,15 @@
         </div>
       </div>
 
-      <!-- Confirmar antes de derrubar todo mundo -->
+      <!-- O host ao sair: passa a sala adiante ou encerra para todos -->
       <div id="closeDialog" class="modal" hidden>
         <div class="dialog narrow" role="alertdialog" aria-modal="true" aria-labelledby="closeTitle" aria-describedby="closeText">
-          <h2 id="closeTitle">Encerrar a sala para todos?</h2>
-          <p id="closeText" class="hint">Todo mundo sai da sala e as transmissões param. Para voltar, crie a sala de novo e passe o endereço.</p>
+          <h2 id="closeTitle">Sair da sala?</h2>
+          <p id="closeText" class="hint"></p>
           <div class="actions">
             <button class="btn ghost" id="cancelClose" type="button">Cancelar</button>
-            <button class="btn danger" id="confirmClose" type="button">Encerrar sala</button>
+            <button class="btn danger" id="confirmClose" type="button">Encerrar para todos</button>
+            <button class="btn primary" id="handoffLeave" type="button">Sair</button>
           </div>
         </div>
       </div>
