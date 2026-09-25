@@ -365,6 +365,23 @@ function setupPip(child) {
   setPipEdit(true); // abre no modo de ajuste: posicione e trave
 }
 
+// Reabre o app depois de instalar uma atualização. O .exe portátil apaga a pasta temporária quando
+// fecha, então o novo só abre depois de 2 s, por um cmd separado. Antes, o Node escapava as aspas do
+// caminho ("Tela P2P.exe" tem espaço) com \", que o cmd não entende: o comando falhava calado e o app
+// não voltava. Com os argumentos literais, o cmd recebe as aspas como estão.
+function relaunch() {
+  const exe = process.env.PORTABLE_EXECUTABLE_FILE;
+  if (!exe) {
+    app.relaunch();
+    app.exit(0);
+    return;
+  }
+  spawn('cmd.exe', ['/d', '/s', '/c', `"ping -n 3 127.0.0.1 >nul & start "" "${exe}""`], {
+    detached: true, stdio: 'ignore', windowsHide: true, windowsVerbatimArguments: true,
+  }).unref();
+  app.quit();
+}
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1200,
@@ -479,7 +496,7 @@ app.whenReady().then(() => {
     stopAppAudio();
     stopVideoCap();
     if (boostProc) boostProc.kill();
-    updater.restart();
+    relaunch();
   });
 
   ipcMain.handle('start-server', (_e, port, password) => startServer(port, password));

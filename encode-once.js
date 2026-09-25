@@ -550,9 +550,18 @@ function setVideoTrack(link, track) {
   refreshTileStream(link);
 }
 
+// Com a janela flutuante aberta para esta transmissão, o vídeo vai só para ela; o quadro no app fica
+// só com o som (não desenha o mesmo vídeo duas vezes)
 function refreshTileStream(link) {
   const video = link.tile.video;
-  video.srcObject = new MediaStream(link.tracks);
+  const inPip = state.pip && !state.pip.win.closed && state.in.get(state.pip.id) === link;
+  const full = new MediaStream(link.tracks);
+  if (inPip) {
+    state.pip.video.srcObject = full;
+    state.pip.video.play().catch(() => {});
+    video.srcObject = new MediaStream(link.tracks.filter((t) => t.kind === 'audio'));
+  } else {
+    video.srcObject = full;
+  }
   video.play().catch(() => {});
-  if (state.pip && state.in.get(state.pip.id) === link) setPipStream(state.pip.id); // a janela flutuante acompanha
 }

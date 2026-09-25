@@ -819,10 +819,24 @@ function createTile(id, name) {
   setIcon(close, 'close', 'Parar de assistir');
   close.onclick = () => stopWatching(id);
   bar.append(stats, mute, vol, pipBtn, focusBtn, fs, close);
-  el.append(video, overlay, label, bar);
+  // Aviso no lugar do vídeo enquanto ele está na janela flutuante
+  const pipNote = document.createElement('div');
+  pipNote.className = 'tile-pip-note';
+  pipNote.hidden = true;
+  const pipTitle = document.createElement('strong');
+  pipTitle.textContent = 'Picture in picture ativado, transmissão pausada';
+  const pipText = document.createElement('span');
+  pipText.textContent = 'O vídeo está na janela flutuante. O som continua por aqui.';
+  const pipBack = document.createElement('button');
+  pipBack.type = 'button';
+  pipBack.className = 'btn small';
+  pipBack.textContent = 'Trazer de volta';
+  pipBack.onclick = () => closePip();
+  pipNote.append(pipTitle, pipText, pipBack);
+  el.append(video, overlay, pipNote, label, bar);
   el.addEventListener('dblclick', (e) => { if (!bar.contains(e.target)) toggleFullscreen(el); });
   $('tiles').append(el);
-  return { el, video, overlay, stats, fs, focusBtn, pipBtn, syncMute, name, paused: false, mutedBefore: false };
+  return { el, video, overlay, pipNote, stats, fs, focusBtn, pipBtn, syncMute, name, paused: false, mutedBefore: false };
 }
 
 // Mostra a barra do vídeo por alguns segundos, para quem nunca passou o mouse em cima descobrir os botões
@@ -951,9 +965,10 @@ function setPipStream(id) {
   const link = state.in.get(id);
   const p = state.pip;
   if (!link || !p || p.win.closed) return;
+  const before = state.in.get(p.id);
   p.id = id;
-  p.video.srcObject = link.tile.video.srcObject;
-  p.video.play().catch(() => {});
+  if (before && before !== link) refreshTileStream(before); // a anterior volta para o app
+  refreshTileStream(link);
   p.name.textContent = link.tile.name;
   p.win.document.title = `${link.tile.name} · Tela P2P`;
   syncIncomingVideo();
@@ -964,6 +979,13 @@ function closePip() {
   const p = state.pip;
   state.pip = null;
   if (p && !p.win.closed) p.win.close();
+  pipClosed(p);
+}
+
+// O vídeo volta para o quadro no app
+function pipClosed(p) {
+  const link = p && state.in.get(p.id);
+  if (link) refreshTileStream(link);
   syncIncomingVideo();
   renderPipButtons();
 }
@@ -973,12 +995,13 @@ function renderPipButtons() {
     const on = !!state.pip && state.pip.id === id;
     setIcon(link.tile.pipBtn, 'pip', on ? 'Fechar a janela flutuante' : 'Abrir em janela flutuante (fica por cima do jogo)');
     link.tile.pipBtn.classList.toggle('on', on);
+    link.tile.pipNote.hidden = !on;
   }
 }
 
 window.api.onPip((m) => {
   if (m.type === 'edit' && state.pip && !state.pip.win.closed) state.pip.edit.style.display = m.on ? 'flex' : 'none';
-  else if (m.type === 'closed' && state.pip) { state.pip = null; syncIncomingVideo(); renderPipButtons(); }
+  else if (m.type === 'closed' && state.pip) { const p = state.pip; state.pip = null; pipClosed(p); }
   else if (m.type === 'shortcut-busy') toast('Outro programa já usa Ctrl+Shift+E. Trave pelo botão Travar da janela; para ajustar de novo, feche e abra a janela flutuante pelo botão do vídeo.', 'error');
 });
 
