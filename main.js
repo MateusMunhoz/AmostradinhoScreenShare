@@ -6,8 +6,15 @@ const { spawn, execFile } = require('child_process');
 const { startServer, stopServer } = require('./signaling');
 const github = require('./github');
 
-// Usa os IPs reais (26.x da Radmin) nos candidatos WebRTC em vez de endereços .local
-app.commandLine.appendSwitch('disable-features', 'WebRtcHideLocalIpsWithMdns');
+// Usa os IPs reais (26.x da Radmin) nos candidatos WebRTC em vez de endereços .local.
+// No Windows 10, a captura moderna do Windows (a que o Chromium usa) desenha uma borda amarela em volta
+// do que está sendo transmitido, e lá não dá para tirar. Desligada, o Chromium usa as capturas antigas:
+// Duplicação da Área de Trabalho para a tela inteira e GDI para janelas, as duas sem borda.
+// (TELA_P2P_WIN10=1 simula o Windows 10, para testar no Windows 11)
+const WIN10 = process.platform === 'win32' && (Number(os.release().split('.')[2]) < 22000 || process.env.TELA_P2P_WIN10 === '1');
+const disabledFeatures = ['WebRtcHideLocalIpsWithMdns'];
+if (WIN10) disabledFeatures.push('AllowWgcScreenCapturer', 'AllowWgcWindowCapturer');
+app.commandLine.appendSwitch('disable-features', disabledFeatures.join(','));
 // Deixa o vídeo do host tocar com som sem precisar clicar
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 // Com a janela minimizada, o Chromium joga a página para prioridade ociosa e modo de eficiência.

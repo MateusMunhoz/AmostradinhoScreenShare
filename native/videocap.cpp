@@ -1,11 +1,16 @@
 // videocap.exe - captura a tela (ou uma janela) e codifica em H.264 direto no NVENC da placa NVIDIA.
-// A imagem não sai da placa: captura do Windows (Windows.Graphics.Capture) -> escala e conversão
-// para NV12 pelo processador de vídeo do D3D11 -> NVENC.
+// A imagem não sai da placa: captura do Windows -> escala e conversão para NV12 pelo processador de
+// vídeo do D3D11 -> NVENC.
+//
+// Captura: Windows.Graphics.Capture, sem a borda amarela no Windows 11. O Windows 10 não deixa tirar
+// essa borda, então lá a tela inteira vem da Duplicação da Área de Trabalho (sem borda; o cursor é
+// desenhado aqui) e a captura de janela é recusada (o app usa a do Chromium, que também não tem borda).
 //
 //   videocap.exe --probe                          uma linha JSON: {"nvenc":true,"gpu":"..."} ou {"nvenc":false,"error":"..."}
 //   videocap.exe --monitor X,Y [opções]           a tela que contém o ponto X,Y (pixels físicos)
 //   videocap.exe --window HWND [opções]           uma janela
 //   opções: --width 1920 --height 1080 --fps 60 --bitrate 7000000 (tamanho máximo; a proporção da imagem é mantida)
+//           --dda 1   usa a Duplicação da Área de Trabalho também no Windows 11 (para testes)
 //
 // Saída (stdout): um quadro por vez, [tamanho u32][chave u8][timestamp f64 em µs][H.264 Annex B].
 // Mensagens (stderr): READY <largura> <altura> | ERROR <texto> | ENDED (a janela fechou) |
@@ -28,6 +33,7 @@
 #include <winrt/Windows.Foundation.Metadata.h>
 #include <winrt/Windows.Graphics.Capture.h>
 #include <winrt/Windows.Graphics.DirectX.Direct3D11.h>
+#include <winrt/Windows.Security.Authorization.AppCapabilityAccess.h>
 #include <atomic>
 #include <cstdint>
 #include <cstdio>
@@ -204,8 +210,54 @@ struct Options {
   HWND window = nullptr;
   POINT monitorPoint{};
   bool monitor = false;
+  bool dda = false;
   UINT maxW = 1920, maxH = 1080, fps = 60, bitrate = 7000000;
 };
+
+// Windows 11 deixa tirar a borda amarela da captura; o Windows 10 não
+static bool borderlessSupported() {
+  try {
+    return winrt::Windows::Foundation::Metadata::ApiInformation::IsPropertyPresent(
+      L"Windows.Graphics.Capture.GraphicsCaptureSession", L"IsBorderRequired");
+  } catch (...) {
+    return false;
+  }
+}
+
+// Duplicação da Área de Trabalho: a tela inteira, sem borda. Só funciona com a tela ligada na placa
+// da NVIDIA (a mesma do NVENC); em notebook com a tela na placa integrada, o app usa a outra captura.
+struct Dda {
+  Com<IDXGIOutput1> out;
+  Com<IDXGIOutputDuplication> dup;
+  RECT rect{};
+};
+
+static bool reopenDda(ID3D11Device *dev, Dda &d, std::string &err) {
+  d.dup.put();  // solta a anterior
+  HRESULT hr = d.out->DuplicateOutput(dev, d.dup.put());
+  if (FAILED(hr)) { err = "não foi possível duplicar a tela (" + hex(hr) + ")"; return false; }
+  return true;
+}
+
+static bool openDda(ID3D11Device *dev, POINT pt, Dda &d, std::string &err) {
+  Com<IDXGIDevice> dx;
+  Com<IDXGIAdapter> ad;
+  if (FAILED(dev->QueryInterface(__uuidof(IDXGIDevice), (void **)dx.put())) || FAILED(dx->GetAdapter(ad.put()))) {
+    err = "DXGI indisponível";
+    return false;
+  }
+  Com<IDXGIOutput> out;
+  for (UINT i = 0; ad->EnumOutputs(i, out.put()) != DXGI_ERROR_NOT_FOUND; i++) {
+    DXGI_OUTPUT_DESC od;
+    out->GetDesc(&od);
+    if (!PtInRect(&od.DesktopCoordinates, pt)) continue;
+    if (FAILED(out->QueryInterface(__uuidof(IDXGIOutput1), (void **)d.out.put()))) break;
+    d.rect = od.DesktopCoordinates;
+    return reopenDda(dev, d, err);
+  }
+  err = "esta tela está ligada em outra placa de vídeo, não na NVIDIA";
+  return false;
+}
 
 static GraphicsCaptureItem createItem(const Options &o) {
   auto interop = get_activation_factory<GraphicsCaptureItem, IGraphicsCaptureItemInterop>();
@@ -225,37 +277,56 @@ static UINT even(double v) { UINT n = (UINT)(v + 0.5); return n < 2 ? 2 : n & ~1
 // ---------- Programa principal ----------
 static int run(const Options &o) {
   init_apartment(apartment_type::multi_threaded);
-  if (!GraphicsCaptureSession::IsSupported()) fail("este Windows não tem a captura de tela moderna");
+  SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);  // tudo em pixels físicos
+  const bool borderless = borderlessSupported();
+  if (o.window && !borderless) fail("no Windows 10 a captura de janela mostra uma borda amarela");
+  const bool useDda = o.monitor && (o.dda || !borderless);
+  if (!useDda && !GraphicsCaptureSession::IsSupported()) fail("este Windows não tem a captura de tela moderna");
 
   Gpu g;
   Nvenc nv;
   std::string err;
   if (!createNvidiaDevice(g, err) || !openNvenc(nv, g.dev, err)) fail(err);
 
-  // Dispositivo no formato que a captura do Windows pede
-  Com<IDXGIDevice> dxgi;
-  HR(g.dev->QueryInterface(__uuidof(IDXGIDevice), (void **)dxgi.put()), "DXGI");
-  com_ptr<::IInspectable> insp;
-  HR(CreateDirect3D11DeviceFromDXGIDevice(dxgi, insp.put()), "dispositivo da captura");
-  IDirect3DDevice device = insp.as<IDirect3DDevice>();
-
-  GraphicsCaptureItem item = createItem(o);
-  auto size = item.Size();
+  // Fonte da imagem: Duplicação da Área de Trabalho (sem borda no Windows 10) ou a captura moderna
+  Dda dda;
+  IDirect3DDevice device{ nullptr };
+  GraphicsCaptureItem item{ nullptr };
+  Direct3D11CaptureFramePool pool{ nullptr };
+  GraphicsCaptureSession session{ nullptr };
   std::atomic<bool> ended{ false };
-  item.Closed([&](auto &&, auto &&) { ended = true; });
+  UINT capW = 0, capH = 0;
+  if (useDda) {
+    if (!openDda(g.dev, o.monitorPoint, dda, err)) fail(err);
+    capW = dda.rect.right - dda.rect.left;
+    capH = dda.rect.bottom - dda.rect.top;
+  } else {
+    // Dispositivo no formato que a captura do Windows pede
+    Com<IDXGIDevice> dxgi;
+    HR(g.dev->QueryInterface(__uuidof(IDXGIDevice), (void **)dxgi.put()), "DXGI");
+    com_ptr<::IInspectable> insp;
+    HR(CreateDirect3D11DeviceFromDXGIDevice(dxgi, insp.put()), "dispositivo da captura");
+    device = insp.as<IDirect3DDevice>();
+    item = createItem(o);
+    auto size = item.Size();
+    item.Closed([&](auto &&, auto &&) { ended = true; });
+    pool = Direct3D11CaptureFramePool::CreateFreeThreaded(device, DirectXPixelFormat::B8G8R8A8UIntNormalized, 2, size);
+    session = pool.CreateCaptureSession(item);
+    try { session.IsCursorCaptureEnabled(true); } catch (...) {}
+    // Sem a borda amarela (Windows 11): pede a permissão e desliga a borda
+    try { GraphicsCaptureAccess::RequestAccessAsync(GraphicsCaptureAccessKind::Borderless).get(); } catch (...) {}
+    try { session.IsBorderRequired(false); } catch (...) {}
+    try {
+      if (winrt::Windows::Foundation::Metadata::ApiInformation::IsPropertyPresent(L"Windows.Graphics.Capture.GraphicsCaptureSession", L"MinUpdateInterval"))
+        session.MinUpdateInterval(winrt::Windows::Foundation::TimeSpan{ 10'000'000 / o.fps });
+    } catch (...) {}
+    capW = size.Width;
+    capH = size.Height;
+  }
 
   // Tamanho de saída: a proporção da captura, no máximo o tamanho pedido (sem aumentar)
-  double scale = std::min(1.0, std::min((double)o.maxW / size.Width, (double)o.maxH / size.Height));
-  const UINT W = even(size.Width * scale), H = even(size.Height * scale);
-
-  auto pool = Direct3D11CaptureFramePool::CreateFreeThreaded(device, DirectXPixelFormat::B8G8R8A8UIntNormalized, 2, size);
-  auto session = pool.CreateCaptureSession(item);
-  try { session.IsCursorCaptureEnabled(true); } catch (...) {}
-  try { session.IsBorderRequired(false); } catch (...) {}  // sem a borda amarela (Windows 11)
-  try {
-    if (winrt::Windows::Foundation::Metadata::ApiInformation::IsPropertyPresent(L"Windows.Graphics.Capture.GraphicsCaptureSession", L"MinUpdateInterval"))
-      session.MinUpdateInterval(winrt::Windows::Foundation::TimeSpan{ 10'000'000 / o.fps });
-  } catch (...) {}
+  double scale = std::min(1.0, std::min((double)o.maxW / capW, (double)o.maxH / capH));
+  const UINT W = even(capW * scale), H = even(capH * scale);
 
   // Processador de vídeo do D3D11: escala e converte BGRA -> NV12 sem sair da placa
   Com<ID3D11VideoDevice> vdev;
@@ -263,8 +334,9 @@ static int run(const Options &o) {
   HR(g.dev->QueryInterface(__uuidof(ID3D11VideoDevice), (void **)vdev.put()), "processador de vídeo");
   HR(g.ctx->QueryInterface(__uuidof(ID3D11VideoContext), (void **)vctx.put()), "processador de vídeo");
 
-  // Cópia da captura numa textura nossa (a do Windows nem sempre aceita ser lida pelo processador)
-  Com<ID3D11Texture2D> bgra;
+  // Cópia da captura numa textura nossa (a do Windows nem sempre aceita ser lida pelo processador).
+  // Na Duplicação, "desk" guarda a tela limpa e "bgra" recebe a tela + o cursor desenhado por cima.
+  Com<ID3D11Texture2D> bgra, desk;
   UINT srcW = 0, srcH = 0;
   Com<ID3D11VideoProcessorEnumerator> vpEnum;
   Com<ID3D11VideoProcessor> vp;
@@ -284,7 +356,12 @@ static int run(const Options &o) {
     bd.Width = w; bd.Height = h; bd.MipLevels = 1; bd.ArraySize = 1;
     bd.Format = DXGI_FORMAT_B8G8R8A8_UNORM; bd.SampleDesc.Count = 1;
     bd.Usage = D3D11_USAGE_DEFAULT; bd.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+    if (useDda) bd.MiscFlags = D3D11_RESOURCE_MISC_GDI_COMPATIBLE;  // para desenhar o cursor com o GDI
     HR(g.dev->CreateTexture2D(&bd, nullptr, bgra.put()), "textura da captura");
+    if (useDda) {
+      bd.MiscFlags = 0;
+      HR(g.dev->CreateTexture2D(&bd, nullptr, desk.put()), "textura da tela");
+    }
 
     D3D11_VIDEO_PROCESSOR_CONTENT_DESC cd = {};
     cd.InputFrameFormat = D3D11_VIDEO_FRAME_FORMAT_PROGRESSIVE;
@@ -329,7 +406,29 @@ static int run(const Options &o) {
     srcW = w;
     srcH = h;
   };
-  setupSource(size.Width, size.Height);
+  setupSource(capW, capH);
+
+  auto convert = [&]() {
+    D3D11_VIDEO_PROCESSOR_STREAM stream = {};
+    stream.Enable = TRUE;
+    stream.pInputSurface = inView;
+    HR(vctx->VideoProcessorBlt(vp, outView, 0, 1, &stream), "conversão do quadro");
+  };
+
+  // A Duplicação não traz o cursor: desenha o do Windows por cima, na posição dele na tela
+  auto drawCursor = [&](const CURSORINFO &ci) {
+    if (!(ci.flags & CURSOR_SHOWING) || !PtInRect(&dda.rect, ci.ptScreenPos)) return;
+    ICONINFO ii;
+    if (!GetIconInfo(ci.hCursor, &ii)) return;
+    if (ii.hbmMask) DeleteObject(ii.hbmMask);
+    if (ii.hbmColor) DeleteObject(ii.hbmColor);
+    Com<IDXGISurface1> surf;
+    HDC dc = nullptr;
+    if (FAILED(bgra->QueryInterface(__uuidof(IDXGISurface1), (void **)surf.put())) || FAILED(surf->GetDC(FALSE, &dc))) return;
+    DrawIconEx(dc, ci.ptScreenPos.x - dda.rect.left - (int)ii.xHotspot, ci.ptScreenPos.y - dda.rect.top - (int)ii.yHotspot,
+               ci.hCursor, 0, 0, 0, nullptr, DI_NORMAL);
+    surf->ReleaseDC(nullptr);
+  };
 
   // ---- NVENC: H.264 High, baixíssimo atraso, bitrate constante, sem B-frames ----
   NV_ENC_PRESET_CONFIG preset = { NV_ENC_PRESET_CONFIG_VER, { NV_ENC_CONFIG_VER } };
@@ -382,7 +481,7 @@ static int run(const Options &o) {
   reg.bufferUsage = NV_ENC_INPUT_IMAGE;
   NV(nv.fn.nvEncRegisterResource(nv.enc, &reg), "textura no NVENC");
 
-  session.StartCapture();
+  if (session) session.StartCapture();
   char ready[64];
   snprintf(ready, sizeof(ready), "READY %u %u", W, H);
   logLine(ready);
@@ -398,6 +497,8 @@ static int run(const Options &o) {
   uint64_t captured = 0, encoded = 0;
   ULONGLONG lastStats = GetTickCount64();
   bool haveImage = false;
+  bool haveDesk = false;
+  CURSORINFO lastCursor = { sizeof(CURSORINFO) };
 
   for (;;) {
     // Espera até a hora do próximo quadro (se atrasou mais de um quadro, recomeça a contagem)
@@ -413,31 +514,71 @@ static int run(const Options &o) {
     }
     if (ended) { logLine("ENDED"); ExitProcess(2); }
 
-    // Pega o quadro mais novo da captura (descarta os mais velhos)
-    Direct3D11CaptureFrame frame{ nullptr };
-    for (auto f = pool.TryGetNextFrame(); f; f = pool.TryGetNextFrame()) { if (frame) frame.Close(); frame = f; }
-    if (frame) {
-      captured++;
-      auto cs = frame.ContentSize();
-      if ((UINT)cs.Width != srcW || (UINT)cs.Height != srcH) {
-        if (cs.Width > 0 && cs.Height > 0) {
-          pool.Recreate(device, DirectXPixelFormat::B8G8R8A8UIntNormalized, 2, cs);
-          setupSource(cs.Width, cs.Height);
-          wantKey = true;
+    if (useDda) {
+      // Duplicação: pega a tela se mudou; se a tela foi trocada (resolução, tela de UAC), reabre
+      bool deskChanged = false;
+      if (dda.dup) {
+        DXGI_OUTDUPL_FRAME_INFO fi = {};
+        Com<IDXGIResource> res;
+        HRESULT hr = dda.dup->AcquireNextFrame(0, &fi, res.put());
+        if (hr == DXGI_ERROR_ACCESS_LOST) {
+          dda.dup.put();
+        } else if (SUCCEEDED(hr)) {
+          if (fi.LastPresentTime.QuadPart || !haveDesk) {
+            Com<ID3D11Texture2D> tex;
+            if (SUCCEEDED(res->QueryInterface(__uuidof(ID3D11Texture2D), (void **)tex.put()))) {
+              D3D11_TEXTURE2D_DESC td;
+              tex->GetDesc(&td);
+              if (td.Width != srcW || td.Height != srcH) {
+                setupSource(td.Width, td.Height);
+                wantKey = true;
+              }
+              g.ctx->CopyResource(desk, tex);
+              haveDesk = deskChanged = true;
+              captured++;
+            }
+          }
+          dda.dup->ReleaseFrame();
         }
       } else {
-        auto access = frame.Surface().as<::Windows::Graphics::DirectX::Direct3D11::IDirect3DDxgiInterfaceAccess>();
-        Com<ID3D11Texture2D> tex;
-        HR(access->GetInterface(__uuidof(ID3D11Texture2D), (void **)tex.put()), "quadro da captura");
-        D3D11_BOX box = { 0, 0, 0, srcW, srcH, 1 };
-        g.ctx->CopySubresourceRegion(bgra, 0, 0, 0, 0, tex, 0, &box);
-        D3D11_VIDEO_PROCESSOR_STREAM stream = {};
-        stream.Enable = TRUE;
-        stream.pInputSurface = inView;
-        HR(vctx->VideoProcessorBlt(vp, outView, 0, 1, &stream), "conversão do quadro");
-        haveImage = true;
+        std::string e;
+        reopenDda(g.dev, dda, e);  // tenta de novo no próximo quadro se ainda não der
       }
-      frame.Close();
+      CURSORINFO ci = { sizeof(ci) };
+      GetCursorInfo(&ci);
+      bool cursorChanged = ci.hCursor != lastCursor.hCursor || ci.flags != lastCursor.flags ||
+                           ci.ptScreenPos.x != lastCursor.ptScreenPos.x || ci.ptScreenPos.y != lastCursor.ptScreenPos.y;
+      if (haveDesk && (deskChanged || cursorChanged)) {
+        g.ctx->CopyResource(bgra, desk);
+        drawCursor(ci);
+        convert();
+        haveImage = true;
+        lastCursor = ci;
+      }
+    } else {
+      // Pega o quadro mais novo da captura (descarta os mais velhos)
+      Direct3D11CaptureFrame frame{ nullptr };
+      for (auto f = pool.TryGetNextFrame(); f; f = pool.TryGetNextFrame()) { if (frame) frame.Close(); frame = f; }
+      if (frame) {
+        captured++;
+        auto cs = frame.ContentSize();
+        if ((UINT)cs.Width != srcW || (UINT)cs.Height != srcH) {
+          if (cs.Width > 0 && cs.Height > 0) {
+            pool.Recreate(device, DirectXPixelFormat::B8G8R8A8UIntNormalized, 2, cs);
+            setupSource(cs.Width, cs.Height);
+            wantKey = true;
+          }
+        } else {
+          auto access = frame.Surface().as<::Windows::Graphics::DirectX::Direct3D11::IDirect3DDxgiInterfaceAccess>();
+          Com<ID3D11Texture2D> tex;
+          HR(access->GetInterface(__uuidof(ID3D11Texture2D), (void **)tex.put()), "quadro da captura");
+          D3D11_BOX box = { 0, 0, 0, srcW, srcH, 1 };
+          g.ctx->CopySubresourceRegion(bgra, 0, 0, 0, 0, tex, 0, &box);
+          convert();
+          haveImage = true;
+        }
+        frame.Close();
+      }
     }
 
     if (GetTickCount64() - lastStats >= 1000) {
@@ -496,6 +637,7 @@ int main() {
     else if (wcscmp(k, L"--height") == 0) o.maxH = wcstoul(v, nullptr, 10);
     else if (wcscmp(k, L"--fps") == 0) o.fps = wcstoul(v, nullptr, 10);
     else if (wcscmp(k, L"--bitrate") == 0) o.bitrate = wcstoul(v, nullptr, 10);
+    else if (wcscmp(k, L"--dda") == 0) o.dda = wcstoul(v, nullptr, 10) != 0;
   }
   if ((!o.window && !o.monitor) || o.fps < 1 || o.fps > 240 || o.maxW < 16 || o.maxH < 16 || o.bitrate < 100000) {
     logLine("uso: videocap.exe --probe | (--monitor X,Y | --window HWND) [--width W --height H --fps F --bitrate B]");

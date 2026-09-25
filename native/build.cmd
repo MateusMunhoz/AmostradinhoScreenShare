@@ -11,4 +11,4 @@ if not exist obj mkdir obj
 rem Só um: build.cmd videocap
 set FLAGS=/nologo /O2 /EHsc /std:c++20 /utf-8 /MT /DNOMINMAX /Foobj\
 if /i not "%1"=="videocap" cl %FLAGS% audiocap.cpp /Fe..\bin\audiocap.exe ole32.lib shell32.lib version.lib || exit /b 1
-cl %FLAGS% videocap.cpp /Fe..\bin\videocap.exe d3d11.lib dxgi.lib windowsapp.lib shell32.lib user32.lib || exit /b 1
+cl %FLAGS% videocap.cpp /Fe..\bin\videocap.exe d3d11.lib dxgi.lib windowsapp.lib shell32.lib user32.lib gdi32.lib || exit /b 1

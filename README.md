@@ -186,6 +186,7 @@ x86_64-w64-mingw32-g++ -O2 -std=c++17 -static -s -o bin/audiocap.exe native/audi
 | "Não foi possível conectar" | Confira se a Radmin está ligada nos dois PCs e se o endereço está certo. Teste com um ping no IP 26.x. |
 | Conecta, mas o vídeo não aparece | Libere o app no Firewall do Windows (redes públicas) nos dois PCs. |
 | "A porta já está em uso" | Troque a porta (ex.: 8766) e passe o novo endereço. |
+| Borda amarela em volta do que está sendo transmitido (Windows 10) | Resolvido na 1.5.2. É o aviso da captura moderna do Windows, que o Windows 10 não deixa esconder. Nele, o app passa a usar as capturas antigas, sem borda: a tela inteira pela Duplicação da Área de Trabalho (também no NVENC direto, com o cursor desenhado pelo app) e as janelas pela captura do Chromium. Alguma janela de jogo pode sair preta: nesse caso, transmita a Tela inteira. |
 | Sem áudio | Verifique se há som tocando no dispositivo de saída padrão do Windows. |
 | "Não foi possível ignorar os apps escolhidos" ou "Não deu para separar o som deste app" | Confira a versão do Windows (Configurações > Sistema > Sobre) e se o antivírus não bloqueou o `audiocap.exe`. |
 | O painel diz "pelo processador" | É o esperado nesta versão (veja Codec). Use 720p 60 fps ou 30 fps para aliviar o processador. |
