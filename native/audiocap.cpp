@@ -5,6 +5,8 @@
 //                                                "Discord.exe<TAB>Discord" (exe e nome amigável)
 //   audiocap.exe --boost above 1234              deixa o processo 1234 e os filhos com prioridade
 //                                                acima do normal (ou normal / high) e sem modo de eficiência
+//   audiocap.exe --stats 1234                    uma linha JSON por segundo com o uso de processador e
+//                                                placa de vídeo do processo 1234 e dos filhos (tela de Estatísticas)
 //   audiocap.exe --exclude-pid 1234              todo o som, menos o processo 1234 e os filhos dele
 //   audiocap.exe --exclude-pid 1234 --exclude Discord.exe --exclude Spotify.exe
 //                                                todo o som, menos o processo 1234 e esses apps
@@ -26,6 +28,7 @@
 #include <audiopolicy.h>
 #include <tlhelp32.h>
 #include <shellapi.h>
+#include <pdh.h>
 #include <algorithm>
 #include <cstdint>
 #include <cstdio>
@@ -588,16 +591,24 @@ static int captureMixing(const Exclusions &ex) {
 // modo de eficiência (núcleos lentos). Aqui cada processo do app (o raiz e todos os filhos) fica
 // com a prioridade escolhida e com o modo de eficiência desligado. Refaz a cada 2 s, porque o
 // Chromium abre processos novos e às vezes mexe na prioridade deles.
+//
+// A mesma prioridade vale na placa de vídeo: com um jogo em tela cheia usando 100% da placa, a
+// captura da tela (que copia a imagem pela placa) perdia a vez e caía de 60 para poucos quadros.
 struct PowerThrottling { ULONG Version, ControlMask, StateMask; };
 typedef BOOL (WINAPI *SetProcInfoFn)(HANDLE, int, LPVOID, DWORD);
+typedef LONG (APIENTRY *SetGpuPriorityFn)(HANDLE, int);  // D3DKMTSetProcessSchedulingPriorityClass
 static const int PROCESS_POWER_THROTTLING_CLASS = 4;  // ProcessPowerThrottling
 static const ULONG THROTTLE_EXECUTION_SPEED = 0x1, THROTTLE_IGNORE_TIMER_RESOLUTION = 0x4;
+static const int GPU_NORMAL = 2, GPU_ABOVE_NORMAL = 3, GPU_HIGH = 4;  // D3DKMT_SCHEDULINGPRIORITYCLASS
 
 static int boost(const wchar_t *level, DWORD root) {
   DWORD cls = NORMAL_PRIORITY_CLASS;
-  if (wcscmp(level, L"above") == 0) cls = ABOVE_NORMAL_PRIORITY_CLASS;
-  else if (wcscmp(level, L"high") == 0) cls = HIGH_PRIORITY_CLASS;
+  int gpu = GPU_NORMAL;
+  if (wcscmp(level, L"above") == 0) { cls = ABOVE_NORMAL_PRIORITY_CLASS; gpu = GPU_ABOVE_NORMAL; }
+  else if (wcscmp(level, L"high") == 0) { cls = HIGH_PRIORITY_CLASS; gpu = GPU_HIGH; }
   auto setInfo = (SetProcInfoFn)GetProcAddress(GetModuleHandleW(L"kernel32.dll"), "SetProcessInformation");
+  HMODULE gdi = LoadLibraryW(L"gdi32.dll");
+  auto setGpu = gdi ? (SetGpuPriorityFn)GetProcAddress(gdi, "D3DKMTSetProcessSchedulingPriorityClass") : nullptr;
 
   for (;;) {
     ProcTable t;
@@ -612,9 +623,11 @@ static int boost(const wchar_t *level, DWORD root) {
       for (int d = 0; a && d < 64 && !inTree; d++) { inTree = a == root; a = t.parentOf(a); }
       if (!inTree) continue;
 
-      HANDLE h = OpenProcess(PROCESS_SET_INFORMATION | PROCESS_QUERY_LIMITED_INFORMATION, FALSE, kv.first);
+      HANDLE h = OpenProcess(PROCESS_SET_INFORMATION | PROCESS_QUERY_INFORMATION, FALSE, kv.first);
+      if (!h) h = OpenProcess(PROCESS_SET_INFORMATION | PROCESS_QUERY_LIMITED_INFORMATION, FALSE, kv.first);
       if (!h) continue;
       if (GetPriorityClass(h) != cls) SetPriorityClass(h, cls);
+      if (setGpu) setGpu(h, gpu);  // quem não usa a placa direto (a página) só recusa, sem problema
       if (setInfo) {
         PowerThrottling off = { 1, THROTTLE_EXECUTION_SPEED | THROTTLE_IGNORE_TIMER_RESOLUTION, 0 };
         if (!setInfo(h, PROCESS_POWER_THROTTLING_CLASS, &off, sizeof(off))) {
@@ -625,6 +638,144 @@ static int boost(const wchar_t *level, DWORD root) {
       CloseHandle(h);
     }
     Sleep(2000);
+  }
+}
+
+// ---- --stats: uso de processador e placa de vídeo, uma linha JSON por segundo ----
+// A placa de vídeo vem dos contadores "GPU Engine" do Windows (os mesmos do Gerenciador de Tarefas),
+// pedidos pelo nome em inglês para funcionar em Windows em português.
+typedef PDH_STATUS (WINAPI *PdhOpenQueryFn)(LPCWSTR, DWORD_PTR, PDH_HQUERY *);
+typedef PDH_STATUS (WINAPI *PdhAddEnglishCounterFn)(PDH_HQUERY, LPCWSTR, DWORD_PTR, PDH_HCOUNTER *);
+typedef PDH_STATUS (WINAPI *PdhCollectFn)(PDH_HQUERY);
+typedef PDH_STATUS (WINAPI *PdhGetArrayFn)(PDH_HCOUNTER, DWORD, LPDWORD, LPDWORD, PPDH_FMT_COUNTERVALUE_ITEM_W);
+
+static const PDH_STATUS PDH_MORE_DATA_ = (PDH_STATUS)0x800007D2L;  // de pdhmsg.h
+static const DWORD PDH_CSTATUS_NEW_DATA_ = 0x00000001L;
+
+struct CounterValue { std::wstring name; double value; };
+
+static std::vector<CounterValue> readCounterArray(PdhGetArrayFn getArray, PDH_HCOUNTER counter) {
+  std::vector<CounterValue> out;
+  if (!counter) return out;
+  DWORD size = 0, count = 0;
+  const DWORD fmt = PDH_FMT_DOUBLE | PDH_FMT_NOCAP100;
+  if (getArray(counter, fmt, &size, &count, nullptr) != PDH_MORE_DATA_ || !size) return out;
+  std::vector<BYTE> buf(size);
+  auto items = (PPDH_FMT_COUNTERVALUE_ITEM_W)buf.data();
+  if (getArray(counter, fmt, &size, &count, items) != ERROR_SUCCESS) return out;
+  for (DWORD i = 0; i < count; i++)
+    if (items[i].FmtValue.CStatus <= PDH_CSTATUS_NEW_DATA_) out.push_back({ items[i].szName, items[i].FmtValue.doubleValue });
+  return out;
+}
+
+// "pid_1234_luid_..._engtype_VideoEncode" -> pid 1234, "VideoEncode"
+static DWORD instancePid(const std::wstring &s) {
+  size_t at = s.find(L"pid_");
+  return at == std::wstring::npos ? 0 : wcstoul(s.c_str() + at + 4, nullptr, 10);
+}
+static std::string instanceEngine(const std::wstring &s) {
+  size_t at = s.find(L"engtype_");
+  std::string e = at == std::wstring::npos ? "" : utf8(s.substr(at + 8));
+  return e.rfind("Compute", 0) == 0 ? "Compute" : e;  // Compute_0, Compute_1... viram um só
+}
+
+static ULONGLONG fileTime(const FILETIME &f) { return ((ULONGLONG)f.dwHighDateTime << 32) | f.dwLowDateTime; }
+
+static std::string jsonEngines(const std::map<std::string, double> &m) {
+  std::string s = "{";
+  for (auto &kv : m) {
+    if (s.size() > 1) s += ",";
+    char num[32];
+    snprintf(num, sizeof(num), "%.1f", std::min(kv.second, 100.0));
+    s += "\"" + kv.first + "\":" + num;
+  }
+  return s + "}";
+}
+
+static int stats(DWORD root) {
+  HMODULE pdh = LoadLibraryW(L"pdh.dll");
+  auto open = pdh ? (PdhOpenQueryFn)GetProcAddress(pdh, "PdhOpenQueryW") : nullptr;
+  auto add = pdh ? (PdhAddEnglishCounterFn)GetProcAddress(pdh, "PdhAddEnglishCounterW") : nullptr;
+  auto collect = pdh ? (PdhCollectFn)GetProcAddress(pdh, "PdhCollectQueryData") : nullptr;
+  auto getArray = pdh ? (PdhGetArrayFn)GetProcAddress(pdh, "PdhGetFormattedCounterArrayW") : nullptr;
+  PDH_HQUERY query = nullptr;
+  PDH_HCOUNTER engines = nullptr, memory = nullptr;
+  bool gpuOk = open && add && collect && getArray && open(nullptr, 0, &query) == ERROR_SUCCESS
+    && add(query, L"\\GPU Engine(*)\\Utilization Percentage", 0, &engines) == ERROR_SUCCESS;
+  if (gpuOk) {
+    add(query, L"\\GPU Process Memory(*)\\Dedicated Usage", 0, &memory);
+    collect(query);
+  }
+
+  const DWORD cores = GetActiveProcessorCount(ALL_PROCESSOR_GROUPS);
+  std::map<DWORD, ULONGLONG> lastCpu;  // pid -> tempo de processador (100 ns)
+  FILETIME fi, fk, fu, now;
+  GetSystemTimes(&fi, &fk, &fu);
+  ULONGLONG lastIdle = fileTime(fi), lastKernel = fileTime(fk), lastUser = fileTime(fu);
+  GetSystemTimeAsFileTime(&now);
+  ULONGLONG lastWall = fileTime(now);
+
+  for (;;) {
+    Sleep(1000);
+    if (gpuOk) collect(query);
+    GetSystemTimeAsFileTime(&now);
+    ULONGLONG wall = fileTime(now), elapsed = std::max<ULONGLONG>(wall - lastWall, 1);
+    lastWall = wall;
+
+    // Processador do PC inteiro
+    GetSystemTimes(&fi, &fk, &fu);
+    ULONGLONG idle = fileTime(fi) - lastIdle, kernel = fileTime(fk) - lastKernel, user = fileTime(fu) - lastUser;
+    lastIdle = fileTime(fi); lastKernel = fileTime(fk); lastUser = fileTime(fu);
+    double cpuPC = kernel + user ? 100.0 * (double)(kernel + user - idle) / (double)(kernel + user) : 0;
+
+    // Processos do app: o raiz e todos os filhos
+    ProcTable t;
+    std::vector<DWORD> tree;
+    for (auto &kv : t.all()) {
+      DWORD a = kv.first;
+      bool in = false;
+      for (int d = 0; a && d < 64 && !in; d++) { in = a == root; a = t.parentOf(a); }
+      if (in) tree.push_back(kv.first);
+    }
+
+    std::map<DWORD, std::map<std::string, double>> gpuByPid;
+    std::map<std::string, double> gpuPC;
+    std::map<DWORD, double> memByPid;
+    if (gpuOk) {
+      for (auto &c : readCounterArray(getArray, engines)) {
+        std::string eng = instanceEngine(c.name);
+        if (eng.empty()) continue;
+        gpuPC[eng] += c.value;
+        gpuByPid[instancePid(c.name)][eng] += c.value;
+      }
+      for (auto &c : readCounterArray(getArray, memory)) memByPid[instancePid(c.name)] += c.value;
+    }
+
+    std::string procs;
+    std::map<DWORD, ULONGLONG> seen;
+    for (DWORD pid : tree) {
+      double cpu = 0;
+      if (HANDLE h = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid)) {
+        FILETIME c, e, k, u;
+        if (GetProcessTimes(h, &c, &e, &k, &u)) {
+          ULONGLONG used = fileTime(k) + fileTime(u);
+          auto it = lastCpu.find(pid);
+          if (it != lastCpu.end() && used >= it->second) cpu = 100.0 * (double)(used - it->second) / (double)(elapsed * cores);
+          seen[pid] = used;
+        }
+        CloseHandle(h);
+      }
+      char head[160];
+      snprintf(head, sizeof(head), "{\"pid\":%lu,\"name\":\"%s\",\"cpu\":%.1f,\"gpuMemMB\":%.0f,\"gpu\":",
+               pid, utf8(t.get(pid)->name).c_str(), cpu, memByPid[pid] / (1024.0 * 1024.0));
+      if (!procs.empty()) procs += ",";
+      procs += head + jsonEngines(gpuByPid[pid]) + "}";
+    }
+    lastCpu = seen;
+
+    printf("{\"cores\":%lu,\"gpuAvailable\":%s,\"cpuPC\":%.1f,\"gpuPC\":%s,\"procs\":[%s]}\n",
+           cores, gpuOk ? "true" : "false", cpuPC, jsonEngines(gpuPC).c_str(), procs.c_str());
+    fflush(stdout);
   }
 }
 
@@ -643,6 +794,11 @@ int main() {
   CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 
   if (argc >= 2 && wcscmp(argv[1], L"--list") == 0) return listAudioApps();
+
+  if (argc >= 3 && wcscmp(argv[1], L"--stats") == 0) {
+    CreateThread(nullptr, 0, watchStdin, nullptr, 0, nullptr);  // termina junto com o app
+    return stats(wcstoul(argv[2], nullptr, 10));
+  }
 
   if (argc >= 4 && wcscmp(argv[1], L"--boost") == 0) {
     CreateThread(nullptr, 0, watchStdin, nullptr, 0, nullptr);  // termina junto com o app

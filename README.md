@@ -102,6 +102,26 @@ O app já faz isto sozinho:
 - **Som:** o capturador de áudio usa a prioridade de áudio do Windows e tem uma folga maior, então não picota quando o jogo pesa.
 - **Prioridade e modo de eficiência:** com a janela minimizada, o Chromium (o motor do app) jogava a página de quem assiste para prioridade *ociosa* e *modo de eficiência* (núcleos lentos). Enquanto alguém jogava, o som picotava e as respostas para quem transmite atrasavam, e quem transmitia baixava a qualidade achando que a internet estava ruim. Agora todos os processos do app ficam **acima do normal** e com o modo de eficiência desligado, mesmo minimizados.
 
+### Estatísticas
+
+Clique em **Estatísticas**, na tela inicial (ao lado da versão) ou na sala (embaixo de Sair da sala). A janela atualiza a cada segundo e mostra:
+
+- **Processador, placa de vídeo 3D, codificação e decodificação de vídeo:** quanto o app usa de cada um, e quanto o PC inteiro usa (inclui o jogo e outros programas). São os mesmos números do Gerenciador de Tarefas.
+- **Cada processo do app:** quem captura a tela, quem codifica, quem decodifica, a rede e os ajudantes. Também mostra a memória de vídeo de cada um.
+- **O codificador de verdade:** por exemplo "H.264 com OpenH264 (processador)". Para quem só assiste, o Chromium não diz qual é o decodificador, então aparecem só o codec, a resolução e os fps.
+
+Se "Codificação de vídeo, PC inteiro" estiver alta com o app parado, é outro programa usando o codificador da placa (por exemplo, o Replay Instantâneo da NVIDIA ou uma live do Discord).
+
+### Jogo em tela cheia
+
+Com o jogo em tela cheia, a taxa de envio pode cair por três motivos:
+
+- **Placa de vídeo em 100%:** o jogo usa a placa inteira, e a captura da tela (que copia a imagem pela placa) perde a vez. Ela entrega menos quadros por segundo, e menos quadros viram menos dados enviados. O app agora usa a mesma prioridade escolhida (acima do normal ou alta) também na placa de vídeo, como o OBS faz. Mesmo assim, o que mais ajuda é **limitar o FPS do jogo** para sobrar uns 10% da placa. Dá para fazer nas opções do jogo ou em Painel de controle da NVIDIA > Taxa de quadros máxima.
+- **Captura da *janela* do jogo em tela cheia exclusiva:** a janela pode congelar ou ficar preta. Imagem parada ocupa quase nada, e o envio despenca. Nesse caso, use o modo **janela sem bordas** (*borderless*) do jogo ou transmita a **Tela inteira**.
+- **Processador:** veja a prioridade, abaixo.
+
+Para saber qual foi, volte para o app depois de jogar. Embaixo da prévia aparece o resumo de como a transmissão foi enquanto o app estava escondido: quadros capturados, quadros enviados, Mbps e o que limitou (placa de vídeo, processador ou internet).
+
 O que você pode ajustar:
 
 - **Prioridade do app** (na tela de transmitir; vale para o app inteiro e fica salva):

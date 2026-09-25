@@ -66,6 +66,60 @@ function setPriority(level) {
   }
 }
 
+// Tela de Estatísticas: o capturador mede processador e placa de vídeo de cada processo do app
+let statsProc = null;
+
+// O que cada processo do Chromium faz, para a tabela ficar legível
+function processLabels() {
+  const labels = new Map();
+  for (const m of app.getAppMetrics()) {
+    const svc = m.serviceName || '';
+    const label = m.type === 'Browser' ? 'Principal (captura a tela)'
+      : m.type === 'GPU' ? 'Placa de vídeo (desenha e decodifica)'
+      : m.type === 'Tab' ? 'Página (codifica o vídeo)'
+      : /Network/.test(svc) ? 'Rede'
+      : /Audio/.test(svc) ? 'Áudio'
+      : /VideoCapture/.test(svc) ? 'Captura de vídeo'
+      : `Outro (${m.type})`;
+    labels.set(m.pid, label);
+  }
+  return labels;
+}
+
+function startStats(sender) {
+  stopStats();
+  let proc;
+  try {
+    proc = spawn(AUDIOCAP, ['--stats', String(process.pid)], { windowsHide: true });
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+  statsProc = proc;
+  let buf = '';
+  proc.stdout.on('data', (d) => {
+    buf += d;
+    let nl;
+    while ((nl = buf.indexOf('\n')) >= 0) {
+      const line = buf.slice(0, nl);
+      buf = buf.slice(nl + 1);
+      let s;
+      try { s = JSON.parse(line); } catch { continue; }
+      const labels = processLabels();
+      s.procs = s.procs.filter((p) => p.name.toLowerCase() !== 'conhost.exe'); // console do Windows dos ajudantes
+      for (const p of s.procs) p.label = labels.get(p.pid) || (p.name === 'audiocap.exe' ? 'Ajudante (som, prioridade, estatísticas)' : p.name);
+      if (!sender.isDestroyed()) sender.send('stats', s);
+    }
+  });
+  proc.on('error', () => {});
+  proc.on('exit', () => { if (statsProc === proc) statsProc = null; });
+  return { ok: true };
+}
+
+function stopStats() {
+  if (statsProc) statsProc.kill();
+  statsProc = null;
+}
+
 function stopAppAudio() {
   if (audioProc) {
     audioProc.stdout.removeAllListeners('data');
@@ -190,6 +244,8 @@ app.whenReady().then(() => {
 
   setPriority('above'); // a página manda a escolha salva assim que abre
   ipcMain.handle('set-priority', (_e, level) => setPriority(level));
+  ipcMain.handle('stats-start', (e) => startStats(e.sender));
+  ipcMain.handle('stats-stop', () => stopStats());
 
   ipcMain.handle('get-version', () => updater.version);
   ipcMain.handle('get-own-pack', () => updater.readCurrentPack());
@@ -213,6 +269,7 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
   stopServer();
   stopAppAudio();
+  stopStats();
   if (boostProc) boostProc.kill();
   app.quit();
 });

@@ -39,6 +39,7 @@
         <p class="version">
           <span id="appVersion"></span>
           <button class="link-btn" id="checkUpdates" type="button">Procurar atualização</button>
+          <button class="link-btn" id="openStatsHome" type="button">Estatísticas</button>
         </p>
       </div>
     </section>
@@ -122,12 +123,14 @@
               </div>
               <p id="watcherInfo" class="hint"></p>
               <p id="encoderInfo" class="hint"></p>
+              <p id="awayInfo" class="hint"></p>
               <p id="noAudio" class="warn" hidden>Transmitindo sem áudio.</p>
               <button class="btn danger wide" id="stopShareBtn">Parar transmissão</button>
             </div>
           </div>
 
           <button class="btn ghost leave" id="leaveBtn">Sair da sala</button>
+          <button class="btn small" id="openStatsRoom" type="button">Estatísticas</button>
         </aside>
       </div>
 
@@ -193,6 +196,32 @@
       </div>
     </section>
   </main>
+
+  <!-- Estatísticas: quanto o app usa de processador e placa de vídeo -->
+  <div id="statsDialog" class="modal global" hidden>
+    <div class="dialog stats" role="dialog" aria-modal="true" aria-labelledby="statsTitle">
+      <div class="dialog-head">
+        <h2 id="statsTitle">Estatísticas</h2>
+        <button class="btn small" id="closeStats" type="button">Fechar</button>
+      </div>
+      <div class="stat-cards">
+        <div class="stat-card"><span>Processador (app)</span><strong id="stCpu">–</strong><span id="stCpuPC"></span></div>
+        <div class="stat-card"><span>Placa de vídeo 3D (app)</span><strong id="stGpu">–</strong><span id="stGpuPC"></span></div>
+        <div class="stat-card"><span>Codificação de vídeo (app)</span><strong id="stEnc">–</strong><span id="stEncPC"></span></div>
+        <div class="stat-card"><span>Decodificação de vídeo (app)</span><strong id="stDec">–</strong><span id="stDecPC"></span></div>
+      </div>
+      <p id="stCodec" class="hint"></p>
+      <div class="stat-scroll">
+        <table class="stat-table">
+          <thead>
+            <tr><th>Processo</th><th>Processador</th><th>Placa 3D</th><th>Codif. vídeo</th><th>Decodif. vídeo</th><th>Memória de vídeo</th></tr>
+          </thead>
+          <tbody id="stRows"></tbody>
+        </table>
+      </div>
+      <p id="stNote" class="hint"></p>
+    </div>
+  </div>
 
   <div id="toast" class="toast" role="status"></div>
   <script src="renderer.js"></script>

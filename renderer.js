@@ -469,6 +469,88 @@ function renderUpdateNotice() {
   });
 }
 
+// ---------- Estatísticas ----------
+// Processador e placa de vídeo do app (e do PC inteiro, que inclui o jogo), atualizados a cada segundo
+let codecTimer = null;
+const pct = (v) => `${(v || 0).toFixed(1).replace('.', ',')}%`;
+
+function openStats() {
+  $('statsDialog').hidden = false;
+  $('stNote').textContent = 'Medindo…';
+  window.api.offStats();
+  window.api.onStats(renderStats);
+  window.api.statsStart();
+  renderCodecInfo();
+  codecTimer = setInterval(renderCodecInfo, 1000);
+  $('closeStats').focus();
+}
+
+function closeStats() {
+  if ($('statsDialog').hidden) return;
+  $('statsDialog').hidden = true;
+  window.api.statsStop();
+  window.api.offStats();
+  clearInterval(codecTimer);
+}
+
+function renderStats(s) {
+  const sum = (get) => s.procs.reduce((t, p) => t + get(p), 0);
+  const gpu = (eng) => (p) => p.gpu[eng] || 0;
+  $('stCpu').textContent = pct(sum((p) => p.cpu));
+  $('stCpuPC').textContent = `PC inteiro: ${pct(s.cpuPC)}`;
+  const cards = [['stGpu', '3D'], ['stEnc', 'VideoEncode'], ['stDec', 'VideoDecode']];
+  for (const [id, eng] of cards) {
+    $(id).textContent = s.gpuAvailable ? pct(Math.min(sum(gpu(eng)), 100)) : '–';
+    $(`${id}PC`).textContent = s.gpuAvailable ? `PC inteiro: ${pct(Math.min(s.gpuPC[eng] || 0, 100))}` : 'o Windows não informou';
+  }
+
+  const rows = [...s.procs].sort((a, b) => (b.cpu + (b.gpu['3D'] || 0)) - (a.cpu + (a.gpu['3D'] || 0)));
+  const body = $('stRows');
+  body.innerHTML = '';
+  for (const p of rows) {
+    const tr = document.createElement('tr');
+    const cells = [p.label, pct(p.cpu), pct(p.gpu['3D']), pct(p.gpu.VideoEncode), pct(p.gpu.VideoDecode), `${p.gpuMemMB} MB`];
+    for (const c of cells) {
+      const td = document.createElement('td');
+      td.textContent = c;
+      tr.append(td);
+    }
+    body.append(tr);
+  }
+  $('stNote').textContent = `Processador em % do PC inteiro (${s.cores} núcleos). "PC inteiro" inclui o jogo e outros programas. Atualiza a cada segundo.`;
+}
+
+// Qual codificador/decodificador o WebRTC está usando de verdade agora
+async function renderCodecInfo() {
+  const parts = [];
+  const describe = async (links, type, implKey, hwKey) => {
+    const seen = [];
+    for (const link of links) {
+      if (link.pc.connectionState !== 'connected') continue;
+      let report;
+      try { report = await link.pc.getStats(); } catch { continue; }
+      report.forEach((r) => {
+        if (r.type !== type || r.kind !== 'video' || !r.codecId) return;
+        const codec = codecName(report, r.codecId) || '?';
+        const size = r.frameWidth ? `, ${r.frameWidth}×${r.frameHeight} a ${Math.round(r.framesPerSecond || 0)} fps` : '';
+        if (!r[implKey]) {
+          // O Chromium só diz qual é o (de)codificador para quem está capturando a tela
+          seen.push(`${codec}${size} (o Chromium não informa o decodificador para quem só assiste)`);
+          return;
+        }
+        const hw = usesHardware(r[hwKey], r[implKey]);
+        seen.push(`${codec} com ${r[implKey]}${hw === true ? ' (placa de vídeo)' : hw === false ? ' (processador)' : ''}${size}`);
+      });
+    }
+    return seen;
+  };
+  const enc = await describe(state.out.values(), 'outbound-rtp', 'encoderImplementation', 'powerEfficientEncoder');
+  const dec = await describe(state.in.values(), 'inbound-rtp', 'decoderImplementation', 'powerEfficientDecoder');
+  if (enc.length) parts.push(`Transmitindo: ${[...new Set(enc)].join(', ')}${enc.length > 1 ? ` (${enc.length} codificações, uma por pessoa)` : ''}.`);
+  if (dec.length) parts.push(`Assistindo: ${[...new Set(dec)].join(', ')}.`);
+  $('stCodec').textContent = parts.join(' ') || 'Sem vídeo agora. Transmita ou assista uma tela para ver qual codificador está em uso.';
+}
+
 // ---------- Painel da sala ----------
 async function renderRoomAddress() {
   const box = $('roomAddress');
@@ -715,8 +797,14 @@ function syncPreview() {
 
 function onVisibility() {
   clearTimeout(hiddenTimer);
-  if (document.hidden) hiddenTimer = setTimeout(() => setIncomingVideo(false), 3000);
-  else setIncomingVideo(true);
+  if (document.hidden) {
+    hiddenTimer = setTimeout(() => setIncomingVideo(false), 3000);
+    away.since = Date.now();
+    away.samples = [];
+  } else {
+    setIncomingVideo(true);
+    awayReport();
+  }
   syncPreview();
 }
 
@@ -959,26 +1047,60 @@ function closeOut(id) {
   renderWatchers();
 }
 
+// Como a transmissão foi enquanto a janela estava escondida (ex.: jogo em tela cheia). Ao voltar,
+// o painel diz o que limitou: captura lenta (placa de vídeo ocupada), processador ou internet.
+const away = { since: 0, samples: [] };
+
+function formatDuration(secs) {
+  return secs < 120 ? `${Math.round(secs)} s` : `${Math.round(secs / 60)} min`;
+}
+
+function awayReport() {
+  const s = away.samples;
+  away.samples = [];
+  const secs = (Date.now() - away.since) / 1000;
+  if (!state.sharing || s.length < 3 || secs < 10) return;
+  const avg = (k) => s.reduce((t, x) => t + x[k], 0) / s.length;
+  const share = (l) => s.filter((x) => x.limit === l).length / s.length;
+  const fps = QUALITY[state.quality].fps;
+  const measured = s.some((x) => x.captureFps > 0);
+  const captured = measured ? avg('captureFps') : avg('sentFps');
+  const why = share('cpu') > 0.3 ? 'O processador ficou no limite.'
+    : share('bandwidth') > 0.3 ? 'A internet limitou o envio.'
+    : captured < fps * 0.7 ? 'A captura da tela entregou poucos quadros: se o jogo estava rodando, a placa de vídeo estava ocupada ou a janela do jogo não deixa ser capturada em tela cheia. Limite o FPS do jogo ou use o modo janela sem bordas.'
+    : 'Nada limitou a transmissão.';
+  $('awayInfo').textContent = `Enquanto o app estava escondido (${formatDuration(secs)}): captura a ${Math.round(captured)} de ${fps} fps, `
+    + `enviando ${Math.round(avg('sentFps'))} fps e ${avg('mbps').toFixed(1)} Mbps. ${why}`;
+  console.log('[diagnóstico]', $('awayInfo').textContent, s);
+}
+
 // Mostra para quem transmite qual codec está em uso e se a placa de vídeo está codificando
 function startOutStats() {
   stopOutStats();
-  $('encoderInfo').textContent = '';
   state.outStatsTimer = setInterval(async () => {
-    if (document.hidden) return; // ninguém está vendo o painel
     const links = [...state.out.values()].filter((l) => l.pc.connectionState === 'connected' && !l.videoOff);
-    if (!links.length) { $('encoderInfo').textContent = ''; return; }
-    let codec = '', hw = null, limit = 'none';
+    if (!links.length) { if (!document.hidden) $('encoderInfo').textContent = ''; return; }
+    let codec = '', hw = null, limit = 'none', captureFps = 0, sentFps = 0, mbps = 0;
     for (const link of links) {
       let report;
       try { report = await link.pc.getStats(); } catch { continue; }
       report.forEach((r) => {
+        if (r.type === 'media-source' && r.kind === 'video') captureFps = Math.max(captureFps, r.framesPerSecond || 0);
         if (r.type !== 'outbound-rtp' || r.kind !== 'video') return;
         codec = codecName(report, r.codecId) || codec;
         const h = usesHardware(r.powerEfficientEncoder, r.encoderImplementation);
         if (h !== null) hw = hw === null ? h : hw && h;
         if (r.qualityLimitationReason === 'cpu') limit = 'cpu';
         else if (r.qualityLimitationReason === 'bandwidth' && limit !== 'cpu') limit = 'bandwidth';
+        sentFps += (r.framesPerSecond || 0) / links.length;
+        if (link.lastTs) mbps += ((r.bytesSent - link.lastBytes) * 8) / (r.timestamp - link.lastTs) / 1000;
+        link.lastBytes = r.bytesSent;
+        link.lastTs = r.timestamp;
       });
+    }
+    if (document.hidden) {
+      away.samples.push({ captureFps, sentFps, mbps, limit }); // ninguém está vendo o painel agora
+      return;
     }
     if (!codec) return;
     const where = hw === true ? 'pela placa de vídeo' : hw === false ? 'pelo processador' : '';
@@ -994,6 +1116,8 @@ function stopOutStats() {
   clearInterval(state.outStatsTimer);
   state.outStatsTimer = null;
   $('encoderInfo').textContent = '';
+  $('awayInfo').textContent = '';
+  away.samples = [];
 }
 
 function renderShareBox() {
@@ -1065,9 +1189,13 @@ $('startBtn').onclick = startSharing;
 $('refreshSources').onclick = loadSources;
 $('audioMode').addEventListener('change', syncAudioMode);
 $('refreshApps').onclick = loadAudioApps;
+$('openStatsHome').onclick = openStats;
+$('openStatsRoom').onclick = openStats;
+$('closeStats').onclick = closeStats;
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
-  if (!$('closeDialog').hidden) closeCloseDialog();
+  if (!$('statsDialog').hidden) closeStats();
+  else if (!$('closeDialog').hidden) closeCloseDialog();
   else if (!$('shareDialog').hidden) closeShareDialog();
 });
 document.addEventListener('fullscreenchange', () => {
