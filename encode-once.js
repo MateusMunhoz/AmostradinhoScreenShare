@@ -554,4 +554,5 @@ function refreshTileStream(link) {
   const video = link.tile.video;
   video.srcObject = new MediaStream(link.tracks);
   video.play().catch(() => {});
+  if (state.pip && state.in.get(state.pip.id) === link) setPipStream(state.pip.id); // a janela flutuante acompanha
 }

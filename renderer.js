@@ -86,7 +86,8 @@ const ICON = {
   close: svg('M18 6 6 18M6 6l12 12'),
   refresh: svg('M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6'),
   stats: svg('M22 12h-4l-3 9L9 3l-3 9H2'),                 // pulso: estatísticas
-  focus: svg('M3 5h18v14H3zM7 9h10v6H7z'),                  // um quadro dentro do outro: destacar
+  focus: svg('M3 5h18v14H3zM7 9h10v6H7z'),
+  pip: svg('M3 5h18v14H3zM12 11h7v6h-7z'),                   // janelinha no canto: janela flutuante                  // um quadro dentro do outro: destacar
   grid: svg('M3 3h8v8H3zM13 3h8v8h-8zM3 13h8v8H3zM13 13h8v8h-8z'), // grade: mostrar todas
 };
 
@@ -801,6 +802,10 @@ function createTile(id, name) {
     syncMute();
   };
   syncMute();
+  const pipBtn = document.createElement('button');
+  pipBtn.className = 'btn icon';
+  setIcon(pipBtn, 'pip', 'Abrir em janela flutuante (fica por cima do jogo)');
+  pipBtn.onclick = () => togglePip(id);
   const focusBtn = document.createElement('button');
   focusBtn.className = 'btn icon';
   focusBtn.hidden = true; // só com 2 ou mais transmissões abertas
@@ -813,11 +818,11 @@ function createTile(id, name) {
   close.className = 'btn icon';
   setIcon(close, 'close', 'Parar de assistir');
   close.onclick = () => stopWatching(id);
-  bar.append(stats, mute, vol, focusBtn, fs, close);
+  bar.append(stats, mute, vol, pipBtn, focusBtn, fs, close);
   el.append(video, overlay, label, bar);
   el.addEventListener('dblclick', (e) => { if (!bar.contains(e.target)) toggleFullscreen(el); });
   $('tiles').append(el);
-  return { el, video, overlay, stats, fs, focusBtn, syncMute, name, paused: false, mutedBefore: false };
+  return { el, video, overlay, stats, fs, focusBtn, pipBtn, syncMute, name, paused: false, mutedBefore: false };
 }
 
 // Mostra a barra do vídeo por alguns segundos, para quem nunca passou o mouse em cima descobrir os botões
@@ -868,6 +873,7 @@ function stopWatching(id, notify = true) {
   const link = state.in.get(id);
   if (!link) return;
   if (notify) sendSignal(id, { side: 'viewer', unsubscribe: true });
+  if (state.pip && state.pip.id === id) closePip();
   if (document.fullscreenElement === link.tile.el) document.exitFullscreen().catch(() => {});
   closeOnceReceiver(link);
   link.pc.close();
@@ -879,6 +885,102 @@ function stopWatching(id, notify = true) {
   renderMembers();
   updateStage();
 }
+
+// ---------- Janela flutuante ----------
+// A página abre a janela (about:blank, mesmo processo) e monta nela um <video> com o mesmo MediaStream do
+// tile: nada é decodificado de novo. O processo principal cuida de deixar a janela por cima, sem foco e,
+// travada, com o clique atravessando.
+function togglePip(id) {
+  if (state.pip && state.pip.id === id) return closePip();
+  if (state.pip && !state.pip.win.closed) return setPipStream(id);
+  const win = window.open('', 'tela-pip');
+  if (!win) return toast('Não foi possível abrir a janela flutuante.', 'error');
+  state.pip = buildPip(win);
+  setPipStream(id);
+}
+
+function pipButton(d, text, onClick, primary) {
+  const b = d.createElement('button');
+  b.type = 'button';
+  b.textContent = text;
+  Object.assign(b.style, {
+    font: 'inherit', fontSize: '12px', fontWeight: '600', height: '28px', padding: '0 10px', borderRadius: '6px', cursor: 'pointer',
+    border: '1px solid ' + (primary ? '#ededed' : '#2e2e2e'), background: primary ? '#ededed' : '#191919', color: primary ? '#111111' : '#ededed',
+  });
+  b.style.setProperty('-webkit-app-region', 'no-drag');
+  b.onclick = onClick;
+  return b;
+}
+
+// Tudo por CSSOM: a página herda a regra de segurança do app, que não deixa estilo escrito em HTML
+function buildPip(win) {
+  const d = win.document;
+  d.documentElement.style.height = '100%';
+  Object.assign(d.body.style, {
+    margin: '0', height: '100%', overflow: 'hidden', background: '#000000', color: '#ededed', userSelect: 'none',
+    fontFamily: '"Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif',
+  });
+  const video = d.createElement('video');
+  video.autoplay = true;
+  video.muted = true; // o som continua saindo pelo app, com o volume de cada tela
+  video.playsInline = true;
+  Object.assign(video.style, { position: 'fixed', inset: '0', width: '100%', height: '100%', objectFit: 'contain' });
+
+  // Modo de ajuste: borda, nome, botões e a dica; a janela inteira arrasta
+  const edit = d.createElement('div');
+  Object.assign(edit.style, {
+    position: 'fixed', inset: '0', boxSizing: 'border-box', border: '2px solid #8ab4ff', padding: '8px',
+    display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '8px',
+    background: 'rgba(0, 0, 0, .35)', fontSize: '12px', cursor: 'move',
+  });
+  edit.style.setProperty('-webkit-app-region', 'drag');
+  const top = d.createElement('div');
+  Object.assign(top.style, { display: 'flex', alignItems: 'center', gap: '6px' });
+  const name = d.createElement('span');
+  Object.assign(name.style, { flex: '1', fontSize: '13px', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textShadow: '0 1px 2px #000' });
+  top.append(name, pipButton(d, 'Travar', () => window.api.pipSetEdit(false), true), pipButton(d, 'Fechar', () => closePip(), false));
+  const hint = d.createElement('span');
+  hint.textContent = 'Arraste para mover · puxe as bordas para redimensionar · Ctrl+Shift+E trava e destrava, até de dentro do jogo';
+  Object.assign(hint.style, { lineHeight: '1.35', textShadow: '0 1px 2px #000' });
+  edit.append(top, hint);
+  d.body.append(video, edit);
+  return { win, id: null, video, edit, name };
+}
+
+function setPipStream(id) {
+  const link = state.in.get(id);
+  const p = state.pip;
+  if (!link || !p || p.win.closed) return;
+  p.id = id;
+  p.video.srcObject = link.tile.video.srcObject;
+  p.video.play().catch(() => {});
+  p.name.textContent = link.tile.name;
+  p.win.document.title = `${link.tile.name} · Tela P2P`;
+  syncIncomingVideo();
+  renderPipButtons();
+}
+
+function closePip() {
+  const p = state.pip;
+  state.pip = null;
+  if (p && !p.win.closed) p.win.close();
+  syncIncomingVideo();
+  renderPipButtons();
+}
+
+function renderPipButtons() {
+  for (const [id, link] of state.in) {
+    const on = !!state.pip && state.pip.id === id;
+    setIcon(link.tile.pipBtn, 'pip', on ? 'Fechar a janela flutuante' : 'Abrir em janela flutuante (fica por cima do jogo)');
+    link.tile.pipBtn.classList.toggle('on', on);
+  }
+}
+
+window.api.onPip((m) => {
+  if (m.type === 'edit' && state.pip && !state.pip.win.closed) state.pip.edit.style.display = m.on ? 'flex' : 'none';
+  else if (m.type === 'closed' && state.pip) { state.pip = null; syncIncomingVideo(); renderPipButtons(); }
+  else if (m.type === 'shortcut-busy') toast('Outro programa já usa Ctrl+Shift+E. Trave pelo botão Travar da janela; para ajustar de novo, feche e abra a janela flutuante pelo botão do vídeo.', 'error');
+});
 
 // ---------- Destaque ----------
 // Uma transmissão ocupa toda a área de vídeo e as outras ficam pausadas só para mim: quem
@@ -1008,7 +1110,9 @@ function setIncomingVideo(on) {
 // Recebe vídeo de quem estiver na tela: janela do app visível e (sem destaque, ou em destaque)
 function syncIncomingVideo() {
   for (const [id, link] of state.in) {
-    const on = appVisible && (!state.focus || state.focus === id);
+    // Na janela flutuante, o vídeo continua vindo mesmo com o app escondido (é para ver enquanto joga)
+    const inPip = !!state.pip && state.pip.id === id;
+    const on = inPip || (appVisible && (!state.focus || state.focus === id));
     if (link.videoOn === on) continue;
     link.videoOn = on;
     sendSignal(id, { side: 'viewer', video: on });

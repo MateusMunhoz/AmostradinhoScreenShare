@@ -211,6 +211,7 @@ struct Options {
   POINT monitorPoint{};
   bool monitor = false;
   bool dda = false;
+  bool border = false;  // --border 1: deixa a borda amarela (testes)
   UINT maxW = 1920, maxH = 1080, fps = 60, bitrate = 7000000;
 };
 
@@ -314,8 +315,10 @@ static int run(const Options &o) {
     session = pool.CreateCaptureSession(item);
     try { session.IsCursorCaptureEnabled(true); } catch (...) {}
     // Sem a borda amarela (Windows 11): pede a permissão e desliga a borda
-    try { GraphicsCaptureAccess::RequestAccessAsync(GraphicsCaptureAccessKind::Borderless).get(); } catch (...) {}
-    try { session.IsBorderRequired(false); } catch (...) {}
+    if (!o.border) {
+      try { GraphicsCaptureAccess::RequestAccessAsync(GraphicsCaptureAccessKind::Borderless).get(); } catch (...) {}
+      try { session.IsBorderRequired(false); } catch (...) {}
+    }
     try {
       if (winrt::Windows::Foundation::Metadata::ApiInformation::IsPropertyPresent(L"Windows.Graphics.Capture.GraphicsCaptureSession", L"MinUpdateInterval"))
         session.MinUpdateInterval(winrt::Windows::Foundation::TimeSpan{ 10'000'000 / o.fps });
@@ -638,6 +641,7 @@ int main() {
     else if (wcscmp(k, L"--fps") == 0) o.fps = wcstoul(v, nullptr, 10);
     else if (wcscmp(k, L"--bitrate") == 0) o.bitrate = wcstoul(v, nullptr, 10);
     else if (wcscmp(k, L"--dda") == 0) o.dda = wcstoul(v, nullptr, 10) != 0;
+    else if (wcscmp(k, L"--border") == 0) o.border = wcstoul(v, nullptr, 10) != 0;
   }
   if ((!o.window && !o.monitor) || o.fps < 1 || o.fps > 240 || o.maxW < 16 || o.maxH < 16 || o.bitrate < 100000) {
     logLine("uso: videocap.exe --probe | (--monitor X,Y | --window HWND) [--width W --height H --fps F --bitrate B]");

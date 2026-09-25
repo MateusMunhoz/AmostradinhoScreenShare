@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, desktopCapturer, session, screen } = require('electron');
+const { app, BrowserWindow, ipcMain, desktopCapturer, session, screen, globalShortcut } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -307,6 +307,64 @@ function cleanOldUpdates() {
   }
 }
 
+// ---------- Janela flutuante (picture in picture) ----------
+// Uma transmissão numa janela pequena, sempre por cima (inclusive de jogo em tela cheia sem bordas).
+// Travada, o mouse passa por ela (o clique vai para o jogo) e ela nunca pega o foco. No modo de ajuste
+// dá para arrastar e redimensionar. Ctrl+Shift+E troca entre os dois, de dentro do jogo.
+const PIP_KEY = 'CommandOrControl+Shift+E';
+let mainWin = null;
+let pip = null;
+let pipEdit = false;
+const pipFile = () => path.join(app.getPath('userData'), 'janela-flutuante.json');
+
+// Última posição e tamanho, se ainda couber numa das telas; senão, canto de baixo à direita
+function pipBounds() {
+  try {
+    const b = JSON.parse(fs.readFileSync(pipFile(), 'utf8'));
+    const ok = ['x', 'y', 'width', 'height'].every((k) => Number.isFinite(b[k])) && b.width >= 192 && b.height >= 108;
+    const visible = ok && screen.getAllDisplays().some(({ workArea: w }) =>
+      b.x < w.x + w.width - 40 && b.x + b.width > w.x + 40 && b.y < w.y + w.height - 40 && b.y + b.height > w.y + 40);
+    if (visible) return { x: b.x, y: b.y, width: b.width, height: b.height };
+  } catch {}
+  const wa = screen.getPrimaryDisplay().workArea;
+  return { width: 480, height: 270, x: wa.x + wa.width - 480 - 24, y: wa.y + wa.height - 270 - 24 };
+}
+
+function sendMain(msg) {
+  if (mainWin && !mainWin.isDestroyed()) mainWin.webContents.send('pip', msg);
+}
+
+function setPipEdit(on) {
+  if (!pip || pip.isDestroyed()) return;
+  pipEdit = !!on;
+  pip.setIgnoreMouseEvents(!pipEdit); // travada: o clique atravessa para o que estiver embaixo
+  sendMain({ type: 'edit', on: pipEdit });
+}
+
+function setupPip(child) {
+  pip = child;
+  child.setAlwaysOnTop(true, 'screen-saver');
+  child.setAspectRatio(16 / 9);
+  let saveTimer = null;
+  const save = () => {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      if (!child.isDestroyed()) fs.writeFile(pipFile(), JSON.stringify(child.getBounds()), () => {});
+    }, 400);
+  };
+  child.on('moved', save);
+  child.on('resized', save);
+  if (!globalShortcut.isRegistered(PIP_KEY) && !globalShortcut.register(PIP_KEY, () => setPipEdit(!pipEdit))) {
+    sendMain({ type: 'shortcut-busy' });
+  }
+  child.on('closed', () => {
+    if (pip === child) pip = null;
+    globalShortcut.unregister(PIP_KEY);
+    sendMain({ type: 'closed' });
+  });
+  setPipEdit(true); // abre no modo de ajuste: posicione e trave
+}
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1200,
@@ -326,6 +384,24 @@ function createWindow() {
     updater.started();
     cleanOldUpdates();
   });
+  mainWin = win;
+  // A única janela que a página pode abrir é a flutuante; ela nasce sem moldura, por cima e sem foco
+  win.webContents.setWindowOpenHandler(({ frameName }) => {
+    if (frameName !== 'tela-pip') return { action: 'deny' };
+    return {
+      action: 'allow',
+      overrideBrowserWindowOptions: {
+        ...pipBounds(), minWidth: 192, minHeight: 108,
+        frame: false, alwaysOnTop: true, skipTaskbar: true, focusable: false, resizable: true,
+        minimizable: false, maximizable: false, fullscreenable: false, hasShadow: false,
+        backgroundColor: '#000000', title: 'Tela P2P · janela flutuante',
+      },
+    };
+  });
+  win.webContents.on('did-create-window', (child, { frameName }) => {
+    if (frameName === 'tela-pip') setupPip(child);
+  });
+  win.on('closed', () => { if (pip && !pip.isDestroyed()) pip.close(); });
   win.loadFile(path.join(__dirname, 'index.html'));
 }
 
@@ -397,6 +473,7 @@ app.whenReady().then(() => {
   ipcMain.handle('github-check', () => github.check());
   ipcMain.handle('github-install', () => github.install(updater));
   ipcMain.handle('open-github', (_e, url) => github.openPage(url));
+  ipcMain.handle('pip-edit', (_e, on) => setPipEdit(on));
   ipcMain.handle('restart-app', () => {
     stopServer();
     stopAppAudio();
@@ -410,6 +487,8 @@ app.whenReady().then(() => {
 
   createWindow();
 });
+
+app.on('will-quit', () => globalShortcut.unregisterAll());
 
 app.on('window-all-closed', () => {
   stopServer();

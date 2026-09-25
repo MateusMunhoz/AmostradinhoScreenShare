@@ -7,6 +7,11 @@ contextBridge.exposeInMainWorld('api', {
   startAppAudio: (exes) => ipcRenderer.invoke('start-app-audio', exes),
   stopAppAudio: () => ipcRenderer.invoke('stop-app-audio'),
   onPcm: (cb) => ipcRenderer.on('pcm', (_e, data) => cb(data)),
+  pipSetEdit: (on) => ipcRenderer.invoke('pip-edit', on),
+  onPip: (cb) => {
+    ipcRenderer.removeAllListeners('pip');
+    ipcRenderer.on('pip', (_e, msg) => cb(msg));
+  },
   videoCapProbe: () => ipcRenderer.invoke('videocap-probe'),
   videoCapStart: (opts) => ipcRenderer.invoke('videocap-start', opts),
   videoCapStop: () => ipcRenderer.invoke('videocap-stop'),
