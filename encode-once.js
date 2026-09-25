@@ -1,17 +1,23 @@
 'use strict';
 
 // Modo experimental "codificar uma vez só": em vez de uma faixa de vídeo WebRTC por pessoa
-// (um codificador por conexão), o vídeo é codificado uma vez com WebCodecs, pela placa de vídeo
-// quando der, e os mesmos pedaços vão para todos por um canal de dados na conexão de cada um.
-// O som continua como faixa WebRTC. Usa state, QUALITY, sendSignal, preferH264 e toast do renderer.js.
+// (um codificador por conexão), o vídeo é codificado uma vez e os mesmos pedaços vão para todos
+// por um canal de dados na conexão de cada um. O som continua como faixa WebRTC.
+// Dois motores, nesta ordem:
+//   1. NVENC direto (videocap.exe): captura do Windows + NVENC, sem a imagem sair da placa NVIDIA.
+//   2. WebCodecs: captura do Chromium, codificação pela placa (qualquer marca) ou pelo processador.
+// Se os dois falharem, cada pessoa volta a ter a própria faixa WebRTC (modo normal).
+// Usa state, QUALITY, sendSignal, preferH264, toast e stopSharing do renderer.js.
 
 const PART_SIZE = 64 * 1024 - 32;   // limite seguro de mensagem do canal de dados
 const HEADER = 17;                  // [tipo 1][seq 4][timestamp 8][parte 2][total 2]
-const KEY_INTERVAL = 4000;          // quadro-chave periódico (ms)
+const KEY_INTERVAL = 4000;          // quadro-chave periódico do WebCodecs (ms)
 const KEY_REQUEST_GAP = 500;        // no máximo 2 pedidos de quadro-chave por segundo
+const NVENC_CODEC = 'avc1.64002a';  // H.264 High do videocap
 
 const once = {
   active: false,
+  engine: '',        // 'nvenc' ou 'webcodecs'
   encoder: null,
   reader: null,
   base: null,        // { codec, hardwareAcceleration } em uso
@@ -22,6 +28,7 @@ const once = {
   lastKey: 0,
   keyWanted: false,
   lastKeyRequest: 0,
+  nvencRunning: false,   // o videocap está codificando (e não em pausa)
   // contadores para o painel e as estatísticas
   captured: 0,
   encoded: 0,
@@ -58,24 +65,128 @@ async function pickEncoderConfig(q, w, h, softwareOnly = false) {
   return null;
 }
 
+// Qual motor o modo "uma vez só" vai usar neste PC: { engine, hardware } ou null
+let onceSupportCache = null;
+async function onceSupport() {
+  if (!onceSupportCache) {
+    onceSupportCache = (async () => {
+      try {
+        const probe = await window.api.videoCapProbe();
+        if (probe && probe.nvenc) return { engine: 'nvenc', hardware: true, gpu: probe.gpu };
+      } catch {}
+      const q = QUALITY['1080p60'];
+      const pick = await pickEncoderConfig(q, q.w, q.h);
+      return pick ? { engine: 'webcodecs', hardware: pick.hardware } : null;
+    })();
+  }
+  return onceSupportCache;
+}
+
+function engineName() {
+  return once.engine === 'nvenc' ? 'NVENC direto' : 'WebCodecs';
+}
+
 // ---------- Quem transmite ----------
 function onceLinks() {
   return [...state.out].filter(([, l]) => l.dc);
 }
 
-// Pedido de quem acabou de entrar, voltou ou perdeu o decodificador: sempre atende
-function requestKey() {
-  once.keyWanted = true;
+function configMessage() {
+  return JSON.stringify({ config: { codec: once.base.codec, width: once.width, height: once.height } });
 }
 
+function sendConfigToAll() {
+  const msg = configMessage();
+  for (const [, l] of onceLinks()) if (l.dc.readyState === 'open') l.dc.send(msg);
+}
+
+// Pedido de quem acabou de entrar, voltou ou perdeu o decodificador: sempre atende
+function requestKey() {
+  if (once.engine === 'nvenc') window.api.videoCapCmd('key');
+  else once.keyWanted = true;
+}
+
+// Alguém precisa de vídeo agora? (quem assiste com a janela aberta, ou a prévia)
+function onceWanted() {
+  return onceLinks().some(([, l]) => l.dc.readyState === 'open' && !l.videoOff) || !!ownPreview.link;
+}
+
+// O NVENC fica em pausa enquanto ninguém precisa do vídeo
+function onceViewersChanged() {
+  if (!once.active || once.engine !== 'nvenc') return;
+  const want = onceWanted();
+  if (want === once.nvencRunning) return;
+  once.nvencRunning = want;
+  window.api.videoCapCmd(want ? 'resume' : 'pause');
+}
+
+// ---- Motor 1: NVENC direto ----
+async function startNvenc(sourceId) {
+  const q = QUALITY[state.quality];
+  window.api.onVideoCap(onNvencChunk, onNvencStats, onNvencEnded);
+  let res;
+  try {
+    res = await window.api.videoCapStart({ sourceId, w: q.w, h: q.h, fps: q.fps, bitrate: q.bitrate });
+  } catch (e) {
+    res = { ok: false, error: e.message };
+  }
+  if (!res.ok) {
+    window.api.offVideoCap();
+    console.warn('[1x] NVENC direto não começou:', res.error);
+    return false;
+  }
+  Object.assign(once, {
+    active: true, engine: 'nvenc', base: { codec: NVENC_CODEC }, hardware: true, width: res.width, height: res.height,
+    seq: 0, captured: 0, encoded: 0, dropped: 0, sentBytes: 0, nvencRunning: true,
+  });
+  onceViewersChanged(); // ninguém assistindo ainda: pausa
+  return true;
+}
+
+function onNvencChunk(c) {
+  if (!once.active || once.engine !== 'nvenc') return;
+  broadcastChunk({ key: c.key, timestamp: c.ts, data: c.data });
+}
+
+function onNvencStats(s) {
+  if (once.engine !== 'nvenc') return;
+  once.captured = s.captured;
+  once.encoded = s.encoded;
+}
+
+function onNvencEnded(info) {
+  if (!once.active || once.engine !== 'nvenc') return;
+  window.api.offVideoCap();
+  if (info.windowClosed) return stopSharing('A captura foi encerrada (a janela foi fechada?).');
+  console.warn('[1x] NVENC direto parou:', info.error);
+  switchToWebCodecs('O NVENC direto parou.');
+}
+
+// O NVENC parou no meio: continua uma vez só pelo WebCodecs, com a captura do Chromium
+async function switchToWebCodecs(why) {
+  once.active = false;
+  once.engine = '';
+  const track = await ensureChromeVideo();
+  if (track && state.sharing && (await startOnceEncoder(track))) {
+    sendConfigToAll();
+    for (const [, l] of onceLinks()) l.needKey = true;
+    requestKey();
+    syncPreview();
+    return toast(`${why} A transmissão continua pelo WebCodecs.`, 'error');
+  }
+  if (!state.sharing) return;
+  fallbackToTracks();
+  toast(`${why} A transmissão continua no modo normal (uma codificação por pessoa).`, 'error');
+}
+
+// ---- Motor 2: WebCodecs ----
 function configureEncoder(w, h) {
   const q = QUALITY[state.quality];
   once.encoder.configure(encoderConfig(once.base, q, w, h));
   once.width = even(w);
   once.height = even(h);
   once.keyWanted = true;
-  const msg = JSON.stringify({ config: { codec: once.base.codec, width: once.width, height: once.height } });
-  for (const [, l] of onceLinks()) if (l.dc.readyState === 'open') l.dc.send(msg);
+  sendConfigToAll();
 }
 
 function newEncoder() {
@@ -89,13 +200,14 @@ async function startOnceEncoder(track) {
   const h = s.height || q.h;
   const pick = await pickEncoderConfig(q, w, h);
   if (!pick) return false;
-  Object.assign(once, { base: pick.base, hardware: pick.hardware, seq: 0, lastKey: 0, captured: 0, encoded: 0, dropped: 0, sentBytes: 0 });
+  Object.assign(once, { engine: 'webcodecs', base: pick.base, hardware: pick.hardware, lastKey: 0 });
   once.encoder = newEncoder();
   try {
     configureEncoder(w, h);
   } catch (e) {
     console.warn(e);
     once.encoder = null;
+    once.engine = '';
     return false;
   }
   once.active = true;
@@ -119,8 +231,7 @@ function encodeFrame(frame) {
   once.captured++;
   const enc = once.encoder;
   if (!enc || enc.state !== 'configured') return;
-  // Ninguém com vídeo ligado no modo novo: não codifica à toa
-  if (!onceLinks().some(([, l]) => l.dc.readyState === 'open' && !l.videoOff)) return;
+  if (!onceWanted()) return; // ninguém precisa do vídeo: não codifica à toa
   // A placa/processador não está dando conta: descarta em vez de acumular atraso
   if (enc.encodeQueueSize > 2) { once.dropped++; return; }
   if (even(frame.displayWidth) !== once.width || even(frame.displayHeight) !== once.height) {
@@ -136,7 +247,35 @@ function onChunk(chunk) {
   once.encoded++;
   const data = new Uint8Array(chunk.byteLength);
   chunk.copyTo(data);
-  const key = chunk.type === 'key';
+  broadcastChunk({ key: chunk.type === 'key', timestamp: chunk.timestamp, data });
+}
+
+let encoderRetried = false;
+async function onEncoderError(err) {
+  console.warn('[1x] erro no codificador:', err);
+  if (!once.active || once.engine !== 'webcodecs') return;
+  const q = QUALITY[state.quality];
+  // A placa de vídeo parou de codificar: tenta pelo processador, ainda uma vez só
+  if (!encoderRetried) {
+    encoderRetried = true;
+    const pick = await pickEncoderConfig(q, once.width, once.height, true);
+    if (pick && once.active) {
+      try {
+        once.base = pick.base;
+        once.hardware = false;
+        once.encoder = newEncoder();
+        configureEncoder(once.width, once.height);
+        return;
+      } catch (e) { console.warn(e); }
+    }
+  }
+  fallbackToTracks();
+  toast('A codificação única falhou. A transmissão continua no modo normal (uma codificação por pessoa).', 'error');
+}
+
+// ---- Envio: o mesmo quadro para todos ----
+function broadcastChunk({ key, timestamp, data }) {
+  if (ownPreview.link) feedPreview(key, timestamp, data);
   const seq = once.seq = (once.seq + 1) >>> 0;
   const total = Math.max(1, Math.ceil(data.length / PART_SIZE));
   const msgs = [];
@@ -146,7 +285,7 @@ function onChunk(chunk) {
     const v = new DataView(buf);
     v.setUint8(0, key ? 1 : 0);
     v.setUint32(1, seq);
-    v.setFloat64(5, chunk.timestamp);
+    v.setFloat64(5, timestamp);
     v.setUint16(13, part);
     v.setUint16(15, total);
     new Uint8Array(buf, HEADER).set(slice);
@@ -190,9 +329,11 @@ function setupOnceSender(link) {
   link.needKey = true;
   link.dc.binaryType = 'arraybuffer';
   link.dc.onopen = () => {
-    link.dc.send(JSON.stringify({ config: { codec: once.base.codec, width: once.width, height: once.height } }));
+    link.dc.send(configMessage());
+    onceViewersChanged();
     requestKey();
   };
+  link.dc.onclose = () => onceViewersChanged();
   link.dc.onmessage = (e) => {
     if (typeof e.data !== 'string') return;
     let m;
@@ -201,42 +342,22 @@ function setupOnceSender(link) {
   };
 }
 
-// Vídeo da pessoa voltou (janela restaurada): quadro-chave para aparecer na hora
-function onceVideoResumed(link) {
+// A janela de quem assiste foi minimizada ou voltou
+function onceVideoChanged(link) {
   if (!link.dc) return;
-  link.needKey = true;
+  onceViewersChanged();
+  if (link.videoOff) return;
+  link.needKey = true; // voltou: quadro-chave para o vídeo aparecer na hora
   requestKey();
 }
 
-let encoderRetried = false;
-async function onEncoderError(err) {
-  console.warn('[1x] erro no codificador:', err);
-  if (!once.active) return;
-  const q = QUALITY[state.quality];
-  // A placa de vídeo parou de codificar: tenta pelo processador, ainda uma vez só
-  if (!encoderRetried) {
-    encoderRetried = true;
-    const pick = await pickEncoderConfig(q, once.width, once.height, true);
-    if (pick && once.active) {
-      try {
-        once.base = pick.base;
-        once.hardware = false;
-        once.encoder = newEncoder();
-        configureEncoder(once.width, once.height);
-        return;
-      } catch (e) { console.warn(e); }
-    }
-  }
-  fallbackToTracks();
-  toast('A codificação única falhou. A transmissão continua no modo normal (uma codificação por pessoa).', 'error');
-}
-
 // Volta todo mundo para o modo normal: uma faixa de vídeo WebRTC em cada conexão
-function fallbackToTracks() {
-  const video = state.stream && state.stream.getVideoTracks()[0];
+async function fallbackToTracks() {
   stopOnceEncoder();
+  const video = await ensureChromeVideo();
   for (const [id, link] of state.out) {
     if (!link.dc) continue;
+    link.dc.onclose = null;
     link.dc.close();
     link.dc = null;
     if (!video) continue;
@@ -250,7 +371,13 @@ function fallbackToTracks() {
 }
 
 function stopOnceEncoder() {
+  if (once.engine === 'nvenc') {
+    window.api.offVideoCap();
+    window.api.videoCapStop();
+  }
   once.active = false;
+  once.engine = '';
+  once.nvencRunning = false;
   encoderRetried = false;
   const reader = once.reader;
   once.reader = null;
@@ -259,6 +386,35 @@ function stopOnceEncoder() {
     try { once.encoder.close(); } catch {}
   }
   once.encoder = null;
+  stopPreview();
+}
+
+// ---- Prévia da própria tela no modo NVENC (não há faixa do Chromium): decodifica o próprio vídeo ----
+const ownPreview = { link: null };
+
+function startPreview(videoEl) {
+  if (ownPreview.link) return;
+  const link = { tracks: [], tile: { video: videoEl }, once: null };
+  const fakeChannel = { readyState: 'open', send: () => requestKey() }; // o único pedido é "quadro-chave"
+  ownPreview.link = link;
+  setupOnceReceiver(link, fakeChannel);
+  configureDecoder(link, once.base.codec);
+  onceViewersChanged();
+  requestKey();
+}
+
+function feedPreview(key, ts, data) {
+  const r = ownPreview.link && ownPreview.link.once;
+  if (r) decodeFrame(ownPreview.link, { key, ts, parts: [data], size: data.length });
+}
+
+function stopPreview() {
+  const link = ownPreview.link;
+  if (!link) return;
+  ownPreview.link = null;
+  closeOnceReceiver(link);
+  link.tile.video.srcObject = null;
+  onceViewersChanged();
 }
 
 // ---------- Quem assiste ----------

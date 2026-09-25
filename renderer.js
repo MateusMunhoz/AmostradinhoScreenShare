@@ -306,7 +306,7 @@ function handleSignal(from, data) {
     if (!link) return;
     if (typeof data.video === 'boolean') {
       link.videoOff = !data.video;
-      if (data.video) onceVideoResumed(link);
+      onceVideoChanged(link);
       renderWatchers();
       link.chain = link.chain.then(() => applyBitrate(link)).catch(console.error);
       return;
@@ -550,7 +550,7 @@ async function renderCodecInfo() {
   const where = (h) => (h ? 'placa de vídeo' : 'processador');
   const onceOut = [...state.out.values()].filter((l) => l.dc && l.dc.readyState === 'open').length;
   if (once.active && onceOut) {
-    parts.push(`Transmitindo: H.264 com WebCodecs (${where(once.hardware)}), ${once.width}×${once.height}, 1 codificação para ${onceOut} ${onceOut > 1 ? 'pessoas' : 'pessoa'}.`);
+    parts.push(`Transmitindo: H.264 com ${engineName()} (${where(once.hardware)}), ${once.width}×${once.height}, 1 codificação para ${onceOut} ${onceOut > 1 ? 'pessoas' : 'pessoa'}.`);
   }
   for (const link of state.in.values()) {
     if (link.once?.decoder) dec.push(`H.264 com WebCodecs (${where(link.once.hardware)}), ${link.once.width}×${link.once.height}`);
@@ -813,8 +813,16 @@ function setIncomingVideo(on) {
 function syncPreview() {
   const preview = $('myPreview');
   const active = state.sharing && document.hasFocus() && !document.hidden;
-  const src = active ? state.stream : null;
-  if (preview.srcObject !== src) preview.srcObject = src;
+  const hasTrack = !!(state.stream && state.stream.getVideoTracks()[0]);
+  if (once.active && once.engine === 'nvenc' && !hasTrack) {
+    // NVENC direto: não há captura do Chromium, então a prévia decodifica a própria transmissão
+    if (active) startPreview(preview);
+    else stopPreview();
+  } else {
+    stopPreview();
+    const src = active ? state.stream : null;
+    if (preview.srcObject !== src) preview.srcObject = src;
+  }
   $('previewPaused').hidden = !state.sharing || active;
 }
 
@@ -842,10 +850,7 @@ function openShareDialog() {
 // A opção "uma vez só" só fica disponível se o PC codifica H.264 pelo WebCodecs
 let encodeOnceSupport = null;
 async function checkEncodeOnce() {
-  if (encodeOnceSupport === null) {
-    const q = QUALITY['1080p60'];
-    encodeOnceSupport = await pickEncoderConfig(q, q.w, q.h);
-  }
+  if (encodeOnceSupport === null) encodeOnceSupport = await onceSupport();
   const opt = $('encodeMode').querySelector('option[value="once"]');
   opt.disabled = !encodeOnceSupport;
   if (!encodeOnceSupport) $('encodeMode').value = 'per';
@@ -859,7 +864,7 @@ function syncEncodeNote() {
   note.textContent = !encodeOnceSupport
     ? 'Este PC não consegue codificar uma vez só para todos, então cada pessoa recebe a própria codificação.'
     : $('encodeMode').value === 'once'
-      ? `Codifica o vídeo uma vez só${encodeOnceSupport.hardware ? ', pela placa de vídeo' : ', pelo processador'}, e manda o mesmo para todos: o peso não aumenta quando mais gente assiste. Quem tem versão antiga do app recebe no modo normal.`
+      ? `Codifica o vídeo uma vez só${encodeOnceSupport.engine === 'nvenc' ? ', direto no NVENC da placa NVIDIA (a imagem nem passa pelo processador)' : encodeOnceSupport.hardware ? ', pela placa de vídeo' : ', pelo processador'}, e manda o mesmo para todos: o peso não aumenta quando mais gente assiste. Quem tem versão antiga do app recebe no modo normal.`
       : 'O processador codifica o vídeo uma vez para cada pessoa que assiste. Com vários amigos assistindo, experimente "Uma vez só para todos".';
 }
 function closeShareDialog() { $('shareDialog').hidden = true; }
@@ -1020,15 +1025,26 @@ async function startSharing() {
     }
   }
 
+  // Uma vez só + placa NVIDIA: o videocap captura e codifica, sem a captura do Chromium
+  let nvenc = false;
+  if (encodeMode === 'once' && (await onceSupport())?.engine === 'nvenc') nvenc = await startNvenc(state.selectedSource);
+
   try {
-    await window.api.selectSource(state.selectedSource, loopback);
-    state.stream = await navigator.mediaDevices.getDisplayMedia({
-      video: { width: { max: q.w }, height: { max: q.h }, frameRate: { ideal: q.fps, max: q.fps } },
-      audio: loopback
-        ? { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
-        : false,
-    });
+    if (nvenc && !loopback) {
+      state.stream = new MediaStream();
+    } else {
+      await window.api.selectSource(state.selectedSource, loopback);
+      state.stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { width: { max: q.w }, height: { max: q.h }, frameRate: { ideal: q.fps, max: q.fps } },
+        audio: loopback
+          ? { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+          : false,
+      });
+      // Com o NVENC, a captura do Chromium só serviu para pegar o som do Windows
+      if (nvenc) for (const t of state.stream.getVideoTracks()) { t.stop(); state.stream.removeTrack(t); }
+    }
   } catch (err) {
+    stopOnceEncoder();
     stopAppAudio();
     setBusy(btn, false, 'Iniciar transmissão');
     return toast(`Não foi possível capturar a tela: ${err.message}`, 'error');
@@ -1037,9 +1053,8 @@ async function startSharing() {
 
   const vTrack = state.stream.getVideoTracks()[0];
   if (vTrack) {
-    vTrack.contentHint = 'motion';
-    vTrack.onended = () => stopSharing('A captura foi encerrada (a janela foi fechada?).');
-    if (encodeMode === 'once' && !(await startOnceEncoder(vTrack))) {
+    setupChromeVideo(vTrack);
+    if (encodeMode === 'once' && !nvenc && !(await startOnceEncoder(vTrack))) {
       toast('Este PC não conseguiu codificar uma vez só. Transmitindo no modo normal.', 'error');
     }
   }
@@ -1053,6 +1068,52 @@ async function startSharing() {
   renderShareBox();
   renderMembers();
   setBusy(btn, false, 'Iniciar transmissão');
+}
+
+function setupChromeVideo(track) {
+  track.contentHint = 'motion';
+  track.onended = () => stopSharing('A captura foi encerrada (a janela foi fechada?).');
+}
+
+// Faixa de vídeo do Chromium, pega só quando precisa: no modo NVENC, para quem tem versão antiga
+// ou quando o NVENC para no meio da transmissão
+let chromeVideoPending = null;
+function ensureChromeVideo() {
+  const have = state.stream && state.stream.getVideoTracks()[0];
+  if (have) return Promise.resolve(have);
+  if (!state.sharing || !state.stream) return Promise.resolve(null);
+  if (!chromeVideoPending) {
+    chromeVideoPending = (async () => {
+      const q = QUALITY[state.quality];
+      try {
+        await window.api.selectSource(state.selectedSource, false);
+        const s = await navigator.mediaDevices.getDisplayMedia({
+          video: { width: { max: q.w }, height: { max: q.h }, frameRate: { ideal: q.fps, max: q.fps } },
+          audio: false,
+        });
+        const track = s.getVideoTracks()[0];
+        if (!state.sharing || !state.stream) { track.stop(); return null; }
+        setupChromeVideo(track);
+        state.stream.addTrack(track);
+        syncPreview();
+        return track;
+      } catch (err) {
+        console.warn('Não foi possível capturar a tela pelo Chromium:', err);
+        return null;
+      } finally {
+        chromeVideoPending = null;
+      }
+    })();
+  }
+  return chromeVideoPending;
+}
+
+// No modo NVENC, a captura do Chromium só fica ligada enquanto alguém com versão antiga assiste
+function releaseChromeVideo() {
+  if (!once.active || once.engine !== 'nvenc' || !state.stream) return;
+  if ([...state.out.values()].some((l) => !l.dc)) return;
+  for (const t of state.stream.getVideoTracks()) { t.onended = null; t.stop(); state.stream.removeTrack(t); }
+  syncPreview();
 }
 
 function stopSharing(reason) {
@@ -1080,13 +1141,17 @@ function addWatcher(id, wantsOnce) {
   state.out.set(id, link);
 
   const useOnce = wantsOnce && once.active;
-  state.stream.getTracks().filter((t) => !useOnce || t.kind !== 'video').forEach((t) => pc.addTrack(t, state.stream));
   if (useOnce) {
     link.dc = pc.createDataChannel('video');
     setupOnceSender(link);
-  } else {
-    preferH264(pc);
   }
+  // No modo NVENC não há faixa de vídeo do Chromium: quem precisa dela (versão antiga) espera ela ser pega
+  link.chain = link.chain.then(async () => {
+    if (!useOnce) await ensureChromeVideo();
+    if (!state.stream || state.out.get(id) !== link) return;
+    state.stream.getTracks().filter((t) => !useOnce || t.kind !== 'video').forEach((t) => pc.addTrack(t, state.stream));
+    if (!useOnce) preferH264(pc);
+  });
   pc.onicecandidate = (e) => { if (e.candidate) sendSignal(id, { side: 'sharer', candidate: e.candidate }); };
   pc.onconnectionstatechange = () => {
     if (pc.connectionState === 'connected') link.chain = link.chain.then(() => applyBitrate(link)).catch(console.error);
@@ -1107,6 +1172,7 @@ function closeOut(id) {
   if (link.dc) link.dc.close();
   link.pc.close();
   state.out.delete(id);
+  releaseChromeVideo();
   renderWatchers();
 }
 
@@ -1187,7 +1253,7 @@ function startOutStats() {
     const place = (h) => (h === true ? ' pela placa de vídeo' : h === false ? ' pelo processador' : '');
     let text = '';
     if (onceCount) {
-      text = `Codificando em H.264 uma vez só${onceCount > 1 ? ` para ${onceCount} pessoas,` : ''}${place(once.hardware)}.`;
+      text = `Codificando em H.264 uma vez só${onceCount > 1 ? ` para ${onceCount} pessoas,` : ''}${once.engine === 'nvenc' ? ' pelo NVENC direto' : place(once.hardware)}.`;
     }
     if (codec) {
       const n = links.length;

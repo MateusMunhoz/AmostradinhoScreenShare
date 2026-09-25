@@ -7,6 +7,17 @@ contextBridge.exposeInMainWorld('api', {
   startAppAudio: (exes) => ipcRenderer.invoke('start-app-audio', exes),
   stopAppAudio: () => ipcRenderer.invoke('stop-app-audio'),
   onPcm: (cb) => ipcRenderer.on('pcm', (_e, data) => cb(data)),
+  videoCapProbe: () => ipcRenderer.invoke('videocap-probe'),
+  videoCapStart: (opts) => ipcRenderer.invoke('videocap-start', opts),
+  videoCapStop: () => ipcRenderer.invoke('videocap-stop'),
+  videoCapCmd: (cmd) => ipcRenderer.invoke('videocap-cmd', cmd),
+  onVideoCap: (onChunk, onStats, onEnded) => {
+    for (const ch of ['vchunk', 'vstats', 'vended']) ipcRenderer.removeAllListeners(ch);
+    ipcRenderer.on('vchunk', (_e, c) => onChunk(c));
+    ipcRenderer.on('vstats', (_e, s) => onStats(s));
+    ipcRenderer.on('vended', (_e, info) => onEnded(info));
+  },
+  offVideoCap: () => { for (const ch of ['vchunk', 'vstats', 'vended']) ipcRenderer.removeAllListeners(ch); },
   offPcm: () => ipcRenderer.removeAllListeners('pcm'),
   getIps: () => ipcRenderer.invoke('get-ips'),
   getVersion: () => ipcRenderer.invoke('get-version'),

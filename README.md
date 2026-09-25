@@ -116,14 +116,23 @@ Se "Codificação de vídeo, PC inteiro" estiver alta com o app parado, é outro
 
 No modo normal, cada pessoa que assiste tem uma conexão própria, e o WebRTC codifica o vídeo uma vez para cada conexão, pelo processador. Com 3 amigos assistindo, são 3 codificações.
 
-Na tela de transmitir, **Codificação > Uma vez só para todos (experimental)** codifica o vídeo uma vez só, pela placa de vídeo quando ela suporta, e manda o mesmo vídeo para todos. O peso não aumenta quando mais gente entra. Como funciona:
+Na tela de transmitir, **Codificação > Uma vez só para todos (experimental)** codifica o vídeo uma vez só e manda o mesmo vídeo para todos. O peso não aumenta quando mais gente entra. O app escolhe o motor sozinho, nesta ordem:
 
-- **Se o app de quem assiste é de uma versão antiga,** essa pessoa recebe no modo normal, na mesma transmissão.
+1. **NVENC direto** (placas NVIDIA com driver 522 ou mais novo): o ajudante `videocap.exe` captura a tela pelo Windows e codifica no NVENC. A imagem nem passa pelo processador. No teste com 2 pessoas assistindo, o app usou 0,6% do processador, contra 1,5% no WebCodecs e 2,4% no modo normal. Nesse motor, a prévia da sua tela é a própria transmissão decodificada.
+2. **WebCodecs** (qualquer placa): a captura é a do Chromium, e a codificação vai para a placa de vídeo (AMD e Intel também) ou para o processador.
+3. **Modo normal**, se os dois falharem.
+
+Como funciona:
+
+- **Se o app de quem assiste é de uma versão antiga,** essa pessoa recebe no modo normal, na mesma transmissão. No NVENC direto, a captura do Chromium só liga enquanto alguém assim estiver assistindo.
 - **Se a internet de alguém não dá conta,** só essa pessoa pula quadros até o próximo quadro completo. Os outros não travam.
-- **Se a placa de vídeo parar de codificar,** o app tenta pelo processador, ainda uma vez só. Se também falhar, todos voltam para o modo normal sem a transmissão cair.
-- **Para conferir,** abra **Estatísticas**. Ela mostra "H.264 com WebCodecs (placa de vídeo), 1 codificação para N pessoas".
+- **Se ninguém estiver com o vídeo aberto,** por exemplo com todos jogando e com o app minimizado, o NVENC pausa.
+- **Se o motor parar no meio,** o app troca sozinho: NVENC direto → WebCodecs → processador → modo normal. A transmissão não cai.
+- **Para conferir,** abra **Estatísticas**. Ela mostra, por exemplo, "H.264 com NVENC direto (placa de vídeo), 1 codificação para N pessoas". A tabela mostra o processo "Captura e NVENC".
 
 Se o PC não conseguir codificar desse jeito, a opção fica desativada.
+
+Os ajudantes nativos são compilados com `native\build.cmd` (Visual Studio Build Tools com C++). `native\build.cmd videocap` compila só o de vídeo. O cabeçalho do NVENC (`native/third_party/nvEncodeAPI.h`) é do projeto nv-codec-headers e tem licença MIT.
 
 ### Jogo em tela cheia
 

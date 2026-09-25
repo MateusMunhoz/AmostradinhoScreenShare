@@ -7,6 +7,10 @@ pack/*
 !pack/.gitkeep
 *.exe
 !bin/audiocap.exe
+!bin/videocap.exe
+
+# Compilação dos ajudantes nativos (native/build.cmd)
+native/obj/
 
 # Anotações locais
 Explicacao.txt

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, desktopCapturer, session } = require('electron');
+const { app, BrowserWindow, ipcMain, desktopCapturer, session, screen } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -19,10 +19,12 @@ let selectedSourceId = null;
 let captureSystemAudio = true;
 let audioProc = null;
 
-// Capturador nativo que ignora apps. Vem junto das atualizações; no .exe fica fora do .asar.
-const AUDIOCAP = fs.existsSync(path.join(__dirname, 'bin', 'audiocap.exe'))
-  ? path.join(__dirname, 'bin', 'audiocap.exe')
-  : path.join(process.resourcesPath, 'bin', 'audiocap.exe');
+// Ajudantes nativos (som e NVENC). Vêm junto das atualizações; no .exe ficam fora do .asar.
+const BIN = fs.existsSync(path.join(__dirname, 'bin', 'audiocap.exe'))
+  ? path.join(__dirname, 'bin')
+  : path.join(process.resourcesPath, 'bin');
+const AUDIOCAP = path.join(BIN, 'audiocap.exe');
+const VIDEOCAP = path.join(BIN, 'videocap.exe');
 
 // Atualizações pela sala (boot.js). Sem ele (ex.: "electron main.js"), o app só não se atualiza.
 const updater = global.updater || {
@@ -83,6 +85,7 @@ function processLabels() {
       : `Outro (${m.type})`;
     labels.set(m.pid, label);
   }
+  if (videoProc) labels.set(videoProc.pid, 'Captura e NVENC');
   return labels;
 }
 
@@ -118,6 +121,113 @@ function startStats(sender) {
 function stopStats() {
   if (statsProc) statsProc.kill();
   statsProc = null;
+}
+
+// ---------- NVENC direto (videocap.exe) ----------
+// Captura a tela pelo Windows e codifica no NVENC sem a imagem sair da placa. O vídeo pronto
+// (H.264) vai para a página, que manda o mesmo para todos no modo "uma vez só".
+let videoProc = null;
+let videoProbe = null;
+
+function probeVideoCap() {
+  if (!videoProbe) {
+    videoProbe = new Promise((resolve) => {
+      if (!fs.existsSync(VIDEOCAP)) return resolve({ nvenc: false, error: 'videocap.exe não encontrado' });
+      execFile(VIDEOCAP, ['--probe'], { windowsHide: true, timeout: 8000 }, (err, stdout) => {
+        try { resolve(JSON.parse(stdout)); } catch { resolve({ nvenc: false, error: err ? err.message : 'resposta inválida' }); }
+      });
+    });
+  }
+  return videoProbe;
+}
+
+// Id do desktopCapturer -> o que o videocap entende: "window:<HWND>:0" ou "screen:<id>:0"
+async function captureTarget(sourceId) {
+  const win = /^window:(\d+):/.exec(sourceId || '');
+  if (win) return ['--window', win[1]];
+  const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 0, height: 0 } });
+  const src = sources.find((s) => s.id === sourceId);
+  const display = screen.getAllDisplays().find((d) => src && String(d.id) === src.display_id) || screen.getPrimaryDisplay();
+  const center = { x: Math.round(display.bounds.x + display.bounds.width / 2), y: Math.round(display.bounds.y + display.bounds.height / 2) };
+  const p = screen.dipToScreenPoint(center); // pixels físicos
+  return ['--monitor', `${Math.round(p.x)},${Math.round(p.y)}`];
+}
+
+function stopVideoCap() {
+  if (!videoProc) return;
+  const proc = videoProc;
+  videoProc = null;
+  proc.stdout.removeAllListeners('data');
+  proc.stdin.end();
+  setTimeout(() => { if (proc.exitCode === null) proc.kill(); }, 1000);
+}
+
+async function startVideoCap(sender, opts) {
+  stopVideoCap();
+  const probe = await probeVideoCap();
+  if (!probe.nvenc) return { ok: false, error: probe.error };
+  const o = opts || {};
+  const num = (v, min, max, def) => (Number.isFinite(v) && v >= min && v <= max ? Math.round(v) : def);
+  const args = [
+    ...(await captureTarget(o.sourceId)),
+    '--width', String(num(o.w, 16, 7680, 1920)), '--height', String(num(o.h, 16, 4320, 1080)),
+    '--fps', String(num(o.fps, 1, 240, 60)), '--bitrate', String(num(o.bitrate, 100000, 100000000, 7000000)),
+  ];
+  return new Promise((resolve) => {
+    let proc;
+    try {
+      proc = spawn(VIDEOCAP, args, { windowsHide: true });
+    } catch (err) {
+      return resolve({ ok: false, error: err.message });
+    }
+    videoProc = proc;
+    let settled = false;
+    const finish = (res) => { if (!settled) { settled = true; clearTimeout(timer); resolve(res); } };
+    const timer = setTimeout(() => finish({ ok: false, error: 'o videocap não respondeu' }), 8000);
+    const alive = () => videoProc === proc && !sender.isDestroyed();
+
+    // Cada quadro: [tamanho u32][chave u8][timestamp f64][H.264]
+    let buf = Buffer.alloc(0);
+    proc.stdout.on('data', (d) => {
+      buf = buf.length ? Buffer.concat([buf, d]) : d;
+      while (buf.length >= 13) {
+        const size = buf.readUInt32LE(0);
+        if (buf.length < 13 + size) break;
+        if (alive()) sender.send('vchunk', { key: buf[4] === 1, ts: buf.readDoubleLE(5), data: buf.subarray(13, 13 + size) });
+        buf = buf.subarray(13 + size);
+      }
+    });
+
+    let errBuf = '';
+    let lastError = '';
+    proc.stderr.on('data', (d) => {
+      errBuf += d;
+      let nl;
+      while ((nl = errBuf.indexOf('\n')) >= 0) {
+        const line = errBuf.slice(0, nl).trim();
+        errBuf = errBuf.slice(nl + 1);
+        const ready = /^READY (\d+) (\d+)/.exec(line);
+        const stats = /^STATS (\d+) (\d+)/.exec(line);
+        if (ready) finish({ ok: true, width: +ready[1], height: +ready[2], gpu: probe.gpu });
+        else if (stats) { if (alive()) sender.send('vstats', { captured: +stats[1], encoded: +stats[2] }); }
+        else if (line.startsWith('ERROR')) { lastError = line.slice(6); finish({ ok: false, error: lastError }); }
+        else if (line === 'ENDED') lastError = 'ended';
+      }
+    });
+    proc.on('error', (err) => finish({ ok: false, error: err.message }));
+    proc.on('exit', (code) => {
+      finish({ ok: false, error: lastError || 'o videocap fechou' });
+      // Fechou sozinho no meio da transmissão: a página decide o que fazer (janela fechou / reserva)
+      if (videoProc === proc) {
+        videoProc = null;
+        if (!sender.isDestroyed()) sender.send('vended', { windowClosed: lastError === 'ended' || code === 2, error: lastError });
+      }
+    });
+  });
+}
+
+function videoCapCommand(line) {
+  if (videoProc && videoProc.stdin.writable) videoProc.stdin.write(line + '\n');
 }
 
 function stopAppAudio() {
@@ -229,6 +339,12 @@ app.whenReady().then(() => {
   }));
 
   ipcMain.handle('start-app-audio', (e, exes) => startAppAudio(e.sender, exes));
+  ipcMain.handle('videocap-probe', () => probeVideoCap());
+  ipcMain.handle('videocap-start', (e, opts) => startVideoCap(e.sender, opts));
+  ipcMain.handle('videocap-stop', () => stopVideoCap());
+  ipcMain.handle('videocap-cmd', (_e, cmd) => {
+    if (cmd === 'key' || cmd === 'pause' || cmd === 'resume' || /^bitrate \d{5,9}$/.test(cmd)) videoCapCommand(cmd);
+  });
   ipcMain.handle('stop-app-audio', () => stopAppAudio());
 
   ipcMain.handle('get-ips', () => {
@@ -256,6 +372,7 @@ app.whenReady().then(() => {
   ipcMain.handle('restart-app', () => {
     stopServer();
     stopAppAudio();
+    stopVideoCap();
     if (boostProc) boostProc.kill();
     updater.restart();
   });
@@ -269,6 +386,7 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
   stopServer();
   stopAppAudio();
+  stopVideoCap();
   stopStats();
   if (boostProc) boostProc.kill();
   app.quit();
