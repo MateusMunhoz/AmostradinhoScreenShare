@@ -39,7 +39,7 @@
         <p class="version">
           <span id="appVersion"></span>
           <button class="link-btn" id="checkUpdates" type="button">Procurar atualização</button>
-          <button class="link-btn" id="openStatsHome" type="button">Estatísticas</button>
+          <button class="btn icon ghost stats-btn" id="openStatsHome" type="button" title="Estatísticas: uso de processador e placa de vídeo" aria-label="Estatísticas: uso de processador e placa de vídeo"></button>
         </p>
       </div>
     </section>
@@ -90,6 +90,7 @@
     <section id="room" class="screen" hidden>
       <div class="room-grid">
         <div class="stage-area">
+          <div id="pausedStrip" class="paused-strip" role="group" aria-label="Transmissões em pausa" hidden></div>
           <div id="emptyStage" class="empty-stage"><p id="emptyText"></p></div>
           <div id="tiles" class="tiles" hidden></div>
         </div>
@@ -129,8 +130,10 @@
             </div>
           </div>
 
-          <button class="btn ghost leave" id="leaveBtn">Sair da sala</button>
-          <button class="btn small" id="openStatsRoom" type="button">Estatísticas</button>
+          <div class="panel-foot">
+            <button class="btn ghost leave" id="leaveBtn">Sair da sala</button>
+            <button class="btn icon" id="openStatsRoom" type="button" title="Estatísticas: uso de processador e placa de vídeo" aria-label="Estatísticas: uso de processador e placa de vídeo"></button>
+          </div>
         </aside>
       </div>
 

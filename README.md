@@ -22,7 +22,7 @@ npm install
 npm start
 ```
 
-Para gerar um `.exe` portátil sem publicar nada: `npm run dist` (o arquivo aparece na pasta `dist`).
+Para gerar um `.exe` portátil sem publicar nada: `npm run dist` (o arquivo aparece na pasta `dist`). O `.exe` tem sempre o mesmo nome, `Tela P2P.exe`, sem a versão: cada publicação troca o anterior em vez de juntar um arquivo por versão.
 
 ## 3. Usar
 
@@ -36,6 +36,7 @@ Para gerar um `.exe` portátil sem publicar nada: `npm run dist` (o arquivo apar
 - **Assistir:** na lista de pessoas, quem está transmitindo aparece com um botão Assistir. O vídeo só começa a ser baixado depois que você clica nele, e você pode assistir a várias telas lado a lado.
 - **Parar de assistir:** clique em Parar na lista ou no X da própria tela. A conexão é fechada e o download para na hora.
 - **Barra do vídeo:** aparece nos primeiros segundos, ao passar o mouse ou ao navegar com Tab. Tem o alto-falante (silenciar), o volume, a tela cheia (as duas setinhas) e o X. Também dá para entrar em tela cheia clicando duas vezes no vídeo. Cada tela tem o próprio volume.
+- **Destacar uma tela:** assistindo duas ou mais pessoas, o botão de destacar (um quadro dentro do outro) na barra do vídeo faz essa tela ocupar toda a área de vídeo. As outras ficam em pausa só para você, sem vídeo e sem som. Quem transmite para de mandar o vídeo para você, e o seu PC deixa de decodificar. A faixa de cima mostra quem está em pausa: clique num nome para trocar o destaque na hora, ou em Mostrar todas (ou Esc) para voltar ao lado a lado.
 
 ## Atualizações
 
@@ -48,6 +49,7 @@ Nos dois casos, o app confere a assinatura e mostra **Reiniciar agora**.
 
 - **Segurança:** o app só aceita atualizações assinadas com a chave de quem publica. Pacote alterado, de outra pessoa ou mais velho que o atual é recusado, mesmo que venha do GitHub. Se uma versão nova não abrir, o app volta sozinho para a versão do `.exe`.
 - **Versões antigas:** quem tem a 1.0.0 precisa baixar o `.exe` uma vez. Quem tem a 1.1.0 ou a 1.1.1 recebe a 1.1.2 pela sala e, dali em diante, também pelo botão do GitHub.
+- **Nada se acumula:** atualizar não cria outro `.exe`. A versão nova fica em `%APPDATA%\Tela P2P\atualizacoes`, e as pastas das versões mais velhas que a que está rodando são apagadas quando o app abre.
 - **Quando precisa do `.exe` de novo:** só se mudar a versão do Electron ou o `boot.js`. O app avisa que aquela versão "precisa do .exe novo" e abre a página dela no GitHub.
 
 ### Para publicar uma versão (só quem tem a chave)
@@ -97,7 +99,7 @@ Faça o mesmo nos PCs de quem assiste, caso o Windows pergunte.
 
 O app já faz isto sozinho:
 
-- **Janela minimizada ou coberta pelo jogo:** depois de 3 segundos, o app para de baixar o vídeo das telas que você assiste e fica só com o som. Quem transmite deixa de codificar vídeo para você, e o seu PC deixa de decodificar. Ao voltar para a janela, o vídeo volta na hora. Quem transmite vê "(só som, janela minimizada)" ao lado do seu nome.
+- **Janela minimizada ou coberta pelo jogo:** depois de 3 segundos, o app para de baixar o vídeo das telas que você assiste e fica só com o som. Quem transmite deixa de codificar vídeo para você, e o seu PC deixa de decodificar. Ao voltar para a janela, o vídeo volta na hora. Quem transmite vê "(vídeo pausado)" ao lado do seu nome.
 - **Prévia da sua tela:** só roda com a janela do app em foco. Enquanto você está no jogo ela para, e a transmissão continua normal.
 - **Som:** o capturador de áudio usa a prioridade de áudio do Windows e tem uma folga maior, então não picota quando o jogo pesa.
 - **Prioridade e modo de eficiência:** com a janela minimizada, o Chromium (o motor do app) jogava a página de quem assiste para prioridade *ociosa* e *modo de eficiência* (núcleos lentos). Enquanto alguém jogava, o som picotava e as respostas para quem transmite atrasavam, e quem transmitia baixava a qualidade achando que a internet estava ruim. Agora todos os processos do app ficam **acima do normal** e com o modo de eficiência desligado, mesmo minimizados.

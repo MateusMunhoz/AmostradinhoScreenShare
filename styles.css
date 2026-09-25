@@ -91,7 +91,7 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 /* Sala */
 #room { padding: 16px; }
 .room-grid { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 300px; gap: 16px; }
-.stage-area { min-height: 0; display: flex; }
+.stage-area { min-height: 0; display: flex; flex-direction: column; gap: 8px; }
 .empty-stage {
   flex: 1; display: grid; place-items: center; padding: 32px; text-align: center;
   border: 1px dashed var(--line); border-radius: var(--radius);
@@ -101,6 +101,10 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
   flex: 1; min-height: 0; display: grid; gap: 12px;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); grid-auto-rows: minmax(0, 1fr);
 }
+/* Destaque: uma transmissão ocupa toda a área de vídeo; as outras ficam pausadas na faixa de cima */
+.tiles.focused { grid-template-columns: 1fr; }
+.paused-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.paused-label { font-size: 13px; color: var(--muted); }
 .tile { position: relative; background: #000; border-radius: var(--radius); overflow: hidden; min-height: 180px; }
 .tile video { width: 100%; height: 100%; object-fit: contain; display: block; }
 .tile-overlay {
@@ -147,7 +151,10 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
   position: absolute; top: 8px; left: 8px; background: var(--live-fill); color: #fff;
   font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px;
 }
-.leave { margin-top: auto; }
+/* Rodapé do painel da sala: Sair da sala e o ícone das Estatísticas na mesma linha */
+.panel-foot { margin-top: auto; display: flex; align-items: center; gap: 8px; }
+.panel-foot .leave { flex: 1; }
+.version .stats-btn { margin-left: auto; }
 
 /* Janela de escolher a tela */
 .modal { position: absolute; inset: 0; background: rgba(8, 10, 16, .7); display: grid; place-items: center; padding: 24px; z-index: 5; }

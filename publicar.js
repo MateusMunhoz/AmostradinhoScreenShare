@@ -72,7 +72,7 @@ function publishGithub(version, productName, notes) {
     console.log('\nGitHub pulado: precisa do projeto clonado do GitHub, do Git e do GitHub CLI (gh auth login).');
     return false;
   }
-  const exe = path.join(ROOT, 'dist', `${productName} ${version}.exe`);
+  const exe = path.join(ROOT, 'dist', `${productName}.exe`);
   const steps = [
     ['git', ['add', '-A']],
     ['git', ['commit', '-m', `Versão ${version}`]],
@@ -113,6 +113,11 @@ function publish(requested, { notes = '', github = true } = {}) {
   }
   console.log(`Versão ${version} assinada (${Math.round(pack.length / 1024)} KB). O app deste PC já usa ela na próxima vez que abrir.`);
 
+  // O .exe tem sempre o mesmo nome: o da versão anterior (e os antigos, com a versão no nome) saem
+  const dist = path.join(ROOT, 'dist');
+  for (const f of fs.existsSync(dist) ? fs.readdirSync(dist) : []) {
+    if (f.startsWith(pkg.build.productName) && f.endsWith('.exe')) fs.rmSync(path.join(dist, f), { force: true });
+  }
   console.log('Gerando o .exe para quem ainda não tem o app...');
   const r = spawnSync('npx electron-builder --win portable', { cwd: ROOT, stdio: 'inherit', shell: true });
   if (r.status !== 0) fail('O .exe não foi gerado, mas a atualização pela sala já funciona.');

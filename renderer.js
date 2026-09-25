@@ -30,6 +30,7 @@ const state = {
 
   // O que eu estou assistindo
   in: new Map(),           // id de quem transmite -> { pc, chain, tile, lastBytes, lastTs }
+  focus: null,             // id da transmissão em destaque (as outras ficam pausadas para mim)
   statsTimer: null,
   outStatsTimer: null,
 };
@@ -80,6 +81,9 @@ const ICON = {
   volume: svg('M11 5 6 9H2v6h4l5 4V5zM15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14'),
   muted: svg('M11 5 6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6'),
   close: svg('M18 6 6 18M6 6l12 12'),
+  stats: svg('M22 12h-4l-3 9L9 3l-3 9H2'),                 // pulso: estatísticas
+  focus: svg('M3 5h18v14H3zM7 9h10v6H7z'),                  // um quadro dentro do outro: destacar
+  grid: svg('M3 3h8v8H3zM13 3h8v8h-8zM3 13h8v8H3zM13 13h8v8h-8z'), // grade: mostrar todas
 };
 
 // Botão só com ícone: a dica (title) e o nome lido pelo leitor de tela são o mesmo texto
@@ -606,7 +610,8 @@ function memberRow(id, name, sharing) {
   nameEl.textContent = name;
   const status = document.createElement('span');
   status.className = 'mstatus';
-  status.textContent = sharing ? 'Transmitindo' : 'Na sala';
+  const paused = id && state.focus && state.focus !== id && state.in.has(id);
+  status.textContent = !sharing ? 'Na sala' : paused ? 'Transmitindo, em pausa para você' : 'Transmitindo';
   info.append(nameEl, status);
   li.append(dot, info);
 
@@ -681,6 +686,10 @@ function createTile(id, name) {
     syncMute();
   };
   syncMute();
+  const focusBtn = document.createElement('button');
+  focusBtn.className = 'btn icon';
+  focusBtn.hidden = true; // só com 2 ou mais transmissões abertas
+  focusBtn.onclick = () => setFocus(state.focus === id ? null : id);
   const fs = document.createElement('button');
   fs.className = 'btn icon';
   setFsIcon(fs, false);
@@ -689,11 +698,11 @@ function createTile(id, name) {
   close.className = 'btn icon';
   setIcon(close, 'close', 'Parar de assistir');
   close.onclick = () => stopWatching(id);
-  bar.append(stats, mute, vol, fs, close);
+  bar.append(stats, mute, vol, focusBtn, fs, close);
   el.append(video, overlay, label, bar);
   el.addEventListener('dblclick', (e) => { if (!bar.contains(e.target)) toggleFullscreen(el); });
   $('tiles').append(el);
-  return { el, video, overlay, stats, fs };
+  return { el, video, overlay, stats, fs, focusBtn, syncMute, name, paused: false, mutedBefore: false };
 }
 
 // Mostra a barra do vídeo por alguns segundos, para quem nunca passou o mouse em cima descobrir os botões
@@ -733,6 +742,8 @@ function watch(id) {
 
   sendSignal(id, { side: 'viewer', subscribe: true, once: onceSupportedForViewer() });
   if (document.hidden) onVisibility(); // começou a assistir com a janela já oculta: pausa o vídeo também
+  if (state.focus) state.focus = id;   // pediu para assistir alguém durante o destaque: essa pessoa vira o destaque
+  renderFocus();
   renderMembers();
   updateStage();
   ensureStats();
@@ -748,8 +759,77 @@ function stopWatching(id, notify = true) {
   link.tile.video.srcObject = null;
   link.tile.el.remove();
   state.in.delete(id);
+  if (state.focus === id) state.focus = null; // quem estava em destaque saiu: as outras voltam
+  renderFocus();
   renderMembers();
   updateStage();
+}
+
+// ---------- Destaque ----------
+// Uma transmissão ocupa toda a área de vídeo e as outras ficam pausadas só para mim: quem
+// transmite para de mandar o vídeo (o mesmo pedido da janela minimizada) e o som fica mudo.
+function setFocus(id) {
+  state.focus = id && state.in.has(id) ? id : null;
+  renderFocus();
+  renderMembers();
+}
+
+function renderFocus() {
+  if (state.focus && (!state.in.has(state.focus) || state.in.size < 2)) state.focus = null;
+  const focus = state.focus;
+  $('tiles').classList.toggle('focused', !!focus);
+  for (const [id, link] of state.in) {
+    const t = link.tile;
+    const paused = !!focus && id !== focus;
+    t.el.classList.toggle('focus', id === focus);
+    t.el.hidden = paused;
+    setTilePaused(t, paused);
+    t.focusBtn.hidden = state.in.size < 2;
+    if (id === focus) setIcon(t.focusBtn, 'grid', 'Mostrar todas');
+    else setIcon(t.focusBtn, 'focus', `Destacar ${t.name} (as outras pausam)`);
+  }
+  renderPausedStrip();
+  syncIncomingVideo();
+}
+
+// O som da transmissão pausada fica mudo; ao voltar, fica como a pessoa tinha deixado
+function setTilePaused(t, paused) {
+  if (paused === t.paused) return;
+  t.paused = paused;
+  if (paused) {
+    t.mutedBefore = t.video.muted;
+    t.video.muted = true;
+  } else {
+    t.video.muted = t.mutedBefore;
+    t.syncMute();
+  }
+}
+
+function renderPausedStrip() {
+  const strip = $('pausedStrip');
+  strip.innerHTML = '';
+  strip.hidden = !state.focus;
+  if (!state.focus) return;
+  const label = document.createElement('span');
+  label.className = 'paused-label';
+  label.textContent = 'Em pausa para você:';
+  strip.append(label);
+  for (const [id, link] of state.in) {
+    if (id === state.focus) continue;
+    const btn = document.createElement('button');
+    btn.className = 'btn small';
+    btn.type = 'button';
+    btn.textContent = link.tile.name;
+    btn.title = `Destacar ${link.tile.name}`;
+    btn.onclick = () => setFocus(id);
+    strip.append(btn);
+  }
+  const all = document.createElement('button');
+  all.className = 'btn small ghost';
+  all.type = 'button';
+  all.textContent = 'Mostrar todas';
+  all.onclick = () => setFocus(null);
+  strip.append(all);
 }
 
 function ensureStats() {
@@ -801,8 +881,16 @@ function stopStats() {
 // o vídeo das telas que você assiste e fica só com o som. Quem transmite economiza uma codificação,
 // e você, a decodificação. Ao voltar para a janela, o vídeo volta na hora.
 let hiddenTimer = null;
+let appVisible = true;
 function setIncomingVideo(on) {
+  appVisible = on;
+  syncIncomingVideo();
+}
+
+// Recebe vídeo de quem estiver na tela: janela do app visível e (sem destaque, ou em destaque)
+function syncIncomingVideo() {
   for (const [id, link] of state.in) {
+    const on = appVisible && (!state.focus || state.focus === id);
     if (link.videoOn === on) continue;
     link.videoOn = on;
     sendSignal(id, { side: 'viewer', video: on });
@@ -1283,7 +1371,7 @@ function renderShareBox() {
 }
 
 function renderWatchers() {
-  const names = [...state.out].map(([id, l]) => nameOf(id) + (l.videoOff ? ' (só som, janela minimizada)' : ''));
+  const names = [...state.out].map(([id, l]) => nameOf(id) + (l.videoOff ? ' (vídeo pausado)' : ''));
   $('watcherInfo').textContent = names.length
     ? `Assistindo você: ${names.join(', ')}`
     : 'Ninguém está assistindo ainda. Só é enviado vídeo para quem clicar em Assistir.';
@@ -1346,6 +1434,8 @@ $('startBtn').onclick = startSharing;
 $('refreshSources').onclick = loadSources;
 $('audioMode').addEventListener('change', syncAudioMode);
 $('refreshApps').onclick = loadAudioApps;
+// Ícone das Estatísticas: na tela inicial ao lado da versão, na sala ao lado de Sair da sala
+for (const id of ['openStatsHome', 'openStatsRoom']) setIcon($(id), 'stats', 'Estatísticas: uso de processador e placa de vídeo');
 $('openStatsHome').onclick = openStats;
 $('openStatsRoom').onclick = openStats;
 $('closeStats').onclick = closeStats;
@@ -1354,6 +1444,7 @@ document.addEventListener('keydown', (e) => {
   if (!$('statsDialog').hidden) closeStats();
   else if (!$('closeDialog').hidden) closeCloseDialog();
   else if (!$('shareDialog').hidden) closeShareDialog();
+  else if (state.focus && !document.fullscreenElement) setFocus(null);
 });
 document.addEventListener('fullscreenchange', () => {
   for (const link of state.in.values()) setFsIcon(link.tile.fs, document.fullscreenElement === link.tile.el);

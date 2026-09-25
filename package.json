@@ -34,6 +34,9 @@
       "target": "portable",
       "signAndEditExecutable": false
     },
+    "portable": {
+      "artifactName": "${productName}.${ext}"
+    },
     "extraResources": [
       {
         "from": "bin",

@@ -282,6 +282,24 @@ function startAppAudio(sender, excludeExes) {
   });
 }
 
+// Atualizações mais velhas que a versão que está rodando nunca mais são usadas: apaga as pastas
+// (cada uma tem uma cópia do app e dos ajudantes audiocap.exe e videocap.exe)
+function cleanOldUpdates() {
+  const dir = path.join(app.getPath('userData'), 'atualizacoes');
+  const parts = (v) => v.split('.').map(Number);
+  const older = (a, b) => {
+    const pa = parts(a), pb = parts(b);
+    for (let i = 0; i < 3; i++) if (pa[i] !== pb[i]) return pa[i] < pb[i];
+    return false;
+  };
+  let names = [];
+  try { names = fs.readdirSync(dir); } catch { return; }
+  for (const v of names) {
+    if (!/^\d+\.\d+\.\d+$/.test(v) || !older(v, updater.version)) continue;
+    fs.rm(path.join(dir, v), { recursive: true, force: true }, () => {});
+  }
+}
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1200,
@@ -297,7 +315,10 @@ function createWindow() {
       nodeIntegration: false,
     },
   });
-  win.webContents.once('did-finish-load', () => updater.started());
+  win.webContents.once('did-finish-load', () => {
+    updater.started();
+    cleanOldUpdates();
+  });
   win.loadFile(path.join(__dirname, 'index.html'));
 }
 
