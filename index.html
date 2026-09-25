@@ -103,69 +103,95 @@
 
     <!-- Sala -->
     <section id="room" class="screen" hidden>
-      <div class="room-grid">
-        <div class="stage-area">
-          <div id="pausedStrip" class="paused-strip" role="group" aria-label="Transmissões em pausa" hidden></div>
-          <div id="emptyStage" class="empty-stage"><p id="emptyText"></p></div>
-          <div id="tiles" class="tiles" hidden></div>
+      <div class="room-grid" id="roomGrid">
+        <div class="stage-col">
+          <div class="stage-area">
+            <div id="pausedStrip" class="paused-strip" role="group" aria-label="Transmissões em pausa" hidden></div>
+            <div id="emptyStage" class="empty-stage"><p id="emptyText"></p></div>
+            <div id="tiles" class="tiles" hidden></div>
+          </div>
+
+          <!-- Barra da sala: transmitir, janela flutuante e o resto, embaixo dos vídeos -->
+          <div class="dock" role="toolbar" aria-label="Controles da sala">
+            <button class="addr-pill" id="dockAddr" type="button" title="Copiar o endereço da sala" hidden>
+              <span id="dockAddrText"></span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 9h11v11H9zM5 15H4V4h11v1"/></svg>
+            </button>
+            <button class="btn primary dock-share" id="shareBtn" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v12H3zM8 21h8M12 17v4"/></svg>Transmitir minha tela
+            </button>
+            <div class="live-chip" id="liveChip" hidden>
+              <span class="live-pill">Ao vivo</span>
+              <span id="liveText"></span>
+              <button class="btn small danger" id="stopShareBtn" type="button">Parar</button>
+            </div>
+            <div class="pip-chip" id="pipChip" hidden>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v14H3zM12 11h7v6h-7z"/></svg>
+              <span id="pipChipText"></span>
+              <kbd>Ctrl+Shift+E</kbd>
+              <button class="btn icon ghost" id="pipChipClose" type="button"></button>
+            </div>
+            <span class="dock-spacer"></span>
+            <button class="btn icon" id="openStatsRoom" type="button"></button>
+            <button class="btn icon chat-toggle" id="chatToggle" type="button" aria-pressed="true">
+              <span id="chatUnread" class="unread" hidden></span>
+            </button>
+            <button class="btn icon" id="leaveBtn" type="button"></button>
+          </div>
         </div>
 
-        <aside class="panel">
-          <div class="seg panel-tabs" role="tablist" aria-label="Painel da sala">
-            <button type="button" role="tab" id="tabRoomBtn" aria-selected="true" aria-controls="roomTab">Sala</button>
-            <button type="button" role="tab" id="tabChatBtn" aria-selected="false" aria-controls="chatTab">Chat <span id="chatUnread" class="unread" hidden></span></button>
-          </div>
-          <div id="roomTab" class="panel-tab" role="tabpanel" aria-labelledby="tabRoomBtn">
+        <!-- Painel: endereço, sua transmissão, quem está na sala e o chat, sempre à vista -->
+        <aside class="panel" id="sidePanel">
           <div class="update-notice" role="status" hidden>
             <span class="update-text"></span>
             <button class="btn small primary update-restart" type="button">Reiniciar agora (sai da sala)</button>
           </div>
-          <div class="block">
-            <h3>Endereço da sala</h3>
+          <div class="side-section">
             <div id="roomAddress"></div>
             <p id="noRadmin" class="warn" hidden>Nenhum IP da Radmin VPN (26.x.x.x) encontrado. Ligue a Radmin e entre na rede.</p>
           </div>
 
-          <div class="block">
-            <h3>Na sala: <span id="memberCount">1</span></h3>
+          <div class="side-section my-share" id="myShare" hidden>
+            <h3>Sua transmissão</h3>
+            <div class="mini">
+              <video id="myPreview" autoplay muted playsinline></video>
+              <p id="previewPaused" class="mini-note" hidden>Prévia pausada enquanto você usa outro app, para não pesar no jogo. A transmissão continua normal.</p>
+              <span class="live-badge">Ao vivo</span>
+            </div>
+            <p id="watcherInfo" class="hint"></p>
+            <p id="encoderInfo" class="hint"></p>
+            <p id="awayInfo" class="hint"></p>
+            <p id="noAudio" class="warn" hidden>Transmitindo sem áudio.</p>
+          </div>
+
+          <div class="side-section">
+            <h3>Na sala · <span id="memberCount">1</span></h3>
             <ul id="members" class="members"></ul>
             <p id="downloadInfo" class="hint"></p>
           </div>
 
-          <div class="block share-box">
-            <div id="shareIdle">
-              <button class="btn primary wide" id="shareBtn">Transmitir minha tela</button>
+          <div class="chat" id="chatTab">
+            <div class="chat-head">
+              <h3>Chat</h3>
+              <button class="btn icon ghost" id="chatCollapse" type="button"></button>
             </div>
-            <div id="shareLive" hidden>
-              <div class="mini">
-                <video id="myPreview" autoplay muted playsinline></video>
-                <p id="previewPaused" class="mini-note" hidden>Prévia pausada enquanto você usa outro app, para não pesar no jogo. A transmissão continua normal.</p>
-                <span class="live-badge">Ao vivo</span>
-              </div>
-              <p id="watcherInfo" class="hint"></p>
-              <p id="encoderInfo" class="hint"></p>
-              <p id="awayInfo" class="hint"></p>
-              <p id="noAudio" class="warn" hidden>Transmitindo sem áudio.</p>
-              <button class="btn danger wide" id="stopShareBtn">Parar transmissão</button>
-            </div>
-          </div>
-          </div>
-
-          <div id="chatTab" class="panel-tab chat" role="tabpanel" aria-labelledby="tabChatBtn" hidden>
-            <p id="chatOff" class="warn" hidden>Quem criou a sala precisa atualizar o app para usar o chat.</p>
-            <p id="chatEmpty" class="hint">Nenhuma mensagem ainda. Para mandar um arquivo, use o clipe ou arraste o arquivo para cá.</p>
+            <p id="chatOff" class="warn" hidden>O chat está desligado nesta sala: quem criou precisa da versão 1.7.0 ou mais nova.</p>
+            <p id="chatEmpty" class="hint">Nenhuma mensagem ainda. Mande um oi ou arraste um arquivo para cá. Quem entrar depois vê as últimas 100 mensagens.</p>
             <ul id="chatList" class="chat-list" aria-live="polite"></ul>
+            <button class="jump-new" id="chatJump" type="button" hidden>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7"/></svg>Ir para as mensagens novas
+            </button>
+            <div class="chat-drop" id="chatDrop" hidden>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg>
+              <strong>Solte para mandar para a sala</strong>
+              <span>Até 200 MB. Fica disponível enquanto você estiver na sala.</span>
+            </div>
             <form id="chatForm" class="chat-form">
               <button type="button" class="btn icon" id="chatAttach"></button>
-              <textarea id="chatInput" rows="1" maxlength="2000" placeholder="Mensagem" aria-label="Mensagem"></textarea>
+              <textarea id="chatInput" rows="1" maxlength="2000" placeholder="Mensagem para a sala" aria-label="Mensagem"></textarea>
               <button type="submit" class="btn primary icon" id="chatSend"></button>
               <input type="file" id="chatFile" multiple hidden>
             </form>
-          </div>
-
-          <div class="panel-foot">
-            <button class="btn ghost leave" id="leaveBtn">Sair da sala</button>
-            <button class="btn icon" id="openStatsRoom" type="button" title="Estatísticas: uso de processador e placa de vídeo" aria-label="Estatísticas: uso de processador e placa de vídeo"></button>
           </div>
         </aside>
       </div>

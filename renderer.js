@@ -85,6 +85,12 @@ const ICON = {
   muted: svg('M11 5 6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6'),
   close: svg('M18 6 6 18M6 6l12 12'),
   refresh: svg('M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6'),
+  leave: svg('M9 21H5V3h4M16 17l5-5-5-5M21 12H9'),
+  chat: svg('M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'),
+  chevron: svg('M9 6l6 6-6 6'),
+  doc: svg('M14 3H6v18h12V7zM14 3v4h4'),
+  check: svg('M20 6 9 17l-5-5'),
+  warn: svg('M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z'),
   attach: svg('M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48'),
   send: svg('M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z'),
   stats: svg('M22 12h-4l-3 9L9 3l-3 9H2'),                 // pulso: estatísticas
@@ -239,7 +245,7 @@ function enterRoom(welcome, owner, host, port) {
   state.port = port;
   state.members.clear();
   for (const m of welcome.members) state.members.set(m.id, { name: m.name, sharing: m.sharing, version: m.version });
-  $('leaveBtn').textContent = owner ? 'Encerrar sala' : 'Sair da sala';
+  setIcon($('leaveBtn'), 'leave', owner ? 'Encerrar sala (sai todo mundo)' : 'Sair da sala');
   resetChat(welcome);
   renderRoomAddress();
   renderMembers();
@@ -726,6 +732,9 @@ async function renderRoomAddress() {
     row.append(code, copy);
     box.append(row);
   }
+  state.roomAddr = addrs[0] || '';
+  $('dockAddrText').textContent = state.roomAddr;
+  $('dockAddr').hidden = chat.open || !state.roomAddr;
 }
 
 function memberRow(id, name, sharing) {
@@ -741,7 +750,8 @@ function memberRow(id, name, sharing) {
   const status = document.createElement('span');
   status.className = 'mstatus';
   const paused = id && state.focus && state.focus !== id && state.in.has(id);
-  status.textContent = !sharing ? 'Na sala' : paused ? 'Transmitindo, em pausa para você' : 'Transmitindo';
+  const inPip = id && state.pip && state.pip.id === id;
+  status.textContent = !sharing ? 'Na sala' : inPip ? 'Transmitindo · na janela flutuante' : paused ? 'Transmitindo, em pausa para você' : 'Transmitindo';
   info.append(nameEl, status);
   li.append(dot, info);
 
@@ -837,16 +847,29 @@ function createTile(id, name) {
   const pipNote = document.createElement('div');
   pipNote.className = 'tile-pip-note';
   pipNote.hidden = true;
+  const pipIcon = document.createElement('span');
+  pipIcon.innerHTML = ICON.pip;
   const pipTitle = document.createElement('strong');
   pipTitle.textContent = 'Picture in picture ativado, transmissão pausada';
   const pipText = document.createElement('span');
-  pipText.textContent = 'O vídeo está na janela flutuante. O som continua por aqui.';
+  pipText.textContent = `${name} está na janela flutuante, por cima do jogo. O som continua saindo por aqui.`;
+  const pipActions = document.createElement('div');
+  pipActions.className = 'pip-note-actions';
   const pipBack = document.createElement('button');
   pipBack.type = 'button';
-  pipBack.className = 'btn small';
+  pipBack.className = 'btn primary';
   pipBack.textContent = 'Trazer de volta';
   pipBack.onclick = () => closePip();
-  pipNote.append(pipTitle, pipText, pipBack);
+  const pipAdjust = document.createElement('button');
+  pipAdjust.type = 'button';
+  pipAdjust.className = 'btn';
+  pipAdjust.textContent = 'Ajustar janela';
+  pipAdjust.onclick = () => window.api.pipSetEdit(true);
+  pipActions.append(pipBack, pipAdjust);
+  const pipHint = document.createElement('span');
+  pipHint.className = 'hint';
+  pipHint.textContent = 'ou Ctrl+Shift+E de dentro do jogo';
+  pipNote.append(pipIcon, pipTitle, pipText, pipActions, pipHint);
   el.append(video, overlay, pipNote, label, bar);
   el.addEventListener('dblclick', (e) => { if (!bar.contains(e.target)) toggleFullscreen(el); });
   $('tiles').append(el);
@@ -922,7 +945,10 @@ const CHAT_AUTO_IMAGE = 8 * 1024 * 1024;
 const CHAT_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
 const FILE_CHUNK = 48 * 1024;
 const chat = {
-  tab: 'room',
+  open: true,             // painel (pessoas + chat) aberto
+  lastMsg: null,          // para agrupar mensagens seguidas da mesma pessoa
+  divider: null,          // linha "N mensagens novas"
+  sending: new Set(),     // "pessoa|arquivo" que estou mandando agora (Cancelar do outro lado para)
   supported: false,
   unread: 0,
   files: new Map(),       // id -> File que eu anexei (disponível enquanto eu estiver na sala)
@@ -938,25 +964,42 @@ function formatBytes(n) {
   return `${(n / 1024 / 1024).toFixed(1).replace('.', ',')} MB`;
 }
 
-function setPanelTab(tab) {
-  chat.tab = tab;
-  $('tabRoomBtn').setAttribute('aria-selected', String(tab === 'room'));
-  $('tabChatBtn').setAttribute('aria-selected', String(tab === 'chat'));
-  $('roomTab').hidden = tab !== 'room';
-  $('chatTab').hidden = tab !== 'chat';
-  if (tab === 'chat') {
-    chat.unread = 0;
-    renderUnread();
-    const list = $('chatList');
-    list.scrollTop = list.scrollHeight;
-    if (chat.supported) $('chatInput').focus();
-  }
+// Painel (endereço, pessoas e chat) aberto ou recolhido pelo balão da barra
+function setPanelOpen(open) {
+  chat.open = open;
+  save('panelOpen', open ? '1' : '0');
+  $('roomGrid').classList.toggle('panel-closed', !open);
+  $('chatToggle').setAttribute('aria-pressed', String(open));
+  $('dockAddr').hidden = open || !state.roomAddr;
+  if (open && chatAtBottom()) markRead();
+  renderUnread();
+}
+
+function chatAtBottom() {
+  const l = $('chatList');
+  return l.scrollHeight - l.scrollTop - l.clientHeight < 40;
+}
+
+function scrollChatToEnd() {
+  const l = $('chatList');
+  l.scrollTop = l.scrollHeight;
+}
+
+function markRead() {
+  if (!chat.unread) return;
+  chat.unread = 0;
+  renderUnread();
 }
 
 function renderUnread() {
-  $('chatUnread').hidden = !chat.unread;
-  $('chatUnread').textContent = chat.unread > 99 ? '99+' : String(chat.unread);
-  $('tabChatBtn').setAttribute('aria-label', chat.unread ? `Chat, ${chat.unread} mensagens novas` : 'Chat');
+  const n = chat.unread;
+  $('chatUnread').hidden = !n;
+  $('chatUnread').textContent = n > 99 ? '99+' : String(n);
+  const label = chat.open ? 'Recolher o painel da sala'
+    : n ? `Abrir o chat (${n} ${n === 1 ? 'mensagem nova' : 'mensagens novas'})` : 'Abrir o painel da sala e o chat';
+  $('chatToggle').title = label;
+  $('chatToggle').setAttribute('aria-label', label);
+  $('chatJump').hidden = !n || !chat.open || chatAtBottom();
 }
 
 function resetChat(welcome) {
@@ -965,29 +1008,40 @@ function resetChat(welcome) {
   chat.files.clear();
   chat.downloads.clear();
   chat.cards.clear();
+  chat.sending.clear();
   chat.unread = 0;
+  chat.lastMsg = null;
+  chat.divider = null;
   chat.supported = !!welcome && Array.isArray(welcome.features) && welcome.features.includes('chat');
   $('chatList').innerHTML = '';
   $('chatOff').hidden = !welcome || chat.supported;
   $('chatInput').disabled = $('chatSend').disabled = $('chatAttach').disabled = !chat.supported;
   for (const m of (welcome && welcome.chat) || []) appendMessage(m, false);
   $('chatEmpty').hidden = !!$('chatList').children.length || !chat.supported;
-  renderUnread();
-  setPanelTab('room');
+  setPanelOpen(load('panelOpen', '1') !== '0');
+  requestAnimationFrame(scrollChatToEnd);
 }
 
 function onChatMessage(m) {
-  const list = $('chatList');
-  const atBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 40;
+  const wasBottom = chatAtBottom();
+  const unseen = m.from !== state.myId && (!chat.open || document.hidden || !wasBottom);
+  if (unseen && !chat.unread) {
+    // Começa um lote de novas: a linha "mensagens novas" vai antes desta
+    if (chat.divider) chat.divider.remove();
+    chat.divider = document.createElement('li');
+    chat.divider.className = 'new-divider';
+    $('chatList').append(chat.divider);
+    chat.lastMsg = null;
+  }
   appendMessage(m, true);
   $('chatEmpty').hidden = true;
-  if (atBottom || m.from === state.myId) list.scrollTop = list.scrollHeight;
-  if (m.from === state.myId) return;
-  if (chat.tab !== 'chat' || document.hidden) {
+  if (m.from === state.myId || (chat.open && wasBottom && !document.hidden)) scrollChatToEnd();
+  if (unseen) {
     chat.unread++;
-    renderUnread();
-    if (chat.tab !== 'chat') toast(`${m.name}: ${m.text || `mandou ${m.file.name}`}`);
+    chat.divider.textContent = `${chat.unread} ${chat.unread === 1 ? 'mensagem nova' : 'mensagens novas'}`;
+    if (!chat.open) toast(`${m.name}: ${m.text || `mandou ${m.file.name}`}`);
   }
+  renderUnread();
 }
 
 // Texto sempre como texto; só endereços http(s) viram link, que abre no navegador
@@ -1003,67 +1057,99 @@ function textWithLinks(p, text) {
   }
 }
 
+// Mensagens seguidas da mesma pessoa (em até 5 min) ficam juntas, sem repetir nome e hora
 function appendMessage(m, live) {
   const mine = m.from === state.myId;
+  const prev = chat.lastMsg;
+  const grouped = !!prev && prev.from === m.from && m.ts - prev.ts < 5 * 60 * 1000;
   const li = document.createElement('li');
-  li.className = 'msg' + (mine ? ' mine' : '');
+  li.className = 'msg' + (mine ? ' mine' : '') + (grouped ? ' grouped' : '');
   const head = document.createElement('div');
   head.className = 'msg-head';
-  const who = document.createElement('strong');
-  who.textContent = mine ? 'Você' : m.name;
-  const when = document.createElement('span');
   const d = new Date(m.ts);
+  const when = document.createElement('span');
   when.textContent = `${two(d.getHours())}:${two(d.getMinutes())}`;
-  head.append(who, when);
+  if (!mine) {
+    const who = document.createElement('strong');
+    who.textContent = m.name;
+    head.append(who, ' · ');
+  }
+  head.append(when);
   li.append(head);
   if (m.text) {
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
     const p = document.createElement('p');
     p.className = 'msg-text';
     textWithLinks(p, m.text);
-    li.append(p);
+    bubble.append(p);
+    li.append(bubble);
   }
   if (m.file) li.append(fileCard(m, live));
   $('chatList').append(li);
+  chat.lastMsg = { from: m.from, ts: m.ts };
 }
 
+// Cartão de arquivo: ícone, nome, tamanho/estado, botão (Baixar, Cancelar, Salvar) e barra de progresso
 function fileCard(m, live) {
   const f = m.file;
   const mine = m.from === state.myId;
   const card = document.createElement('div');
   card.className = 'file-card';
+  const row = document.createElement('div');
+  row.className = 'file-row';
+  const icon = document.createElement('span');
+  icon.className = 'file-icon';
+  icon.innerHTML = ICON.doc;
+  const info = document.createElement('div');
+  info.className = 'file-info';
   const name = document.createElement('span');
   name.className = 'file-name';
   name.textContent = f.name;
   name.title = f.name;
   const meta = document.createElement('span');
   meta.className = 'file-meta';
-  const bar = document.createElement('progress');
-  bar.max = 1;
-  bar.hidden = true;
+  info.append(name, meta);
   const btn = document.createElement('button');
   btn.type = 'button';
-  btn.className = 'btn small';
+  btn.className = 'btn small primary';
   btn.textContent = 'Baixar';
-  card.append(name, meta, bar);
-  const parts = { card, meta, bar, btn, f, from: m.from };
+  row.append(icon, info);
+  const bar = document.createElement('div');
+  bar.className = 'file-bar';
+  bar.hidden = true;
+  const fill = document.createElement('span');
+  bar.append(fill);
+  card.append(row, bar);
+  const parts = { card, row, icon, meta, bar, fill, btn, f, from: m.from, state: 'offer' };
   chat.cards.set(f.id, parts);
 
   const local = mine && chat.files.get(f.id);
   if (local) {
+    parts.state = 'mine';
     meta.textContent = `${formatBytes(f.size)} · disponível enquanto você estiver na sala`;
     if (CHAT_IMAGE_TYPES.includes(f.mime)) showImage(parts, URL.createObjectURL(local));
   } else if (mine) {
-    meta.textContent = `${formatBytes(f.size)} · enviado antes de você reabrir o app, não está mais disponível`;
+    setCardGone(parts, 'enviado antes de você reabrir o app, não está mais disponível');
   } else if (!state.members.has(m.from)) {
-    meta.textContent = `${formatBytes(f.size)} · quem mandou saiu da sala`;
+    setCardGone(parts, 'Quem mandou saiu da sala');
   } else {
     meta.textContent = formatBytes(f.size);
     btn.onclick = () => requestFile(m.from, f);
-    card.append(btn);
+    row.append(btn);
     // Imagem pequena chega sozinha e aparece no chat
     if (live && CHAT_IMAGE_TYPES.includes(f.mime) && f.size <= CHAT_AUTO_IMAGE) requestFile(m.from, f);
   }
   return card;
+}
+
+function setCardGone(parts, text) {
+  parts.state = 'gone';
+  parts.card.classList.add('gone');
+  parts.icon.innerHTML = ICON.warn;
+  parts.bar.hidden = true;
+  parts.btn.remove();
+  parts.meta.textContent = text;
 }
 
 function showImage(parts, url) {
@@ -1105,32 +1191,51 @@ function requestFile(from, f) {
   const parts = chat.cards.get(f.id);
   chat.downloads.set(f.id, { from, file: f, chunks: [], got: 0, bytes: 0 });
   if (parts) {
-    parts.btn.disabled = true;
-    parts.btn.textContent = 'Baixando…';
+    parts.state = 'downloading';
+    parts.btn.textContent = 'Cancelar';
+    parts.btn.className = 'btn small';
+    parts.btn.onclick = () => cancelFile(f.id);
     parts.bar.hidden = false;
-    parts.bar.value = 0;
+    parts.fill.style.width = '0%';
+    parts.meta.textContent = `Pedindo a ${nameOf(from)}…`;
   }
   sendSignal(from, { side: 'file', want: f.id });
+}
+
+// Cancelar: avisa quem manda para parar, e o cartão volta a oferecer o Baixar
+function cancelFile(id) {
+  const dl = chat.downloads.get(id);
+  if (!dl) return;
+  chat.downloads.delete(id);
+  sendSignal(dl.from, { side: 'file', cancel: id });
+  const parts = chat.cards.get(id);
+  if (!parts) return;
+  parts.state = 'offer';
+  parts.bar.hidden = true;
+  parts.btn.textContent = 'Baixar';
+  parts.btn.className = 'btn small primary';
+  parts.btn.onclick = () => requestFile(dl.from, dl.file);
+  parts.meta.textContent = formatBytes(dl.file.size);
 }
 
 function fileFailed(id, text) {
   chat.downloads.delete(id);
   const parts = chat.cards.get(id);
-  if (!parts) return;
-  parts.bar.hidden = true;
-  parts.btn.remove();
-  parts.meta.textContent = `${formatBytes(parts.f.size)} · ${text}`;
+  if (parts) setCardGone(parts, `${formatBytes(parts.f.size)} · ${text}`);
 }
 
 async function streamFile(to, id, file) {
+  const key = `${to}|${id}`;
+  chat.sending.add(key);
   const total = Math.max(1, Math.ceil(file.size / FILE_CHUNK));
-  for (let part = 0; part < total && state.members.has(to) && chat.files.has(id); part++) {
+  for (let part = 0; part < total && state.members.has(to) && chat.files.has(id) && chat.sending.has(key); part++) {
     const buf = new Uint8Array(await file.slice(part * FILE_CHUNK, (part + 1) * FILE_CHUNK).arrayBuffer());
     let bin = '';
     for (let i = 0; i < buf.length; i += 8192) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 8192));
     sendSignal(to, { side: 'file', fileId: id, part, total, data: btoa(bin) });
     await waitRoomBuffer();
   }
+  chat.sending.delete(key);
 }
 
 function onFileSignal(from, data) {
@@ -1140,6 +1245,7 @@ function onFileSignal(from, data) {
     streamFile(from, data.want, file).catch((e) => console.warn(e));
     return;
   }
+  if (typeof data.cancel === 'string') return void chat.sending.delete(`${from}|${data.cancel}`);
   const dl = chat.downloads.get(data.fileId);
   if (!dl || dl.from !== from) return;
   if (data.unavailable) return fileFailed(data.fileId, 'não está mais disponível (quem mandou reabriu o app)');
@@ -1151,7 +1257,11 @@ function onFileSignal(from, data) {
   dl.got++;
   dl.bytes += bytes.length;
   const parts = chat.cards.get(data.fileId);
-  if (parts) parts.bar.value = dl.bytes / dl.file.size;
+  if (parts) {
+    const pct = Math.min(100, Math.round((dl.bytes / dl.file.size) * 100));
+    parts.fill.style.width = `${pct}%`;
+    parts.meta.textContent = `${formatBytes(dl.bytes)} de ${formatBytes(dl.file.size)} · ${pct}%`;
+  }
   if (dl.got < data.total) return;
 
   chat.downloads.delete(data.fileId);
@@ -1160,17 +1270,20 @@ function onFileSignal(from, data) {
   const url = URL.createObjectURL(blob);
   chat.urls.push(url);
   if (!parts) return;
+  parts.state = 'done';
+  parts.card.classList.add('done');
+  parts.icon.innerHTML = ICON.check;
   parts.bar.hidden = true;
   parts.btn.remove();
   parts.meta.textContent = `${formatBytes(dl.file.size)} · recebido`;
   if (CHAT_IMAGE_TYPES.includes(dl.file.mime)) showImage(parts, url);
   // Salvar: o Electron pergunta onde guardar
-  const save = document.createElement('a');
-  save.className = 'btn small';
-  save.href = url;
-  save.download = dl.file.name;
-  save.textContent = 'Salvar';
-  parts.card.append(save);
+  const saveLink = document.createElement('a');
+  saveLink.className = 'btn small primary';
+  saveLink.href = url;
+  saveLink.download = dl.file.name;
+  saveLink.textContent = 'Salvar';
+  parts.row.append(saveLink);
   parts.blob = blob;
 }
 
@@ -1178,7 +1291,7 @@ function onFileSignal(from, data) {
 function chatMemberLeft(id) {
   for (const [fid, dl] of chat.downloads) if (dl.from === id) fileFailed(fid, 'quem mandou saiu da sala');
   for (const [fid, parts] of chat.cards) {
-    if (parts.from === id && parts.btn.isConnected && !parts.btn.disabled) fileFailed(fid, 'quem mandou saiu da sala');
+    if (parts.from === id && parts.state === 'offer') fileFailed(fid, 'quem mandou saiu da sala');
   }
 }
 
@@ -1234,13 +1347,50 @@ function buildPip(win) {
   Object.assign(top.style, { display: 'flex', alignItems: 'center', gap: '6px' });
   const name = d.createElement('span');
   Object.assign(name.style, { flex: '1', fontSize: '13px', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textShadow: '0 1px 2px #000' });
-  top.append(name, pipButton(d, 'Travar', () => window.api.pipSetEdit(false), true), pipButton(d, 'Fechar', () => closePip(), false));
+  Object.assign(top.style, { background: 'rgba(0, 0, 0, .72)', margin: '-8px -8px 0', padding: '8px' });
+  const sizes = d.createElement('div');
+  Object.assign(sizes.style, { display: 'flex', gap: '2px', padding: '2px', background: '#111111', borderRadius: '6px' });
+  sizes.style.setProperty('-webkit-app-region', 'no-drag');
+  for (const key of ['P', 'M', 'G']) {
+    const b = pipButton(d, key, () => window.api.pipSize(key), false);
+    Object.assign(b.style, { width: '28px', height: '24px', padding: '0', border: '0', borderRadius: '4px', background: 'transparent', color: '#a3a3a3' });
+    b.title = { P: 'Pequena', M: 'Média', G: 'Grande' }[key];
+    sizes.append(b);
+  }
+  top.append(name, sizes, pipButton(d, 'Travar', () => window.api.pipSetEdit(false), true), pipButton(d, 'Fechar', () => closePip(), false));
+  const bottom = d.createElement('div');
+  Object.assign(bottom.style, { display: 'flex', flexDirection: 'column', gap: '6px', background: 'rgba(0, 0, 0, .72)', margin: '0 -8px -8px', padding: '8px 10px' });
+  const opacityRow = d.createElement('label');
+  Object.assign(opacityRow.style, { display: 'flex', alignItems: 'center', gap: '8px', color: '#d0d0d0' });
+  opacityRow.style.setProperty('-webkit-app-region', 'no-drag');
+  const opacity = d.createElement('input');
+  opacity.type = 'range';
+  opacity.min = '40';
+  opacity.max = '100';
+  opacity.value = '100';
+  Object.assign(opacity.style, { flex: '1', accentColor: '#8ab4ff' });
+  opacity.oninput = () => window.api.pipOpacity(Number(opacity.value) / 100);
+  opacityRow.append('Transparência', opacity);
   const hint = d.createElement('span');
-  hint.textContent = 'Arraste para mover · puxe as bordas para redimensionar · Ctrl+Shift+E trava e destrava, até de dentro do jogo';
-  Object.assign(hint.style, { lineHeight: '1.35', textShadow: '0 1px 2px #000' });
-  edit.append(top, hint);
-  d.body.append(video, edit);
-  return { win, id: null, video, edit, name };
+  hint.textContent = 'Arraste para mover · puxe um canto para redimensionar · Ctrl+Shift+E trava';
+  Object.assign(hint.style, { lineHeight: '1.35', color: '#d0d0d0' });
+  bottom.append(opacityRow, hint);
+  edit.append(top, bottom);
+
+  // Travada: só uma etiqueta pequena com o nome; ao travar, um aviso rápido
+  const lockTag = d.createElement('span');
+  Object.assign(lockTag.style, {
+    position: 'fixed', top: '8px', left: '8px', display: 'none', alignItems: 'center', gap: '5px', fontSize: '11px', fontWeight: '600',
+    padding: '3px 7px', borderRadius: '5px', background: 'rgba(0, 0, 0, .55)', color: 'rgba(237, 237, 237, .85)',
+  });
+  const notice = d.createElement('span');
+  notice.textContent = 'Janela travada: o clique vai para o jogo · Ctrl+Shift+E para ajustar';
+  Object.assign(notice.style, {
+    position: 'fixed', left: '50%', bottom: '10px', transform: 'translateX(-50%)', display: 'none', whiteSpace: 'nowrap',
+    fontSize: '12px', padding: '6px 10px', borderRadius: '8px', background: 'rgba(17, 17, 17, .88)', border: '1px solid #2e2e2e',
+  });
+  d.body.append(video, edit, lockTag, notice);
+  return { win, id: null, video, edit, name, opacity, lockTag, notice, noticeTimer: null };
 }
 
 function setPipStream(id) {
@@ -1252,6 +1402,7 @@ function setPipStream(id) {
   if (before && before !== link) refreshTileStream(before); // a anterior volta para o app
   refreshTileStream(link);
   p.name.textContent = link.tile.name;
+  p.lockTag.textContent = link.tile.name;
   p.win.document.title = `${link.tile.name} · Tela P2P`;
   syncIncomingVideo();
   renderPipButtons();
@@ -1279,10 +1430,26 @@ function renderPipButtons() {
     link.tile.pipBtn.classList.toggle('on', on);
     link.tile.pipNote.hidden = !on;
   }
+  // Barra: qual transmissão está na janela flutuante, com o atalho e o X
+  const p = state.pip;
+  $('pipChip').hidden = !p || !state.in.has(p.id);
+  if (p && state.in.has(p.id)) $('pipChipText').textContent = `Janela flutuante: ${state.in.get(p.id).tile.name}`;
+  if (state.myId) renderMembers();
+}
+
+function setPipLocked(p, locked) {
+  p.edit.style.display = locked ? 'none' : 'flex';
+  p.lockTag.style.display = locked ? 'inline-flex' : 'none';
+  clearTimeout(p.noticeTimer);
+  p.notice.style.display = locked ? 'block' : 'none';
+  if (locked) p.noticeTimer = setTimeout(() => { p.notice.style.display = 'none'; }, 3000);
 }
 
 window.api.onPip((m) => {
-  if (m.type === 'edit' && state.pip && !state.pip.win.closed) state.pip.edit.style.display = m.on ? 'flex' : 'none';
+  if (m.type === 'edit' && state.pip && !state.pip.win.closed) {
+    setPipLocked(state.pip, !m.on);
+    if (typeof m.opacity === 'number') state.pip.opacity.value = String(Math.round(m.opacity * 100));
+  }
   else if (m.type === 'closed' && state.pip) { const p = state.pip; state.pip = null; pipClosed(p); }
   else if (m.type === 'shortcut-busy') toast('Outro programa já usa Ctrl+Shift+E. Trave pelo botão Travar da janela; para ajustar de novo, feche e abra a janela flutuante pelo botão do vídeo.', 'error');
 });
@@ -1978,9 +2145,11 @@ function stopOutStats() {
   away.samples = [];
 }
 
+// Transmitindo: a barra mostra "Ao vivo" e Parar; o painel mostra a prévia e os detalhes
 function renderShareBox() {
-  $('shareIdle').hidden = state.sharing;
-  $('shareLive').hidden = !state.sharing;
+  $('shareBtn').hidden = state.sharing;
+  $('liveChip').hidden = !state.sharing;
+  $('myShare').hidden = !state.sharing;
   syncPreview();
   renderWatchers();
 }
@@ -1990,6 +2159,8 @@ function renderWatchers() {
   $('watcherInfo').textContent = names.length
     ? `Assistindo você: ${names.join(', ')}`
     : 'Ninguém está assistindo ainda. Só é enviado vídeo para quem clicar em Assistir.';
+  const n = state.out.size;
+  $('liveText').textContent = n === 0 ? 'ninguém assistindo' : n === 1 ? '1 assistindo' : `${n} assistindo`;
 }
 
 // ---------- Início ----------
@@ -2108,8 +2279,18 @@ setIcon($('openStatsRoom'), 'stats', 'Estatísticas: uso de processador e placa 
 $('openStatsRoom').onclick = openStats;
 
 // Chat
-$('tabRoomBtn').onclick = () => setPanelTab('room');
-$('tabChatBtn').onclick = () => setPanelTab('chat');
+$('chatToggle').insertAdjacentHTML('afterbegin', ICON.chat);
+$('chatToggle').onclick = () => setPanelOpen(!chat.open);
+setIcon($('chatCollapse'), 'chevron', 'Recolher o painel da sala');
+$('chatCollapse').onclick = () => setPanelOpen(false);
+$('chatJump').onclick = () => { scrollChatToEnd(); markRead(); };
+$('chatList').addEventListener('scroll', () => { if (chatAtBottom() && chat.open && !document.hidden) markRead(); else renderUnread(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden && chat.open && chatAtBottom()) markRead(); });
+$('dockAddr').onclick = async () => {
+  try { await navigator.clipboard.writeText(state.roomAddr); toast('Endereço copiado.'); } catch { toast('Não foi possível copiar.', 'error'); }
+};
+setIcon($('pipChipClose'), 'close', 'Fechar a janela flutuante');
+$('pipChipClose').onclick = () => closePip();
 setIcon($('chatAttach'), 'attach', 'Mandar arquivo (até 200 MB)');
 setIcon($('chatSend'), 'send', 'Enviar');
 $('chatForm').onsubmit = (e) => { e.preventDefault(); sendChat(); };
@@ -2122,11 +2303,11 @@ $('chatFile').onchange = () => { attachFiles([...$('chatFile').files]); $('chatF
 // Arrastar arquivo para o chat; fora dele, soltar um arquivo não faz a janela abrir o arquivo
 document.addEventListener('dragover', (e) => e.preventDefault());
 document.addEventListener('drop', (e) => e.preventDefault());
-$('chatTab').addEventListener('dragover', (e) => { e.preventDefault(); $('chatTab').classList.add('dragging'); });
-$('chatTab').addEventListener('dragleave', (e) => { if (!$('chatTab').contains(e.relatedTarget)) $('chatTab').classList.remove('dragging'); });
+$('chatTab').addEventListener('dragover', (e) => { e.preventDefault(); if (chat.supported) $('chatDrop').hidden = false; });
+$('chatTab').addEventListener('dragleave', (e) => { if (!$('chatTab').contains(e.relatedTarget)) $('chatDrop').hidden = true; });
 $('chatTab').addEventListener('drop', (e) => {
   e.preventDefault();
-  $('chatTab').classList.remove('dragging');
+  $('chatDrop').hidden = true;
   attachFiles([...e.dataTransfer.files]);
 });
 $('closeStats').onclick = closeStats;

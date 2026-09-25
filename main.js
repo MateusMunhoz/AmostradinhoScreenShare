@@ -334,23 +334,45 @@ function sendMain(msg) {
   if (mainWin && !mainWin.isDestroyed()) mainWin.webContents.send('pip', msg);
 }
 
+// Tamanhos rápidos (P, M, G) mantendo o canto de baixo à direita no lugar
+const PIP_SIZES = { P: 320, M: 480, G: 640 };
+function setPipSize(key) {
+  if (!pip || pip.isDestroyed() || !PIP_SIZES[key]) return;
+  const b = pip.getBounds();
+  const width = PIP_SIZES[key];
+  const height = Math.round(width * 9 / 16);
+  pip.setBounds({ x: b.x + b.width - width, y: b.y + b.height - height, width, height });
+}
+
+let pipOpacity = 1;
+function setPipOpacity(v) {
+  if (!pip || pip.isDestroyed()) return;
+  pipOpacity = Math.min(1, Math.max(0.4, Number(v) || 1));
+  pip.setOpacity(pipOpacity);
+  savePip();
+}
+
+function savePip() {
+  if (pip && !pip.isDestroyed()) fs.writeFile(pipFile(), JSON.stringify({ ...pip.getBounds(), opacity: pipOpacity }), () => {});
+}
+
 function setPipEdit(on) {
   if (!pip || pip.isDestroyed()) return;
   pipEdit = !!on;
   pip.setIgnoreMouseEvents(!pipEdit); // travada: o clique atravessa para o que estiver embaixo
-  sendMain({ type: 'edit', on: pipEdit });
+  sendMain({ type: 'edit', on: pipEdit, opacity: pipOpacity });
 }
 
 function setupPip(child) {
   pip = child;
   child.setAlwaysOnTop(true, 'screen-saver');
   child.setAspectRatio(16 / 9);
+  try { pipOpacity = Math.min(1, Math.max(0.4, Number(JSON.parse(fs.readFileSync(pipFile(), 'utf8')).opacity) || 1)); } catch { pipOpacity = 1; }
+  child.setOpacity(pipOpacity);
   let saveTimer = null;
   const save = () => {
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => {
-      if (!child.isDestroyed()) fs.writeFile(pipFile(), JSON.stringify(child.getBounds()), () => {});
-    }, 400);
+    saveTimer = setTimeout(savePip, 400);
   };
   child.on('moved', save);
   child.on('resized', save);
@@ -491,6 +513,8 @@ app.whenReady().then(() => {
   ipcMain.handle('github-install', () => github.install(updater));
   ipcMain.handle('open-github', (_e, url) => github.openPage(url));
   ipcMain.handle('pip-edit', (_e, on) => setPipEdit(on));
+  ipcMain.handle('pip-size', (_e, key) => setPipSize(key));
+  ipcMain.handle('pip-opacity', (_e, v) => setPipOpacity(v));
   ipcMain.handle('open-link', (_e, url) => {
     if (typeof url === 'string' && /^https?:\/\/[^\s]+$/i.test(url)) shell.openExternal(url);
   });
