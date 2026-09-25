@@ -273,11 +273,19 @@
         <h2 id="statsTitle">Estatísticas</h2>
         <button class="btn small" id="closeStats" type="button">Fechar</button>
       </div>
+      <h3 class="stat-group">Uso do app</h3>
       <div class="stat-cards">
-        <div class="stat-card"><span>Processador (app)</span><strong id="stCpu">–</strong><span id="stCpuPC"></span></div>
-        <div class="stat-card"><span>Placa de vídeo 3D (app)</span><strong id="stGpu">–</strong><span id="stGpuPC"></span></div>
-        <div class="stat-card"><span>Codificação de vídeo (app)</span><strong id="stEnc">–</strong><span id="stEncPC"></span></div>
-        <div class="stat-card"><span>Decodificação de vídeo (app)</span><strong id="stDec">–</strong><span id="stDecPC"></span></div>
+        <div class="stat-card"><span class="stat-label">Processador</span><strong id="stCpu">–</strong><span id="stCpuAvg" class="stat-avg"></span><span id="stCpuPC" class="stat-sub"></span><svg id="stCpuChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
+        <div class="stat-card"><span class="stat-label">Placa de vídeo 3D</span><strong id="stGpu">–</strong><span id="stGpuAvg" class="stat-avg"></span><span id="stGpuPC" class="stat-sub"></span><svg id="stGpuChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
+        <div class="stat-card"><span class="stat-label">Codificação de vídeo</span><strong id="stEnc">–</strong><span id="stEncAvg" class="stat-avg"></span><span id="stEncPC" class="stat-sub"></span><svg id="stEncChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
+        <div class="stat-card"><span class="stat-label">Decodificação de vídeo</span><strong id="stDec">–</strong><span id="stDecAvg" class="stat-avg"></span><span id="stDecPC" class="stat-sub"></span><svg id="stDecChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
+      </div>
+      <h3 class="stat-group">Transmissão</h3>
+      <div class="stat-cards">
+        <div class="stat-card"><span class="stat-label">Quadros capturados</span><strong id="stCap">–</strong><span id="stCapAvg" class="stat-avg"></span><svg id="stCapChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
+        <div class="stat-card"><span class="stat-label">Quadros enviados</span><strong id="stSent">–</strong><span id="stSentAvg" class="stat-avg"></span><svg id="stSentChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
+        <div class="stat-card"><span class="stat-label">Enviando</span><strong id="stUp">–</strong><span id="stUpAvg" class="stat-avg"></span><svg id="stUpChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
+        <div class="stat-card"><span class="stat-label">Recebendo</span><strong id="stDown">–</strong><span id="stDownAvg" class="stat-avg"></span><svg id="stDownChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
       </div>
       <p id="stCodec" class="hint"></p>
       <div class="stat-scroll">

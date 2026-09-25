@@ -106,9 +106,12 @@ O app já faz isto sozinho:
 
 ### Estatísticas
 
-Clique em **Estatísticas**, na tela inicial (ao lado da versão) ou na sala (embaixo de Sair da sala). A janela atualiza a cada segundo e mostra:
+Na sala, clique no ícone de pulso ao lado de Sair da sala. Enquanto você está numa sala, o app mede tudo uma vez por segundo, com a janela aberta ou não, e guarda os últimos 10 minutos. Dá para jogar uma partida e abrir as Estatísticas depois para ver como foi.
 
-- **Processador, placa de vídeo 3D, codificação e decodificação de vídeo:** quanto o app usa de cada um, e quanto o PC inteiro usa (inclui o jogo e outros programas). São os mesmos números do Gerenciador de Tarefas.
+Cada cartão mostra o número de agora, a **média dos últimos 30 s** com o mínimo e o pico, e um **gráfico dos últimos 10 minutos**. A faixa no fim do gráfico marca os 30 s da média.
+
+- **Uso do app:** processador, placa de vídeo 3D, codificação e decodificação de vídeo. Mostra quanto o app usa de cada um e, embaixo, a média de 30 s do PC inteiro (inclui o jogo e outros programas). São os mesmos números do Gerenciador de Tarefas.
+- **Transmissão:** quadros capturados, quadros enviados, Mbps enviando e Mbps recebendo. Se "capturados" cai durante o jogo, a placa de vídeo estava ocupada. Se "enviados" cai e "capturados" não, o problema é a internet ou a codificação.
 - **Cada processo do app:** quem captura a tela, quem codifica, quem decodifica, a rede e os ajudantes. Também mostra a memória de vídeo de cada um.
 - **O codificador de verdade:** por exemplo "H.264 com OpenH264 (processador)". Para quem só assiste, o Chromium não diz qual é o decodificador, então aparecem só o codec, a resolução e os fps.
 

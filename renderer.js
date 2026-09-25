@@ -242,6 +242,7 @@ function enterRoom(welcome, owner, host, port) {
   renderShareBox();
   updateStage();
   show('room');
+  perfStart();
   const live = welcome.members.filter((m) => m.sharing).length;
   if (live) toast(live === 1 ? '1 pessoa está transmitindo. Clique em Assistir para ver.' : `${live} pessoas estão transmitindo. Escolha quem assistir.`);
   checkUpdates();
@@ -255,6 +256,8 @@ function leaveRoom(reason, kind = 'info') {
   stopSharing();
   for (const id of [...state.in.keys()]) stopWatching(id, false);
   stopStats();
+  closeStats();
+  perfStop();
   if (state.isOwner) window.api.stopServer();
   state.members.clear();
   state.myId = null;
@@ -483,12 +486,108 @@ function renderUpdateNotice() {
 let codecTimer = null;
 const pct = (v) => `${(v || 0).toFixed(1).replace('.', ',')}%`;
 
+const fpsText = (v) => `${Math.round(v || 0)} fps`;
+const mbpsText = (v) => `${(v || 0).toFixed(1).replace('.', ',')} Mbps`;
+
+// ---------- Desempenho ao longo do tempo ----------
+// Enquanto você está numa sala, o capturador mede processador e placa de vídeo uma vez por segundo,
+// com a janela de Estatísticas aberta ou não. Guarda 10 minutos para os gráficos e as médias de 30 s.
+const PERF_KEEP = 600;
+const PERF_AVG = 30;
+const perf = {
+  samples: [],
+  last: null,     // última leitura completa (para a tabela por processo)
+  since: 0,
+  // números da transmissão agora, preenchidos por startOutStats e ensureStats
+  live: { captureFps: null, sentFps: null, upMbps: 0, downMbps: 0 },
+};
+
+function perfStart() {
+  perf.samples = [];
+  perf.last = null;
+  perf.since = Date.now();
+  window.api.offStats();
+  window.api.onStats(onPerfSample);
+  window.api.statsStart();
+}
+
+function perfStop() {
+  window.api.statsStop();
+  window.api.offStats();
+}
+
+function onPerfSample(s) {
+  const sum = (get) => s.procs.reduce((t, p) => t + get(p), 0);
+  const gpu = (eng) => (s.gpuAvailable ? Math.min(sum((p) => p.gpu[eng] || 0), 100) : null);
+  const gpuPC = (eng) => (s.gpuAvailable ? Math.min(s.gpuPC[eng] || 0, 100) : null);
+  const live = perf.live;
+  perf.samples.push({
+    cpu: sum((p) => p.cpu), cpuPC: s.cpuPC,
+    gpu3d: gpu('3D'), gpu3dPC: gpuPC('3D'),
+    enc: gpu('VideoEncode'), encPC: gpuPC('VideoEncode'),
+    dec: gpu('VideoDecode'), decPC: gpuPC('VideoDecode'),
+    captureFps: state.sharing ? live.captureFps : null,
+    sentFps: state.sharing ? live.sentFps : null,
+    upMbps: state.sharing ? live.upMbps : 0,
+    downMbps: state.in.size ? live.downMbps : 0,
+  });
+  if (perf.samples.length > PERF_KEEP) perf.samples.shift();
+  perf.last = s;
+  if (!$('statsDialog').hidden) renderStats();
+}
+
+// Média, mínimo e máximo dos últimos N segundos (só o que foi medido)
+function perfWindow(key, secs = PERF_AVG) {
+  const vals = perf.samples.slice(-secs).map((x) => x[key]).filter((v) => typeof v === 'number');
+  if (!vals.length) return null;
+  return { avg: vals.reduce((a, b) => a + b, 0) / vals.length, min: Math.min(...vals), max: Math.max(...vals) };
+}
+
+const STAT_CARDS = [
+  { id: 'stCpu', key: 'cpu', pc: 'cpuPC', fmt: pct, max: 100, label: 'Processador' },
+  { id: 'stGpu', key: 'gpu3d', pc: 'gpu3dPC', fmt: pct, max: 100, label: 'Placa de vídeo 3D' },
+  { id: 'stEnc', key: 'enc', pc: 'encPC', fmt: pct, max: 100, label: 'Codificação de vídeo' },
+  { id: 'stDec', key: 'dec', pc: 'decPC', fmt: pct, max: 100, label: 'Decodificação de vídeo' },
+  { id: 'stCap', key: 'captureFps', fmt: fpsText, label: 'Quadros capturados', only: 'sharing' },
+  { id: 'stSent', key: 'sentFps', fmt: fpsText, label: 'Quadros enviados', only: 'sharing' },
+  { id: 'stUp', key: 'upMbps', fmt: mbpsText, label: 'Enviando' },
+  { id: 'stDown', key: 'downMbps', fmt: mbpsText, label: 'Recebendo' },
+];
+
+// Linha dos últimos 10 minutos (o mais novo à direita); trechos sem medida ficam em branco
+function drawSpark(svg, key, max, label, fmt) {
+  const NS = 'http://www.w3.org/2000/svg';
+  const W = 600, H = 60, step = W / (PERF_KEEP - 1);
+  const vals = perf.samples.map((x) => x[key]);
+  const top = max || Math.max(1, ...vals.filter((v) => typeof v === 'number')) * 1.15;
+  svg.replaceChildren();
+  const el = (tag, attrs) => {
+    const n = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+    svg.append(n);
+    return n;
+  };
+  el('rect', { class: 'band', x: W - step * PERF_AVG, y: 0, width: step * PERF_AVG, height: H });
+  el('line', { class: 'base', x1: 0, y1: H - 1, x2: W, y2: H - 1 });
+  let pts = [];
+  const flush = () => { if (pts.length > 1) el('polyline', { points: pts.join(' ') }); pts = []; };
+  vals.forEach((v, i) => {
+    if (typeof v !== 'number') return flush();
+    const x = (PERF_KEEP - vals.length + i) * step;
+    const y = H - 2 - (Math.min(v, top) / top) * (H - 6);
+    pts.push(`${x.toFixed(1)},${y.toFixed(1)}`);
+  });
+  flush();
+  const all = perfWindow(key, PERF_KEEP);
+  const mins = Math.max(1, Math.round(perf.samples.length / 60));
+  svg.setAttribute('aria-label', all
+    ? `${label}, últimos ${mins} min: média ${fmt(all.avg)}, pico ${fmt(all.max)}`
+    : `${label}: sem medidas ainda`);
+}
+
 function openStats() {
   $('statsDialog').hidden = false;
-  $('stNote').textContent = 'Medindo…';
-  window.api.offStats();
-  window.api.onStats(renderStats);
-  window.api.statsStart();
+  renderStats();
   renderCodecInfo();
   codecTimer = setInterval(renderCodecInfo, 1000);
   $('closeStats').focus();
@@ -497,20 +596,29 @@ function openStats() {
 function closeStats() {
   if ($('statsDialog').hidden) return;
   $('statsDialog').hidden = true;
-  window.api.statsStop();
-  window.api.offStats();
   clearInterval(codecTimer);
 }
 
-function renderStats(s) {
-  const sum = (get) => s.procs.reduce((t, p) => t + get(p), 0);
-  const gpu = (eng) => (p) => p.gpu[eng] || 0;
-  $('stCpu').textContent = pct(sum((p) => p.cpu));
-  $('stCpuPC').textContent = `PC inteiro: ${pct(s.cpuPC)}`;
-  const cards = [['stGpu', '3D'], ['stEnc', 'VideoEncode'], ['stDec', 'VideoDecode']];
-  for (const [id, eng] of cards) {
-    $(id).textContent = s.gpuAvailable ? pct(Math.min(sum(gpu(eng)), 100)) : '–';
-    $(`${id}PC`).textContent = s.gpuAvailable ? `PC inteiro: ${pct(Math.min(s.gpuPC[eng] || 0, 100))}` : 'o Windows não informou';
+function renderStats() {
+  const s = perf.last;
+  const last = perf.samples[perf.samples.length - 1];
+  for (const c of STAT_CARDS) {
+    const now = last ? last[c.key] : null;
+    const w = perfWindow(c.key);
+    $(c.id).textContent = typeof now === 'number' ? c.fmt(now) : '–';
+    $(`${c.id}Avg`).textContent = w
+      ? `Média 30 s: ${c.fmt(w.avg)} · mín. ${c.fmt(w.min)} · pico ${c.fmt(w.max)}`
+      : c.only === 'sharing' ? (state.sharing ? 'Ninguém assistindo agora' : 'Só enquanto você transmite')
+        : s && !s.gpuAvailable && c.max ? 'O Windows não informou' : '';
+    if (c.pc) {
+      const pc = perfWindow(c.pc);
+      $(`${c.id}PC`).textContent = pc ? `PC inteiro, média 30 s: ${c.fmt(pc.avg)}` : '';
+    }
+    drawSpark($(`${c.id}Chart`), c.key, c.max, c.label, c.fmt);
+  }
+  if (!s) {
+    $('stNote').textContent = 'Medindo… As medidas começam quando você entra numa sala.';
+    return;
   }
 
   const rows = [...s.procs].sort((a, b) => (b.cpu + (b.gpu['3D'] || 0)) - (a.cpu + (a.gpu['3D'] || 0)));
@@ -526,7 +634,10 @@ function renderStats(s) {
     }
     body.append(tr);
   }
-  $('stNote').textContent = `Processador em % do PC inteiro (${s.cores} núcleos). "PC inteiro" inclui o jogo e outros programas. Atualiza a cada segundo.`;
+  const secs = perf.samples.length;
+  $('stNote').textContent = secs < PERF_AVG
+    ? `Coletando há ${secs} s, desde que você entrou na sala. As médias usam os últimos 30 s.`
+    : `Médias dos últimos 30 s (a faixa no fim de cada gráfico); gráficos dos últimos ${Math.min(10, Math.round(secs / 60)) || 1} min. Processador em % do PC inteiro (${s.cores} núcleos); "PC inteiro" inclui o jogo e outros programas.`;
 }
 
 // Qual codificador/decodificador o WebRTC está usando de verdade agora
@@ -840,7 +951,7 @@ function ensureStats() {
   if (state.statsTimer) return;
   state.statsTimer = setInterval(async () => {
     if (!state.in.size) return stopStats();
-    if (document.hidden) return; // ninguém está vendo os números
+    const paint = !document.hidden; // escondida: mede para as Estatísticas, sem pintar a tela
     let total = 0;
     for (const link of state.in.values()) {
       if (link.pc.connectionState !== 'connected') continue;
@@ -852,7 +963,7 @@ function ensureStats() {
         const fps = secs ? (r.decoded - link.onceFrames) / secs : 0;
         Object.assign(link, { onceTs: now, onceBytes: r.bytes, onceFrames: r.decoded });
         total += mbps;
-        link.tile.stats.textContent = `H.264 (1x), ${r.width || '–'}×${r.height || '–'}, ${Math.round(fps)} fps, ${mbps.toFixed(1)} Mbps`;
+        if (paint) link.tile.stats.textContent = `H.264 (1x), ${r.width || '–'}×${r.height || '–'}, ${Math.round(fps)} fps, ${mbps.toFixed(1)} Mbps`;
         continue;
       }
       let report;
@@ -863,6 +974,7 @@ function ensureStats() {
         link.lastBytes = r.bytesReceived;
         link.lastTs = r.timestamp;
         total += mbps;
+        if (!paint) return;
         const codec = codecName(report, r.codecId);
         link.tile.stats.textContent = [
           codec,
@@ -872,13 +984,15 @@ function ensureStats() {
         ].filter(Boolean).join(', ');
       });
     }
-    $('downloadInfo').textContent = `Baixando ${total.toFixed(1)} Mbps no total`;
+    perf.live.downMbps = total;
+    if (paint) $('downloadInfo').textContent = `Baixando ${total.toFixed(1)} Mbps no total`;
   }, 1000);
 }
 
 function stopStats() {
   clearInterval(state.statsTimer);
   state.statsTimer = null;
+  perf.live.downMbps = 0;
 }
 
 // Com a janela minimizada ou coberta (ex.: jogo em tela cheia) por alguns segundos, para de baixar
@@ -1385,7 +1499,11 @@ function startOutStats() {
     const active = [...state.out.values()].filter((l) => l.pc.connectionState === 'connected' && !l.videoOff);
     const links = active.filter((l) => !l.dc);
     const onceCount = active.length - links.length;
-    if (!active.length) { if (!document.hidden) $('encoderInfo').textContent = ''; return; }
+    if (!active.length) {
+      Object.assign(perf.live, { captureFps: null, sentFps: 0, upMbps: 0 }); // ninguém assistindo
+      if (!document.hidden) $('encoderInfo').textContent = '';
+      return;
+    }
     let codec = '', hw = null, limit = 'none', captureFps = 0, sentFps = 0, mbps = 0;
 
     // Modo "uma vez só": contadores próprios, já que não há faixa de vídeo WebRTC
@@ -1420,6 +1538,7 @@ function startOutStats() {
         link.lastTs = r.timestamp;
       });
     }
+    Object.assign(perf.live, { captureFps, sentFps, upMbps: mbps });
     if (document.hidden) {
       away.samples.push({ captureFps, sentFps, mbps, limit }); // ninguém está vendo o painel agora
       return;
@@ -1444,6 +1563,7 @@ function startOutStats() {
 function stopOutStats() {
   clearInterval(state.outStatsTimer);
   state.outStatsTimer = null;
+  Object.assign(perf.live, { captureFps: null, sentFps: null, upMbps: 0 });
   $('encoderInfo').textContent = '';
   $('awayInfo').textContent = '';
   away.samples = [];
