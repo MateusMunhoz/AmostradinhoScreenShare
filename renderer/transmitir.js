@@ -1,0 +1,673 @@
+'use strict';
+// Transmitir: escolher a fonte, som, iniciar, trocar e parar, quem assiste e as medidas de envio.
+// Script clássico: divide o escopo global com os outros (ordem no index.html). Usa de: util, estado, rtc, voz, membros, assistir, estatisticas.
+
+// ---------- Transmitir ----------
+function openShareDialog(switching = false) {
+  state.shareSwitching = switching && state.sharing;
+  $('shareDialog').hidden = false;
+  $('shareDialog').classList.toggle('switching', state.shareSwitching);
+  $('shareTitle').textContent = state.shareSwitching ? 'Trocar o que transmitir' : 'Transmitir';
+  $('shareSubtitle').textContent = state.shareSwitching
+    ? 'A transmissão continua: quem assiste passa a ver o que você escolher'
+    : 'Escolha o que os outros vão ver';
+  if (state.shareSwitching) state.selectedSource = state.sharingSource;
+  loadSources();
+  syncAudioMode();
+  checkEncodeOnce();
+  renderShareSummary();
+}
+
+const QUALITY_SPEC = { '720p30': '720p 30 fps', '720p60': '720p 60 fps', '1080p30': '1080p 30 fps', '1080p60': '1080p 60 fps' };
+function radioValue(name) { return document.querySelector(`input[name="${name}"]:checked`)?.value || ''; }
+function setRadio(name, value) {
+  const el = document.querySelector(`input[name="${name}"][value="${value}"]`);
+  if (el && !el.disabled) el.checked = true;
+}
+// "Discord", "Discord e Spotify", "Discord, Spotify e Chrome"
+function joinNames(list) { return list.length < 2 ? list.join('') : `${list.slice(0, -1).join(', ')} e ${list[list.length - 1]}`; }
+// Com um monitor só, o Chromium chama a tela de "Tela cheia" / "Entire screen": fica só "Tela inteira"
+function sourceLabel(s) {
+  if (!s.id.startsWith('screen')) return s.name;
+  return /^(tela cheia|tela inteira|entire screen)$/i.test(s.name.trim()) ? 'Tela inteira' : `Tela inteira: ${s.name}`;
+}
+
+// A opção "uma vez só" só fica disponível se o PC codifica H.264 pelo NVENC ou pelo WebCodecs
+let encodeOnceSupport = null;
+async function checkEncodeOnce() {
+  if (encodeOnceSupport === null) encodeOnceSupport = await onceSupport();
+  const once = document.querySelector('input[name="encodeMode"][value="once"]');
+  once.disabled = !encodeOnceSupport;
+  $('encodeOnceLabel').textContent = encodeOnceSupport?.engine === 'nvenc' ? 'Uma vez só (NVENC direto)' : 'Uma vez só';
+  if (!encodeOnceSupport) { once.checked = false; setRadio('encodeMode', 'per'); }
+  syncEncodeNote();
+  renderShareSummary();
+}
+
+function syncEncodeNote() {
+  const note = $('encodeNote');
+  if (encodeOnceSupport === null) return;
+  note.hidden = false;
+  note.textContent = !encodeOnceSupport
+    ? 'Este PC não consegue codificar uma vez só para todos, então cada pessoa recebe a própria codificação.'
+    : radioValue('encodeMode') === 'once'
+      ? `Codifica o vídeo uma vez só${encodeOnceSupport.engine === 'nvenc' ? ', direto no NVENC da placa NVIDIA (a imagem nem passa pelo processador)' : encodeOnceSupport.hardware ? ', pela placa de vídeo' : ', pelo processador'}, e manda o mesmo para todos: o peso não aumenta quando mais gente assiste. Quem tem versão antiga do app recebe no modo normal.`
+      : 'O processador codifica o vídeo uma vez para cada pessoa que assiste. Com vários amigos assistindo, experimente "Uma vez só".';
+}
+
+function encodeText() {
+  if (radioValue('encodeMode') !== 'once' || !encodeOnceSupport) return 'uma codificação por pessoa';
+  return encodeOnceSupport.engine === 'nvenc' ? 'NVENC direto' : encodeOnceSupport.hardware ? 'uma vez só pela placa' : 'uma vez só pelo processador';
+}
+
+function soundText() {
+  if (!$('soundOn').checked) return 'sem som';
+  const names = appsLoaded()
+    ? [...$('excludeApps').querySelectorAll('input:checked')].map((i) => i.parentElement.textContent.trim())
+    : savedExcludes().map((exe) => exe.replace(/\.exe$/i, ''));
+  return names.length ? `som sem ${joinNames(names)}` : 'todo o som do PC';
+}
+
+// Rodapé: o que vai acontecer ao clicar em Iniciar; e o resumo do Avançado quando está fechado
+function renderShareSummary() {
+  const src = state.sources.find((s) => s.id === state.selectedSource);
+  const same = state.shareSwitching && state.selectedSource === state.sharingSource;
+  $('shareSummary').classList.toggle('ready', !!src && !same);
+  $('shareSummaryText').textContent = state.shareSwitching
+    ? (!src ? 'Escolha a tela ou janela nova'
+      : same ? `${sourceLabel(src)} · é o que você já está transmitindo`
+      : `${sourceLabel(src)} · a qualidade e o som continuam os mesmos`)
+    : src
+      ? [sourceLabel(src), QUALITY_SPEC[radioValue('quality')], encodeText(), soundText()].join(' · ')
+      : 'Escolha uma tela ou janela para começar';
+  $('shareSummary').title = $('shareSummaryText').textContent; // texto inteiro, se não couber
+  $('startBtn').disabled = !src || same;
+  if (!$('startBtn').dataset.busy) $('startBtn').textContent = state.shareSwitching ? 'Trocar para esta' : 'Iniciar transmissão';
+  const open = $('advToggle').getAttribute('aria-expanded') === 'true';
+  const prio = document.querySelector('input[name="priority"]:checked')?.nextElementSibling?.textContent || '';
+  $('advSummary').textContent = open ? '' : `${encodeText()} · prioridade ${prio.toLowerCase()}`;
+}
+
+function setAdvanced(open) {
+  $('advToggle').setAttribute('aria-expanded', String(open));
+  $('advPanel').hidden = !open;
+  renderShareSummary();
+}
+
+function closeShareDialog() {
+  $('shareDialog').hidden = true;
+  if (state.shareSwitching) state.selectedSource = state.sharingSource; // cancelou: a escolha volta a ser a de agora
+  state.shareSwitching = false;
+  $('shareDialog').classList.remove('switching');
+}
+
+async function loadSources() {
+  $('sources').innerHTML = '<p class="hint">Carregando telas e janelas…</p>';
+  let sources = [];
+  try { sources = await window.api.getSources(); } catch (e) { console.error(e); }
+  state.sources = sources;
+  const sel = sources.find((s) => s.id === state.selectedSource);
+  if (!sel) state.selectedSource = null;
+  else state.sourceTab = sel.id.startsWith('screen') ? 'screens' : 'windows';
+  renderSources();
+}
+
+function selectSource(id) {
+  state.selectedSource = id;
+  for (const el of $('shareDialog').querySelectorAll('[data-source]')) {
+    const on = el.dataset.source === id;
+    el.classList.toggle('selected', on);
+    el.setAttribute('aria-pressed', String(on));
+  }
+  renderShareSummary();
+}
+
+// Abas Telas | Janelas. Janelas que saem pretas (administrador, protegidas ou minimizadas) ficam à parte.
+function renderSources() {
+  const grid = $('sources');
+  const screens = state.sources.filter((s) => s.id.startsWith('screen'));
+  const windows = state.sources.filter((s) => !s.id.startsWith('screen') && !s.dark);
+  const blocked = state.sources.filter((s) => !s.id.startsWith('screen') && s.dark);
+  $('countScreens').textContent = screens.length || '';
+  $('countWindows').textContent = windows.length || '';
+  $('tabScreens').setAttribute('aria-selected', String(state.sourceTab === 'screens'));
+  $('tabWindows').setAttribute('aria-selected', String(state.sourceTab === 'windows'));
+  const shown = state.sourceTab === 'screens' ? screens : windows;
+
+  grid.innerHTML = '';
+  if (!shown.length) {
+    grid.innerHTML = state.sources.length
+      ? '<p class="hint">Nenhuma janela aberta agora.</p>'
+      : '<p class="hint">Nenhuma tela encontrada. Clique em atualizar.</p>';
+  }
+  for (const s of shown) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'source';
+    btn.dataset.source = s.id;
+    const img = document.createElement('img');
+    img.src = s.thumbnail;
+    img.alt = '';
+    const label = document.createElement('span');
+    label.textContent = sourceLabel(s);
+    btn.append(img, label);
+    btn.onclick = () => selectSource(s.id);
+    btn.ondblclick = () => startSharing();
+    grid.append(btn);
+  }
+
+  const note = $('blockedNote');
+  note.hidden = state.sourceTab !== 'windows' || !blocked.length;
+  if (!note.hidden) {
+    $('blockedTitle').textContent = `Aparecem pretas (${blocked.length})`;
+    $('blockedText').textContent = `${joinNames(blocked.map((s) => s.name))}: janela de administrador, protegida ou minimizada. Se estiver minimizada, abra a janela e clique em atualizar; senão, transmita a Tela inteira.`;
+  }
+  selectSource(state.selectedSource);
+}
+
+// Apps marcados da última vez. Sem nada salvo, o Discord já vem marcado (a voz da call não vai
+// para a transmissão), a não ser que a pessoa já transmitisse com todo o som na versão antiga.
+function savedExcludes() {
+  try {
+    const list = JSON.parse(load('excludeApps', 'null'));
+    if (Array.isArray(list)) return list;
+  } catch {}
+  const oldMode = load('audioMode', '');
+  if (oldMode === 'exclude') return [load('excludeApp', 'Discord.exe')]; // versão antiga: um app só
+  return oldMode === 'all' ? [] : ['Discord.exe'];
+}
+
+function appsLoaded() { return !!$('excludeApps').querySelector('input'); }
+
+function checkedApps() {
+  return [...$('excludeApps').querySelectorAll('input:checked')].map((i) => i.value);
+}
+
+async function loadAudioApps() {
+  const box = $('excludeApps');
+  const wanted = appsLoaded() ? checkedApps() : savedExcludes();
+  const same = (a, b) => a.toLowerCase() === b.toLowerCase();
+  if (!appsLoaded()) box.innerHTML = '<span class="hint">Procurando apps que estão tocando som…</span>';
+  let apps = [];
+  try { apps = await window.api.listAudioApps(); } catch (e) { console.error(e); }
+  // Discord sempre aparece, mesmo sem estar numa call agora; os marcados antes também
+  if (!apps.some((a) => same(a.exe, 'Discord.exe'))) apps.push({ exe: 'Discord.exe', name: 'Discord' });
+  for (const w of wanted) if (!apps.some((a) => same(a.exe, w))) apps.push({ exe: w, name: w.replace(/\.exe$/i, '') });
+  // Discord e Spotify primeiro (os mais ignorados), o resto em ordem alfabética
+  const rank = (a) => ['discord.exe', 'spotify.exe'].indexOf(a.exe.toLowerCase()) >>> 0;
+  apps.sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name, 'pt-BR'));
+  box.innerHTML = '';
+  for (const a of apps) {
+    const chip = document.createElement('label');
+    chip.className = 'app-chip';
+    chip.title = a.exe;
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.value = a.exe;
+    input.checked = wanted.some((w) => same(w, a.exe));
+    const text = document.createElement('span');
+    text.textContent = a.name;
+    chip.append(input, text);
+    box.append(chip);
+  }
+  renderShareSummary();
+}
+
+function syncAudioMode() {
+  const withAudio = $('soundOn').checked;
+  $('excludeField').hidden = !withAudio;
+  if (withAudio && !appsLoaded()) loadAudioApps();
+}
+
+async function createAppAudioTrack(exes) {
+  const res = await window.api.startAppAudio(exes);
+  if (!res.ok) throw new Error(res.error);
+
+  const ctx = new AudioContext({ sampleRate: 48000, latencyHint: 'interactive' });
+  await ctx.audioWorklet.addModule('pcm-worklet.js');
+  const node = new AudioWorkletNode(ctx, 'pcm-player', { numberOfInputs: 0, outputChannelCount: [2] });
+  const dest = ctx.createMediaStreamDestination();
+  node.connect(dest);
+  await ctx.resume();
+
+  // O worklet converte para float no thread de áudio; aqui só copia e repassa
+  window.api.onPcm((bytes) => {
+    const i16 = new Int16Array(bytes.slice().buffer);
+    node.port.postMessage(i16, [i16.buffer]);
+  });
+
+  state.appAudio = { ctx };
+  return dest.stream.getAudioTracks()[0];
+}
+
+function stopAppAudio() {
+  if (!state.appAudio) return;
+  window.api.offPcm();
+  window.api.stopAppAudio();
+  state.appAudio.ctx.close().catch(() => {});
+  state.appAudio = null;
+}
+
+function stopTracks() {
+  state.systemLoopback = false;
+  if (state.stream) state.stream.getTracks().forEach((t) => t.stop());
+  state.stream = null;
+  stopAppAudio();
+}
+
+async function startSharing() {
+  if (!state.selectedSource || state.sharing || !state.ws) return;
+  const btn = $('startBtn');
+  setBusy(btn, true, 'Iniciando…');
+
+  state.quality = QUALITY[radioValue('quality')] ? radioValue('quality') : '1080p30';
+  const q = QUALITY[state.quality];
+  const audioMode = $('soundOn').checked ? 'all' : 'none';
+  const encodeMode = radioValue('encodeMode') || 'per';
+  save('encodeMode', encodeMode);
+  const excluded = audioMode === 'none' ? [] : appsLoaded() ? checkedApps() : savedExcludes();
+  save('quality', state.quality);
+  save('audioMode', audioMode);
+  if (audioMode !== 'none') save('excludeApps', JSON.stringify(excluded));
+
+  // O som vem do capturador próprio, que sempre deixa de fora o som deste app (as telas que você
+  // está assistindo) e os apps marcados. Se ele falhar sem nenhum app marcado, volta para a
+  // captura comum do Windows; com apps marcados, transmite sem som (melhor que vazar a call).
+  let audioTrack = null;
+  let loopback = false;
+  if (audioMode !== 'none') {
+    try {
+      audioTrack = await createAppAudioTrack(excluded);
+    } catch (err) {
+      stopAppAudio();
+      if (!excluded.length && !voice.session && !voice.pending) {
+        loopback = true;
+        state.systemLoopback = true;
+        toast('Não deu para separar o som deste app, então quem você assiste pode se ouvir na sua transmissão.', 'error');
+      } else {
+        toast(`Não foi possível ignorar os apps escolhidos: ${err.message}. Transmitindo sem áudio.`, 'error');
+      }
+    }
+  }
+
+  // Uma vez só + placa NVIDIA: o videocap captura e codifica, sem a captura do Chromium
+  let nvenc = false;
+  if (encodeMode === 'once' && (await onceSupport())?.engine === 'nvenc') nvenc = await startNvenc(state.selectedSource);
+
+  try {
+    if (nvenc && !loopback) {
+      state.stream = new MediaStream();
+    } else {
+      await window.api.selectSource(state.selectedSource, loopback);
+      state.stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { width: { max: q.w }, height: { max: q.h }, frameRate: { ideal: q.fps, max: q.fps } },
+        audio: loopback
+          ? { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+          : false,
+      });
+      // Com o NVENC, a captura do Chromium só serviu para pegar o som do Windows
+      if (nvenc) for (const t of state.stream.getVideoTracks()) { t.stop(); state.stream.removeTrack(t); }
+    }
+  } catch (err) {
+    stopOnceEncoder();
+    stopAppAudio();
+    state.systemLoopback = false;
+    setBusy(btn, false, 'Iniciar transmissão');
+    return toast(`Não foi possível capturar a tela: ${err.message}`, 'error');
+  }
+  if (audioTrack) state.stream.addTrack(audioTrack);
+  state.systemLoopback = loopback;
+
+  const vTrack = state.stream.getVideoTracks()[0];
+  if (vTrack) {
+    setupChromeVideo(vTrack);
+    if (encodeMode === 'once' && !nvenc && !(await startOnceEncoder(vTrack))) {
+      toast('Este PC não conseguiu codificar uma vez só. Transmitindo no modo normal.', 'error');
+    }
+  }
+
+  state.sharing = true;
+  state.sharingSource = state.selectedSource;
+  state.shareInfoKey = '';
+  sendShareInfo();
+  updateStage();
+  startOutStats();
+  $('noAudio').hidden = audioMode === 'none' || state.stream.getAudioTracks().length > 0;
+  closeShareDialog();
+  renderShareBox();
+  renderMembers();
+  setBusy(btn, false, 'Iniciar transmissão');
+}
+
+function setupChromeVideo(track) {
+  track.contentHint = 'motion';
+  track.onended = () => stopSharing('A captura foi encerrada (a janela foi fechada?).');
+}
+
+// Faixa de vídeo do Chromium, pega só quando precisa: no modo NVENC, para quem tem versão antiga
+// ou quando o NVENC para no meio da transmissão
+let chromeVideoPending = null;
+function ensureChromeVideo() {
+  const have = state.stream && state.stream.getVideoTracks()[0];
+  if (have) return Promise.resolve(have);
+  if (!state.sharing || !state.stream) return Promise.resolve(null);
+  if (!chromeVideoPending) {
+    chromeVideoPending = (async () => {
+      const q = QUALITY[state.quality];
+      try {
+        await window.api.selectSource(state.sharingSource || state.selectedSource, false);
+        const s = await navigator.mediaDevices.getDisplayMedia({
+          video: { width: { max: q.w }, height: { max: q.h }, frameRate: { ideal: q.fps, max: q.fps } },
+          audio: false,
+        });
+        const track = s.getVideoTracks()[0];
+        if (!state.sharing || !state.stream) { track.stop(); return null; }
+        setupChromeVideo(track);
+        state.stream.addTrack(track);
+        syncPreview();
+        return track;
+      } catch (err) {
+        console.warn('Não foi possível capturar a tela pelo Chromium:', err);
+        return null;
+      } finally {
+        chromeVideoPending = null;
+      }
+    })();
+  }
+  return chromeVideoPending;
+}
+
+// No modo NVENC, a captura do Chromium só fica ligada enquanto alguém com versão antiga assiste
+function releaseChromeVideo() {
+  if (!once.active || once.engine !== 'nvenc' || !state.stream) return;
+  if ([...state.out.values()].some((l) => !l.dc)) return;
+  for (const t of state.stream.getVideoTracks()) { t.onended = null; t.stop(); state.stream.removeTrack(t); }
+  syncPreview();
+}
+
+function stopSharing(reason) {
+  if (!state.sharing) return;
+  state.sharing = false;
+  state.sharingSource = null;
+  if (state.shareSwitching) closeShareDialog();
+  stopWatching(state.myId, false);
+  stopOnceEncoder();
+  stopOutStats();
+  for (const id of [...state.out.keys()]) closeOut(id);
+  stopTracks();
+  state.shareInfo = null;
+  state.shareInfoKey = '';
+  send({ type: 'share', sharing: false });
+  updateStage();
+  renderShareBox();
+  renderMembers();
+  if (reason) toast(reason);
+}
+
+// Troca a tela ou janela no meio da transmissão, sem derrubar ninguém. O som não muda (vem do
+// capturador de áudio, não da tela).
+//   Modo normal: a faixa nova entra no lugar da antiga em cada conexão (replaceTrack, sem renegociar).
+//   Uma vez só pelo WebCodecs: o codificador passa a ler da faixa nova.
+//   Uma vez só pelo NVENC direto: o videocap recomeça apontando para a fonte nova, e todos recebem um
+//   quadro-chave. Se o NVENC não conseguir, continua pelo WebCodecs com a faixa do Chromium.
+async function switchSource() {
+  const id = state.selectedSource;
+  if (!state.sharing || !id || id === state.sharingSource) return closeShareDialog();
+  const btn = $('startBtn');
+  btn.dataset.busy = '1';
+  setBusy(btn, true, 'Trocando…');
+  const q = QUALITY[state.quality];
+  const oldVideo = state.stream.getVideoTracks()[0] || null;
+  const nvenc = once.active && once.engine === 'nvenc';
+  let newVideo = null;
+  try {
+    // Faixa nova do Chromium: sempre, menos no NVENC sem ninguém de versão antiga (que não usa essa faixa)
+    if (oldVideo || !nvenc) {
+      await window.api.selectSource(id, false);
+      const s = await navigator.mediaDevices.getDisplayMedia({
+        video: { width: { max: q.w }, height: { max: q.h }, frameRate: { ideal: q.fps, max: q.fps } },
+        audio: false,
+      });
+      newVideo = s.getVideoTracks()[0];
+    }
+  } catch (err) {
+    delete btn.dataset.busy;
+    setBusy(btn, false, 'Trocar para esta');
+    return toast(`Não foi possível capturar: ${err.message}`, 'error');
+  }
+  if (!state.sharing) { newVideo?.stop(); delete btn.dataset.busy; return; }
+  state.sharingSource = id;
+
+  if (newVideo) {
+    if (oldVideo) { oldVideo.onended = null; state.stream.removeTrack(oldVideo); }
+    state.stream.addTrack(newVideo);
+    setupChromeVideo(newVideo);
+    for (const link of state.out.values()) {
+      const sender = link.pc.getSenders().find((x) => x.track && x.track.kind === 'video');
+      if (sender) await sender.replaceTrack(newVideo).catch((e) => console.warn(e));
+    }
+    if (once.active && once.engine === 'webcodecs') {
+      const reader = once.reader;
+      once.reader = null;
+      if (reader) reader.cancel().catch(() => {});
+      once.keyWanted = true;
+      readFrames(newVideo);
+    }
+    oldVideo?.stop();
+  }
+
+  if (nvenc) {
+    window.api.offVideoCap();
+    await window.api.videoCapStop().catch(() => {});
+    once.active = false;
+    once.engine = '';
+    if (await startNvenc(id)) {
+      sendConfigToAll();
+      for (const [, l] of onceLinks()) l.needKey = true;
+      requestKey();
+    } else {
+      await switchToWebCodecs('O NVENC direto não conseguiu capturar a fonte nova.');
+    }
+  }
+
+  delete btn.dataset.busy;
+  setBusy(btn, false, 'Trocar para esta');
+  closeShareDialog();
+  renderShareBox();
+  sendShareInfo();
+  refreshSelfView();
+  const src = state.sources.find((s) => s.id === id);
+  toast(`Agora você está transmitindo: ${src ? sourceLabel(src) : 'a fonte nova'}.`);
+}
+
+// Alguém clicou em Assistir na minha transmissão: só agora a conexão é criada
+// Se eu transmito no modo "uma vez só" e o app da pessoa entende, o vídeo vai pelo canal de dados;
+// senão (ex.: versão antiga), vai como faixa WebRTC normal, com o codificador próprio dessa conexão.
+function addWatcher(id, wantsOnce) {
+  if (!state.sharing || !state.stream) return sendSignal(id, { side: 'sharer', unavailable: true });
+  closeOut(id);
+  const pc = new RTCPeerConnection(RTC_CONFIG);
+  const link = { pc, chain: Promise.resolve(), dc: null };
+  state.out.set(id, link);
+
+  const useOnce = wantsOnce && once.active;
+  if (useOnce) {
+    link.dc = pc.createDataChannel('video');
+    setupOnceSender(link);
+  }
+  // No modo NVENC não há faixa de vídeo do Chromium: quem precisa dela (versão antiga) espera ela ser pega
+  link.chain = link.chain.then(async () => {
+    if (!useOnce) await ensureChromeVideo();
+    if (!state.stream || state.out.get(id) !== link) return;
+    state.stream.getTracks().filter((t) => !useOnce || t.kind !== 'video').forEach((t) => pc.addTrack(t, state.stream));
+    if (!useOnce) preferH264(pc);
+  });
+  pc.onicecandidate = (e) => { if (e.candidate) sendSignal(id, { side: 'sharer', candidate: e.candidate }); };
+  pc.onconnectionstatechange = () => {
+    if (pc.connectionState === 'connected') link.chain = link.chain.then(() => applyBitrate(link)).catch(console.error);
+    renderWatchers();
+  };
+  link.chain = link.chain.then(async () => {
+    await pc.setLocalDescription(await pc.createOffer());
+    sendSignal(id, { side: 'sharer', sdp: pc.localDescription });
+  }).catch(console.error);
+
+  renderWatchers();
+  toast(`${nameOf(id)} está assistindo você`);
+}
+
+function closeOut(id) {
+  const link = state.out.get(id);
+  if (!link) return;
+  if (link.dc) link.dc.close();
+  link.pc.close();
+  state.out.delete(id);
+  releaseChromeVideo();
+  renderWatchers();
+}
+
+// Como a transmissão foi enquanto a janela estava escondida (ex.: jogo em tela cheia). Ao voltar,
+// o painel diz o que limitou: captura lenta (placa de vídeo ocupada), processador ou internet.
+const away = { since: 0, samples: [] };
+
+function formatDuration(secs) {
+  return secs < 120 ? `${Math.round(secs)} s` : `${Math.round(secs / 60)} min`;
+}
+
+function awayReport() {
+  const s = away.samples;
+  away.samples = [];
+  const secs = (Date.now() - away.since) / 1000;
+  if (!state.sharing || s.length < 3 || secs < 10) return;
+  const avg = (k) => s.reduce((t, x) => t + x[k], 0) / s.length;
+  const share = (l) => s.filter((x) => x.limit === l).length / s.length;
+  const fps = QUALITY[state.quality].fps;
+  const measured = s.some((x) => x.captureFps > 0);
+  const captured = measured ? avg('captureFps') : avg('sentFps');
+  const why = share('cpu') > 0.3 ? 'O processador ficou no limite.'
+    : share('bandwidth') > 0.3 ? 'A internet limitou o envio.'
+    : captured < fps * 0.7 ? 'A captura da tela entregou poucos quadros: se o jogo estava rodando, a placa de vídeo estava ocupada ou a janela do jogo não deixa ser capturada em tela cheia. Limite o FPS do jogo ou use o modo janela sem bordas.'
+    : 'Nada limitou a transmissão.';
+  $('awayInfo').textContent = `Enquanto o app estava escondido (${formatDuration(secs)}): captura a ${Math.round(captured)} de ${fps} fps, `
+    + `enviando ${Math.round(avg('sentFps'))} fps e ${avg('mbps').toFixed(1)} Mbps. ${why}`;
+  console.log('[diagnóstico]', $('awayInfo').textContent, s);
+}
+
+// O que eu estou usando para transmitir, para a aba Transmissão das Estatísticas de quem está na sala.
+// Só manda de novo quando algo muda (ex.: o NVENC caiu para o WebCodecs, ou descobriu a placa de vídeo).
+function myShareInfo(hw) {
+  const info = { quality: state.quality, mode: once.active ? 'once' : 'per', engine: once.active ? engineName() : 'WebRTC',
+    audio: !!state.stream?.getAudioTracks().length };
+  const h = once.active ? once.hardware : hw;
+  if (typeof h === 'boolean') info.hw = h;
+  return info;
+}
+function sendShareInfo(hw) {
+  if (!state.sharing) return;
+  const info = myShareInfo(hw ?? state.shareInfo?.hw);
+  const key = JSON.stringify(info);
+  if (key === state.shareInfoKey) return;
+  state.shareInfoKey = key;
+  state.shareInfo = info;
+  send({ type: 'share', sharing: true, info });
+}
+
+// Mostra para quem transmite qual codec está em uso e se a placa de vídeo está codificando
+function startOutStats() {
+  stopOutStats();
+  const last = { ts: performance.now(), captured: 0, encoded: 0, dropped: 0, sent: 0, behind: 0 };
+  state.outStatsTimer = setInterval(async () => {
+    const active = [...state.out.values()].filter((l) => l.pc.connectionState === 'connected' && !l.videoOff);
+    const links = active.filter((l) => !l.dc);
+    const onceCount = active.length - links.length;
+    if (!active.length) {
+      Object.assign(perf.live, { captureFps: null, sentFps: 0, upMbps: 0 }); // ninguém assistindo
+      if (!document.hidden) $('encoderInfo').textContent = '';
+      return;
+    }
+    let codec = '', hw = null, limit = 'none', captureFps = 0, sentFps = 0, mbps = 0;
+
+    // Modo "uma vez só": contadores próprios, já que não há faixa de vídeo WebRTC
+    const now = performance.now();
+    const secs = (now - last.ts) / 1000;
+    const behind = active.reduce((t, l) => t + (l.behind || 0), 0);
+    if (once.active && secs > 0) {
+      captureFps = (once.captured - last.captured) / secs;
+      if (onceCount) {
+        sentFps = (once.encoded - last.encoded) / secs;
+        mbps = ((once.sentBytes - last.sent) * 8) / secs / 1e6;
+        if (once.dropped > last.dropped) limit = 'cpu';
+        else if (behind > last.behind) limit = 'bandwidth';
+      }
+    }
+    Object.assign(last, { ts: now, captured: once.captured, encoded: once.encoded, dropped: once.dropped, sent: once.sentBytes, behind });
+
+    for (const link of links) {
+      let report;
+      try { report = await link.pc.getStats(); } catch { continue; }
+      report.forEach((r) => {
+        if (r.type === 'media-source' && r.kind === 'video') captureFps = Math.max(captureFps, r.framesPerSecond || 0);
+        if (r.type !== 'outbound-rtp' || r.kind !== 'video') return;
+        codec = codecName(report, r.codecId) || codec;
+        const h = usesHardware(r.powerEfficientEncoder, r.encoderImplementation);
+        if (h !== null) hw = hw === null ? h : hw && h;
+        if (r.qualityLimitationReason === 'cpu') limit = 'cpu';
+        else if (r.qualityLimitationReason === 'bandwidth' && limit !== 'cpu') limit = 'bandwidth';
+        sentFps += (r.framesPerSecond || 0) / active.length;
+        if (link.lastTs) mbps += ((r.bytesSent - link.lastBytes) * 8) / (r.timestamp - link.lastTs) / 1000;
+        link.lastBytes = r.bytesSent;
+        link.lastTs = r.timestamp;
+      });
+    }
+    Object.assign(perf.live, { captureFps, sentFps, upMbps: mbps });
+    sendShareInfo(hw); // a placa de vídeo só aparece depois das primeiras medidas
+    if (document.hidden) {
+      away.samples.push({ captureFps, sentFps, mbps, limit }); // ninguém está vendo o painel agora
+      return;
+    }
+    const place = (h) => (h === true ? ' pela placa de vídeo' : h === false ? ' pelo processador' : '');
+    let text = '';
+    if (onceCount) {
+      text = `Codificando em H.264 uma vez só${onceCount > 1 ? ` para ${onceCount} pessoas,` : ''}${once.engine === 'nvenc' ? ' pelo NVENC direto' : place(once.hardware)}.`;
+    }
+    if (codec) {
+      const n = links.length;
+      text += `${text ? ' ' : ''}Codificando em ${codec}${place(hw)}${onceCount ? ` para quem tem versão antiga` : ''}.`;
+      if (n > 1) text += ` São ${n} codificações, uma para cada pessoa.`;
+    }
+    if (!text) return;
+    if (limit === 'cpu') text += ' O processador está no limite, então a qualidade foi reduzida.';
+    else if (limit === 'bandwidth') text += ' A internet está limitando a qualidade.';
+    $('encoderInfo').textContent = text;
+  }, 2000);
+}
+
+function stopOutStats() {
+  clearInterval(state.outStatsTimer);
+  state.outStatsTimer = null;
+  Object.assign(perf.live, { captureFps: null, sentFps: null, upMbps: 0 });
+  $('encoderInfo').textContent = '';
+  $('awayInfo').textContent = '';
+  away.samples = [];
+}
+
+// Transmitindo: a barra mostra "Ao vivo" e Parar; o painel mostra a prévia e os detalhes
+function renderShareBox() {
+  $('shareBtn').hidden = state.sharing;
+  $('liveChip').hidden = !state.sharing;
+  const selfOn = !!state.myId && state.in.has(state.myId);
+  setIcon($('selfViewBtn'), 'eye', selfOn ? 'Parar de ver a sua transmissão' : 'Ver a sua própria transmissão');
+  $('selfViewBtn').setAttribute('aria-pressed', String(selfOn));
+  $('myShare').hidden = !state.sharing;
+  syncPreview();
+  renderWatchers();
+}
+
+function renderWatchers() {
+  const names = [...state.out].map(([id, l]) => nameOf(id) + (l.videoOff ? ' (vídeo pausado)' : ''));
+  $('watcherInfo').textContent = names.length
+    ? `Assistindo você: ${names.join(', ')}`
+    : 'Ninguém está assistindo ainda. Só é enviado vídeo para quem clicar em Assistir.';
+  const n = state.out.size;
+  $('liveText').textContent = n === 0 ? 'ninguém assistindo' : n === 1 ? '1 assistindo' : `${n} assistindo`;
+}
