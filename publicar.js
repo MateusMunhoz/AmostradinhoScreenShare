@@ -20,7 +20,7 @@ const ROOT = __dirname;
 const KEY_FILE = path.join(os.homedir(), '.tela-p2p', 'chave-de-atualizacao.pem');
 const BOOT = path.join(ROOT, 'boot.js');
 // O que viaja pela sala. boot.js fica de fora: ele confere as assinaturas e só muda com um .exe novo.
-const PACK_FILES = ['main.js', 'preload.js', 'signaling.js', 'github.js', 'index.html', 'styles.css', 'renderer/util.js', 'renderer/estado.js', 'renderer/rtc.js', 'renderer/tema.js', 'renderer/sala.js', 'renderer/voz.js', 'renderer/microfone.js', 'renderer/membros.js', 'renderer/assistir.js', 'renderer/pip.js', 'renderer/overlay.js', 'renderer/chat.js', 'renderer/estatisticas.js', 'renderer.js', 'voice.js', 'encode-once.js', 'pcm-worklet.js', 'bin/audiocap.exe', 'bin/videocap.exe', 'bin/teclas.exe',
+const PACK_FILES = ['main.js', 'preload.js', 'signaling.js', 'github.js', 'index.html', 'styles.css', 'renderer/util.js', 'renderer/estado.js', 'renderer/rtc.js', 'renderer/tema.js', 'renderer/sala.js', 'renderer/voz.js', 'renderer/microfone.js', 'renderer/membros.js', 'renderer/assistir.js', 'renderer/pip.js', 'renderer/overlay.js', 'renderer/chat.js', 'renderer/estatisticas.js', 'renderer/atualizacao.js', 'renderer.js', 'voice.js', 'encode-once.js', 'pcm-worklet.js', 'bin/audiocap.exe', 'bin/videocap.exe', 'bin/teclas.exe',
   'vendor/noise/rnnoiseWorklet.js', 'vendor/noise/rnnoise.wasm', 'vendor/noise/rnnoise_simd.wasm', 'vendor/noise/LICENSE', 'vendor/noise/NOTICE.md'];
 
 function fail(msg) {
