@@ -23,16 +23,68 @@ Para gerar um `.exe` portátil sem publicar: `npm run dist`. O arquivo aparece e
   | Arquivo | O que faz |
   |---------|-----------|
   | `boot.js` | Início do app. Confere a assinatura das atualizações e escolhe qual versão rodar. Só muda com um `.exe` novo. |
-  | `main.js` | Processo principal: janelas, janelas flutuantes, chat por cima do jogo, atalhos globais, ajudantes nativos, prioridade. |
-  | `preload.js` | A ponte segura entre a página e o processo principal. |
-  | `renderer.js` | A interface e quase toda a lógica da sala: transmitir, assistir, chat, voz, volume, troca de host, estatísticas. |
+  | `main.js` | Processo principal: opções do Chromium, a janela do app, as janelas que a página abre e todo o IPC. |
+  | `main/` | O resto do processo principal (veja abaixo). |
+  | `preload.js` | A ponte segura entre a página e o processo principal (`window.api`). |
+  | `renderer/` | A interface e a lógica da sala, em vários arquivos (veja abaixo). |
   | `encode-once.js` | O modo "uma vez só" (NVENC direto e WebCodecs). |
   | `voice.js` | A voz: conexões WebRTC de áudio entre as pessoas (feito pelo Cristian). |
   | `signaling.js` | O servidor da sala. |
   | `publicar.js` | Assina, gera o `.exe` e publica. |
   | `native/` | Código dos ajudantes nativos em C++. |
   | `bin/` | Os ajudantes compilados: `audiocap.exe` (som), `videocap.exe` (captura e NVENC), `teclas.exe` (apertar para falar). |
-  | `vendor/` | Arquivos de terceiros usados pelo app: a IA de ruído (RNNoise) e as fontes. |
+  | `vendor/` | Arquivos de terceiros usados pelo app: a IA de ruído (RNNoise). |
+
+### A página (`renderer/`)
+
+São `<script>` comuns (não módulos), carregados pelo `index.html` nesta ordem. Todos dividem o mesmo
+escopo global: uma função ou variável de um arquivo é vista pelos outros pelo nome. Os testes usam
+isso (chamam `watch`, `state`, `speaking`... direto na página).
+
+| Ordem | Arquivo | O que tem |
+|-------|---------|-----------|
+| 1 | `encode-once.js` | Modo "uma vez só" (fica na raiz) |
+| 2 | `voice.js` | Classe `VoiceChat` (fica na raiz) |
+| 3 | `util.js` | `$`, telas, aviso, preferências, `send`, ícones, formatação, `closeOnBackdrop` |
+| 4 | `estado.js` | `state`, `update` e as qualidades de transmissão |
+| 5 | `rtc.js` | Ajustes do WebRTC: Opus, H.264 primeiro, codec, bitrate |
+| 6 | `tema.js` | Cores das janelas montadas por código, cor de cada pessoa, barrinhas de quem fala |
+| 7 | `sala.js` | Criar, entrar e sair, mensagens do servidor, sinalização, troca de host |
+| 8 | `voz.js` | Volume por pessoa, mixer, quem fala, atenuação, barra da voz, cartão da pessoa (cria o `voice`) |
+| 9 | `microfone.js` | RNNoise, eco, sensibilidade, apertar para falar, janela "Voz e atalhos" |
+| 10 | `membros.js` | Painel da sala: endereço e lista de pessoas |
+| 11 | `assistir.js` | Quadros de vídeo, ver a própria transmissão, destaque, tela cheia |
+| 12 | `pip.js` | Janelas flutuantes |
+| 13 | `overlay.js` | Chat por cima do jogo |
+| 14 | `chat.js` | Mensagens, arquivos, não lidas |
+| 15 | `estatisticas.js` | Desempenho, aba Transmissão, codificador em uso |
+| 16 | `atualizacao.js` | Atualização pela sala, pelo GitHub e o aviso |
+| 17 | `sessoes.js` | Sessões abertas na rede (a lista da tela inicial) |
+| 18 | `transmitir.js` | Escolher a fonte, som, iniciar, trocar e parar, quem assiste |
+| 19 | `inicio.js` | Tela inicial e a partida: liga os botões e listeners, carrega as preferências |
+
+**A regra que evita erro na carga:** só o `inicio.js` roda código quando a página abre (listeners,
+`onclick`, preferências). Os outros só declaram funções e variáveis. Um arquivo que rodasse algo na
+carga usando uma função de um arquivo que vem depois quebraria com "não definido". A exceção é o
+`voz.js`, que cria o `voice` na carga: por isso ele vem depois do `util.js` (que tem o `send`).
+
+Arquivo novo na página: entra no `index.html` (na posição certa), em `PACK_FILES` e no `build.files`
+(veja [Contribuir](#contribuir-pr-e-merge)). Para conferir rápido que nada quebrou na carga:
+`npx electron tests/e2e/carga.cjs` (uns 5 segundos, sem abrir janelas).
+
+### O processo principal (`main/`)
+
+| Arquivo | O que tem |
+|---------|-----------|
+| `contexto.js` | O que as janelas dividem (`janelas.main`, `janelas.chat`, modo de ajuste, modo de escrever) e o `sendMain` |
+| `nativos.js` | Prioridade, medidas das Estatísticas, NVENC direto (`videocap.exe`), som sem o próprio app (`audiocap.exe`) |
+| `janela-flutuante.js` | Vagas, fila, transparência e modo de ajuste das janelas flutuantes |
+| `chat-jogo.js` | A janela do chat por cima do jogo e o modo de escrever (Ctrl+Enter) |
+| `atalhos.js` | Atalhos globais e o apertar para falar (`teclas.exe`) |
+| `sessoes.js` | Anúncio e busca das sessões abertas (UDP na rede da Radmin) |
+
+`janela-flutuante.js`, `chat-jogo.js` e `atalhos.js` usam uns aos outros. Cada um faz o
+`module.exports` antes dos `require` dos outros, senão o Node entrega um objeto vazio no ciclo.
 
 ## Testes
 
@@ -40,7 +92,8 @@ Para gerar um `.exe` portátil sem publicar: `npm run dist`. O arquivo aparece e
 |---------|-------------|---------------|
 | `npm test` | Voz e servidor da sala, rápido | Não |
 | `npm run test:rtc` | Áudio WebRTC de verdade entre duas janelas ocultas, sem o seu microfone | Não |
-| `npm run test:e2e` | Tudo de ponta a ponta (uns 8 minutos) | Sim |
+| `npm run test:e2e` | Tudo de ponta a ponta (uns 10 minutos) | Sim |
+| `npx electron tests/e2e/carga.cjs` | Se o app abre sem erro e os nomes globais existem (5 s) | Não |
 
 Sobre o `npm run test:e2e` (`tests/e2e/`):
 - **Como funciona:** abre várias cópias do app no seu PC, cada uma como uma pessoa, e confere:

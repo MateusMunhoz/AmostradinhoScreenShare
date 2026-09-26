@@ -44,6 +44,13 @@ quem estava fazendo e o que aconteceu.
     Deve acontecer: em uns 5 a 15 segundos, a pessoa que entrou primeiro vira host sozinha. A voz e as
     transmissões continuam, e o botão de pessoas mostra "Host" nela.
 
+11. **Sessões abertas.** Uma pessoa cria uma sala; as outras ficam na tela inicial, sem entrar.
+    Deve acontecer: em até 5 segundos, aparece "Sessão de <nome>" na lista de todo mundo, com o número de
+    pessoas. Clique em **Entrar** e confira que entra direto. Se não aparecer para alguém, anote quem (é o
+    aviso pela Radmin que não passou) e se o Windows pediu permissão do firewall ao abrir o app.
+12. **Sessão oculta.** Crie outra sala com **Mostrar esta sessão** desmarcado. Deve acontecer: ela não
+    aparece na lista de ninguém, mas dá para entrar pelo endereço.
+
 ## Anotações
 
 | Item | Quem | O que aconteceu |

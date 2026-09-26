@@ -3,6 +3,7 @@
 Tudo o que dá para fazer no Tela P2P, com os detalhes. Para começar do zero, veja o [README](../README.md).
 
 - [Sala](#sala)
+- [Sessões abertas](#sessões-abertas)
 - [Transmitir](#transmitir)
 - [Assistir](#assistir)
 - [Janela flutuante](#janela-flutuante)
@@ -34,6 +35,24 @@ Tudo o que dá para fazer no Tela P2P, com os detalhes. Para começar do zero, v
   - o balão do chat;
   - **Sair**.
 - **Recolher o painel:** o balão do chat recolhe o painel, e os vídeos ocupam a largura toda. Recolhido, ele mostra quantas mensagens chegaram, e o endereço da sala passa para a barra.
+
+### Sessões abertas
+
+A tela inicial mostra as **sessões abertas** na rede da Radmin: as salas que alguém criou, com o nome de
+quem está com ela, quantas pessoas estão dentro e um cadeado se tiver senha.
+
+- **Entrar:** o botão ao lado da sessão entra direto. Se ela tiver senha, abre o **Entrar numa sala** com
+  o endereço preenchido, e é só digitar a senha.
+- **Como aparece:** quem tem uma sala aberta avisa a rede a cada 3 segundos. A sessão some da lista quando
+  a sala é encerrada, ou depois de uns 10 segundos sem aviso (PC desligado, Radmin caiu).
+- **Troca de host:** a sessão continua a mesma na lista, com o nome do novo host.
+- **Não mostrar a sua:** ao criar a sala, desmarque **Mostrar esta sessão para quem está na rede**. Ela
+  continua funcionando pelo endereço, só não aparece para os outros (e continua assim se o host mudar).
+- **Se nada aparecer:** algumas redes não deixam passar o aviso. O app também pergunta direto aos
+  endereços das salas em que você já esteve, então elas aparecem mesmo assim. Se ainda não aparecer,
+  entre pelo endereço, como antes.
+- **O que os outros veem:** o seu nome, quantas pessoas estão na sala e se ela tem senha. A senha nunca vai
+  no aviso, e continua sendo pedida para entrar.
 
 ### Troca de host
 

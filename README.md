@@ -8,7 +8,7 @@ Transmita a tela e converse por voz com os amigos, de PC para PC, pela Radmin VP
 
 1. **Radmin VPN (todos):** instale a [Radmin VPN](https://www.radmin-vpn.com). Uma pessoa cria a rede (Rede > Criar rede) e passa o nome e a senha. Os outros entram nela. Cada um fica com um IP que começa com 26.
 2. **Criar a sala (uma pessoa):** abra o app, digite seu nome e clique em **Criar sala**. Mande para os amigos o endereço que aparece (tipo `26.12.34.56:8765`).
-3. **Entrar (os outros):** clique em **Entrar numa sala**, cole o endereço e clique em **Entrar**.
+3. **Entrar (os outros):** a sala aparece em **Sessões abertas**, na tela inicial: clique em **Entrar**. Se não aparecer, clique em **Entrar numa sala**, cole o endereço e clique em **Entrar**.
 4. **Firewall:** na primeira vez, o Windows pergunta se o app pode acessar a rede. Marque **redes privadas e públicas** e permita, em todos os PCs.
 
 ## O que dá para fazer
