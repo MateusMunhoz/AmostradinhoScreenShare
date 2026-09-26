@@ -12,6 +12,10 @@ contextBridge.exposeInMainWorld('api', {
   pipOpacity: (id, v) => ipcRenderer.invoke('pip-opacity', String(id), v),
   pipGroup: (id, patch) => ipcRenderer.invoke('pip-group', String(id), patch),
   roomKeys: (on) => ipcRenderer.invoke('room-keys', !!on),
+  getShortcuts: () => ipcRenderer.invoke('get-shortcuts'),
+  setShortcut: (action, accel) => ipcRenderer.invoke('set-shortcut', action, accel),
+  ptt: (vk) => ipcRenderer.invoke('ptt', Number(vk) || 0),
+  noiseWasm: (simd) => ipcRenderer.invoke('noise-wasm', !!simd),
   chatCompose: (on, opening = false) => ipcRenderer.invoke('chat-compose', !!on, !!opening),
   openLink: (url) => ipcRenderer.invoke('open-link', url),
   onPip: (cb) => {

@@ -148,8 +148,9 @@ const mixer = {
     n.gain.disconnect();
     this.nodes.delete(id);
   },
-  local(stream) {
+  local(stream, keepMic = false) {
     if (this.localNode) { this.localNode.src.disconnect(); this.localNode = null; }
+    if (!stream && !keepMic) closeMic(micNow);
     if (!stream) return;
     const ctx = this.ensure();
     const src = ctx.createMediaStreamSource(stream);
@@ -208,6 +209,7 @@ function renderSpeaking() {
 const inVoice = (id) => (id === state.myId ? !!voice.session : !!voice.members.get(id)?.session);
 
 const voice = new VoiceChat({ send, changed: renderVoice, error: message => toast(message, 'error'), mixer });
+voice.media = { getUserMedia: () => openMic() };
 function renderVoice() {
   const active = !!voice.session;
   const join = $('voiceJoin');
@@ -229,6 +231,11 @@ function renderVoice() {
   setIcon($('voiceDeafen'), voice.deafened ? 'headphonesOff' : 'headphones', voice.deafened ? 'Ouvir as vozes' : 'Silenciar as vozes');
   $('voiceDeafen').setAttribute('aria-pressed', String(voice.deafened));
   if (state.myId) $('voiceMe').dataset.person = state.myId;
+  setIcon($('voiceSettingsBtn'), 'sliders', 'Voz e atalhos: supressão de ruído, eco, apertar para falar e teclas');
+  applyMicGate();
+  syncPtt();
+  renderVoiceMe();
+  if (!$('voiceDialog').hidden) renderVoiceDialog();
   renderVoiceAvatars();
   if (state.myId) renderMembers();
   if (!$('personCard').hidden) renderPersonCard();
@@ -371,6 +378,319 @@ $('voiceJoin').onclick = () => {
 };
 $('voiceMute').onclick = () => voice.mute();
 $('voiceDeafen').onclick = () => voice.deafen();
+// ---------- Microfone: supressão de ruído, eco e apertar para falar ----------
+// ns: 'ia' (RNNoise, roda no PC), 'chrome' (o filtro básico do Chrome) ou 'off'. echo: cancelamento de eco.
+// mode: 'voz' (o microfone fica aberto) ou 'ptt' (só enquanto a tecla está apertada).
+const voiceCfg = { ns: 'ia', echo: true, mode: 'voz', pttVk: 0, pttLabel: '' };
+try { Object.assign(voiceCfg, JSON.parse(load('vozConfig', '{}')) || {}); } catch {}
+function saveVoiceCfg() { save('vozConfig', JSON.stringify(voiceCfg)); }
+
+const RNNOISE_ID = '@sapphi-red/web-noise-suppressor/rnnoise';
+let micNow = null;   // { raw, out, ctx, node } do microfone em uso
+let noiseWasm = null;
+const simdOk = () => WebAssembly.validate(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0, 1, 5, 1, 96, 0, 1, 123, 3, 2, 1, 0, 10, 10, 1, 8, 0, 65, 0, 253, 15, 253, 98, 11]));
+
+// Abre o microfone com os filtros escolhidos. Com a IA, o som passa pelo RNNoise (48 kHz) antes de sair.
+async function openMic() {
+  const raw = await navigator.mediaDevices.getUserMedia({
+    video: false,
+    audio: { echoCancellation: voiceCfg.echo, noiseSuppression: voiceCfg.ns === 'chrome', autoGainControl: true },
+  });
+  let mic = { raw, out: raw, ctx: null, node: null };
+  if (voiceCfg.ns === 'ia') {
+    try {
+      if (!noiseWasm) noiseWasm = await window.api.noiseWasm(simdOk());
+      if (!noiseWasm) throw new Error('arquivo da IA não encontrado');
+      const ctx = new AudioContext({ sampleRate: 48000 });
+      await ctx.audioWorklet.addModule('vendor/noise/rnnoiseWorklet.js');
+      const bin = noiseWasm.buffer.slice(noiseWasm.byteOffset, noiseWasm.byteOffset + noiseWasm.byteLength);
+      const node = new AudioWorkletNode(ctx, RNNOISE_ID, { processorOptions: { maxChannels: 1, wasmBinary: bin } });
+      const src = ctx.createMediaStreamSource(raw);
+      const dest = ctx.createMediaStreamDestination();
+      src.connect(node);
+      node.connect(dest);
+      mic = { raw, out: dest.stream, ctx, node };
+      // Microfone desconectado: avisa a voz do mesmo jeito que o microfone "cru" avisaria
+      for (const t of raw.getAudioTracks()) t.addEventListener('ended', () => dest.stream.getAudioTracks().forEach((o) => o.dispatchEvent(new Event('ended'))));
+    } catch (err) {
+      console.warn('Supressão de ruído com IA indisponível:', err);
+      toast('A supressão de ruído com IA não carregou. Usando a básica.', 'error');
+    }
+  }
+  micNow = mic;
+  return mic.out;
+}
+
+function closeMic(mic) {
+  if (!mic) return;
+  mic.raw.getTracks().forEach((t) => t.stop());
+  if (mic.out !== mic.raw) mic.out.getTracks().forEach((t) => t.stop());
+  try { mic.node?.port.postMessage('destroy'); } catch {}
+  mic.ctx?.close().catch(() => {});
+  if (micNow === mic) micNow = null;
+}
+
+// Trocar o filtro no meio da conversa: abre o microfone de novo e troca a faixa em cada conexão, sem cair
+async function restartMic() {
+  if (!voice.session || !voice.stream) return;
+  const old = micNow;
+  const oldTrack = voice.stream.getAudioTracks()[0];
+  let stream;
+  try { stream = await openMic(); } catch (err) { toast(`Não foi possível reabrir o microfone: ${err.message}`, 'error'); return; }
+  if (!voice.session) { closeMic(micNow); return; }
+  const track = stream.getAudioTracks()[0];
+  track.onended = oldTrack ? oldTrack.onended : null;
+  if (oldTrack) oldTrack.onended = null;
+  for (const p of voice.peers.values()) {
+    const sender = p.pc.getSenders().find((s) => s.track && s.track.kind === 'audio');
+    if (sender) await sender.replaceTrack(track).catch(() => {});
+  }
+  voice.stream = stream;
+  mixer.local(stream, true);
+  closeMic(old);
+  applyMicGate();
+}
+
+// O microfone só manda som quando: não está desligado e (detecção de voz, ou a tecla está apertada)
+const ptt = { down: false, active: 0, releaseTimer: null };
+function applyMicGate() {
+  const t = voice.stream?.getAudioTracks()[0];
+  if (!t) return;
+  t.enabled = !voice.muted && (voiceCfg.mode !== 'ptt' || ptt.down);
+}
+function syncPtt() {
+  const want = voice.session && voiceCfg.mode === 'ptt' ? voiceCfg.pttVk : 0;
+  if (want === ptt.active) return;
+  ptt.active = want;
+  ptt.down = false;
+  window.api.ptt(want).then((ok) => { if (!ok && want) toast('Não foi possível ligar o apertar para falar (teclas.exe não encontrado).', 'error'); }).catch(() => {});
+  applyMicGate();
+}
+function onPttKey(down) {
+  clearTimeout(ptt.releaseTimer);
+  if (down) {
+    ptt.down = true;
+    applyMicGate();
+    renderVoiceMe();
+  } else {
+    // Solta 200 ms depois, para não cortar o fim da última palavra
+    ptt.releaseTimer = setTimeout(() => { ptt.down = false; applyMicGate(); renderVoiceMe(); }, 200);
+  }
+}
+function renderVoiceMe() {
+  const label = $('voiceMeText');
+  if (!label) return;
+  label.textContent = voiceCfg.mode === 'ptt'
+    ? (voiceCfg.pttVk ? (ptt.down ? 'Falando' : `Segure ${voiceCfg.pttLabel}`) : 'Escolha a tecla')
+    : 'Na voz';
+  $('voiceMe').classList.toggle('ptt-open', voiceCfg.mode === 'ptt' && ptt.down);
+}
+
+// ---------- Janela "Voz e atalhos" ----------
+const SHORTCUT_NAMES = {
+  compose: 'Escrever no chat por cima do jogo',
+  mute: 'Ligar ou desligar o microfone',
+  edit: 'Ajustar ou travar as janelas por cima do jogo',
+  hideChat: 'Esconder ou mostrar o chat por cima do jogo',
+};
+let shortcutKeys = {};
+let capturing = null; // { kind: 'shortcut'|'ptt', action, btn }
+
+// "CommandOrControl+Shift+E" -> "Ctrl+Shift+E"
+function accelLabel(accel) {
+  if (!accel) return 'Nenhum';
+  return accel.split('+').map((k) => ({ CommandOrControl: 'Ctrl', Control: 'Ctrl', Return: 'Enter', Space: 'Espaço' }[k] || k)).join('+');
+}
+
+// Tecla do teclado -> nome no formato de atalho do Electron
+const ACCEL_CODES = {
+  Enter: 'Enter', NumpadEnter: 'Enter', Space: 'Space', Tab: 'Tab', Backspace: 'Backspace', Delete: 'Delete', Insert: 'Insert',
+  Home: 'Home', End: 'End', PageUp: 'PageUp', PageDown: 'PageDown', ArrowUp: 'Up', ArrowDown: 'Down', ArrowLeft: 'Left', ArrowRight: 'Right',
+  Backquote: '`', Minus: '-', Equal: '=', BracketLeft: '[', BracketRight: ']', Backslash: '\\', Semicolon: ';', Quote: "'",
+  Comma: ',', Period: '.', Slash: '/',
+};
+function accelFromEvent(e) {
+  let key = '';
+  if (/^Key[A-Z]$/.test(e.code)) key = e.code.slice(3);
+  else if (/^Digit\d$/.test(e.code)) key = e.code.slice(5);
+  else if (/^F([1-9]|1\d|2[0-4])$/.test(e.code)) key = e.code;
+  else if (/^Numpad\d$/.test(e.code)) key = `num${e.code.slice(6)}`;
+  else key = ACCEL_CODES[e.code] || '';
+  if (!key) return null;
+  const mods = [];
+  if (e.ctrlKey) mods.push('CommandOrControl');
+  if (e.altKey) mods.push('Alt');
+  if (e.shiftKey) mods.push('Shift');
+  return { accel: [...mods, key].join('+'), fkey: /^F\d+$/.test(key), strong: e.ctrlKey || e.altKey };
+}
+
+// Nome curto de uma tecla (para o apertar para falar)
+function keyLabel(e) {
+  const names = { ' ': 'Espaço', Control: 'Ctrl', CapsLock: 'Caps Lock', Enter: 'Enter', Tab: 'Tab', Backspace: 'Backspace' };
+  if (names[e.key]) return names[e.key];
+  if (/^Key[A-Z]$/.test(e.code)) return e.code.slice(3);
+  if (/^Digit\d$/.test(e.code)) return e.code.slice(5);
+  return e.key.length === 1 ? e.key.toUpperCase() : e.key;
+}
+
+function openVoiceDialog() {
+  $('voiceDialog').hidden = false;
+  renderVoiceDialog();
+  window.api.getShortcuts().then((k) => { shortcutKeys = k || {}; renderShortcutRows(); }).catch(() => {});
+  $('closeVoiceDialog').focus();
+  meterLoop();
+}
+function closeVoiceDialog() {
+  stopCapture();
+  $('voiceDialog').hidden = true;
+  $('voiceSettingsBtn').focus();
+}
+
+function renderVoiceDialog() {
+  document.querySelectorAll('input[name="noise"]').forEach((r) => { r.checked = r.value === voiceCfg.ns; });
+  document.querySelectorAll('input[name="talkMode"]').forEach((r) => { r.checked = r.value === voiceCfg.mode; });
+  $('echoOn').checked = voiceCfg.echo;
+  $('nsHint').textContent = {
+    ia: 'Uma IA no seu PC tira teclado, ventilador, barulho da rua e respiração, e deixa só a voz. Usa um pouco de processador.',
+    chrome: 'Tira chiado constante (ventilador, ar-condicionado). Barulhos como teclado e mouse passam.',
+    off: 'Sua voz vai sem filtro de ruído. Bom para microfones de estúdio em lugar silencioso.',
+  }[voiceCfg.ns];
+  $('pttRow').hidden = voiceCfg.mode !== 'ptt';
+  $('pttKey').textContent = voiceCfg.pttVk ? voiceCfg.pttLabel : 'Nenhuma';
+  $('modeHint').textContent = voiceCfg.mode === 'ptt'
+    ? 'Seu microfone só manda som enquanto você segura a tecla, até de dentro do jogo. Vale tecla do teclado ou botão lateral do mouse.'
+    : 'Seu microfone fica aberto enquanto você está na voz; a supressão de ruído corta o que não é voz.';
+  $('micMeterBox').hidden = !voice.session;
+}
+
+function renderShortcutRows() {
+  const box = $('shortcutRows');
+  box.replaceChildren();
+  for (const [action, name] of Object.entries(SHORTCUT_NAMES)) {
+    const row = document.createElement('div');
+    row.className = 'vd-row';
+    const label = document.createElement('span');
+    label.textContent = name;
+    const keysBox = document.createElement('span');
+    keysBox.className = 'vd-keys';
+    const kbd = document.createElement('kbd');
+    kbd.textContent = accelLabel(shortcutKeys[action]);
+    const change = document.createElement('button');
+    change.type = 'button';
+    change.className = 'btn small';
+    change.textContent = 'Trocar';
+    change.setAttribute('aria-label', `Trocar o atalho de: ${name}`);
+    change.onclick = () => startCapture({ kind: 'shortcut', action, btn: change });
+    keysBox.append(kbd, change);
+    if (shortcutKeys[action]) {
+      const off = document.createElement('button');
+      off.type = 'button';
+      off.className = 'btn small ghost';
+      off.textContent = 'Tirar';
+      off.setAttribute('aria-label', `Tirar o atalho de: ${name}`);
+      off.onclick = () => applyShortcut(action, '');
+      keysBox.append(off);
+    }
+    row.append(label, keysBox);
+    box.append(row);
+  }
+}
+
+async function applyShortcut(action, accel) {
+  const res = await window.api.setShortcut(action, accel).catch((err) => ({ ok: false, error: err.message }));
+  if (!res.ok) { toast(res.error || 'Não deu para usar esse atalho.', 'error'); return false; }
+  shortcutKeys = res.keys;
+  renderShortcutRows();
+  return true;
+}
+
+function startCapture(c) {
+  stopCapture();
+  capturing = c;
+  c.btn.textContent = c.kind === 'ptt' ? 'Aperte a tecla ou o botão do mouse… (Esc cancela)' : 'Aperte a combinação… (Esc cancela)';
+  c.btn.classList.add('capturing');
+}
+function stopCapture() {
+  if (!capturing) return;
+  capturing.btn.classList.remove('capturing');
+  capturing.btn.textContent = 'Trocar';
+  capturing = null;
+}
+// Captura antes de qualquer outro atalho da página
+window.addEventListener('keydown', async (e) => {
+  if (!capturing) return;
+  e.preventDefault();
+  e.stopPropagation();
+  if (e.key === 'Escape') return stopCapture();
+  const c = capturing;
+  if (c.kind === 'ptt') {
+    if (!e.keyCode) return;
+    voiceCfg.pttVk = e.keyCode; // no Windows, é o código de tecla virtual que o teclas.exe usa
+    voiceCfg.pttLabel = keyLabel(e);
+    saveVoiceCfg();
+    stopCapture();
+    ptt.active = -1; // força reiniciar com a tecla nova
+    syncPtt();
+    renderVoiceDialog();
+    renderVoiceMe();
+    return;
+  }
+  if (['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)) return; // espera a tecla principal
+  const a = accelFromEvent(e);
+  if (!a) return toast('Essa tecla não pode ser usada como atalho.', 'error');
+  if (!a.strong && !a.fkey) return toast('Use Ctrl ou Alt junto (ou uma tecla de F1 a F24), para não atrapalhar quando você digita.', 'error');
+  stopCapture();
+  await applyShortcut(c.action, a.accel);
+}, true);
+// Botões do mouse para o apertar para falar: meio e os laterais (o esquerdo e o direito ficam de fora)
+window.addEventListener('mousedown', (e) => {
+  if (!capturing || capturing.kind !== 'ptt' || ![1, 3, 4].includes(e.button)) return;
+  e.preventDefault();
+  voiceCfg.pttVk = { 1: 4, 3: 5, 4: 6 }[e.button];
+  voiceCfg.pttLabel = { 1: 'Botão do meio', 3: 'Mouse 4', 4: 'Mouse 5' }[e.button];
+  saveVoiceCfg();
+  stopCapture();
+  ptt.active = -1;
+  syncPtt();
+  renderVoiceDialog();
+  renderVoiceMe();
+}, true);
+
+// Medidor do microfone (o que sai depois dos filtros), enquanto a janela está aberta
+function meterLoop() {
+  if ($('voiceDialog').hidden) return;
+  const bar = $('micMeter');
+  const level = mixer.localNode ? mixer.level(mixer.localNode.an) : 0;
+  bar.style.width = `${Math.min(100, Math.round(Math.sqrt(level) * 180))}%`;
+  bar.classList.toggle('open', !!voice.stream?.getAudioTracks()[0]?.enabled);
+  requestAnimationFrame(meterLoop);
+}
+
+document.querySelectorAll('input[name="noise"]').forEach((r) => {
+  r.onchange = () => { voiceCfg.ns = r.value; saveVoiceCfg(); renderVoiceDialog(); restartMic(); };
+});
+$('echoOn').onchange = () => { voiceCfg.echo = $('echoOn').checked; saveVoiceCfg(); restartMic(); };
+document.querySelectorAll('input[name="talkMode"]').forEach((r) => {
+  r.onchange = () => {
+    voiceCfg.mode = r.value;
+    saveVoiceCfg();
+    renderVoiceDialog();
+    syncPtt();
+    applyMicGate();
+    renderVoiceMe();
+    if (voiceCfg.mode === 'ptt' && !voiceCfg.pttVk) startCapture({ kind: 'ptt', btn: $('pttChange') });
+  };
+});
+$('pttChange').onclick = () => startCapture({ kind: 'ptt', btn: $('pttChange') });
+$('shortcutReset').onclick = async () => {
+  const defaults = { compose: 'CommandOrControl+Enter', mute: 'CommandOrControl+Shift+M', edit: 'CommandOrControl+Shift+E', hideChat: 'CommandOrControl+Shift+O' };
+  for (const action of Object.keys(defaults)) await window.api.setShortcut(action, '').catch(() => {}); // solta todos antes
+  for (const [action, accel] of Object.entries(defaults)) await applyShortcut(action, accel);
+};
+$('voiceSettingsBtn').onclick = openVoiceDialog;
+$('closeVoiceDialog').onclick = closeVoiceDialog;
+$('voiceDialog').addEventListener('mousedown', (e) => { if (e.target === $('voiceDialog')) closeVoiceDialog(); });
+
 window.addEventListener('beforeunload', () => voice.leave(false));
 
 function toggleFullscreen(el) {
@@ -404,6 +724,7 @@ const ICON = {
   headphonesOff: svg('M2 2l20 20M3 18v-6a9 9 0 0 1 14.5-7.1M20.4 8.4A9 9 0 0 1 21 12v6M21 19a2 2 0 0 1-2 2h-1v-6h3zM3 19a2 2 0 0 0 2 2h1v-6H3z'),
   phoneOff: svg('M3 11a15 15 0 0 1 18 0l-2 3-3-1v-2a10 10 0 0 0-8 0v2l-3 1z'),
   overlay: svg('M3 4h18v14H3zM6 12h7M6 15h5'),        // tela com linhas de texto: chat por cima da tela
+  sliders: svg('M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6'), // controles: voz e atalhos
 };
 
 // Botão só com ícone: a dica (title) e o nome lido pelo leitor de tela são o mesmo texto
@@ -2105,13 +2426,13 @@ window.api.onPip((m) => {
   if (m.type === 'edit') { overlay.edit = !!m.on; renderChatOverlay(); }
   if (m.type === 'chat-closed') { overlay.p = null; overlay.compose = false; clearTimeout(overlay.timer); renderOverlayButton(); }
   if (m.type === 'compose-key') onComposeKey();
+  if (m.type === 'ptt') onPttKey(!!m.down);
+  if (m.type === 'mute-key' && voice.session) voice.mute();
   if (m.type === 'compose') {
     overlay.compose = !!m.on;
     renderChatOverlay();
     if (overlay.compose) setTimeout(() => overlay.p?.input.focus(), 30);
   }
-  if (m.type === 'compose-key-busy') toast('Outro programa já usa Ctrl+Enter, então o atalho para escrever no chat por cima do jogo não funciona.', 'error');
-  if (m.type === 'chat-key-busy') toast('Outro programa já usa Ctrl+Shift+O, então o atalho para esconder o chat por cima do jogo não funciona. Use o botão da barra.', 'error');
   if (m.type === 'edit') {
     for (const [id, p] of state.pips) {
       if (p.win.closed) continue;
@@ -2121,7 +2442,7 @@ window.api.onPip((m) => {
     }
   }
   else if (m.type === 'closed' && state.pips.has(m.id)) { const p = state.pips.get(m.id); state.pips.delete(m.id); pipClosed(p); }
-  else if (m.type === 'shortcut-busy') toast('Outro programa já usa Ctrl+Shift+E. Trave pelo botão Travar da janela; para ajustar de novo, feche e abra a janela flutuante pelo botão do vídeo.', 'error');
+  else if (m.type === 'shortcut-busy') toast(`Outro programa já usa ${accelLabel(m.accel)}, então esse atalho não funciona agora. Dá para trocar em Voz e atalhos (a engrenagem na barra).`, 'error');
 });
 
 // ---------- Chat por cima do jogo ----------
@@ -3197,7 +3518,8 @@ $('chatTab').addEventListener('drop', (e) => {
 $('closeStats').onclick = closeStats;
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
-  if (!$('personCard').hidden) closePersonCard();
+  if (!$('voiceDialog').hidden) { if (!capturing) closeVoiceDialog(); }
+  else if (!$('personCard').hidden) closePersonCard();
   else if (!$('statsDialog').hidden) closeStats();
   else if (!$('closeDialog').hidden) closeCloseDialog();
   else if (!$('shareDialog').hidden) closeShareDialog();

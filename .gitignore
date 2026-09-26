@@ -10,6 +10,7 @@ pack/*
 *.exe
 !bin/audiocap.exe
 !bin/videocap.exe
+!bin/teclas.exe
 
 # Compilação dos ajudantes nativos (native/build.cmd)
 native/obj/

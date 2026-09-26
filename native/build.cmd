@@ -8,7 +8,21 @@ set /p VS=<"%TEMP%\tela-p2p-vs.txt"
 call "%VS%\VC\Auxiliary\Build\vcvars64.bat" >nul 2>nul || exit /b 1
 cd /d "%~dp0"
 if not exist obj mkdir obj
-rem Só um: build.cmd videocap
+rem Todos: build.cmd   Só um: build.cmd audiocap | videocap | teclas
 set FLAGS=/nologo /O2 /EHsc /std:c++20 /utf-8 /MT /DNOMINMAX /Foobj\
-if /i not "%1"=="videocap" cl %FLAGS% audiocap.cpp /Fe..\bin\audiocap.exe ole32.lib shell32.lib version.lib || exit /b 1
+set ONE=%1
+if "%ONE%"=="" set ONE=todos
+if /i "%ONE%"=="todos" goto audiocap
+if /i "%ONE%"=="audiocap" goto audiocap
+if /i "%ONE%"=="videocap" goto videocap
+if /i "%ONE%"=="teclas" goto teclas
+echo Uso: build.cmd [audiocap^|videocap^|teclas]
+exit /b 1
+:audiocap
+cl %FLAGS% audiocap.cpp /Fe..\bin\audiocap.exe ole32.lib shell32.lib version.lib || exit /b 1
+if /i not "%ONE%"=="todos" exit /b 0
+:videocap
 cl %FLAGS% videocap.cpp /Fe..\bin\videocap.exe d3d11.lib dxgi.lib windowsapp.lib shell32.lib user32.lib gdi32.lib || exit /b 1
+if /i not "%ONE%"=="todos" exit /b 0
+:teclas
+cl %FLAGS% teclas.cpp /Fe..\bin\teclas.exe user32.lib winmm.lib || exit /b 1

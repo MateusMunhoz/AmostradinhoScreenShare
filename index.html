@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; img-src 'self' data: blob:; style-src 'self'; connect-src ws:; media-src 'self' blob: mediastream:">
+        content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; img-src 'self' data: blob:; style-src 'self'; connect-src ws:; media-src 'self' blob: mediastream:">
   <title>Tela P2P</title>
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -128,11 +128,12 @@
             <div class="voice-dock" id="voiceDock" role="group" aria-label="Conversa por voz">
               <div class="voice-avatars" id="voiceAvatars" hidden></div>
               <span class="voice-me" id="voiceMe" title="Você na voz" hidden>
-                <span class="eq" aria-hidden="true"><span></span><span></span><span></span></span>Na voz
+                <span class="eq" aria-hidden="true"><span></span><span></span><span></span></span><span id="voiceMeText">Na voz</span>
               </span>
               <button class="btn icon" id="voiceMute" type="button" aria-pressed="false" hidden></button>
               <button class="btn icon" id="voiceDeafen" type="button" aria-pressed="false" hidden></button>
               <button class="btn" id="voiceJoin" type="button">Entrar na voz</button>
+              <button class="btn icon ghost" id="voiceSettingsBtn" type="button"></button>
             </div>
             <button class="btn icon" id="overlayToggle" type="button" aria-pressed="false"></button>
             <span class="dock-spacer"></span>
@@ -342,6 +343,61 @@
         </table>
       </div>
       <p id="stNote" class="hint"></p>
+    </div>
+  </div>
+
+  <!-- Voz e atalhos: microfone (ruído e eco), modo de fala e as teclas de atalho -->
+  <div id="voiceDialog" class="modal global" hidden>
+    <div class="dialog narrow voice-dialog" role="dialog" aria-modal="true" aria-labelledby="voiceDialogTitle">
+      <div class="dialog-head">
+        <h2 id="voiceDialogTitle">Voz e atalhos</h2>
+        <button class="btn small" id="closeVoiceDialog" type="button">Fechar</button>
+      </div>
+
+      <section class="vd-section">
+        <h3 id="nsLabel">Supressão de ruído</h3>
+        <div class="seg" role="radiogroup" aria-labelledby="nsLabel">
+          <label><input type="radio" name="noise" value="ia"><span>Forte, com IA</span></label>
+          <label><input type="radio" name="noise" value="chrome"><span>Básica</span></label>
+          <label><input type="radio" name="noise" value="off"><span>Desligada</span></label>
+        </div>
+        <p class="hint" id="nsHint"></p>
+        <div class="vd-row">
+          <span id="echoLabel">Cancelamento de eco</span>
+          <label class="switch">
+            <input type="checkbox" id="echoOn" role="switch" aria-labelledby="echoLabel">
+            <span class="track" aria-hidden="true"></span>
+          </label>
+        </div>
+        <p class="hint">Tira da sua voz o som que sai das suas caixas (as vozes dos outros e o som das telas). Com fone, pode desligar.</p>
+        <div class="vd-meter" id="micMeterBox" hidden>
+          <span class="hint">Seu microfone agora</span>
+          <div class="vd-meter-bar" aria-hidden="true"><span id="micMeter"></span></div>
+        </div>
+      </section>
+
+      <section class="vd-section">
+        <h3 id="modeLabel">Como falar</h3>
+        <div class="seg" role="radiogroup" aria-labelledby="modeLabel">
+          <label><input type="radio" name="talkMode" value="voz"><span>Detecção de voz</span></label>
+          <label><input type="radio" name="talkMode" value="ptt"><span>Apertar para falar</span></label>
+        </div>
+        <div class="vd-row" id="pttRow" hidden>
+          <span>Tecla para falar</span>
+          <span class="vd-keys">
+            <kbd id="pttKey"></kbd>
+            <button class="btn small" id="pttChange" type="button">Trocar</button>
+          </span>
+        </div>
+        <p class="hint" id="modeHint"></p>
+      </section>
+
+      <section class="vd-section">
+        <h3>Atalhos</h3>
+        <p class="hint">Funcionam de dentro do jogo. Precisam de Ctrl ou Alt junto (ou ser uma tecla F1 a F24), para não atrapalhar quando você digita.</p>
+        <div id="shortcutRows" class="vd-shortcuts"></div>
+        <button class="btn small ghost" id="shortcutReset" type="button">Voltar aos atalhos padrão</button>
+      </section>
     </div>
   </div>
 

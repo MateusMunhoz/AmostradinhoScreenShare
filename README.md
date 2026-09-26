@@ -60,13 +60,20 @@ Na sala, clique em **Entrar na voz** (na barra de baixo) para ligar o microfone 
 - Se o Windows negar o microfone, permita o acesso para aplicativos de desktop nas configurações de privacidade. Use fones para reduzir eco.
 - Se a captura que exclui o som do próprio app falhar durante a conversa, a tela é transmitida sem áudio do PC para evitar retransmitir as vozes. Se uma transmissão já estiver capturando todo o som do PC, pare-a, entre na voz e depois reinicie a transmissão.
 
+- **Voz e atalhos** (o botão de controles na barra de voz):
+  - **Supressão de ruído:** **Forte, com IA** (padrão) passa sua voz pelo [RNNoise](https://github.com/xiph/rnnoise), uma IA que roda no seu PC e tira teclado, ventilador, barulho da rua e respiração; **Básica** usa o filtro do Chrome (só chiado constante); **Desligada**.
+  - **Cancelamento de eco:** tira da sua voz o que sai das suas caixas (as vozes dos outros e o som das telas). O app usa o cancelamento de eco do app inteiro, então vale também para o som que passa pelo volume de cada pessoa. Com fone, pode desligar.
+  - Dá para trocar os dois no meio da conversa, sem sair da voz. Um medidor mostra o que o seu microfone está mandando.
+  - **Como falar:** **Detecção de voz** (o microfone fica aberto) ou **Apertar para falar**: o microfone só manda som enquanto você segura a tecla escolhida, de qualquer lugar, até de dentro do jogo. Vale tecla do teclado ou botão do mouse (meio, Mouse 4 e Mouse 5). Ao soltar, fica aberto mais 200 ms para não cortar a última palavra. Quem cuida da tecla é o `bin/teclas.exe`, que só consulta se a tecla está apertada (não intercepta o teclado).
+  - **Atalhos:** escrever no chat por cima do jogo (Ctrl+Enter), ligar/desligar o microfone (Ctrl+Shift+M), ajustar/travar as janelas por cima do jogo (Ctrl+Shift+E) e esconder/mostrar o chat por cima do jogo (Ctrl+Shift+O). Cada um pode ser trocado ou tirado; o app recusa combinações sem Ctrl ou Alt (menos F1 a F24) e avisa se outro programa já usa a combinação.
+
 A voz usa WebRTC direto pela Radmin, com uma conexão por par de participantes. Não usa servidor adicional. Usa o microfone padrão, sem escolher o dispositivo.
 
 ## Chat por cima do jogo
 
 O botão da barra com a tela e as linhas de texto abre o chat da sala numa janela transparente, sempre por cima, até do jogo (em janela sem bordas). Ela mostra as últimas mensagens, que somem 20 s depois de chegar, e quem está falando na voz. Abre no modo de ajuste: arraste para mover, puxe as bordas para redimensionar e escreva no campo para responder. Depois clique em **Travar** ou aperte **Ctrl+Shift+E** (o mesmo das janelas flutuantes): travada, o clique passa direto para o jogo e ela não pega o teclado. **Ctrl+Shift+O** esconde e mostra de novo, de dentro do jogo. O app lembra a posição e o tamanho.
 
-**Ctrl+Enter** (dentro de uma sala), de dentro do jogo: o chat por cima do jogo aparece (abre sozinho se estiver fechado) com o campo de escrever. Digite e aperte **Enter** para mandar, ou **Esc** para cancelar; nos dois casos o teclado volta para o jogo. Enquanto você está numa sala, o Ctrl+Enter fica reservado para isso em todos os programas.
+**Ctrl+Enter** (dentro de uma sala; dá para trocar em Voz e atalhos), de dentro do jogo: o chat por cima do jogo aparece (abre sozinho se estiver fechado) com o campo de escrever. Digite e aperte **Enter** para mandar, ou **Esc** para cancelar; nos dois casos o teclado volta para o jogo. Enquanto você está numa sala, o Ctrl+Enter fica reservado para isso em todos os programas.
 
 Verificações de desenvolvimento: `npm test`. O teste adicional `npm run test:rtc` usa duas janelas ocultas do Electron e áudio sintético para verificar o transporte WebRTC local, sem abrir seu microfone. A validação de microfones reais e Radmin entre computadores continua necessária.
 
