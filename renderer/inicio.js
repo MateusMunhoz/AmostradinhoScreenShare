@@ -80,6 +80,12 @@ $('gateAuto').onchange = () => {
 };
 $('gateDb').oninput = () => { voiceCfg.gateDb = Number($('gateDb').value); saveVoiceCfg(); renderVoiceDialog(); };
 $('duckAmount').oninput = () => { voiceCfg.duck = Number($('duckAmount').value); saveVoiceCfg(); renderVoiceDialog(); updateDuck(); };
+$('cueVolume').oninput = () => { voiceCfg.cues = Number($('cueVolume').value); saveVoiceCfg(); renderVoiceDialog(); };
+$('cueVolume').onchange = () => playCue('entrou'); // soltou o controle: ouve como ficou
+$('cueTest').onclick = () => {
+  const order = ['entrou', 'mutou', 'desmutou', 'saiu'];
+  order.forEach((n, i) => setTimeout(() => playCue(n), i * 550));
+};
 $('duckSelf').onchange = () => { voiceCfg.duckSelf = $('duckSelf').checked; saveVoiceCfg(); updateDuck(); };
 $('shortcutReset').onclick = async () => {
   const defaults = { compose: 'CommandOrControl+Enter', mute: 'CommandOrControl+Shift+M', edit: 'CommandOrControl+Shift+E', hideChat: 'CommandOrControl+Shift+O' };
@@ -296,6 +302,7 @@ $('chatInput').addEventListener('keydown', (e) => {
 });
 $('chatInput').addEventListener('input', fitChatInput);
 $('chatAttach').onclick = () => $('chatFile').click();
+document.addEventListener('paste', onChatPaste); // Ctrl+V com imagem ou arquivo: vai para o chat
 $('chatFile').onchange = () => { attachFiles([...$('chatFile').files]); $('chatFile').value = ''; };
 // Arrastar arquivo para o chat; fora dele, soltar um arquivo não faz a janela abrir o arquivo
 document.addEventListener('dragover', (e) => e.preventDefault());

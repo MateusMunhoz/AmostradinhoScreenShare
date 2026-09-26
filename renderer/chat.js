@@ -260,6 +260,24 @@ function attachFiles(list) {
   }
 }
 
+// Ctrl+V na sala com imagem (print da tela) ou arquivo copiado: manda para o chat, como o clipe. Texto
+// continua colando normal. Print chega sem nome ("image.png"): ganha um nome com a hora.
+function onChatPaste(e) {
+  if ($('room').hidden || !chat.supported) return;
+  const files = [...(e.clipboardData?.files || [])];
+  if (!files.length) return;
+  e.preventDefault();
+  const d = new Date();
+  const stamp = `${two(d.getHours())}-${two(d.getMinutes())}-${two(d.getSeconds())}`;
+  const named = files.map((f, i) => {
+    if (f.name && f.name !== 'image.png') return f;
+    const ext = (f.type.split('/')[1] || 'png').replace('jpeg', 'jpg');
+    return new File([f], `imagem-colada-${stamp}${files.length > 1 ? `-${i + 1}` : ''}.${ext}`, { type: f.type });
+  });
+  attachFiles(named);
+  if (!chat.open) toast(named.length === 1 ? `${named[0].name} foi para o chat.` : `${named.length} arquivos foram para o chat.`);
+}
+
 function fitChatInput() {
   const t = $('chatInput');
   t.style.height = 'auto';

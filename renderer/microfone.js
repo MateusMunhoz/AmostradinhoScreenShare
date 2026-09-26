@@ -7,7 +7,8 @@
 // mode: 'voz' (o microfone fica aberto) ou 'ptt' (só enquanto a tecla está apertada).
 // gateAuto/gateDb: sensibilidade (abaixo do limite, o microfone fica fechado). duck: quanto o som das
 // transmissões abaixa enquanto alguém fala (0 = não abaixa); duckSelf: abaixa também quando eu falo.
-const voiceCfg = { ns: 'ia', echo: true, mode: 'voz', pttVk: 0, pttLabel: '', gateAuto: true, gateDb: -50, duck: 0, duckSelf: false };
+// cues: volume dos sons da call (entrar, sair, mutar, desmutar), 0 = desligados.
+const voiceCfg = { ns: 'ia', echo: true, mode: 'voz', pttVk: 0, pttLabel: '', gateAuto: true, gateDb: -50, duck: 0, duckSelf: false, cues: 80 };
 try { Object.assign(voiceCfg, JSON.parse(load('vozConfig', '{}')) || {}); } catch {}
 function saveVoiceCfg() { save('vozConfig', JSON.stringify(voiceCfg)); }
 
@@ -232,6 +233,8 @@ function renderVoiceDialog() {
   $('duckValue').textContent = voiceCfg.duck ? `${voiceCfg.duck}%` : 'Desligada';
   $('duckSelf').checked = voiceCfg.duckSelf;
   $('duckSelf').disabled = !voiceCfg.duck;
+  $('cueVolume').value = String(voiceCfg.cues);
+  $('cueValue').textContent = voiceCfg.cues ? `${voiceCfg.cues}%` : 'Desligados';
 }
 
 function renderShortcutRows() {

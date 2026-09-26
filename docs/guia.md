@@ -116,7 +116,7 @@ Para ver uma transmissão enquanto joga.
 
 - **Mensagens:** Enter envia e Shift+Enter quebra a linha. Links abrem no navegador.
 - **Organização:** cada linha fica no formato do console do jogo, "21:02 Nome : mensagem", com o nome na cor da pessoa. Mensagens seguidas da mesma pessoa ficam juntas, sem repetir o nome. As que chegam enquanto você não está olhando ganham a linha "N mensagens novas" e o botão "Ir para as mensagens novas".
-- **Arquivos:** use o clipe ou arraste para o chat, até 200 MB.
+- **Arquivos:** use o clipe, arraste para o chat ou cole com **Ctrl+V** (um print da tela ou um arquivo copiado), até 200 MB. O print colado ganha um nome com a hora, tipo `imagem-colada-21-07-45.png`.
   - **Baixar:** quem clica em **Baixar** recebe direto de quem mandou, vê a barra de progresso (dá para cancelar) e depois clica em **Salvar**.
   - **Imagens pequenas** aparecem sozinhas.
   - **Disponibilidade:** o arquivo fica disponível enquanto quem mandou estiver na sala.
@@ -150,6 +150,7 @@ Clique em **Entrar na voz**, na barra de baixo, para ligar o microfone padrão d
   Só muda o que você ouve. O botão mostra o valor quando não está no padrão. O app lembra o volume de cada pessoa pelo nome, para a próxima sala.
 - **Painel recolhido:** os nomes de quem está na voz ficam na barra de baixo, e clicar num abre o mesmo cartão.
 - **Roda do mouse:** em cima do nome na barra da voz ou do botão de volume na lista, muda a voz da pessoa (ou o som da tela, se ela não estiver na voz), de 5 em 5%. Em cima da tela da pessoa ou da janela flutuante (no modo de ajuste), muda o som da tela. Um balãozinho mostra o valor.
+- **Sons da call:** dois tons subindo quando alguém entra na voz (ou você), dois descendo quando sai, e um toque curto quando você muta ou desmuta o microfone. Quem muta do outro lado e o apertar para falar não tocam som. O volume (ou desligar) fica em **Voz e atalhos**, com um botão **Ouvir**.
 - **Microfone negado:** se o Windows negar o microfone, permita o acesso para aplicativos de desktop nas configurações de privacidade.
 - **Voz e transmissão juntas:** se a captura que exclui o som do app falhar durante a conversa, a tela é transmitida sem áudio do PC, para não retransmitir as vozes. Se uma transmissão já estiver capturando todo o som do PC, pare, entre na voz e recomece a transmissão.
 - **Como funciona:** a voz usa WebRTC direto pela Radmin, uma conexão por par de pessoas, sem servidor. Usa o microfone padrão.

@@ -424,6 +424,18 @@
       </section>
 
       <section class="vd-section">
+        <div class="vd-row">
+          <h3 id="cueLabel">Sons da call</h3>
+          <button class="btn small" id="cueTest" type="button">Ouvir</button>
+        </div>
+        <p class="hint">Tocam quando alguém entra ou sai da voz e quando você muta ou desmuta o microfone.</p>
+        <div class="vd-slider">
+          <input type="range" id="cueVolume" min="0" max="100" step="5" aria-labelledby="cueLabel">
+          <span id="cueValue" class="vd-value"></span>
+        </div>
+      </section>
+
+      <section class="vd-section">
         <h3 id="modeLabel">Como falar</h3>
         <div class="seg" role="radiogroup" aria-labelledby="modeLabel">
           <label><input type="radio" name="talkMode" value="voz"><span>Detecção de voz</span></label>
@@ -473,6 +485,7 @@
   <script src="renderer/sala.js"></script>
   <script src="renderer/voz.js"></script>
   <script src="renderer/microfone.js"></script>
+  <script src="renderer/avisos.js"></script>
   <script src="renderer/membros.js"></script>
   <script src="renderer/assistir.js"></script>
   <script src="renderer/pip.js"></script>

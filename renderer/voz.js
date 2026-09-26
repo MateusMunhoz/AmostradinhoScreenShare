@@ -242,6 +242,7 @@ function renderVoice() {
   renderVoiceAvatars();
   if (state.myId) renderMembers();
   if (!$('personCard').hidden) renderPersonCard();
+  syncCues(); // sons de entrar, sair, mutar e desmutar
 }
 
 // Painel recolhido: quem está na voz fica na barra; clicar abre o volume da pessoa
