@@ -4,22 +4,76 @@
 
 // ---------- Volume por pessoa e quem está falando ----------
 // Cada pessoa tem um volume de voz (0 a 200%), um da transmissão (0 a 100%) e "silenciar para mim".
-// Fica guardado pelo nome, então vale de novo na próxima sala.
+// Fica guardado pelo nome, então vale de novo na próxima sala. O som da transmissão começa em 0%: a tela
+// chega sem som, e você aumenta de quem quiser ouvir (no controle ou com a roda do mouse em cima da tela).
+const DEFAULT_VOICE = 100;
+const DEFAULT_SCREEN = 0;
 let volumes = {};
 try { volumes = JSON.parse(load('volumes', '{}')) || {}; } catch { volumes = {}; }
 function volOf(id) {
-  return { voice: 100, screen: 100, muted: false, ...(volumes[nameOf(id)] || {}) };
+  return { voice: DEFAULT_VOICE, screen: DEFAULT_SCREEN, muted: false, ...(volumes[nameOf(id)] || {}) };
 }
 function setVol(id, patch) {
   const name = nameOf(id);
   const v = { ...volOf(id), ...patch };
-  if (v.voice === 100 && v.screen === 100 && !v.muted) delete volumes[name];
+  if (v.voice === DEFAULT_VOICE && v.screen === DEFAULT_SCREEN && !v.muted) delete volumes[name];
   else volumes[name] = v;
   save('volumes', JSON.stringify(volumes));
   mixer.apply(id);
   applyScreenVolume(id);
   renderMembers();
   renderVoiceAvatars();
+}
+
+// ---------- Volume com a roda do mouse ----------
+// Em cima da tela de alguém (som da transmissão), da janela flutuante, do nome na barra da voz, do botão de
+// volume na lista ou do controle no cartão: cada "clique" da roda muda 5%. O touchpad manda muitos passos
+// pequenos: eles se somam até dar um clique.
+const WHEEL_STEP = 5;
+const wheelAcc = new Map();
+function wheelSteps(key, e) {
+  const px = e.deltaMode === 1 ? e.deltaY * 40 : e.deltaMode === 2 ? e.deltaY * 400 : e.deltaY;
+  const acc = (wheelAcc.get(key) || 0) + px;
+  const steps = Math.trunc(acc / 100);
+  wheelAcc.set(key, acc - steps * 100);
+  return -steps; // roda para cima = mais alto
+}
+function wheelVolume(id, key, e, where = document) {
+  const steps = wheelSteps(`${id}|${key}`, e);
+  if (!steps) return;
+  const v = volOf(id);
+  const max = key === 'voice' ? 200 : 100;
+  const next = Math.max(0, Math.min(max, v[key] + steps * WHEEL_STEP));
+  setVol(id, { [key]: next, muted: false });
+  if (!$('personCard').hidden && $('personCard').dataset.for === id) renderPersonCard();
+  volBubble(where, `${key === 'voice' ? 'Voz' : 'Som da tela'} de ${nameOf(id)}: ${next}%`, e.clientX, e.clientY);
+}
+// Balãozinho perto do mouse com o volume novo (some sozinho). Vale também nas janelas flutuantes.
+function volBubble(d, text, x, y) {
+  let b = d.getElementById('volBubble');
+  if (!b) {
+    b = d.createElement('div');
+    b.id = 'volBubble';
+    b.setAttribute('role', 'status');
+    Object.assign(b.style, {
+      position: 'fixed', zIndex: '60', pointerEvents: 'none', padding: '5px 10px', borderRadius: '6px', whiteSpace: 'nowrap',
+      background: THEME.glass, border: `1px solid ${THEME.line}`, color: THEME.text, fontFamily: THEME.font, fontSize: '12.5px', fontWeight: '600',
+    });
+    d.body.append(b);
+  }
+  b.textContent = text;
+  const w = d.defaultView;
+  b.style.left = `${Math.max(8, Math.min(w.innerWidth - 200, x + 14))}px`;
+  b.style.top = `${Math.max(8, y - 34)}px`;
+  b.style.display = 'block';
+  clearTimeout(b.hideTimer);
+  b.hideTimer = setTimeout(() => { b.style.display = 'none'; }, 1100);
+}
+function onWheelVolume(el, id, key, where) {
+  el.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    wheelVolume(id, typeof key === 'function' ? key() : key, e, where);
+  }, { passive: false });
 }
 // O som da transmissão sai pelo <video> do quadro: o volume dele segue o da pessoa
 // Atenuação: enquanto alguém fala na voz, o som das transmissões vai para duck.factor (e volta suave depois)
@@ -212,6 +266,7 @@ function renderVoiceAvatars() {
     b.classList.toggle('mic-off', !!voice.members.get(id).muted);
     b.classList.toggle('speaking', speaking.has(id));
     b.onclick = (e) => openPersonCard(id, b, e.detail === 0);
+    onWheelVolume(b, id, 'voice');
     box.append(b);
   }
 }
@@ -286,6 +341,15 @@ function renderPersonCard() {
       applyScreenVolume(id);
     };
     input.onchange = () => setVol(id, { [key]: Number(input.value), muted: false });
+    // A roda do mouse em cima do controle anda de 5 em 5 (o controle do Chromium não reage à roda)
+    input.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const steps = wheelSteps(`${id}|${key}`, e);
+      if (!steps) return;
+      input.value = String(Math.max(0, Math.min(max, Number(input.value) + steps * WHEEL_STEP)));
+      input.oninput();
+      input.onchange();
+    }, { passive: false });
     row.append(top, input);
     card.append(row);
   };
@@ -308,8 +372,9 @@ function renderPersonCard() {
   const reset = document.createElement('button');
   reset.type = 'button';
   reset.className = 'btn small ghost';
-  reset.textContent = 'Voltar para 100%';
-  reset.onclick = () => { setVol(id, { voice: 100, screen: 100, muted: false }); renderPersonCard(); };
+  reset.textContent = 'Voltar ao padrão';
+  reset.title = `Voz em ${DEFAULT_VOICE}% e a transmissão sem som (${DEFAULT_SCREEN}%)`;
+  reset.onclick = () => { setVol(id, { voice: DEFAULT_VOICE, screen: DEFAULT_SCREEN, muted: false }); renderPersonCard(); };
   actions.append(mute, reset);
   const note = document.createElement('p');
   note.className = 'hint';

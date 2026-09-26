@@ -48,8 +48,9 @@ function createTile(id, name) {
   // O volume do quadro fica guardado como o "som da transmissão" dessa pessoa
   vol.onchange = () => setVol(id, { screen: Math.round(parseFloat(vol.value) * 100), muted: false });
   mute.onclick = () => {
+    // Em 0% (o começo de toda transmissão), o alto-falante liga o som em 100% e guarda
+    if (video.volume === 0 && !state.in.get(id)?.self) return setVol(id, { screen: 100, muted: false });
     video.muted = !video.muted;
-    if (!video.muted && video.volume === 0) { video.volume = 1; vol.value = '1'; }
     syncMute();
   };
   syncMute();
@@ -101,6 +102,12 @@ function createTile(id, name) {
   body.className = 'tile-body';
   body.append(video, overlay, pipNote, bar);
   el.append(label, body);
+  // Roda do mouse em cima da tela: som dessa transmissão (a sua própria não tem som)
+  el.addEventListener('wheel', (e) => {
+    if (state.in.get(id)?.self) return;
+    e.preventDefault();
+    wheelVolume(id, 'screen', e);
+  }, { passive: false });
   el.addEventListener('dblclick', (e) => { if (!bar.contains(e.target) && !el.classList.contains('small')) toggleFullscreen(el); });
   // Na coluna ao lado, clicar (ou Enter) numa tela pequena põe ela em destaque
   el.addEventListener('click', () => { if (el.classList.contains('small')) setMain(id); });
@@ -119,6 +126,7 @@ function revealBar(tile) {
   tile.barTimer = setTimeout(() => tile.el.classList.remove('show-bar'), 4000);
 }
 
+let soundHintShown = false; // o aviso do som desligado aparece uma vez só por vez que o app abre
 function watch(id) {
   if (state.in.has(id) || !state.members.get(id)?.sharing) return;
   const pc = new RTCPeerConnection(RTC_CONFIG);
@@ -126,6 +134,10 @@ function watch(id) {
   const link = { pc, chain: Promise.resolve(), tile, lastBytes: 0, lastTs: 0, videoOn: true, tracks: [], once: null };
   state.in.set(id, link);
   applyScreenVolume(id); // o volume que você deixou para essa pessoa da última vez
+  if (!soundHintShown && volOf(id).screen === 0) {
+    soundHintShown = true;
+    toast('O som das telas começa desligado. Role a roda do mouse em cima da tela (ou use o controle) para ouvir.');
+  }
 
   pc.ontrack = (e) => {
     if (e.track.kind === 'video') setVideoTrack(link, e.track);

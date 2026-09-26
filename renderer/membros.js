@@ -74,21 +74,22 @@ function memberRow(id, name, sharing) {
     li.append(mo);
   }
 
-  // Volume dessa pessoa para você (voz e/ou transmissão); mostra o valor quando não está em 100%
+  // Volume dessa pessoa para você (voz e/ou transmissão); mostra o valor quando não está no padrão
   if (id && (voiceOn || state.in.has(id))) {
     const v = volOf(id);
-    const changed = v.muted || v.voice !== 100 || v.screen !== 100;
+    const changed = v.muted || v.voice !== DEFAULT_VOICE || v.screen !== DEFAULT_SCREEN;
     const vb = document.createElement('button');
     vb.type = 'button';
     vb.className = 'btn small vol-btn' + (changed ? ' changed' : '');
     vb.innerHTML = v.muted ? ICON.muted : ICON.volume;
-    const badge = v.muted ? 'mudo' : voiceOn && v.voice !== 100 ? `${v.voice}%` : !voiceOn && v.screen !== 100 ? `${v.screen}%` : '';
+    const badge = v.muted ? 'mudo' : voiceOn && v.voice !== DEFAULT_VOICE ? `${v.voice}%` : !voiceOn && v.screen !== DEFAULT_SCREEN ? `${v.screen}%` : '';
     if (badge) vb.append(badge);
     const label = `Volume de ${name}${v.muted ? ' (silenciada para você)' : badge ? ` (${badge})` : ''}`;
     vb.title = label;
     vb.setAttribute('aria-label', label);
     vb.setAttribute('aria-expanded', String($('personCard').dataset.for === id && !$('personCard').hidden));
     vb.onclick = (e) => openPersonCard(id, vb, e.detail === 0);
+    onWheelVolume(vb, id, () => (inVoice(id) ? 'voice' : 'screen')); // na voz, a roda muda a voz
     li.append(vb);
   }
 

@@ -93,7 +93,8 @@ Qualidade, codificação e jogo em tela cheia estão em [Desempenho](desempenho.
 - **Barra do vídeo:** aparece nos primeiros segundos, ao passar o mouse ou ao navegar com Tab. Tem silenciar, volume, janela flutuante, destacar, tela cheia e o X. Clicar duas vezes no vídeo também põe em tela cheia. Resolução, quadros e Mbps de cada tela ficam em [Estatísticas](#estatísticas), na aba Transmissão.
 - **Várias telas:** com duas ou mais, uma fica grande à esquerda e as outras numa coluna ao lado, todas ao vivo. Clique numa pequena (ou Enter nela) para trocar o destaque.
 - **Só esta:** o botão de destacar deixa só essa tela ocupando tudo. As outras ficam em pausa só para você, sem vídeo e sem som: quem transmite para de mandar o vídeo para você, e o seu PC deixa de decodificar. A faixa de cima mostra quem está em pausa. Clique num nome para trocar, ou em **Mostrar todas** (ou Esc) para voltar.
-- **Volume por pessoa:** veja [Voz](#voz). O som da transmissão de cada pessoa também tem volume próprio.
+- **Som das telas:** toda transmissão começa **sem som** (0%). Para ouvir, role a roda do mouse para cima em cima da tela (5% por clique), use o controle da barra do vídeo ou clique no alto-falante (liga em 100%). O volume de cada pessoa fica guardado pelo nome.
+- **Volume por pessoa:** veja [Voz](#voz).
 - **App minimizado:** com a janela minimizada ou coberta pelo jogo por 3 segundos, o app para de baixar o vídeo e fica só com o som. Ao voltar, o vídeo volta na hora. Quem transmite vê "(vídeo pausado)" ao lado do seu nome.
 
 ## Janela flutuante
@@ -143,8 +144,9 @@ Clique em **Entrar na voz**, na barra de baixo, para ligar o microfone padrão d
 - **Quem está falando** ganha 3 barrinhas verdes que mexem ao lado do nome, sem texto. Isso aparece na lista de pessoas, na tela dessa pessoa (a borda pisca em verde), nas janelas flutuantes e no chat por cima do jogo. Microfone desligado aparece com um ícone laranja.
 - **Volume de cada pessoa:** o botão de volume ao lado do nome abre um cartão com:
   - **Voz** (0 a 200%, para ouvir quem tem o microfone baixo);
-  - **Som da transmissão** (0 a 100%);
-  - **Silenciar para mim** e **Voltar para 100%**.
+  - **Som da transmissão** (0 a 100%, começa em 0%);
+  - **Silenciar para mim** e **Voltar ao padrão** (voz em 100% e a transmissão sem som).
+- **Roda do mouse:** em cima do nome na barra da voz ou do botão de volume na lista, muda a voz da pessoa (ou o som da tela, se ela não estiver na voz), de 5 em 5%. Em cima da tela da pessoa ou da janela flutuante (no modo de ajuste), muda o som da tela. Um balãozinho mostra o valor.
 
   Só muda o que você ouve. O botão mostra o valor quando não está em 100%. O app lembra o volume de cada pessoa pelo nome, para a próxima sala.
 - **Painel recolhido:** as bolinhas de quem está na voz ficam na barra de baixo, e clicar numa abre o mesmo cartão.

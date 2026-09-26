@@ -42,9 +42,9 @@ run('Voz, volume e chat por cima do jogo', 150000, async () => {
   await B.eval(`[...$('personCard').querySelectorAll('button')].find((b) => b.textContent === 'Silenciar para mim').click()`);
   await sleep(200);
   check('Silenciar para mim: ganho 0 e "mudo"', await B.eval(`mixer.nodes.get('${anaId}').gain.gain.value === 0 && ${row}.querySelector('.vol-btn').textContent.includes('mudo')`));
-  await B.eval(`[...$('personCard').querySelectorAll('button')].find((b) => b.textContent === 'Voltar para 100%').click()`);
+  await B.eval(`[...$('personCard').querySelectorAll('button')].find((b) => b.textContent === 'Voltar ao padrão').click()`);
   await sleep(200);
-  check('Voltar para 100%', await B.eval(`mixer.nodes.get('${anaId}').gain.gain.value === 1 && !localStorage.getItem('volumes').includes('Ana')`));
+  check('Voltar ao padrão (voz em 100%)', await B.eval(`mixer.nodes.get('${anaId}').gain.gain.value === 1 && !localStorage.getItem('volumes').includes('Ana')`));
   await B.eval(`closePersonCard(); setPeopleOpen(false)`);
 
   // Fone mutado: quem fala não aparece falando, já que você não está ouvindo
@@ -59,6 +59,19 @@ run('Voz, volume e chat por cima do jogo', 150000, async () => {
   check('Ana silenciada para mim: também não aparece falando', await B.eval(`!speaking.has('${anaId}')`));
   await B.eval(`setVol('${anaId}', { muted: false })`);
 
+  // Roda do mouse no botão de volume da lista: muda a voz (a Ana está na voz), de 5 em 5
+  const wheel = (sel, dy) => `(() => { const el = ${sel}; const r = el.getBoundingClientRect(); el.dispatchEvent(new WheelEvent('wheel', { deltaY: ${dy}, clientX: r.x + 5, clientY: r.y + 5, bubbles: true, cancelable: true })); })()`;
+  await B.eval(`$('peopleBtn').click()`);
+  await B.eval(wheel(`${row}.querySelector('.vol-btn')`, -100));
+  await B.eval(wheel(`${row}.querySelector('.vol-btn')`, -100));
+  check('Roda para cima no volume da lista: voz 110%', await B.eval(`volOf('${anaId}').voice === 110 && Math.abs(mixer.nodes.get('${anaId}').gain.gain.value - 1.1) < 0.01`));
+  check('Balão mostra o volume novo', await B.eval(`$('volBubble')?.textContent === 'Voz de Ana: 110%' && $('volBubble').style.display === 'block'`));
+  await B.eval(wheel(`${row}.querySelector('.vol-btn')`, 30));
+  check('Touchpad: passos pequenos só contam somados', await B.eval(`volOf('${anaId}').voice === 110`));
+  await B.eval(wheel(`${row}.querySelector('.vol-btn')`, 70));
+  check('Somou um clique: 105%', await B.eval(`volOf('${anaId}').voice === 105`));
+  await B.eval(`(() => { setVol('${anaId}', { voice: 100 }); setPeopleOpen(false); })()`);
+
   // Microfone desligado
   await A.eval(`$('voiceMute').click()`);
   await B.waitFor(`voice.members.get('${anaId}').muted`, 5000);
@@ -70,6 +83,9 @@ run('Voz, volume e chat por cima do jogo', 150000, async () => {
   await B.eval(`setPanelOpen(false)`);
   await sleep(200);
   check('Painel recolhido: a Ana aparece na barra', await B.eval(`!$('voiceAvatars').hidden && $('voiceAvatars').querySelectorAll('.voice-avatar').length === 1`));
+  await B.eval(wheel(`$('voiceAvatars').querySelector('.voice-avatar')`, 100));
+  check('Roda para baixo no nome da barra: voz 95%', await B.eval(`volOf('${anaId}').voice === 95`));
+  await B.eval(`setVol('${anaId}', { voice: 100 })`);
   await B.eval(`$('voiceAvatars').querySelector('.voice-avatar').click()`);
   await sleep(200);
   check('Clicar na bolinha abre o volume', await B.eval(`!$('personCard').hidden && $('personCard').dataset.for === '${anaId}'`));

@@ -143,6 +143,8 @@ function buildPip(win, id) {
   const talkers = d.createElement('div');
   Object.assign(talkers.style, { position: 'fixed', left: '8px', bottom: '8px', display: 'flex', flexWrap: 'wrap', gap: '6px', pointerEvents: 'none' });
   d.body.append(video, speakRing, talkers, edit, lockTag, notice);
+  // Roda do mouse (no modo de ajuste; travada, o mouse passa direto para o jogo): som dessa transmissão
+  if (!state.in.get(id)?.self) onWheelVolume(d, id, 'screen', d);
   const p = { win, id, video, edit, name, opacity, lockTag, notice, noticeTimer: null, groupRow, linked, layoutSeg, cornerSeg, speakRing, talkers };
   requestAnimationFrame(() => renderPipSpeaking());
   return p;
