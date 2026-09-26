@@ -146,10 +146,10 @@ Clique em **Entrar na voz**, na barra de baixo, para ligar o microfone padrão d
   - **Voz** (0 a 200%, para ouvir quem tem o microfone baixo);
   - **Som da transmissão** (0 a 100%, começa em 0%);
   - **Silenciar para mim** e **Voltar ao padrão** (voz em 100% e a transmissão sem som).
-- **Roda do mouse:** em cima do nome na barra da voz ou do botão de volume na lista, muda a voz da pessoa (ou o som da tela, se ela não estiver na voz), de 5 em 5%. Em cima da tela da pessoa ou da janela flutuante (no modo de ajuste), muda o som da tela. Um balãozinho mostra o valor.
 
-  Só muda o que você ouve. O botão mostra o valor quando não está em 100%. O app lembra o volume de cada pessoa pelo nome, para a próxima sala.
-- **Painel recolhido:** as bolinhas de quem está na voz ficam na barra de baixo, e clicar numa abre o mesmo cartão.
+  Só muda o que você ouve. O botão mostra o valor quando não está no padrão. O app lembra o volume de cada pessoa pelo nome, para a próxima sala.
+- **Painel recolhido:** os nomes de quem está na voz ficam na barra de baixo, e clicar num abre o mesmo cartão.
+- **Roda do mouse:** em cima do nome na barra da voz ou do botão de volume na lista, muda a voz da pessoa (ou o som da tela, se ela não estiver na voz), de 5 em 5%. Em cima da tela da pessoa ou da janela flutuante (no modo de ajuste), muda o som da tela. Um balãozinho mostra o valor.
 - **Microfone negado:** se o Windows negar o microfone, permita o acesso para aplicativos de desktop nas configurações de privacidade.
 - **Voz e transmissão juntas:** se a captura que exclui o som do app falhar durante a conversa, a tela é transmitida sem áudio do PC, para não retransmitir as vozes. Se uma transmissão já estiver capturando todo o som do PC, pare, entre na voz e recomece a transmissão.
 - **Como funciona:** a voz usa WebRTC direto pela Radmin, uma conexão por par de pessoas, sem servidor. Usa o microfone padrão.
