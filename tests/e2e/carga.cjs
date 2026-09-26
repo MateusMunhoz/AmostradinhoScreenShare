@@ -27,7 +27,7 @@ const GLOBALS = [
 app.whenReady().then(async () => {
   for (const [channel, value] of Object.entries({
     'get-ips': [], 'get-version': '1.9.2', 'github-check': { ok: false }, 'set-priority': true, 'stats-start': true, 'stats-stop': true,
-    'stop-app-audio': true, 'stop-server': true, 'room-keys': true, 'sessoes-observar': true, 'ptt': true,
+    'stop-app-audio': true, 'stop-server': true, 'room-keys': true, 'sessoes-observar': true, 'capture-exclude': true, 'ptt': true,
     'get-shortcuts': { compose: 'CommandOrControl+Enter', mute: 'CommandOrControl+Shift+M', edit: 'CommandOrControl+Shift+E', hideChat: 'CommandOrControl+Shift+O' },
   })) ipcMain.handle(channel, () => value);
   const win = new BrowserWindow({ show: false, width: 1200, height: 780, webPreferences: { preload: path.join(APP, 'preload.js') } });

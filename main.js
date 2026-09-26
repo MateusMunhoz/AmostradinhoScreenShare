@@ -97,6 +97,20 @@ function relaunch() {
   app.quit();
 }
 
+// Fora da captura: enquanto você se vê transmitindo uma tela inteira, a janela do app e as flutuantes não
+// aparecem na captura (senão vira um espelho infinito). No Windows 10 2004 ou mais novo, a captura mostra o que
+// está atrás delas; nos mais velhos, um retângulo preto. Para quem usa o PC, nada muda.
+let excludeFromCapture = false;
+function protectFromCapture(win) {
+  if (win && !win.isDestroyed()) win.setContentProtection(excludeFromCapture);
+}
+function setCaptureExclude(on) {
+  excludeFromCapture = !!on;
+  protectFromCapture(janelas.main);
+  for (const p of pips.values()) protectFromCapture(p.win);
+  return excludeFromCapture;
+}
+
 // Para de anunciar a sessão. Sem encerrar para todos e com mais gente na sala, ela vai para outro PC
 // (troca de host): aí não avisa que fechou, e o novo host continua o anúncio com o mesmo id.
 function endSession(endRoom) {
@@ -161,6 +175,7 @@ function createWindow() {
     const slot = opening.has(id) ? opening.get(id) : freeSlot();
     opening.delete(id);
     setupPip(child, id, slot);
+    protectFromCapture(child);
   });
   win.on('closed', () => {
     for (const p of pips.values()) if (!p.win.isDestroyed()) p.win.close();
@@ -273,6 +288,7 @@ app.whenReady().then(() => {
     stopServer({ endRoom: !!endRoom });
   });
   onRoomChange(() => sessoes.anunciarAgora());
+  ipcMain.handle('capture-exclude', (_e, on) => setCaptureExclude(on));
   ipcMain.handle('sessoes-observar', (e, on) => sessoes.observar(!!on, e.sender));
 
   createWindow();

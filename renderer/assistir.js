@@ -179,6 +179,19 @@ async function selfTrack(link) {
   }
 }
 
+// Transmitindo uma tela inteira e se vendo, a captura pegaria o próprio quadro, que mostra a captura...
+// (espelho infinito: o mouse se multiplica e tudo se repete, para você e para quem assiste). Enquanto isso,
+// a janela do app e as flutuantes saem da captura (o Windows mostra o que está atrás delas). Para você, nada
+// muda na tela. Transmitindo uma janela, não precisa.
+let captureExcluded = false;
+function syncCaptureExclude() {
+  const on = !!state.myId && state.in.get(state.myId)?.self === true && state.sharing && /^screen:/.test(state.sharingSource || '');
+  if (on === captureExcluded) return;
+  captureExcluded = on;
+  window.api.captureExclude(on).catch(() => {});
+  if (on) toast('Enquanto você se vê, a janela do app fica fora da sua transmissão (senão ela vira um espelho infinito).');
+}
+
 async function watchSelf() {
   const id = state.myId;
   if (!state.sharing || !id || state.in.has(id)) return;
@@ -189,6 +202,7 @@ async function watchSelf() {
   tile.el.querySelector('.tile-bar .btn.icon').hidden = true; // o botão de silenciar: não tem som
   const link = { self: true, pc: SELF_PC, tile, videoOn: true, tracks: [], once: null, lastBytes: 0, lastTs: 0 };
   state.in.set(id, link);
+  syncCaptureExclude(); // antes do vídeo aparecer
   if (state.focus) state.focus = id;
   renderFocus();
   renderMembers();
@@ -204,6 +218,7 @@ async function watchSelf() {
 async function refreshSelfView() {
   const link = state.in.get(state.myId);
   if (!link?.self) return;
+  syncCaptureExclude(); // trocou de tela para janela (ou o contrário)
   const track = await selfTrack(link);
   if (track && state.in.get(state.myId) === link) setVideoTrack(link, track);
 }
@@ -229,7 +244,7 @@ function stopWatching(id, notify = true) {
   renderFocus();
   renderMembers();
   updateStage();
-  if (link.self) renderShareBox();
+  if (link.self) { syncCaptureExclude(); renderShareBox(); }
 }
 
 // ---------- Destaque ----------
