@@ -20,7 +20,7 @@ const ROOT = __dirname;
 const KEY_FILE = path.join(os.homedir(), '.tela-p2p', 'chave-de-atualizacao.pem');
 const BOOT = path.join(ROOT, 'boot.js');
 // O que viaja pela sala. boot.js fica de fora: ele confere as assinaturas e só muda com um .exe novo.
-const PACK_FILES = ['main.js', 'preload.js', 'signaling.js', 'github.js', 'index.html', 'styles.css', 'renderer.js', 'encode-once.js', 'pcm-worklet.js', 'bin/audiocap.exe', 'bin/videocap.exe'];
+const PACK_FILES = ['main.js', 'preload.js', 'signaling.js', 'github.js', 'index.html', 'styles.css', 'renderer.js', 'voice.js', 'encode-once.js', 'pcm-worklet.js', 'bin/audiocap.exe', 'bin/videocap.exe'];
 
 function fail(msg) {
   console.error('\n' + msg + '\n');

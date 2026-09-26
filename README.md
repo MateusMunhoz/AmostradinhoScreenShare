@@ -48,6 +48,21 @@ Para gerar um `.exe` portátil sem publicar nada: `npm run dist` (o arquivo apar
   - Funciona se quem criou a sala tiver a versão 1.7.0 ou mais nova.
 - **Janela flutuante (para ver enquanto joga):** o botão da janelinha na barra do vídeo abre essa transmissão numa janela pequena que fica sempre por cima, até do jogo. Ela abre no modo de ajuste: arraste para mover e puxe as bordas para redimensionar. Depois clique em **Travar** ou aperte **Ctrl+Shift+E**. Travada, o mouse passa direto por ela: o clique vai para o jogo, e ela nunca tira o foco dele. Aperte Ctrl+Shift+E de novo, até de dentro do jogo, para ajustar. No modo de ajuste há tamanhos rápidos (P, M, G) e a transparência da janela. Enquanto a janela estiver aberta, o quadro dessa pessoa no app mostra "Picture in picture ativado, transmissão pausada", com **Trazer de volta** e **Ajustar janela**. Dá para abrir uma janela para cada pessoa ao mesmo tempo: elas nascem empilhadas no canto, uma sem cobrir a outra, e **Travar** ou Ctrl+Shift+E valem para todas juntas. O app lembra a posição, o tamanho e a transparência de cada uma (da 1ª, da 2ª janela aberta...), e o X da barra fecha todas. O som continua saindo pelo app, com o volume daquela tela, e o vídeo continua chegando com o app minimizado. Não aparece por cima de jogo em tela cheia **exclusiva**: use o modo janela sem bordas do jogo.
 
+## Chat de voz (código desta versão)
+
+Na sala, clique em **Entrar na voz** para ligar o microfone padrão do Windows e conversar com quem também entrou. A conversa funciona sem transmitir ou assistir a telas e continua ao parar uma transmissão. O criador da sala e os participantes da voz precisam usar esta versão do código.
+
+- **Silenciar mic** interrompe o envio da sua voz; **Ativar mic** retoma.
+- **Silenciar vozes** silencia somente a conversa recebida, sem alterar seu microfone nem o áudio das telas.
+- **Sair da voz** libera o microfone e fecha as conexões de voz. Sair da sala também encerra a voz.
+- O painel mostra os participantes, microfones silenciados e o estado das conexões. Se uma conexão falhar, saia e entre na voz novamente.
+- Se o Windows negar o microfone, permita o acesso para aplicativos de desktop nas configurações de privacidade. Use fones para reduzir eco acústico.
+- Se a captura que exclui o som do próprio app falhar durante a conversa, a tela é transmitida sem áudio do PC para evitar retransmitir as vozes. Se uma transmissão já estiver capturando todo o som do PC, pare-a, entre na voz e depois reinicie a transmissão.
+
+A voz usa WebRTC diretamente pela Radmin, com uma conexão bidirecional por par de participantes. Não usa servidor adicional. Esta primeira versão usa o microfone padrão, sem seleção de dispositivo, indicador de fala ou reconexão automática.
+
+Verificações de desenvolvimento: `npm test`. O teste adicional `npm run test:rtc` usa duas janelas ocultas do Electron e áudio sintético para verificar o transporte WebRTC local, sem abrir seu microfone. A validação de microfones reais e Radmin entre computadores continua necessária.
+
 ## Atualizações
 
 Ninguém precisa baixar o `.exe` de novo para atualizar. A versão nova chega de dois jeitos, e os dois usam o mesmo pacote assinado (cerca de 500 KB):
