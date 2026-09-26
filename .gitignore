@@ -1,5 +1,7 @@
 # Instalado pelo npm install
 node_modules/
+.npm-cache/
+.test-profile/
 
 # Gerado pelo npm run dist / npm run publicar (o .exe vai nas Releases do GitHub)
 dist/

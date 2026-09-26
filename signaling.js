@@ -69,6 +69,7 @@ function startServer(port, password = '') {
       ws.on('message', (raw) => {
         let msg;
         try { msg = JSON.parse(raw); } catch { return; }
+        if (!msg || typeof msg !== 'object') return;
 
         if (!me) {
           if (msg.type !== 'hello') return;
@@ -82,12 +83,12 @@ function startServer(port, password = '') {
           }
           // A versão de cada um serve para os apps baixarem atualizações uns dos outros
           const version = /^\d+\.\d+\.\d+$/.test(msg.version) ? msg.version : '';
-          me = { ws, name: String(msg.name || 'Anônimo').slice(0, 32), sharing: false, version };
+          me = { ws, name: String(msg.name || 'Anônimo').slice(0, 32), sharing: false, version, voiceSession: '', muted: false };
           send(ws, {
             type: 'welcome',
             id,
-            members: [...members].map(([mid, m]) => ({ id: mid, name: m.name, sharing: m.sharing, version: m.version })),
-            features: ['chat'],
+            members: [...members].map(([mid, m]) => ({ id: mid, name: m.name, sharing: m.sharing, version: m.version, voiceSession: m.voiceSession, muted: m.muted })),
+            features: ['chat', 'voice'],
             chat: chatLog,
           });
           members.set(id, me);
@@ -95,7 +96,12 @@ function startServer(port, password = '') {
           return;
         }
 
-        if (msg.type === 'share') {
+        if (msg.type === 'voice-state') {
+          if (typeof msg.session !== 'string' || !/^[\w-]{0,64}$/.test(msg.session)) return;
+          me.voiceSession = msg.session;
+          me.muted = !!msg.session && msg.muted === true;
+          broadcast({ type: 'voice-state', id, session: me.voiceSession, muted: me.muted });
+        } else if (msg.type === 'share') {
           me.sharing = !!msg.sharing;
           broadcast({ type: 'share-state', id, sharing: me.sharing }, id);
         } else if (msg.type === 'chat') {
@@ -109,6 +115,9 @@ function startServer(port, password = '') {
           if (chatLog.length > CHAT_KEEP) chatLog.shift();
           broadcast({ type: 'chat', ...entry }); // para todos, inclusive quem mandou
         } else if (msg.type === 'signal' && msg.to !== id && members.has(msg.to)) {
+          if (msg.data?.side === 'voice' && (!me.voiceSession ||
+              msg.data.session !== me.voiceSession || msg.data.targetSession !== members.get(msg.to).voiceSession ||
+              !members.get(msg.to).voiceSession)) return;
           send(members.get(msg.to).ws, { type: 'signal', from: id, data: msg.data });
         }
       });

@@ -74,6 +74,38 @@ function send(msg) {
 }
 function sendSignal(to, data) { send({ type: 'signal', to, data }); }
 
+const voice = new VoiceChat({ send, changed: renderVoice, error: message => toast(message, 'error') });
+function renderVoice() {
+  const active = !!voice.session;
+  $('voiceJoin').disabled = !voice.supported;
+  $('voiceJoin').textContent = voice.pending ? 'Cancelar entrada' : active ? 'Sair da voz' : 'Entrar na voz';
+  $('voiceMute').hidden = $('voiceDeafen').hidden = !active;
+  $('voiceMute').textContent = voice.muted ? 'Ativar mic' : 'Silenciar mic';
+  $('voiceMute').setAttribute('aria-pressed', String(voice.muted));
+  $('voiceDeafen').textContent = voice.deafened ? 'Ouvir vozes' : 'Silenciar vozes';
+  $('voiceDeafen').setAttribute('aria-pressed', String(voice.deafened));
+  $('voiceStatus').textContent = !voice.supported ? 'Quem criou a sala precisa atualizar o app para habilitar a voz.'
+    : voice.pending ? 'Aguardando acesso ao microfone…'
+    : active ? `${voice.muted ? 'Microfone silenciado.' : 'Microfone ligado.'} ${voice.deafened ? 'Vozes silenciadas; seu microfone não é alterado.' : 'A conversa continua sem transmitir tela.'}`
+    : 'Entre na voz para conversar. O microfone só liga ao entrar.';
+  const list = $('voiceMembers');
+  list.replaceChildren();
+  const row = text => { const li = document.createElement('li'); li.textContent = text; list.append(li); };
+  if (active) row(`${getName()} (você) · ${voice.muted ? 'mic silenciado' : 'na voz'}`);
+  for (const [id, m] of voice.members) if (m.session) {
+    const status = active ? voice.peers.get(id)?.status || 'conectando' : 'na voz';
+    row(`${nameOf(id)} · ${m.muted ? 'mic silenciado · ' : ''}${status}`);
+  }
+}
+$('voiceJoin').onclick = () => {
+  if (voice.session || voice.pending) return voice.leave();
+  if (state.systemLoopback) return toast('Pare sua transmissão, entre na voz e depois reinicie a transmissão: a captura atual inclui todo o som do PC.', 'error');
+  voice.join();
+};
+$('voiceMute').onclick = () => voice.mute();
+$('voiceDeafen').onclick = () => voice.deafen();
+window.addEventListener('beforeunload', () => voice.leave(false));
+
 function toggleFullscreen(el) {
   if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
   else el.requestFullscreen().catch(() => {});
@@ -247,6 +279,7 @@ function enterRoom(welcome, owner, host, port) {
   state.port = port;
   state.members.clear();
   for (const m of welcome.members) state.members.set(m.id, { name: m.name, sharing: m.sharing, version: m.version });
+  voice.reset(welcome);
   setIcon($('leaveBtn'), 'leave', owner ? 'Encerrar sala (sai todo mundo)' : 'Sair da sala');
   resetChat(welcome);
   renderRoomAddress();
@@ -262,6 +295,7 @@ function enterRoom(welcome, owner, host, port) {
 
 function leaveRoom(reason, kind = 'info') {
   if (!state.myId) return;
+  voice.reset(null);
   const ws = state.ws;
   state.ws = null;
   if (ws) { ws.onclose = null; ws.close(); }
@@ -288,12 +322,14 @@ function onRoomMessage(m) {
   switch (m.type) {
     case 'member-joined':
       state.members.set(m.id, { name: m.name, sharing: false, version: m.version });
+      voice.update(m.id, '', false);
       renderMembers();
       toast(`${m.name} entrou na sala`);
       checkUpdates();
       break;
     case 'member-left': {
       const name = nameOf(m.id);
+      voice.remove(m.id);
       if (update.busy?.from === m.id) cancelDownload();
       chatMemberLeft(m.id);
       closeOut(m.id);
@@ -314,6 +350,9 @@ function onRoomMessage(m) {
       updateStage();
       break;
     }
+    case 'voice-state':
+      if (m.id === state.myId || state.members.has(m.id)) voice.update(m.id, m.session, m.muted);
+      break;
     case 'signal':
       handleSignal(m.from, m.data || {});
       break;
@@ -326,6 +365,7 @@ function onRoomMessage(m) {
 // Cada par de PCs pode ter duas conexões (eu assisto você e você me assiste).
 // O campo "side" diz de qual lado da conexão veio a mensagem.
 function handleSignal(from, data) {
+  if (data.side === 'voice') return voice.receive(from, data);
   if (data.side === 'viewer') {
     // Mensagem de alguém que assiste (ou quer assistir) a minha tela
     if (data.subscribe) return addWatcher(from, data.once === true);
@@ -1899,6 +1939,7 @@ function stopAppAudio() {
 }
 
 function stopTracks() {
+  state.systemLoopback = false;
   if (state.stream) state.stream.getTracks().forEach((t) => t.stop());
   state.stream = null;
   stopAppAudio();
@@ -1929,8 +1970,9 @@ async function startSharing() {
       audioTrack = await createAppAudioTrack(excluded);
     } catch (err) {
       stopAppAudio();
-      if (!excluded.length) {
+      if (!excluded.length && !voice.session && !voice.pending) {
         loopback = true;
+        state.systemLoopback = true;
         toast('Não deu para separar o som deste app, então quem você assiste pode se ouvir na sua transmissão.', 'error');
       } else {
         toast(`Não foi possível ignorar os apps escolhidos: ${err.message}. Transmitindo sem áudio.`, 'error');
@@ -1959,10 +2001,12 @@ async function startSharing() {
   } catch (err) {
     stopOnceEncoder();
     stopAppAudio();
+    state.systemLoopback = false;
     setBusy(btn, false, 'Iniciar transmissão');
     return toast(`Não foi possível capturar a tela: ${err.message}`, 'error');
   }
   if (audioTrack) state.stream.addTrack(audioTrack);
+  state.systemLoopback = loopback;
 
   const vTrack = state.stream.getVideoTracks()[0];
   if (vTrack) {
