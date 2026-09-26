@@ -71,3 +71,14 @@ function setIcon(btn, icon, label) {
 function setFsIcon(btn, full) {
   setIcon(btn, full ? 'shrink' : 'expand', full ? 'Sair da tela cheia' : 'Tela cheia');
 }
+
+// ---------- Formatação (números com vírgula, como no Brasil) ----------
+const two = (n) => String(n).padStart(2, '0');
+function formatBytes(n) {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(0)} KB`;
+  return `${(n / 1024 / 1024).toFixed(1).replace('.', ',')} MB`;
+}
+const pct = (v) => `${(v || 0).toFixed(1).replace('.', ',')}%`;
+const fpsText = (v) => `${Math.round(v || 0)} fps`;
+const mbpsText = (v) => `${(v || 0).toFixed(1).replace('.', ',')} Mbps`;

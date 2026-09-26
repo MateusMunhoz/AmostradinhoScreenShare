@@ -5,10 +5,6 @@
 // ---------- Estatísticas ----------
 // Processador e placa de vídeo do app (e do PC inteiro, que inclui o jogo), atualizados a cada segundo
 let codecTimer = null;
-const pct = (v) => `${(v || 0).toFixed(1).replace('.', ',')}%`;
-
-const fpsText = (v) => `${Math.round(v || 0)} fps`;
-const mbpsText = (v) => `${(v || 0).toFixed(1).replace('.', ',')} Mbps`;
 
 // ---------- Desempenho ao longo do tempo ----------
 // Enquanto você está numa sala, o capturador mede processador e placa de vídeo uma vez por segundo,

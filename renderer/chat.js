@@ -23,12 +23,6 @@ const chat = {
   urls: [],               // blob: criados, para liberar ao sair
 };
 
-const two = (n) => String(n).padStart(2, '0');
-function formatBytes(n) {
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(0)} KB`;
-  return `${(n / 1024 / 1024).toFixed(1).replace('.', ',')} MB`;
-}
 
 // Painel (endereço, pessoas e chat) aberto ou recolhido pelo balão da barra
 function setPanelOpen(open) {
