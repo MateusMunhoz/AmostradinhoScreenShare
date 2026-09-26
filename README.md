@@ -85,7 +85,7 @@ Verificações de desenvolvimento:
 
 - `npm test`: testes rápidos da voz e do servidor da sala, sem abrir janelas.
 - `npm run test:rtc`: áudio WebRTC de verdade entre duas janelas ocultas, sem abrir seu microfone.
-- `npm run test:e2e`: os testes de ponta a ponta (`tests/e2e/`). Eles abrem várias cópias do app no seu PC (cada uma como uma pessoa) e conferem o chat, a troca de host, as janelas flutuantes, a arrumação das telas, a voz e o volume, o chat por cima do jogo, o aviso de atualização, o microfone com IA e os atalhos. Levam uns 8 minutos e abrem janelas na tela, então não começam com um jogo em tela cheia aberto (`set TELA_E2E_FORCE=1` pula essa trava). Para rodar só um: `npm run test:e2e -- chat`. As fotos ficam em `%TEMP%	ela-p2p-e2eotos`. O teste do Ctrl+Enter digita de verdade e fica de fora: `node tests/e2e/ctrl-enter.js`.
+- `npm run test:e2e`: os testes de ponta a ponta (`tests/e2e/`). Eles abrem várias cópias do app no seu PC (cada uma como uma pessoa) e conferem o chat, a troca de host, as janelas flutuantes, a arrumação das telas, a voz e o volume, o chat por cima do jogo, o aviso de atualização, o microfone com IA e os atalhos. Levam uns 8 minutos e abrem janelas na tela, então não começam com um jogo em tela cheia aberto (`set TELA_E2E_FORCE=1` pula essa trava). Para rodar só um: `npm run test:e2e -- chat`. As fotos ficam em `%TEMP%\tela-p2p-e2e\fotos`. O teste do Ctrl+Enter digita de verdade e fica de fora: `node tests/e2e/ctrl-enter.js`.
 - `docs/roteiro-de-teste.md`: o que testar numa call com gente e microfone de verdade (eco, ruído, apertar para falar, Ctrl+Enter no jogo, troca de host).
 
 ## Atualizações
