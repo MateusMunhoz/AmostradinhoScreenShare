@@ -1,0 +1,23 @@
+[Unit]
+Description=Tela P2P - controlador da rede SelfVPN
+After=network-online.target wg-quick@tela0.service
+Requires=wg-quick@tela0.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/node /opt/tela-selfvpn/server/selfvpn-server.js /etc/tela-selfvpn/server.json
+Restart=on-failure
+RestartSec=3
+User=root
+UMask=0077
+StateDirectory=tela-selfvpn
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+NoNewPrivileges=true
+CapabilityBoundingSet=CAP_NET_ADMIN
+ReadWritePaths=/var/lib/tela-selfvpn
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+
+[Install]
+WantedBy=multi-user.target

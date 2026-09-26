@@ -1,6 +1,16 @@
 # AmostradinhoScreenShare (Tela P2P)
 
-Compartilhamento de tela com áudio do PC, de computador para computador, usando a Radmin VPN. Não precisa de nenhum servidor pago: o app de quem transmite faz a "apresentação" entre os PCs, e o vídeo e o áudio vão direto para cada amigo.
+## Branch `naitsi_selfvpn`: VPN integrada
+
+Baseada na versão **1.8.9**, esta branch adiciona o painel **VPN própria**, com cadastro por convite, chaves locais e controle de um túnel WireGuard pelo app. O endereço da VPN ganha prioridade ao criar uma sala; rede local e Radmin continuam disponíveis.
+
+**É necessário configurar uma VPS antes de usar a VPN pela internet.** O servidor e o guia completo estão em [server/README.md](server/README.md). O tráfego da rede privada passa pela VPS. Esta versão não direciona sua navegação de internet para a VPN.
+
+Para desenvolvimento no Windows x64: `npm ci`, depois `npm start` (prepara o motor oficial automaticamente). Para gerar o portátil: `npm run dist`. O pacote não foi publicado como atualização oficial; a versão-base permanece 1.8.9.
+
+Na primeira conexão, cole o convite da rede e autorize o Windows. **Desconectar** encerra a VPN; fechar o app mantém o túnel ativo até desconectar ou desligar o PC. A instalação e o handshake reais ainda precisam ser validados com uma VPS e dois computadores.
+
+As instruções abaixo descrevem o modo original com Radmin: compartilhamento de tela com áudio do PC, de computador para computador. Nesse modo o app de quem transmite faz a "apresentação" entre os PCs. Para o modo VPN própria, siga o guia acima; ele requer uma VPS e o tráfego passa por ela.
 
 **Baixar:** pegue o `.exe` da versão mais nova em [Releases](https://github.com/MateusMunhoz/AmostradinhoScreenShare/releases/latest). Não precisa instalar: é só abrir. Depois disso, o próprio app avisa quando sair uma versão nova.
 

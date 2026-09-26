@@ -19,7 +19,7 @@
         </div>
         <div class="home-hero">
           <h1>Sua tela,<br>direto no PC dos amigos.</h1>
-          <p class="lead">Uma sala para transmitir telas com os amigos, de PC para PC pela Radmin VPN.</p>
+          <p class="lead">Uma sala para transmitir telas com os amigos, pela sua VPN ou rede local.</p>
         </div>
         <div class="home-status">
           <p class="status-line">
@@ -37,6 +37,17 @@
       </div>
 
       <div class="home-actions">
+        <div class="home-card selfvpn-card">
+          <h2>VPN própria</h2>
+          <p class="hint">Cole o convite da sua rede para conectar sem configurar outro aplicativo.</p>
+          <label class="field"><span>Convite da rede</span><input id="vpnInvite" type="password" autocomplete="off" maxlength="2048" placeholder="selfvpn:…"></label>
+          <div class="actions">
+            <button id="vpnConnect" type="button" class="btn primary">Conectar VPN</button>
+            <button id="vpnDisconnect" type="button" class="btn" disabled>Desconectar</button>
+          </div>
+          <p id="vpnStatus" class="hint" role="status">Verificando VPN…</p>
+          <p class="hint">É preciso um convite de um servidor configurado. O Windows pedirá permissão de administrador. A VPN continua ativa ao fechar o app; use Desconectar para encerrá-la.</p>
+        </div>
         <div class="home-card" id="homeCard">
           <label class="field">
             <span>Seu nome</span>
@@ -51,7 +62,7 @@
             <strong>Entrar numa sala</strong>
             <label class="field">
               <span>Endereço de quem criou</span>
-              <input id="roomAddr" class="mono" placeholder="26.123.45.67:8765">
+              <input id="roomAddr" class="mono" placeholder="10.77.0.2:8765">
             </label>
             <label class="field">
               <span>Senha</span>
@@ -194,7 +205,7 @@
             </div>
             <div class="pp-addr">
               <div id="roomAddress"></div>
-              <p id="noRadmin" class="warn" hidden>Nenhum IP da Radmin VPN (26.x.x.x) encontrado. Ligue a Radmin e entre na rede.</p>
+            <p id="noRadmin" class="warn" hidden>Sem VPN detectada. Para conectar pela internet, todos devem entrar na mesma rede VPN.</p>
             </div>
           </div>
         </aside>
@@ -444,5 +455,6 @@
   <script src="encode-once.js"></script>
   <script src="voice.js"></script>
   <script src="renderer.js"></script>
+  <script src="selfvpn-ui.js"></script>
 </body>
 </html>

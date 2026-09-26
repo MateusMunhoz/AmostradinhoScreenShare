@@ -1,6 +1,9 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
+  vpnStatus: () => ipcRenderer.invoke('selfvpn-status'),
+  vpnConnect: (invite) => ipcRenderer.invoke('selfvpn-connect', invite),
+  vpnDisconnect: () => ipcRenderer.invoke('selfvpn-disconnect'),
   getSources: () => ipcRenderer.invoke('get-sources'),
   selectSource: (id, withSystemAudio) => ipcRenderer.invoke('select-source', id, withSystemAudio),
   listAudioApps: () => ipcRenderer.invoke('list-audio-apps'),

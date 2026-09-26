@@ -1,0 +1,20 @@
+'use strict';
+// Executar no Linux como root após instalar WireGuard, Node e Caddy; não é executado pelo app.
+const fs = require('node:fs');
+const crypto = require('node:crypto');
+const { execFileSync } = require('node:child_process');
+const { origin, endpoint } = require('../selfvpn/protocol');
+const domain = process.argv[2];
+if (!domain || !/^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])$/.test(domain)) throw new Error('Uso: sudo node server/configure.js vpn.seudominio.com');
+if (process.platform !== 'linux' || process.getuid() !== 0) throw new Error('Execute no servidor Linux como root.');
+if (fs.existsSync('/etc/tela-selfvpn/server.json') || fs.existsSync('/etc/wireguard/tela0.conf')) throw new Error('Servidor já configurado; não serão substituídas as chaves.');
+origin('https://' + domain); endpoint(domain + ':51820');
+fs.mkdirSync('/etc/tela-selfvpn', { recursive: true, mode: 0o700 });
+fs.mkdirSync('/etc/wireguard', { recursive: true, mode: 0o700 });
+const privateKey = execFileSync('/usr/bin/wg', ['genkey'], { encoding: 'utf8' }).trim();
+const token = () => crypto.randomBytes(32).toString('base64url');
+const settings = { endpoint: domain + ':51820', origin: 'https://' + domain, inviteToken: token(), adminToken: token(), maxPeers: 12 };
+fs.writeFileSync('/etc/tela-selfvpn/server.json', JSON.stringify(settings, null, 2), { mode: 0o600, flag: 'wx' });
+fs.writeFileSync('/etc/wireguard/tela0.conf', `[Interface]\nPrivateKey = ${privateKey}\nAddress = 10.77.0.1/24\nListenPort = 51820\nMTU = 1280\nPostUp = iptables -I FORWARD 1 -i %i -j DROP\nPostUp = iptables -I FORWARD 1 -o %i -j DROP\nPostUp = iptables -I FORWARD 1 -i %i -o %i -s 10.77.0.0/24 -d 10.77.0.0/24 -j ACCEPT\nPostDown = iptables -D FORWARD -i %i -o %i -s 10.77.0.0/24 -d 10.77.0.0/24 -j ACCEPT\nPostDown = iptables -D FORWARD -o %i -j DROP\nPostDown = iptables -D FORWARD -i %i -j DROP\n`, { mode: 0o600, flag: 'wx' });
+fs.writeFileSync('/etc/tela-selfvpn/Caddyfile', `${domain} {\n  @api path /v1/enroll\n  reverse_proxy @api 127.0.0.1:8788\n  respond 404\n}\n`, { mode: 0o644 });
+console.log('Configuração criada. Siga server/README.md para habilitar os serviços.');

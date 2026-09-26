@@ -895,7 +895,7 @@ async function connectRoom(url, hello, timeoutMs = 8000) {
     let joined = false;
     let errMsg = null;
     const timer = setTimeout(() => {
-      if (!joined) { errMsg = 'Tempo esgotado. Confira o endereço e se a Radmin VPN está ligada.'; ws.close(); }
+      if (!joined) { errMsg = 'Tempo esgotado. Confira o endereço e se todos estão na mesma VPN ou rede local.'; ws.close(); }
     }, timeoutMs);
 
     ws.onopen = () => ws.send(JSON.stringify({ type: 'hello', ...hello, addrs, version: update.myVersion }));
@@ -912,7 +912,7 @@ async function connectRoom(url, hello, timeoutMs = 8000) {
     ws.onclose = (e) => {
       clearTimeout(timer);
       if (!joined) {
-        reject(new Error(errMsg || 'Não foi possível conectar. Confira o endereço e se a Radmin VPN está ligada nos dois PCs.'));
+        reject(new Error(errMsg || 'Não foi possível conectar. Confira o endereço e a conexão de rede nos dois PCs.'));
       } else if (state.ws === ws) {
         // Sem quem roda o servidor, a sala passa para quem está nela há mais tempo
         if (e.reason !== 'room-closed' && state.handoff) migrateRoom(e.reason);
@@ -1600,7 +1600,8 @@ async function renderRoomAddress() {
   let addrs;
   if (state.isOwner) {
     const ips = await window.api.getIps();
-    const radmin = ips.filter((i) => i.radmin);
+    const self = ips.filter((i) => i.selfvpn);
+    const radmin = self.length ? self : ips.filter((i) => i.radmin);
     $('noRadmin').hidden = radmin.length > 0;
     addrs = (radmin.length ? radmin : ips).map((i) => `${i.address}:${state.port}`);
   } else {
@@ -3492,10 +3493,10 @@ $('closeShare').onclick = closeShareDialog;
 async function renderRadmin() {
   let ips = [];
   try { ips = await window.api.getIps(); } catch {}
-  const r = ips.find((i) => i.radmin);
+  const r = ips.find((i) => i.selfvpn) || ips.find((i) => i.radmin);
   $('radminDot').className = 'dot ' + (r ? 'ok' : 'warn');
-  $('radminTitle').textContent = r ? 'Radmin VPN conectada' : 'Radmin VPN não encontrada';
-  $('radminDetail').textContent = r ? r.address : 'Ligue a Radmin e entre na rede';
+  $('radminTitle').textContent = r?.selfvpn ? 'Adaptador da VPN própria ativo' : r ? 'Radmin VPN conectada' : 'Rede local';
+  $('radminDetail').textContent = r ? r.address : 'Use a VPN própria para conectar pela internet';
 }
 
 function renderLastRoom() {
