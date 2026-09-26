@@ -58,3 +58,55 @@ test('sala anuncia voz, guarda estado e só encaminha sinais entre sessões ativ
   a.ws.close();
   assert.equal((await b.wait(m => m.type === 'member-left')).id, a.welcome.id);
 });
+
+async function freePort() {
+  const probe = net.createServer();
+  await new Promise(r => probe.listen(0, '127.0.0.1', r));
+  const port = probe.address().port;
+  await new Promise(r => probe.close(r));
+  return port;
+}
+
+// Pergunta "info" sem entrar na sala (o que a lista de sessões faz com os endereços conhecidos)
+async function askInfo(port) {
+  const ws = new WebSocket(`ws://127.0.0.1:${port}`);
+  await new Promise((resolve, reject) => { ws.once('open', resolve); ws.once('error', reject); });
+  const reply = new Promise(resolve => {
+    ws.once('message', raw => resolve(JSON.parse(raw)));
+    ws.once('close', () => resolve(null));
+  });
+  ws.send(JSON.stringify({ type: 'info' }));
+  return reply;
+}
+
+test('sessão: id, pessoas e senha para quem procura, sem entrar; sala oculta não aparece', async t => {
+  const { roomInfo, roomSize, onRoomChange } = require('../signaling');
+  const port = await freePort();
+  let changes = 0;
+  onRoomChange(() => { changes++; });
+  t.after(() => onRoomChange(null));
+  assert.equal((await startServer(port, 'segredo')).ok, true);
+  t.after(stopServer);
+  assert.equal(roomInfo(), null, 'antes do host entrar, nada a anunciar');
+  const a = await client(port); t.after(() => a.ws.terminate());
+  assert.match(a.welcome.sessao.id, /^[a-f0-9]{16}$/);
+  assert.equal(a.welcome.sessao.oculta, false);
+  assert.ok(a.welcome.features.includes('sessoes'));
+  const info = await askInfo(port);
+  assert.deepEqual(info, { type: 'info', app: 'tela-p2p', id: a.welcome.sessao.id, host: 'Teste', pessoas: 1, senha: true, porta: port });
+  assert.equal(roomSize(), 1, 'quem só perguntou não conta como pessoa');
+  const b = await client(port); t.after(() => b.ws.terminate());
+  assert.equal(roomInfo().pessoas, 2);
+  assert.ok(changes >= 2, 'avisa quando entra alguém');
+  stopServer();
+  assert.equal(roomInfo(), null);
+
+  // Troca de host: o novo servidor continua com o mesmo id; oculta continua oculta
+  const port2 = await freePort();
+  assert.equal((await startServer(port2, '', { sessao: { id: a.welcome.sessao.id, oculta: true } })).ok, true);
+  const c = await client(port2); t.after(() => c.ws.terminate());
+  assert.equal(c.welcome.sessao.id, a.welcome.sessao.id);
+  assert.equal(roomInfo(), null, 'oculta não é anunciada');
+  assert.equal(roomSize(), 1);
+  assert.equal(await askInfo(port2), null, 'oculta não responde info');
+});

@@ -1,9 +1,13 @@
 // Servidor de sinalização da sala: roda no PC de quem criou a sala.
 // Ele só apresenta as pessoas umas às outras. Vídeo e áudio vão direto entre os PCs (P2P).
+const crypto = require('crypto');
 const { WebSocketServer } = require('ws');
 
 let wss = null;
 let pingTimer = null;
+// A sala em andamento, para o anúncio das sessões abertas: { sessao, port, password, members, hostId() }
+let room = null;
+let roomChanged = () => {};
 
 const LOCAL = ['127.0.0.1', '::1', '::ffff:127.0.0.1'];
 const MAX_MEMBERS = 12;
@@ -24,7 +28,6 @@ function send(ws, msg) {
   if (ws && ws.readyState === 1) ws.send(JSON.stringify(msg));
 }
 
-// Endereços IPv4 que a pessoa diz ter (para os outros acharem ela se ela virar o host)
 // Configuração de quem transmite (qualidade, codificação, som), para a aba Transmissão das Estatísticas
 function cleanShareInfo(i) {
   if (!i || typeof i !== 'object') return null;
@@ -37,8 +40,34 @@ function cleanShareInfo(i) {
   return out;
 }
 
+// Endereços IPv4 que a pessoa diz ter (para os outros acharem ela se ela virar o host)
 function cleanAddrs(list) {
   return (Array.isArray(list) ? list : []).map(String).filter((a) => /^\d{1,3}(\.\d{1,3}){3}$/.test(a)).slice(0, 8);
+}
+
+// Sessão: um id que fica o mesmo quando a sala passa para outra pessoa (a lista das sessões abertas não
+// duplica) e se ela aparece para quem procura na rede
+function cleanSessao(s) {
+  const id = s && /^[a-f0-9]{16}$/.test(String(s.id)) ? String(s.id) : crypto.randomBytes(8).toString('hex');
+  return { id, oculta: !!(s && s.oculta === true) };
+}
+
+// Avisa o anúncio das sessões quando entra ou sai alguém (o número de pessoas muda)
+function onRoomChange(cb) {
+  roomChanged = typeof cb === 'function' ? cb : () => {};
+}
+
+// A sessão como aparece para quem procura; null sem sala, com a sala oculta ou antes de o host entrar
+function roomInfo() {
+  if (!room || room.sessao.oculta) return null;
+  const host = room.members.get(room.hostId());
+  if (!host) return null;
+  return { id: room.sessao.id, host: host.name, pessoas: room.members.size, senha: !!room.password, porta: room.port };
+}
+
+// Quantas pessoas estão na sala agora (oculta ou não), para saber se ela vai passar adiante
+function roomSize() {
+  return room ? room.members.size : 0;
 }
 
 // seed: quando a sala passa para outra pessoa, o novo servidor continua a conversa e a numeração
@@ -53,6 +82,7 @@ function startServer(port, password = '', seed = {}) {
     // Quem roda este servidor: numa sala nova, a primeira conexão do próprio PC; depois de uma troca,
     // já vem definido (os outros podem chegar antes do próprio novo host)
     let hostId = /^\d{1,6}$/.test(String(seed.hostId || '')) ? String(seed.hostId) : null;
+    const sessao = cleanSessao(seed.sessao);
 
     const broadcast = (msg, exceptId) => {
       for (const [id, m] of members) if (id !== exceptId) send(m.ws, msg);
@@ -60,6 +90,7 @@ function startServer(port, password = '', seed = {}) {
 
     server.on('listening', () => {
       wss = server;
+      room = { sessao, port, password, members, hostId: () => hostId };
       pingTimer = setInterval(() => {
         for (const ws of server.clients) {
           if (ws.isAlive === false) { ws.terminate(); continue; }
@@ -93,6 +124,13 @@ function startServer(port, password = '', seed = {}) {
         if (!msg || typeof msg !== 'object') return;
 
         if (!me) {
+          // Quem procura sessões abertas pergunta sem entrar (e sem senha): nome do host, pessoas e se tem senha.
+          // Sala oculta não responde.
+          if (msg.type === 'info') {
+            const i = roomInfo();
+            if (i) send(ws, { type: 'info', app: 'tela-p2p', ...i });
+            return ws.close();
+          }
           if (msg.type !== 'hello') return;
           if (password && !isLocal && msg.password !== password) {
             send(ws, { type: 'error', message: 'Senha incorreta.' });
@@ -127,11 +165,13 @@ function startServer(port, password = '', seed = {}) {
             id,
             hostId,
             members: [...members].map(([mid, m]) => info(mid, m)),
-            features: ['chat', 'voice', 'handoff'],
+            features: ['chat', 'voice', 'handoff', 'sessoes'],
             chat: chatLog,
+            sessao,
           });
           members.set(id, me);
           broadcast({ type: 'member-joined', ...info(id, me), resumed: !!resume }, id);
+          roomChanged();
           return;
         }
 
@@ -166,6 +206,7 @@ function startServer(port, password = '', seed = {}) {
         if (!me) return;
         members.delete(id);
         broadcast({ type: 'member-left', id });
+        roomChanged();
       });
     });
   });
@@ -175,6 +216,7 @@ function startServer(port, password = '', seed = {}) {
 function stopServer({ endRoom = false } = {}) {
   clearInterval(pingTimer);
   pingTimer = null;
+  room = null;
   if (wss) {
     for (const ws of wss.clients) {
       ws.close(1000, endRoom ? 'room-closed' : 'host-left');
@@ -185,4 +227,4 @@ function stopServer({ endRoom = false } = {}) {
   }
 }
 
-module.exports = { startServer, stopServer };
+module.exports = { startServer, stopServer, roomInfo, roomSize, onRoomChange };
