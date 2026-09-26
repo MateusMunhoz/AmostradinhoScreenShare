@@ -9,6 +9,7 @@ const {
   BIN, AUDIOCAP, setPriority, stopPriority, startStats, stopStats, probeVideoCap, startVideoCap, stopVideoCap,
   videoCapCommand, startAppAudio, stopAppAudio,
 } = require('./main/nativos');
+const { janelas, sendMain } = require('./main/contexto');
 
 // Usa os IPs reais (26.x da Radmin) nos candidatos WebRTC em vez de endereços .local.
 // No Windows 10, a captura moderna do Windows (a que o Chromium usa) desenha uma borda amarela em volta
@@ -80,9 +81,7 @@ function cleanOldUpdates() {
 // bordas). Travadas, o mouse passa por elas (o clique vai para o jogo) e elas nunca pegam o foco. No modo de
 // ajuste dá para arrastar e redimensionar. Ctrl+Shift+E troca todas entre os dois, de dentro do jogo.
 // Cada vaga (1ª, 2ª, 3ª janela aberta...) lembra a própria posição, tamanho e transparência.
-let mainWin = null;
 const pips = new Map(); // id da transmissão -> { win, slot, opacity }
-let pipEdit = false;
 const pipFile = () => path.join(app.getPath('userData'), 'janela-flutuante.json');
 
 // Arquivo: { slots: [{ x, y, width, height, opacity }, ...], group }. O formato antigo (uma janela só) vira a vaga 0.
@@ -130,10 +129,6 @@ function freeSlot() {
   let slot = 0;
   while (used.has(slot)) slot++;
   return slot;
-}
-
-function sendMain(msg) {
-  if (mainWin && !mainWin.isDestroyed()) mainWin.webContents.send('pip', msg);
 }
 
 const livePip = (id) => { const p = pips.get(String(id)); return p && !p.win.isDestroyed() ? p : null; };
@@ -232,16 +227,16 @@ function pipOpacities() {
 }
 
 function setPipEdit(on) {
-  pipEdit = !!on;
+  janelas.pipEdit = !!on;
   for (const p of pips.values()) {
-    if (!p.win.isDestroyed()) p.win.setIgnoreMouseEvents(!pipEdit); // travada: o clique atravessa
+    if (!p.win.isDestroyed()) p.win.setIgnoreMouseEvents(!janelas.pipEdit); // travada: o clique atravessa
   }
   // O chat por cima do jogo entra e sai do modo de ajuste junto; só nele recebe o teclado (para responder)
-  if (chatWin && !chatWin.isDestroyed()) {
-    chatWin.setIgnoreMouseEvents(!pipEdit && !chatCompose);
-    chatWin.setFocusable(pipEdit || chatCompose);
+  if (janelas.chat && !janelas.chat.isDestroyed()) {
+    janelas.chat.setIgnoreMouseEvents(!janelas.pipEdit && !janelas.chatCompose);
+    janelas.chat.setFocusable(janelas.pipEdit || janelas.chatCompose);
   }
-  sendMain({ type: 'edit', on: pipEdit, opacity: pipOpacities(), group: group() });
+  sendMain({ type: 'edit', on: janelas.pipEdit, opacity: pipOpacities(), group: group() });
 }
 
 // ---------- Atalhos (dá para trocar em "Voz e atalhos") ----------
@@ -266,15 +261,15 @@ function keys() {
   return shortcutKeys;
 }
 let roomKeysOn = false;
-const chatOpen = () => !!(chatWin && !chatWin.isDestroyed());
+const chatOpen = () => !!(janelas.chat && !janelas.chat.isDestroyed());
 const ACTIONS = {
-  edit: { active: () => pips.size > 0 || chatOpen(), run: () => setPipEdit(!pipEdit) },
+  edit: { active: () => pips.size > 0 || chatOpen(), run: () => setPipEdit(!janelas.pipEdit) },
   hideChat: {
     active: chatOpen,
     run: () => {
       if (!chatOpen()) return;
-      if (chatWin.isVisible()) chatWin.hide();
-      else chatWin.showInactive();
+      if (janelas.chat.isVisible()) janelas.chat.hide();
+      else janelas.chat.showInactive();
     },
   },
   compose: { active: () => roomKeysOn, run: () => sendMain({ type: 'compose-key' }) },
@@ -318,17 +313,15 @@ function setShortcut(action, accel) {
 // ---------- Chat por cima do jogo ----------
 // Janela transparente, sempre por cima, sem foco e com o clique atravessando (menos no modo de ajuste).
 // Ctrl+Shift+O esconde e mostra, de dentro do jogo. Lembra a posição e o tamanho.
-let chatWin = null;
 
 // Ctrl+Enter, de dentro do jogo: o chat por cima do jogo pega o teclado só para escrever uma mensagem.
 // Enter manda, Esc cancela, e nos dois casos o teclado volta para o jogo. Vale enquanto você está numa sala.
-let chatCompose = false;
 let composeOnOpen = false;
 function setRoomKeys(on) {
   roomKeysOn = !!on;
   syncShortcuts();
   if (!on) {
-    if (chatCompose) setChatCompose(false);
+    if (janelas.chatCompose) setChatCompose(false);
     setPtt(0);
   }
 }
@@ -364,22 +357,22 @@ function setPtt(vk) {
   return true;
 }
 function setChatCompose(on) {
-  chatCompose = !!on;
-  if (chatWin && !chatWin.isDestroyed()) {
-    if (chatCompose) {
-      chatWin.setIgnoreMouseEvents(false);
-      chatWin.setFocusable(true);
-      if (!chatWin.isVisible()) chatWin.show();
-      chatWin.focus();
+  janelas.chatCompose = !!on;
+  if (janelas.chat && !janelas.chat.isDestroyed()) {
+    if (janelas.chatCompose) {
+      janelas.chat.setIgnoreMouseEvents(false);
+      janelas.chat.setFocusable(true);
+      if (!janelas.chat.isVisible()) janelas.chat.show();
+      janelas.chat.focus();
     } else {
-      if (!pipEdit) {
-        chatWin.setIgnoreMouseEvents(true);
-        chatWin.setFocusable(false);
+      if (!janelas.pipEdit) {
+        janelas.chat.setIgnoreMouseEvents(true);
+        janelas.chat.setFocusable(false);
       }
-      chatWin.blur(); // o teclado volta para a janela que estava ativa (o jogo)
+      janelas.chat.blur(); // o teclado volta para a janela que estava ativa (o jogo)
     }
   }
-  sendMain({ type: 'compose', on: chatCompose });
+  sendMain({ type: 'compose', on: janelas.chatCompose });
 }
 const chatFile = () => path.join(app.getPath('userData'), 'janela-chat.json');
 function chatBounds() {
@@ -394,7 +387,7 @@ function chatBounds() {
   return { width: 380, height: 300, x: wa.x + 24, y: wa.y + wa.height - 300 - 24 };
 }
 function setupChatOverlay(child) {
-  chatWin = child;
+  janelas.chat = child;
   child.setAlwaysOnTop(true, 'screen-saver');
   let saveTimer = null;
   const save = () => {
@@ -405,8 +398,8 @@ function setupChatOverlay(child) {
   child.on('resized', save);
   syncShortcuts();
   child.on('closed', () => {
-    if (chatWin === child) chatWin = null;
-    chatCompose = false;
+    if (janelas.chat === child) janelas.chat = null;
+    janelas.chatCompose = false;
     syncShortcuts();
     sendMain({ type: 'chat-closed' });
   });
@@ -487,14 +480,14 @@ function createWindow() {
     updater.started();
     cleanOldUpdates();
   });
-  mainWin = win;
+  janelas.main = win;
   // A única janela que a página pode abrir é a flutuante (uma por transmissão, "tela-pip-<id>"); ela nasce
   // sem moldura, por cima e sem foco
   const pipId = (frameName) => (/^tela-pip-([\w-]{1,40})$/.exec(frameName) || [])[1];
   const opening = new Map(); // id -> vaga escolhida ao abrir
   win.webContents.setWindowOpenHandler(({ frameName }) => {
     if (frameName === 'tela-chat') {
-      if (chatWin && !chatWin.isDestroyed()) return { action: 'deny' };
+      if (janelas.chat && !janelas.chat.isDestroyed()) return { action: 'deny' };
       return {
         action: 'allow',
         overrideBrowserWindowOptions: {
@@ -529,7 +522,7 @@ function createWindow() {
   });
   win.on('closed', () => {
     for (const p of pips.values()) if (!p.win.isDestroyed()) p.win.close();
-    if (chatWin && !chatWin.isDestroyed()) chatWin.close();
+    if (janelas.chat && !janelas.chat.isDestroyed()) janelas.chat.close();
   });
   win.loadFile(path.join(__dirname, 'index.html'));
 }
