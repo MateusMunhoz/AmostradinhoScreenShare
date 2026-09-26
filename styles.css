@@ -135,6 +135,9 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 }
 .dock .btn.icon { width: 40px; height: 40px; }
 .dock-spacer { flex: 1; }
+.voice-members { list-style: none; margin: 0; padding: 0; font-size: 12px; overflow-wrap: anywhere; max-height: 130px; overflow-y: auto; }
+.voice-members li { padding: 4px 0; }
+#voiceMute[aria-pressed="true"], #voiceDeafen[aria-pressed="true"] { border-color: #e8ab55; color: #e8ab55; }
 .dock-share { display: inline-flex; align-items: center; gap: 8px; height: 40px; }
 .dock-share svg, .addr-pill svg, .pip-chip svg, .jump-new svg, .chat-drop svg {
   fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none;

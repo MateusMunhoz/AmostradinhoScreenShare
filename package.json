@@ -5,6 +5,8 @@
   "main": "boot.js",
   "scripts": {
     "start": "electron .",
+    "test": "node --test tests/*.test.js",
+    "test:rtc": "electron tests/rtc-smoke.cjs",
     "dist": "electron-builder --win portable",
     "publicar": "node publicar.js"
   },
@@ -27,6 +29,7 @@
       "index.html",
       "styles.css",
       "renderer.js",
+      "voice.js",
       "encode-once.js",
       "pcm-worklet.js"
     ],

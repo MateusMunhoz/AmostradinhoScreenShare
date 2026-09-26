@@ -78,6 +78,7 @@ function startServer(port, password = '', seed = {}) {
       ws.on('message', (raw) => {
         let msg;
         try { msg = JSON.parse(raw); } catch { return; }
+        if (!msg || typeof msg !== 'object') return;
 
         if (!me) {
           if (msg.type !== 'hello') return;
@@ -101,14 +102,19 @@ function startServer(port, password = '', seed = {}) {
             id = String(nextId++);
           }
           if (!hostId && isLocal) hostId = id;
-          me = { ws, name: String(msg.name || 'Anônimo').slice(0, 32), sharing: !!(resume && msg.sharing), version, addrs: cleanAddrs(msg.addrs) };
-          const info = (mid, m) => ({ id: mid, name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs });
+          // Na volta, quem estava na voz continua na mesma sessão (as conexões de voz também seguem de pé)
+          const voiceSession = resume && typeof msg.voiceSession === 'string' && /^[\w-]{1,64}$/.test(msg.voiceSession) ? msg.voiceSession : '';
+          me = {
+            ws, name: String(msg.name || 'Anônimo').slice(0, 32), sharing: !!(resume && msg.sharing), version, addrs: cleanAddrs(msg.addrs),
+            voiceSession, muted: !!voiceSession && msg.muted === true,
+          };
+          const info = (mid, m) => ({ id: mid, name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs, voiceSession: m.voiceSession, muted: m.muted });
           send(ws, {
             type: 'welcome',
             id,
             hostId,
             members: [...members].map(([mid, m]) => info(mid, m)),
-            features: ['chat', 'handoff'],
+            features: ['chat', 'voice', 'handoff'],
             chat: chatLog,
           });
           members.set(id, me);
@@ -116,7 +122,12 @@ function startServer(port, password = '', seed = {}) {
           return;
         }
 
-        if (msg.type === 'share') {
+        if (msg.type === 'voice-state') {
+          if (typeof msg.session !== 'string' || !/^[\w-]{0,64}$/.test(msg.session)) return;
+          me.voiceSession = msg.session;
+          me.muted = !!msg.session && msg.muted === true;
+          broadcast({ type: 'voice-state', id, session: me.voiceSession, muted: me.muted });
+        } else if (msg.type === 'share') {
           me.sharing = !!msg.sharing;
           broadcast({ type: 'share-state', id, sharing: me.sharing }, id);
         } else if (msg.type === 'chat') {
@@ -130,6 +141,9 @@ function startServer(port, password = '', seed = {}) {
           if (chatLog.length > CHAT_KEEP) chatLog.shift();
           broadcast({ type: 'chat', ...entry }); // para todos, inclusive quem mandou
         } else if (msg.type === 'signal' && msg.to !== id && members.has(msg.to)) {
+          if (msg.data?.side === 'voice' && (!me.voiceSession ||
+              msg.data.session !== me.voiceSession || msg.data.targetSession !== members.get(msg.to).voiceSession ||
+              !members.get(msg.to).voiceSession)) return;
           send(members.get(msg.to).ws, { type: 'signal', from: id, data: msg.data });
         }
       });
