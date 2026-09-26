@@ -250,6 +250,8 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 }
 .live-pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .live-chip .btn.small { height: 30px; }
+.live-chip .btn.icon.small { width: 30px; }
+#selfViewBtn[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
 .pip-chip {
   display: inline-flex; align-items: center; gap: 8px; height: 40px; box-sizing: border-box; padding: 0 4px 0 10px;
   border: 1px solid var(--accent); border-radius: 8px; background: var(--accent-soft); font-size: 13px;

@@ -111,4 +111,12 @@ run('Trocar o que transmitir', 200000, async () => {
   const f3 = await frames(B, video);
   check('NVENC direto: continua no NVENC depois da troca', await A.eval(`once.active && once.engine === 'nvenc'`), await A.eval(`once.engine`));
   check('NVENC direto: o vídeo continua chegando, na mesma conexão', f3 > 5 && (await B.eval(`[...state.in.values()][0].pc === window.pcAntes`)), `${f3} quadros; ${size0} -> ${size1}`);
+
+  // Ver a própria transmissão no NVENC direto: uma captura leve só para ver, sem mexer no que a Bia recebe
+  await A.eval(`watchSelf()`);
+  await A.waitFor(`state.in.get(state.myId)?.tile.video.videoWidth > 0`, 15000);
+  check('NVENC direto: dá para se ver (captura só para ver)', await A.eval(`!!state.in.get(state.myId).ownTrack && once.engine === 'nvenc'`));
+  check('NVENC direto: a Bia continua recebendo enquanto a Ana se vê', (await frames(B, video)) > 5);
+  await A.eval(`stopWatching(state.myId, false)`);
+  check('Parar de se ver fecha a captura extra', await A.eval(`!state.in.has(state.myId)`));
 });

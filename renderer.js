@@ -125,8 +125,9 @@ function updateDuck() {
 }
 
 function applyScreenVolume(id) {
-  const t = state.in.get(id)?.tile;
-  if (!t) return;
+  const link = state.in.get(id);
+  const t = link?.tile;
+  if (!t || link.self) return; // a sua própria tela fica sempre sem som
   const v = volOf(id);
   t.video.volume = (v.screen / 100) * duck.factor;
   t.vol.value = String(v.screen / 100);
@@ -213,7 +214,12 @@ function tickSpeak() {
     if (!silent && mixer.level(an) > 0.015) lastLoud.set(id, now);
     if (now - (lastLoud.get(id) || 0) < 350) next.add(id);
   };
-  for (const [id, n] of mixer.nodes) check(id, n.an, voice.members.get(id)?.muted);
+  // Com o fone mutado (ou a pessoa silenciada / no 0% para você), ela não aparece falando: você não está ouvindo
+  const unheard = (id) => { const v = volOf(id); return voice.deafened || v.muted || v.voice === 0; };
+  for (const [id, n] of mixer.nodes) {
+    if (unheard(id)) { lastLoud.delete(id); continue; }
+    check(id, n.an, voice.members.get(id)?.muted);
+  }
   if (mixer.localNode && state.myId) check(state.myId, mixer.localNode.an, voice.muted);
   if (!mixer.nodes.size && !mixer.localNode) { clearInterval(speakTimer); speakTimer = null; }
   if (next.size === speaking.size && [...next].every((id) => speaking.has(id))) return;
@@ -815,6 +821,7 @@ const ICON = {
   headphonesOff: svg('M2 2l20 20M3 18v-6a9 9 0 0 1 14.5-7.1M20.4 8.4A9 9 0 0 1 21 12v6M21 19a2 2 0 0 1-2 2h-1v-6h3zM3 19a2 2 0 0 0 2 2h1v-6H3z'),
   phoneOff: svg('M3 11a15 15 0 0 1 18 0l-2 3-3-1v-2a10 10 0 0 0-8 0v2l-3 1z'),
   overlay: svg('M3 4h18v14H3zM6 12h7M6 15h5'),        // tela com linhas de texto: chat por cima da tela
+  eye: svg('M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z'),
   sliders: svg('M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6'), // controles: voz e atalhos
 };
 
@@ -1846,6 +1853,16 @@ function memberRow(id, name, sharing) {
     li.append(vb);
   }
 
+  if (!id && sharing && state.myId) {
+    const watching = state.in.has(state.myId);
+    const btn = document.createElement('button');
+    btn.className = 'btn small';
+    btn.textContent = watching ? 'Parar de ver' : 'Ver';
+    btn.title = watching ? 'Tirar a sua tela da sala' : 'Ver a sua própria transmissão, como um quadro na sala';
+    btn.onclick = toggleSelfView;
+    li.append(btn);
+  }
+
   if (id && sharing) {
     const watching = state.in.has(id);
     const btn = document.createElement('button');
@@ -2032,9 +2049,66 @@ function watch(id) {
   ensureStats();
 }
 
+// ---------- Ver a própria transmissão ----------
+// Você vira um quadro como os outros (com destaque e janela flutuante), sem conexão: o vídeo é a própria
+// captura, sem som (não volta para você). No NVENC direto, que não usa a captura do Chromium, pega uma
+// captura leve da mesma fonte só para ver.
+const SELF_PC = { connectionState: 'connected', getStats: async () => new Map(), getSenders: () => [], close() {} };
+
+async function selfTrack(link) {
+  link.ownTrack?.stop();
+  link.ownTrack = null;
+  const t = state.stream?.getVideoTracks().find((x) => x.readyState === 'live');
+  if (t) return t;
+  try {
+    await window.api.selectSource(state.sharingSource, false);
+    const s = await navigator.mediaDevices.getDisplayMedia({ video: { width: { max: 1280 }, height: { max: 720 }, frameRate: { max: 30 } }, audio: false });
+    link.ownTrack = s.getVideoTracks()[0];
+    return link.ownTrack;
+  } catch (err) {
+    toast(`Não deu para mostrar a sua tela: ${err.message}`, 'error');
+    return null;
+  }
+}
+
+async function watchSelf() {
+  const id = state.myId;
+  if (!state.sharing || !id || state.in.has(id)) return;
+  const tile = createTile(id, `${getName()} (você)`);
+  tile.overlay.hidden = true;
+  tile.video.muted = true;
+  tile.vol.hidden = true;
+  tile.el.querySelector('.tile-bar .btn.icon').hidden = true; // o botão de silenciar: não tem som
+  const link = { self: true, pc: SELF_PC, tile, videoOn: true, tracks: [], once: null, lastBytes: 0, lastTs: 0 };
+  state.in.set(id, link);
+  if (state.focus) state.focus = id;
+  renderFocus();
+  renderMembers();
+  updateStage();
+  renderShareBox();
+  const track = await selfTrack(link);
+  if (state.in.get(id) !== link) { link.ownTrack?.stop(); return; }
+  if (!track) return stopWatching(id, false);
+  setVideoTrack(link, track);
+}
+
+// Trocou a fonte no meio: o quadro passa a mostrar a nova
+async function refreshSelfView() {
+  const link = state.in.get(state.myId);
+  if (!link?.self) return;
+  const track = await selfTrack(link);
+  if (track && state.in.get(state.myId) === link) setVideoTrack(link, track);
+}
+
+function toggleSelfView() {
+  if (state.in.has(state.myId)) stopWatching(state.myId, false);
+  else watchSelf();
+}
+
 function stopWatching(id, notify = true) {
   const link = state.in.get(id);
   if (!link) return;
+  if (link.self) { notify = false; link.ownTrack?.stop(); }
   if (notify) sendSignal(id, { side: 'viewer', unsubscribe: true });
   if (state.pips.has(id)) closePip(id);
   if (document.fullscreenElement === link.tile.el) document.exitFullscreen().catch(() => {});
@@ -2047,6 +2121,7 @@ function stopWatching(id, notify = true) {
   renderFocus();
   renderMembers();
   updateStage();
+  if (link.self) renderShareBox();
 }
 
 // ---------- Chat ----------
@@ -2985,7 +3060,7 @@ function syncIncomingVideo() {
     const on = inPip || (appVisible && (!state.focus || state.focus === id));
     if (link.videoOn === on) continue;
     link.videoOn = on;
-    sendSignal(id, { side: 'viewer', video: on });
+    if (!link.self) sendSignal(id, { side: 'viewer', video: on });
   }
 }
 
@@ -3397,6 +3472,7 @@ function stopSharing(reason) {
   state.sharing = false;
   state.sharingSource = null;
   if (state.shareSwitching) closeShareDialog();
+  stopWatching(state.myId, false);
   stopOnceEncoder();
   stopOutStats();
   for (const id of [...state.out.keys()]) closeOut(id);
@@ -3481,6 +3557,7 @@ async function switchSource() {
   closeShareDialog();
   renderShareBox();
   sendShareInfo();
+  refreshSelfView();
   const src = state.sources.find((s) => s.id === id);
   toast(`Agora você está transmitindo: ${src ? sourceLabel(src) : 'a fonte nova'}.`);
 }
@@ -3660,6 +3737,9 @@ function stopOutStats() {
 function renderShareBox() {
   $('shareBtn').hidden = state.sharing;
   $('liveChip').hidden = !state.sharing;
+  const selfOn = !!state.myId && state.in.has(state.myId);
+  setIcon($('selfViewBtn'), 'eye', selfOn ? 'Parar de ver a sua transmissão' : 'Ver a sua própria transmissão');
+  $('selfViewBtn').setAttribute('aria-pressed', String(selfOn));
   $('myShare').hidden = !state.sharing;
   syncPreview();
   renderWatchers();
@@ -3800,6 +3880,7 @@ $('refreshApps').onclick = loadAudioApps;
 // Ícone das Estatísticas, na sala ao lado de Sair da sala
 setIcon($('openStatsRoom'), 'stats', 'Estatísticas: desempenho do PC e a transmissão de cada pessoa');
 $('openStatsRoom').onclick = openStats;
+$('selfViewBtn').onclick = toggleSelfView;
 $('statsTabPerf').onclick = () => setStatsTab('perf');
 $('statsTabStream').onclick = () => setStatsTab('stream');
 for (const id of ['statsTabPerf', 'statsTabStream']) {

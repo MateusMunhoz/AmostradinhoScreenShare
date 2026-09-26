@@ -47,6 +47,18 @@ run('Voz, volume e chat por cima do jogo', 150000, async () => {
   check('Voltar para 100%', await B.eval(`mixer.nodes.get('${anaId}').gain.gain.value === 1 && !localStorage.getItem('volumes').includes('Ana')`));
   await B.eval(`closePersonCard(); setPeopleOpen(false)`);
 
+  // Fone mutado: quem fala não aparece falando, já que você não está ouvindo
+  await B.eval(`$('voiceDeafen').click()`);
+  await sleep(600);
+  check('Fone mutado: a Ana não aparece falando', await B.eval(`voice.deafened && !speaking.has('${anaId}') && !${row}.classList.contains('speaking')`));
+  await B.eval(`$('voiceDeafen').click()`);
+  await B.waitFor(`speaking.has('${anaId}')`, 5000);
+  check('Fone de volta: a Ana aparece falando de novo', true);
+  await B.eval(`setVol('${anaId}', { muted: true })`);
+  await sleep(600);
+  check('Ana silenciada para mim: também não aparece falando', await B.eval(`!speaking.has('${anaId}')`));
+  await B.eval(`setVol('${anaId}', { muted: false })`);
+
   // Microfone desligado
   await A.eval(`$('voiceMute').click()`);
   await B.waitFor(`voice.members.get('${anaId}').muted`, 5000);

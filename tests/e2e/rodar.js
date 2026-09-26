@@ -6,7 +6,7 @@ const { spawnSync } = require('child_process');
 const path = require('path');
 const { APP, FOTOS, fullscreenApps } = require('./ajuda');
 
-const TESTS = ['filtros.cjs', 'atualizacao.js', 'chat.js', 'janela-flutuante.js', 'varias-telas.js', 'varias-janelas.js', 'voz.js', 'troca-de-host.js', 'trocar-tela.js'];
+const TESTS = ['filtros.cjs', 'atualizacao.js', 'chat.js', 'janela-flutuante.js', 'varias-telas.js', 'varias-janelas.js', 'voz.js', 'troca-de-host.js', 'trocar-tela.js', 'ver-a-propria.js'];
 const only = process.argv[2];
 const list = only ? TESTS.filter((t) => t.replace(/\.c?js$/, '') === only) : TESTS;
 if (!list.length) {

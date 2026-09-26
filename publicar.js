@@ -75,7 +75,7 @@ function publishGithub(version, productName, notes) {
   }
   const exe = path.join(ROOT, 'dist', `${productName}.exe`);
   const steps = [
-    ['git', ['add', '-A']],
+    ['git', ['add', '-u']], // só o que o git já acompanha: arquivo novo (ex.: protótipos) nunca entra sozinho
     ['git', ['commit', '-m', `Versão ${version}`]],
     ['git', ['tag', '-a', `v${version}`, '-m', `Versão ${version}`]],
     ['git', ['push', 'origin', 'HEAD']],

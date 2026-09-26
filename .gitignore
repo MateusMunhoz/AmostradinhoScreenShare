@@ -20,3 +20,6 @@ Explicacao.txt
 
 # Configuração local do app do Claude
 .claude/
+
+# Protótipos de design: ficam só neste PC, nunca vão para o GitHub
+prototipo-ui/
