@@ -1,0 +1,12 @@
+# Texto com LF no repositório e no disco (acaba com os avisos de LF/CRLF a cada commit)
+* text=auto eol=lf
+# Scripts do Windows precisam de CRLF (o cmd se perde com rótulos e goto em LF)
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+# Binários: nunca mexer
+*.exe binary
+*.wasm binary
+*.woff2 binary
+*.png binary
+*.ico binary
