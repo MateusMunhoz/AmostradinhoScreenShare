@@ -11,6 +11,8 @@ contextBridge.exposeInMainWorld('api', {
   pipSize: (id, key) => ipcRenderer.invoke('pip-size', String(id), key),
   pipOpacity: (id, v) => ipcRenderer.invoke('pip-opacity', String(id), v),
   pipGroup: (id, patch) => ipcRenderer.invoke('pip-group', String(id), patch),
+  roomKeys: (on) => ipcRenderer.invoke('room-keys', !!on),
+  chatCompose: (on, opening = false) => ipcRenderer.invoke('chat-compose', !!on, !!opening),
   openLink: (url) => ipcRenderer.invoke('open-link', url),
   onPip: (cb) => {
     ipcRenderer.removeAllListeners('pip');

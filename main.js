@@ -471,8 +471,8 @@ function setPipEdit(on) {
   }
   // O chat por cima do jogo entra e sai do modo de ajuste junto; só nele recebe o teclado (para responder)
   if (chatWin && !chatWin.isDestroyed()) {
-    chatWin.setIgnoreMouseEvents(!pipEdit);
-    chatWin.setFocusable(pipEdit);
+    chatWin.setIgnoreMouseEvents(!pipEdit && !chatCompose);
+    chatWin.setFocusable(pipEdit || chatCompose);
   }
   sendMain({ type: 'edit', on: pipEdit, opacity: pipOpacities(), group: group() });
 }
@@ -492,6 +492,40 @@ function releaseEditKey() {
 // Ctrl+Shift+O esconde e mostra, de dentro do jogo. Lembra a posição e o tamanho.
 const CHAT_KEY = 'CommandOrControl+Shift+O';
 let chatWin = null;
+
+// Ctrl+Enter, de dentro do jogo: o chat por cima do jogo pega o teclado só para escrever uma mensagem.
+// Enter manda, Esc cancela, e nos dois casos o teclado volta para o jogo. Vale enquanto você está numa sala.
+const COMPOSE_KEY = 'CommandOrControl+Enter';
+let chatCompose = false;
+let composeOnOpen = false;
+function setRoomKeys(on) {
+  if (!on) {
+    globalShortcut.unregister(COMPOSE_KEY);
+    if (chatCompose) setChatCompose(false);
+    return;
+  }
+  if (!globalShortcut.isRegistered(COMPOSE_KEY) && !globalShortcut.register(COMPOSE_KEY, () => sendMain({ type: 'compose-key' }))) {
+    sendMain({ type: 'compose-key-busy' });
+  }
+}
+function setChatCompose(on) {
+  chatCompose = !!on;
+  if (chatWin && !chatWin.isDestroyed()) {
+    if (chatCompose) {
+      chatWin.setIgnoreMouseEvents(false);
+      chatWin.setFocusable(true);
+      if (!chatWin.isVisible()) chatWin.show();
+      chatWin.focus();
+    } else {
+      if (!pipEdit) {
+        chatWin.setIgnoreMouseEvents(true);
+        chatWin.setFocusable(false);
+      }
+      chatWin.blur(); // o teclado volta para a janela que estava ativa (o jogo)
+    }
+  }
+  sendMain({ type: 'compose', on: chatCompose });
+}
 const chatFile = () => path.join(app.getPath('userData'), 'janela-chat.json');
 function chatBounds() {
   try {
@@ -525,11 +559,18 @@ function setupChatOverlay(child) {
   }
   child.on('closed', () => {
     if (chatWin === child) chatWin = null;
+    chatCompose = false;
     globalShortcut.unregister(CHAT_KEY);
     releaseEditKey();
     sendMain({ type: 'chat-closed' });
   });
-  setPipEdit(true); // abre no modo de ajuste: posicione e trave
+  // Aberto pelo Ctrl+Enter: já vai direto para escrever; pelo botão: abre no modo de ajuste (posicione e trave)
+  if (composeOnOpen) {
+    composeOnOpen = false;
+    setChatCompose(true);
+  } else {
+    setPipEdit(true);
+  }
 }
 
 function setupPip(child, id, slot) {
@@ -719,6 +760,11 @@ app.whenReady().then(() => {
   ipcMain.handle('pip-size', (_e, id, key) => setPipSize(id, key));
   ipcMain.handle('pip-opacity', (_e, id, v) => setPipOpacity(id, v));
   ipcMain.handle('pip-group', (_e, id, patch) => setPipGroup(id, patch));
+  ipcMain.handle('room-keys', (_e, on) => setRoomKeys(!!on));
+  ipcMain.handle('chat-compose', (_e, on, opening) => {
+    if (opening) composeOnOpen = true; // a janela vai abrir agora: ela já nasce pronta para escrever
+    else setChatCompose(!!on);
+  });
   ipcMain.handle('open-link', (_e, url) => {
     if (typeof url === 'string' && /^https?:\/\/[^\s]+$/i.test(url)) shell.openExternal(url);
   });

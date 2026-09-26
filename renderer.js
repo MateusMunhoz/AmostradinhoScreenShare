@@ -569,6 +569,7 @@ function enterRoom(welcome, owner, host, port) {
   state.handoff = (welcome.features || []).includes('handoff');
   state.order = [...welcome.members.map((m) => m.id), welcome.id];
   voice.reset(welcome);
+  window.api.roomKeys(true).catch(() => {});
   renderLeaveBtn();
   resetChat(welcome);
   renderRoomAddress();
@@ -599,6 +600,7 @@ function leaveRoom(reason, kind = 'info', endRoom = false) {
   if (state.isOwner) window.api.stopServer(endRoom);
   closeChatOverlay();
   closePersonCard();
+  window.api.roomKeys(false).catch(() => {});
   resetChat(null);
   state.members.clear();
   state.myId = null;
@@ -2101,7 +2103,14 @@ window.api.onPip((m) => {
   // O modo de ajuste vale para todas as janelas ao mesmo tempo
   if (m.group) { pipGroupState = m.group; renderPipGroup(); }
   if (m.type === 'edit') { overlay.edit = !!m.on; renderChatOverlay(); }
-  if (m.type === 'chat-closed') { overlay.p = null; clearTimeout(overlay.timer); renderOverlayButton(); }
+  if (m.type === 'chat-closed') { overlay.p = null; overlay.compose = false; clearTimeout(overlay.timer); renderOverlayButton(); }
+  if (m.type === 'compose-key') onComposeKey();
+  if (m.type === 'compose') {
+    overlay.compose = !!m.on;
+    renderChatOverlay();
+    if (overlay.compose) setTimeout(() => overlay.p?.input.focus(), 30);
+  }
+  if (m.type === 'compose-key-busy') toast('Outro programa já usa Ctrl+Enter, então o atalho para escrever no chat por cima do jogo não funciona.', 'error');
   if (m.type === 'chat-key-busy') toast('Outro programa já usa Ctrl+Shift+O, então o atalho para esconder o chat por cima do jogo não funciona. Use o botão da barra.', 'error');
   if (m.type === 'edit') {
     for (const [id, p] of state.pips) {
@@ -2120,7 +2129,23 @@ window.api.onPip((m) => {
 // falando na voz. Travada, o clique atravessa para o jogo. No modo de ajuste (Ctrl+Shift+E, o mesmo da
 // janela flutuante) dá para mover, redimensionar e responder. Ctrl+Shift+O esconde e mostra de novo.
 const OVERLAY_SHOW_MS = 20000;
-const overlay = { p: null, edit: false, timer: null };
+const overlay = { p: null, edit: false, compose: false, timer: null };
+
+// Ctrl+Enter no jogo: abre o chat por cima do jogo (se estiver fechado) já com o campo de escrever
+async function onComposeKey() {
+  if (!state.myId || !chat.supported) return;
+  if (overlay.compose) return endCompose();
+  if (!overlay.p || overlay.p.win.closed) {
+    await window.api.chatCompose(true, true);
+    toggleChatOverlay();
+    return;
+  }
+  window.api.chatCompose(true);
+}
+function endCompose() {
+  if (!overlay.compose) return;
+  window.api.chatCompose(false);
+}
 
 function toggleChatOverlay() {
   if (overlay.p && !overlay.p.win.closed) return closeChatOverlay();
@@ -2143,7 +2168,7 @@ function renderOverlayButton() {
   const on = !!overlay.p;
   setIcon($('overlayToggle'), 'overlay', on
     ? 'Fechar o chat por cima do jogo (Ctrl+Shift+O esconde e mostra)'
-    : 'Chat por cima do jogo: as mensagens aparecem sobre a tela, e Ctrl+Shift+O esconde');
+    : 'Chat por cima do jogo: as mensagens aparecem sobre a tela. Ctrl+Enter escreve, Ctrl+Shift+O esconde');
   $('overlayToggle').setAttribute('aria-pressed', String(on));
   $('overlayToggle').classList.toggle('on', on);
 }
@@ -2199,7 +2224,12 @@ function buildChatOverlay(win) {
     if (!text || !chat.supported) return;
     send({ type: 'chat', text });
     input.value = '';
+    endCompose();
   };
+  input.onkeydown = (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); input.value = ''; endCompose(); }
+  };
+  input.addEventListener('blur', () => setTimeout(() => { if (overlay.compose && d.activeElement !== input) endCompose(); }, 150));
   form.append(input);
   const hint = d.createElement('span');
   hint.textContent = 'Ctrl+Shift+E trava · Ctrl+Shift+O esconde';
@@ -2214,10 +2244,13 @@ function renderChatOverlay() {
   if (!p || p.win.closed) return;
   const d = p.win.document;
   const edit = overlay.edit;
-  p.frame.style.border = edit ? '2px solid #8ab4ff' : '2px solid transparent';
-  p.frame.style.background = edit ? 'rgba(0, 0, 0, .35)' : 'transparent';
-  p.head.style.display = p.form.style.display = edit ? 'flex' : 'none';
-  p.hint.style.display = edit ? 'block' : 'none';
+  const open = edit || overlay.compose;
+  p.frame.style.border = open ? '2px solid #8ab4ff' : '2px solid transparent';
+  p.frame.style.background = open ? 'rgba(0, 0, 0, .35)' : 'transparent';
+  p.head.style.display = edit ? 'flex' : 'none';
+  p.form.style.display = open ? 'flex' : 'none';
+  p.hint.style.display = open ? 'block' : 'none';
+  p.hint.textContent = overlay.compose && !edit ? 'Enter manda · Esc volta para o jogo' : 'Ctrl+Shift+E trava · Ctrl+Shift+O esconde · Ctrl+Enter escreve';
 
   const chip = (id) => {
     const el = d.createElement('span');
@@ -2238,7 +2271,7 @@ function renderChatOverlay() {
 
   // As últimas 6; travada, cada uma some 20 s depois de chegar
   const now = Date.now();
-  const recent = chat.log.slice(-6).filter((m) => edit || now - m.ts < OVERLAY_SHOW_MS);
+  const recent = chat.log.slice(-6).filter((m) => open || now - m.ts < OVERLAY_SHOW_MS);
   p.list.replaceChildren(...recent.map((m) => {
     const row = d.createElement('div');
     Object.assign(row.style, {
@@ -2254,7 +2287,7 @@ function renderChatOverlay() {
   }));
   // Acorda quando a próxima mensagem visível tiver que sumir
   clearTimeout(overlay.timer);
-  if (!edit && recent.length) {
+  if (!open && recent.length) {
     const next = Math.min(...recent.map((m) => m.ts + OVERLAY_SHOW_MS - now));
     overlay.timer = setTimeout(renderChatOverlay, Math.max(200, next + 50));
   }

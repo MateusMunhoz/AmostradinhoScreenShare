@@ -66,6 +66,8 @@ A voz usa WebRTC direto pela Radmin, com uma conexão por par de participantes. 
 
 O botão da barra com a tela e as linhas de texto abre o chat da sala numa janela transparente, sempre por cima, até do jogo (em janela sem bordas). Ela mostra as últimas mensagens, que somem 20 s depois de chegar, e quem está falando na voz. Abre no modo de ajuste: arraste para mover, puxe as bordas para redimensionar e escreva no campo para responder. Depois clique em **Travar** ou aperte **Ctrl+Shift+E** (o mesmo das janelas flutuantes): travada, o clique passa direto para o jogo e ela não pega o teclado. **Ctrl+Shift+O** esconde e mostra de novo, de dentro do jogo. O app lembra a posição e o tamanho.
 
+**Ctrl+Enter** (dentro de uma sala), de dentro do jogo: o chat por cima do jogo aparece (abre sozinho se estiver fechado) com o campo de escrever. Digite e aperte **Enter** para mandar, ou **Esc** para cancelar; nos dois casos o teclado volta para o jogo. Enquanto você está numa sala, o Ctrl+Enter fica reservado para isso em todos os programas.
+
 Verificações de desenvolvimento: `npm test`. O teste adicional `npm run test:rtc` usa duas janelas ocultas do Electron e áudio sintético para verificar o transporte WebRTC local, sem abrir seu microfone. A validação de microfones reais e Radmin entre computadores continua necessária.
 
 ## Atualizações
