@@ -31,6 +31,8 @@ const state = {
   sharing: false,
   quality: '1080p30',
   selectedSource: null,
+  sharingSource: null,     // a tela ou janela que está sendo transmitida agora
+  shareSwitching: false,   // a janela de escolher está aberta para trocar, no meio da transmissão
   sources: [],             // telas e janelas da última busca
   sourceTab: 'screens',    // aba aberta na janela de transmitir: 'screens' ou 'windows'
   appAudio: null,
@@ -2907,8 +2909,15 @@ function onVisibility() {
 }
 
 // ---------- Transmitir ----------
-function openShareDialog() {
+function openShareDialog(switching = false) {
+  state.shareSwitching = switching && state.sharing;
   $('shareDialog').hidden = false;
+  $('shareDialog').classList.toggle('switching', state.shareSwitching);
+  $('shareTitle').textContent = state.shareSwitching ? 'Trocar o que transmitir' : 'Transmitir';
+  $('shareSubtitle').textContent = state.shareSwitching
+    ? 'A transmissão continua: quem assiste passa a ver o que você escolher'
+    : 'Escolha o que os outros vão ver';
+  if (state.shareSwitching) state.selectedSource = state.sharingSource;
   loadSources();
   syncAudioMode();
   checkEncodeOnce();
@@ -2968,12 +2977,18 @@ function soundText() {
 // Rodapé: o que vai acontecer ao clicar em Iniciar; e o resumo do Avançado quando está fechado
 function renderShareSummary() {
   const src = state.sources.find((s) => s.id === state.selectedSource);
-  $('shareSummary').classList.toggle('ready', !!src);
-  $('shareSummaryText').textContent = src
-    ? [sourceLabel(src), QUALITY_SPEC[radioValue('quality')], encodeText(), soundText()].join(' · ')
-    : 'Escolha uma tela ou janela para começar';
+  const same = state.shareSwitching && state.selectedSource === state.sharingSource;
+  $('shareSummary').classList.toggle('ready', !!src && !same);
+  $('shareSummaryText').textContent = state.shareSwitching
+    ? (!src ? 'Escolha a tela ou janela nova'
+      : same ? `${sourceLabel(src)} · é o que você já está transmitindo`
+      : `${sourceLabel(src)} · a qualidade e o som continuam os mesmos`)
+    : src
+      ? [sourceLabel(src), QUALITY_SPEC[radioValue('quality')], encodeText(), soundText()].join(' · ')
+      : 'Escolha uma tela ou janela para começar';
   $('shareSummary').title = $('shareSummaryText').textContent; // texto inteiro, se não couber
-  $('startBtn').disabled = !src;
+  $('startBtn').disabled = !src || same;
+  if (!$('startBtn').dataset.busy) $('startBtn').textContent = state.shareSwitching ? 'Trocar para esta' : 'Iniciar transmissão';
   const open = $('advToggle').getAttribute('aria-expanded') === 'true';
   const prio = document.querySelector('input[name="priority"]:checked')?.nextElementSibling?.textContent || '';
   $('advSummary').textContent = open ? '' : `${encodeText()} · prioridade ${prio.toLowerCase()}`;
@@ -2985,7 +3000,12 @@ function setAdvanced(open) {
   renderShareSummary();
 }
 
-function closeShareDialog() { $('shareDialog').hidden = true; }
+function closeShareDialog() {
+  $('shareDialog').hidden = true;
+  if (state.shareSwitching) state.selectedSource = state.sharingSource; // cancelou: a escolha volta a ser a de agora
+  state.shareSwitching = false;
+  $('shareDialog').classList.remove('switching');
+}
 
 async function loadSources() {
   $('sources').innerHTML = '<p class="hint">Carregando telas e janelas…</p>';
@@ -3213,6 +3233,7 @@ async function startSharing() {
   }
 
   state.sharing = true;
+  state.sharingSource = state.selectedSource;
   send({ type: 'share', sharing: true });
   updateStage();
   startOutStats();
@@ -3239,7 +3260,7 @@ function ensureChromeVideo() {
     chromeVideoPending = (async () => {
       const q = QUALITY[state.quality];
       try {
-        await window.api.selectSource(state.selectedSource, false);
+        await window.api.selectSource(state.sharingSource || state.selectedSource, false);
         const s = await navigator.mediaDevices.getDisplayMedia({
           video: { width: { max: q.w }, height: { max: q.h }, frameRate: { ideal: q.fps, max: q.fps } },
           audio: false,
@@ -3272,6 +3293,8 @@ function releaseChromeVideo() {
 function stopSharing(reason) {
   if (!state.sharing) return;
   state.sharing = false;
+  state.sharingSource = null;
+  if (state.shareSwitching) closeShareDialog();
   stopOnceEncoder();
   stopOutStats();
   for (const id of [...state.out.keys()]) closeOut(id);
@@ -3281,6 +3304,80 @@ function stopSharing(reason) {
   renderShareBox();
   renderMembers();
   if (reason) toast(reason);
+}
+
+// Troca a tela ou janela no meio da transmissão, sem derrubar ninguém. O som não muda (vem do
+// capturador de áudio, não da tela).
+//   Modo normal: a faixa nova entra no lugar da antiga em cada conexão (replaceTrack, sem renegociar).
+//   Uma vez só pelo WebCodecs: o codificador passa a ler da faixa nova.
+//   Uma vez só pelo NVENC direto: o videocap recomeça apontando para a fonte nova, e todos recebem um
+//   quadro-chave. Se o NVENC não conseguir, continua pelo WebCodecs com a faixa do Chromium.
+async function switchSource() {
+  const id = state.selectedSource;
+  if (!state.sharing || !id || id === state.sharingSource) return closeShareDialog();
+  const btn = $('startBtn');
+  btn.dataset.busy = '1';
+  setBusy(btn, true, 'Trocando…');
+  const q = QUALITY[state.quality];
+  const oldVideo = state.stream.getVideoTracks()[0] || null;
+  const nvenc = once.active && once.engine === 'nvenc';
+  let newVideo = null;
+  try {
+    // Faixa nova do Chromium: sempre, menos no NVENC sem ninguém de versão antiga (que não usa essa faixa)
+    if (oldVideo || !nvenc) {
+      await window.api.selectSource(id, false);
+      const s = await navigator.mediaDevices.getDisplayMedia({
+        video: { width: { max: q.w }, height: { max: q.h }, frameRate: { ideal: q.fps, max: q.fps } },
+        audio: false,
+      });
+      newVideo = s.getVideoTracks()[0];
+    }
+  } catch (err) {
+    delete btn.dataset.busy;
+    setBusy(btn, false, 'Trocar para esta');
+    return toast(`Não foi possível capturar: ${err.message}`, 'error');
+  }
+  if (!state.sharing) { newVideo?.stop(); delete btn.dataset.busy; return; }
+  state.sharingSource = id;
+
+  if (newVideo) {
+    if (oldVideo) { oldVideo.onended = null; state.stream.removeTrack(oldVideo); }
+    state.stream.addTrack(newVideo);
+    setupChromeVideo(newVideo);
+    for (const link of state.out.values()) {
+      const sender = link.pc.getSenders().find((x) => x.track && x.track.kind === 'video');
+      if (sender) await sender.replaceTrack(newVideo).catch((e) => console.warn(e));
+    }
+    if (once.active && once.engine === 'webcodecs') {
+      const reader = once.reader;
+      once.reader = null;
+      if (reader) reader.cancel().catch(() => {});
+      once.keyWanted = true;
+      readFrames(newVideo);
+    }
+    oldVideo?.stop();
+  }
+
+  if (nvenc) {
+    window.api.offVideoCap();
+    await window.api.videoCapStop().catch(() => {});
+    once.active = false;
+    once.engine = '';
+    if (await startNvenc(id)) {
+      sendConfigToAll();
+      for (const [, l] of onceLinks()) l.needKey = true;
+      requestKey();
+    } else {
+      await switchToWebCodecs('O NVENC direto não conseguiu capturar a fonte nova.');
+    }
+  }
+
+  delete btn.dataset.busy;
+  setBusy(btn, false, 'Trocar para esta');
+  closeShareDialog();
+  renderShareBox();
+  const src = state.sources.find((s) => s.id === id);
+  toast(`Agora você está transmitindo: ${src ? sourceLabel(src) : 'a fonte nova'}.`);
 }
 
 // Alguém clicou em Assistir na minha transmissão: só agora a conexão é criada
@@ -3571,7 +3668,8 @@ $('handoffLeave').onclick = () => leaveRoom(`Você saiu. ${nameOf(successors().f
 $('shareBtn').onclick = openShareDialog;
 $('stopShareBtn').onclick = () => stopSharing();
 $('cancelShare').onclick = closeShareDialog;
-$('startBtn').onclick = startSharing;
+$('startBtn').onclick = () => (state.shareSwitching ? switchSource() : startSharing());
+$('switchShareBtn').onclick = () => openShareDialog(true);
 $('refreshSources').onclick = loadSources;
 $('refreshApps').onclick = loadAudioApps;
 // Ícone das Estatísticas, na sala ao lado de Sair da sala

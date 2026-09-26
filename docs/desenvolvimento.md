@@ -51,6 +51,7 @@ Sobre o `npm run test:e2e` (`tests/e2e/`):
   - a voz e o volume;
   - o chat por cima do jogo;
   - o aviso de atualização;
+  - trocar a tela no meio da transmissão (nos três modos);
   - o microfone com IA e os atalhos.
 - **Só um teste:** `npm run test:e2e -- chat` (o nome do arquivo, sem `.js`).
 - **Jogo aberto:** os testes não começam se houver um jogo em tela cheia na frente, porque abrem janelas que tiram o foco. `set TELA_E2E_FORCE=1` pula essa trava.

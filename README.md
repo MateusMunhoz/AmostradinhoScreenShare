@@ -13,7 +13,7 @@ Transmita a tela e converse por voz com os amigos, de PC para PC, pela Radmin VP
 
 ## O que dá para fazer
 
-- **Transmitir e assistir:** várias pessoas transmitindo ao mesmo tempo, com o som do PC. Dá para deixar de fora o som do Discord e de outros apps. Com várias telas abertas, uma fica em destaque e as outras numa coluna ao lado.
+- **Transmitir e assistir:** várias pessoas transmitindo ao mesmo tempo, com o som do PC. Dá para trocar a tela ou janela no meio da transmissão, sem parar. Dá para deixar de fora o som do Discord e de outros apps. Com várias telas abertas, uma fica em destaque e as outras numa coluna ao lado.
 - **Ver enquanto joga:** janelas flutuantes, uma por pessoa, sempre por cima do jogo e com o clique passando direto.
 - **Chat:** mensagens e arquivos até 200 MB. Também tem uma versão por cima do jogo: **Ctrl+Enter** escreve sem sair do jogo.
 - **Voz:** supressão de ruído com IA, cancelamento de eco, apertar para falar, volume de cada pessoa e indicador de quem está falando.

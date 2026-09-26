@@ -614,3 +614,6 @@ fieldset.group > legend { margin-bottom: 10px; }
 .people-pop .hint { margin: 0; }
 .people-pop .hint:empty { display: none; }
 .people-pop .addr { background: var(--sunken); }
+
+/* Trocar o que transmitir: só a escolha da fonte (qualidade, som e codificação continuam os mesmos) */
+.modal.switching .share-settings { display: none; }

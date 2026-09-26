@@ -50,6 +50,7 @@ Se o host sai, ou se o app dele fecha ou trava, a sala não acaba.
 - **Várias ao mesmo tempo:** qualquer pessoa pode clicar em **Transmitir minha tela**, e várias podem transmitir juntas.
 - **O que transmitir:** na janela de transmitir, escolha a tela inteira ou uma janela, a qualidade e o áudio.
 - **Sem prévia:** a prévia da sua própria tela não aparece na sala. Você vê o que escolheu ao começar.
+- **Trocar sem parar:** enquanto transmite, clique em **Trocar**, ao lado de "Ao vivo", e escolha outra tela ou janela (por exemplo, de uma janela do Chrome para a do Firefox, ou de uma janela para a tela inteira). Quem assiste passa a ver a fonte nova em um instante, sem reconectar. A qualidade, o som e a codificação continuam os mesmos. Funciona nos três modos (normal, WebCodecs e NVENC direto).
 - **Firewall:** na primeira vez, o Windows pergunta se o app pode acessar a rede. Marque **redes privadas e públicas**.
 
 ### Áudio e apps ignorados
