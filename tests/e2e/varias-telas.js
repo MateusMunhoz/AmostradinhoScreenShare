@@ -20,7 +20,8 @@ run('Várias telas (destaque com coluna)', 200000, async () => {
   await B.waitFor(`state.in.size === 3 && [...state.in.values()].every((l) => l.tile.video.videoWidth > 0)`, 30000);
   await sleep(800);
 
-  const info = () => B.eval(`[...state.in].map(([id, l]) => { const r = l.tile.el.getBoundingClientRect(); return { id, name: l.tile.name, small: l.tile.el.classList.contains('small'), w: Math.round(r.width), h: Math.round(r.height), x: Math.round(r.x), playing: !l.tile.video.paused, videoOn: l.videoOn }; })`);
+  // O tamanho é o da área do vídeo (a faixa com o nome fica em cima dela)
+  const info = () => B.eval(`[...state.in].map(([id, l]) => { const r = l.tile.el.querySelector('.tile-body').getBoundingClientRect(); return { id, name: l.tile.name, small: l.tile.el.classList.contains('small'), w: Math.round(r.width), h: Math.round(r.height), x: Math.round(r.x), playing: !l.tile.video.paused, videoOn: l.videoOn }; })`);
   let t = await info();
   const big = t.filter((x) => !x.small);
   check('Uma grande e duas pequenas', big.length === 1 && t.filter((x) => x.small).length === 2, t.map((x) => x.name + (x.small ? ':p' : ':G')).join(' '));

@@ -278,7 +278,10 @@ function renderVoiceAvatars() {
     b.className = 'voice-avatar';
     b.dataset.person = id;
     b.style.setProperty('--person', personColor(id));
-    b.append(avatar(nameOf(id)));
+    const nm = document.createElement('span');
+    nm.className = 'va-name';
+    nm.textContent = nameOf(id);
+    b.append(nm, speakBars());
     const label = `${nameOf(id)}${voice.members.get(id).muted ? ', microfone desligado' : ''}. Mudar o volume`;
     b.title = label;
     b.setAttribute('aria-label', label);
@@ -543,7 +546,7 @@ function renderVoiceMe() {
   const label = $('voiceMeText');
   if (!label) return;
   label.textContent = voiceCfg.mode === 'ptt'
-    ? (voiceCfg.pttVk ? (ptt.down ? 'Falando' : `Segure ${voiceCfg.pttLabel}`) : 'Escolha a tecla')
+    ? (voiceCfg.pttVk ? `Segure ${voiceCfg.pttLabel}` : 'Escolha a tecla') // apertada, só as barrinhas acendem
     : 'Na voz';
   $('voiceMe').classList.toggle('ptt-open', voiceCfg.mode === 'ptt' && ptt.down);
 }
@@ -973,7 +976,7 @@ function enterRoom(welcome, owner, host, port) {
   state.host = host;
   state.port = port;
   state.members.clear();
-  for (const m of welcome.members) state.members.set(m.id, { name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs || [] });
+  for (const m of welcome.members) state.members.set(m.id, { name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs || [], shareInfo: m.shareInfo || null });
   state.hostId = welcome.hostId || null;
   state.handoff = (welcome.features || []).includes('handoff');
   state.order = [...welcome.members.map((m) => m.id), welcome.id];
@@ -1096,7 +1099,7 @@ async function rejoin(host, timeoutMs) {
   let welcome;
   try {
     welcome = await connectRoom(`ws://${host}:${state.port}`, {
-      name: getName(), password: state.password, resume: myId, sharing: state.sharing,
+      name: getName(), password: state.password, resume: myId, sharing: state.sharing, shareInfo: state.sharing ? state.shareInfo : undefined,
       voiceSession: voice.session || '', muted: voice.muted,
     }, timeoutMs);
   } catch { return false; }
@@ -1117,7 +1120,7 @@ async function rejoin(host, timeoutMs) {
   for (const m of state.members.values()) delete m.back;
   for (const m of welcome.members) {
     const before = state.members.get(m.id);
-    state.members.set(m.id, { name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs || [], back: true });
+    state.members.set(m.id, { name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs || [], shareInfo: m.shareInfo || null, back: true });
     if (!state.order.includes(m.id)) state.order.push(m.id);
     if (before && before.sharing && !m.sharing) stopWatching(m.id, false);
     voice.update(m.id, m.voiceSession || '', !!m.muted);
@@ -1143,7 +1146,7 @@ function onRoomMessage(m) {
     case 'member-joined': {
       // Quem volta depois da troca de host continua de onde estava (mesmo número, mesmas conexões)
       const back = state.members.get(m.id);
-      state.members.set(m.id, { name: m.name, sharing: !!m.sharing, version: m.version, addrs: m.addrs || [], back: true });
+      state.members.set(m.id, { name: m.name, sharing: !!m.sharing, version: m.version, addrs: m.addrs || [], shareInfo: m.shareInfo || null, back: true });
       if (!state.order.includes(m.id)) state.order.push(m.id);
       if (back && back.sharing && !m.sharing) stopWatching(m.id, false);
       voice.update(m.id, m.voiceSession || '', !!m.muted);
@@ -1170,9 +1173,11 @@ function onRoomMessage(m) {
     case 'share-state': {
       const mem = state.members.get(m.id);
       if (!mem) return;
+      const started = m.sharing && !mem.sharing; // com sharing de novo, é só a configuração que mudou
       mem.sharing = m.sharing;
-      if (m.sharing) toast(`${mem.name} começou a transmitir`);
-      else stopWatching(m.id, false);
+      mem.shareInfo = m.sharing ? m.info || null : null;
+      if (started) toast(`${mem.name} começou a transmitir`);
+      else if (!m.sharing) stopWatching(m.id, false);
       renderMembers();
       updateStage();
       break;
@@ -1501,6 +1506,96 @@ function drawSpark(svg, key, max, label, fmt) {
     : `${label}: sem medidas ainda`);
 }
 
+// Abas das Estatísticas: Desempenho (uso do PC e rede) e Transmissão (cada pessoa que transmite)
+let statsTab = 'perf';
+function setStatsTab(tab, focus = false) {
+  statsTab = tab;
+  for (const [t, btn, panel] of [['perf', 'statsTabPerf', 'statsPerf'], ['stream', 'statsTabStream', 'statsStream']]) {
+    $(btn).setAttribute('aria-selected', String(t === tab));
+    $(btn).tabIndex = t === tab ? 0 : -1;
+    $(panel).hidden = t !== tab;
+  }
+  if (focus) $(tab === 'perf' ? 'statsTabPerf' : 'statsTabStream').focus();
+  renderStats();
+}
+
+const QUALITY_TEXT = (q) => {
+  const m = /^(\d+)p(\d+)$/.exec(q || '');
+  return m ? `${m[1]}p a ${m[2]} fps` : '–';
+};
+
+// Um cartão por pessoa transmitindo (você primeiro): a configuração dela e o que chega aqui
+function streamCard(id) {
+  const me = !id;
+  const m = me ? null : state.members.get(id);
+  const info = me ? state.shareInfo : m.shareInfo;
+  const link = me ? null : state.in.get(id);
+  const card = document.createElement('section');
+  card.className = 'stream-card';
+  card.style.setProperty('--person', personColor(id));
+  const head = document.createElement('div');
+  head.className = 'stream-head';
+  const title = document.createElement('strong');
+  title.textContent = me ? `${getName()} (você)` : m.name;
+  const where = document.createElement('span');
+  where.className = 'hint';
+  const watchers = [...state.out.values()].filter((l) => l.pc.connectionState === 'connected').length;
+  where.textContent = me
+    ? (watchers ? `${watchers} ${watchers > 1 ? 'pessoas assistindo' : 'pessoa assistindo'}` : 'Ninguém assistindo agora')
+    : !link ? 'Você não está assistindo'
+      : state.pips.has(id) ? 'Na janela flutuante'
+        : state.focus && state.focus !== id ? 'Em pausa para você'
+          : 'Você está assistindo';
+  head.append(title, where);
+
+  const rows = [];
+  const hw = (h) => (h === true ? ', placa de vídeo' : h === false ? ', processador' : '');
+  if (info) {
+    rows.push(['Qualidade escolhida', QUALITY_TEXT(info.quality)]);
+    rows.push(['Codificação', info.mode === 'once' ? `Uma vez só para todos, ${info.engine || 'H.264'}${hw(info.hw)}` : `Uma por pessoa${hw(info.hw)}`]);
+    rows.push(['Som do PC', info.audio ? 'Junto com a tela' : 'Sem som']);
+  }
+  if (me) {
+    const live = perf.live;
+    rows.push(['Capturando', typeof live.captureFps === 'number' ? fpsText(live.captureFps) : '–']);
+    rows.push(['Enviando', watchers ? `${fpsText(live.sentFps)}, ${mbpsText(live.upMbps)}` : '–']);
+  } else if (link?.rx && link.pc.connectionState === 'connected') {
+    const r = link.rx;
+    rows.push(['Chegando aqui', `${r.width || '–'}×${r.height || '–'}, ${fpsText(r.fps)}`]);
+    rows.push(['Taxa', mbpsText(r.mbps)]);
+    rows.push(['Codec', r.codec ? `${r.codec}${r.decoder ? `, decodificando pela ${r.decoder}` : ''}` : '–']);
+    if (typeof r.lost === 'number') rows.push(['Pacotes perdidos', `${r.lost.toFixed(1).replace('.', ',')}%`]);
+  }
+  const dl = document.createElement('dl');
+  dl.className = 'stream-grid';
+  for (const [k, v] of rows) {
+    const dt = document.createElement('dt');
+    dt.textContent = k;
+    const dd = document.createElement('dd');
+    dd.textContent = v;
+    const pair = document.createElement('div');
+    pair.append(dt, dd);
+    dl.append(pair);
+  }
+  card.append(head);
+  if (rows.length) card.append(dl);
+  if (!me && !info) {
+    const p = document.createElement('p');
+    p.className = 'hint';
+    p.textContent = 'A configuração não chegou: quem transmite ou o host está numa versão antiga do app.';
+    card.append(p);
+  }
+  return card;
+}
+
+function renderStreamStats() {
+  const cards = [];
+  if (state.sharing) cards.push(streamCard(null));
+  for (const [id, m] of state.members) if (m.sharing) cards.push(streamCard(id));
+  $('streamRows').replaceChildren(...cards);
+  $('streamEmpty').hidden = cards.length > 0;
+}
+
 function openStats() {
   $('statsDialog').hidden = false;
   renderStats();
@@ -1516,6 +1611,7 @@ function closeStats() {
 }
 
 function renderStats() {
+  if (statsTab === 'stream') return renderStreamStats();
   const s = perf.last;
   const last = perf.samples[perf.samples.length - 1];
   for (const c of STAT_CARDS) {
@@ -1632,22 +1728,16 @@ async function renderRoomAddress() {
   $('dockAddr').hidden = chat.open || !state.roomAddr;
 }
 
-// Cada pessoa tem uma cor (a mesma no chat e na lista); você é sempre azul
-// Cores do tema Orbyt usadas nas janelas que o app monta por código (flutuantes e chat por cima do jogo)
+// Cada pessoa tem uma cor (a mesma no chat e na lista); você é sempre o amarelo
+// Cores do tema lan house usadas nas janelas que o app monta por código (flutuantes e chat por cima do jogo)
 const THEME = {
-  bg: '#0F1012', sunken: '#0A0B0D', card: '#16171A', raised: '#1E1F23', line: '#2A2B30', field: '#62656F',
-  text: '#EDEDF0', muted: '#8E9099', primary: '#EDEDF0', onPrimary: '#0F1012', accent: '#A3B1FF',
-  accentSoft: 'rgba(163, 177, 255, .18)', ok: '#7CCF9E', ink: '#0F1012', glass: 'rgba(16, 17, 20, .9)',
-  font: '"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif',
+  bg: '#22271E', sunken: '#1B1F17', card: '#2D3327', raised: '#3A4232', line: '#434C3A', field: '#6B7560',
+  text: '#E4E9DD', muted: '#A9B29C', primary: '#D6C45C', onPrimary: '#221E06', accent: '#D6C45C',
+  accentSoft: 'rgba(214, 196, 92, .16)', ok: '#A6D089', ink: '#1B1F17', glass: 'rgba(27, 31, 23, .9)',
+  font: '"Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif',
 };
-// As janelas abertas pelo app (about:blank) não herdam as fontes: carrega o mesmo fonts.css nelas
-function useAppFonts(d) {
-  const link = d.createElement('link');
-  link.rel = 'stylesheet';
-  link.href = new URL('fonts.css', location.href).href;
-  d.head.append(link);
-}
-const PERSON_COLORS = ['#f2a65a', '#6fcf97', '#c490f0', '#5fd0d6', '#FF86B0', '#e0c85a'];
+// Longe do amarelo (você) e do verde (quem fala), e legíveis sobre o oliva
+const PERSON_COLORS = ['#E3A76F', '#8FC1E3', '#D59BD0', '#7FD1C1', '#B9C7F2', '#E6C3A0'];
 function personColor(id) {
   if (!id || id === state.myId) return 'var(--accent)';
   let h = 0;
@@ -1660,6 +1750,46 @@ function avatar(name) {
   el.className = 'avatar';
   el.textContent = (name.trim()[0] || '?').toUpperCase();
   el.setAttribute('aria-hidden', 'true');
+  return el;
+}
+
+// As 3 barrinhas de quem fala (aparecem pelo CSS quando o elemento de cima está .speaking)
+function speakBars() {
+  const eq = document.createElement('span');
+  eq.className = 'eq';
+  eq.setAttribute('role', 'img');
+  eq.setAttribute('aria-label', 'Falando');
+  eq.innerHTML = '<span></span><span></span><span></span>';
+  return eq;
+}
+
+// O mesmo gráfico nas janelas que o app monta por código (flutuante e chat por cima do jogo)
+function speakBarsIn(d) {
+  const eq = d.createElement('span');
+  eq.setAttribute('role', 'img');
+  eq.setAttribute('aria-label', 'Falando');
+  Object.assign(eq.style, { display: 'inline-flex', alignItems: 'flex-end', gap: '2px', height: '11px' });
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  for (let i = 0; i < 3; i++) {
+    const b = d.createElement('span');
+    Object.assign(b.style, { width: '3px', height: '100%', borderRadius: '1px', background: THEME.ok, transformOrigin: 'bottom', transform: 'scaleY(.6)' });
+    if (!still) b.animate([{ transform: 'scaleY(.3)' }, { transform: 'scaleY(1)' }, { transform: 'scaleY(.3)' }], { duration: 900, delay: i * 250, iterations: Infinity, easing: 'ease-in-out' });
+    eq.append(b);
+  }
+  return eq;
+}
+
+// Nome de quem fala, com as barrinhas, para as janelas montadas por código
+function talkerChip(d, id) {
+  const el = d.createElement('span');
+  Object.assign(el.style, {
+    display: 'inline-flex', alignItems: 'center', gap: '7px', height: '24px', padding: '0 9px', borderRadius: '5px',
+    background: 'rgba(20, 23, 17, .82)', border: `1px solid ${THEME.ok}`, color: THEME.text, fontSize: '12px', fontWeight: '600',
+  });
+  const dot = d.createElement('span');
+  Object.assign(dot.style, { width: '8px', height: '8px', borderRadius: '2px', background: personColor(id) });
+  el.append(dot, nameOf(id), speakBarsIn(d));
+  el.title = `${nameOf(id)} está falando`;
   return el;
 }
 
@@ -1676,12 +1806,7 @@ function memberRow(id, name, sharing) {
   const nameEl = document.createElement('span');
   nameEl.className = 'mname';
   nameEl.textContent = name;
-  // Barrinhas de "falando" ao lado do nome (aparecem pelo CSS quando a linha está .speaking)
-  const eq = document.createElement('span');
-  eq.className = 'eq';
-  eq.title = 'Falando';
-  eq.innerHTML = '<span></span><span></span><span></span>';
-  nameEl.append(eq);
+  nameEl.append(speakBars());
   const status = document.createElement('span');
   status.className = 'mstatus';
   const paused = id && state.focus && state.focus !== id && state.in.has(id);
@@ -1767,19 +1892,18 @@ function createTile(id, name) {
   const overlay = document.createElement('div');
   overlay.className = 'tile-overlay';
   overlay.textContent = 'Conectando…';
-  const label = document.createElement('span');
+  // Faixa de título em cima do vídeo: o nome e, quando a pessoa fala, as barrinhas
+  const label = document.createElement('div');
   label.className = 'tile-name';
-  label.textContent = name;
   label.style.setProperty('--person', personColor(id));
-  const labelEq = document.createElement('span');
-  labelEq.className = 'eq';
-  labelEq.title = 'Falando';
-  labelEq.innerHTML = '<span></span><span></span><span></span>';
-  label.append(labelEq);
+  const labelText = document.createElement('span');
+  labelText.className = 'tile-name-text';
+  labelText.textContent = name;
+  label.append(labelText, speakBars());
   const bar = document.createElement('div');
   bar.className = 'tile-bar';
-  const stats = document.createElement('span');
-  stats.className = 'tile-stats';
+  const barSpace = document.createElement('span');
+  barSpace.className = 'tile-bar-space';
   const mute = document.createElement('button');
   mute.className = 'btn icon';
   const vol = document.createElement('input');
@@ -1820,7 +1944,7 @@ function createTile(id, name) {
   close.className = 'btn icon';
   setIcon(close, 'close', 'Parar de assistir');
   close.onclick = () => stopWatching(id);
-  bar.append(stats, mute, vol, pipBtn, focusBtn, fs, close);
+  bar.append(barSpace, mute, vol, pipBtn, focusBtn, fs, close);
   // Aviso no lugar do vídeo enquanto ele está na janela flutuante
   const pipNote = document.createElement('div');
   pipNote.className = 'tile-pip-note';
@@ -1848,7 +1972,10 @@ function createTile(id, name) {
   pipHint.className = 'hint';
   pipHint.textContent = 'ou Ctrl+Shift+E de dentro do jogo';
   pipNote.append(pipIcon, pipTitle, pipText, pipActions, pipHint);
-  el.append(video, overlay, pipNote, label, bar);
+  const body = document.createElement('div');
+  body.className = 'tile-body';
+  body.append(video, overlay, pipNote, bar);
+  el.append(label, body);
   el.addEventListener('dblclick', (e) => { if (!bar.contains(e.target) && !el.classList.contains('small')) toggleFullscreen(el); });
   // Na coluna ao lado, clicar (ou Enter) numa tela pequena põe ela em destaque
   el.addEventListener('click', () => { if (el.classList.contains('small')) setMain(id); });
@@ -1857,7 +1984,7 @@ function createTile(id, name) {
   });
   $('tiles').append(el);
   el.dataset.person = id;
-  return { el, video, vol, overlay, pipNote, stats, fs, focusBtn, pipBtn, syncMute, name, paused: false, mutedBefore: false };
+  return { el, video, vol, overlay, pipNote, fs, focusBtn, pipBtn, syncMute, name, paused: false, mutedBefore: false };
 }
 
 // Mostra a barra do vídeo por alguns segundos, para quem nunca passou o mouse em cima descobrir os botões
@@ -2068,25 +2195,30 @@ function appendMessage(m, live) {
   li.className = 'msg' + (mine ? ' mine' : '') + (grouped ? ' grouped' : '');
   const name = mine ? 'Você' : m.name;
   li.style.setProperty('--person', personColor(m.from));
+  const d = new Date(m.ts);
+  const when = document.createElement('time');
+  when.className = 'msg-time';
+  when.textContent = `${two(d.getHours())}:${two(d.getMinutes())}`;
+  const line = document.createElement('p');
+  line.className = 'msg-line';
+  const who = document.createElement('strong');
+  who.className = 'msg-who';
+  who.textContent = name;
+  const sep = document.createElement('span');
+  sep.className = 'msg-sep';
+  sep.textContent = ' : ';
+  line.append(who, sep);
+  if (m.text) {
+    const text = document.createElement('span');
+    text.className = 'msg-text';
+    textWithLinks(text, m.text);
+    line.append(text);
+  }
   const body = document.createElement('div');
   body.className = 'msg-body';
-  const head = document.createElement('div');
-  head.className = 'msg-head';
-  const d = new Date(m.ts);
-  const who = document.createElement('strong');
-  who.textContent = name;
-  const when = document.createElement('span');
-  when.textContent = `${two(d.getHours())}:${two(d.getMinutes())}`;
-  head.append(who, when);
-  body.append(head);
-  if (m.text) {
-    const p = document.createElement('p');
-    p.className = 'msg-text';
-    textWithLinks(p, m.text);
-    body.append(p);
-  }
+  body.append(line);
   if (m.file) body.append(fileCard(m, live));
-  li.append(avatar(m.name), body);
+  li.append(when, body);
   $('chatList').append(li);
   chat.lastMsg = { from: m.from, ts: m.ts };
 }
@@ -2326,7 +2458,6 @@ function pipButton(d, text, onClick, primary) {
 // Tudo por CSSOM: a página herda a regra de segurança do app, que não deixa estilo escrito em HTML
 function buildPip(win, id) {
   const d = win.document;
-  useAppFonts(d);
   d.documentElement.style.height = '100%';
   Object.assign(d.body.style, {
     margin: '0', height: '100%', overflow: 'hidden', background: '#000000', color: THEME.text, userSelect: 'none',
@@ -2432,6 +2563,9 @@ function buildPip(win, id) {
   // Borda verde quando a pessoa desta janela fala; embaixo, quem mais está falando na voz
   const speakRing = d.createElement('div');
   Object.assign(speakRing.style, { position: 'fixed', inset: '0', border: `2px solid ${THEME.ok}`, display: 'none', pointerEvents: 'none' });
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    speakRing.animate([{ opacity: 1 }, { opacity: 0.3 }, { opacity: 1 }], { duration: 1100, iterations: Infinity, easing: 'ease-in-out' });
+  }
   const talkers = d.createElement('div');
   Object.assign(talkers.style, { position: 'fixed', left: '8px', bottom: '8px', display: 'flex', flexWrap: 'wrap', gap: '6px', pointerEvents: 'none' });
   d.body.append(video, speakRing, talkers, edit, lockTag, notice);
@@ -2446,21 +2580,7 @@ function renderPipSpeaking() {
     const d = p.win.document;
     p.speakRing.style.display = speaking.has(p.id) ? 'block' : 'none';
     const others = [...speaking].filter((id) => id !== p.id && id !== state.myId && state.members.has(id));
-    p.talkers.replaceChildren(...others.map((id) => {
-      const chip = d.createElement('span');
-      Object.assign(chip.style, {
-        display: 'inline-flex', alignItems: 'center', gap: '6px', height: '22px', padding: '0 8px 0 3px', borderRadius: '999px',
-        background: 'rgba(0, 0, 0, .62)', color: THEME.text, fontSize: '11px', fontWeight: '600',
-      });
-      const dot = d.createElement('span');
-      dot.textContent = (nameOf(id).trim()[0] || '?').toUpperCase();
-      Object.assign(dot.style, {
-        width: '16px', height: '16px', borderRadius: '50%', display: 'grid', placeItems: 'center', fontSize: '10px', fontWeight: '700',
-        color: THEME.ink, background: personColor(id), boxShadow: `0 0 0 2px ${THEME.ok}`,
-      });
-      chip.append(dot, nameOf(id));
-      return chip;
-    }));
+    p.talkers.replaceChildren(...others.map((id) => talkerChip(d, id)));
   }
 }
 
@@ -2612,7 +2732,6 @@ function renderOverlayButton() {
 // Tudo por CSSOM, como a janela flutuante (a regra de segurança do app não deixa estilo escrito em HTML)
 function buildChatOverlay(win) {
   const d = win.document;
-  useAppFonts(d);
   Object.assign(d.documentElement.style, { height: '100%', background: 'transparent' });
   Object.assign(d.body.style, {
     margin: '0', height: '100%', overflow: 'hidden', background: 'transparent', color: THEME.text,
@@ -2650,7 +2769,7 @@ function buildChatOverlay(win) {
   input.setAttribute('aria-label', 'Mensagem para a sala');
   Object.assign(input.style, {
     flex: '1', minWidth: '0', height: '34px', boxSizing: 'border-box', padding: '0 10px', borderRadius: '8px',
-    border: `1px solid ${THEME.field}`, background: 'rgba(8, 11, 36, .92)', color: THEME.text, font: 'inherit', fontSize: '13px', outline: 'none',
+    border: `1px solid ${THEME.field}`, background: 'rgba(27, 31, 23, .92)', color: THEME.text, font: 'inherit', fontSize: '13px', outline: 'none',
   });
   input.onfocus = () => { input.style.borderColor = THEME.accent; };
   input.onblur = () => { input.style.borderColor = THEME.field; };
@@ -2689,22 +2808,7 @@ function renderChatOverlay() {
   p.hint.style.display = open ? 'block' : 'none';
   p.hint.textContent = overlay.compose && !edit ? 'Enter manda · Esc volta para o jogo' : 'Ctrl+Shift+E trava · Ctrl+Shift+O esconde · Ctrl+Enter escreve';
 
-  const chip = (id) => {
-    const el = d.createElement('span');
-    Object.assign(el.style, {
-      display: 'inline-flex', alignItems: 'center', gap: '6px', height: '22px', padding: '0 8px 0 3px', borderRadius: '999px',
-      background: 'rgba(0, 0, 0, .66)', fontSize: '11px', fontWeight: '600',
-    });
-    const dot = d.createElement('span');
-    dot.textContent = (nameOf(id).trim()[0] || '?').toUpperCase();
-    Object.assign(dot.style, {
-      width: '16px', height: '16px', borderRadius: '50%', display: 'grid', placeItems: 'center', fontSize: '10px', fontWeight: '700',
-      color: THEME.ink, background: personColor(id), boxShadow: `0 0 0 2px ${THEME.ok}`,
-    });
-    el.append(dot, `${nameOf(id)} falando`);
-    return el;
-  };
-  p.talkers.replaceChildren(...[...speaking].filter((id) => id !== state.myId && state.members.has(id)).map(chip));
+  p.talkers.replaceChildren(...[...speaking].filter((id) => id !== state.myId && state.members.has(id)).map((id) => talkerChip(d, id)));
 
   // As últimas 6; travada, cada uma some 20 s depois de chegar
   const now = Date.now();
@@ -2834,7 +2938,7 @@ function ensureStats() {
         const fps = secs ? (r.decoded - link.onceFrames) / secs : 0;
         Object.assign(link, { onceTs: now, onceBytes: r.bytes, onceFrames: r.decoded });
         total += mbps;
-        if (paint) link.tile.stats.textContent = `H.264 (1x), ${r.width || '–'}×${r.height || '–'}, ${Math.round(fps)} fps, ${mbps.toFixed(1)} Mbps`;
+        link.rx = { codec: 'H.264', width: r.width, height: r.height, fps, mbps, lost: null, decoder: r.hardware === true ? 'placa de vídeo' : r.hardware === false ? 'processador' : null, once: true };
         continue;
       }
       let report;
@@ -2845,14 +2949,11 @@ function ensureStats() {
         link.lastBytes = r.bytesReceived;
         link.lastTs = r.timestamp;
         total += mbps;
-        if (!paint) return;
-        const codec = codecName(report, r.codecId);
-        link.tile.stats.textContent = [
-          codec,
-          `${r.frameWidth || '–'}×${r.frameHeight || '–'}`,
-          `${Math.round(r.framesPerSecond || 0)} fps`,
-          `${mbps.toFixed(1)} Mbps`,
-        ].filter(Boolean).join(', ');
+        const got = (r.packetsReceived || 0) + (r.packetsLost || 0);
+        link.rx = {
+          codec: codecName(report, r.codecId), width: r.frameWidth, height: r.frameHeight, fps: r.framesPerSecond || 0, mbps,
+          lost: got ? (100 * (r.packetsLost || 0)) / got : null, decoder: null, once: false,
+        };
       });
     }
     perf.live.downMbps = total;
@@ -3234,7 +3335,8 @@ async function startSharing() {
 
   state.sharing = true;
   state.sharingSource = state.selectedSource;
-  send({ type: 'share', sharing: true });
+  state.shareInfoKey = '';
+  sendShareInfo();
   updateStage();
   startOutStats();
   $('noAudio').hidden = audioMode === 'none' || state.stream.getAudioTracks().length > 0;
@@ -3299,6 +3401,8 @@ function stopSharing(reason) {
   stopOutStats();
   for (const id of [...state.out.keys()]) closeOut(id);
   stopTracks();
+  state.shareInfo = null;
+  state.shareInfoKey = '';
   send({ type: 'share', sharing: false });
   updateStage();
   renderShareBox();
@@ -3376,6 +3480,7 @@ async function switchSource() {
   setBusy(btn, false, 'Trocar para esta');
   closeShareDialog();
   renderShareBox();
+  sendShareInfo();
   const src = state.sources.find((s) => s.id === id);
   toast(`Agora você está transmitindo: ${src ? sourceLabel(src) : 'a fonte nova'}.`);
 }
@@ -3453,6 +3558,25 @@ function awayReport() {
   console.log('[diagnóstico]', $('awayInfo').textContent, s);
 }
 
+// O que eu estou usando para transmitir, para a aba Transmissão das Estatísticas de quem está na sala.
+// Só manda de novo quando algo muda (ex.: o NVENC caiu para o WebCodecs, ou descobriu a placa de vídeo).
+function myShareInfo(hw) {
+  const info = { quality: state.quality, mode: once.active ? 'once' : 'per', engine: once.active ? engineName() : 'WebRTC',
+    audio: !!state.stream?.getAudioTracks().length };
+  const h = once.active ? once.hardware : hw;
+  if (typeof h === 'boolean') info.hw = h;
+  return info;
+}
+function sendShareInfo(hw) {
+  if (!state.sharing) return;
+  const info = myShareInfo(hw ?? state.shareInfo?.hw);
+  const key = JSON.stringify(info);
+  if (key === state.shareInfoKey) return;
+  state.shareInfoKey = key;
+  state.shareInfo = info;
+  send({ type: 'share', sharing: true, info });
+}
+
 // Mostra para quem transmite qual codec está em uso e se a placa de vídeo está codificando
 function startOutStats() {
   stopOutStats();
@@ -3501,6 +3625,7 @@ function startOutStats() {
       });
     }
     Object.assign(perf.live, { captureFps, sentFps, upMbps: mbps });
+    sendShareInfo(hw); // a placa de vídeo só aparece depois das primeiras medidas
     if (document.hidden) {
       away.samples.push({ captureFps, sentFps, mbps, limit }); // ninguém está vendo o painel agora
       return;
@@ -3673,8 +3798,17 @@ $('switchShareBtn').onclick = () => openShareDialog(true);
 $('refreshSources').onclick = loadSources;
 $('refreshApps').onclick = loadAudioApps;
 // Ícone das Estatísticas, na sala ao lado de Sair da sala
-setIcon($('openStatsRoom'), 'stats', 'Estatísticas: uso de processador e placa de vídeo');
+setIcon($('openStatsRoom'), 'stats', 'Estatísticas: desempenho do PC e a transmissão de cada pessoa');
 $('openStatsRoom').onclick = openStats;
+$('statsTabPerf').onclick = () => setStatsTab('perf');
+$('statsTabStream').onclick = () => setStatsTab('stream');
+for (const id of ['statsTabPerf', 'statsTabStream']) {
+  $(id).addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    e.preventDefault();
+    setStatsTab(statsTab === 'perf' ? 'stream' : 'perf', true);
+  });
+}
 
 // Chat
 $('chatToggle').insertAdjacentHTML('afterbegin', ICON.chat);

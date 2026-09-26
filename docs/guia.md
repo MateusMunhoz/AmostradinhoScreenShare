@@ -70,7 +70,8 @@ Qualidade, codificação e jogo em tela cheia estão em [Desempenho](desempenho.
 
 - **Assistir:** na lista de pessoas, quem está transmitindo aparece com **Assistir**. O vídeo só começa a ser baixado depois do clique.
 - **Parar:** clique em **Parar** na lista ou no X da própria tela. A conexão fecha e o download para na hora.
-- **Barra do vídeo:** aparece nos primeiros segundos, ao passar o mouse ou ao navegar com Tab. Tem silenciar, volume, janela flutuante, destacar, tela cheia e o X. Clicar duas vezes no vídeo também põe em tela cheia.
+- **Cada tela** tem uma faixa em cima com o nome da pessoa. Quando ela fala na voz, a borda pisca em verde e aparecem 3 barrinhas ao lado do nome.
+- **Barra do vídeo:** aparece nos primeiros segundos, ao passar o mouse ou ao navegar com Tab. Tem silenciar, volume, janela flutuante, destacar, tela cheia e o X. Clicar duas vezes no vídeo também põe em tela cheia. Resolução, quadros e Mbps de cada tela ficam em [Estatísticas](#estatísticas), na aba Transmissão.
 - **Várias telas:** com duas ou mais, uma fica grande à esquerda e as outras numa coluna ao lado, todas ao vivo. Clique numa pequena (ou Enter nela) para trocar o destaque.
 - **Só esta:** o botão de destacar deixa só essa tela ocupando tudo. As outras ficam em pausa só para você, sem vídeo e sem som: quem transmite para de mandar o vídeo para você, e o seu PC deixa de decodificar. A faixa de cima mostra quem está em pausa. Clique num nome para trocar, ou em **Mostrar todas** (ou Esc) para voltar.
 - **Volume por pessoa:** veja [Voz](#voz). O som da transmissão de cada pessoa também tem volume próprio.
@@ -94,7 +95,7 @@ Para ver uma transmissão enquanto joga.
 ## Chat
 
 - **Mensagens:** Enter envia e Shift+Enter quebra a linha. Links abrem no navegador.
-- **Organização:** mensagens seguidas da mesma pessoa ficam juntas, com a cor e a inicial dela. As que chegam enquanto você não está olhando ganham a linha "N mensagens novas" e o botão "Ir para as mensagens novas".
+- **Organização:** cada linha fica no formato do console do jogo, "21:02 Nome : mensagem", com o nome na cor da pessoa. Mensagens seguidas da mesma pessoa ficam juntas, sem repetir o nome. As que chegam enquanto você não está olhando ganham a linha "N mensagens novas" e o botão "Ir para as mensagens novas".
 - **Arquivos:** use o clipe ou arraste para o chat, até 200 MB.
   - **Baixar:** quem clica em **Baixar** recebe direto de quem mandou, vê a barra de progresso (dá para cancelar) e depois clica em **Salvar**.
   - **Imagens pequenas** aparecem sozinhas.
@@ -120,7 +121,7 @@ Clique em **Entrar na voz**, na barra de baixo, para ligar o microfone padrão d
   - **microfone** (liga e desliga);
   - **silenciar as vozes** (só o que você ouve, sem mexer no seu microfone nem no som das telas);
   - **sair da voz**.
-- **Quem está falando** ganha um anel verde na bolinha e barrinhas ao lado do nome. Isso aparece na lista de pessoas, no vídeo dessa pessoa (borda verde), nas janelas flutuantes e no chat por cima do jogo. Microfone desligado aparece com um ícone amarelo.
+- **Quem está falando** ganha 3 barrinhas verdes que mexem ao lado do nome, sem texto. Isso aparece na lista de pessoas, na tela dessa pessoa (a borda pisca em verde), nas janelas flutuantes e no chat por cima do jogo. Microfone desligado aparece com um ícone laranja.
 - **Volume de cada pessoa:** o botão de volume ao lado do nome abre um cartão com:
   - **Voz** (0 a 200%, para ouvir quem tem o microfone baixo);
   - **Som da transmissão** (0 a 100%);
@@ -164,21 +165,34 @@ O botão de controles na barra de voz.
 Na sala, o ícone de pulso na barra.
 
 - **Medição:** enquanto você está numa sala, o app mede tudo uma vez por segundo, com a janela aberta ou não, e guarda os últimos 10 minutos. Dá para jogar e abrir depois para ver como foi.
+Tem duas abas: **Desempenho** e **Transmissão**.
+
+### Desempenho
+
 - **Cada cartão** mostra o número de agora, a **média dos últimos 30 s** com mínimo e pico, e um **gráfico dos últimos 10 minutos**. A faixa no fim do gráfico marca os 30 s da média.
 - **Uso do app:** processador, placa de vídeo 3D, codificação e decodificação. Mostra quanto o app usa e, embaixo, a média do PC inteiro (inclui o jogo). São os mesmos números do Gerenciador de Tarefas.
-- **Transmissão:** quadros capturados, quadros enviados, Mbps enviando e recebendo.
+- **Rede:** quadros capturados, quadros enviados, Mbps enviando e recebendo.
   - Se "capturados" cai durante o jogo, a placa de vídeo estava ocupada.
   - Se "enviados" cai e "capturados" não, o problema é a internet ou a codificação.
 - **Cada processo do app:** captura, codificação, decodificação, rede e os ajudantes, com a memória de vídeo de cada um.
 - **O codificador de verdade:** por exemplo, "H.264 com OpenH264 (processador)". Para quem só assiste, o Chromium não diz qual é o decodificador.
 - **Codificação alta com o app parado:** se "Codificação de vídeo, PC inteiro" estiver alta, é outro programa usando o codificador da placa (ex.: o Replay Instantâneo da NVIDIA ou uma live do Discord).
 
+### Transmissão
+
+Um cartão para cada pessoa que está transmitindo (você primeiro, se estiver):
+- **Configuração de quem transmite:** a qualidade escolhida, a codificação (uma vez só para todos ou uma por pessoa, e se é pela placa de vídeo) e se o som do PC vai junto.
+- **O que chega até você,** nas telas que você está assistindo: resolução, quadros por segundo, Mbps, codec e pacotes perdidos. Atualiza a cada segundo.
+- **A sua transmissão:** quantas pessoas estão assistindo, quadros capturados e o que sai daqui.
+
+A configuração de outra pessoa só aparece se ela e o host estiverem na versão 1.9.0 ou mais nova.
+
 ## Tema
 
-Paleta escura minimalista:
-- **Base:** grafite quase neutro, com texto claro.
-- **Azul-lavanda,** a única cor de destaque: seleção, "você", "transmitindo" e "ao vivo".
-- **Verde** só para "falando" e conectado.
-- **Âmbar** para parar, encerrar e erros. Sem vermelho.
+Lan house moderna: o verde-oliva e o amarelo do Steam e do CS 1.6 de 2004, com fonte, espaço e cantos de hoje.
+- **Base:** verde-oliva escuro, com texto claro. Botões com um brilho de 1px no topo, no lugar das bordas chanfradas de 2004.
+- **Amarelo,** a única cor de destaque: botão principal, seleção, "você", "transmitindo" e "ao vivo".
+- **Verde claro** só para "falando" e conectado.
+- **Laranja** para parar, encerrar e erros. Sem vermelho.
 
-Fontes: Bricolage Grotesque nos títulos e Atkinson Hyperlegible no texto, dentro do app em `vendor/fonts/` (licença SIL OFL 1.1).
+Fontes do próprio Windows: Segoe UI Variable no app e Tahoma no chat, como o console do jogo.

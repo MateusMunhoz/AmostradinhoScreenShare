@@ -25,6 +25,18 @@ function send(ws, msg) {
 }
 
 // Endereços IPv4 que a pessoa diz ter (para os outros acharem ela se ela virar o host)
+// Configuração de quem transmite (qualidade, codificação, som), para a aba Transmissão das Estatísticas
+function cleanShareInfo(i) {
+  if (!i || typeof i !== 'object') return null;
+  const out = {};
+  if (typeof i.quality === 'string' && /^\d{3,4}p\d{2,3}$/.test(i.quality)) out.quality = i.quality;
+  if (i.mode === 'once' || i.mode === 'per') out.mode = i.mode;
+  if (typeof i.engine === 'string' && /^[\w .-]{1,24}$/.test(i.engine)) out.engine = i.engine;
+  if (typeof i.hw === 'boolean') out.hw = i.hw;
+  if (typeof i.audio === 'boolean') out.audio = i.audio;
+  return out;
+}
+
 function cleanAddrs(list) {
   return (Array.isArray(list) ? list : []).map(String).filter((a) => /^\d{1,3}(\.\d{1,3}){3}$/.test(a)).slice(0, 8);
 }
@@ -103,12 +115,13 @@ function startServer(port, password = '', seed = {}) {
           }
           if (!hostId && isLocal) hostId = id;
           // Na volta, quem estava na voz continua na mesma sessão (as conexões de voz também seguem de pé)
+          const shareInfo = resume && msg.sharing ? cleanShareInfo(msg.shareInfo) : null;
           const voiceSession = resume && typeof msg.voiceSession === 'string' && /^[\w-]{1,64}$/.test(msg.voiceSession) ? msg.voiceSession : '';
           me = {
             ws, name: String(msg.name || 'Anônimo').slice(0, 32), sharing: !!(resume && msg.sharing), version, addrs: cleanAddrs(msg.addrs),
-            voiceSession, muted: !!voiceSession && msg.muted === true,
+            voiceSession, muted: !!voiceSession && msg.muted === true, shareInfo,
           };
-          const info = (mid, m) => ({ id: mid, name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs, voiceSession: m.voiceSession, muted: m.muted });
+          const info = (mid, m) => ({ id: mid, name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs, voiceSession: m.voiceSession, muted: m.muted, shareInfo: m.shareInfo });
           send(ws, {
             type: 'welcome',
             id,
@@ -129,7 +142,8 @@ function startServer(port, password = '', seed = {}) {
           broadcast({ type: 'voice-state', id, session: me.voiceSession, muted: me.muted });
         } else if (msg.type === 'share') {
           me.sharing = !!msg.sharing;
-          broadcast({ type: 'share-state', id, sharing: me.sharing }, id);
+          me.shareInfo = me.sharing ? cleanShareInfo(msg.info) : null;
+          broadcast({ type: 'share-state', id, sharing: me.sharing, info: me.shareInfo }, id);
         } else if (msg.type === 'chat') {
           const text = typeof msg.text === 'string' ? msg.text.trim().slice(0, 2000) : '';
           const file = chatFile(msg.file);

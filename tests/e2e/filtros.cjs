@@ -37,9 +37,9 @@ app.whenReady().then(async () => {
     await run(`localStorage.removeItem('vozConfig'); Object.assign(voiceCfg, { ns: 'ia', echo: true, mode: 'voz', pttVk: 0, pttLabel: '' })`);
     // Sem vermelho na paleta
     const colors = await run(`(() => { const cs = getComputedStyle(document.documentElement); return [cs.getPropertyValue('--live').trim(), cs.getPropertyValue('--live-fill').trim()]; })()`);
-    check('Paleta minimalista: "ao vivo" e "transmitindo" no destaque lavanda', colors.every((c) => c.toLowerCase() === '#a3b1ff'), colors.join(' '));
-    const theme = await run(`(async () => { await document.fonts.ready; return { bg: getComputedStyle(document.body).backgroundColor, font: document.fonts.check('16px "Atkinson Hyperlegible"') && document.fonts.check('700 20px "Bricolage Grotesque"'), loaded: [...document.fonts].filter((f) => f.status === 'loaded').map((f) => f.family).join(',') }; })()`);
-    check('Fundo grafite e fontes carregadas', theme.bg === 'rgb(15, 16, 18)' && theme.font, JSON.stringify(theme));
+    check('Tema lan house: "ao vivo" e "transmitindo" no amarelo', colors.every((c) => c.toLowerCase() === '#d6c45c'), colors.join(' '));
+    const theme = await run(`({ bg: getComputedStyle(document.body).backgroundColor, font: getComputedStyle(document.body).fontFamily })`);
+    check('Fundo verde-oliva e a fonte do Windows', theme.bg === 'rgb(34, 39, 30)' && theme.font.includes('Segoe UI Variable'), JSON.stringify(theme));
 
     await run(`enterRoom({ id: '1', features: ['chat', 'voice'], members: [{ id: '2', name: 'Ana', sharing: true, version: '1.8.6' }], chat: [] }, false, '127.0.0.1', 8765)`);
     await run(`voice.join()`);
@@ -50,7 +50,7 @@ app.whenReady().then(async () => {
     await sleep(1500);
     const lvl = await run(`mixer.localNode ? mixer.level(mixer.localNode.an) : -1`);
     check('Som sai do RNNoise (medidor recebe o microfone filtrado)', lvl >= 0, lvl.toFixed(4));
-    check('Status da lista: "Transmitindo" em azul', await run(`(() => { const li = [...document.querySelectorAll('#members .member')].find((l) => l.dataset.person === '2'); return getComputedStyle(li.querySelector('.mstatus')).color; })()`) === 'rgb(163, 177, 255)');
+    check('Status da lista: "Transmitindo" em amarelo', await run(`(() => { const li = [...document.querySelectorAll('#members .member')].find((l) => l.dataset.person === '2'); return getComputedStyle(li.querySelector('.mstatus')).color; })()`) === 'rgb(214, 196, 92)');
     // Painel: só o chat; pessoas pelo botão
     check('Painel sem a prévia da própria tela e sem a lista à vista', await run(`!document.getElementById('myPreview') && $('peoplePop').hidden && getComputedStyle($('chatTab')).display !== 'none'`));
     check('Botão de pessoas mostra o total (2)', await run(`$('memberCount').textContent === '2' && $('peopleBtn').getAttribute('aria-expanded') === 'false'`));
@@ -108,7 +108,7 @@ app.whenReady().then(async () => {
     check('Tecla solta: microfone mudo', await run(`voice.stream.getAudioTracks()[0].enabled === false`));
     check('Barra mostra "Segure V"', await run(`$('voiceMeText').textContent === 'Segure V'`));
     await run(`onPttKey(true)`);
-    check('Tecla apertada: microfone abre', await run(`voice.stream.getAudioTracks()[0].enabled === true && $('voiceMeText').textContent === 'Falando'`));
+    check('Tecla apertada: microfone abre e as barrinhas acendem', await run(`voice.stream.getAudioTracks()[0].enabled === true && $('voiceMe').classList.contains('ptt-open')`));
     await run(`onPttKey(false)`);
     await sleep(100);
     check('Soltou: continua aberto por 200 ms (não corta a última palavra)', await run(`voice.stream.getAudioTracks()[0].enabled === true`));

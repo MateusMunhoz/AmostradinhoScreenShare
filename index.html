@@ -5,7 +5,6 @@
   <meta http-equiv="Content-Security-Policy"
         content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; img-src 'self' data: blob:; style-src 'self'; connect-src ws:; media-src 'self' blob: mediastream:">
   <title>Tela P2P</title>
-  <link rel="stylesheet" href="fonts.css">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -323,6 +322,12 @@
         <h2 id="statsTitle">Estatísticas</h2>
         <button class="btn small" id="closeStats" type="button">Fechar</button>
       </div>
+      <div class="seg stats-tabs" role="tablist" aria-label="Estatísticas">
+        <button type="button" role="tab" id="statsTabPerf" aria-controls="statsPerf" aria-selected="true">Desempenho</button>
+        <button type="button" role="tab" id="statsTabStream" aria-controls="statsStream" aria-selected="false" tabindex="-1">Transmissão</button>
+      </div>
+      <!-- Desempenho: quanto o app usa do PC e o que entra e sai pela rede -->
+      <div id="statsPerf" class="stats-panel" role="tabpanel" aria-labelledby="statsTabPerf">
       <h3 class="stat-group">Uso do app</h3>
       <div class="stat-cards">
         <div class="stat-card"><span class="stat-label">Processador</span><strong id="stCpu">–</strong><span id="stCpuAvg" class="stat-avg"></span><span id="stCpuPC" class="stat-sub"></span><svg id="stCpuChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
@@ -330,7 +335,7 @@
         <div class="stat-card"><span class="stat-label">Codificação de vídeo</span><strong id="stEnc">–</strong><span id="stEncAvg" class="stat-avg"></span><span id="stEncPC" class="stat-sub"></span><svg id="stEncChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
         <div class="stat-card"><span class="stat-label">Decodificação de vídeo</span><strong id="stDec">–</strong><span id="stDecAvg" class="stat-avg"></span><span id="stDecPC" class="stat-sub"></span><svg id="stDecChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
       </div>
-      <h3 class="stat-group">Transmissão</h3>
+      <h3 class="stat-group">Rede</h3>
       <div class="stat-cards">
         <div class="stat-card"><span class="stat-label">Quadros capturados</span><strong id="stCap">–</strong><span id="stCapAvg" class="stat-avg"></span><svg id="stCapChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
         <div class="stat-card"><span class="stat-label">Quadros enviados</span><strong id="stSent">–</strong><span id="stSentAvg" class="stat-avg"></span><svg id="stSentChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
@@ -347,6 +352,13 @@
         </table>
       </div>
       <p id="stNote" class="hint"></p>
+      </div>
+      <!-- Transmissão: a configuração de cada pessoa que está transmitindo e como chega até você -->
+      <div id="statsStream" class="stats-panel" role="tabpanel" aria-labelledby="statsTabStream" hidden>
+        <div id="streamRows" class="stream-list"></div>
+        <p id="streamEmpty" class="hint">Ninguém está transmitindo agora.</p>
+        <p class="hint">Qualidade, codificação e som vêm de quem transmite. Resolução, quadros, taxa e perda são medidos aqui, a cada segundo, só nas telas que você está assistindo.</p>
+      </div>
     </div>
   </div>
 

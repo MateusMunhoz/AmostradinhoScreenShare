@@ -47,4 +47,4 @@ Detalhes de cada coisa no [Guia de uso](docs/guia.md).
 
 ## Quem fez
 
-Projeto de [MateusMunhoz](https://github.com/MateusMunhoz), com o chat de voz feito pelo Cristian ([Nyon0k](https://github.com/Nyon0k)). Usa [RNNoise](https://github.com/xiph/rnnoise) (supressão de ruído) e as fontes Bricolage Grotesque e Atkinson Hyperlegible. As licenças estão em `vendor/` e `native/third_party/`.
+Projeto de [MateusMunhoz](https://github.com/MateusMunhoz), com o chat de voz feito pelo Cristian ([Nyon0k](https://github.com/Nyon0k)). Usa [RNNoise](https://github.com/xiph/rnnoise) (supressão de ruído). As licenças estão em `vendor/` e `native/third_party/`.

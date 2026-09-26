@@ -18,7 +18,7 @@ run('Chat', 170000, async () => {
   check('Divisor de mensagens novas', await B.eval(`$('chatList').querySelector('.new-divider')?.textContent === '1 mensagem nova'`));
   check('Texto com HTML aparece literal', await B.eval(`$('chatList').querySelector('.msg-text').textContent.includes('<b>negrito</b>') && !$('chatList').querySelector('.msg-text b')`));
   check('Link vira link', await B.eval(`$('chatList').querySelector('.msg-text a')?.textContent === 'https://osu.ppy.sh'`));
-  check('Ana vê a própria mensagem como "Você", com a inicial', await A.eval(`$('chatList').querySelector('.msg.mine strong')?.textContent === 'Você' && $('chatList').querySelector('.msg.mine .avatar')?.textContent === 'A'`));
+  check('Ana vê a própria mensagem como "Você", no formato "Nome : mensagem"', await A.eval(`$('chatList').querySelector('.msg.mine .msg-who')?.textContent === 'Você' && $('chatList').querySelector('.msg.mine .msg-sep')?.textContent === ' : '`));
   await B.eval(`(() => { document.hasFocus = () => true; setPanelOpen(true); scrollChatToEnd(); markRead(); })()`);
   check('Abrir o painel zera as não lidas', await B.eval(`chat.unread === 0 && $('chatUnread').hidden`));
 
