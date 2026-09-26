@@ -64,10 +64,16 @@ Na sala, clique em **Entrar na voz** (na barra de baixo) para ligar o microfone 
   - **Supressão de ruído:** **Forte, com IA** (padrão) passa sua voz pelo [RNNoise](https://github.com/xiph/rnnoise), uma IA que roda no seu PC e tira teclado, ventilador, barulho da rua e respiração; **Básica** usa o filtro do Chrome (só chiado constante); **Desligada**.
   - **Cancelamento de eco:** tira da sua voz o que sai das suas caixas (as vozes dos outros e o som das telas). O app usa o cancelamento de eco do app inteiro, então vale também para o som que passa pelo volume de cada pessoa. Com fone, pode desligar.
   - Dá para trocar os dois no meio da conversa, sem sair da voz. Um medidor mostra o que o seu microfone está mandando.
+  - **Sensibilidade do microfone:** abaixo do limite, o microfone fica fechado (o barulho baixo entre as falas não passa). **Automática** (padrão) mede o ruído de fundo e fica 12 dB acima dele; desmarcando, você escolhe o limite no controle, vendo a marca dourada no medidor. A barra fica verde quando o microfone abre.
+  - **Atenuação:** abaixa o som das transmissões (o jogo que os outros estão mostrando) enquanto alguém fala na voz, de 0 (desligada) a 100%, e volta suave meio segundo depois. Dá para abaixar também quando você fala. Não mexe no volume de outros programas do PC.
   - **Como falar:** **Detecção de voz** (o microfone fica aberto) ou **Apertar para falar**: o microfone só manda som enquanto você segura a tecla escolhida, de qualquer lugar, até de dentro do jogo. Vale tecla do teclado ou botão do mouse (meio, Mouse 4 e Mouse 5). Ao soltar, fica aberto mais 200 ms para não cortar a última palavra. Quem cuida da tecla é o `bin/teclas.exe`, que só consulta se a tecla está apertada (não intercepta o teclado).
   - **Atalhos:** escrever no chat por cima do jogo (Ctrl+Enter), ligar/desligar o microfone (Ctrl+Shift+M), ajustar/travar as janelas por cima do jogo (Ctrl+Shift+E) e esconder/mostrar o chat por cima do jogo (Ctrl+Shift+O). Cada um pode ser trocado ou tirado; o app recusa combinações sem Ctrl ou Alt (menos F1 a F24) e avisa se outro programa já usa a combinação.
 
 A voz usa WebRTC direto pela Radmin, com uma conexão por par de participantes. Não usa servidor adicional. Usa o microfone padrão, sem escolher o dispositivo.
+
+## Tema
+
+O app usa o tema **Orbyt** (escuro): fundo azul-marinho com estrelinhas, dourado nos botões principais, verde-água para seleção e "você", azul para "transmitindo" e âmbar para parar, encerrar e erros (sem vermelho). Fontes Bricolage Grotesque (títulos) e Atkinson Hyperlegible (texto), dentro do app em `vendor/fonts/` (licença SIL OFL 1.1).
 
 ## Chat por cima do jogo
 

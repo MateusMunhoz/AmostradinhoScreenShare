@@ -101,11 +101,32 @@ function setVol(id, patch) {
   renderVoiceAvatars();
 }
 // O som da transmissão sai pelo <video> do quadro: o volume dele segue o da pessoa
+// Atenuação: enquanto alguém fala na voz, o som das transmissões vai para duck.factor (e volta suave depois)
+const duck = { factor: 1, timer: null, releaseAt: 0 };
+function duckTarget() {
+  const others = [...speaking].some((id) => id !== state.myId);
+  const talking = others || (voiceCfg.duckSelf && speaking.has(state.myId));
+  const now = performance.now();
+  if (talking) duck.releaseAt = now + 500; // espera meio segundo de silêncio para voltar
+  return voiceCfg.duck > 0 && (talking || now < duck.releaseAt) ? 1 - voiceCfg.duck / 100 : 1;
+}
+// Abaixa rápido (~150 ms) e volta devagar (~500 ms); o relógio só roda enquanto está atenuado
+function updateDuck() {
+  if (duck.timer) return;
+  duck.timer = setInterval(() => {
+    const target = duckTarget();
+    if (target < duck.factor) duck.factor = Math.max(target, duck.factor - 0.12);
+    else if (target > duck.factor) duck.factor = Math.min(target, duck.factor + 0.035);
+    for (const id of state.in.keys()) applyScreenVolume(id);
+    if (duck.factor === 1 && target === 1) { clearInterval(duck.timer); duck.timer = null; }
+  }, 20);
+}
+
 function applyScreenVolume(id) {
   const t = state.in.get(id)?.tile;
   if (!t) return;
   const v = volOf(id);
-  t.video.volume = v.screen / 100;
+  t.video.volume = (v.screen / 100) * duck.factor;
   t.vol.value = String(v.screen / 100);
   if (!t.paused) t.video.muted = v.muted;
   else t.mutedBefore = v.muted;
@@ -204,6 +225,7 @@ function renderSpeaking() {
   for (const [id, link] of state.in) link.tile.el.classList.toggle('speaking', speaking.has(id));
   renderPipSpeaking();
   renderChatOverlay();
+  updateDuck();
 }
 
 const inVoice = (id) => (id === state.myId ? !!voice.session : !!voice.members.get(id)?.session);
@@ -381,7 +403,9 @@ $('voiceDeafen').onclick = () => voice.deafen();
 // ---------- Microfone: supressão de ruído, eco e apertar para falar ----------
 // ns: 'ia' (RNNoise, roda no PC), 'chrome' (o filtro básico do Chrome) ou 'off'. echo: cancelamento de eco.
 // mode: 'voz' (o microfone fica aberto) ou 'ptt' (só enquanto a tecla está apertada).
-const voiceCfg = { ns: 'ia', echo: true, mode: 'voz', pttVk: 0, pttLabel: '' };
+// gateAuto/gateDb: sensibilidade (abaixo do limite, o microfone fica fechado). duck: quanto o som das
+// transmissões abaixa enquanto alguém fala (0 = não abaixa); duckSelf: abaixa também quando eu falo.
+const voiceCfg = { ns: 'ia', echo: true, mode: 'voz', pttVk: 0, pttLabel: '', gateAuto: true, gateDb: -50, duck: 0, duckSelf: false };
 try { Object.assign(voiceCfg, JSON.parse(load('vozConfig', '{}')) || {}); } catch {}
 function saveVoiceCfg() { save('vozConfig', JSON.stringify(voiceCfg)); }
 
@@ -396,35 +420,70 @@ async function openMic() {
     video: false,
     audio: { echoCancellation: voiceCfg.echo, noiseSuppression: voiceCfg.ns === 'chrome', autoGainControl: true },
   });
-  let mic = { raw, out: raw, ctx: null, node: null };
+  // microfone -> [IA] -> medidor -> porta (sensibilidade) -> o que vai para a sala
+  const ctx = new AudioContext({ sampleRate: 48000 });
+  const src = ctx.createMediaStreamSource(raw);
+  let last = src;
+  let node = null;
   if (voiceCfg.ns === 'ia') {
     try {
       if (!noiseWasm) noiseWasm = await window.api.noiseWasm(simdOk());
       if (!noiseWasm) throw new Error('arquivo da IA não encontrado');
-      const ctx = new AudioContext({ sampleRate: 48000 });
       await ctx.audioWorklet.addModule('vendor/noise/rnnoiseWorklet.js');
       const bin = noiseWasm.buffer.slice(noiseWasm.byteOffset, noiseWasm.byteOffset + noiseWasm.byteLength);
-      const node = new AudioWorkletNode(ctx, RNNOISE_ID, { processorOptions: { maxChannels: 1, wasmBinary: bin } });
-      const src = ctx.createMediaStreamSource(raw);
-      const dest = ctx.createMediaStreamDestination();
+      node = new AudioWorkletNode(ctx, RNNOISE_ID, { processorOptions: { maxChannels: 1, wasmBinary: bin } });
       src.connect(node);
-      node.connect(dest);
-      mic = { raw, out: dest.stream, ctx, node };
-      // Microfone desconectado: avisa a voz do mesmo jeito que o microfone "cru" avisaria
-      for (const t of raw.getAudioTracks()) t.addEventListener('ended', () => dest.stream.getAudioTracks().forEach((o) => o.dispatchEvent(new Event('ended'))));
+      last = node;
     } catch (err) {
       console.warn('Supressão de ruído com IA indisponível:', err);
       toast('A supressão de ruído com IA não carregou. Usando a básica.', 'error');
+      node = null;
     }
   }
+  const pre = ctx.createAnalyser();
+  pre.fftSize = 1024;
+  const gate = ctx.createGain();
+  const dest = ctx.createMediaStreamDestination();
+  last.connect(pre);
+  last.connect(gate);
+  gate.connect(dest);
+  const mic = { raw, out: dest.stream, ctx, node, pre, gate, gateOpen: true, holdUntil: 0, floor: -70, level: -100, timer: null };
+  mic.timer = setInterval(() => tickGate(mic), 20);
+  // Microfone desconectado: avisa a voz do mesmo jeito que o microfone "cru" avisaria
+  for (const t of raw.getAudioTracks()) t.addEventListener('ended', () => dest.stream.getAudioTracks().forEach((o) => o.dispatchEvent(new Event('ended'))));
   micNow = mic;
   return mic.out;
+}
+
+// Sensibilidade: mede o som (depois da IA) a cada 20 ms. Acima do limite, a porta abre na hora; abaixo,
+// espera 300 ms e fecha suave. No automático, o limite fica 12 dB acima do ruído de fundo medido.
+function gateThreshold(mic) {
+  return voiceCfg.gateAuto ? Math.max(-72, Math.min(-30, mic.floor + 12)) : voiceCfg.gateDb;
+}
+function tickGate(mic) {
+  const buf = new Float32Array(mic.pre.fftSize);
+  mic.pre.getFloatTimeDomainData(buf);
+  let sum = 0;
+  for (const x of buf) sum += x * x;
+  const db = 20 * Math.log10(Math.sqrt(sum / buf.length) + 1e-9);
+  mic.level = db;
+  // Ruído de fundo: desce rápido, sobe devagar (a voz não puxa o limite para cima)
+  mic.floor = db < mic.floor ? db * 0.3 + mic.floor * 0.7 : mic.floor + 0.02;
+  const now = performance.now();
+  const open = db > gateThreshold(mic);
+  if (open) mic.holdUntil = now + 300;
+  const want = open || now < mic.holdUntil;
+  if (want !== mic.gateOpen) {
+    mic.gateOpen = want;
+    mic.gate.gain.setTargetAtTime(want ? 1 : 0, mic.ctx.currentTime, want ? 0.004 : 0.04);
+  }
 }
 
 function closeMic(mic) {
   if (!mic) return;
   mic.raw.getTracks().forEach((t) => t.stop());
   if (mic.out !== mic.raw) mic.out.getTracks().forEach((t) => t.stop());
+  clearInterval(mic.timer);
   try { mic.node?.port.postMessage('destroy'); } catch {}
   mic.ctx?.close().catch(() => {});
   if (micNow === mic) micNow = null;
@@ -561,6 +620,16 @@ function renderVoiceDialog() {
     ? 'Seu microfone só manda som enquanto você segura a tecla, até de dentro do jogo. Vale tecla do teclado ou botão lateral do mouse.'
     : 'Seu microfone fica aberto enquanto você está na voz; a supressão de ruído corta o que não é voz.';
   $('micMeterBox').hidden = !voice.session;
+  $('gateAuto').checked = voiceCfg.gateAuto;
+  $('gateDb').disabled = voiceCfg.gateAuto;
+  if (!voiceCfg.gateAuto) { $('gateDb').value = String(voiceCfg.gateDb); $('gateMark').style.left = `${dbToPct(voiceCfg.gateDb)}%`; $('gateValue').textContent = `${voiceCfg.gateDb} dB`; }
+  $('gateHint').textContent = voice.session
+    ? 'Fale normalmente: a barra fica verde quando o microfone abre. Barulho abaixo da marca não passa.'
+    : 'Entre na voz para ver o medidor do seu microfone.';
+  $('duckAmount').value = String(voiceCfg.duck);
+  $('duckValue').textContent = voiceCfg.duck ? `${voiceCfg.duck}%` : 'Desligada';
+  $('duckSelf').checked = voiceCfg.duckSelf;
+  $('duckSelf').disabled = !voiceCfg.duck;
 }
 
 function renderShortcutRows() {
@@ -657,12 +726,19 @@ window.addEventListener('mousedown', (e) => {
 }, true);
 
 // Medidor do microfone (o que sai depois dos filtros), enquanto a janela está aberta
+// Escala do medidor e do controle: -80 dB (esquerda) a 0 dB (direita)
+const dbToPct = (db) => Math.max(0, Math.min(100, ((db + 80) / 80) * 100));
 function meterLoop() {
   if ($('voiceDialog').hidden) return;
-  const bar = $('micMeter');
-  const level = mixer.localNode ? mixer.level(mixer.localNode.an) : 0;
-  bar.style.width = `${Math.min(100, Math.round(Math.sqrt(level) * 180))}%`;
-  bar.classList.toggle('open', !!voice.stream?.getAudioTracks()[0]?.enabled);
+  const mic = micNow;
+  $('micMeter').style.width = `${mic ? dbToPct(mic.level) : 0}%`;
+  $('micMeter').classList.toggle('open', !!mic && mic.gateOpen && !!voice.stream?.getAudioTracks()[0]?.enabled);
+  if (mic) {
+    const th = gateThreshold(mic);
+    $('gateMark').style.left = `${dbToPct(th)}%`;
+    if (voiceCfg.gateAuto) $('gateDb').value = String(Math.round(th));
+    $('gateValue').textContent = `${Math.round(th)} dB`;
+  }
   requestAnimationFrame(meterLoop);
 }
 
@@ -682,6 +758,15 @@ document.querySelectorAll('input[name="talkMode"]').forEach((r) => {
   };
 });
 $('pttChange').onclick = () => startCapture({ kind: 'ptt', btn: $('pttChange') });
+$('gateAuto').onchange = () => {
+  voiceCfg.gateAuto = $('gateAuto').checked;
+  if (!voiceCfg.gateAuto && micNow) voiceCfg.gateDb = Math.round(gateThreshold(micNow)); // começa de onde o automático estava
+  saveVoiceCfg();
+  renderVoiceDialog();
+};
+$('gateDb').oninput = () => { voiceCfg.gateDb = Number($('gateDb').value); saveVoiceCfg(); renderVoiceDialog(); };
+$('duckAmount').oninput = () => { voiceCfg.duck = Number($('duckAmount').value); saveVoiceCfg(); renderVoiceDialog(); updateDuck(); };
+$('duckSelf').onchange = () => { voiceCfg.duckSelf = $('duckSelf').checked; saveVoiceCfg(); updateDuck(); };
 $('shortcutReset').onclick = async () => {
   const defaults = { compose: 'CommandOrControl+Enter', mute: 'CommandOrControl+Shift+M', edit: 'CommandOrControl+Shift+E', hideChat: 'CommandOrControl+Shift+O' };
   for (const action of Object.keys(defaults)) await window.api.setShortcut(action, '').catch(() => {}); // solta todos antes
@@ -1545,7 +1630,21 @@ async function renderRoomAddress() {
 }
 
 // Cada pessoa tem uma cor (a mesma no chat e na lista); você é sempre azul
-const PERSON_COLORS = ['#f2a65a', '#6fcf97', '#c490f0', '#5fd0d6', '#f28bb4', '#e0c85a'];
+// Cores do tema Orbyt usadas nas janelas que o app monta por código (flutuantes e chat por cima do jogo)
+const THEME = {
+  bg: '#0C1030', sunken: '#080B24', card: '#151A42', raised: '#1F2558', line: '#2B3270', field: '#5A64B8',
+  text: '#EEF0FF', muted: '#9098C9', primary: '#FFC46B', onPrimary: '#1A1405', accent: '#5EE6D0',
+  accentSoft: 'rgba(94, 230, 208, .18)', ok: '#5EE69A', ink: '#0C1030', glass: 'rgba(12, 16, 48, .9)',
+  font: '"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif',
+};
+// As janelas abertas pelo app (about:blank) não herdam as fontes: carrega o mesmo fonts.css nelas
+function useAppFonts(d) {
+  const link = d.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = new URL('fonts.css', location.href).href;
+  d.head.append(link);
+}
+const PERSON_COLORS = ['#f2a65a', '#6fcf97', '#c490f0', '#7FB8FF', '#FF86B0', '#e0c85a'];
 function personColor(id) {
   if (!id || id === state.myId) return 'var(--accent)';
   let h = 0;
@@ -1686,7 +1785,7 @@ function createTile(id, name) {
     setIcon(mute, silent ? 'muted' : 'volume', silent ? `Ativar o som de ${name}` : `Silenciar ${name}`);
   };
   vol.oninput = () => {
-    video.volume = parseFloat(vol.value);
+    video.volume = parseFloat(vol.value) * duck.factor;
     if (video.volume > 0) video.muted = false;
     syncMute();
   };
@@ -2202,7 +2301,7 @@ function pipButton(d, text, onClick, primary) {
   b.textContent = text;
   Object.assign(b.style, {
     font: 'inherit', fontSize: '12px', fontWeight: '600', height: '28px', padding: '0 10px', borderRadius: '6px', cursor: 'pointer',
-    border: '1px solid ' + (primary ? '#ededed' : '#2e2e2e'), background: primary ? '#ededed' : '#191919', color: primary ? '#111111' : '#ededed',
+    border: '1px solid ' + (primary ? THEME.primary : THEME.line), background: primary ? THEME.primary : THEME.card, color: primary ? THEME.onPrimary : THEME.text,
   });
   b.style.setProperty('-webkit-app-region', 'no-drag');
   b.onclick = onClick;
@@ -2212,10 +2311,11 @@ function pipButton(d, text, onClick, primary) {
 // Tudo por CSSOM: a página herda a regra de segurança do app, que não deixa estilo escrito em HTML
 function buildPip(win, id) {
   const d = win.document;
+  useAppFonts(d);
   d.documentElement.style.height = '100%';
   Object.assign(d.body.style, {
-    margin: '0', height: '100%', overflow: 'hidden', background: '#000000', color: '#ededed', userSelect: 'none',
-    fontFamily: '"Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif',
+    margin: '0', height: '100%', overflow: 'hidden', background: '#000000', color: THEME.text, userSelect: 'none',
+    fontFamily: THEME.font,
   });
   const video = d.createElement('video');
   video.autoplay = true;
@@ -2226,7 +2326,7 @@ function buildPip(win, id) {
   // Modo de ajuste: borda, nome, botões e a dica; a janela inteira arrasta
   const edit = d.createElement('div');
   Object.assign(edit.style, {
-    position: 'fixed', inset: '0', boxSizing: 'border-box', border: '2px solid #8ab4ff', padding: '8px',
+    position: 'fixed', inset: '0', boxSizing: 'border-box', border: `2px solid ${THEME.accent}`, padding: '8px',
     display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '8px',
     background: 'rgba(0, 0, 0, .35)', fontSize: '12px', cursor: 'move',
   });
@@ -2237,11 +2337,11 @@ function buildPip(win, id) {
   Object.assign(name.style, { flex: '1', fontSize: '13px', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textShadow: '0 1px 2px #000' });
   Object.assign(top.style, { background: 'rgba(0, 0, 0, .72)', margin: '-8px -8px 0', padding: '8px' });
   const sizes = d.createElement('div');
-  Object.assign(sizes.style, { display: 'flex', gap: '2px', padding: '2px', background: '#111111', borderRadius: '6px' });
+  Object.assign(sizes.style, { display: 'flex', gap: '2px', padding: '2px', background: THEME.sunken, borderRadius: '6px' });
   sizes.style.setProperty('-webkit-app-region', 'no-drag');
   for (const key of ['P', 'M', 'G']) {
     const b = pipButton(d, key, () => window.api.pipSize(id, key), false);
-    Object.assign(b.style, { width: '28px', height: '24px', padding: '0', border: '0', borderRadius: '4px', background: 'transparent', color: '#a3a3a3' });
+    Object.assign(b.style, { width: '28px', height: '24px', padding: '0', border: '0', borderRadius: '4px', background: 'transparent', color: THEME.muted });
     b.title = { P: 'Pequena', M: 'Média', G: 'Grande' }[key];
     sizes.append(b);
   }
@@ -2256,7 +2356,7 @@ function buildPip(win, id) {
   opacity.min = '40';
   opacity.max = '100';
   opacity.value = '100';
-  Object.assign(opacity.style, { flex: '1', accentColor: '#8ab4ff' });
+  Object.assign(opacity.style, { flex: '1', accentColor: THEME.accent });
   opacity.oninput = () => window.api.pipOpacity(id, Number(opacity.value) / 100);
   opacityRow.append('Transparência', opacity);
 
@@ -2268,12 +2368,12 @@ function buildPip(win, id) {
   Object.assign(linkedLabel.style, { display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' });
   const linked = d.createElement('input');
   linked.type = 'checkbox';
-  linked.style.accentColor = '#8ab4ff';
+  linked.style.accentColor = THEME.accent;
   linked.onchange = () => window.api.pipGroup(id, { linked: linked.checked });
   linkedLabel.append(linked, 'Todas do mesmo tamanho');
   const seg = (items, onPick) => {
     const box = d.createElement('div');
-    Object.assign(box.style, { display: 'flex', gap: '2px', padding: '2px', background: '#111111', borderRadius: '6px' });
+    Object.assign(box.style, { display: 'flex', gap: '2px', padding: '2px', background: THEME.sunken, borderRadius: '6px' });
     const btns = {};
     for (const [key, text, title] of items) {
       const b = pipButton(d, text, () => onPick(key), false);
@@ -2312,11 +2412,11 @@ function buildPip(win, id) {
   notice.textContent = 'Janela travada: o clique vai para o jogo · Ctrl+Shift+E para ajustar';
   Object.assign(notice.style, {
     position: 'fixed', left: '50%', bottom: '10px', transform: 'translateX(-50%)', display: 'none', whiteSpace: 'nowrap',
-    fontSize: '12px', padding: '6px 10px', borderRadius: '8px', background: 'rgba(17, 17, 17, .88)', border: '1px solid #2e2e2e',
+    fontSize: '12px', padding: '6px 10px', borderRadius: '8px', background: THEME.glass, border: `1px solid ${THEME.line}`,
   });
   // Borda verde quando a pessoa desta janela fala; embaixo, quem mais está falando na voz
   const speakRing = d.createElement('div');
-  Object.assign(speakRing.style, { position: 'fixed', inset: '0', border: '2px solid #4cc38a', display: 'none', pointerEvents: 'none' });
+  Object.assign(speakRing.style, { position: 'fixed', inset: '0', border: `2px solid ${THEME.ok}`, display: 'none', pointerEvents: 'none' });
   const talkers = d.createElement('div');
   Object.assign(talkers.style, { position: 'fixed', left: '8px', bottom: '8px', display: 'flex', flexWrap: 'wrap', gap: '6px', pointerEvents: 'none' });
   d.body.append(video, speakRing, talkers, edit, lockTag, notice);
@@ -2335,13 +2435,13 @@ function renderPipSpeaking() {
       const chip = d.createElement('span');
       Object.assign(chip.style, {
         display: 'inline-flex', alignItems: 'center', gap: '6px', height: '22px', padding: '0 8px 0 3px', borderRadius: '999px',
-        background: 'rgba(0, 0, 0, .62)', color: '#ededed', fontSize: '11px', fontWeight: '600',
+        background: 'rgba(0, 0, 0, .62)', color: THEME.text, fontSize: '11px', fontWeight: '600',
       });
       const dot = d.createElement('span');
       dot.textContent = (nameOf(id).trim()[0] || '?').toUpperCase();
       Object.assign(dot.style, {
         width: '16px', height: '16px', borderRadius: '50%', display: 'grid', placeItems: 'center', fontSize: '10px', fontWeight: '700',
-        color: '#111111', background: personColor(id), boxShadow: '0 0 0 2px #4cc38a',
+        color: THEME.ink, background: personColor(id), boxShadow: `0 0 0 2px ${THEME.ok}`,
       });
       chip.append(dot, nameOf(id));
       return chip;
@@ -2361,8 +2461,8 @@ function renderPipGroup() {
     for (const [segKey, seg] of [['layout', p.layoutSeg], ['corner', p.cornerSeg]]) {
       for (const [key, b] of Object.entries(seg.btns)) {
         const on = g[segKey] === key;
-        b.style.background = on ? 'rgba(138, 180, 255, .18)' : 'transparent';
-        b.style.color = on ? '#8ab4ff' : '#a3a3a3';
+        b.style.background = on ? THEME.accentSoft : 'transparent';
+        b.style.color = on ? THEME.accent : THEME.muted;
         b.setAttribute('aria-pressed', String(on));
       }
     }
@@ -2497,10 +2597,11 @@ function renderOverlayButton() {
 // Tudo por CSSOM, como a janela flutuante (a regra de segurança do app não deixa estilo escrito em HTML)
 function buildChatOverlay(win) {
   const d = win.document;
+  useAppFonts(d);
   Object.assign(d.documentElement.style, { height: '100%', background: 'transparent' });
   Object.assign(d.body.style, {
-    margin: '0', height: '100%', overflow: 'hidden', background: 'transparent', color: '#ededed',
-    fontFamily: '"Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif', fontSize: '14px',
+    margin: '0', height: '100%', overflow: 'hidden', background: 'transparent', color: THEME.text,
+    fontFamily: THEME.font, fontSize: '14px',
   });
   d.title = 'Chat da sala · Tela P2P';
   const frame = d.createElement('div');
@@ -2511,7 +2612,7 @@ function buildChatOverlay(win) {
   const head = d.createElement('div');
   Object.assign(head.style, {
     display: 'none', alignItems: 'center', gap: '6px', padding: '6px 6px 6px 10px', borderRadius: '8px',
-    background: 'rgba(17, 17, 17, .88)', fontSize: '12px', cursor: 'move',
+    background: THEME.glass, fontSize: '12px', cursor: 'move',
   });
   head.style.setProperty('-webkit-app-region', 'drag');
   const title = d.createElement('span');
@@ -2534,10 +2635,10 @@ function buildChatOverlay(win) {
   input.setAttribute('aria-label', 'Mensagem para a sala');
   Object.assign(input.style, {
     flex: '1', minWidth: '0', height: '34px', boxSizing: 'border-box', padding: '0 10px', borderRadius: '8px',
-    border: '1px solid #686868', background: 'rgba(17, 17, 17, .92)', color: '#ededed', font: 'inherit', fontSize: '13px', outline: 'none',
+    border: `1px solid ${THEME.field}`, background: 'rgba(8, 11, 36, .92)', color: THEME.text, font: 'inherit', fontSize: '13px', outline: 'none',
   });
-  input.onfocus = () => { input.style.borderColor = '#8ab4ff'; };
-  input.onblur = () => { input.style.borderColor = '#686868'; };
+  input.onfocus = () => { input.style.borderColor = THEME.accent; };
+  input.onblur = () => { input.style.borderColor = THEME.field; };
   form.style.setProperty('-webkit-app-region', 'no-drag');
   form.onsubmit = (e) => {
     e.preventDefault();
@@ -2566,7 +2667,7 @@ function renderChatOverlay() {
   const d = p.win.document;
   const edit = overlay.edit;
   const open = edit || overlay.compose;
-  p.frame.style.border = open ? '2px solid #8ab4ff' : '2px solid transparent';
+  p.frame.style.border = open ? `2px solid ${THEME.accent}` : '2px solid transparent';
   p.frame.style.background = open ? 'rgba(0, 0, 0, .35)' : 'transparent';
   p.head.style.display = edit ? 'flex' : 'none';
   p.form.style.display = open ? 'flex' : 'none';
@@ -2583,7 +2684,7 @@ function renderChatOverlay() {
     dot.textContent = (nameOf(id).trim()[0] || '?').toUpperCase();
     Object.assign(dot.style, {
       width: '16px', height: '16px', borderRadius: '50%', display: 'grid', placeItems: 'center', fontSize: '10px', fontWeight: '700',
-      color: '#111111', background: personColor(id), boxShadow: '0 0 0 2px #4cc38a',
+      color: THEME.ink, background: personColor(id), boxShadow: `0 0 0 2px ${THEME.ok}`,
     });
     el.append(dot, `${nameOf(id)} falando`);
     return el;
@@ -2601,7 +2702,7 @@ function renderChatOverlay() {
     });
     const who = d.createElement('strong');
     who.textContent = m.from === state.myId ? 'Você' : m.name;
-    who.style.color = m.from === state.myId ? '#8ab4ff' : personColor(m.from);
+    who.style.color = m.from === state.myId ? THEME.accent : personColor(m.from);
     who.style.marginRight = '6px';
     row.append(who, m.text || `mandou ${m.file ? m.file.name : 'um arquivo'}`);
     return row;

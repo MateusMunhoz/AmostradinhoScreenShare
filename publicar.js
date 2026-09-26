@@ -21,7 +21,10 @@ const KEY_FILE = path.join(os.homedir(), '.tela-p2p', 'chave-de-atualizacao.pem'
 const BOOT = path.join(ROOT, 'boot.js');
 // O que viaja pela sala. boot.js fica de fora: ele confere as assinaturas e só muda com um .exe novo.
 const PACK_FILES = ['main.js', 'preload.js', 'signaling.js', 'github.js', 'index.html', 'styles.css', 'renderer.js', 'voice.js', 'encode-once.js', 'pcm-worklet.js', 'bin/audiocap.exe', 'bin/videocap.exe', 'bin/teclas.exe',
-  'vendor/noise/rnnoiseWorklet.js', 'vendor/noise/rnnoise.wasm', 'vendor/noise/rnnoise_simd.wasm', 'vendor/noise/LICENSE', 'vendor/noise/NOTICE.md'];
+  'vendor/noise/rnnoiseWorklet.js', 'vendor/noise/rnnoise.wasm', 'vendor/noise/rnnoise_simd.wasm', 'vendor/noise/LICENSE', 'vendor/noise/NOTICE.md',
+  'fonts.css', 'vendor/fonts/atkinson-400-latin.woff2', 'vendor/fonts/atkinson-400-latin-ext.woff2', 'vendor/fonts/atkinson-700-latin.woff2',
+  'vendor/fonts/atkinson-700-latin-ext.woff2', 'vendor/fonts/bricolage-latin.woff2', 'vendor/fonts/bricolage-latin-ext.woff2',
+  'vendor/fonts/OFL-atkinson.txt', 'vendor/fonts/OFL-bricolage.txt'];
 
 function fail(msg) {
   console.error('\n' + msg + '\n');

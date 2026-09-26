@@ -5,6 +5,7 @@
   <meta http-equiv="Content-Security-Policy"
         content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; img-src 'self' data: blob:; style-src 'self'; connect-src ws:; media-src 'self' blob: mediastream:">
   <title>Tela P2P</title>
+  <link rel="stylesheet" href="fonts.css">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -370,10 +371,31 @@
           </label>
         </div>
         <p class="hint">Tira da sua voz o som que sai das suas caixas (as vozes dos outros e o som das telas). Com fone, pode desligar.</p>
-        <div class="vd-meter" id="micMeterBox" hidden>
-          <span class="hint">Seu microfone agora</span>
-          <div class="vd-meter-bar" aria-hidden="true"><span id="micMeter"></span></div>
+      </section>
+
+      <section class="vd-section">
+        <div class="vd-row">
+          <h3 id="gateLabel">Sensibilidade do microfone</h3>
+          <label class="vd-check"><input type="checkbox" id="gateAuto"> Automática</label>
         </div>
+        <div class="vd-meter" id="micMeterBox" hidden>
+          <div class="vd-meter-bar" aria-hidden="true"><span id="micMeter"></span><i id="gateMark"></i></div>
+        </div>
+        <div class="vd-slider">
+          <input type="range" id="gateDb" min="-80" max="0" step="1" aria-labelledby="gateLabel" aria-describedby="gateHint">
+          <span id="gateValue" class="vd-value"></span>
+        </div>
+        <p class="hint" id="gateHint"></p>
+      </section>
+
+      <section class="vd-section">
+        <h3 id="duckLabel">Atenuação</h3>
+        <p class="hint">Abaixa o som das transmissões (o jogo que os outros estão mostrando) enquanto alguém fala na voz.</p>
+        <div class="vd-slider">
+          <input type="range" id="duckAmount" min="0" max="100" step="5" aria-labelledby="duckLabel">
+          <span id="duckValue" class="vd-value"></span>
+        </div>
+        <label class="vd-check"><input type="checkbox" id="duckSelf"> Abaixar também quando eu falo</label>
       </section>
 
       <section class="vd-section">
