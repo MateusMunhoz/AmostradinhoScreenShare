@@ -5,6 +5,10 @@ const os = require('os');
 const { spawn, execFile } = require('child_process');
 const { startServer, stopServer } = require('./signaling');
 const github = require('./github');
+const { SelfVPN } = require('./selfvpn/client');
+const { safeStorage } = require('electron');
+let selfvpn = null;
+let selfvpnRoomActive = false;
 
 // Usa os IPs reais (26.x da Radmin) nos candidatos WebRTC em vez de endereços .local.
 // No Windows 10, a captura moderna do Windows (a que o Chromium usa) desenha uma borda amarela em volta
@@ -770,6 +774,18 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  selfvpn = new SelfVPN({ directory: app.getPath('userData'), bin: BIN, safeStorage });
+  for (const action of ['status', 'connect', 'disconnect']) {
+    ipcMain.handle(`selfvpn-${action}`, async (event, invite) => {
+      if (event.sender !== mainWin?.webContents || event.senderFrame !== event.sender.mainFrame) return { ok: false, error: 'Origem não autorizada.' };
+      try {
+        if (action !== 'status' && selfvpnRoomActive) throw new Error('Saia da sala antes de alterar a VPN.');
+        if (action === 'connect' && typeof invite !== 'string') throw new Error('Convite inválido.');
+        if (action !== 'status' && (process.platform !== 'win32' || os.machine() !== 'x86_64')) throw new Error('Esta versão da VPN requer Windows x64.');
+        return { ok: true, ...await selfvpn[action](invite) };
+      } catch (err) { return { ok: false, error: err.message }; }
+    });
+  }
   // Quando a página pede getDisplayMedia, entregamos a tela escolhida + áudio do sistema
   session.defaultSession.setDisplayMediaRequestHandler(async (_request, callback) => {
     const sources = await desktopCapturer.getSources({ types: ['screen', 'window'] });
@@ -820,10 +836,10 @@ app.whenReady().then(() => {
     for (const [name, addrs] of Object.entries(os.networkInterfaces())) {
       for (const a of addrs || []) {
         const v4 = a.family === 'IPv4' || a.family === 4;
-        if (v4 && !a.internal) list.push({ name, address: a.address, radmin: a.address.startsWith('26.') });
+        if (v4 && !a.internal) list.push({ name, address: a.address, selfvpn: name === 'TelaP2PSelfVPN', radmin: a.address.startsWith('26.') });
       }
     }
-    return list.sort((a, b) => b.radmin - a.radmin);
+    return list.sort((a, b) => Number(b.selfvpn) - Number(a.selfvpn) || b.radmin - a.radmin);
   });
 
   setPriority('above'); // a página manda a escolha salva assim que abre
@@ -841,7 +857,7 @@ app.whenReady().then(() => {
   ipcMain.handle('pip-size', (_e, id, key) => setPipSize(id, key));
   ipcMain.handle('pip-opacity', (_e, id, v) => setPipOpacity(id, v));
   ipcMain.handle('pip-group', (_e, id, patch) => setPipGroup(id, patch));
-  ipcMain.handle('room-keys', (_e, on) => setRoomKeys(!!on));
+  ipcMain.handle('room-keys', (_e, on) => { selfvpnRoomActive = !!on; return setRoomKeys(!!on); });
   ipcMain.handle('get-shortcuts', () => ({ ...keys() }));
   ipcMain.handle('set-shortcut', (_e, action, accel) => setShortcut(String(action), accel));
   ipcMain.handle('ptt', (_e, vk) => setPtt(vk));

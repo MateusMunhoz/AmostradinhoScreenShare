@@ -614,3 +614,8 @@ fieldset.group > legend { margin-bottom: 10px; }
 .people-pop .hint { margin: 0; }
 .people-pop .hint:empty { display: none; }
 .people-pop .addr { background: var(--sunken); }
+.home-actions { gap: 16px; flex-direction: column; align-items: stretch; overflow-y: auto; }
+.home-actions .home-card { flex-shrink: 0; }
+.selfvpn-card { gap: 12px; padding: 22px; }
+.selfvpn-card h2 { font-size: 18px; margin: 0; }
+.selfvpn-card .hint { line-height: 1.5; margin: 0; }

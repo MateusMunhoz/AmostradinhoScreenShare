@@ -2,6 +2,8 @@
 node_modules/
 .npm-cache/
 .test-profile/
+.vpn-build/
+selfvpn.json*
 
 # Gerado pelo npm run dist / npm run publicar (o .exe vai nas Releases do GitHub)
 dist/

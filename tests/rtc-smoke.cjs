@@ -75,16 +75,39 @@ app.whenReady().then(async () => {
     console.log('PASS: mute, saída e liberação do microfone/conexões');
     // Carrega a interface real e o preload real; serviços nativos ficam simulados.
     for (const [channel, value] of Object.entries({
-      'get-ips': [], 'get-version': '1.8.3', 'github-check': { ok: false },
+      'get-ips': [], 'get-version': '1.8.9', 'github-check': { ok: false },
       'set-priority': true, 'stats-start': true, 'stats-stop': true,
       'stop-app-audio': true, 'stop-server': true,
+      'room-keys': true, 'ptt': true,
     })) ipcMain.handle(channel, () => value);
+    let vpnState = { ok: true, installed: true, configured: false, state: 'disconnected', address: '' };
+    ipcMain.handle('selfvpn-status', () => vpnState);
+    ipcMain.handle('selfvpn-connect', () => {
+      vpnState = { ...vpnState, configured: true, state: 'unreachable', address: '10.77.0.2' };
+      return vpnState;
+    });
+    ipcMain.handle('selfvpn-disconnect', () => { vpnState = { ...vpnState, state: 'disconnected', address: '' }; return vpnState; });
     const ui = new BrowserWindow({ show: false, width: 1200, height: 780,
       webPreferences: { preload: path.join(__dirname, '..', 'preload.js'), backgroundThrottling: false } });
     windows.push(ui);
     const uiErrors = [];
     ui.webContents.on('console-message', (_event, level, message) => { if (level === 3) uiErrors.push(message); });
     await ui.loadFile(path.join(__dirname, '..', 'index.html'));
+    await run(ui, `$('vpnInvite').value = 'selfvpn:teste'; $('vpnConnect').click()`);
+    await sleep(150);
+    assert.match(await run(ui, "$ ('vpnStatus').textContent"), /servidor sem resposta/);
+    assert.equal(await run(ui, "$ ('vpnInvite').value"), '');
+    assert.equal(await run(ui, 'document.documentElement.scrollWidth > innerWidth'), false);
+    const vpnScreenshot = await ui.webContents.capturePage();
+    fs.writeFileSync(path.join(app.getPath('userData'), 'selfvpn-preview.png'), vpnScreenshot.toPNG());
+    await run(ui, "$ ('vpnDisconnect').click()");
+    await sleep(150);
+    assert.match(await run(ui, "$ ('vpnStatus').textContent"), /Desconectado/);
+    ui.setSize(820, 560);
+    await sleep(100);
+    assert.equal(await run(ui, 'document.documentElement.scrollWidth > innerWidth'), false);
+    ui.setSize(1200, 780);
+    console.log('PASS: interface VPN distingue servidor inacessível, desconecta e cabe na janela mínima');
     await run(ui, `
       $('name').value = 'Teste local';
       enterRoom({ id: '1', features: ['chat', 'voice'], members: [], chat: [] }, false, '127.0.0.1', 8765);
