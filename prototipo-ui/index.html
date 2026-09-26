@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Redesign da Tela P2P</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#141517;color:#E6E7EA;font-family:"Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;font-size:15px;line-height:1.55;padding:56px 24px;-webkit-font-smoothing:antialiased}
+main{max-width:720px;margin:0 auto}
+h1{font-size:26px;font-weight:600;margin-bottom:10px}
+.lead{color:#B9BCC3;margin-bottom:36px}
+.row{display:grid;grid-template-columns:40px minmax(0,1fr);gap:4px 16px;padding:22px 0;border-top:1px solid #2D2F34}
+.row:last-of-type{border-bottom:1px solid #2D2F34}
+.row .l{font-size:22px;font-weight:600;color:#8F939B;line-height:1.2}
+.row h2{font-size:17px;font-weight:600}
+.row p{color:#B9BCC3;margin-top:4px}
+.row p b{color:#E6E7EA;font-weight:600}
+.row a{display:inline-block;margin-top:10px;color:#E6E7EA;text-underline-offset:4px}
+.row a:hover{color:#fff}
+h3{font-size:15px;font-weight:600;margin:40px 0 8px}
+ul{color:#B9BCC3;padding-left:20px}
+li{margin:4px 0}
+.foot{margin-top:28px;color:#8F939B;font-size:13.5px}
+code{font-family:"Cascadia Mono",Consolas,monospace;font-size:13px}
+</style>
+</head>
+<body>
+<main>
+  <h1>Três jeitos de desenhar a sala</h1>
+  <p class="lead">A mesma tela, com as mesmas pessoas e mensagens, em três direções. Cada uma parte de uma
+  referência concreta, não de um estilo genérico. São protótipos para escolher uma direção, não o app.</p>
+
+  <div class="row">
+    <span class="l">A</span>
+    <div>
+      <h2>Ferramenta nativa</h2>
+      <p><b>Referência:</b> programas de transmissão para Windows, como o OBS, e o próprio Windows 11. Fonte do
+      sistema, azul do Windows só para o que está ao vivo, números em fonte fixa só onde se comparam números.
+      Parece parte do computador.</p>
+      <a href="console.html">Abrir o conceito A</a>
+    </div>
+  </div>
+
+  <div class="row">
+    <span class="l">B</span>
+    <div>
+      <h2>Lan house moderna</h2>
+      <p><b>Referência:</b> a interface do Steam e do CS 1.6 de 2004, trazida para hoje. Fica o verde-oliva com
+      amarelo, a faixa de título em cima de cada tela, a lista de pessoas em colunas como a lista de servidores e o
+      chat no formato do console do jogo. Muda o resto: fonte moderna, cantos levemente arredondados, mais espaço
+      e ícones na barra.</p>
+      <a href="lanhouse.html">Abrir o conceito B</a> &nbsp; <a href="lanhouse-classico.html">ver a versão clássica, fiel a 2004</a>
+    </div>
+  </div>
+
+  <div class="row">
+    <span class="l">C</span>
+    <div>
+      <h2>Transcrição</h2>
+      <p><b>Referência:</b> um livro. Fonte com serifa (Sitka, que vem no Windows), o estado da sala escrito em
+      frase, legenda embaixo de cada tela e o horário na margem do chat. Calmo, para quem fica horas na call.</p>
+      <a href="editorial.html">Abrir o conceito C</a>
+    </div>
+  </div>
+
+  <h3>O que ficou de fora de propósito</h3>
+  <ul>
+    <li>Rótulos em caixa alta com letras espaçadas e títulos pequenos em cima de títulos.</li>
+    <li>Travessão no texto, setas nos botões, roxo e lavanda como cor de destaque.</li>
+    <li>Brilho, sombra colorida, luz piscando e borda colorida só de um lado.</li>
+    <li>Manchas de gradiente no lugar do vídeo e quadrados com iniciais no lugar das pessoas.</li>
+    <li>Enfeites de fantasia: cantos de câmera, linhas de TV antiga, barrinhas de equalizador.</li>
+  </ul>
+
+  <p class="foot">Nos protótipos, o botão de pessoas abre a lista da sala e o aviso de atualização some em “Depois”.
+  Depois da escolha, a pasta <code>prototipo-ui/</code> é apagada e o conceito escolhido vira o <code>styles.css</code> do app.</p>
+</main>
+</body>
+</html>
