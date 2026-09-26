@@ -469,7 +469,67 @@ function setPipEdit(on) {
   for (const p of pips.values()) {
     if (!p.win.isDestroyed()) p.win.setIgnoreMouseEvents(!pipEdit); // travada: o clique atravessa
   }
+  // O chat por cima do jogo entra e sai do modo de ajuste junto; só nele recebe o teclado (para responder)
+  if (chatWin && !chatWin.isDestroyed()) {
+    chatWin.setIgnoreMouseEvents(!pipEdit);
+    chatWin.setFocusable(pipEdit);
+  }
   sendMain({ type: 'edit', on: pipEdit, opacity: pipOpacities(), group: group() });
+}
+
+// O atalho de ajuste vale enquanto houver janela flutuante ou o chat por cima do jogo
+function holdEditKey() {
+  if (!globalShortcut.isRegistered(PIP_KEY) && !globalShortcut.register(PIP_KEY, () => setPipEdit(!pipEdit))) {
+    sendMain({ type: 'shortcut-busy' });
+  }
+}
+function releaseEditKey() {
+  if (!pips.size && !(chatWin && !chatWin.isDestroyed())) globalShortcut.unregister(PIP_KEY);
+}
+
+// ---------- Chat por cima do jogo ----------
+// Janela transparente, sempre por cima, sem foco e com o clique atravessando (menos no modo de ajuste).
+// Ctrl+Shift+O esconde e mostra, de dentro do jogo. Lembra a posição e o tamanho.
+const CHAT_KEY = 'CommandOrControl+Shift+O';
+let chatWin = null;
+const chatFile = () => path.join(app.getPath('userData'), 'janela-chat.json');
+function chatBounds() {
+  try {
+    const b = JSON.parse(fs.readFileSync(chatFile(), 'utf8'));
+    const ok = ['x', 'y', 'width', 'height'].every((k) => Number.isFinite(b[k])) && b.width >= 240 && b.height >= 140;
+    const visible = ok && screen.getAllDisplays().some(({ workArea: w }) =>
+      b.x < w.x + w.width - 40 && b.x + b.width > w.x + 40 && b.y < w.y + w.height - 40 && b.y + b.height > w.y + 40);
+    if (visible) return { x: b.x, y: b.y, width: b.width, height: b.height };
+  } catch {}
+  const wa = screen.getPrimaryDisplay().workArea;
+  return { width: 380, height: 300, x: wa.x + 24, y: wa.y + wa.height - 300 - 24 };
+}
+function setupChatOverlay(child) {
+  chatWin = child;
+  child.setAlwaysOnTop(true, 'screen-saver');
+  let saveTimer = null;
+  const save = () => {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => { if (!child.isDestroyed()) fs.writeFile(chatFile(), JSON.stringify(child.getBounds()), () => {}); }, 400);
+  };
+  child.on('moved', save);
+  child.on('resized', save);
+  holdEditKey();
+  if (!globalShortcut.isRegistered(CHAT_KEY)) {
+    const ok = globalShortcut.register(CHAT_KEY, () => {
+      if (!chatWin || chatWin.isDestroyed()) return;
+      if (chatWin.isVisible()) chatWin.hide();
+      else chatWin.showInactive();
+    });
+    if (!ok) sendMain({ type: 'chat-key-busy' });
+  }
+  child.on('closed', () => {
+    if (chatWin === child) chatWin = null;
+    globalShortcut.unregister(CHAT_KEY);
+    releaseEditKey();
+    sendMain({ type: 'chat-closed' });
+  });
+  setPipEdit(true); // abre no modo de ajuste: posicione e trave
 }
 
 function setupPip(child, id, slot) {
@@ -495,12 +555,10 @@ function setupPip(child, id, slot) {
     const other = [...pips.values()].find((o) => o !== p && !o.win.isDestroyed());
     if (other) arrangePips([...pips].find(([, o]) => o === other)[0]);
   }
-  if (!globalShortcut.isRegistered(PIP_KEY) && !globalShortcut.register(PIP_KEY, () => setPipEdit(!pipEdit))) {
-    sendMain({ type: 'shortcut-busy' });
-  }
+  holdEditKey();
   child.on('closed', () => {
     if (pips.get(id) === p) pips.delete(id);
-    if (!pips.size) globalShortcut.unregister(PIP_KEY);
+    releaseEditKey();
     sendMain({ type: 'closed', id });
   });
   setPipEdit(true); // abre no modo de ajuste (todas juntas): posicione e trave
@@ -548,6 +606,18 @@ function createWindow() {
   const pipId = (frameName) => (/^tela-pip-([\w-]{1,40})$/.exec(frameName) || [])[1];
   const opening = new Map(); // id -> vaga escolhida ao abrir
   win.webContents.setWindowOpenHandler(({ frameName }) => {
+    if (frameName === 'tela-chat') {
+      if (chatWin && !chatWin.isDestroyed()) return { action: 'deny' };
+      return {
+        action: 'allow',
+        overrideBrowserWindowOptions: {
+          ...chatBounds(), minWidth: 240, minHeight: 140,
+          frame: false, transparent: true, backgroundColor: '#00000000', alwaysOnTop: true, skipTaskbar: true,
+          focusable: false, resizable: true, minimizable: false, maximizable: false, fullscreenable: false, hasShadow: false,
+          title: 'Tela P2P · chat da sala',
+        },
+      };
+    }
     const id = pipId(frameName);
     if (!id || livePip(id)) return { action: 'deny' };
     const slot = freeSlot();
@@ -563,13 +633,17 @@ function createWindow() {
     };
   });
   win.webContents.on('did-create-window', (child, { frameName }) => {
+    if (frameName === 'tela-chat') return setupChatOverlay(child);
     const id = pipId(frameName);
     if (!id) return;
     const slot = opening.has(id) ? opening.get(id) : freeSlot();
     opening.delete(id);
     setupPip(child, id, slot);
   });
-  win.on('closed', () => { for (const p of pips.values()) if (!p.win.isDestroyed()) p.win.close(); });
+  win.on('closed', () => {
+    for (const p of pips.values()) if (!p.win.isDestroyed()) p.win.close();
+    if (chatWin && !chatWin.isDestroyed()) chatWin.close();
+  });
   win.loadFile(path.join(__dirname, 'index.html'));
 }
 

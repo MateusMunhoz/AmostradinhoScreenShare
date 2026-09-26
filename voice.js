@@ -4,8 +4,10 @@
 class VoiceChat {
   constructor({ send, changed, error, media = navigator.mediaDevices,
     makePeer = () => new RTCPeerConnection({ iceServers: [] }),
-    makeAudio = () => new Audio(), token = () => crypto.randomUUID() }) {
-    Object.assign(this, { send, changed, error, media, makePeer, makeAudio, token });
+    makeAudio = () => new Audio(), token = () => crypto.randomUUID(), mixer = null }) {
+    // mixer (opcional): o app toca as vozes por ele, com volume por pessoa e medidor de quem fala.
+    // Sem mixer, cada voz toca direto no seu <audio>.
+    Object.assign(this, { send, changed, error, media, makePeer, makeAudio, token, mixer });
     this.peers = new Map();
     this.members = new Map();
     this.epoch = 0;
@@ -32,6 +34,7 @@ class VoiceChat {
       } });
       if (epoch !== this.epoch) { stream.getTracks().forEach(t => t.stop()); return; }
       this.stream = stream;
+      this.mixer?.local(stream);
       this.session = this.token();
       this.muted = false;
       for (const track of stream.getAudioTracks()) track.onended = () => {
@@ -57,9 +60,11 @@ class VoiceChat {
     this.session = '';
     if (this.stream) for (const track of this.stream.getTracks()) { track.onended = null; track.stop(); }
     this.stream = null;
+    this.mixer?.local(null);
     for (const id of [...this.peers.keys()]) this.close(id);
     this.muted = false;
     this.deafened = false;
+    this.mixer?.deafen(false);
     if (notify && wasActive) this.announce();
     this.changed();
   }
@@ -72,7 +77,8 @@ class VoiceChat {
   }
   deafen() {
     this.deafened = !this.deafened;
-    for (const p of this.peers.values()) p.audio.muted = this.deafened;
+    if (this.mixer) this.mixer.deafen(this.deafened);
+    else for (const p of this.peers.values()) p.audio.muted = this.deafened;
     this.changed();
   }
   update(id, session, muted) {
@@ -106,7 +112,8 @@ class VoiceChat {
     const pc = this.makePeer();
     const audio = this.makeAudio();
     audio.autoplay = true;
-    audio.muted = this.deafened;
+    // Com mixer, o <audio> fica mudo (só mantém a voz chegando); o som sai pelo mixer
+    audio.muted = this.mixer ? true : this.deafened;
     const p = { pc, audio, session, call, chain: Promise.resolve(), candidates: [], status: 'conectando' };
     this.peers.set(id, p);
     this.stream.getAudioTracks().forEach(t => pc.addTrack(t, this.stream));
@@ -115,6 +122,7 @@ class VoiceChat {
     };
     pc.ontrack = e => {
       audio.srcObject = e.streams[0] || new MediaStream([e.track]);
+      this.mixer?.attach(id, audio.srcObject);
       audio.play().catch(() => {
         if (this.peers.get(id) === p) this.error('Não foi possível reproduzir a voz. Saia e entre na voz novamente.');
       });
@@ -172,6 +180,7 @@ class VoiceChat {
     p.pc.close();
     p.audio.pause();
     p.audio.srcObject = null;
+    this.mixer?.detach(id);
   }
 }
 if (typeof module !== 'undefined') module.exports = { VoiceChat };

@@ -135,9 +135,58 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 }
 .dock .btn.icon { width: 40px; height: 40px; }
 .dock-spacer { flex: 1; }
-.voice-members { list-style: none; margin: 0; padding: 0; font-size: 12px; overflow-wrap: anywhere; max-height: 130px; overflow-y: auto; }
-.voice-members li { padding: 4px 0; }
-#voiceMute[aria-pressed="true"], #voiceDeafen[aria-pressed="true"] { border-color: #e8ab55; color: #e8ab55; }
+/* Quem está falando: anel verde na bolinha, barrinhas que mexem ao lado do nome e borda no vídeo */
+.eq { display: none; align-items: flex-end; gap: 2px; height: 12px; margin-left: 6px; vertical-align: -1px; }
+.eq > span { width: 3px; height: 100%; border-radius: 1px; background: var(--ok); transform-origin: bottom; animation: eq .9s ease-in-out infinite; }
+.eq > span:nth-child(2) { animation-delay: .25s; }
+.eq > span:nth-child(3) { animation-delay: .5s; }
+@keyframes eq { 0%, 100% { transform: scaleY(.3); } 50% { transform: scaleY(1); } }
+@media (prefers-reduced-motion: reduce) { .eq > span { animation: none; transform: scaleY(.7); } }
+.speaking .eq, .voice-me .eq { display: inline-flex; }
+.speaking > .avatar, .avatar.speaking, .voice-avatar.speaking .avatar { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--ok); }
+.tile.speaking::after { content: ""; position: absolute; inset: 0; border: 2px solid var(--ok); border-radius: inherit; pointer-events: none; }
+
+#overlayToggle.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+
+/* Voz na barra de baixo */
+.voice-dock { display: flex; align-items: center; gap: 6px; }
+.voice-dock.active { padding: 3px 3px 3px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
+.voice-dock .btn.icon { width: 36px; height: 36px; }
+.voice-dock #voiceJoin:not(.icon) svg { width: 17px; height: 17px; margin-right: 6px; }
+.voice-me { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); margin-right: 4px; }
+.voice-me .eq { margin-left: 0; }
+.voice-me:not(.speaking) .eq > span { animation: none; transform: scaleY(.3); background: var(--field-line); }
+#voiceMute[aria-pressed="true"], #voiceDeafen[aria-pressed="true"] { border-color: var(--warn); color: var(--warn); background: rgba(232, 176, 75, .1); }
+.voice-leave { border-color: rgba(255, 95, 95, .45) !important; color: var(--live) !important; background: transparent !important; }
+.voice-avatars { display: flex; align-items: center; gap: 2px; margin-right: 4px; }
+.voice-avatar { width: 34px; height: 34px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: transparent; cursor: pointer; }
+.voice-avatar .avatar { width: 26px; height: 26px; font-size: 12px; }
+.voice-avatar.mic-off .avatar { opacity: .55; }
+.voice-avatar:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* Lista "Na sala": microfone desligado e botão de volume da pessoa */
+.mic-off-icon { display: grid; place-items: center; color: var(--warn); }
+.mic-off-icon svg, .vol-btn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.vol-btn { display: inline-flex; align-items: center; gap: 5px; padding: 0 8px; font-variant-numeric: tabular-nums; color: var(--muted); }
+.vol-btn.changed, .vol-btn[aria-expanded="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+
+/* Cartão da pessoa */
+.person-card {
+  position: fixed; z-index: 30; width: 300px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px;
+  padding: 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel-2); box-shadow: 0 12px 32px rgba(0, 0, 0, .5);
+}
+.person-card .pc-head { display: flex; align-items: center; gap: 12px; }
+.person-card .pc-head .avatar { width: 40px; height: 40px; font-size: 16px; background: var(--person); }
+.person-card .pc-head div { display: flex; flex-direction: column; }
+.person-card .pc-head strong { font-size: 15px; }
+.person-card .pc-head span { font-size: 12px; color: var(--muted); }
+.person-card .pc-slider { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.person-card .pc-slider > span { display: flex; justify-content: space-between; }
+.person-card .pc-val { color: var(--muted); font-variant-numeric: tabular-nums; }
+.person-card input[type="range"] { accent-color: var(--person); }
+.person-card .pc-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.person-card .warn-on { border-color: var(--warn); color: var(--warn); background: rgba(232, 176, 75, .12); }
+.person-card .hint { margin: 0; font-size: 12px; line-height: 1.45; }
 .dock-share { display: inline-flex; align-items: center; gap: 8px; height: 40px; }
 .dock-share svg, .addr-pill svg, .pip-chip svg, .jump-new svg, .chat-drop svg {
   fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none;

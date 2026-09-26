@@ -95,7 +95,7 @@ app.whenReady().then(async () => {
     `);
     const result = await run(ui, `(() => {
       $('voiceMute').click(); $('voiceDeafen').click();
-      return { joined: $('voiceJoin').textContent, mic: $('voiceMute').getAttribute('aria-pressed'),
+      return { joined: $('voiceJoin').getAttribute('aria-label'), mic: $('voiceMute').getAttribute('aria-pressed'),
         sound: $('voiceDeafen').getAttribute('aria-pressed'), visible: !$('room').hidden };
     })()`);
     assert.deepEqual(result, { joined: 'Sair da voz', mic: 'true', sound: 'true', visible: true });

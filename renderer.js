@@ -80,32 +80,292 @@ function send(msg) {
 }
 function sendSignal(to, data) { send({ type: 'signal', to, data }); }
 
-const voice = new VoiceChat({ send, changed: renderVoice, error: message => toast(message, 'error') });
+// ---------- Volume por pessoa e quem está falando ----------
+// Cada pessoa tem um volume de voz (0 a 200%), um da transmissão (0 a 100%) e "silenciar para mim".
+// Fica guardado pelo nome, então vale de novo na próxima sala.
+let volumes = {};
+try { volumes = JSON.parse(load('volumes', '{}')) || {}; } catch { volumes = {}; }
+function volOf(id) {
+  return { voice: 100, screen: 100, muted: false, ...(volumes[nameOf(id)] || {}) };
+}
+function setVol(id, patch) {
+  const name = nameOf(id);
+  const v = { ...volOf(id), ...patch };
+  if (v.voice === 100 && v.screen === 100 && !v.muted) delete volumes[name];
+  else volumes[name] = v;
+  save('volumes', JSON.stringify(volumes));
+  mixer.apply(id);
+  applyScreenVolume(id);
+  renderMembers();
+  renderVoiceAvatars();
+}
+// O som da transmissão sai pelo <video> do quadro: o volume dele segue o da pessoa
+function applyScreenVolume(id) {
+  const t = state.in.get(id)?.tile;
+  if (!t) return;
+  const v = volOf(id);
+  t.video.volume = v.screen / 100;
+  t.vol.value = String(v.screen / 100);
+  if (!t.paused) t.video.muted = v.muted;
+  else t.mutedBefore = v.muted;
+  t.syncMute();
+}
+
+// As vozes tocam por aqui: cada uma com o seu volume (acima de 100% também) e um medidor de nível
+const mixer = {
+  ctx: null,
+  nodes: new Map(),   // id -> { src, gain, an }
+  localNode: null,    // meu microfone: só o medidor
+  deafened: false,
+  ensure() {
+    if (!this.ctx) this.ctx = new AudioContext();
+    if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
+    return this.ctx;
+  },
+  meter(src) {
+    const an = this.ctx.createAnalyser();
+    an.fftSize = 2048; // ~43 ms de som por medida: não perde sílabas curtas
+    src.connect(an);
+    return an;
+  },
+  attach(id, stream) {
+    this.detach(id);
+    if (!stream || !stream.getAudioTracks().length) return;
+    const ctx = this.ensure();
+    const src = ctx.createMediaStreamSource(stream);
+    const gain = ctx.createGain();
+    src.connect(gain);
+    gain.connect(ctx.destination);
+    this.nodes.set(id, { src, gain, an: this.meter(src) });
+    this.apply(id);
+    startSpeakLoop();
+  },
+  detach(id) {
+    const n = this.nodes.get(id);
+    if (!n) return;
+    n.src.disconnect();
+    n.gain.disconnect();
+    this.nodes.delete(id);
+  },
+  local(stream) {
+    if (this.localNode) { this.localNode.src.disconnect(); this.localNode = null; }
+    if (!stream) return;
+    const ctx = this.ensure();
+    const src = ctx.createMediaStreamSource(stream);
+    this.localNode = { src, an: this.meter(src) };
+    startSpeakLoop();
+  },
+  deafen(on) {
+    this.deafened = !!on;
+    for (const id of this.nodes.keys()) this.apply(id);
+  },
+  apply(id) {
+    const n = this.nodes.get(id);
+    if (!n) return;
+    const v = volOf(id);
+    n.gain.gain.value = this.deafened || v.muted ? 0 : v.voice / 100;
+  },
+  level(an) {
+    const buf = new Float32Array(an.fftSize);
+    an.getFloatTimeDomainData(buf);
+    let sum = 0;
+    for (const x of buf) sum += x * x;
+    return Math.sqrt(sum / buf.length);
+  },
+};
+
+// Falando: nível acima do limite nos últimos 350 ms (o anel não pisca entre uma sílaba e outra)
+let speaking = new Set();
+const lastLoud = new Map();
+let speakTimer = null;
+function startSpeakLoop() {
+  if (!speakTimer) speakTimer = setInterval(tickSpeak, 100);
+}
+function tickSpeak() {
+  const now = performance.now();
+  const next = new Set();
+  const check = (id, an, silent) => {
+    if (!silent && mixer.level(an) > 0.015) lastLoud.set(id, now);
+    if (now - (lastLoud.get(id) || 0) < 350) next.add(id);
+  };
+  for (const [id, n] of mixer.nodes) check(id, n.an, voice.members.get(id)?.muted);
+  if (mixer.localNode && state.myId) check(state.myId, mixer.localNode.an, voice.muted);
+  if (!mixer.nodes.size && !mixer.localNode) { clearInterval(speakTimer); speakTimer = null; }
+  if (next.size === speaking.size && [...next].every((id) => speaking.has(id))) return;
+  speaking = next;
+  renderSpeaking();
+}
+
+// Marca quem fala em todo lugar que mostra a pessoa: lista, barra, quadro de vídeo e janelas flutuantes
+function renderSpeaking() {
+  for (const el of document.querySelectorAll('[data-person]')) el.classList.toggle('speaking', speaking.has(el.dataset.person));
+  for (const [id, link] of state.in) link.tile.el.classList.toggle('speaking', speaking.has(id));
+  renderPipSpeaking();
+  renderChatOverlay();
+}
+
+const inVoice = (id) => (id === state.myId ? !!voice.session : !!voice.members.get(id)?.session);
+
+const voice = new VoiceChat({ send, changed: renderVoice, error: message => toast(message, 'error'), mixer });
 function renderVoice() {
   const active = !!voice.session;
-  $('voiceJoin').disabled = !voice.supported;
-  $('voiceJoin').textContent = voice.pending ? 'Cancelar entrada' : active ? 'Sair da voz' : 'Entrar na voz';
-  $('voiceMute').hidden = $('voiceDeafen').hidden = !active;
-  $('voiceMute').textContent = voice.muted ? 'Ativar mic' : 'Silenciar mic';
+  const join = $('voiceJoin');
+  join.disabled = !voice.supported;
+  $('voiceDock').classList.toggle('active', active || voice.pending);
+  if (active || voice.pending) {
+    join.className = 'btn icon voice-leave';
+    setIcon(join, 'phoneOff', voice.pending ? 'Cancelar entrada na voz' : 'Sair da voz');
+  } else {
+    join.className = 'btn';
+    join.innerHTML = ICON.mic;
+    join.append('Entrar na voz');
+    join.title = !voice.supported ? 'O host precisa da versão 1.8.4 ou mais nova para ter voz' : 'Liga o microfone e entra na conversa por voz';
+    join.removeAttribute('aria-label');
+  }
+  $('voiceMute').hidden = $('voiceDeafen').hidden = $('voiceMe').hidden = !active;
+  setIcon($('voiceMute'), voice.muted ? 'micOff' : 'mic', voice.muted ? 'Ligar o microfone' : 'Desligar o microfone');
   $('voiceMute').setAttribute('aria-pressed', String(voice.muted));
-  $('voiceDeafen').textContent = voice.deafened ? 'Ouvir vozes' : 'Silenciar vozes';
+  setIcon($('voiceDeafen'), voice.deafened ? 'headphonesOff' : 'headphones', voice.deafened ? 'Ouvir as vozes' : 'Silenciar as vozes');
   $('voiceDeafen').setAttribute('aria-pressed', String(voice.deafened));
-  $('voiceStatus').textContent = !voice.supported ? 'Quem criou a sala precisa atualizar o app para habilitar a voz.'
-    : voice.pending ? 'Aguardando acesso ao microfone…'
-    : active ? `${voice.muted ? 'Microfone silenciado.' : 'Microfone ligado.'} ${voice.deafened ? 'Vozes silenciadas; seu microfone não é alterado.' : 'A conversa continua sem transmitir tela.'}`
-    : 'Entre na voz para conversar. O microfone só liga ao entrar.';
-  const list = $('voiceMembers');
-  list.replaceChildren();
-  const row = text => { const li = document.createElement('li'); li.textContent = text; list.append(li); };
-  if (active) row(`${getName()} (você) · ${voice.muted ? 'mic silenciado' : 'na voz'}`);
-  for (const [id, m] of voice.members) if (m.session) {
-    const status = active ? voice.peers.get(id)?.status || 'conectando' : 'na voz';
-    row(`${nameOf(id)} · ${m.muted ? 'mic silenciado · ' : ''}${status}`);
+  if (state.myId) $('voiceMe').dataset.person = state.myId;
+  renderVoiceAvatars();
+  if (state.myId) renderMembers();
+  if (!$('personCard').hidden) renderPersonCard();
+}
+
+// Painel recolhido: quem está na voz fica na barra; clicar abre o volume da pessoa
+function renderVoiceAvatars() {
+  const box = $('voiceAvatars');
+  box.replaceChildren();
+  const ids = [...voice.members].filter(([id, m]) => m.session && state.members.has(id)).map(([id]) => id);
+  box.hidden = chat.open || !ids.length;
+  for (const id of ids) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'voice-avatar';
+    b.dataset.person = id;
+    b.style.setProperty('--person', personColor(id));
+    b.append(avatar(nameOf(id)));
+    const label = `${nameOf(id)}${voice.members.get(id).muted ? ', microfone desligado' : ''}. Mudar o volume`;
+    b.title = label;
+    b.setAttribute('aria-label', label);
+    b.classList.toggle('mic-off', !!voice.members.get(id).muted);
+    b.classList.toggle('speaking', speaking.has(id));
+    b.onclick = (e) => openPersonCard(id, b, e.detail === 0);
+    box.append(b);
   }
 }
+
+// ---------- Cartão da pessoa: volume da voz, da transmissão e silenciar para mim ----------
+function openPersonCard(id, anchor, byKeyboard = false) {
+  const card = $('personCard');
+  if (!card.hidden && card.dataset.for === id) return closePersonCard();
+  card.dataset.for = id;
+  card.style.setProperty('--person', personColor(id));
+  renderPersonCard();
+  card.hidden = false;
+  const r = anchor.getBoundingClientRect();
+  const w = card.offsetWidth, h = card.offsetHeight;
+  const left = Math.min(Math.max(8, r.right - w), innerWidth - w - 8);
+  const top = r.bottom + 6 + h < innerHeight - 8 ? r.bottom + 6 : Math.max(8, r.top - 6 - h);
+  card.style.left = `${left}px`;
+  card.style.top = `${top}px`;
+  // Pelo teclado, o foco vai para o controle; com o mouse, fica onde estava
+  if (byKeyboard) card.querySelector('input, button')?.focus();
+}
+function closePersonCard() {
+  const card = $('personCard');
+  if (card.hidden) return;
+  card.hidden = true;
+  delete card.dataset.for;
+}
+function renderPersonCard() {
+  const card = $('personCard');
+  const id = card.dataset.for;
+  if (!id || !state.members.has(id)) return closePersonCard();
+  const v = volOf(id);
+  const name = nameOf(id);
+  const watching = state.in.has(id);
+  const focused = document.activeElement && card.contains(document.activeElement) ? document.activeElement.getAttribute('aria-label') : null;
+  card.replaceChildren();
+  const head = document.createElement('div');
+  head.className = 'pc-head';
+  const who = document.createElement('div');
+  const strong = document.createElement('strong');
+  strong.textContent = name;
+  const sub = document.createElement('span');
+  sub.textContent = v.muted ? 'Silenciada para você' : [inVoice(id) && 'Na voz', state.members.get(id)?.sharing && 'Transmitindo'].filter(Boolean).join(' · ') || 'Na sala';
+  who.append(strong, sub);
+  const av = avatar(name);
+  av.dataset.person = id;
+  av.classList.toggle('speaking', speaking.has(id));
+  head.append(av, who);
+  card.append(head);
+  const slider = (label, key, max, show) => {
+    if (!show) return;
+    const row = document.createElement('label');
+    row.className = 'pc-slider';
+    const top = document.createElement('span');
+    const text = document.createElement('span');
+    text.textContent = label;
+    const val = document.createElement('span');
+    val.className = 'pc-val';
+    val.textContent = v.muted ? 'mudo' : `${v[key]}%`;
+    top.append(text, val);
+    const input = document.createElement('input');
+    input.type = 'range';
+    input.min = '0'; input.max = String(max); input.step = '5';
+    input.value = String(v[key]);
+    input.setAttribute('aria-label', `${label} de ${name}`);
+    // Enquanto arrasta, só muda o som; o cartão não é redesenhado (o controle não perde o foco)
+    input.oninput = () => {
+      val.textContent = `${input.value}%`;
+      const next = { ...volOf(id), [key]: Number(input.value), muted: false };
+      volumes[name] = next;
+      mixer.apply(id);
+      applyScreenVolume(id);
+    };
+    input.onchange = () => setVol(id, { [key]: Number(input.value), muted: false });
+    row.append(top, input);
+    card.append(row);
+  };
+  slider('Voz', 'voice', 200, inVoice(id));
+  slider('Som da transmissão', 'screen', 100, watching);
+  if (!inVoice(id) && !watching) {
+    const p = document.createElement('p');
+    p.className = 'hint';
+    p.textContent = `${name} não está na voz e você não está assistindo a tela. O volume vale quando entrar.`;
+    card.append(p);
+  }
+  const actions = document.createElement('div');
+  actions.className = 'pc-actions';
+  const mute = document.createElement('button');
+  mute.type = 'button';
+  mute.className = 'btn small' + (v.muted ? ' warn-on' : '');
+  mute.textContent = v.muted ? `Ouvir ${name} de novo` : 'Silenciar para mim';
+  mute.setAttribute('aria-pressed', String(v.muted));
+  mute.onclick = () => { setVol(id, { muted: !v.muted }); renderPersonCard(); card.querySelector('.pc-actions .btn')?.focus(); };
+  const reset = document.createElement('button');
+  reset.type = 'button';
+  reset.className = 'btn small ghost';
+  reset.textContent = 'Voltar para 100%';
+  reset.onclick = () => { setVol(id, { voice: 100, screen: 100, muted: false }); renderPersonCard(); };
+  actions.append(mute, reset);
+  const note = document.createElement('p');
+  note.className = 'hint';
+  note.textContent = `Só muda o que você ouve. ${name} e o resto da sala não percebem.`;
+  card.append(actions, note);
+  if (focused) card.querySelector(`[aria-label="${CSS.escape(focused)}"]`)?.focus();
+}
+document.addEventListener('mousedown', (e) => {
+  const card = $('personCard');
+  if (!card.hidden && !card.contains(e.target) && !e.target.closest('.vol-btn, .voice-avatar')) closePersonCard();
+});
+
 $('voiceJoin').onclick = () => {
   if (voice.session || voice.pending) return voice.leave();
   if (state.systemLoopback) return toast('Pare sua transmissão, entre na voz e depois reinicie a transmissão: a captura atual inclui todo o som do PC.', 'error');
+  mixer.ensure(); // o clique libera o áudio do app
   voice.join();
 };
 $('voiceMute').onclick = () => voice.mute();
@@ -137,6 +397,12 @@ const ICON = {
   focus: svg('M3 5h18v14H3zM7 9h10v6H7z'),
   pip: svg('M3 5h18v14H3zM12 11h7v6h-7z'),                   // janelinha no canto: janela flutuante                  // um quadro dentro do outro: destacar
   grid: svg('M3 3h8v8H3zM13 3h8v8h-8zM3 13h8v8H3zM13 13h8v8h-8z'), // grade: mostrar todas
+  mic: svg('M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3zM19 10v2a7 7 0 0 1-14 0v-2M12 19v3'),
+  micOff: svg('M2 2l20 20M9 9v3a3 3 0 0 0 5.1 2.1M15 9.3V5a3 3 0 0 0-5.9-.6M17 16.9A7 7 0 0 1 5 12v-2M19 10v2a7 7 0 0 1-.1 1.2M12 19v3'),
+  headphones: svg('M3 18v-6a9 9 0 0 1 18 0v6M21 19a2 2 0 0 1-2 2h-1v-6h3zM3 19a2 2 0 0 0 2 2h1v-6H3z'),
+  headphonesOff: svg('M2 2l20 20M3 18v-6a9 9 0 0 1 14.5-7.1M20.4 8.4A9 9 0 0 1 21 12v6M21 19a2 2 0 0 1-2 2h-1v-6h3zM3 19a2 2 0 0 0 2 2h1v-6H3z'),
+  phoneOff: svg('M3 11a15 15 0 0 1 18 0l-2 3-3-1v-2a10 10 0 0 0-8 0v2l-3 1z'),
+  overlay: svg('M3 4h18v14H3zM6 12h7M6 15h5'),        // tela com linhas de texto: chat por cima da tela
 };
 
 // Botão só com ícone: a dica (title) e o nome lido pelo leitor de tela são o mesmo texto
@@ -330,6 +596,8 @@ function leaveRoom(reason, kind = 'info', endRoom = false) {
   closeStats();
   perfStop();
   if (state.isOwner) window.api.stopServer(endRoom);
+  closeChatOverlay();
+  closePersonCard();
   resetChat(null);
   state.members.clear();
   state.myId = null;
@@ -944,23 +1212,62 @@ function avatar(name) {
 }
 
 function memberRow(id, name, sharing) {
+  const who = id || state.myId;
   const li = document.createElement('li');
   li.className = 'member' + (sharing ? ' live' : '');
   li.style.setProperty('--person', personColor(id));
+  li.dataset.person = who;
+  li.classList.toggle('speaking', speaking.has(who));
   const dot = avatar(id ? name : getName());
   const info = document.createElement('div');
   info.className = 'info';
   const nameEl = document.createElement('span');
   nameEl.className = 'mname';
   nameEl.textContent = name;
+  // Barrinhas de "falando" ao lado do nome (aparecem pelo CSS quando a linha está .speaking)
+  const eq = document.createElement('span');
+  eq.className = 'eq';
+  eq.title = 'Falando';
+  eq.innerHTML = '<span></span><span></span><span></span>';
+  nameEl.append(eq);
   const status = document.createElement('span');
   status.className = 'mstatus';
   const paused = id && state.focus && state.focus !== id && state.in.has(id);
   const inPip = id && state.pips.has(id);
-  status.textContent = !sharing ? 'Na sala' : inPip ? 'Transmitindo · na janela flutuante' : paused ? 'Transmitindo, em pausa para você' : 'Transmitindo';
-  if ((id || state.myId) === state.hostId) status.textContent = `Host · ${status.textContent}`;
+  const voiceOn = inVoice(who);
+  const micOff = voiceOn && (id ? !!voice.members.get(id)?.muted : voice.muted);
+  const parts = [];
+  if (who === state.hostId) parts.push('Host');
+  if (sharing) parts.push(inPip ? 'Transmitindo · na janela flutuante' : paused ? 'Transmitindo, em pausa para você' : 'Transmitindo');
+  if (voiceOn) parts.push(micOff ? 'na voz, microfone desligado' : 'na voz');
+  status.textContent = parts.join(' · ') || 'Na sala';
   info.append(nameEl, status);
   li.append(dot, info);
+  if (micOff) {
+    const mo = document.createElement('span');
+    mo.className = 'mic-off-icon';
+    mo.innerHTML = ICON.micOff;
+    mo.title = 'Microfone desligado';
+    li.append(mo);
+  }
+
+  // Volume dessa pessoa para você (voz e/ou transmissão); mostra o valor quando não está em 100%
+  if (id && (voiceOn || state.in.has(id))) {
+    const v = volOf(id);
+    const changed = v.muted || v.voice !== 100 || v.screen !== 100;
+    const vb = document.createElement('button');
+    vb.type = 'button';
+    vb.className = 'btn small vol-btn' + (changed ? ' changed' : '');
+    vb.innerHTML = v.muted ? ICON.muted : ICON.volume;
+    const badge = v.muted ? 'mudo' : voiceOn && v.voice !== 100 ? `${v.voice}%` : !voiceOn && v.screen !== 100 ? `${v.screen}%` : '';
+    if (badge) vb.append(badge);
+    const label = `Volume de ${name}${v.muted ? ' (silenciada para você)' : badge ? ` (${badge})` : ''}`;
+    vb.title = label;
+    vb.setAttribute('aria-label', label);
+    vb.setAttribute('aria-expanded', String($('personCard').dataset.for === id && !$('personCard').hidden));
+    vb.onclick = (e) => openPersonCard(id, vb, e.detail === 0);
+    li.append(vb);
+  }
 
   if (id && sharing) {
     const watching = state.in.has(id);
@@ -1008,6 +1315,11 @@ function createTile(id, name) {
   label.className = 'tile-name';
   label.textContent = name;
   label.style.setProperty('--person', personColor(id));
+  const labelEq = document.createElement('span');
+  labelEq.className = 'eq';
+  labelEq.title = 'Falando';
+  labelEq.innerHTML = '<span></span><span></span><span></span>';
+  label.append(labelEq);
   const bar = document.createElement('div');
   bar.className = 'tile-bar';
   const stats = document.createElement('span');
@@ -1028,6 +1340,8 @@ function createTile(id, name) {
     if (video.volume > 0) video.muted = false;
     syncMute();
   };
+  // O volume do quadro fica guardado como o "som da transmissão" dessa pessoa
+  vol.onchange = () => setVol(id, { screen: Math.round(parseFloat(vol.value) * 100), muted: false });
   mute.onclick = () => {
     video.muted = !video.muted;
     if (!video.muted && video.volume === 0) { video.volume = 1; vol.value = '1'; }
@@ -1086,7 +1400,8 @@ function createTile(id, name) {
     if (el.classList.contains('small') && e.target === el && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setMain(id); }
   });
   $('tiles').append(el);
-  return { el, video, overlay, pipNote, stats, fs, focusBtn, pipBtn, syncMute, name, paused: false, mutedBefore: false };
+  el.dataset.person = id;
+  return { el, video, vol, overlay, pipNote, stats, fs, focusBtn, pipBtn, syncMute, name, paused: false, mutedBefore: false };
 }
 
 // Mostra a barra do vídeo por alguns segundos, para quem nunca passou o mouse em cima descobrir os botões
@@ -1102,6 +1417,7 @@ function watch(id) {
   const tile = createTile(id, nameOf(id));
   const link = { pc, chain: Promise.resolve(), tile, lastBytes: 0, lastTs: 0, videoOn: true, tracks: [], once: null };
   state.in.set(id, link);
+  applyScreenVolume(id); // o volume que você deixou para essa pessoa da última vez
 
   pc.ontrack = (e) => {
     if (e.track.kind === 'video') setVideoTrack(link, e.track);
@@ -1187,6 +1503,8 @@ function setPanelOpen(open) {
   $('dockAddr').hidden = open || !state.roomAddr;
   if (open && chatAtBottom()) markRead();
   renderUnread();
+  renderVoiceAvatars();
+  closePersonCard();
 }
 
 function chatAtBottom() {
@@ -1242,6 +1560,7 @@ function onChatMessage(m) {
   const { type, ...entry } = m;
   chat.log.push(entry);
   if (chat.log.length > 100) chat.log.shift();
+  renderChatOverlay();
   const wasBottom = chatAtBottom();
   const unseen = m.from !== state.myId && (!chat.open || document.hidden || !wasBottom);
   if (unseen && !chat.unread) {
@@ -1645,8 +1964,39 @@ function buildPip(win, id) {
     position: 'fixed', left: '50%', bottom: '10px', transform: 'translateX(-50%)', display: 'none', whiteSpace: 'nowrap',
     fontSize: '12px', padding: '6px 10px', borderRadius: '8px', background: 'rgba(17, 17, 17, .88)', border: '1px solid #2e2e2e',
   });
-  d.body.append(video, edit, lockTag, notice);
-  return { win, id, video, edit, name, opacity, lockTag, notice, noticeTimer: null, groupRow, linked, layoutSeg, cornerSeg };
+  // Borda verde quando a pessoa desta janela fala; embaixo, quem mais está falando na voz
+  const speakRing = d.createElement('div');
+  Object.assign(speakRing.style, { position: 'fixed', inset: '0', border: '2px solid #4cc38a', display: 'none', pointerEvents: 'none' });
+  const talkers = d.createElement('div');
+  Object.assign(talkers.style, { position: 'fixed', left: '8px', bottom: '8px', display: 'flex', flexWrap: 'wrap', gap: '6px', pointerEvents: 'none' });
+  d.body.append(video, speakRing, talkers, edit, lockTag, notice);
+  const p = { win, id, video, edit, name, opacity, lockTag, notice, noticeTimer: null, groupRow, linked, layoutSeg, cornerSeg, speakRing, talkers };
+  requestAnimationFrame(() => renderPipSpeaking());
+  return p;
+}
+
+function renderPipSpeaking() {
+  for (const p of state.pips.values()) {
+    if (p.win.closed) continue;
+    const d = p.win.document;
+    p.speakRing.style.display = speaking.has(p.id) ? 'block' : 'none';
+    const others = [...speaking].filter((id) => id !== p.id && id !== state.myId && state.members.has(id));
+    p.talkers.replaceChildren(...others.map((id) => {
+      const chip = d.createElement('span');
+      Object.assign(chip.style, {
+        display: 'inline-flex', alignItems: 'center', gap: '6px', height: '22px', padding: '0 8px 0 3px', borderRadius: '999px',
+        background: 'rgba(0, 0, 0, .62)', color: '#ededed', fontSize: '11px', fontWeight: '600',
+      });
+      const dot = d.createElement('span');
+      dot.textContent = (nameOf(id).trim()[0] || '?').toUpperCase();
+      Object.assign(dot.style, {
+        width: '16px', height: '16px', borderRadius: '50%', display: 'grid', placeItems: 'center', fontSize: '10px', fontWeight: '700',
+        color: '#111111', background: personColor(id), boxShadow: '0 0 0 2px #4cc38a',
+      });
+      chip.append(dot, nameOf(id));
+      return chip;
+    }));
+  }
 }
 
 // Os controles de grupo aparecem só com 2 ou mais janelas, e mostram a escolha atual em todas
@@ -1723,6 +2073,9 @@ function setPipLocked(p, locked) {
 window.api.onPip((m) => {
   // O modo de ajuste vale para todas as janelas ao mesmo tempo
   if (m.group) { pipGroupState = m.group; renderPipGroup(); }
+  if (m.type === 'edit') { overlay.edit = !!m.on; renderChatOverlay(); }
+  if (m.type === 'chat-closed') { overlay.p = null; clearTimeout(overlay.timer); renderOverlayButton(); }
+  if (m.type === 'chat-key-busy') toast('Outro programa já usa Ctrl+Shift+O, então o atalho para esconder o chat por cima do jogo não funciona. Use o botão da barra.', 'error');
   if (m.type === 'edit') {
     for (const [id, p] of state.pips) {
       if (p.win.closed) continue;
@@ -1734,6 +2087,151 @@ window.api.onPip((m) => {
   else if (m.type === 'closed' && state.pips.has(m.id)) { const p = state.pips.get(m.id); state.pips.delete(m.id); pipClosed(p); }
   else if (m.type === 'shortcut-busy') toast('Outro programa já usa Ctrl+Shift+E. Trave pelo botão Travar da janela; para ajustar de novo, feche e abra a janela flutuante pelo botão do vídeo.', 'error');
 });
+
+// ---------- Chat por cima do jogo ----------
+// Uma janela transparente, sempre por cima, com as últimas mensagens (somem depois de 20 s) e quem está
+// falando na voz. Travada, o clique atravessa para o jogo. No modo de ajuste (Ctrl+Shift+E, o mesmo da
+// janela flutuante) dá para mover, redimensionar e responder. Ctrl+Shift+O esconde e mostra de novo.
+const OVERLAY_SHOW_MS = 20000;
+const overlay = { p: null, edit: false, timer: null };
+
+function toggleChatOverlay() {
+  if (overlay.p && !overlay.p.win.closed) return closeChatOverlay();
+  const win = window.open('', 'tela-chat');
+  if (!win) return toast('Não foi possível abrir o chat por cima do jogo.', 'error');
+  overlay.p = buildChatOverlay(win);
+  renderChatOverlay();
+  renderOverlayButton();
+}
+
+function closeChatOverlay() {
+  const p = overlay.p;
+  overlay.p = null;
+  clearTimeout(overlay.timer);
+  if (p && !p.win.closed) p.win.close();
+  renderOverlayButton();
+}
+
+function renderOverlayButton() {
+  const on = !!overlay.p;
+  setIcon($('overlayToggle'), 'overlay', on
+    ? 'Fechar o chat por cima do jogo (Ctrl+Shift+O esconde e mostra)'
+    : 'Chat por cima do jogo: as mensagens aparecem sobre a tela, e Ctrl+Shift+O esconde');
+  $('overlayToggle').setAttribute('aria-pressed', String(on));
+  $('overlayToggle').classList.toggle('on', on);
+}
+
+// Tudo por CSSOM, como a janela flutuante (a regra de segurança do app não deixa estilo escrito em HTML)
+function buildChatOverlay(win) {
+  const d = win.document;
+  Object.assign(d.documentElement.style, { height: '100%', background: 'transparent' });
+  Object.assign(d.body.style, {
+    margin: '0', height: '100%', overflow: 'hidden', background: 'transparent', color: '#ededed',
+    fontFamily: '"Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif', fontSize: '14px',
+  });
+  d.title = 'Chat da sala · Tela P2P';
+  const frame = d.createElement('div');
+  Object.assign(frame.style, {
+    position: 'fixed', inset: '0', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '8px', padding: '8px',
+  });
+  // Cabeçalho do modo de ajuste: arrasta a janela, trava e fecha
+  const head = d.createElement('div');
+  Object.assign(head.style, {
+    display: 'none', alignItems: 'center', gap: '6px', padding: '6px 6px 6px 10px', borderRadius: '8px',
+    background: 'rgba(17, 17, 17, .88)', fontSize: '12px', cursor: 'move',
+  });
+  head.style.setProperty('-webkit-app-region', 'drag');
+  const title = d.createElement('span');
+  title.textContent = 'Chat da sala · arraste para mover';
+  Object.assign(title.style, { flex: '1', fontWeight: '600' });
+  head.append(title, pipButton(d, 'Travar', () => window.api.pipSetEdit(false), true), pipButton(d, 'Fechar', () => closeChatOverlay(), false));
+  // Quem está falando agora
+  const talkers = d.createElement('div');
+  Object.assign(talkers.style, { display: 'flex', flexWrap: 'wrap', gap: '6px' });
+  // Mensagens: as mais novas embaixo
+  const list = d.createElement('div');
+  Object.assign(list.style, { flex: '1', minHeight: '0', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', gap: '4px', overflow: 'hidden' });
+  // Responder (só no modo de ajuste, quando a janela pode receber o teclado)
+  const form = d.createElement('form');
+  Object.assign(form.style, { display: 'none', gap: '6px' });
+  const input = d.createElement('input');
+  input.type = 'text';
+  input.maxLength = 2000;
+  input.placeholder = 'Mensagem para a sala (Enter manda)';
+  input.setAttribute('aria-label', 'Mensagem para a sala');
+  Object.assign(input.style, {
+    flex: '1', minWidth: '0', height: '34px', boxSizing: 'border-box', padding: '0 10px', borderRadius: '8px',
+    border: '1px solid #686868', background: 'rgba(17, 17, 17, .92)', color: '#ededed', font: 'inherit', fontSize: '13px', outline: 'none',
+  });
+  input.onfocus = () => { input.style.borderColor = '#8ab4ff'; };
+  input.onblur = () => { input.style.borderColor = '#686868'; };
+  form.style.setProperty('-webkit-app-region', 'no-drag');
+  form.onsubmit = (e) => {
+    e.preventDefault();
+    const text = input.value.trim();
+    if (!text || !chat.supported) return;
+    send({ type: 'chat', text });
+    input.value = '';
+  };
+  form.append(input);
+  const hint = d.createElement('span');
+  hint.textContent = 'Ctrl+Shift+E trava · Ctrl+Shift+O esconde';
+  Object.assign(hint.style, { display: 'none', fontSize: '11px', color: '#d0d0d0', textShadow: '0 1px 2px #000' });
+  frame.append(head, talkers, list, form, hint);
+  d.body.append(frame);
+  return { win, frame, head, talkers, list, form, input, hint };
+}
+
+function renderChatOverlay() {
+  const p = overlay.p;
+  if (!p || p.win.closed) return;
+  const d = p.win.document;
+  const edit = overlay.edit;
+  p.frame.style.border = edit ? '2px solid #8ab4ff' : '2px solid transparent';
+  p.frame.style.background = edit ? 'rgba(0, 0, 0, .35)' : 'transparent';
+  p.head.style.display = p.form.style.display = edit ? 'flex' : 'none';
+  p.hint.style.display = edit ? 'block' : 'none';
+
+  const chip = (id) => {
+    const el = d.createElement('span');
+    Object.assign(el.style, {
+      display: 'inline-flex', alignItems: 'center', gap: '6px', height: '22px', padding: '0 8px 0 3px', borderRadius: '999px',
+      background: 'rgba(0, 0, 0, .66)', fontSize: '11px', fontWeight: '600',
+    });
+    const dot = d.createElement('span');
+    dot.textContent = (nameOf(id).trim()[0] || '?').toUpperCase();
+    Object.assign(dot.style, {
+      width: '16px', height: '16px', borderRadius: '50%', display: 'grid', placeItems: 'center', fontSize: '10px', fontWeight: '700',
+      color: '#111111', background: personColor(id), boxShadow: '0 0 0 2px #4cc38a',
+    });
+    el.append(dot, `${nameOf(id)} falando`);
+    return el;
+  };
+  p.talkers.replaceChildren(...[...speaking].filter((id) => id !== state.myId && state.members.has(id)).map(chip));
+
+  // As últimas 6; travada, cada uma some 20 s depois de chegar
+  const now = Date.now();
+  const recent = chat.log.slice(-6).filter((m) => edit || now - m.ts < OVERLAY_SHOW_MS);
+  p.list.replaceChildren(...recent.map((m) => {
+    const row = d.createElement('div');
+    Object.assign(row.style, {
+      alignSelf: 'flex-start', maxWidth: '100%', boxSizing: 'border-box', padding: '5px 9px', borderRadius: '8px',
+      background: 'rgba(0, 0, 0, .66)', lineHeight: '1.35', overflowWrap: 'anywhere', fontSize: '13px',
+    });
+    const who = d.createElement('strong');
+    who.textContent = m.from === state.myId ? 'Você' : m.name;
+    who.style.color = m.from === state.myId ? '#8ab4ff' : personColor(m.from);
+    who.style.marginRight = '6px';
+    row.append(who, m.text || `mandou ${m.file ? m.file.name : 'um arquivo'}`);
+    return row;
+  }));
+  // Acorda quando a próxima mensagem visível tiver que sumir
+  clearTimeout(overlay.timer);
+  if (!edit && recent.length) {
+    const next = Math.min(...recent.map((m) => m.ts + OVERLAY_SHOW_MS - now));
+    overlay.timer = setTimeout(renderChatOverlay, Math.max(200, next + 50));
+  }
+}
 
 // ---------- Destaque ----------
 // Uma transmissão ocupa toda a área de vídeo e as outras ficam pausadas só para mim: quem
@@ -2612,6 +3110,8 @@ $('dockAddr').onclick = async () => {
   try { await navigator.clipboard.writeText(state.roomAddr); toast('Endereço copiado.'); } catch { toast('Não foi possível copiar.', 'error'); }
 };
 setIcon($('pipChipClose'), 'close', 'Fechar as janelas flutuantes');
+renderOverlayButton();
+$('overlayToggle').onclick = toggleChatOverlay;
 $('pipChipClose').onclick = () => { for (const id of [...state.pips.keys()]) closePip(id); };
 setIcon($('chatAttach'), 'attach', 'Mandar arquivo (até 200 MB)');
 setIcon($('chatSend'), 'send', 'Enviar');
@@ -2635,7 +3135,8 @@ $('chatTab').addEventListener('drop', (e) => {
 $('closeStats').onclick = closeStats;
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
-  if (!$('statsDialog').hidden) closeStats();
+  if (!$('personCard').hidden) closePersonCard();
+  else if (!$('statsDialog').hidden) closeStats();
   else if (!$('closeDialog').hidden) closeCloseDialog();
   else if (!$('shareDialog').hidden) closeShareDialog();
   else if (state.focus && !document.fullscreenElement) setFocus(null);

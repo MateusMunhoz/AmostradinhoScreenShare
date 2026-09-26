@@ -131,9 +131,18 @@
               <kbd>Ctrl+Shift+E</kbd>
               <button class="btn icon ghost" id="pipChipClose" type="button"></button>
             </div>
-            <button class="btn" id="voiceJoin" type="button">Entrar na voz</button>
-            <button class="btn" id="voiceMute" type="button" aria-pressed="false" hidden>Silenciar mic</button>
-            <button class="btn" id="voiceDeafen" type="button" aria-pressed="false" hidden>Silenciar vozes</button>
+            <!-- Voz: entrar; dentro, meu indicador, microfone, silenciar as vozes e sair. Com o painel
+                 recolhido, as bolinhas de quem está na voz (clicar abre o volume da pessoa). -->
+            <div class="voice-dock" id="voiceDock" role="group" aria-label="Conversa por voz">
+              <div class="voice-avatars" id="voiceAvatars" hidden></div>
+              <span class="voice-me" id="voiceMe" title="Você na voz" hidden>
+                <span class="eq" aria-hidden="true"><span></span><span></span><span></span></span>Na voz
+              </span>
+              <button class="btn icon" id="voiceMute" type="button" aria-pressed="false" hidden></button>
+              <button class="btn icon" id="voiceDeafen" type="button" aria-pressed="false" hidden></button>
+              <button class="btn" id="voiceJoin" type="button">Entrar na voz</button>
+            </div>
+            <button class="btn icon" id="overlayToggle" type="button" aria-pressed="false"></button>
             <span class="dock-spacer"></span>
             <button class="btn icon" id="openStatsRoom" type="button"></button>
             <button class="btn icon chat-toggle" id="chatToggle" type="button" aria-pressed="true">
@@ -171,12 +180,6 @@
             <h3>Na sala · <span id="memberCount">1</span></h3>
             <ul id="members" class="members"></ul>
             <p id="downloadInfo" class="hint"></p>
-          </div>
-
-          <div class="side-section">
-            <h3>Conversa por voz</h3>
-            <p id="voiceStatus" class="hint" role="status">Entre na voz para conversar.</p>
-            <ul id="voiceMembers" class="voice-members"></ul>
           </div>
 
           <div class="chat" id="chatTab">
@@ -354,6 +357,8 @@
     </div>
   </div>
 
+  <!-- Volume de uma pessoa (abre pelo botão de volume na lista ou pela bolinha na barra) -->
+  <div id="personCard" class="person-card" role="dialog" aria-label="Volume da pessoa" hidden></div>
   <div id="toast" class="toast" role="status"></div>
   <script src="encode-once.js"></script>
   <script src="voice.js"></script>

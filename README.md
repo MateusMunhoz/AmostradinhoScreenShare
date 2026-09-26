@@ -50,18 +50,21 @@ Para gerar um `.exe` portátil sem publicar nada: `npm run dist` (o arquivo apar
   - Funciona se quem criou a sala tiver a versão 1.7.0 ou mais nova.
 - **Janela flutuante (para ver enquanto joga):** o botão da janelinha na barra do vídeo abre essa transmissão numa janela pequena que fica sempre por cima, até do jogo. Ela abre no modo de ajuste: arraste para mover e puxe as bordas para redimensionar. Depois clique em **Travar** ou aperte **Ctrl+Shift+E**. Travada, o mouse passa direto por ela: o clique vai para o jogo, e ela nunca tira o foco dele. Aperte Ctrl+Shift+E de novo, até de dentro do jogo, para ajustar. No modo de ajuste há tamanhos rápidos (P, M, G) e a transparência da janela. Enquanto a janela estiver aberta, o quadro dessa pessoa no app mostra "Picture in picture ativado, transmissão pausada", com **Trazer de volta** e **Ajustar janela**. Dá para abrir uma janela para cada pessoa ao mesmo tempo: elas nascem empilhadas no canto, uma sem cobrir a outra, e **Travar** ou Ctrl+Shift+E valem para todas juntas. O app lembra a posição, o tamanho e a transparência de cada uma (da 1ª, da 2ª janela aberta...), e o X da barra fecha todas. Com 2 ou mais janelas, o modo de ajuste mostra também **Todas do mesmo tamanho** (redimensionar uma, com o mouse ou pelos tamanhos P, M e G, muda todas e reorganiza a fila) e como enfileirar: em **Coluna** ou em **Linha**, a partir de qual canto da tela (↖ ↗ ↙ ↘). Quando a fila não cabe na tela, ela continua ao lado. O som continua saindo pelo app, com o volume daquela tela, e o vídeo continua chegando com o app minimizado. Não aparece por cima de jogo em tela cheia **exclusiva**: use o modo janela sem bordas do jogo.
 
-## Chat de voz (código desta versão)
+## Chat de voz
 
-Na sala, clique em **Entrar na voz** para ligar o microfone padrão do Windows e conversar com quem também entrou. A conversa funciona sem transmitir ou assistir a telas e continua ao parar uma transmissão. O criador da sala e os participantes da voz precisam usar esta versão do código.
+Na sala, clique em **Entrar na voz** (na barra de baixo) para ligar o microfone padrão do Windows e conversar com quem também entrou. A conversa funciona sem transmitir ou assistir a telas e continua ao parar uma transmissão. Todo mundo precisa da versão 1.8.4 ou mais nova. O chat de voz foi feito pelo Cristian.
 
-- **Silenciar mic** interrompe o envio da sua voz; **Ativar mic** retoma.
-- **Silenciar vozes** silencia somente a conversa recebida, sem alterar seu microfone nem o áudio das telas.
-- **Sair da voz** libera o microfone e fecha as conexões de voz. Sair da sala também encerra a voz.
-- O painel mostra os participantes, microfones silenciados e o estado das conexões. Se uma conexão falhar, saia e entre na voz novamente.
-- Se o Windows negar o microfone, permita o acesso para aplicativos de desktop nas configurações de privacidade. Use fones para reduzir eco acústico.
+- Na voz, a barra mostra o seu indicador (acende quando você fala), **microfone** (liga e desliga), **silenciar as vozes** (só o que você ouve, sem mexer no seu microfone nem no som das telas) e **sair da voz**.
+- **Quem está falando** ganha um anel verde na bolinha e barrinhas que mexem ao lado do nome, na lista "Na sala", no vídeo dessa pessoa (borda verde), nas janelas flutuantes e no chat por cima do jogo. Microfone desligado aparece com um ícone amarelo.
+- **Volume de cada pessoa:** o botão de volume ao lado do nome abre um cartão com **Voz** (0 a 200%, para ouvir quem tem o microfone baixo) e **Som da transmissão** (0 a 100%), mais **Silenciar para mim** e **Voltar para 100%**. Só muda o que você ouve. O botão mostra o valor quando não está em 100%, e o app lembra o volume de cada pessoa pelo nome, para a próxima sala. Com o painel recolhido, as bolinhas de quem está na voz ficam na barra de baixo; clicar numa abre o mesmo cartão.
+- Se o Windows negar o microfone, permita o acesso para aplicativos de desktop nas configurações de privacidade. Use fones para reduzir eco.
 - Se a captura que exclui o som do próprio app falhar durante a conversa, a tela é transmitida sem áudio do PC para evitar retransmitir as vozes. Se uma transmissão já estiver capturando todo o som do PC, pare-a, entre na voz e depois reinicie a transmissão.
 
-A voz usa WebRTC diretamente pela Radmin, com uma conexão bidirecional por par de participantes. Não usa servidor adicional. Esta primeira versão usa o microfone padrão, sem seleção de dispositivo, indicador de fala ou reconexão automática.
+A voz usa WebRTC direto pela Radmin, com uma conexão por par de participantes. Não usa servidor adicional. Usa o microfone padrão, sem escolher o dispositivo.
+
+## Chat por cima do jogo
+
+O botão da barra com a tela e as linhas de texto abre o chat da sala numa janela transparente, sempre por cima, até do jogo (em janela sem bordas). Ela mostra as últimas mensagens, que somem 20 s depois de chegar, e quem está falando na voz. Abre no modo de ajuste: arraste para mover, puxe as bordas para redimensionar e escreva no campo para responder. Depois clique em **Travar** ou aperte **Ctrl+Shift+E** (o mesmo das janelas flutuantes): travada, o clique passa direto para o jogo e ela não pega o teclado. **Ctrl+Shift+O** esconde e mostra de novo, de dentro do jogo. O app lembra a posição e o tamanho.
 
 Verificações de desenvolvimento: `npm test`. O teste adicional `npm run test:rtc` usa duas janelas ocultas do Electron e áudio sintético para verificar o transporte WebRTC local, sem abrir seu microfone. A validação de microfones reais e Radmin entre computadores continua necessária.
 
