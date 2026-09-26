@@ -176,10 +176,17 @@ $s = 0; [void][QU]::SHQueryUserNotificationState([ref]$s)
 // ---------- Limpeza ----------
 // Fecha só as cópias de teste (o Electron de desenvolvimento e os ajudantes da pasta do projeto).
 // O Tela P2P que você usa (o .exe) não é tocado.
+// Fecha só as cópias de teste: as que usam o perfil temporário (tela-p2p-e2e) na linha de comando, e os
+// ajudantes (audiocap, videocap, teclas) que elas abriram. O app que você abriu pelo npm start ou pelo .exe,
+// mesmo rodando do mesmo Electron, não é tocado.
 function killTest() {
-  const root = APP.replace(/'/g, "''");
+  const script = `
+    $all = Get-CimInstance Win32_Process
+    $test = @($all | Where-Object { $_.ProcessId -ne $PID -and $_.CommandLine -like '*tela-p2p-e2e*' } | ForEach-Object { $_.ProcessId })
+    $kids = @($all | Where-Object { $test -contains $_.ParentProcessId } | ForEach-Object { $_.ProcessId })
+    foreach ($id in ($test + $kids | Select-Object -Unique)) { Stop-Process -Id $id -Force -ErrorAction SilentlyContinue }`;
   try {
-    execFileSync('powershell', ['-NoProfile', '-Command', `Get-CimInstance Win32_Process | Where-Object { $_.ProcessId -ne $PID -and ($_.ExecutablePath -like '${root}\\node_modules\\*' -or $_.ExecutablePath -like '${root}\\bin\\*') } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }`]);
+    execFileSync('powershell', ['-NoProfile', '-Command', script]);
   } catch {}
 }
 
