@@ -30,7 +30,6 @@
       "github.js",
       "index.html",
       "styles.css",
-      "renderer.js",
       "renderer/**",
       "voice.js",
       "encode-once.js",

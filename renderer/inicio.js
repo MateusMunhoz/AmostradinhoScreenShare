@@ -1,6 +1,7 @@
 'use strict';
+// Tela inicial e a partida do app: liga os botões e listeners, carrega as preferências e mostra o início.
+// Roda por último (todos os outros scripts já definiram o que ele usa).
 
-// ---------- Partida: o que roda na carga, na mesma ordem de antes ----------
 voice.media = { getUserMedia: () => openMic() };
 document.addEventListener('mousedown', (e) => {
   const card = $('personCard');
