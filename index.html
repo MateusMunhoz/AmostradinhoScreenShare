@@ -21,14 +21,6 @@
           <p class="lead">Uma sala para transmitir telas com os amigos, de PC para PC pela Radmin VPN.</p>
         </div>
         <div class="home-status">
-          <div class="update-notice" role="status" hidden>
-            <span class="update-text"></span>
-            <button class="btn small primary update-restart" type="button">Reiniciar agora</button>
-          </div>
-          <div id="githubUpdate" class="github-notice" role="status" hidden>
-            <span id="githubText" class="update-text"></span>
-            <button class="btn small primary" id="githubBtn" type="button">Baixar atualização</button>
-          </div>
           <p class="status-line">
             <span id="radminDot" class="dot"></span>
             <strong id="radminTitle">Procurando a Radmin VPN…</strong>
@@ -154,10 +146,6 @@
 
         <!-- Painel: endereço, sua transmissão, quem está na sala e o chat, sempre à vista -->
         <aside class="panel" id="sidePanel">
-          <div class="update-notice" role="status" hidden>
-            <span class="update-text"></span>
-            <button class="btn small primary update-restart" type="button">Reiniciar agora (sai da sala)</button>
-          </div>
           <div class="side-section">
             <div id="roomAddress"></div>
             <p id="noRadmin" class="warn" hidden>Nenhum IP da Radmin VPN (26.x.x.x) encontrado. Ligue a Radmin e entre na rede.</p>
@@ -354,6 +342,19 @@
         </table>
       </div>
       <p id="stNote" class="hint"></p>
+    </div>
+  </div>
+
+  <!-- Aviso de atualização: aparece em qualquer tela, e um botão baixa e reinicia -->
+  <div id="updateBanner" class="update-banner" role="status" aria-live="polite" hidden>
+    <span class="ub-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg></span>
+    <div class="ub-text">
+      <strong id="ubTitle"></strong>
+      <span id="ubText"></span>
+    </div>
+    <div class="ub-actions">
+      <button class="btn small ghost" id="ubLater" type="button">Depois</button>
+      <button class="btn small primary" id="ubGo" type="button"></button>
     </div>
   </div>
 

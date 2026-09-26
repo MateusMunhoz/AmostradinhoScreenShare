@@ -57,6 +57,7 @@ const update = {
 // ---------- Utilidades ----------
 function show(id) {
   document.querySelectorAll('.screen').forEach((s) => { s.hidden = s.id !== id; });
+  if (typeof renderUpdateBanner === 'function') renderUpdateBanner();
   if (id === 'home') renderHome();
 }
 
@@ -896,9 +897,7 @@ async function onUpdateSignal(from, data) {
   const res = await window.api.installUpdate(b.parts.join(''), b.sig);
   if (res.ok) {
     update.ready = res.version;
-    renderUpdateNotice();
-    if (update.github && !newerVersion(update.github.version, update.ready)) $('githubUpdate').hidden = true;
-    toast(`Versão ${res.version} baixada de ${nameOf(from)}. Reinicie o app para usar.`);
+    renderUpdateBanner();
   } else {
     console.warn(`Atualização de ${nameOf(from)} recusada:`, res.error);
   }
@@ -920,43 +919,71 @@ async function checkGithub(manual = false) {
   }
   const rel = res.release;
   if (!rel || !newerVersion(rel.version, update.ready || update.myVersion)) {
-    $('githubUpdate').hidden = true;
+    update.github = null;
+    renderUpdateBanner();
     if (manual) toast(update.ready ? `A versão ${update.ready} já está baixada. Reinicie para usar.` : 'Você já está na versão mais nova.');
     return;
   }
+  if (update.github?.version !== rel.version) update.exePage = '';
   update.github = rel;
-  $('githubText').textContent = `Versão ${rel.version} disponível no GitHub.`;
-  $('githubBtn').textContent = 'Baixar atualização';
-  $('githubBtn').onclick = installFromGithub;
-  $('githubUpdate').hidden = false;
+  if (manual) update.dismissed = '';
+  renderUpdateBanner();
 }
 
-async function installFromGithub() {
-  const btn = $('githubBtn');
-  setBusy(btn, true, 'Baixando…');
-  const res = await window.api.githubInstall();
-  setBusy(btn, false, 'Baixar atualização');
-  if (res.ok) {
+// ---------- Aviso de atualização ----------
+// Um cartão no canto da tela, em qualquer tela do app. Um botão faz tudo: baixa do GitHub (se ainda
+// não veio pela sala) e reinicia o app já na versão nova. "Depois" esconde até a próxima versão.
+function updateMode() {
+  if (update.ready) return { mode: 'ready', version: update.ready };
+  if (update.github) return { mode: update.exePage ? 'exe' : 'github', version: update.github.version };
+  return null;
+}
+
+function renderUpdateBanner() {
+  const m = updateMode();
+  const banner = $('updateBanner');
+  if (!m || update.dismissed === m.version || update.installing) {
+    banner.hidden = !update.installing;
+    return;
+  }
+  const inRoom = !!state.myId;
+  const leaves = inRoom ? ' Você sai da sala e o app abre de novo sozinho.' : ' O app fecha e abre de novo sozinho.';
+  $('ubTitle').textContent = m.mode === 'ready' ? `Versão ${m.version} pronta` : `Versão ${m.version} disponível`;
+  $('ubText').textContent = m.mode === 'ready' ? `Já está baixada.${leaves}`
+    : m.mode === 'github' ? `Baixa em poucos segundos e atualiza.${leaves}`
+    : 'Esta versão precisa do .exe novo. Baixe na página do GitHub e abra no lugar do antigo.';
+  $('ubGo').textContent = m.mode === 'exe' ? 'Abrir no GitHub' : 'Atualizar agora';
+  $('ubGo').disabled = false;
+  $('ubLater').hidden = false;
+  banner.hidden = false;
+}
+
+async function runUpdate() {
+  const m = updateMode();
+  if (!m) return;
+  if (m.mode === 'exe') return window.api.openGithub(update.exePage);
+  const go = $('ubGo');
+  update.installing = true;
+  $('ubLater').hidden = true;
+  if (m.mode === 'github') {
+    setBusy(go, true, 'Baixando…');
+    $('ubText').textContent = 'Baixando a versão nova do GitHub…';
+    const res = await window.api.githubInstall();
+    if (!res.ok) {
+      update.installing = false;
+      if (res.page && /exe novo|pacote de atualização/.test(res.error)) {
+        // Mudou algo que só um .exe novo traz (ex.: versão do Electron): manda para a página da versão
+        update.exePage = res.page;
+      } else {
+        toast(`Não deu para atualizar: ${res.error}`, 'error');
+      }
+      return renderUpdateBanner();
+    }
     update.ready = res.version;
-    $('githubUpdate').hidden = true;
-    renderUpdateNotice();
-    return;
   }
-  if (res.page && /exe novo|pacote de atualização/.test(res.error)) {
-    // Mudou algo que só um .exe novo traz (ex.: versão do Electron): manda para a página da versão
-    $('githubText').textContent = `A versão ${update.github?.version || ''} precisa do .exe novo. Baixe na página do GitHub.`;
-    btn.textContent = 'Abrir no GitHub';
-    btn.onclick = () => window.api.openGithub(res.page);
-    return;
-  }
-  toast(`Não deu para atualizar: ${res.error}`, 'error');
-}
-
-function renderUpdateNotice() {
-  document.querySelectorAll('.update-notice').forEach((box) => {
-    box.hidden = !update.ready;
-    box.querySelector('.update-text').textContent = `Versão ${update.ready} pronta. Ela começa a valer quando o app reiniciar.`;
-  });
+  setBusy(go, true, 'Reiniciando…');
+  $('ubText').textContent = 'Abrindo a versão nova…';
+  window.api.restartApp();
 }
 
 // ---------- Estatísticas ----------
@@ -3039,7 +3066,9 @@ window.api.getVersion().then((v) => {
   checkGithub();
 });
 $('checkUpdates').onclick = () => checkGithub(true);
-document.querySelectorAll('.update-restart').forEach((b) => { b.onclick = () => window.api.restartApp(); });
+$('ubGo').onclick = runUpdate;
+$('ubLater').onclick = () => { update.dismissed = updateMode()?.version || ''; renderUpdateBanner(); };
+setInterval(() => checkGithub(), 30 * 60 * 1000); // quem deixa o app aberto também fica sabendo
 
 $('goCreate').onclick = () => show('create-room');
 $('goJoin').onclick = () => setJoinOpen(true);
