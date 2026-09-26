@@ -147,34 +147,16 @@
         </div>
 
         <!-- Painel: endereço, sua transmissão, quem está na sala e o chat, sempre à vista -->
+        <!-- Painel: só o chat. As pessoas (e o endereço da sala) abrem pelo botão no topo -->
         <aside class="panel" id="sidePanel">
-          <div class="side-section">
-            <div id="roomAddress"></div>
-            <p id="noRadmin" class="warn" hidden>Nenhum IP da Radmin VPN (26.x.x.x) encontrado. Ligue a Radmin e entre na rede.</p>
-          </div>
-
-          <div class="side-section my-share" id="myShare" hidden>
-            <h3>Sua transmissão</h3>
-            <div class="mini">
-              <video id="myPreview" autoplay muted playsinline></video>
-              <p id="previewPaused" class="mini-note" hidden>Prévia pausada enquanto você usa outro app, para não pesar no jogo. A transmissão continua normal.</p>
-              <span class="live-badge">Ao vivo</span>
-            </div>
-            <p id="watcherInfo" class="hint"></p>
-            <p id="encoderInfo" class="hint"></p>
-            <p id="awayInfo" class="hint"></p>
-            <p id="noAudio" class="warn" hidden>Transmitindo sem áudio.</p>
-          </div>
-
-          <div class="side-section">
-            <h3>Na sala · <span id="memberCount">1</span></h3>
-            <ul id="members" class="members"></ul>
-            <p id="downloadInfo" class="hint"></p>
-          </div>
-
           <div class="chat" id="chatTab">
             <div class="chat-head">
-              <h3>Chat</h3>
+              <h2 class="chat-title">Chat</h2>
+              <button class="people-btn" id="peopleBtn" type="button" aria-expanded="false" aria-controls="peoplePop">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5a6.5 6.5 0 0 1 3.5 5.5"/></svg>
+                <span id="memberCount">1</span>
+                <span class="people-speak" id="peopleSpeak" title="Alguém está falando" hidden></span>
+              </button>
               <button class="btn icon ghost" id="chatCollapse" type="button"></button>
             </div>
             <p id="chatOff" class="warn" hidden>O chat está desligado nesta sala: quem criou precisa da versão 1.7.0 ou mais nova.</p>
@@ -194,6 +176,26 @@
               <button type="submit" class="btn primary icon" id="chatSend"></button>
               <input type="file" id="chatFile" multiple hidden>
             </form>
+          </div>
+
+          <div class="people-pop" id="peoplePop" role="dialog" aria-labelledby="peopleTitle" hidden>
+            <div class="pp-head">
+              <h3 id="peopleTitle">Na sala · <span id="memberTitleCount">1</span></h3>
+              <span class="hint" id="voiceCount"></span>
+            </div>
+            <ul id="members" class="members"></ul>
+            <p id="downloadInfo" class="hint"></p>
+            <div class="pp-share" id="myShare" hidden>
+              <h3>Sua transmissão</h3>
+              <p id="watcherInfo" class="hint"></p>
+              <p id="encoderInfo" class="hint"></p>
+              <p id="awayInfo" class="hint"></p>
+              <p id="noAudio" class="warn" hidden>Transmitindo sem áudio.</p>
+            </div>
+            <div class="pp-addr">
+              <div id="roomAddress"></div>
+              <p id="noRadmin" class="warn" hidden>Nenhum IP da Radmin VPN (26.x.x.x) encontrado. Ligue a Radmin e entre na rede.</p>
+            </div>
           </div>
         </aside>
       </div>

@@ -40,7 +40,7 @@ Para gerar um `.exe` portátil sem publicar nada: `npm run dist` (o arquivo apar
 - **Barra do vídeo:** aparece nos primeiros segundos, ao passar o mouse ou ao navegar com Tab. Tem o alto-falante (silenciar), o volume, a tela cheia (as duas setinhas) e o X. Também dá para entrar em tela cheia clicando duas vezes no vídeo. Cada tela tem o próprio volume.
 - **Destacar uma tela:** assistindo duas ou mais pessoas, o botão de destacar (um quadro dentro do outro) na barra do vídeo faz essa tela ocupar toda a área de vídeo. As outras ficam em pausa só para você, sem vídeo e sem som. Quem transmite para de mandar o vídeo para você, e o seu PC deixa de decodificar. A faixa de cima mostra quem está em pausa: clique num nome para trocar o destaque na hora, ou em Mostrar todas (ou Esc) para voltar ao lado a lado.
 - **Painel e barra da sala:**
-  - **Painel à direita:** o endereço (com Copiar), quem está na sala, a sua transmissão (prévia e detalhes) e o chat, sempre à vista.
+  - **Painel à direita:** só o chat. O botão de pessoas no topo (com o total, e uma bolinha verde quando alguém fala) abre a lista por cima do chat: quem está na sala, com Assistir e volume, os detalhes da sua transmissão e o endereço da sala (com Copiar). Clicar fora ou Esc fecha. A prévia da sua própria tela não aparece mais: você vê o que escolheu ao começar a transmitir, e a barra mostra "Ao vivo" com quantos estão assistindo.
   - **Barra embaixo dos vídeos:** Transmitir minha tela (vira "Ao vivo · N assistindo" com Parar), a janela flutuante aberta (com o atalho e o X), Estatísticas, o balão do chat e Sair.
   - **O balão recolhe o painel,** e os vídeos ocupam a largura toda. Recolhido, ele mostra quantas mensagens chegaram, e o endereço da sala passa para a barra.
 - **Chat:** mensagens seguidas da mesma pessoa ficam juntas. As que chegam enquanto você não está olhando ganham a linha "N mensagens novas" e o botão "Ir para as mensagens novas".
@@ -73,7 +73,7 @@ A voz usa WebRTC direto pela Radmin, com uma conexão por par de participantes. 
 
 ## Tema
 
-O app usa o tema **Orbyt** (escuro): fundo azul-marinho com estrelinhas, dourado nos botões principais, verde-água para seleção e "você", azul para "transmitindo" e âmbar para parar, encerrar e erros (sem vermelho). Fontes Bricolage Grotesque (títulos) e Atkinson Hyperlegible (texto), dentro do app em `vendor/fonts/` (licença SIL OFL 1.1).
+O app usa uma paleta escura minimalista: grafite quase neutro, texto claro e uma cor de destaque só, azul-lavanda, para seleção, "você", "transmitindo" e "ao vivo". Verde só para "falando" e conectado, e âmbar para parar, encerrar e erros (sem vermelho). Fontes Bricolage Grotesque (títulos) e Atkinson Hyperlegible (texto), dentro do app em `vendor/fonts/` (licença SIL OFL 1.1).
 
 ## Chat por cima do jogo
 
@@ -145,7 +145,6 @@ Faça o mesmo nos PCs de quem assiste, caso o Windows pergunte.
 O app já faz isto sozinho:
 
 - **Janela minimizada ou coberta pelo jogo:** depois de 3 segundos, o app para de baixar o vídeo das telas que você assiste e fica só com o som. Quem transmite deixa de codificar vídeo para você, e o seu PC deixa de decodificar. Ao voltar para a janela, o vídeo volta na hora. Quem transmite vê "(vídeo pausado)" ao lado do seu nome.
-- **Prévia da sua tela:** só roda com a janela do app em foco. Enquanto você está no jogo ela para, e a transmissão continua normal.
 - **Som:** o capturador de áudio usa a prioridade de áudio do Windows e tem uma folga maior, então não picota quando o jogo pesa.
 - **Prioridade e modo de eficiência:** com a janela minimizada, o Chromium (o motor do app) jogava a página de quem assiste para prioridade *ociosa* e *modo de eficiência* (núcleos lentos). Enquanto alguém jogava, o som picotava e as respostas para quem transmite atrasavam, e quem transmitia baixava a qualidade achando que a internet estava ruim. Agora todos os processos do app ficam **acima do normal** e com o modo de eficiência desligado, mesmo minimizados.
 
@@ -168,7 +167,7 @@ No modo normal, cada pessoa que assiste tem uma conexão própria, e o WebRTC co
 
 Na tela de transmitir, **Codificação > Uma vez só para todos (experimental)** codifica o vídeo uma vez só e manda o mesmo vídeo para todos. O peso não aumenta quando mais gente entra. O app escolhe o motor sozinho, nesta ordem:
 
-1. **NVENC direto** (placas NVIDIA com driver 522 ou mais novo): o ajudante `videocap.exe` captura a tela pelo Windows e codifica no NVENC. A imagem nem passa pelo processador. No teste com 2 pessoas assistindo, o app usou 0,6% do processador, contra 1,5% no WebCodecs e 2,4% no modo normal. Nesse motor, a prévia da sua tela é a própria transmissão decodificada.
+1. **NVENC direto** (placas NVIDIA com driver 522 ou mais novo): o ajudante `videocap.exe` captura a tela pelo Windows e codifica no NVENC. A imagem nem passa pelo processador. No teste com 2 pessoas assistindo, o app usou 0,6% do processador, contra 1,5% no WebCodecs e 2,4% no modo normal. 
 2. **WebCodecs** (qualquer placa): a captura é a do Chromium, e a codificação vai para a placa de vídeo (AMD e Intel também) ou para o processador.
 3. **Modo normal**, se os dois falharem.
 
@@ -192,7 +191,7 @@ Com o jogo em tela cheia, a taxa de envio pode cair por três motivos:
 - **Captura da *janela* do jogo em tela cheia exclusiva:** a janela pode congelar ou ficar preta. Imagem parada ocupa quase nada, e o envio despenca. Nesse caso, use o modo **janela sem bordas** (*borderless*) do jogo ou transmita a **Tela inteira**.
 - **Processador:** veja a prioridade, abaixo.
 
-Para saber qual foi, volte para o app depois de jogar. Embaixo da prévia aparece o resumo de como a transmissão foi enquanto o app estava escondido: quadros capturados, quadros enviados, Mbps e o que limitou (placa de vídeo, processador ou internet).
+Para saber qual foi, volte para o app depois de jogar. Na lista de pessoas, em "Sua transmissão", aparece o resumo de como a transmissão foi enquanto o app estava escondido: quadros capturados, quadros enviados, Mbps e o que limitou (placa de vídeo, processador ou internet).
 
 O que você pode ajustar:
 

@@ -222,6 +222,7 @@ function tickSpeak() {
 // Marca quem fala em todo lugar que mostra a pessoa: lista, barra, quadro de vídeo e janelas flutuantes
 function renderSpeaking() {
   for (const el of document.querySelectorAll('[data-person]')) el.classList.toggle('speaking', speaking.has(el.dataset.person));
+  $('peopleSpeak').hidden = ![...speaking].some((id) => id !== state.myId);
   for (const [id, link] of state.in) link.tile.el.classList.toggle('speaking', speaking.has(id));
   renderPipSpeaking();
   renderChatOverlay();
@@ -1632,9 +1633,9 @@ async function renderRoomAddress() {
 // Cada pessoa tem uma cor (a mesma no chat e na lista); você é sempre azul
 // Cores do tema Orbyt usadas nas janelas que o app monta por código (flutuantes e chat por cima do jogo)
 const THEME = {
-  bg: '#0C1030', sunken: '#080B24', card: '#151A42', raised: '#1F2558', line: '#2B3270', field: '#5A64B8',
-  text: '#EEF0FF', muted: '#9098C9', primary: '#FFC46B', onPrimary: '#1A1405', accent: '#5EE6D0',
-  accentSoft: 'rgba(94, 230, 208, .18)', ok: '#5EE69A', ink: '#0C1030', glass: 'rgba(12, 16, 48, .9)',
+  bg: '#0F1012', sunken: '#0A0B0D', card: '#16171A', raised: '#1E1F23', line: '#2A2B30', field: '#62656F',
+  text: '#EDEDF0', muted: '#8E9099', primary: '#EDEDF0', onPrimary: '#0F1012', accent: '#A3B1FF',
+  accentSoft: 'rgba(163, 177, 255, .18)', ok: '#7CCF9E', ink: '#0F1012', glass: 'rgba(16, 17, 20, .9)',
   font: '"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif',
 };
 // As janelas abertas pelo app (about:blank) não herdam as fontes: carrega o mesmo fonts.css nelas
@@ -1644,7 +1645,7 @@ function useAppFonts(d) {
   link.href = new URL('fonts.css', location.href).href;
   d.head.append(link);
 }
-const PERSON_COLORS = ['#f2a65a', '#6fcf97', '#c490f0', '#7FB8FF', '#FF86B0', '#e0c85a'];
+const PERSON_COLORS = ['#f2a65a', '#6fcf97', '#c490f0', '#5fd0d6', '#FF86B0', '#e0c85a'];
 function personColor(id) {
   if (!id || id === state.myId) return 'var(--accent)';
   let h = 0;
@@ -1732,7 +1733,11 @@ function memberRow(id, name, sharing) {
 function renderMembers() {
   const list = $('members');
   list.innerHTML = '';
-  $('memberCount').textContent = state.members.size + 1;
+  $('memberCount').textContent = $('memberTitleCount').textContent = state.members.size + 1;
+  $('peopleBtn').setAttribute('aria-label', `Pessoas na sala (${state.members.size + 1})`);
+  $('peopleBtn').title = 'Pessoas na sala';
+  const inVoiceCount = [...voice.members.values()].filter((m) => m.session).length + (voice.session ? 1 : 0);
+  $('voiceCount').textContent = inVoiceCount ? `${inVoiceCount} na voz` : '';
   list.append(memberRow(null, `${getName()} (você)`, state.sharing));
   const others = [...state.members].sort((a, b) => Number(b[1].sharing) - Number(a[1].sharing));
   for (const [id, m] of others) list.append(memberRow(id, m.name, m.sharing));
@@ -1954,6 +1959,14 @@ function setPanelOpen(open) {
   renderUnread();
   renderVoiceAvatars();
   closePersonCard();
+  setPeopleOpen(false);
+}
+
+// Lista de pessoas: abre pelo botão no topo do chat, por cima das mensagens
+function setPeopleOpen(open) {
+  $('peoplePop').hidden = !open;
+  $('peopleBtn').setAttribute('aria-expanded', String(open));
+  if (!open) closePersonCard();
 }
 
 function chatAtBottom() {
@@ -2874,20 +2887,10 @@ function syncIncomingVideo() {
 }
 
 // A prévia da sua própria tela só roda com a janela do app em foco: enquanto você joga, ela para.
+// A prévia da sua própria tela saiu do painel (você já vê o que escolheu ao começar a transmitir):
+// só garante que nenhuma prévia antiga siga decodificando
 function syncPreview() {
-  const preview = $('myPreview');
-  const active = state.sharing && document.hasFocus() && !document.hidden;
-  const hasTrack = !!(state.stream && state.stream.getVideoTracks()[0]);
-  if (once.active && once.engine === 'nvenc' && !hasTrack) {
-    // NVENC direto: não há captura do Chromium, então a prévia decodifica a própria transmissão
-    if (active) startPreview(preview);
-    else stopPreview();
-  } else {
-    stopPreview();
-    const src = active ? state.stream : null;
-    if (preview.srcObject !== src) preview.srcObject = src;
-  }
-  $('previewPaused').hidden = !state.sharing || active;
+  stopPreview();
 }
 
 function onVisibility() {
@@ -3580,6 +3583,13 @@ $('chatToggle').insertAdjacentHTML('afterbegin', ICON.chat);
 $('chatToggle').onclick = () => setPanelOpen(!chat.open);
 setIcon($('chatCollapse'), 'chevron', 'Recolher o painel da sala');
 $('chatCollapse').onclick = () => setPanelOpen(false);
+$('peopleBtn').onclick = () => setPeopleOpen($('peoplePop').hidden);
+// Clicar fora da lista fecha (o cartão de volume, que abre de dentro dela, conta como dentro)
+document.addEventListener('mousedown', (e) => {
+  if ($('peoplePop').hidden) return;
+  if (e.target.closest('#peoplePop, #peopleBtn, #personCard')) return;
+  setPeopleOpen(false);
+});
 $('chatJump').onclick = () => { scrollChatToEnd(); markRead(); };
 $('chatList').addEventListener('scroll', () => { if (chatAtBottom() && chat.open && !document.hidden) markRead(); else renderUnread(); });
 // A barra de rolagem fica escondida e aparece enquanto rola (e com o mouse em cima, pelo CSS)
@@ -3621,6 +3631,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
   if (!$('voiceDialog').hidden) { if (!capturing) closeVoiceDialog(); }
   else if (!$('personCard').hidden) closePersonCard();
+  else if (!$('peoplePop').hidden) { setPeopleOpen(false); $('peopleBtn').focus(); }
   else if (!$('statsDialog').hidden) closeStats();
   else if (!$('closeDialog').hidden) closeCloseDialog();
   else if (!$('shareDialog').hidden) closeShareDialog();
