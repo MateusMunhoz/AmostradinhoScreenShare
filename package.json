@@ -25,6 +25,7 @@
     "files": [
       "boot.js",
       "main.js",
+      "main/**",
       "preload.js",
       "signaling.js",
       "github.js",
