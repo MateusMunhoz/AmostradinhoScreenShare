@@ -82,3 +82,9 @@ function formatBytes(n) {
 const pct = (v) => `${(v || 0).toFixed(1).replace('.', ',')}%`;
 const fpsText = (v) => `${Math.round(v || 0)} fps`;
 const mbpsText = (v) => `${(v || 0).toFixed(1).replace('.', ',')} Mbps`;
+
+// Fecha o diálogo quando o clique começa no fundo escuro, fora do cartão. mousedown (e não click):
+// arrastar um controle deslizante e soltar fora do cartão não conta como clique fora.
+function closeOnBackdrop(id, close) {
+  $(id).addEventListener('mousedown', (e) => { if (e.target === $(id)) close(); });
+}

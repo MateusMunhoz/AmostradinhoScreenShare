@@ -50,7 +50,11 @@ app.whenReady().then(async () => {
     check('Estatísticas abrem nas duas abas', await run(`!$('statsDialog').hidden && document.querySelectorAll('#streamRows .stream-card').length === 1`));
     await run(`(() => { setStatsTab('perf'); closeStats(); openVoiceDialog(); })()`);
     check('Voz e atalhos abre', await run(`!$('voiceDialog').hidden`));
-    await run(`closeVoiceDialog()`);
+    await run(`$('voiceDialog').querySelector('.dialog').dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))`);
+    check('Clicar dentro do cartão não fecha', await run(`!$('voiceDialog').hidden`));
+    await run(`$('voiceDialog').dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))`);
+    await run(`(() => { openStats(); $('statsDialog').dispatchEvent(new MouseEvent('mousedown', { bubbles: true })); })()`);
+    check('Clicar no fundo fecha Voz e atalhos e Estatísticas', await run(`$('voiceDialog').hidden && $('statsDialog').hidden`));
     check('Nenhum erro depois de usar', errors.length === 0, errors.join(' | '));
   } catch (e) {
     check('Sem exceção', false, e.message);

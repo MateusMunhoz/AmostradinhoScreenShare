@@ -88,8 +88,8 @@ $('shortcutReset').onclick = async () => {
 };
 $('voiceSettingsBtn').onclick = openVoiceDialog;
 $('closeVoiceDialog').onclick = closeVoiceDialog;
-$('voiceDialog').addEventListener('mousedown', (e) => { if (e.target === $('voiceDialog')) closeVoiceDialog(); });
-$('statsDialog').addEventListener('mousedown', (e) => { if (e.target === $('statsDialog')) closeStats(); });
+closeOnBackdrop('voiceDialog', closeVoiceDialog);
+closeOnBackdrop('statsDialog', closeStats);
 
 window.addEventListener('beforeunload', () => voice.leave(false));
 
