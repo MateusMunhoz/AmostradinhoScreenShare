@@ -52,7 +52,8 @@ async function createRoom() {
   const btn = $('createBtn');
   setBusy(btn, true, 'Criando…');
   try {
-    const res = await window.api.startServer(port, password);
+    // A sessão aparece para quem está na rede, menos se você desmarcou (e continua assim numa troca de host)
+    const res = await window.api.startServer(port, password, { sessao: { oculta: !$('roomVisible').checked } });
     if (!res.ok) throw new Error(res.error);
     try {
       const welcome = await connectRoom(`ws://127.0.0.1:${port}`, { name: getName(), password });
@@ -97,7 +98,9 @@ function enterRoom(welcome, owner, host, port) {
   for (const m of welcome.members) state.members.set(m.id, { name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs || [], shareInfo: m.shareInfo || null });
   state.hostId = welcome.hostId || null;
   state.handoff = (welcome.features || []).includes('handoff');
+  state.sessao = welcome.sessao || null;
   state.order = [...welcome.members.map((m) => m.id), welcome.id];
+  lembrarDaSala();
   voice.reset(welcome);
   window.api.roomKeys(true).catch(() => {});
   renderLeaveBtn();
@@ -201,7 +204,7 @@ async function becomeHost() {
   // Se o app do host acabou de cair, a porta pode levar um instante para ficar livre
   let res;
   for (let i = 0; i < 6; i++) {
-    res = await window.api.startServer(state.port, state.password, { chat: chat.log, nextId: Math.max(0, ...known) + 1, hostId: state.myId });
+    res = await window.api.startServer(state.port, state.password, { chat: chat.log, nextId: Math.max(0, ...known) + 1, hostId: state.myId, sessao: state.sessao });
     if (res.ok || !state.migrating) break;
     await new Promise((r) => setTimeout(r, 1000));
   }
@@ -233,6 +236,7 @@ async function rejoin(host, timeoutMs) {
   state.host = host;
   state.hostId = welcome.hostId || null;
   state.handoff = (welcome.features || []).includes('handoff');
+  state.sessao = welcome.sessao || state.sessao;
   if (!state.isOwner) save('roomAddr', `${host}:${state.port}`);
   const present = new Set(welcome.members.map((m) => m.id));
   for (const m of state.members.values()) delete m.back;

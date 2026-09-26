@@ -663,3 +663,18 @@ fieldset.group > legend { margin-bottom: 10px; }
 
 /* Trocar o que transmitir: só a escolha da fonte (qualidade, som e codificação continuam os mesmos) */
 .modal.switching .share-settings { display: none; }
+
+/* Sessões abertas na rede (tela inicial) */
+.sessions { display: flex; flex-direction: column; gap: 8px; }
+.sessions-title { margin: 0; font-size: 14px; font-weight: 600; color: var(--muted); letter-spacing: 0; }
+.session-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; max-height: 196px; overflow-y: auto; }
+.session { display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); box-shadow: var(--lift); }
+.session-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.session-info strong { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.session-meta { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); }
+.session-meta svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.sessions .hint { font-size: 12.5px; }
+.check-line { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; cursor: pointer; }
+.check-line input { margin-top: 3px; width: 16px; height: 16px; accent-color: var(--accent); flex: none; }
+.check-line span { display: flex; flex-direction: column; gap: 3px; }
+.check-line small { font-size: 12px; line-height: 1.4; }

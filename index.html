@@ -41,6 +41,11 @@
             <span>Seu nome</span>
             <input id="name" maxlength="32" placeholder="Como os outros vão te ver">
           </label>
+          <section class="sessions" aria-labelledby="sessionsTitle">
+            <h2 class="sessions-title" id="sessionsTitle">Sessões abertas</h2>
+            <ul id="sessionList" class="session-list" aria-live="polite"></ul>
+            <p id="sessionsEmpty" class="hint"></p>
+          </section>
           <div class="create-block">
             <button class="btn primary big" id="goCreate" type="button">Criar sala</button>
             <span class="hint center">Os amigos entram pelo seu endereço</span>
@@ -87,6 +92,10 @@
         <label class="field">
           <span>Senha (opcional)</span>
           <input id="roomPassword" type="password" placeholder="Vazio = sem senha">
+        </label>
+        <label class="check-line">
+          <input type="checkbox" id="roomVisible" checked>
+          <span>Mostrar esta sessão para quem está na rede<small class="hint">Aparece na tela inicial dos outros, com o seu nome e quantas pessoas estão nela. A senha continua sendo pedida.</small></span>
         </label>
         <button class="btn primary" id="createBtn">Criar sala</button>
         <p class="hint">A sala fica aberta enquanto você estiver nela. Quando você sair, ela é encerrada para todos.</p>
@@ -471,6 +480,7 @@
   <script src="renderer/chat.js"></script>
   <script src="renderer/estatisticas.js"></script>
   <script src="renderer/atualizacao.js"></script>
+  <script src="renderer/sessoes.js"></script>
   <script src="renderer/transmitir.js"></script>
   <script src="renderer/inicio.js"></script>
 </body>

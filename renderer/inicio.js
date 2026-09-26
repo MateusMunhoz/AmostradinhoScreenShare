@@ -205,6 +205,10 @@ $('rejoinBtn').onclick = () => {
 document.querySelectorAll('.back').forEach((b) => { b.onclick = () => show('home'); });
 
 $('createBtn').onclick = createRoom;
+// Sessões abertas: a lista chega do processo principal; a escolha de mostrar a sua fica guardada
+window.api.onSessoes(onSessoesDaRede);
+$('roomVisible').checked = load('sessaoVisivel', '1') !== '0';
+$('roomVisible').onchange = () => save('sessaoVisivel', $('roomVisible').checked ? '1' : '0');
 $('roomPassword').addEventListener('keydown', (e) => { if (e.key === 'Enter') createRoom(); });
 $('joinBtn').onclick = joinRoom;
 $('roomAddr').addEventListener('keydown', (e) => { if (e.key === 'Enter') joinRoom(); });

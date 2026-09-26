@@ -13,6 +13,7 @@ const QUALITY = {
 const RTC_CONFIG = { iceServers: [] };
 
 const state = {
+  sessao: null,         // { id, oculta } da sessão (a sala como aparece na lista de sessões abertas)
   ws: null,
   myId: null,
   isOwner: false,

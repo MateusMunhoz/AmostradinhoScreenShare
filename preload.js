@@ -49,4 +49,7 @@ contextBridge.exposeInMainWorld('api', {
   openGithub: (url) => ipcRenderer.invoke('open-github', url),
   startServer: (port, password, seed) => ipcRenderer.invoke('start-server', port, password, seed),
   stopServer: (endRoom) => ipcRenderer.invoke('stop-server', !!endRoom),
+  // Sessões abertas na rede: escuta só com a tela inicial à vista
+  sessoesObservar: (on) => ipcRenderer.invoke('sessoes-observar', !!on),
+  onSessoes: (cb) => ipcRenderer.on('sessoes', (_e, lista) => cb(lista)),
 });

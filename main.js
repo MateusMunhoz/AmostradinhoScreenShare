@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const { spawn, execFile } = require('child_process');
-const { startServer, stopServer } = require('./signaling');
+const { startServer, stopServer, roomInfo, roomSize, onRoomChange } = require('./signaling');
 const github = require('./github');
 const {
   BIN, AUDIOCAP, setPriority, stopPriority, startStats, stopStats, probeVideoCap, startVideoCap, stopVideoCap,
@@ -13,6 +13,7 @@ const { janelas } = require('./main/contexto');
 const { pips, livePip, freeSlot, pipBounds, setPipSize, setPipGroup, setPipOpacity, setPipEdit, setupPip } = require('./main/janela-flutuante');
 const { chatBounds, setupChatOverlay, chatComposeRequest } = require('./main/chat-jogo');
 const { keys, setShortcut, setRoomKeys, setPtt } = require('./main/atalhos');
+const sessoes = require('./main/sessoes');
 
 // Usa os IPs reais (26.x da Radmin) nos candidatos WebRTC em vez de endereços .local.
 // No Windows 10, a captura moderna do Windows (a que o Chromium usa) desenha uma borda amarela em volta
@@ -94,6 +95,12 @@ function relaunch() {
     detached: true, stdio: 'ignore', windowsHide: true, windowsVerbatimArguments: true,
   }).unref();
   app.quit();
+}
+
+// Para de anunciar a sessão. Sem encerrar para todos e com mais gente na sala, ela vai para outro PC
+// (troca de host): aí não avisa que fechou, e o novo host continua o anúncio com o mesmo id.
+function endSession(endRoom) {
+  sessoes.pararAnuncio({ passaAdiante: !endRoom && roomSize() > 1 });
 }
 
 function createWindow() {
@@ -247,6 +254,7 @@ app.whenReady().then(() => {
     if (typeof url === 'string' && /^https?:\/\/[^\s]+$/i.test(url)) shell.openExternal(url);
   });
   ipcMain.handle('restart-app', () => {
+    endSession(false);
     stopServer();
     stopAppAudio();
     stopVideoCap();
@@ -254,8 +262,18 @@ app.whenReady().then(() => {
     relaunch();
   });
 
-  ipcMain.handle('start-server', (_e, port, password, seed) => startServer(port, password, seed || {}));
-  ipcMain.handle('stop-server', (_e, endRoom) => stopServer({ endRoom: !!endRoom }));
+  // A sala aberta aparece na lista de sessões de quem está na rede (menos se foi criada oculta)
+  ipcMain.handle('start-server', async (_e, port, password, seed) => {
+    const res = await startServer(port, password, seed || {});
+    if (res.ok) sessoes.anunciar(roomInfo, updater.version);
+    return res;
+  });
+  ipcMain.handle('stop-server', (_e, endRoom) => {
+    endSession(!!endRoom);
+    stopServer({ endRoom: !!endRoom });
+  });
+  onRoomChange(() => sessoes.anunciarAgora());
+  ipcMain.handle('sessoes-observar', (e, on) => sessoes.observar(!!on, e.sender));
 
   createWindow();
 });
@@ -263,6 +281,7 @@ app.whenReady().then(() => {
 app.on('will-quit', () => { globalShortcut.unregisterAll(); setPtt(0); });
 
 app.on('window-all-closed', () => {
+  endSession(false);
   stopServer();
   stopAppAudio();
   stopVideoCap();

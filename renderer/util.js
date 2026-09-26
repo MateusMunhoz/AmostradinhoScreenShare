@@ -9,6 +9,7 @@ function show(id) {
   document.querySelectorAll('.screen').forEach((s) => { s.hidden = s.id !== id; });
   if (typeof renderUpdateBanner === 'function') renderUpdateBanner();
   if (id === 'home') renderHome();
+  if (typeof setSessionWatch === 'function') setSessionWatch(id === 'home'); // procura sessões só no início
 }
 
 let toastTimer;
@@ -58,6 +59,7 @@ const ICON = {
   phoneOff: svg('M3 11a15 15 0 0 1 18 0l-2 3-3-1v-2a10 10 0 0 0-8 0v2l-3 1z'),
   overlay: svg('M3 4h18v14H3zM6 12h7M6 15h5'),        // tela com linhas de texto: chat por cima da tela
   eye: svg('M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z'),
+  lock: svg('M6 11h12v10H6zM8 11V7a4 4 0 0 1 8 0v4'),
   sliders: svg('M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6'), // controles: voz e atalhos
 };
 
