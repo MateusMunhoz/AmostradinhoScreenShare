@@ -106,7 +106,7 @@ $('shortcutReset').onclick = async () => {
   for (const [action, accel] of Object.entries(defaults)) await applyShortcut(action, accel);
 };
 $('micTestBtn').onclick = () => (micTest.on ? stopMicTest() : startMicTest());
-$('voiceSettingsBtn').onclick = openVoiceDialog;
+$('voiceSettingsBtn').onclick = () => ($('voiceDialog').hidden ? openVoiceDialog() : closeVoiceDialog()); // de novo: fecha
 $('closeVoiceDialog').onclick = closeVoiceDialog;
 closeOnBackdrop('voiceDialog', closeVoiceDialog);
 closeOnBackdrop('statsDialog', closeStats);

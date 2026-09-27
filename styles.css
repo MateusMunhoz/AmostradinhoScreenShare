@@ -750,7 +750,7 @@ main { padding-top: var(--workspace-top); }
 #workspacePanes .people-pop { top: 50px; right: 8px; left: 8px; max-height: calc(100% - 60px); z-index: 8; }
 
 /* Voz e atalhos na sala: painel à esquerda, espelhando os painéis de chat e voz (renderer/microfone.js) */
-.voice-side #voiceDialog { position: fixed; inset: var(--workspace-top) auto 16px 16px; width: var(--workspace-width); padding: 0; background: none; display: flex; align-items: stretch; z-index: 4; }
+.voice-side #voiceDialog { position: fixed; inset: 16px auto 16px 16px; width: var(--workspace-width); padding: 0; background: none; display: flex; align-items: stretch; z-index: 11; } /* começa na altura da barra de atalhos da direita, acima do cabeçalho */
 .voice-side #voiceDialog .dialog { --text: var(--surface-text); --text-2: var(--surface-text-2); --muted: var(--surface-muted); width: 100%; max-height: none; flex: 1; min-height: 0; overflow-y: auto; color: var(--text); background: var(--panel); border-radius: 10px; padding: 16px; }
 .voice-side main { padding-left: calc(var(--workspace-width) + 12px); }
 .voice-side.workspace-wide #workspacePanes { left: calc(var(--workspace-width) + 28px); }

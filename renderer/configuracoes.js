@@ -25,8 +25,10 @@ function saveAppPreferences() {
 }
 
 function renderGeneralSettings() {
+  const effective = AppPreferences.palette(appPreferences.colors);
+  const shown = { text: '--text', live: '--live', speaking: '--ok', warn: '--warn', line: '--line' };
   for (const [key, value] of Object.entries(appPreferences.colors)) {
-    $('color-' + key).value = value;
+    $('color-' + key).value = value || effective[shown[key]]; // automática: a amostra mostra a cor calculada
     $('hex-' + key).value = value;
     $('hex-' + key).removeAttribute('aria-invalid');
     $('error-' + key).hidden = true;
@@ -62,7 +64,16 @@ function setupGeneralSettings() {
   setupConnectivitySettings();
   for (const [key] of Object.entries(appPreferences.colors)) {
     const picker = $('color-' + key), field = $('hex-' + key), error = $('error-' + key);
+    const optional = AppPreferences.optionalColors.includes(key);
     const change = (value, source) => {
+      if (optional && !String(value).trim()) { // vazio: volta a ser automática
+        field.removeAttribute('aria-invalid');
+        error.hidden = true;
+        appPreferences.colors[key] = '';
+        saveAppPreferences();
+        renderGeneralSettings();
+        return;
+      }
       const normalized = AppPreferences.hex(value);
       field.setAttribute('aria-invalid', String(!normalized));
       error.hidden = !!normalized;

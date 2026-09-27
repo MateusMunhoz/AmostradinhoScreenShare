@@ -19,7 +19,10 @@ const AppPreferences = (() => {
   ];
   // mute/unmute: o seu microfone (o apertar para falar não conta)
   const events = ['join', 'leave', 'chat', 'voiceJoin', 'voiceLeave', 'mute', 'unmute'];
-  const defaults = { colors: { main: '#22271E', secondary: '#2D3327', detail1: '#D6C45C', detail2: '#A6D089' },
+  // Cores: as 4 primeiras sempre valem; as outras começam vazias ('' = automático, calculada das 4) e só
+  // passam a valer quando a pessoa escolhe
+  const optionalColors = ['text', 'live', 'speaking', 'warn', 'line'];
+  const defaults = { colors: { main: '#22271E', secondary: '#2D3327', detail1: '#D6C45C', detail2: '#A6D089', text: '', live: '', speaking: '', warn: '', line: '' },
     sounds: { join: 'notification035', leave: 'whoosh', chat: 'wood', voiceJoin: 'suaveEntrou', voiceLeave: 'suaveSaiu',
       mute: 'suaveMutou', unmute: 'suaveDesmutou',
       chatMuted: false, volume: 50, levels: { join: 100, leave: 100, chat: 100, voiceJoin: 100, voiceLeave: 100, mute: 100, unmute: 100 } } };
@@ -55,20 +58,22 @@ const AppPreferences = (() => {
   const alpha = (c, a) => `rgba(${rgb(c).join(', ')}, ${a})`;
   function palette(colors) {
     const c = normalize({ colors }).colors;
-    const text = ink(c.main), surface = ink(c.secondary), muted = mix(surface, c.secondary, .32);
+    const text = c.text || ink(c.main), surface = c.text || ink(c.secondary), muted = mix(surface, c.secondary, .32);
+    const live = c.live || c.detail1, speaking = c.speaking || c.detail2, warn = c.warn || c.detail2;
+    const line = c.line || mix(c.secondary, surface, .18);
     return {
       '--bg': c.main, '--panel': c.secondary, '--sunken': mix(c.secondary, '#000000', .15),
       '--panel-2': mix(c.secondary, surface, .07), '--panel-3': mix(c.secondary, surface, .13),
       '--text': text, '--text-2': mix(text, c.main, .15), '--muted': mix(text, c.main, .3),
       '--surface-text': surface, '--surface-text-2': mix(surface, c.secondary, .15), '--surface-muted': muted,
-      '--line': mix(c.secondary, surface, .18), '--line-strong': mix(c.secondary, surface, .3), '--field-line': mix(c.secondary, surface, .45),
+      '--line': line, '--line-strong': c.line ? mix(c.line, surface, .15) : mix(c.secondary, surface, .3), '--field-line': c.line ? mix(c.line, surface, .3) : mix(c.secondary, surface, .45),
       '--primary': c.detail1, '--primary-hover': mix(c.detail1, ink(c.detail1), .12), '--primary-ink': ink(c.detail1),
       '--accent': c.detail1, '--accent-ink': ink(c.detail1), '--accent-soft': alpha(c.detail1, .14),
-      '--live': c.detail1, '--live-fill': c.detail1, '--live-ink': ink(c.detail1),
-      '--ok': c.detail2, '--ok-soft': alpha(c.detail2, .1), '--warn': c.detail2, '--warn-soft': alpha(c.detail2, .12),
+      '--live': live, '--live-fill': live, '--live-ink': ink(live),
+      '--ok': speaking, '--ok-soft': alpha(speaking, .1), '--warn': warn, '--warn-soft': alpha(warn, .12),
       '--thumb': mix(c.secondary, '#000000', .15), '--theme-glass': alpha(c.secondary, .94),
       '--on-video': '#FFFFFF', '--scrim': 'rgba(0, 0, 0, .65)',
-      'color-scheme': text === '#000000' ? 'light' : 'dark',
+      'color-scheme': luminance(c.main) > 0.179 ? 'light' : 'dark',
     };
   }
   // Toca um som "Suave" pelo Web Audio; devolve um objeto com pause() para o stop() funcionar igual
@@ -121,6 +126,6 @@ const AppPreferences = (() => {
     }
     stopAll() { for (const event of [...this.players.keys()]) this.stop(event); }
   }
-  return { key, sounds, events, defaults, hex, normalize, read, write, palette, SoundPlayer };
+  return { key, sounds, events, defaults, optionalColors, hex, normalize, read, write, palette, SoundPlayer };
 })();
 if (typeof module !== 'undefined') module.exports = AppPreferences;
