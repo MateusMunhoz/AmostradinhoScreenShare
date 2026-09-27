@@ -14,6 +14,7 @@ const { pips, livePip, freeSlot, pipBounds, setPipSize, setPipGroup, setPipOpaci
 const { chatBounds, setupChatOverlay, chatComposeRequest } = require('./main/chat-jogo');
 const { keys, setShortcut, setRoomKeys, setPtt } = require('./main/atalhos');
 const sessoes = require('./main/sessoes');
+const netbird = require('./main/netbird');
 
 // Usa os IPs reais (26.x da Radmin) nos candidatos WebRTC em vez de endereços .local.
 // No Windows 10, a captura moderna do Windows (a que o Chromium usa) desenha uma borda amarela em volta
@@ -36,6 +37,7 @@ app.commandLine.appendSwitch('disable-renderer-backgrounding');
 
 let selectedSourceId = null;
 let captureSystemAudio = true;
+let localDiscoveryEnabled = true;
 
 // Atualizações pela sala (boot.js). Sem ele (ex.: "electron main.js"), o app só não se atualiza.
 const updater = global.updater || {
@@ -230,16 +232,24 @@ app.whenReady().then(() => {
   });
   ipcMain.handle('stop-app-audio', () => stopAppAudio());
 
-  ipcMain.handle('get-ips', () => {
+  ipcMain.handle('get-ips', async (_e, provider = 'radmin') => {
     const list = [];
     for (const [name, addrs] of Object.entries(os.networkInterfaces())) {
       for (const a of addrs || []) {
         const v4 = a.family === 'IPv4' || a.family === 4;
-        if (v4 && !a.internal) list.push({ name, address: a.address, radmin: a.address.startsWith('26.') });
+        if (v4 && !a.internal) list.push({ name, address: a.address, radmin: a.address.startsWith('26.'), netbird: /netbird/i.test(name) });
       }
     }
-    return list.sort((a, b) => b.radmin - a.radmin);
+    if (provider === 'netbird') {
+      const vpn = await netbird.status();
+      for (const item of list) if (vpn.ip && item.address === vpn.ip) item.netbird = true;
+      return list.sort((a, b) => Number(b.netbird) - Number(a.netbird));
+    }
+    return list.sort((a, b) => Number(b.radmin) - Number(a.radmin));
   });
+  ipcMain.handle('netbird-status', () => netbird.status(true));
+  ipcMain.handle('netbird-connect', (_e, url, setupKey) => netbird.connect(url, setupKey));
+  ipcMain.handle('netbird-disconnect', () => netbird.disconnect());
 
   setPriority('above'); // a página manda a escolha salva assim que abre
   ipcMain.handle('set-priority', (_e, level) => setPriority(level));
@@ -278,16 +288,17 @@ app.whenReady().then(() => {
   });
 
   // A sala aberta aparece na lista de sessões de quem está na rede (menos se foi criada oculta)
-  ipcMain.handle('start-server', async (_e, port, password, seed) => {
+  ipcMain.handle('start-server', async (_e, port, password, seed, provider = 'radmin') => {
     const res = await startServer(port, password, seed || {});
-    if (res.ok) sessoes.anunciar(roomInfo, updater.version);
+    localDiscoveryEnabled = provider !== 'netbird';
+    if (res.ok && localDiscoveryEnabled) sessoes.anunciar(roomInfo, updater.version);
     return res;
   });
   ipcMain.handle('stop-server', (_e, endRoom) => {
     endSession(!!endRoom);
     stopServer({ endRoom: !!endRoom });
   });
-  onRoomChange(() => sessoes.anunciarAgora());
+  onRoomChange(() => { if (localDiscoveryEnabled) sessoes.anunciarAgora(); });
   ipcMain.handle('capture-exclude', (_e, on) => setCaptureExclude(on));
   ipcMain.handle('sessoes-observar', (e, on) => sessoes.observar(!!on, e.sender));
 

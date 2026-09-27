@@ -45,6 +45,7 @@ function openGeneralSettings() {
   if (!$('profilePane').hidden) closeProfilePopup();
   settingsReturnFocus = document.activeElement;
   renderGeneralSettings();
+  renderConnectivitySettings();
   $('generalSettingsDialog').hidden = false;
   syncWorkspace();
   setUtilityBackground(true);
@@ -58,6 +59,7 @@ function closeGeneralSettings() {
   settingsReturnFocus?.focus();
 }
 function setupGeneralSettings() {
+  setupConnectivitySettings();
   for (const [key] of Object.entries(appPreferences.colors)) {
     const picker = $('color-' + key), field = $('hex-' + key), error = $('error-' + key);
     const change = (value, source) => {

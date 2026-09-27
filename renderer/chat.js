@@ -77,6 +77,7 @@ function renderUnread() {
 }
 
 function resetChat(welcome) {
+  resetChatOverlayMessages();
   for (const u of chat.urls) URL.revokeObjectURL(u);
   chat.urls = [];
   chat.files.clear();
@@ -103,7 +104,8 @@ function onChatMessage(m) {
   // Cópia da conversa: se eu virar o host, o novo servidor continua daqui
   const { type, ...entry } = m;
   chat.log.push(entry);
-  if (chat.log.length > 100) chat.log.shift();
+  if (chat.log.length > 100) forgetChatOverlayMessage(chat.log.shift());
+  noteChatOverlayMessage(entry);
   renderChatOverlay();
   const wasBottom = chatAtBottom();
   const unseen = m.from !== state.myId && (!chat.open || document.hidden || !wasBottom);

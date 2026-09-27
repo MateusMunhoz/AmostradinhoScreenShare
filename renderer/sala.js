@@ -6,7 +6,9 @@
 // Meus endereços (Radmin primeiro): a sala guarda para me achar se eu virar o host
 async function myAddrs() {
   try {
-    const ips = await window.api.getIps();
+    const provider = selectedNetworkProvider();
+    const ips = await window.api.getIps(provider);
+    if (provider === 'netbird') return ips.filter((i) => i.netbird).map((i) => i.address);
     return ips.map((i) => i.address);
   } catch { return []; }
 }
@@ -52,8 +54,9 @@ async function createRoom() {
   const btn = $('createBtn');
   setBusy(btn, true, 'Criando…');
   try {
+    await requireSelectedNetwork();
     // A sessão aparece para quem está na rede, menos se você desmarcou (e continua assim numa troca de host)
-    const res = await window.api.startServer(port, password, { sessao: { oculta: !$('roomVisible').checked } });
+    const res = await window.api.startServer(port, password, { sessao: { oculta: !$('roomVisible').checked } }, selectedNetworkProvider());
     if (!res.ok) throw new Error(res.error);
     try {
       const welcome = await connectRoom(`ws://127.0.0.1:${port}`, { name: getName(), password });
@@ -79,6 +82,7 @@ async function joinRoom() {
   const btn = $('joinBtn');
   setBusy(btn, true, 'Entrando…');
   try {
+    await requireSelectedNetwork();
     const welcome = await connectRoom(`ws://${host}:${port}`, { name: getName(), password: $('joinPassword').value });
     state.password = $('joinPassword').value;
     enterRoom(welcome, false, host, port);

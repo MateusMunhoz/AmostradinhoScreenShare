@@ -8,10 +8,15 @@ async function renderRoomAddress() {
   box.innerHTML = '';
   let addrs;
   if (state.isOwner) {
-    const ips = await window.api.getIps();
-    const radmin = ips.filter((i) => i.radmin);
-    $('noRadmin').hidden = radmin.length > 0;
-    addrs = (radmin.length ? radmin : ips).map((i) => `${i.address}:${state.port}`);
+    const provider = selectedNetworkProvider();
+    const ips = await window.api.getIps(provider);
+    const preferred = provider === 'netbird' ? ips.filter((i) => i.netbird) : ips.filter((i) => i.radmin);
+    $('noRadmin').hidden = preferred.length > 0;
+    $('noRadmin').textContent = provider === 'netbird'
+      ? 'Nenhum IP da VPN Tela P2P foi encontrado. Conecte ao NetBird nas configurações gerais.'
+      : 'Nenhum IP da Radmin VPN (26.x.x.x) encontrado. Ligue a Radmin e entre na rede.';
+    const usable = provider === 'netbird' ? preferred : (preferred.length ? preferred : ips);
+    addrs = usable.map((i) => `${i.address}:${state.port}`);
   } else {
     $('noRadmin').hidden = true;
     addrs = [`${state.host}:${state.port}`];
