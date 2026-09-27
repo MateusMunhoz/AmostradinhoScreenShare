@@ -1,5 +1,5 @@
 'use strict';
-// Microfone (RNNoise, eco, sensibilidade), apertar para falar e a janela "Voz e atalhos".
+// Microfone (RNNoise, eco, sensibilidade), ouvir a própria voz, apertar para falar e a janela "Voz e atalhos".
 // Script clássico: divide o escopo global com os outros (ordem no index.html). Usa de: util, voz, chat.
 
 // ---------- Microfone: supressão de ruído, eco e apertar para falar ----------
@@ -17,9 +17,17 @@ let micNow = null;   // { raw, out, ctx, node } do microfone em uso
 let noiseWasm = null;
 const simdOk = () => WebAssembly.validate(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0, 1, 5, 1, 96, 0, 1, 123, 3, 2, 1, 0, 10, 10, 1, 8, 0, 65, 0, 253, 15, 253, 98, 11]));
 
-// Abre o microfone escolhido com os filtros escolhidos. Com a IA, o som passa pelo RNNoise (48 kHz) antes de sair.
-// Microfone escolhido que não está mais ligado ao PC: abre o padrão do Windows.
+// Abre o microfone da voz (o micNow) com os filtros escolhidos
 async function openMic() {
+  const mic = await buildMic();
+  micNow = mic;
+  return mic.out;
+}
+
+// Monta a cadeia do microfone escolhido com os filtros escolhidos. Com a IA, o som passa pelo RNNoise (48 kHz)
+// antes de sair. Microfone escolhido que não está mais ligado ao PC: abre o padrão do Windows.
+// Serve para a voz (openMic) e para o teste de ouvir a própria voz fora dela.
+async function buildMic() {
   const audio = { echoCancellation: voiceCfg.echo, noiseSuppression: voiceCfg.ns === 'chrome', autoGainControl: true };
   let raw;
   try {
@@ -59,8 +67,7 @@ async function openMic() {
   mic.timer = setInterval(() => tickGate(mic), 20);
   // Microfone desconectado: avisa a voz do mesmo jeito que o microfone "cru" avisaria
   for (const t of raw.getAudioTracks()) t.addEventListener('ended', () => dest.stream.getAudioTracks().forEach((o) => o.dispatchEvent(new Event('ended'))));
-  micNow = mic;
-  return mic.out;
+  return mic;
 }
 
 // Sensibilidade: mede o som (depois da IA) a cada 20 ms. Acima do limite, a porta abre na hora; abaixo,
@@ -99,7 +106,7 @@ function closeMic(mic) {
 
 // Trocar o filtro no meio da conversa: abre o microfone de novo e troca a faixa em cada conexão, sem cair
 async function restartMic() {
-  if (!voice.session || !voice.stream) return;
+  if (!voice.session || !voice.stream) { refreshMicTest(); return; }
   const old = micNow;
   const oldTrack = voice.stream.getAudioTracks()[0];
   let stream;
@@ -116,6 +123,87 @@ async function restartMic() {
   mixer.local(stream, true);
   closeMic(old);
   applyMicGate();
+  syncMicTest();
+}
+
+// ---------- Ouvir a própria voz (testar o microfone) ----------
+// Toca nas suas caixas ou no fone o som do microfone depois da IA e da sensibilidade: o que a sala ouve.
+// Na voz, escuta o mesmo microfone da conversa (mesmo com o microfone desligado, então dá para testar
+// sem os outros ouvirem). Fora da voz, abre um microfone só para o teste e fecha quando o teste para.
+// own: o microfone aberto só para o teste. mic: o que está tocando agora. tap: o volume que liga o som à saída.
+const micTest = { on: false, own: null, mic: null, tap: null, busy: false, again: false };
+
+async function startMicTest() {
+  if (micTest.on) return;
+  micTest.on = true;
+  renderMicTest();
+  await attachMicTest();
+}
+function stopMicTest() {
+  if (!micTest.on) return;
+  micTest.on = false;
+  micTest.again = false;
+  detachMicTest();
+  renderMicTest();
+}
+function detachMicTest() {
+  if (micTest.tap) {
+    try { micTest.mic.gate.disconnect(micTest.tap); } catch {}
+    micTest.tap.disconnect();
+    micTest.tap = null;
+  }
+  micTest.mic = null;
+  if (micTest.own) { closeMic(micTest.own); micTest.own = null; }
+}
+// Liga o som do microfone certo (o da voz ou um só do teste) à saída
+async function attachMicTest() {
+  micTest.busy = true;
+  detachMicTest();
+  let mic = voice.session ? micNow : null;
+  if (!mic) {
+    try {
+      mic = await buildMic();
+    } catch (err) {
+      micTest.busy = false;
+      micTest.on = false;
+      renderMicTest();
+      toast(err.name === 'NotAllowedError' ? 'Permita o acesso ao microfone nas configurações do Windows.'
+        : err.name === 'NotFoundError' ? 'Nenhum microfone encontrado.' : `Não foi possível abrir o microfone: ${err.message}`, 'error');
+      return;
+    }
+    micTest.own = mic;
+  }
+  micTest.busy = false;
+  if (!micTest.on) { detachMicTest(); return; } // parou enquanto o microfone abria
+  if (micTest.again) { micTest.again = false; return attachMicTest(); } // o filtro mudou enquanto abria
+  const tap = mic.ctx.createGain();
+  mic.gate.connect(tap);
+  tap.connect(mic.ctx.destination);
+  if (mic.ctx.state === 'suspended') mic.ctx.resume().catch(() => {});
+  micTest.tap = tap;
+  micTest.mic = mic;
+  renderMicTest();
+  syncMicTest(); // a voz pode ter começado ou acabado enquanto abria
+}
+// Entrou ou saiu da voz, ou o microfone da voz foi reaberto: troca para o microfone certo
+function syncMicTest() {
+  if (!micTest.on || micTest.busy) return;
+  const want = voice.session ? micNow : micTest.own;
+  if (!want || micTest.mic !== want) attachMicTest();
+}
+// Trocou o filtro fora da voz: abre o microfone do teste de novo, com o filtro novo
+function refreshMicTest() {
+  if (!micTest.on) return;
+  if (micTest.busy) micTest.again = true;
+  else if (micTest.own) attachMicTest();
+}
+function renderMicTest() {
+  const btn = $('micTestBtn');
+  if (!btn) return;
+  btn.textContent = micTest.on ? 'Parar de ouvir' : 'Ouvir minha voz';
+  btn.classList.toggle('primary', micTest.on);
+  btn.setAttribute('aria-pressed', String(micTest.on));
+  if (!$('voiceDialog').hidden) renderVoiceDialog();
 }
 
 // O microfone só manda som quando: não está desligado e (detecção de voz, ou a tecla está apertada)
@@ -210,6 +298,7 @@ function openVoiceDialog() {
 }
 function closeVoiceDialog() {
   stopCapture();
+  stopMicTest();
   $('voiceDialog').hidden = true;
   $('voiceSettingsBtn').focus();
 }
@@ -228,13 +317,13 @@ function renderVoiceDialog() {
   $('modeHint').textContent = voiceCfg.mode === 'ptt'
     ? 'Seu microfone só manda som enquanto você segura a tecla, até de dentro do jogo. Vale tecla do teclado ou botão lateral do mouse.'
     : 'Seu microfone fica aberto enquanto você está na voz; a supressão de ruído corta o que não é voz.';
-  $('micMeterBox').hidden = !voice.session;
+  $('micMeterBox').hidden = !voice.session && !micTest.own;
   $('gateAuto').checked = voiceCfg.gateAuto;
   $('gateDb').disabled = voiceCfg.gateAuto;
   if (!voiceCfg.gateAuto) { $('gateDb').value = String(voiceCfg.gateDb); $('gateMark').style.left = `${dbToPct(voiceCfg.gateDb)}%`; $('gateValue').textContent = `${voiceCfg.gateDb} dB`; }
-  $('gateHint').textContent = voice.session
+  $('gateHint').textContent = voice.session || micTest.own
     ? 'Fale normalmente: a barra fica verde quando o microfone abre. Barulho abaixo da marca não passa.'
-    : 'Entre na voz para ver o medidor do seu microfone.';
+    : 'Entre na voz ou clique em "Ouvir minha voz" para ver o medidor do seu microfone.';
   $('duckAmount').value = String(voiceCfg.duck);
   $('duckValue').textContent = voiceCfg.duck ? `${voiceCfg.duck}%` : 'Desligada';
   $('duckSelf').checked = voiceCfg.duckSelf;
@@ -317,9 +406,11 @@ function stopCapture() {
 const dbToPct = (db) => Math.max(0, Math.min(100, ((db + 80) / 80) * 100));
 function meterLoop() {
   if ($('voiceDialog').hidden) return;
-  const mic = micNow;
+  const mic = micNow || micTest.own;
+  // Verde: o microfone abriu e o som sai (na voz, também precisa não estar desligado ou esperando a tecla)
+  const sending = mic === micTest.own || !!voice.stream?.getAudioTracks()[0]?.enabled;
   $('micMeter').style.width = `${mic ? dbToPct(mic.level) : 0}%`;
-  $('micMeter').classList.toggle('open', !!mic && mic.gateOpen && !!voice.stream?.getAudioTracks()[0]?.enabled);
+  $('micMeter').classList.toggle('open', !!mic && mic.gateOpen && sending);
   if (mic) {
     const th = gateThreshold(mic);
     $('gateMark').style.left = `${dbToPct(th)}%`;

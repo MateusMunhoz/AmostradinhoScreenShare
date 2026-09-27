@@ -24,6 +24,23 @@ run('Escolher o microfone', 120000, async () => {
   check('Começa no padrão', await A.eval(`$('micSelect').value === ''`));
   await A.shot('microfone-lista.png');
 
+  // Ouvir minha voz, fora da voz: abre o microfone escolhido, e trocar na lista troca o do teste
+  const TEST_RAW = `micTest.own && micTest.own.raw.getAudioTracks()[0].getSettings().deviceId`;
+  const choose = (value) => A.eval(`(() => { $('micSelect').value = ${JSON.stringify(value)}; $('micSelect').dispatchEvent(new Event('change')); })()`);
+  const first = opts[1];
+  const last = opts[opts.length - 1];
+  await choose(first.value);
+  await A.eval(`$('micTestBtn').click()`);
+  await A.waitFor(`micTest.own && micTest.tap`, 8000);
+  check('Ouvir minha voz fora da voz abre o microfone escolhido', await A.eval(TEST_RAW) === first.value, `${await A.eval(TEST_RAW)} (queria ${first.value})`);
+  await choose(last.value);
+  await A.waitFor(`micTest.tap && ${TEST_RAW} === ${JSON.stringify(last.value)}`, 8000);
+  check('Trocar o microfone na lista durante o teste passa o teste para ele (um microfone só)', await A.eval(`micTest.on && micTest.mic === micTest.own && micNow === null`));
+  await A.eval(`closeVoiceDialog()`);
+  check('Fechar a janela para o teste', await A.eval(`!micTest.on && !micTest.own && !micTest.tap`));
+  await choose('');
+  await A.eval(`openVoiceDialog()`);
+
   // Na voz, com a Bia ouvindo
   await A.eval(`$('voiceJoin').click()`);
   await B.eval(`$('voiceJoin').click()`);

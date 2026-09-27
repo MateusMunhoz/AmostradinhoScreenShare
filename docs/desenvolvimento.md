@@ -58,7 +58,7 @@ isso (chamam `watch`, `state`, `speaking`... direto na página).
 | 7 | `fotos.js` | Foto de perfil sem servidor: a sua, pedir a dos outros pelo hash, pintar as bolinhas |
 | 8 | `sala.js` | Criar, entrar e sair, mensagens do servidor, sinalização, troca de host |
 | 9 | `voz.js` | Volume por pessoa, mixer, quem fala, atenuação, barra da voz, cartão da pessoa (cria o `voice`) |
-| 10 | `microfone.js` | RNNoise, eco, sensibilidade, apertar para falar, janela "Voz e atalhos" |
+| 10 | `microfone.js` | Microfone escolhido, RNNoise, eco, sensibilidade, ouvir a própria voz, apertar para falar, janela "Voz e atalhos" |
 | 11 | `membros.js` | Painel da sala: endereço e lista de pessoas |
 | 12 | `assistir.js` | Quadros de vídeo, ver a própria transmissão, destaque, tela cheia |
 | 13 | `pip.js` | Janelas flutuantes |
