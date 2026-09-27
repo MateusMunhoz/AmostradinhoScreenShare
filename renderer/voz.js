@@ -44,6 +44,8 @@ function wheelVolume(id, key, e, where = document) {
   const v = volOf(id);
   const max = key === 'voice' ? 200 : 100;
   const next = Math.max(0, Math.min(max, v[key] + steps * WHEEL_STEP));
+  const tile = key === 'screen' && state.in.get(id)?.tile;
+  if (tile) tile.userMuted = false; // mexer no volume da tela é querer ouvir
   setVol(id, { [key]: next, muted: false });
   if (!$('personCard').hidden && $('personCard').dataset.for === id) renderPersonCard();
   volBubble(where, `${key === 'voice' ? 'Voz' : 'Som da tela'} de ${nameOf(id)}: ${next}%`, e.clientX, e.clientY);
@@ -104,8 +106,9 @@ function applyScreenVolume(id) {
   const v = volOf(id);
   t.video.volume = (v.screen / 100) * duck.factor;
   t.vol.value = String(v.screen / 100);
-  if (!t.paused) t.video.muted = v.muted;
-  else t.mutedBefore = v.muted;
+  const muted = v.muted || t.userMuted; // "Silenciar para mim" ou o alto-falante da própria tela
+  if (!t.paused) t.video.muted = muted;
+  else t.mutedBefore = muted;
   t.syncMute();
 }
 

@@ -54,4 +54,25 @@ run('Som das transmissões', 150000, async () => {
   await sleep(1500);
   const lvl3 = await B.eval(LEVEL('Ana'));
   check('Na janela flutuante: o som continua saindo pelo app', lvl3 > 0.3, lvl3.toFixed(2));
+  await B.eval(`togglePip([...state.members].find(([, m]) => m.name === 'Ana')[0])`);
+
+  // Tela silenciada pelo alto-falante continua muda quando alguém fala na voz (com e sem atenuação)
+  const MUTE_BTN = `${TILE('Ana')}.el.querySelector('.tile-mute')`;
+  await B.eval(`${MUTE_BTN}.click()`);
+  await sleep(300);
+  check('Alto-falante silencia a tela da Ana', await B.eval(`${TILE('Ana')}.video.muted`));
+  for (const amount of [0, 60]) {
+    await B.eval(`(() => { voiceCfg.duck = ${amount}; speaking.add('alguem-falando'); updateDuck(); })()`);
+    await sleep(800);
+    const falando = await B.eval(`${TILE('Ana')}.video.muted`);
+    await B.eval(`(() => { speaking.delete('alguem-falando'); updateDuck(); })()`);
+    await sleep(1200);
+    check(`Alguém fala (atenuação ${amount}%): a tela continua muda`, falando && await B.eval(`${TILE('Ana')}.video.muted`));
+  }
+  const mudo = await B.eval(LEVEL('Ana'));
+  check('E o som dela não toca', mudo < 0.05, mudo.toFixed(2));
+  await B.eval(`${MUTE_BTN}.click()`);
+  await sleep(1500);
+  const volta = await B.eval(LEVEL('Ana'));
+  check('Alto-falante de novo: o som volta', !(await B.eval(`${TILE('Ana')}.video.muted`)) && volta > 0.3, volta.toFixed(2));
 });

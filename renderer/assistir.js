@@ -49,16 +49,20 @@ function createTile(id, name) {
   };
   vol.oninput = () => {
     video.volume = parseFloat(vol.value) * duck.factor;
-    if (video.volume > 0) video.muted = false;
+    if (video.volume > 0) { video.muted = false; tile.userMuted = false; }
     syncMute();
   };
   // O volume do quadro fica guardado como o "som da transmissão" dessa pessoa
   vol.onchange = () => setVol(id, { screen: Math.round(parseFloat(vol.value) * 100), muted: false });
+  // O mudo do alto-falante é só desta tela e fica no quadro (userMuted): a atenuação e o volume salvo o respeitam
   mute.onclick = () => {
     // Em 0% (o começo de toda transmissão), o alto-falante liga o som em 100% e guarda
-    if (video.volume === 0 && !state.in.get(id)?.self) return setVol(id, { screen: 100, muted: false });
-    video.muted = !video.muted;
-    syncMute();
+    if (video.volume === 0 && !state.in.get(id)?.self) { tile.userMuted = false; return setVol(id, { screen: 100, muted: false }); }
+    if (state.in.get(id)?.self) { video.muted = !video.muted; syncMute(); return; }
+    const silent = tile.paused ? tile.mutedBefore : video.muted;
+    tile.userMuted = !silent;
+    if (silent && volOf(id).muted) return setVol(id, { muted: false }); // estava em "Silenciar para mim"
+    applyScreenVolume(id);
   };
   syncMute();
   const pipBtn = document.createElement('button');
@@ -123,7 +127,8 @@ function createTile(id, name) {
   });
   $('tiles').append(el);
   el.dataset.person = id;
-  return { el, video, vol, overlay, pipNote, fs, focusBtn, pipBtn, syncMute, name, paused: false, mutedBefore: false };
+  const tile = { el, video, vol, overlay, pipNote, fs, focusBtn, pipBtn, syncMute, name, paused: false, mutedBefore: false, userMuted: false };
+  return tile;
 }
 
 // Mostra a barra do vídeo por alguns segundos, para quem nunca passou o mouse em cima descobrir os botões
