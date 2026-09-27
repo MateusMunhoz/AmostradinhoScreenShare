@@ -1,4 +1,4 @@
-// Microfone (IA, eco, sensibilidade), atenuação, apertar para falar, atalhos, painel e paleta, numa janela
+// Microfone (IA, eco, sensibilidade, ouvir a própria voz), atenuação, apertar para falar, atalhos, painel e paleta, numa janela
 // invisível: não abre nada na tela nem tira o foco (dá para rodar com um jogo aberto).
 // Roda com: npx electron tests/e2e/filtros.cjs
 const { app, BrowserWindow, ipcMain } = require('electron');
@@ -130,12 +130,61 @@ app.whenReady().then(async () => {
     fs.writeFileSync(path.join(OUT, 'voz-e-atalhos.png'), (await win.webContents.capturePage()).toPNG());
     check('Atalho sem Ctrl/Alt é recusado', await run(`(() => { const a = accelFromEvent(new KeyboardEvent('keydown', { code: 'KeyK', key: 'k', shiftKey: true })); return !a.strong && !a.fkey; })()`));
     check('Ctrl+Alt+K vira CommandOrControl+Alt+K', await run(`accelFromEvent(new KeyboardEvent('keydown', { code: 'KeyK', key: 'k', ctrlKey: true, altKey: true })).accel === 'CommandOrControl+Alt+K'`));
+
+    // Ouvir a própria voz, na voz: usa o mesmo microfone da conversa e o som chega na saída
+    await run(`$('micTestBtn').click()`);
+    await sleep(300);
+    const t1 = await run(`({ on: micTest.on, same: micTest.mic === micNow, tap: !!micTest.tap, own: !!micTest.own, txt: $('micTestBtn').textContent, pressed: $('micTestBtn').getAttribute('aria-pressed') })`);
+    check('Ouvir minha voz, na voz: toca o microfone da conversa (sem abrir outro)', t1.on && t1.same && t1.tap && !t1.own && t1.txt === 'Parar de ouvir' && t1.pressed === 'true', JSON.stringify(t1));
+    // Um tom entra na cadeia; com a sensibilidade toda aberta, ele tem que sair pelo teste
+    await run(`(() => { voiceCfg.gateAuto = false; voiceCfg.gateDb = -80; const o = micNow.ctx.createOscillator(); const g = micNow.ctx.createGain(); g.gain.value = 0.07; o.connect(g); g.connect(micNow.pre); g.connect(micNow.gate); o.start(); window.testTone = o; window.testAn = micNow.ctx.createAnalyser(); micTest.tap.connect(testAn); })()`);
+    await sleep(1200);
+    const heard = await run(`mixer.level(testAn)`);
+    check('O som do microfone (depois da sensibilidade) chega na saída', heard > 0.01, heard.toFixed(4));
+    await run(`testTone.stop(); voiceCfg.gateAuto = true`);
+    // Trocar o filtro no meio do teste: o teste passa para o microfone novo
+    await run(`(() => { const r = document.querySelector('input[name="noise"][value="ia"]'); r.checked = true; r.dispatchEvent(new Event('change')); })()`);
+    await sleep(1000);
+    const t2 = await run(`({ on: micTest.on, same: micTest.mic === micNow, tap: !!micTest.tap, ia: !!micNow.node })`);
+    check('Trocar o filtro durante o teste: continua ouvindo, já no microfone novo', t2.on && t2.same && t2.tap && t2.ia, JSON.stringify(t2));
     await run(`closeVoiceDialog()`);
+    const t3 = await run(`({ on: micTest.on, tap: !!micTest.tap, txt: $('micTestBtn').textContent, session: !!voice.session, mic: !!micNow })`);
+    check('Fechar a janela para o teste e a voz continua', !t3.on && !t3.tap && t3.txt === 'Ouvir minha voz' && t3.session && t3.mic, JSON.stringify(t3));
 
     // Sair da voz fecha o microfone e desliga a tecla de falar
     await run(`voice.leave()`);
     await sleep(300);
     check('Sair da voz fecha o microfone e o apertar para falar', (await run(`micNow === null && !mixer.localNode`)) && ptt[ptt.length - 1] === 0, JSON.stringify(ptt));
+
+    // Ouvir a própria voz fora da voz: abre um microfone só para o teste, sem entrar na voz
+    const untilOwn = `new Promise((r) => { const t = setInterval(() => { if (micTest.own && micTest.tap) { clearInterval(t); r(); } }, 50); })`;
+    await run(`openVoiceDialog()`);
+    check('Fora da voz, o medidor fica escondido até testar', await run(`$('micMeterBox').hidden && $('gateHint').textContent.includes('Ouvir minha voz')`));
+    await run(`$('micTestBtn').click()`);
+    await run(untilOwn);
+    const o1 = await run(`({ own: micTest.mic === micTest.own, voiceMic: micNow, session: voice.session, meter: !$('micMeterBox').hidden, live: micTest.own.raw.getAudioTracks()[0].readyState })`);
+    check('Fora da voz: abre um microfone só do teste, sem entrar na voz, e mostra o medidor', o1.own && o1.voiceMic === null && o1.session === '' && o1.meter && o1.live === 'live', JSON.stringify(o1));
+    // A IA apaga o bipe do microfone falso: um tom (~-26 dB) entra direto no medidor do microfone do teste
+    await run(`(() => { const m = micTest.own; const o = m.ctx.createOscillator(); const g = m.ctx.createGain(); g.gain.value = 0.07; o.connect(g); g.connect(m.pre); o.start(); window.testTone = o; })()`);
+    await sleep(800);
+    const lvlOwn = await run(`Math.round(micTest.own.level)`);
+    check('O medidor mexe com o microfone do teste', lvlOwn > -40, lvlOwn);
+    await run(`testTone.stop()`);
+    // Trocar o filtro fora da voz: o microfone do teste abre de novo com o filtro novo
+    await run(`window.oldOwn = micTest.own; (() => { const r = document.querySelector('input[name="noise"][value="off"]'); r.checked = true; r.dispatchEvent(new Event('change')); })()`);
+    await run(`new Promise((r) => { const t = setInterval(() => { if (micTest.own && micTest.own !== oldOwn && micTest.tap) { clearInterval(t); r(); } }, 50); })`);
+    check('Trocar o filtro fora da voz reabre o microfone do teste (o antigo fecha)', await run(`!micTest.own.node && oldOwn.raw.getAudioTracks()[0].readyState === 'ended'`));
+    // Entrar na voz durante o teste: passa a ouvir o microfone da conversa e fecha o do teste
+    await run(`window.oldOwn = micTest.own; voice.join()`);
+    await run(`new Promise((r) => { const t = setInterval(() => { if (voice.session && micTest.mic === micNow && micTest.tap) { clearInterval(t); r(); } }, 50); })`);
+    check('Entrar na voz durante o teste: um microfone só (o do teste fecha)', await run(`!micTest.own && oldOwn.raw.getAudioTracks()[0].readyState === 'ended'`));
+    // Sair da voz durante o teste: volta a abrir um microfone só do teste
+    await run(`voice.leave()`);
+    await run(untilOwn);
+    check('Sair da voz durante o teste: continua ouvindo, com um microfone só do teste', await run(`micTest.on && micNow === null && micTest.mic === micTest.own`));
+    await run(`window.oldOwn = micTest.own; closeVoiceDialog()`);
+    check('Fechar a janela para o teste e fecha o microfone do teste', await run(`!micTest.on && !micTest.own && oldOwn.raw.getAudioTracks()[0].readyState === 'ended'`));
+    await run(`(() => { const r = document.querySelector('input[name="noise"][value="ia"]'); r.checked = true; r.dispatchEvent(new Event('change')); })()`);
     await run(`leaveRoom()`);
     check('Sem erros no console', errors.filter((e) => !/Autofill|DevTools/.test(e)).length === 0, errors.join(' | ').slice(0, 300));
   } catch (err) { bad++; console.log('FALHOU:', err.message); }

@@ -239,6 +239,7 @@ function renderVoice() {
   applyMicGate();
   syncPtt();
   renderVoiceMe();
+  syncMicTest();
   if (!$('voiceDialog').hidden) renderVoiceDialog();
   renderVoiceAvatars();
   if (state.myId) renderMembers();

@@ -20,35 +20,39 @@ quem estava fazendo e o que aconteceu.
    Deve acontecer: sem apertar, ninguém te ouve; segurando, ouvem. A barra mostra "Segure …" e "Falando".
 5. **Quem está falando.** Cada um fala uma frase.
    Deve acontecer: acende o anel verde de quem fala na lista de pessoas e a bolinha verde no botão de pessoas.
+6. **Ouvir a própria voz.** De fone, abra Voz e atalhos e clique em **Ouvir minha voz**. Fale, troque a supressão
+   de ruído entre **Forte, com IA** e **Desligada** e digite no teclado.
+   Deve acontecer: você se ouve na hora, sem atraso que atrapalhe; com a IA, o teclado some. Desligue o microfone
+   na barra da voz e fale: você continua se ouvindo, e os outros não. Feche a janela: o som para.
 
 ## Volume e atenuação
 
-6. **Volume de uma pessoa.** Abra a lista de pessoas (o botão no topo do chat), clique no volume de alguém e
+7. **Volume de uma pessoa.** Abra a lista de pessoas (o botão no topo do chat), clique no volume de alguém e
    coloque 50%. Em outra pessoa, 150%.
    Deve acontecer: uma fica mais baixa e a outra mais alta, só para você.
-7. **Atenuação.** Alguém transmite um jogo com som. Em Voz e atalhos, coloque a atenuação em 60%.
+8. **Atenuação.** Alguém transmite um jogo com som. Em Voz e atalhos, coloque a atenuação em 60%.
    Deve acontecer: enquanto alguém fala na voz, o som da transmissão abaixa; volta sozinho meio segundo depois.
 
 ## Chat por cima do jogo e atalhos
 
-8. **Ctrl+Enter no jogo.** Abra o chat por cima do jogo (o botão com a tela e as linhas), trave com
+9. **Ctrl+Enter no jogo.** Abra o chat por cima do jogo (o botão com a tela e as linhas), trave com
    Ctrl+Shift+E e vá para o jogo (em modo janela sem bordas). Aperte **Ctrl+Enter**, escreva e aperte **Enter**.
    Deve acontecer: a mensagem chega para todos e o teclado volta sozinho para o jogo. Repita apertando **Esc**
    no lugar do Enter: não manda nada e volta para o jogo.
-9. **Trocar um atalho.** Em Voz e atalhos, troque o Ctrl+Enter por outro (por exemplo Ctrl+Alt+T) e repita o 8.
+10. **Trocar um atalho.** Em Voz e atalhos, troque o Ctrl+Enter por outro (por exemplo Ctrl+Alt+T) e repita o 9.
    Deve acontecer: o atalho novo funciona e o Ctrl+Enter volta a ser livre.
 
 ## Sala
 
-10. **Troca de host de verdade.** Quem criou a sala **fecha o app** no meio da call (sem clicar em Sair).
+11. **Troca de host de verdade.** Quem criou a sala **fecha o app** no meio da call (sem clicar em Sair).
     Deve acontecer: em uns 5 a 15 segundos, a pessoa que entrou primeiro vira host sozinha. A voz e as
     transmissões continuam, e o botão de pessoas mostra "Host" nela.
 
-11. **Sessões abertas.** Uma pessoa cria uma sala; as outras ficam na tela inicial, sem entrar.
+12. **Sessões abertas.** Uma pessoa cria uma sala; as outras ficam na tela inicial, sem entrar.
     Deve acontecer: em até 5 segundos, aparece "Sessão de <nome>" na lista de todo mundo, com o número de
     pessoas. Clique em **Entrar** e confira que entra direto. Se não aparecer para alguém, anote quem (é o
     aviso pela Radmin que não passou) e se o Windows pediu permissão do firewall ao abrir o app.
-12. **Sessão oculta.** Crie outra sala com **Mostrar esta sessão** desmarcado. Deve acontecer: ela não
+13. **Sessão oculta.** Crie outra sala com **Mostrar esta sessão** desmarcado. Deve acontecer: ela não
     aparece na lista de ninguém, mas dá para entrar pelo endereço.
 
 ## Anotações

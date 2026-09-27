@@ -86,12 +86,13 @@ $('shortcutReset').onclick = async () => {
   for (const action of Object.keys(defaults)) await window.api.setShortcut(action, '').catch(() => {}); // solta todos antes
   for (const [action, accel] of Object.entries(defaults)) await applyShortcut(action, accel);
 };
+$('micTestBtn').onclick = () => (micTest.on ? stopMicTest() : startMicTest());
 $('voiceSettingsBtn').onclick = openVoiceDialog;
 $('closeVoiceDialog').onclick = closeVoiceDialog;
 closeOnBackdrop('voiceDialog', closeVoiceDialog);
 closeOnBackdrop('statsDialog', closeStats);
 
-window.addEventListener('beforeunload', () => voice.leave(false));
+window.addEventListener('beforeunload', () => { stopMicTest(); voice.leave(false); });
 
 window.api.onPip((m) => {
   // O modo de ajuste vale para todas as janelas ao mesmo tempo

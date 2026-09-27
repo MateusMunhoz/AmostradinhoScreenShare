@@ -55,7 +55,7 @@ isso (chamam `watch`, `state`, `speaking`... direto na página).
 | 6 | `tema.js` | Cores das janelas montadas por código, cor de cada pessoa, barrinhas de quem fala |
 | 7 | `sala.js` | Criar, entrar e sair, mensagens do servidor, sinalização, troca de host |
 | 8 | `voz.js` | Volume por pessoa, mixer, quem fala, atenuação, barra da voz, cartão da pessoa (cria o `voice`) |
-| 9 | `microfone.js` | RNNoise, eco, sensibilidade, apertar para falar, janela "Voz e atalhos" |
+| 9 | `microfone.js` | RNNoise, eco, sensibilidade, ouvir a própria voz, apertar para falar, janela "Voz e atalhos" |
 | 10 | `membros.js` | Painel da sala: endereço e lista de pessoas |
 | 11 | `assistir.js` | Quadros de vídeo, ver a própria transmissão, destaque, tela cheia |
 | 12 | `pip.js` | Janelas flutuantes |
