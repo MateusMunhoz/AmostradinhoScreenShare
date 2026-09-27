@@ -150,7 +150,8 @@ $('shareDialog').addEventListener('change', (e) => {
 $('tabScreens').onclick = () => { state.sourceTab = 'screens'; renderSources(); };
 $('tabWindows').onclick = () => { state.sourceTab = 'windows'; renderSources(); };
 $('advToggle').onclick = () => setAdvanced($('advToggle').getAttribute('aria-expanded') !== 'true');
-setIcon($('closeShare'), 'close', 'Fechar');
+// Todo botão de fechar janela é um X (a dica e o leitor de tela dizem "Fechar")
+for (const id of ['closeShare', 'closeStats', 'closeVoiceDialog', 'closeGeneralSettings', 'closeProfile']) setIcon($(id), 'close', 'Fechar');
 setIcon($('refreshSources'), 'refresh', 'Atualizar lista');
 $('closeShare').onclick = closeShareDialog;
 

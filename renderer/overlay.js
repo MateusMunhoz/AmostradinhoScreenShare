@@ -75,7 +75,7 @@ function buildChatOverlay(win) {
   const title = d.createElement('span');
   title.textContent = 'Chat da sala · arraste para mover';
   Object.assign(title.style, { flex: '1', fontWeight: '600' });
-  head.append(title, pipButton(d, 'Travar', () => window.api.pipSetEdit(false), true), pipButton(d, 'Fechar', () => closeChatOverlay(), false));
+  head.append(title, pipButton(d, 'Travar', () => window.api.pipSetEdit(false), true), pipCloseButton(d, 'Fechar o chat por cima do jogo', () => closeChatOverlay()));
   // Quem está falando agora
   const talkers = d.createElement('div');
   Object.assign(talkers.style, { display: 'flex', flexWrap: 'wrap', gap: '6px' });

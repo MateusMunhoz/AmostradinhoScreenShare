@@ -29,6 +29,17 @@ function pipButton(d, text, onClick, primary) {
   return b;
 }
 
+// Botão de fechar (um X) para as janelas montadas por código, no mesmo tamanho dos outros botões delas
+function pipCloseButton(d, label, onClick) {
+  const b = pipButton(d, '', onClick, false);
+  b.innerHTML = ICON.close;
+  b.title = label;
+  b.setAttribute('aria-label', label);
+  Object.assign(b.style, { width: '28px', padding: '0', display: 'inline-grid', placeItems: 'center' });
+  Object.assign(b.firstElementChild.style, { width: '16px', height: '16px', fill: 'none', stroke: 'currentColor', strokeWidth: '2', strokeLinecap: 'round' });
+  return b;
+}
+
 // Tudo por CSSOM: a página herda a regra de segurança do app, que não deixa estilo escrito em HTML
 function buildPip(win, id) {
   const d = win.document;
@@ -66,7 +77,7 @@ function buildPip(win, id) {
     b.title = { P: 'Pequena', M: 'Média', G: 'Grande' }[key];
     sizes.append(b);
   }
-  top.append(name, sizes, pipButton(d, 'Travar', () => window.api.pipSetEdit(false), true), pipButton(d, 'Fechar', () => closePip(id), false));
+  top.append(name, sizes, pipButton(d, 'Travar', () => window.api.pipSetEdit(false), true), pipCloseButton(d, 'Fechar a janela flutuante', () => closePip(id)));
   const bottom = d.createElement('div');
   Object.assign(bottom.style, { display: 'flex', flexDirection: 'column', gap: '6px', background: THEME.glass, margin: '0 -8px -8px', padding: '8px 10px' });
   const opacityRow = d.createElement('label');
