@@ -5,6 +5,8 @@
 // ---------- Transmitir ----------
 function openShareDialog(switching = false) {
   state.shareSwitching = switching && state.sharing;
+  // A janela abre dentro da área das transmissões: com o painel Transmissão desligado, ele liga
+  if (workspaceViews.streams === false) { workspaceViews.streams = true; saveWorkspaceViews(); syncWorkspace(); }
   $('shareDialog').hidden = false;
   $('shareDialog').classList.toggle('switching', state.shareSwitching);
   $('shareTitle').textContent = state.shareSwitching ? 'Trocar o que transmitir' : 'Transmitir';

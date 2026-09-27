@@ -262,7 +262,10 @@ kbd { font-family: Consolas, monospace; font-size: 11px; color: var(--muted); bo
 .chat-toggle { position: relative; }
 .chat-toggle[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
 .chat-toggle .unread { position: absolute; top: -6px; right: -6px; }
-.stage-area { min-height: 0; display: flex; flex-direction: column; gap: 8px; }
+.stage-area { min-height: 0; display: flex; flex-direction: column; gap: 8px; position: relative; }
+/* Janela de transmitir: o escurecido e a janela ficam dentro da área das transmissões */
+#shareDialog { border-radius: 12px; padding: 12px; }
+#shareDialog .dialog.share { max-height: 100%; }
 .empty-stage {
   flex: 1; display: grid; place-items: center; padding: 32px; text-align: center;
   border: 1px dashed var(--line); border-radius: var(--radius);
