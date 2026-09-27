@@ -7,15 +7,15 @@
 //                                                acima do normal (ou normal / high) e sem modo de eficiência
 //   audiocap.exe --stats 1234                    uma linha JSON por segundo com o uso de processador e
 //                                                placa de vídeo do processo 1234 e dos filhos (tela de Estatísticas)
-//   audiocap.exe --exclude-pid 1234              todo o som, menos o processo 1234 e os filhos dele
+//   audiocap.exe --exclude-pid 1234              todo o som, menos o app 1234 (os processos dele)
 //   audiocap.exe --exclude-pid 1234 --exclude Discord.exe --exclude Spotify.exe
 //                                                todo o som, menos o processo 1234 e esses apps
 //
-// Só com --exclude-pid, o próprio Windows tira aquele processo do som ("excluir árvore").
-// Com apps pelo nome, o Windows não sabe ignorar mais de um processo de uma vez. Então
-// capturamos cada app que está tocando som em separado ("incluir árvore"), menos os ignorados,
+// Capturamos cada app que está tocando som em separado ("incluir árvore"), menos os ignorados,
 // e misturamos aqui. A lista é refeita a cada 1,5 s, então apps abertos depois também entram
-// (ou ficam de fora, se forem ignorados).
+// (ou ficam de fora, se forem ignorados). Do próprio app (--exclude-pid) saem só os processos dele:
+// um programa que ele abriu (um navegador aberto por um link) continua no som. O "excluir árvore" do
+// Windows não serve: ele tira do som tudo que o app abriu.
 //
 // Saída: PCM 16 bits, estéreo, 48 kHz no stdout. Mensagens no stderr (READY / ERROR ...).
 // Encerra sozinho quando o stdin é fechado (o app principal fechou).
@@ -132,20 +132,46 @@ struct Exclusions {
   std::vector<std::wstring> names;
   std::set<DWORD> pids;
 
-  bool matches(const ProcTable &t, DWORD pid) const {
-    if (pids.count(pid)) return true;
+  bool matchesName(const ProcTable &t, DWORD pid) const {
     const Proc *p = t.get(pid);
     if (!p) return false;
     for (auto &n : names) if (_wcsicmp(n.c_str(), p->name.c_str()) == 0) return true;
     return false;
   }
 
-  // true se o processo ou algum ancestral dele é ignorado
+  bool matches(const ProcTable &t, DWORD pid) const { return pids.count(pid) || matchesName(t, pid); }
+
+  // Os ajudantes do próprio app também são dele
+  static bool helper(const std::wstring &name) {
+    return _wcsicmp(name.c_str(), L"audiocap.exe") == 0 || _wcsicmp(name.c_str(), L"videocap.exe") == 0 || _wcsicmp(name.c_str(), L"teclas.exe") == 0;
+  }
+
+  // true se o processo deve ficar fora do som.
+  // - App ignorado pelo nome (Discord.exe...): ele e tudo que ele abriu, como sempre.
+  // - O próprio app (--exclude-pid): só os processos DELE (o mesmo .exe e os ajudantes). Um programa que o app
+  //   abriu (um navegador aberto por um link do chat, com o navegador fechado) é outro programa: entra no som.
+  //   Antes, ele ficava de fora junto com a árvore do app, e a transmissão ia sem o som dele.
   bool covers(ProcTable &t, DWORD pid) const {
-    for (int depth = 0; pid && depth < 64; depth++, pid = t.parentOf(pid))
-      if (matches(t, pid)) return true;
+    bool foreign = false;  // no caminho até o app apareceu um .exe que não é do app
+    for (int depth = 0; pid && depth < 64; depth++, pid = t.parentOf(pid)) {
+      if (matchesName(t, pid)) return true;
+      if (pids.count(pid)) return !foreign;
+      const Proc *p = t.get(pid);
+      if (p && !own(t, p->name)) foreign = true;
+    }
     return false;
   }
+
+  // "Do app": o mesmo .exe de algum PID excluído (Tela P2P.exe, electron.exe) ou um ajudante
+  bool own(const ProcTable &t, const std::wstring &name) const {
+    if (helper(name)) return true;
+    for (DWORD r : pids) {
+      const Proc *root = t.get(r);
+      if (root && _wcsicmp(root->name.c_str(), name.c_str()) == 0) return true;
+    }
+    return false;
+  }
+
 };
 
 // PIDs com sessão de áudio em qualquer saída ativa
@@ -413,28 +439,6 @@ class Stream {
     return SUCCEEDED(hr);
   }
 };
-
-// ---- Um processo só: o Windows tira ele (e os filhos) do som de todo o PC ----
-static int captureExcluding(DWORD pid) {
-  Stream s;
-  HRESULT hr = s.open(pid, LB_EXCLUDE_TREE);
-  if (FAILED(hr)) { fprintf(stderr, "ERROR captura falhou 0x%08lx (precisa Windows 10 2004 ou mais novo)\n", hr); return 3; }
-  boostAudioThread();
-  logLine("READY");
-
-  std::vector<int16_t> zeros;
-  for (;;) {
-    WaitForSingleObject(s.ev, 1000);
-    bool ok = s.drain([&](const int16_t *pcm, UINT32 frames) {
-      if (!pcm) {
-        if (zeros.size() < frames * 2) zeros.assign(frames * 2, 0);
-        pcm = zeros.data();
-      }
-      writeOut(pcm, frames * 4);
-    });
-    if (!ok) { logLine("ERROR a captura parou"); return 4; }
-  }
-}
 
 // ---- Vários apps: um fluxo "incluir árvore" por app que está tocando som, misturados aqui ----
 static const UINT32 RING = RATE;          // 1 s guardado por app
@@ -819,6 +823,7 @@ int main() {
   }
 
   CreateThread(nullptr, 0, watchStdin, nullptr, 0, nullptr);
-  if (ex.names.empty() && ex.pids.size() == 1) return captureExcluding(*ex.pids.begin());
+  // Sempre app por app: o "excluir árvore" do Windows tirava do som também os programas que o app abriu,
+  // como um navegador aberto por um link do chat
   return captureMixing(ex);
 }
