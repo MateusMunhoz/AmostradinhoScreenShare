@@ -60,7 +60,7 @@ isso (chamam `watch`, `state`, `speaking`... direto na página).
 | 11 | `assistir.js` | Quadros de vídeo, ver a própria transmissão, destaque, tela cheia |
 | 12 | `pip.js` | Janelas flutuantes |
 | 13 | `overlay.js` | Chat por cima do jogo |
-| 14 | `metadados.js` | Tira localização e outros metadados das fotos antes de irem para o chat |
+| 14 | `metadados.js` | Tira localização, autor, datas e outros metadados dos arquivos (fotos, vídeos, PDF, Office) antes de irem para o chat |
 | 15 | `chat.js` | Mensagens, arquivos, não lidas |
 | 16 | `estatisticas.js` | Desempenho, aba Transmissão, codificador em uso |
 | 17 | `atualizacao.js` | Atualização pela sala, pelo GitHub e o aviso |

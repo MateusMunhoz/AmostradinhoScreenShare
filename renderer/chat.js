@@ -255,23 +255,25 @@ function sendChat() {
   fitChatInput();
 }
 
-// Foto (JPEG, PNG, WebP) sai sem os metadados: localização, câmera, data (renderer/metadados.js). Se o arquivo
-// for estranho demais para limpar byte a byte, a foto é redesenhada, o que também não leva metadado nenhum.
+// O arquivo sai sem os metadados: localização, aparelho, datas, autor, pasta do PC (renderer/metadados.js).
+// Foto estranha demais para limpar byte a byte é redesenhada, o que também não leva metadado nenhum. Outro
+// arquivo estranho (vídeo, PDF, documento) não vai: devolve null.
 async function withoutMetadata(file) {
-  if (!ImageMetadata.kind(new Uint8Array(await file.slice(0, 12).arrayBuffer()))) return file;
   try {
-    const clean = ImageMetadata.strip(new Uint8Array(await file.arrayBuffer()));
-    return clean ? new File([clean], file.name, { type: file.type }) : file;
+    const clean = await FileMetadata.clean(file, file.name);
+    return clean ? new File([clean.blob], clean.name, { type: file.type }) : file;
   } catch (err) {
-    console.warn('metadados: redesenhando a foto', file.name, err.message);
+    const kind = FileMetadata.kind(new Uint8Array(await file.slice(0, 16).arrayBuffer()));
+    console.warn('metadados:', file.name, kind, err.message);
+    if (!['jpeg', 'png', 'webp', 'gif'].includes(kind)) return null;
     try {
       const bmp = await createImageBitmap(file);
       const c = new OffscreenCanvas(bmp.width, bmp.height);
       c.getContext('2d').drawImage(bmp, 0, 0);
-      const type = CHAT_IMAGE_TYPES.includes(file.type) && file.type !== 'image/gif' ? file.type : 'image/png';
-      return new File([await c.convertToBlob({ type, quality: 0.95 })], file.name, { type });
+      const type = kind === 'jpeg' ? 'image/jpeg' : kind === 'webp' ? 'image/webp' : 'image/png';
+      return new File([await c.convertToBlob({ type, quality: 0.95 })], FileMetadata.cleanName(file.name, 'foto'), { type });
     } catch {
-      return file; // nem abre como imagem: vai como arquivo comum
+      return null;
     }
   }
 }
@@ -281,7 +283,9 @@ async function attachFiles(list) {
   for (let file of list) {
     if (!file.size) continue;
     if (file.size > CHAT_MAX_FILE) { toast(`${file.name} passa de 200 MB e não pode ser enviado pelo chat.`, 'error'); continue; }
-    file = await withoutMetadata(file);
+    const clean = await withoutMetadata(file);
+    if (!clean) { toast(`Não deu para tirar os metadados de ${file.name} (arquivo fora do padrão), então ele não foi enviado. Para mandar assim mesmo, compacte num .zip.`, 'error'); continue; }
+    file = clean;
     const id = crypto.randomUUID();
     chat.files.set(id, file);
     send({ type: 'chat', file: { id, name: file.name, size: file.size, mime: file.type } });
