@@ -80,12 +80,6 @@ $('gateAuto').onchange = () => {
 };
 $('gateDb').oninput = () => { voiceCfg.gateDb = Number($('gateDb').value); saveVoiceCfg(); renderVoiceDialog(); };
 $('duckAmount').oninput = () => { voiceCfg.duck = Number($('duckAmount').value); saveVoiceCfg(); renderVoiceDialog(); updateDuck(); };
-$('cueVolume').oninput = () => { voiceCfg.cues = Number($('cueVolume').value); saveVoiceCfg(); renderVoiceDialog(); };
-$('cueVolume').onchange = () => playCue('entrou'); // soltou o controle: ouve como ficou
-$('cueTest').onclick = () => {
-  const order = ['entrou', 'mutou', 'desmutou', 'saiu'];
-  order.forEach((n, i) => setTimeout(() => playCue(n), i * 550));
-};
 $('duckSelf').onchange = () => { voiceCfg.duckSelf = $('duckSelf').checked; saveVoiceCfg(); updateDuck(); };
 $('shortcutReset').onclick = async () => {
   const defaults = { compose: 'CommandOrControl+Enter', mute: 'CommandOrControl+Shift+M', edit: 'CommandOrControl+Shift+E', hideChat: 'CommandOrControl+Shift+O' };

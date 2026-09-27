@@ -26,7 +26,8 @@ test('Volumes por evento preservam preferências antigas e multiplicam o volume 
   const prefs=P.normalize({sounds:{join:'wood',volume:40,levels:{chat:30,voiceJoin:50,voiceLeave:-5,leave:'inválido'}}});
   assert.equal(prefs.sounds.join,'wood'); assert.equal(prefs.sounds.levels.join,100);
   assert.equal(prefs.sounds.levels.leave,100); assert.equal(prefs.sounds.levels.voiceLeave,0);
-  const played=[]; const player=new P.SoundPlayer({settings:()=>prefs,createAudio:url=>({pause(){},play(){played.push({url,volume:this.volume});return Promise.resolve();}})});
+  const played=[]; const player=new P.SoundPlayer({settings:()=>prefs,createAudio:url=>({pause(){},play(){played.push({url,volume:this.volume});return Promise.resolve();}}),
+    synth:(notes,volume)=>{played.push({url:'suave',volume});return {pause(){}};}});
   await player.play('voiceJoin',true); assert.equal(played.at(-1).volume,.2);
   await player.play('chat',true); assert.equal(played.at(-1).volume,.12);
   assert.equal(await player.play('voiceLeave',true),false);
@@ -53,4 +54,15 @@ test('Sons: silêncio do chat, prévia, volume, seleção e falha de reproduçã
   assert.equal(await player.play('chat',true),false);
   assert.equal(player.players.has('preview'),false);
   player.stopAll(); assert.equal(player.players.size,0);
+});
+
+test('Sons Suave: gerados na hora, sem arquivo, padrão da voz e do microfone', async () => {
+  assert.ok(P.sounds.filter(s => s.synth).every(s => !s.file && s.synth.every(n => n.length === 4)));
+  const d=P.normalize(null).sounds;
+  assert.deepEqual([d.voiceJoin,d.voiceLeave,d.mute,d.unmute],['suaveEntrou','suaveSaiu','suaveMutou','suaveDesmutou']);
+  const played=[]; const prefs=P.normalize(null);
+  const player=new P.SoundPlayer({settings:()=>prefs,createAudio:()=>{throw new Error('não era para abrir arquivo');},synth:(notes,volume)=>{played.push({f:notes[0][0],volume});return {pause(){}};}});
+  assert.equal(await player.play('mute'),true);
+  assert.deepEqual(played[0],{f:659,volume:.5});
+  prefs.sounds.levels.unmute=0; assert.equal(await player.play('unmute'),false);
 });

@@ -453,18 +453,6 @@
       </section>
 
       <section class="vd-section">
-        <div class="vd-row">
-          <h3 id="cueLabel">Sons da call</h3>
-          <button class="btn small" id="cueTest" type="button">Ouvir</button>
-        </div>
-        <p class="hint">Tocam quando alguém entra ou sai da voz e quando você muta ou desmuta o microfone.</p>
-        <div class="vd-slider">
-          <input type="range" id="cueVolume" min="0" max="100" step="5" aria-labelledby="cueLabel">
-          <span id="cueValue" class="vd-value"></span>
-        </div>
-      </section>
-
-      <section class="vd-section">
         <h3 id="modeLabel">Como falar</h3>
         <div class="seg" role="radiogroup" aria-labelledby="modeLabel">
           <label><input type="radio" name="talkMode" value="voz"><span>Detecção de voz</span></label>
@@ -514,12 +502,14 @@
         <div class="settings-colors"><div class="settings-color"><label for="hex-main">Principal<small>Fundo do aplicativo</small></label><div class="settings-color-input"><input type="color" id="color-main" aria-label="Escolher cor: Principal"><input type="text" id="hex-main" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-main"></div><small id="error-main" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-secondary">Secundária<small>Painéis e cartões</small></label><div class="settings-color-input"><input type="color" id="color-secondary" aria-label="Escolher cor: Secundária"><input type="text" id="hex-secondary" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-secondary"></div><small id="error-secondary" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-detail1">Detalhes 1<small>Botões e destaques</small></label><div class="settings-color-input"><input type="color" id="color-detail1" aria-label="Escolher cor: Detalhes 1"><input type="text" id="hex-detail1" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-detail1"></div><small id="error-detail1" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-detail2">Detalhes 2<small>Indicadores e avisos</small></label><div class="settings-color-input"><input type="color" id="color-detail2" aria-label="Escolher cor: Detalhes 2"><input type="text" id="hex-detail2" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-detail2"></div><small id="error-detail2" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div></div>
         <button id="resetColors" class="btn small" type="button">Restaurar cores padrão</button>
       </section>
-      <section class="settings-section" aria-labelledby="soundsTitle"><h3 id="soundsTitle">Sons de notificação</h3><p class="hint">Escolha entre os oito áudios incluídos no app. “Sem som” desativa só aquele aviso.</p>
+      <section class="settings-section" aria-labelledby="soundsTitle"><h3 id="soundsTitle">Sons de notificação</h3><p class="hint">Escolha entre os sons incluídos no app. “Sem som” desativa só aquele aviso. Os da voz tocam quando você está na voz.</p>
         <div class="sound-event"><div class="settings-sound"><label for="sound-join">Entrada na sala</label><select id="sound-join"></select><button class="btn small" id="preview-join" type="button" aria-label="Ouvir prévia: Entrada na sala">Ouvir</button></div><div class="event-volume"><label for="volume-join">Volume</label><input id="volume-join" type="range" min="0" max="100" step="1" aria-label="Volume: Entrada na sala"><output id="value-join" for="volume-join">100%</output></div></div>
         <div class="sound-event"><div class="settings-sound"><label for="sound-leave">Saída da sala</label><select id="sound-leave"></select><button class="btn small" id="preview-leave" type="button" aria-label="Ouvir prévia: Saída da sala">Ouvir</button></div><div class="event-volume"><label for="volume-leave">Volume</label><input id="volume-leave" type="range" min="0" max="100" step="1" aria-label="Volume: Saída da sala"><output id="value-leave" for="volume-leave">100%</output></div></div>
         <div class="sound-event"><div class="settings-sound"><label for="sound-chat">Mensagem no chat</label><select id="sound-chat"></select><button class="btn small" id="preview-chat" type="button" aria-label="Ouvir prévia: Mensagem no chat">Ouvir</button></div><div class="event-volume"><label for="volume-chat">Volume</label><input id="volume-chat" type="range" min="0" max="100" step="1" aria-label="Volume: Mensagem no chat"><output id="value-chat" for="volume-chat">100%</output></div></div>
         <div class="sound-event"><div class="settings-sound"><label for="sound-voiceJoin">Entrada no chat de voz</label><select id="sound-voiceJoin"></select><button class="btn small" id="preview-voiceJoin" type="button" aria-label="Ouvir prévia: Entrada no chat de voz">Ouvir</button></div><div class="event-volume"><label for="volume-voiceJoin">Volume</label><input id="volume-voiceJoin" type="range" min="0" max="100" step="1" aria-label="Volume: Entrada no chat de voz"><output id="value-voiceJoin" for="volume-voiceJoin">100%</output></div></div>
         <div class="sound-event"><div class="settings-sound"><label for="sound-voiceLeave">Saída do chat de voz</label><select id="sound-voiceLeave"></select><button class="btn small" id="preview-voiceLeave" type="button" aria-label="Ouvir prévia: Saída do chat de voz">Ouvir</button></div><div class="event-volume"><label for="volume-voiceLeave">Volume</label><input id="volume-voiceLeave" type="range" min="0" max="100" step="1" aria-label="Volume: Saída do chat de voz"><output id="value-voiceLeave" for="volume-voiceLeave">100%</output></div></div>
+        <div class="sound-event"><div class="settings-sound"><label for="sound-mute">Mutar o microfone</label><select id="sound-mute"></select><button class="btn small" id="preview-mute" type="button" aria-label="Ouvir prévia: Mutar o microfone">Ouvir</button></div><div class="event-volume"><label for="volume-mute">Volume</label><input id="volume-mute" type="range" min="0" max="100" step="1" aria-label="Volume: Mutar o microfone"><output id="value-mute" for="volume-mute">100%</output></div></div>
+        <div class="sound-event"><div class="settings-sound"><label for="sound-unmute">Desmutar o microfone</label><select id="sound-unmute"></select><button class="btn small" id="preview-unmute" type="button" aria-label="Ouvir prévia: Desmutar o microfone">Ouvir</button></div><div class="event-volume"><label for="volume-unmute">Volume</label><input id="volume-unmute" type="range" min="0" max="100" step="1" aria-label="Volume: Desmutar o microfone"><output id="value-unmute" for="volume-unmute">100%</output></div></div>
         <label class="vd-check"><input type="checkbox" id="muteChatSound"> Silenciar som do chat</label>
         <p class="hint">O chat avisa sobre novas mensagens enviadas e recebidas. O histórico é silencioso.</p>
         <label for="notificationVolume">Volume geral dos avisos</label><div class="vd-slider"><input type="range" id="notificationVolume" min="0" max="100" step="1"><output id="notificationVolumeValue" for="notificationVolume"></output></div><p class="hint">O volume geral multiplica os volumes individuais. Em 0%, todos os avisos ficam silenciosos.</p>
@@ -538,7 +528,6 @@
   <script src="renderer/sala.js"></script>
   <script src="renderer/voz.js"></script>
   <script src="renderer/microfone.js"></script>
-  <script src="renderer/avisos.js"></script>
   <script src="renderer/membros.js"></script>
   <script src="renderer/assistir.js"></script>
   <script src="renderer/pip.js"></script>

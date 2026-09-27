@@ -17,15 +17,15 @@ run('Voz, volume e chat por cima do jogo', 150000, async () => {
   check('Botão "Entrar na voz" na barra', await B.eval(`$('voiceJoin').textContent.includes('Entrar na voz') && !$('voiceDock').classList.contains('active')`));
   await A.eval(TONE);
   await B.eval(TONE);
-  // Sons da call: registra o que tocaria na Bia (o som toca de verdade também)
-  await B.eval(`(() => { window.cueLog = []; const tocar = playCue; playCue = (n) => { cueLog.push(n); tocar(n); }; })()`);
-  await B.eval(`$('voiceJoin').click()`);
-  await B.waitFor(`voice.session`, 10000);
-  check('Som: você entrou na voz', await B.eval(`cueLog.join() === 'entrou'`), await B.eval(`cueLog.join()`));
+  // Sons da voz: registra o que tocaria na Bia (o som toca de verdade também)
+  await B.eval(`(() => { window.cueLog = []; const tocar = appSounds.play.bind(appSounds); appSounds.play = (ev, p) => { if (ev !== 'chat') cueLog.push(ev); return tocar(ev, p); }; })()`);
   await A.eval(`$('voiceJoin').click()`);
+  await B.waitFor(`voice.members.get('${anaId}')?.session`, 10000);
+  await sleep(300);
+  check('Som: fora da voz, a Ana entrar na voz não toca nada para a Bia', await B.eval(`cueLog.length === 0`), await B.eval(`cueLog.join()`));
+  await B.eval(`$('voiceJoin').click()`);
   await B.waitFor(`voice.session && [...voice.peers.values()].some((p) => p.pc.connectionState === 'connected')`, 20000);
-  await B.waitFor(`cueLog.length === 2`, 5000).catch(() => {});
-  check('Som: a Ana entrou na voz', await B.eval(`cueLog.join() === 'entrou,entrou'`), await B.eval(`cueLog.join()`));
+  check('Som: você entrou na voz', await B.eval(`cueLog.join() === 'voiceJoin'`), await B.eval(`cueLog.join()`));
   check('Na voz: barra mostra microfone, silenciar vozes e sair', await B.eval(`$('voiceDock').classList.contains('active') && !$('voiceMute').hidden && !$('voiceDeafen').hidden && $('voiceJoin').getAttribute('aria-label') === 'Sair da voz'`));
   await B.waitFor(`mixer.nodes.has('${anaId}')`, 10000);
   check('Voz da Ana passa pelo mixer (volume próprio)', true);
@@ -82,7 +82,7 @@ run('Voz, volume e chat por cima do jogo', 150000, async () => {
   await B.eval(`cueLog.length = 0`);
   await B.eval(`$('voiceMute').click()`);
   await B.eval(`$('voiceMute').click()`);
-  check('Som: mutar e desmutar o seu microfone', await B.eval(`cueLog.join() === 'mutou,desmutou'`), await B.eval(`cueLog.join()`));
+  check('Som: mutar e desmutar o seu microfone', await B.eval(`cueLog.join() === 'mute,unmute'`), await B.eval(`cueLog.join()`));
   await B.eval(`cueLog.length = 0`);
 
   // Microfone desligado

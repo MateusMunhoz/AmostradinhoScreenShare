@@ -212,8 +212,17 @@ function renderSpeaking() {
 
 const inVoice = (id) => (id === state.myId ? !!voice.session : !!voice.members.get(id)?.session);
 
+// Entrar e sair da voz: o som toca para você mesmo e, de quem mais, só se você estiver na voz (quem só está
+// na sala, assistindo, não precisa ouvir cada entrada e saída da conversa)
 const voice = new VoiceChat({ send, changed: renderVoice, error: message => toast(message, 'error'), mixer,
-  activity: event => { void appSounds.play(event); } });
+  activity: (event, id) => { if (id === voice.id || voice.session) void appSounds.play(event); } });
+// Mutar e desmutar o seu microfone tocam som (o botão ou o atalho; o apertar para falar não)
+let voiceWasMuted = false;
+function syncMuteSound() {
+  const muted = !!voice.session && voice.muted;
+  if (voice.session && muted !== voiceWasMuted) void appSounds.play(muted ? 'mute' : 'unmute');
+  voiceWasMuted = muted;
+}
 function renderVoice() {
   const active = !!voice.session;
   const join = $('voiceJoin');
@@ -243,7 +252,7 @@ function renderVoice() {
   renderVoiceAvatars();
   if (state.myId) renderMembers();
   if (!$('personCard').hidden) renderPersonCard();
-  syncCues(); // sons de entrar, sair, mutar e desmutar
+  syncMuteSound();
 }
 
 // Painel recolhido: quem está na voz fica na barra; clicar abre o volume da pessoa
