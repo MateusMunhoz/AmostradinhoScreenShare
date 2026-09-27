@@ -1,7 +1,7 @@
 {
   "name": "tela-p2p",
-  "version": "1.10.1",
-  "description": "Compartilhamento de tela com áudio, peer to peer, pela Radmin VPN",
+  "version": "1.10.2",
+  "description": "Configurações e Personalização de Layout",
   "main": "boot.js",
   "scripts": {
     "start": "electron .",
