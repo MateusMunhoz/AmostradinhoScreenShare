@@ -1,6 +1,6 @@
 'use strict';
 // Chat: mensagens, arquivos e não lidas.
-// Script clássico: divide o escopo global com os outros (ordem no index.html). Usa de: util, estado, tema, sala, voz, overlay, estatisticas.
+// Script clássico: divide o escopo global com os outros (ordem no index.html). Usa de: util, estado, metadados, tema, sala, voz, overlay, estatisticas.
 
 // ---------- Chat ----------
 // Mensagens passam pelo servidor da sala (que guarda as últimas 100 para quem entrar depois). Um arquivo
@@ -255,11 +255,33 @@ function sendChat() {
   fitChatInput();
 }
 
-function attachFiles(list) {
+// Foto (JPEG, PNG, WebP) sai sem os metadados: localização, câmera, data (renderer/metadados.js). Se o arquivo
+// for estranho demais para limpar byte a byte, a foto é redesenhada, o que também não leva metadado nenhum.
+async function withoutMetadata(file) {
+  if (!ImageMetadata.kind(new Uint8Array(await file.slice(0, 12).arrayBuffer()))) return file;
+  try {
+    const clean = ImageMetadata.strip(new Uint8Array(await file.arrayBuffer()));
+    return clean ? new File([clean], file.name, { type: file.type }) : file;
+  } catch (err) {
+    console.warn('metadados: redesenhando a foto', file.name, err.message);
+    try {
+      const bmp = await createImageBitmap(file);
+      const c = new OffscreenCanvas(bmp.width, bmp.height);
+      c.getContext('2d').drawImage(bmp, 0, 0);
+      const type = CHAT_IMAGE_TYPES.includes(file.type) && file.type !== 'image/gif' ? file.type : 'image/png';
+      return new File([await c.convertToBlob({ type, quality: 0.95 })], file.name, { type });
+    } catch {
+      return file; // nem abre como imagem: vai como arquivo comum
+    }
+  }
+}
+
+async function attachFiles(list) {
   if (!chat.supported) return;
-  for (const file of list) {
+  for (let file of list) {
     if (!file.size) continue;
     if (file.size > CHAT_MAX_FILE) { toast(`${file.name} passa de 200 MB e não pode ser enviado pelo chat.`, 'error'); continue; }
+    file = await withoutMetadata(file);
     const id = crypto.randomUUID();
     chat.files.set(id, file);
     send({ type: 'chat', file: { id, name: file.name, size: file.size, mime: file.type } });
