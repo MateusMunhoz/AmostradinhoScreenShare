@@ -132,6 +132,8 @@ function updateStage() {
   const othersSharing = [...state.members.values()].some((m) => m.sharing);
   $('emptyStage').hidden = state.in.size > 0;
   $('tiles').hidden = state.in.size === 0;
+  // Com tela sendo assistida, as telas sobem até o topo (sem o nome do app e o título "Transmissões")
+  document.body.classList.toggle('watching', !$('room').hidden && state.in.size > 0);
   $('emptyText').textContent = othersSharing
     ? 'Escolha na lista ao lado quem você quer assistir. A tela só começa a ser baixada depois que você clicar em Assistir.'
     : state.sharing
