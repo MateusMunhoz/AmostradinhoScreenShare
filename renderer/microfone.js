@@ -288,7 +288,12 @@ function keyLabel(e) {
   return e.key.length === 1 ? e.key.toUpperCase() : e.key;
 }
 
+// Na sala, Voz e atalhos vira um painel à esquerda (do tamanho dos painéis de chat e voz, do outro lado),
+// com a transmissão no meio; fora da sala, continua uma janela no meio da tela
 function openVoiceDialog() {
+  const side = !!state.myId;
+  document.body.classList.toggle('voice-side', side);
+  $('voiceDialog').querySelector('.dialog').setAttribute('aria-modal', String(!side));
   $('voiceDialog').hidden = false;
   renderVoiceDialog();
   renderMicList();
@@ -300,6 +305,7 @@ function closeVoiceDialog() {
   stopCapture();
   stopMicTest();
   $('voiceDialog').hidden = true;
+  document.body.classList.remove('voice-side');
   $('voiceSettingsBtn').focus();
 }
 
