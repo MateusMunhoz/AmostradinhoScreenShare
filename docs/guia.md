@@ -3,6 +3,7 @@
 Tudo o que dá para fazer no Tela P2P, com os detalhes. Para começar do zero, veja o [README](../README.md).
 
 - [Sala](#sala)
+- [VPN Tela P2P](#vpn-tela-p2p)
 - [Sessões abertas](#sessões-abertas)
 - [Transmitir](#transmitir)
 - [Assistir](#assistir)
@@ -35,6 +36,22 @@ Tudo o que dá para fazer no Tela P2P, com os detalhes. Para começar do zero, v
   - o balão do chat;
   - **Sair**.
 - **Recolher o painel:** o balão do chat recolhe o painel, e os vídeos ocupam a largura toda. Recolhido, ele mostra quantas mensagens chegaram, e o endereço da sala passa para a barra.
+
+### VPN Tela P2P
+
+Para usar uma rede privada sem Radmin, todos precisam instalar o agente NetBird e estar autorizados
+na mesma instalação auto-hospedada do NetBird. Um administrador configura a VPS, as permissões e,
+se quiser entrada por chave, cria uma chave de setup no painel.
+
+1. Abra **Configurações gerais** e escolha **VPN Tela P2P (NetBird)**.
+2. Informe o endereço HTTPS do servidor. Para entrar com uma chave de setup, cole-a no campo opcional;
+   sem chave, o NetBird usa o fluxo de autenticação configurado no servidor.
+3. Clique em **Conectar à VPN**. Depois que o estado mostrar um IP privado, crie ou entre numa sala.
+4. Quem cria compartilha o endereço privado mostrado dentro da sala. Os amigos conectados à mesma rede
+   NetBird entram por **Entrar numa sala** usando esse endereço.
+
+A lista de **Sessões abertas** continua disponível para Radmin e rede local; pela VPN NetBird, a entrada
+é feita pelo endereço privado. A senha da sala continua sendo independente das permissões da VPN.
 
 ### Sessões abertas
 

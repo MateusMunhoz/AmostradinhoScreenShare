@@ -502,6 +502,23 @@
     <div class="dialog general-settings" role="dialog" aria-modal="true" aria-labelledby="generalSettingsTitle">
       <div class="dialog-head"><h2 id="generalSettingsTitle">Configurações gerais</h2><button id="closeGeneralSettings" class="btn icon" type="button"></button></div>
       <p class="hint" id="settingsSaveStatus" role="status">Salvo neste dispositivo. As escolhas continuam ao reabrir o app.</p>
+      <section class="settings-section" aria-labelledby="networkTitle">
+        <h3 id="networkTitle">Conectividade entre PCs</h3>
+        <p class="hint">Escolha a rede usada pelo Tela P2P. A opção Radmin mantém o funcionamento atual. A VPN Tela P2P usa um agente NetBird e o servidor de coordenação configurado abaixo.</p>
+        <label for="networkProvider">Rede</label>
+        <select id="networkProvider"><option value="radmin">Radmin VPN ou rede local</option><option value="netbird">VPN Tela P2P (NetBird)</option></select>
+        <div id="netbirdSettings" hidden>
+          <label for="netbirdManagementUrl">Servidor de coordenação HTTPS</label>
+          <input id="netbirdManagementUrl" type="url" placeholder="https://vpn.seudominio.com" autocomplete="url">
+          <label for="netbirdSetupKey">Chave de acesso da rede <small>Opcional; gerada no painel do servidor</small></label>
+          <input id="netbirdSetupKey" type="password" autocomplete="new-password" spellcheck="false">
+          <p class="hint" id="netbirdStatus" role="status">Consulte o estado da VPN.</p>
+          <div class="button-row"><button id="netbirdConnect" class="btn primary" type="button">Conectar à VPN</button><button id="netbirdDisconnect" class="btn" type="button">Desconectar</button></div>
+          <p class="hint">O agente NetBird precisa estar instalado e autorizado nessa rede. A VPS de coordenação é auto-hospedada por você. Os convites e permissões são administrados no painel NetBird.</p>
+          <button id="netbirdInstallHelp" class="btn small" type="button">Como instalar o agente NetBird</button>
+          <button id="netbirdServerHelp" class="btn small" type="button">Guia para hospedar o servidor</button>
+        </div>
+      </section>
       <section class="settings-section" aria-labelledby="colorsTitle">
         <h3 id="colorsTitle">Cores do layout</h3><p class="hint">Use um hexadecimal, como #3366FF, ou escolha pela amostra. A prévia é imediata.</p>
         <div class="settings-colors"><div class="settings-color"><label for="hex-main">Principal<small>Fundo do aplicativo</small></label><div class="settings-color-input"><input type="color" id="color-main" aria-label="Escolher cor: Principal"><input type="text" id="hex-main" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-main"></div><small id="error-main" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-secondary">Secundária<small>Painéis e cartões</small></label><div class="settings-color-input"><input type="color" id="color-secondary" aria-label="Escolher cor: Secundária"><input type="text" id="hex-secondary" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-secondary"></div><small id="error-secondary" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-detail1">Detalhes 1<small>Botões e destaques</small></label><div class="settings-color-input"><input type="color" id="color-detail1" aria-label="Escolher cor: Detalhes 1"><input type="text" id="hex-detail1" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-detail1"></div><small id="error-detail1" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-detail2">Detalhes 2<small>Indicadores e avisos</small></label><div class="settings-color-input"><input type="color" id="color-detail2" aria-label="Escolher cor: Detalhes 2"><input type="text" id="hex-detail2" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-detail2"></div><small id="error-detail2" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div></div>
@@ -530,6 +547,7 @@
   <script src="renderer/preferencias-modelo.js"></script>
   <script src="renderer/tema.js"></script>
   <script src="renderer/configuracoes.js"></script>
+  <script src="renderer/conectividade.js"></script>
   <script src="renderer/sala.js"></script>
   <script src="renderer/voz.js"></script>
   <script src="renderer/microfone.js"></script>

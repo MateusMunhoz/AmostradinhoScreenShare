@@ -157,6 +157,15 @@ $('closeShare').onclick = closeShareDialog;
 
 // Tela inicial: Radmin VPN, última sala e "Entrar numa sala" aberto ali mesmo
 async function renderRadmin() {
+  if (selectedNetworkProvider() === 'netbird') {
+    let status;
+    try { status = await window.api.netbirdStatus(); } catch { status = null; }
+    const connected = !!status?.connected;
+    $('radminDot').className = 'dot ' + (connected ? 'ok' : 'warn');
+    $('radminTitle').textContent = connected ? 'VPN Tela P2P conectada' : 'VPN Tela P2P desconectada';
+    $('radminDetail').textContent = connected ? status.ip : status?.installed ? 'Conecte nas configurações gerais' : 'Instale o agente NetBird e configure o servidor';
+    return;
+  }
   let ips = [];
   try { ips = await window.api.getIps(); } catch {}
   const r = ips.find((i) => i.radmin);
