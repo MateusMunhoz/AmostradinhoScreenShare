@@ -21,7 +21,7 @@ const GLOBALS = [
   'setPanelOpen', 'setPeopleOpen', 'setStatsTab', 'openStats', 'closeStats', 'enterRoom', 'leaveRoom', 'nameOf', 'setRadio',
   'openVoiceDialog', 'closeVoiceDialog', 'startCapture', 'accelFromEvent', 'gateThreshold', 'onPttKey', 'renderSpeaking',
   'startSpeakLoop', 'updateDuck', 'setFocus', 'setIncomingVideo', 'renderUpdateBanner', 'scrollChatToEnd', 'markRead',
-  'closePersonCard', 'send', 'toast', 'show', 'personColor', 'speakBars', 'renderMembers', 'onceSupport', 'setSessionWatch', 'enterSession', 'onChatPaste', 'FileMetadata', 'withoutMetadata', 'renderMicList', 'appSounds', 'syncMuteSound',
+  'closePersonCard', 'send', 'toast', 'show', 'personColor', 'speakBars', 'renderMembers', 'onceSupport', 'setSessionWatch', 'enterSession', 'onChatPaste', 'FileMetadata', 'withoutMetadata', 'renderMicList', 'fotos', 'paintAvatar', 'setMyPhoto', 'onPhotoSignal', 'appSounds', 'syncMuteSound',
 ];
 
 app.whenReady().then(async () => {

@@ -59,6 +59,16 @@ window.addEventListener('mousedown', (e) => {
 document.querySelectorAll('input[name="noise"]').forEach((r) => {
   r.onchange = () => { voiceCfg.ns = r.value; saveVoiceCfg(); renderVoiceDialog(); restartMic(); };
 });
+// Foto de perfil (renderer/fotos.js)
+$('profilePhotoPick').onclick = () => $('profilePhotoFile').click();
+$('profilePhotoFile').onchange = async () => {
+  const file = $('profilePhotoFile').files[0];
+  $('profilePhotoFile').value = '';
+  if (!file) return;
+  try { await setMyPhoto(file); } catch { toast('Não deu para abrir essa imagem. Escolha uma foto (JPG, PNG, WebP...).', 'error'); }
+};
+$('profilePhotoRemove').onclick = removeMyPhoto;
+renderMyPhoto();
 $('micSelect').onchange = () => {
   const id = $('micSelect').value;
   if (id === voiceCfg.micId) return;

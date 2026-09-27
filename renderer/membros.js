@@ -51,7 +51,7 @@ function memberRow(id, name, sharing) {
   li.style.setProperty('--person', personColor(id));
   li.dataset.person = who;
   li.classList.toggle('speaking', speaking.has(who));
-  const dot = avatar(id ? name : getName());
+  const dot = avatar(id ? name : getName(), id);
   const info = document.createElement('div');
   info.className = 'info';
   const nameEl = document.createElement('span');

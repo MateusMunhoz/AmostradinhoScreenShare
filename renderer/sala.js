@@ -23,7 +23,7 @@ async function connectRoom(url, hello, timeoutMs = 8000) {
       if (!joined) { errMsg = 'Tempo esgotado. Confira o endereço e se a Radmin VPN está ligada.'; ws.close(); }
     }, timeoutMs);
 
-    ws.onopen = () => ws.send(JSON.stringify({ type: 'hello', ...hello, addrs, version: update.myVersion }));
+    ws.onopen = () => ws.send(JSON.stringify({ type: 'hello', ...hello, addrs, version: update.myVersion, avatar: fotos.mine?.hash || '' }));
     ws.onmessage = (e) => {
       let m;
       try { m = JSON.parse(e.data); } catch { return; }
@@ -99,7 +99,7 @@ function enterRoom(welcome, owner, host, port) {
   state.host = host;
   state.port = port;
   state.members.clear();
-  for (const m of welcome.members) state.members.set(m.id, { name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs || [], shareInfo: m.shareInfo || null });
+  for (const m of welcome.members) state.members.set(m.id, { name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs || [], shareInfo: m.shareInfo || null, avatar: m.avatar || '' });
   state.hostId = welcome.hostId || null;
   state.handoff = (welcome.features || []).includes('handoff');
   state.sessao = welcome.sessao || null;
@@ -248,7 +248,7 @@ async function rejoin(host, timeoutMs) {
   for (const m of state.members.values()) delete m.back;
   for (const m of welcome.members) {
     const before = state.members.get(m.id);
-    state.members.set(m.id, { name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs || [], shareInfo: m.shareInfo || null, back: true });
+    state.members.set(m.id, { name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs || [], shareInfo: m.shareInfo || null, avatar: m.avatar || '', back: true });
     if (!state.order.includes(m.id)) state.order.push(m.id);
     if (before && before.sharing && !m.sharing) stopWatching(m.id, false);
     voice.update(m.id, m.voiceSession || '', !!m.muted);
@@ -274,7 +274,7 @@ function onRoomMessage(m) {
     case 'member-joined': {
       // Quem volta depois da troca de host continua de onde estava (mesmo número, mesmas conexões)
       const back = state.members.get(m.id);
-      state.members.set(m.id, { name: m.name, sharing: !!m.sharing, version: m.version, addrs: m.addrs || [], shareInfo: m.shareInfo || null, back: true });
+      state.members.set(m.id, { name: m.name, sharing: !!m.sharing, version: m.version, addrs: m.addrs || [], shareInfo: m.shareInfo || null, avatar: m.avatar || '', back: true });
       if (!state.order.includes(m.id)) state.order.push(m.id);
       if (back && back.sharing && !m.sharing) stopWatching(m.id, false);
       voice.update(m.id, m.voiceSession || '', !!m.muted);
@@ -313,6 +313,9 @@ function onRoomMessage(m) {
       updateStage();
       break;
     }
+    case 'avatar-state':
+      onAvatarState(m.id, m.hash);
+      break;
     case 'voice-state':
       if (m.id === state.myId || state.members.has(m.id)) voice.update(m.id, m.session, m.muted);
       break;
@@ -354,6 +357,8 @@ function handleSignal(from, data) {
     onUpdateSignal(from, data);
   } else if (data.side === 'file') {
     onFileSignal(from, data);
+  } else if (data.side === 'foto') {
+    onPhotoSignal(from, data);
   } else if (data.side === 'sharer') {
     // Mensagem de quem transmite uma tela que eu pedi para assistir
     const link = state.in.get(from);

@@ -64,6 +64,8 @@ function syncWorkspace() {
   $('profileName').value = $('name').value;
   $('profileDisplayName').textContent = getName();
   $('profileAvatar').textContent = $('navProfileAvatar').textContent = [...getName()][0].toUpperCase();
+  paintAvatar($('profileAvatar'));
+  paintAvatar($('navProfileAvatar'));
   $('navProfile').title = $('navProfile').ariaLabel = 'Perfil de ' + getName();
   $('profileHint').textContent = inRoom ? 'Este é o nome usado nesta sala. Para alterá-lo, saia da sala primeiro.' : 'Seu nome fica salvo neste dispositivo e é usado ao entrar em uma sala.';
   renderVoicePane();

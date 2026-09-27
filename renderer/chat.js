@@ -162,6 +162,8 @@ function appendMessage(m, live) {
   const sep = document.createElement('span');
   sep.className = 'msg-sep';
   sep.textContent = ' : ';
+  // Com foto de perfil, ela vem antes do nome (quem não tem continua só com o nome colorido)
+  if (photoHashOf(m.from)) line.append(avatar(m.name, m.from));
   line.append(who, sep);
   if (m.text) {
     const text = document.createElement('span');

@@ -23,6 +23,11 @@
       <div class="dialog profile-dialog" role="dialog" aria-modal="true" aria-labelledby="profileTitle">
       <div class="pane-head"><h2 id="profileTitle">Seu perfil</h2><button id="closeProfile" class="btn icon" type="button"></button></div>
       <div class="profile-summary"><span id="profileAvatar" class="avatar"></span><strong id="profileDisplayName"></strong></div>
+      <div class="profile-photo">
+        <button id="profilePhotoPick" class="btn small" type="button">Escolher foto</button>
+        <button id="profilePhotoRemove" class="btn small ghost" type="button" hidden>Remover foto</button>
+        <input id="profilePhotoFile" type="file" accept="image/*" hidden>
+      </div>
       <label class="field">Nome de exibição<input id="profileName" maxlength="32" autocomplete="off"></label>
       <p id="profileHint" class="hint"></p>
       </div>
@@ -551,6 +556,7 @@
   <script src="renderer/rtc.js"></script>
   <script src="renderer/preferencias-modelo.js"></script>
   <script src="renderer/tema.js"></script>
+  <script src="renderer/fotos.js"></script>
   <script src="renderer/configuracoes.js"></script>
   <script src="renderer/conectividade.js"></script>
   <script src="renderer/sala.js"></script>

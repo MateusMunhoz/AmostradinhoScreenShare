@@ -55,20 +55,21 @@ isso (chamam `watch`, `state`, `speaking`... direto na página).
 | 4 | `estado.js` | `state`, `update` e as qualidades de transmissão |
 | 5 | `rtc.js` | Ajustes do WebRTC: Opus, H.264 primeiro, codec, bitrate |
 | 6 | `tema.js` | Cores das janelas montadas por código, cor de cada pessoa, barrinhas de quem fala |
-| 7 | `sala.js` | Criar, entrar e sair, mensagens do servidor, sinalização, troca de host |
-| 8 | `voz.js` | Volume por pessoa, mixer, quem fala, atenuação, barra da voz, cartão da pessoa (cria o `voice`) |
-| 9 | `microfone.js` | RNNoise, eco, sensibilidade, apertar para falar, janela "Voz e atalhos" |
-| 10 | `membros.js` | Painel da sala: endereço e lista de pessoas |
-| 11 | `assistir.js` | Quadros de vídeo, ver a própria transmissão, destaque, tela cheia |
-| 12 | `pip.js` | Janelas flutuantes |
-| 13 | `overlay.js` | Chat por cima do jogo |
-| 14 | `metadados.js` | Tira localização, autor, datas e outros metadados dos arquivos (fotos, vídeos, PDF, Office) antes de irem para o chat |
-| 15 | `chat.js` | Mensagens, arquivos, não lidas |
-| 16 | `estatisticas.js` | Desempenho, aba Transmissão, codificador em uso |
-| 17 | `atualizacao.js` | Atualização pela sala, pelo GitHub e o aviso |
-| 18 | `sessoes.js` | Sessões abertas na rede (a lista da tela inicial) |
-| 19 | `transmitir.js` | Escolher a fonte, som, iniciar, trocar e parar, quem assiste |
-| 20 | `inicio.js` | Tela inicial e a partida: liga os botões e listeners, carrega as preferências |
+| 7 | `fotos.js` | Foto de perfil sem servidor: a sua, pedir a dos outros pelo hash, pintar as bolinhas |
+| 8 | `sala.js` | Criar, entrar e sair, mensagens do servidor, sinalização, troca de host |
+| 9 | `voz.js` | Volume por pessoa, mixer, quem fala, atenuação, barra da voz, cartão da pessoa (cria o `voice`) |
+| 10 | `microfone.js` | RNNoise, eco, sensibilidade, apertar para falar, janela "Voz e atalhos" |
+| 11 | `membros.js` | Painel da sala: endereço e lista de pessoas |
+| 12 | `assistir.js` | Quadros de vídeo, ver a própria transmissão, destaque, tela cheia |
+| 13 | `pip.js` | Janelas flutuantes |
+| 14 | `overlay.js` | Chat por cima do jogo |
+| 15 | `metadados.js` | Tira localização, autor, datas e outros metadados dos arquivos (fotos, vídeos, PDF, Office) antes de irem para o chat |
+| 16 | `chat.js` | Mensagens, arquivos, não lidas |
+| 17 | `estatisticas.js` | Desempenho, aba Transmissão, codificador em uso |
+| 18 | `atualizacao.js` | Atualização pela sala, pelo GitHub e o aviso |
+| 19 | `sessoes.js` | Sessões abertas na rede (a lista da tela inicial) |
+| 20 | `transmitir.js` | Escolher a fonte, som, iniciar, trocar e parar, quem assiste |
+| 21 | `inicio.js` | Tela inicial e a partida: liga os botões e listeners, carrega as preferências |
 
 **A regra que evita erro na carga:** só o `inicio.js` roda código quando a página abre (listeners,
 `onclick`, preferências). Os outros só declaram funções e variáveis. Um arquivo que rodasse algo na
