@@ -567,6 +567,9 @@ function refreshTileStream(link) {
     pip.video.play().catch(() => {});
     video.srcObject = new MediaStream(link.tracks.filter((t) => t.kind === 'audio'));
   } else {
+    // Voltando da janela flutuante (o quadro tinha só o áudio): sem passar por null, o Chrome não volta a
+    // tocar o som, porque a faixa de áudio é a mesma
+    if (video.srcObject && !video.srcObject.getVideoTracks().length) video.srcObject = null;
     video.srcObject = full;
   }
   video.play().catch(() => {});

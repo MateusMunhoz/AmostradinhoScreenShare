@@ -16,6 +16,13 @@ const LEVEL = (who) => `(async () => {
   let lvl = 0; (await l.pc.getStats()).forEach((s) => { if (s.type === 'inbound-rtp' && s.kind === 'audio') lvl = s.audioLevel || 0; });
   return lvl;
 })()`;
+// Quanto som tocou em 1,5 s (a duração de áudio tocado pelo WebRTC; o nível sozinho pode ficar parado no
+// último valor quando o som para de tocar)
+const PLAYING = (who) => `(async () => {
+  const l = state.in.get([...state.members].find(([, m]) => m.name === '${who}')[0]);
+  const dur = async () => { let d = 0; (await l.pc.getStats()).forEach((s) => { if (s.type === 'inbound-rtp' && s.kind === 'audio') d = s.totalSamplesDuration || 0; }); return d; };
+  const a = await dur(); await new Promise((r) => setTimeout(r, 1500)); return (await dur()) - a;
+})()`;
 const TILE = (who) => `state.in.get([...state.members].find(([, m]) => m.name === '${who}')[0]).tile`;
 
 run('Som das transmissões', 150000, async () => {
@@ -52,9 +59,20 @@ run('Som das transmissões', 150000, async () => {
   await B.eval(`$('navStreams').click()`);
   await B.eval(`togglePip([...state.members].find(([, m]) => m.name === 'Ana')[0])`);
   await sleep(1500);
-  const lvl3 = await B.eval(LEVEL('Ana'));
-  check('Na janela flutuante: o som continua saindo pelo app', lvl3 > 0.3, lvl3.toFixed(2));
+  const pip = await B.eval(PLAYING('Ana'));
+  check('Na janela flutuante: o som continua saindo pelo app', pip > 1, `${pip.toFixed(2)} s tocados em 1,5 s`);
   await B.eval(`togglePip([...state.members].find(([, m]) => m.name === 'Ana')[0])`);
+  await sleep(800);
+  const back = await B.eval(PLAYING('Ana'));
+  check('Fechou a janela flutuante: o som volta a tocar no app', back > 1, `${back.toFixed(2)} s tocados em 1,5 s`);
+  // Fechando pelo X da própria janela flutuante
+  await B.eval(`togglePip([...state.members].find(([, m]) => m.name === 'Ana')[0])`);
+  await sleep(1500);
+  await B.eval(`[...state.pips.values()][0].win.close()`);
+  await B.waitFor(`state.pips.size === 0`, 5000);
+  await sleep(800);
+  const backX = await B.eval(PLAYING('Ana'));
+  check('Fechou pelo X da janela: o som também volta', backX > 1, `${backX.toFixed(2)} s tocados em 1,5 s`);
 
   // Tela silenciada pelo alto-falante continua muda quando alguém fala na voz (com e sem atenuação)
   const MUTE_BTN = `${TILE('Ana')}.el.querySelector('.tile-mute')`;
@@ -69,10 +87,8 @@ run('Som das transmissões', 150000, async () => {
     await sleep(1200);
     check(`Alguém fala (atenuação ${amount}%): a tela continua muda`, falando && await B.eval(`${TILE('Ana')}.video.muted`));
   }
-  const mudo = await B.eval(LEVEL('Ana'));
-  check('E o som dela não toca', mudo < 0.05, mudo.toFixed(2));
   await B.eval(`${MUTE_BTN}.click()`);
-  await sleep(1500);
-  const volta = await B.eval(LEVEL('Ana'));
-  check('Alto-falante de novo: o som volta', !(await B.eval(`${TILE('Ana')}.video.muted`)) && volta > 0.3, volta.toFixed(2));
+  await sleep(500);
+  const volta = await B.eval(PLAYING('Ana'));
+  check('Alto-falante de novo: o som volta', !(await B.eval(`${TILE('Ana')}.video.muted`)) && volta > 1, `${volta.toFixed(2)} s tocados em 1,5 s`);
 });

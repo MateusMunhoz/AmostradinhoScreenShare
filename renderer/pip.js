@@ -207,12 +207,20 @@ function setPipStream(id) {
 function closePip(id) {
   const p = state.pips.get(id);
   state.pips.delete(id);
+  releasePipVideo(p);
   if (p && !p.win.closed) p.win.close();
   pipClosed(p);
 }
 
+// A janela flutuante solta a transmissão antes de fechar: enquanto o vídeo dela segura a faixa de áudio, o
+// quadro do app não volta a tocar o som (que é a mesma faixa)
+function releasePipVideo(p) {
+  try { if (p?.video) { p.video.pause(); p.video.srcObject = null; } } catch {}
+}
+
 // O vídeo volta para o quadro no app
 function pipClosed(p) {
+  releasePipVideo(p);
   const link = p && state.in.get(p.id);
   if (link) refreshTileStream(link);
   syncIncomingVideo();
