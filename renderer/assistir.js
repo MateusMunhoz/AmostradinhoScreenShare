@@ -24,13 +24,20 @@ function createTile(id, name) {
   const labelText = document.createElement('span');
   labelText.className = 'tile-name-text';
   labelText.textContent = name;
-  label.append(labelText, speakBars());
+  // "sem som": quem transmite está sem o som do PC (desligado ou a captura falhou); aí o volume não tem o que mudar
+  const noAudio = document.createElement('span');
+  noAudio.className = 'tile-noaudio';
+  noAudio.hidden = true;
+  noAudio.innerHTML = ICON.muted;
+  noAudio.append('sem som');
+  noAudio.title = `${name} está transmitindo sem o som do PC`;
+  label.append(labelText, speakBars(), noAudio);
   const bar = document.createElement('div');
   bar.className = 'tile-bar';
   const barSpace = document.createElement('span');
   barSpace.className = 'tile-bar-space';
   const mute = document.createElement('button');
-  mute.className = 'btn icon';
+  mute.className = 'btn icon tile-mute';
   const vol = document.createElement('input');
   vol.type = 'range';
   vol.className = 'tile-vol';
@@ -126,6 +133,18 @@ function revealBar(tile) {
   tile.barTimer = setTimeout(() => tile.el.classList.remove('show-bar'), 4000);
 }
 
+// A transmissão tem som? Vale o que quem transmite diz (versão 1.9.0 ou mais nova); sem isso, se a faixa de
+// som chegou alguns segundos depois de conectar
+function renderTileAudio(id) {
+  const link = state.in.get(id);
+  if (!link || link.self) return;
+  const info = state.members.get(id)?.shareInfo;
+  const hasTrack = link.tracks.some((t) => t.kind === 'audio');
+  const silent = info && typeof info.audio === 'boolean' ? !info.audio : link.audioChecked && !hasTrack;
+  link.tile.el.classList.toggle('no-audio', !!silent);
+  link.tile.el.querySelector('.tile-noaudio').hidden = !silent;
+}
+
 let soundHintShown = false; // o aviso do som desligado aparece uma vez só por vez que o app abre
 function watch(id) {
   if (state.in.has(id) || !state.members.get(id)?.sharing) return;
@@ -134,6 +153,7 @@ function watch(id) {
   const link = { pc, chain: Promise.resolve(), tile, lastBytes: 0, lastTs: 0, videoOn: true, tracks: [], once: null };
   state.in.set(id, link);
   applyScreenVolume(id); // o volume que você deixou para essa pessoa da última vez
+  renderTileAudio(id);
   if (!soundHintShown && volOf(id).screen === 0) {
     soundHintShown = true;
     toast('O som das telas começa desligado. Role a roda do mouse em cima da tela (ou use o controle) para ouvir.');
@@ -141,7 +161,7 @@ function watch(id) {
 
   pc.ontrack = (e) => {
     if (e.track.kind === 'video') setVideoTrack(link, e.track);
-    else { link.tracks.push(e.track); refreshTileStream(link); }
+    else { link.tracks.push(e.track); refreshTileStream(link); renderTileAudio(id); }
   };
   // Quem transmite no modo "uma vez só" manda o vídeo já codificado por este canal
   pc.ondatachannel = (e) => { if (e.channel.label === 'video') setupOnceReceiver(link, e.channel); };
@@ -150,6 +170,8 @@ function watch(id) {
     const s = pc.connectionState;
     const o = tile.overlay;
     if (s === 'connected') {
+      clearTimeout(link.audioTimer);
+      link.audioTimer = setTimeout(() => { link.audioChecked = true; renderTileAudio(id); }, 4000);
       if (!o.hidden) revealBar(tile);
       o.hidden = true;
     } else {

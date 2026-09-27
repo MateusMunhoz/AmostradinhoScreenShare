@@ -790,3 +790,9 @@ main { padding-top: var(--workspace-top); }
 .workspace-header { background: transparent; pointer-events: none; }
 #workspaceNav { pointer-events: auto; }
 main { padding-top: 0; }
+
+/* Transmissão sem som: aviso na faixa do nome da tela, e o volume some (não tem o que mudar) */
+.tile-noaudio { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--text-2); white-space: nowrap; }
+.tile-noaudio svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.tile.no-audio .tile-vol, .tile.no-audio .tile-mute { display: none; }
+.live-silent { font-weight: 600; }

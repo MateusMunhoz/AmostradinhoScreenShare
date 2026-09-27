@@ -304,6 +304,7 @@ function onRoomMessage(m) {
       mem.shareInfo = m.sharing ? m.info || null : null;
       if (started) toast(`${mem.name} começou a transmitir`);
       else if (!m.sharing) stopWatching(m.id, false);
+      renderTileAudio(m.id); // a configuração pode ter mudado (com ou sem som)
       renderMembers();
       updateStage();
       break;

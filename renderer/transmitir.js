@@ -670,4 +670,9 @@ function renderWatchers() {
     : 'Ninguém está assistindo ainda. Só é enviado vídeo para quem clicar em Assistir.';
   const n = state.out.size;
   $('liveText').textContent = n === 0 ? 'ninguém assistindo' : n === 1 ? '1 assistindo' : `${n} assistindo`;
+  // Sem o som do PC (desligado ou a captura falhou): fica à vista na barra, não só num aviso que some
+  const silent = !!state.stream && !state.stream.getAudioTracks().length;
+  $('liveText').classList.toggle('live-silent', silent);
+  if (silent) $('liveText').textContent += ', sem som';
+  $('liveText').title = silent ? 'Sua transmissão está sem o som do PC. Para ter som, pare e transmita de novo com "Som do PC" ligado.' : '';
 }
