@@ -212,7 +212,8 @@ function renderSpeaking() {
 
 const inVoice = (id) => (id === state.myId ? !!voice.session : !!voice.members.get(id)?.session);
 
-const voice = new VoiceChat({ send, changed: renderVoice, error: message => toast(message, 'error'), mixer });
+const voice = new VoiceChat({ send, changed: renderVoice, error: message => toast(message, 'error'), mixer,
+  activity: event => { void appSounds.play(event); } });
 function renderVoice() {
   const active = !!voice.session;
   const join = $('voiceJoin');

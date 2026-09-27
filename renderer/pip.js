@@ -32,6 +32,7 @@ function pipButton(d, text, onClick, primary) {
 // Tudo por CSSOM: a página herda a regra de segurança do app, que não deixa estilo escrito em HTML
 function buildPip(win, id) {
   const d = win.document;
+  applyAppTheme(d);
   d.documentElement.style.height = '100%';
   Object.assign(d.body.style, {
     margin: '0', height: '100%', overflow: 'hidden', background: '#000000', color: THEME.text, userSelect: 'none',
@@ -54,8 +55,8 @@ function buildPip(win, id) {
   const top = d.createElement('div');
   Object.assign(top.style, { display: 'flex', alignItems: 'center', gap: '6px' });
   const name = d.createElement('span');
-  Object.assign(name.style, { flex: '1', fontSize: '13px', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textShadow: '0 1px 2px #000' });
-  Object.assign(top.style, { background: 'rgba(0, 0, 0, .72)', margin: '-8px -8px 0', padding: '8px' });
+  Object.assign(name.style, { flex: '1', fontSize: '13px', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textShadow: 'none' });
+  Object.assign(top.style, { background: THEME.glass, margin: '-8px -8px 0', padding: '8px' });
   const sizes = d.createElement('div');
   Object.assign(sizes.style, { display: 'flex', gap: '2px', padding: '2px', background: THEME.sunken, borderRadius: '6px' });
   sizes.style.setProperty('-webkit-app-region', 'no-drag');
@@ -67,9 +68,9 @@ function buildPip(win, id) {
   }
   top.append(name, sizes, pipButton(d, 'Travar', () => window.api.pipSetEdit(false), true), pipButton(d, 'Fechar', () => closePip(id), false));
   const bottom = d.createElement('div');
-  Object.assign(bottom.style, { display: 'flex', flexDirection: 'column', gap: '6px', background: 'rgba(0, 0, 0, .72)', margin: '0 -8px -8px', padding: '8px 10px' });
+  Object.assign(bottom.style, { display: 'flex', flexDirection: 'column', gap: '6px', background: THEME.glass, margin: '0 -8px -8px', padding: '8px 10px' });
   const opacityRow = d.createElement('label');
-  Object.assign(opacityRow.style, { display: 'flex', alignItems: 'center', gap: '8px', color: '#d0d0d0' });
+  Object.assign(opacityRow.style, { display: 'flex', alignItems: 'center', gap: '8px', color: THEME.muted });
   opacityRow.style.setProperty('-webkit-app-region', 'no-drag');
   const opacity = d.createElement('input');
   opacity.type = 'range';
@@ -82,7 +83,7 @@ function buildPip(win, id) {
 
   // Com 2 ou mais janelas: mesmo tamanho para todas e como enfileirar (coluna ou linha, a partir de qual canto)
   const groupRow = d.createElement('div');
-  Object.assign(groupRow.style, { display: 'none', flexWrap: 'wrap', alignItems: 'center', gap: '6px 10px', color: '#d0d0d0' });
+  Object.assign(groupRow.style, { display: 'none', flexWrap: 'wrap', alignItems: 'center', gap: '6px 10px', color: THEME.muted });
   groupRow.style.setProperty('-webkit-app-region', 'no-drag');
   const linkedLabel = d.createElement('label');
   Object.assign(linkedLabel.style, { display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' });
@@ -114,7 +115,7 @@ function buildPip(win, id) {
 
   const hint = d.createElement('span');
   hint.textContent = 'Arraste para mover · puxe um canto para redimensionar · Ctrl+Shift+E trava todas';
-  Object.assign(hint.style, { lineHeight: '1.35', color: '#d0d0d0' });
+  Object.assign(hint.style, { lineHeight: '1.35', color: THEME.muted });
   bottom.append(groupRow, opacityRow, hint);
   // Janela baixa (tamanho P): a dica sai para caber o resto
   const fitHint = () => { hint.style.display = win.innerHeight < 230 ? 'none' : ''; };

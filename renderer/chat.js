@@ -28,7 +28,9 @@ const chat = {
 function setPanelOpen(open) {
   chat.open = open;
   save('panelOpen', open ? '1' : '0');
-  $('roomGrid').classList.toggle('panel-closed', !open);
+  workspaceViews.chat = open;
+  saveWorkspaceViews();
+  syncWorkspace();
   $('chatToggle').setAttribute('aria-pressed', String(open));
   $('dockAddr').hidden = open || !state.roomAddr;
   if (open && chatAtBottom()) markRead();
@@ -63,6 +65,8 @@ function markRead() {
 
 function renderUnread() {
   const n = chat.unread;
+  $('navUnread').hidden = !n;
+  $('navUnread').textContent = n > 99 ? '99+' : String(n);
   $('chatUnread').hidden = !n;
   $('chatUnread').textContent = n > 99 ? '99+' : String(n);
   const label = chat.open ? 'Recolher o painel da sala'
@@ -89,11 +93,13 @@ function resetChat(welcome) {
   $('chatInput').disabled = $('chatSend').disabled = $('chatAttach').disabled = !chat.supported;
   for (const m of (welcome && welcome.chat) || []) appendMessage(m, false);
   $('chatEmpty').hidden = !!$('chatList').children.length || !chat.supported;
-  setPanelOpen(load('panelOpen', '1') !== '0');
+  setPanelOpen(workspaceViews.chat);
   requestAnimationFrame(scrollChatToEnd);
 }
 
 function onChatMessage(m) {
+  if (m.id && chat.log.some(entry => entry.id === m.id)) return;
+  void appSounds.play('chat');
   // Cópia da conversa: se eu virar o host, o novo servidor continua daqui
   const { type, ...entry } = m;
   chat.log.push(entry);

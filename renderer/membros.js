@@ -125,6 +125,7 @@ function renderMembers() {
   list.append(memberRow(null, `${getName()} (você)`, state.sharing));
   const others = [...state.members].sort((a, b) => Number(b[1].sharing) - Number(a[1].sharing));
   for (const [id, m] of others) list.append(memberRow(id, m.name, m.sharing));
+  renderVoicePane();
 }
 
 function updateStage() {

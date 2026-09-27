@@ -210,10 +210,25 @@ A configuração de outra pessoa só aparece se ela e o host estiverem na versã
 
 ## Tema
 
-Lan house moderna: o verde-oliva e o amarelo do Steam e do CS 1.6 de 2004, com fonte, espaço e cantos de hoje.
-- **Base:** verde-oliva escuro, com texto claro. Botões com um brilho de 1px no topo, no lugar das bordas chanfradas de 2004.
-- **Amarelo,** a única cor de destaque: botão principal, seleção, "você", "transmitindo" e "ao vivo".
-- **Verde claro** só para "falando" e conectado.
-- **Laranja** para parar, encerrar e erros. Sem vermelho.
+Abra **Configurações gerais** pela engrenagem no topo direito. A barra fica na mesma posição no início e dentro de uma sala.
 
-Fontes do próprio Windows: Segoe UI Variable no app e Tahoma no chat, como o console do jogo.
+O botão **Perfil** mostra seu nome salvo neste dispositivo; ele pode ser editado fora da sala. Dentro da sala, **Chat**, **Voz** e **Transmissão** são alternadores independentes: clique para exibir ou ocultar cada painel. Os selecionados permanecem visíveis juntos, dividindo o espaço. Perfil e configurações também podem ficar abertos ao mesmo tempo. Cada painel tem sua própria rolagem quando necessário. A seleção dos três painéis da sala é lembrada ao reabrir o app.
+
+O painel **Voz** mostra os participantes, seus controles de volume e botões para entrar, sair, mutar e silenciar as vozes. Mostrar ou ocultar esse painel não liga nem desliga o microfone. Da mesma forma, ocultar **Transmissão** não encerra uma transmissão em andamento; use o botão **Parar** para encerrá-la.
+
+- **Principal:** fundo do aplicativo.
+- **Secundária:** painéis e cartões.
+- **Detalhes 1:** botões, seleção e destaques.
+- **Detalhes 2:** indicadores de voz, conexão e avisos.
+
+Digite um hexadecimal de três ou seis dígitos, com ou sem `#`, ou use a amostra de cor. A mudança aparece imediatamente, inclusive nas janelas flutuantes abertas. Textos e tons de apoio se adaptam às cores escolhidas. Valores inválidos não substituem a última cor válida. **Restaurar cores padrão** recupera o tema oliva e amarelo, sem alterar os sons.
+
+Na mesma tela, escolha o som de **entrada na sala**, **saída da sala**, **mensagem no chat**, **entrada no chat de voz** e **saída do chat de voz**. Os oito MP3 fornecidos estão incluídos no aplicativo; não é necessário manter a pasta original ao lado do executável. **Ouvir** toca uma prévia. **Sem som** desativa um evento específico, e **Silenciar som do chat** mantém os outros avisos ativos. A prévia continua disponível com o chat silenciado.
+
+Cada evento tem seu próprio volume de 0 a 100%. O **volume geral dos avisos** multiplica esses valores: geral em 50% e um evento em 40% resultam em 20% para aquele evento. Geral em 0% silencia todos sem apagar os ajustes individuais. Os volumes dos avisos são independentes do volume da voz e das transmissões.
+
+Mensagens enviadas e recebidas fazem som quando chegam confirmadas pelo servidor. Carregar o histórico não faz som. Entrar ou sair da sala também avisa no próprio PC. Na voz, os avisos acompanham a entrada e saída das pessoas: mutar, desmutar ou reconectar alguém que já estava na voz não repete o som. Carregar os participantes existentes também é silencioso. Retornos de participantes já conhecidos durante uma troca de host não repetem o aviso de entrada.
+
+Todas essas escolhas são salvas automaticamente no perfil local do app e continuam ao fechá-lo e abri-lo de novo. Cada pessoa pode usar suas próprias cores e sons.
+
+Fontes do próprio Windows: Segoe UI Variable no app e Tahoma no chat.
