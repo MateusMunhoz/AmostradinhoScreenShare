@@ -50,7 +50,6 @@ function syncWorkspace() {
   $('workspaceEmpty').hidden = any || workspaceViews.streams;
   document.body.classList.toggle('has-workspace-pane', any);
   document.body.classList.toggle('workspace-in-room', inRoom);
-  document.body.classList.toggle('watching', inRoom && state.in.size > 0);
   document.body.classList.toggle('workspace-wide', inRoom && !workspaceViews.streams && any);
   if (inRoom) syncIncomingVideo(); // telas escondidas não baixam vídeo (o som continua)
   $('workspaceContext').textContent = inRoom ? 'Na sala' : 'Início';

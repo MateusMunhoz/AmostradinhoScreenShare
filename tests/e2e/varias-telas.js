@@ -30,7 +30,7 @@ run('Várias telas (destaque com coluna)', 200000, async () => {
   check('Todas tocando e recebendo vídeo', t.every((x) => x.playing && x.videoOn));
   await B.shot('varias-telas.png');
   // Com tela sendo assistida, as telas vão até o topo: sem o nome do app nem o título "Transmissões"
-  check('Telas até o topo, sem os títulos', await B.eval(`document.body.classList.contains('watching') && getComputedStyle(document.querySelector('.stream-pane-head')).display === 'none' && getComputedStyle(document.querySelector('.workspace-brand')).display === 'none' && $('tiles').getBoundingClientRect().top < 40`));
+  check('Telas até o topo, sem os títulos', await B.eval(`getComputedStyle(document.querySelector('.stream-pane-head')).display === 'none' && getComputedStyle(document.querySelector('.workspace-brand')).display === 'none' && $('tiles').getBoundingClientRect().top < 40`));
 
   // Painel "Transmissão" desligado: as telas ficam escondidas, então quem transmite para de mandar o vídeo
   // para a Bia (o som continua); ligado de novo, o vídeo volta
@@ -61,5 +61,5 @@ run('Várias telas (destaque com coluna)', 200000, async () => {
   check('Com uma só, volta a ocupar tudo', await B.eval(`!$('tiles').classList.contains('column') && ![...state.in.values()][0].tile.el.classList.contains('small')`));
   await B.eval(`stopWatching(state.main)`);
   await sleep(300);
-  check('Sem tela nenhuma: os títulos voltam', await B.eval(`!document.body.classList.contains('watching') && getComputedStyle(document.querySelector('.stream-pane-head')).display !== 'none'`));
+  check('Sem tela nenhuma: a faixa de cima continua sem aparecer', await B.eval(`getComputedStyle(document.querySelector('.stream-pane-head')).display === 'none' && $('emptyStage').getBoundingClientRect().top < 40`));
 });

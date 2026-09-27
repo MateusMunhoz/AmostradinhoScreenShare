@@ -783,10 +783,10 @@ main { padding-top: var(--workspace-top); }
 .workspace-tab[aria-expanded=true] { border-color: var(--accent); }
 .profile-summary .avatar { border-radius: 50%; }
 
-/* Com tela sendo assistida: as telas ocupam a área toda, até o topo. Somem o nome do app, o "Na sala", o título
-   "Transmissões" e o botão de pessoas (a lista continua no botão do chat). A barra de painéis fica por cima da
-   coluna do chat; sem chat nem voz, ela ficaria em cima do vídeo, então aí o espaço dela continua reservado. */
-body.watching .workspace-brand, body.watching .stream-pane-head { display: none; }
-body.watching .workspace-header { background: transparent; pointer-events: none; }
-body.watching #workspaceNav { pointer-events: auto; }
-body.watching.has-workspace-pane:not(.workspace-wide) main { padding-top: 0; }
+/* Sem a faixa de cima: o nome do app, o "Início / Na sala", o título "Transmissões" e o botão de pessoas nunca
+   aparecem (a lista de pessoas fica no botão do chat). Só a barra de painéis fica, solta no canto de cima à
+   direita: por cima da coluna do chat e da voz ou, sem elas, do canto da faixa do nome da tela. */
+.workspace-brand, .stream-pane-head { display: none; }
+.workspace-header { background: transparent; pointer-events: none; }
+#workspaceNav { pointer-events: auto; }
+main { padding-top: 0; }
