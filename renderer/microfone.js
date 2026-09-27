@@ -7,7 +7,8 @@
 // mode: 'voz' (o microfone fica aberto) ou 'ptt' (só enquanto a tecla está apertada).
 // gateAuto/gateDb: sensibilidade (abaixo do limite, o microfone fica fechado). duck: quanto o som das
 // transmissões abaixa enquanto alguém fala (0 = não abaixa); duckSelf: abaixa também quando eu falo.
-const voiceCfg = { ns: 'ia', echo: true, mode: 'voz', pttVk: 0, pttLabel: '', gateAuto: true, gateDb: -50, duck: 0, duckSelf: false };
+// micId: microfone escolhido em Voz e atalhos ('' = o padrão do Windows); micLabel: o nome dele, para a lista
+const voiceCfg = { micId: '', micLabel: '', ns: 'ia', echo: true, mode: 'voz', pttVk: 0, pttLabel: '', gateAuto: true, gateDb: -50, duck: 0, duckSelf: false };
 try { Object.assign(voiceCfg, JSON.parse(load('vozConfig', '{}')) || {}); } catch {}
 function saveVoiceCfg() { save('vozConfig', JSON.stringify(voiceCfg)); }
 
@@ -16,12 +17,17 @@ let micNow = null;   // { raw, out, ctx, node } do microfone em uso
 let noiseWasm = null;
 const simdOk = () => WebAssembly.validate(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0, 1, 5, 1, 96, 0, 1, 123, 3, 2, 1, 0, 10, 10, 1, 8, 0, 65, 0, 253, 15, 253, 98, 11]));
 
-// Abre o microfone com os filtros escolhidos. Com a IA, o som passa pelo RNNoise (48 kHz) antes de sair.
+// Abre o microfone escolhido com os filtros escolhidos. Com a IA, o som passa pelo RNNoise (48 kHz) antes de sair.
+// Microfone escolhido que não está mais ligado ao PC: abre o padrão do Windows.
 async function openMic() {
-  const raw = await navigator.mediaDevices.getUserMedia({
-    video: false,
-    audio: { echoCancellation: voiceCfg.echo, noiseSuppression: voiceCfg.ns === 'chrome', autoGainControl: true },
-  });
+  const audio = { echoCancellation: voiceCfg.echo, noiseSuppression: voiceCfg.ns === 'chrome', autoGainControl: true };
+  let raw;
+  try {
+    raw = await navigator.mediaDevices.getUserMedia({ video: false, audio: voiceCfg.micId ? { ...audio, deviceId: { exact: voiceCfg.micId } } : audio });
+  } catch (err) {
+    if (!voiceCfg.micId || !['NotFoundError', 'OverconstrainedError'].includes(err.name)) throw err;
+    raw = await navigator.mediaDevices.getUserMedia({ video: false, audio });
+  }
   // microfone -> [IA] -> medidor -> porta (sensibilidade) -> o que vai para a sala
   const ctx = new AudioContext({ sampleRate: 48000 });
   const src = ctx.createMediaStreamSource(raw);
@@ -197,6 +203,7 @@ function keyLabel(e) {
 function openVoiceDialog() {
   $('voiceDialog').hidden = false;
   renderVoiceDialog();
+  renderMicList();
   window.api.getShortcuts().then((k) => { shortcutKeys = k || {}; renderShortcutRows(); }).catch(() => {});
   $('closeVoiceDialog').focus();
   meterLoop();
@@ -232,6 +239,23 @@ function renderVoiceDialog() {
   $('duckValue').textContent = voiceCfg.duck ? `${voiceCfg.duck}%` : 'Desligada';
   $('duckSelf').checked = voiceCfg.duckSelf;
   $('duckSelf').disabled = !voiceCfg.duck;
+}
+
+// Lista de microfones: o padrão do Windows (com o nome de qual é agora) e cada microfone ligado ao PC.
+// O escolhido que foi desconectado continua na lista, marcado, até escolherem outro.
+async function renderMicList() {
+  let mics = [];
+  try { mics = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === 'audioinput'); } catch {}
+  const real = mics.filter((d) => d.deviceId !== 'default' && d.deviceId !== 'communications');
+  const def = mics.find((d) => d.deviceId === 'default');
+  const defName = def && (real.find((d) => d.groupId === def.groupId)?.label || def.label.replace(/^[^-]+ - /, ''));
+  const opts = [['', defName ? `Padrão do Windows (${defName})` : 'Padrão do Windows']];
+  for (const d of real) opts.push([d.deviceId, d.label || 'Microfone sem nome']);
+  if (voiceCfg.micId && !real.some((d) => d.deviceId === voiceCfg.micId)) {
+    opts.push([voiceCfg.micId, `${voiceCfg.micLabel || 'Microfone'} (desconectado, usando o padrão)`]);
+  }
+  $('micSelect').replaceChildren(...opts.map(([value, textContent]) => Object.assign(document.createElement('option'), { value, textContent })));
+  $('micSelect').value = voiceCfg.micId;
 }
 
 function renderShortcutRows() {

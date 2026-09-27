@@ -59,6 +59,15 @@ window.addEventListener('mousedown', (e) => {
 document.querySelectorAll('input[name="noise"]').forEach((r) => {
   r.onchange = () => { voiceCfg.ns = r.value; saveVoiceCfg(); renderVoiceDialog(); restartMic(); };
 });
+$('micSelect').onchange = () => {
+  const id = $('micSelect').value;
+  if (id === voiceCfg.micId) return;
+  voiceCfg.micId = id;
+  voiceCfg.micLabel = id ? $('micSelect').selectedOptions[0].textContent : '';
+  saveVoiceCfg();
+  restartMic();
+};
+navigator.mediaDevices.addEventListener('devicechange', () => { if (!$('voiceDialog').hidden) renderMicList(); });
 $('echoOn').onchange = () => { voiceCfg.echo = $('echoOn').checked; saveVoiceCfg(); restartMic(); };
 document.querySelectorAll('input[name="talkMode"]').forEach((r) => {
   r.onchange = () => {

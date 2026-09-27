@@ -618,6 +618,8 @@ fieldset.group > legend { margin-bottom: 10px; }
 .vd-slider input[type="range"] { flex: 1; accent-color: var(--accent); }
 .vd-slider input[type="range"]:disabled { opacity: .45; }
 .vd-value { min-width: 72px; text-align: right; font-size: 13px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.vd-select { font: inherit; font-size: 14px; color: var(--text); background: var(--sunken); border: 1px solid var(--field-line); border-radius: 8px; padding: 9px 10px; width: 100%; min-width: 0; }
+.vd-select:focus { border-color: var(--accent); outline: none; }
 .vd-check { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-2); cursor: pointer; }
 .vd-check input { accent-color: var(--accent); width: 16px; height: 16px; }
 .vd-check input:disabled + * , .vd-check:has(input:disabled) { opacity: .5; cursor: default; }
