@@ -50,7 +50,8 @@ async function applyBitrate(link) {
     if (!sender.track || sender.track.kind !== 'video') continue;
     const params = sender.getParameters();
     if (!params.encodings || !params.encodings.length) params.encodings = [{}];
-    params.encodings[0].maxBitrate = q.bitrate;
+    const s = sender.track.getSettings();
+    params.encodings[0].maxBitrate = bitrateFor(q, s.width, s.height);
     params.encodings[0].maxFramerate = q.fps;
     params.encodings[0].active = !link.videoOff;
     try { await sender.setParameters(params); } catch (e) { console.warn(e); }

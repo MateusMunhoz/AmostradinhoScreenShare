@@ -24,6 +24,7 @@ Para quem transmite e joga ao mesmo tempo. Para o uso geral, veja o [Guia](guia.
   - *Alta*: a transmissão vem antes do jogo, que pode perder alguns FPS.
   - Não existe "Tempo real" de propósito. Sem administrador o Windows ignora; com administrador, pode travar o mouse, o teclado e o som do jogo.
 - **Qualidade:** 720p 60 fps tem menos da metade dos pixels de 1080p 60 fps e continua fluido para jogos. É a opção mais leve para quem joga e transmite.
+- **4K (2160p 30 fps):** só faz diferença numa tela 4K; numa tela menor, vai na resolução dela e a taxa cai junto (uns 9 Mbps em 1440p, 5 Mbps em 1080p). Numa tela 4K são uns 20 Mbps **por pessoa assistindo** no modo "Uma por pessoa", ou 20 no total com "Uma vez só", que é o recomendado em 4K. Pesa também na placa de vídeo de quem transmite e de quem assiste.
 - **Pessoas assistindo:** no modo normal, cada pessoa assistindo é uma codificação a mais. Se pesar, use Uma vez só para todos, 720p ou 30 fps.
 - **Janela em vez de tela:** transmita a janela do jogo em vez da tela inteira quando der. Em monitor maior que 1080p, o app precisa reduzir a imagem, e isso usa o processador.
 - **Limite de FPS no jogo:** limite o FPS do jogo para sobrar uns 10% da placa. Isso é o que mais ajuda quando a placa está em 100%. Dá para fazer nas opções do jogo ou em Painel de controle da NVIDIA > Taxa de quadros máxima.

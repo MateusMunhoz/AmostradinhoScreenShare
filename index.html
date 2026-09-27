@@ -21,8 +21,13 @@
   <aside id="workspacePanes" aria-label="Painéis selecionados" hidden>
     <section id="profilePane" class="modal global utility-popup" hidden>
       <div class="dialog profile-dialog" role="dialog" aria-modal="true" aria-labelledby="profileTitle">
-      <div class="pane-head"><h2 id="profileTitle">Seu perfil</h2><button id="closeProfile" class="btn small" type="button">Fechar</button></div>
+      <div class="pane-head"><h2 id="profileTitle">Seu perfil</h2><button id="closeProfile" class="btn icon" type="button"></button></div>
       <div class="profile-summary"><span id="profileAvatar" class="avatar"></span><strong id="profileDisplayName"></strong></div>
+      <div class="profile-photo">
+        <button id="profilePhotoPick" class="btn small" type="button">Escolher foto</button>
+        <button id="profilePhotoRemove" class="btn small ghost" type="button" hidden>Remover foto</button>
+        <input id="profilePhotoFile" type="file" accept="image/*" hidden>
+      </div>
       <label class="field">Nome de exibição<input id="profileName" maxlength="32" autocomplete="off"></label>
       <p id="profileHint" class="hint"></p>
       </div>
@@ -284,6 +289,11 @@
                   <span class="q-dot" aria-hidden="true"></span>
                   <span class="q-text"><strong>Máxima <span class="spec">· 1080p 60 fps</span></strong><span class="hint">Jogos, com a placa de vídeo sobrando</span></span>
                 </label>
+                <label class="q-card">
+                  <input type="radio" name="quality" value="2160p30">
+                  <span class="q-dot" aria-hidden="true"></span>
+                  <span class="q-text"><strong>4K <span class="spec">· 2160p 30 fps</span></strong><span class="hint">Tela 4K e internet boa: uns 20 Mbps por pessoa (ou 20 no total com "Uma vez só")</span></span>
+                </label>
               </fieldset>
 
               <div class="group">
@@ -359,7 +369,7 @@
     <div class="dialog stats" role="dialog" aria-modal="true" aria-labelledby="statsTitle">
       <div class="dialog-head">
         <h2 id="statsTitle">Estatísticas</h2>
-        <button class="btn small" id="closeStats" type="button">Fechar</button>
+        <button class="btn icon" id="closeStats" type="button"></button>
       </div>
       <div class="seg stats-tabs" role="tablist" aria-label="Estatísticas">
         <button type="button" role="tab" id="statsTabPerf" aria-controls="statsPerf" aria-selected="true">Desempenho</button>
@@ -406,13 +416,15 @@
     <div class="dialog narrow voice-dialog" role="dialog" aria-modal="true" aria-labelledby="voiceDialogTitle">
       <div class="dialog-head">
         <h2 id="voiceDialogTitle">Voz e atalhos</h2>
-        <button class="btn small" id="closeVoiceDialog" type="button">Fechar</button>
+        <button class="btn icon" id="closeVoiceDialog" type="button"></button>
       </div>
 
       <section class="vd-section">
+        <h3><label for="micSelect">Microfone</label></h3>
+        <select id="micSelect" class="vd-select"></select>
         <div class="vd-row">
-          <h3 id="micTestLabel">Testar o microfone</h3>
-          <button class="btn small" id="micTestBtn" type="button" aria-pressed="false" aria-describedby="micTestHint">Ouvir minha voz</button>
+          <span id="micTestLabel">Testar o microfone</span>
+          <button class="btn small" id="micTestBtn" type="button" aria-pressed="false" aria-labelledby="micTestLabel micTestBtn" aria-describedby="micTestHint">Ouvir minha voz</button>
         </div>
         <p class="hint" id="micTestHint">Você se ouve como a sala ouve: depois da supressão de ruído e da sensibilidade. Use fone de ouvido: com caixa de som, o microfone pega o próprio som e apita. Na voz, desligue o microfone para testar sem os outros ouvirem.</p>
       </section>
@@ -503,19 +515,38 @@
 
   <div id="generalSettingsDialog" class="modal global utility-popup" hidden>
     <div class="dialog general-settings" role="dialog" aria-modal="true" aria-labelledby="generalSettingsTitle">
-      <div class="dialog-head"><h2 id="generalSettingsTitle">Configurações gerais</h2><button id="closeGeneralSettings" class="btn small" type="button">Fechar</button></div>
+      <div class="dialog-head"><h2 id="generalSettingsTitle">Configurações gerais</h2><button id="closeGeneralSettings" class="btn icon" type="button"></button></div>
       <p class="hint" id="settingsSaveStatus" role="status">Salvo neste dispositivo. As escolhas continuam ao reabrir o app.</p>
+      <section class="settings-section" aria-labelledby="networkTitle">
+        <h3 id="networkTitle">Conectividade entre PCs</h3>
+        <p class="hint">Escolha a rede usada pelo Tela P2P. A opção Radmin mantém o funcionamento atual. A VPN Tela P2P usa um agente NetBird e o servidor de coordenação configurado abaixo.</p>
+        <label for="networkProvider">Rede</label>
+        <select id="networkProvider"><option value="radmin">Radmin VPN ou rede local</option><option value="netbird">VPN Tela P2P (NetBird)</option></select>
+        <div id="netbirdSettings" hidden>
+          <label for="netbirdManagementUrl">Servidor de coordenação HTTPS</label>
+          <input id="netbirdManagementUrl" type="url" placeholder="https://vpn.seudominio.com" autocomplete="url">
+          <label for="netbirdSetupKey">Chave de acesso da rede <small>Opcional; gerada no painel do servidor</small></label>
+          <input id="netbirdSetupKey" type="password" autocomplete="new-password" spellcheck="false">
+          <p class="hint" id="netbirdStatus" role="status">Consulte o estado da VPN.</p>
+          <div class="button-row"><button id="netbirdConnect" class="btn primary" type="button">Conectar à VPN</button><button id="netbirdDisconnect" class="btn" type="button">Desconectar</button></div>
+          <p class="hint">O agente NetBird precisa estar instalado e autorizado nessa rede. A VPS de coordenação é auto-hospedada por você. Os convites e permissões são administrados no painel NetBird.</p>
+          <button id="netbirdInstallHelp" class="btn small" type="button">Como instalar o agente NetBird</button>
+          <button id="netbirdServerHelp" class="btn small" type="button">Guia para hospedar o servidor</button>
+        </div>
+      </section>
       <section class="settings-section" aria-labelledby="colorsTitle">
         <h3 id="colorsTitle">Cores do layout</h3><p class="hint">Use um hexadecimal, como #3366FF, ou escolha pela amostra. A prévia é imediata.</p>
         <div class="settings-colors"><div class="settings-color"><label for="hex-main">Principal<small>Fundo do aplicativo</small></label><div class="settings-color-input"><input type="color" id="color-main" aria-label="Escolher cor: Principal"><input type="text" id="hex-main" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-main"></div><small id="error-main" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-secondary">Secundária<small>Painéis e cartões</small></label><div class="settings-color-input"><input type="color" id="color-secondary" aria-label="Escolher cor: Secundária"><input type="text" id="hex-secondary" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-secondary"></div><small id="error-secondary" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-detail1">Detalhes 1<small>Botões e destaques</small></label><div class="settings-color-input"><input type="color" id="color-detail1" aria-label="Escolher cor: Detalhes 1"><input type="text" id="hex-detail1" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-detail1"></div><small id="error-detail1" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-detail2">Detalhes 2<small>Indicadores e avisos</small></label><div class="settings-color-input"><input type="color" id="color-detail2" aria-label="Escolher cor: Detalhes 2"><input type="text" id="hex-detail2" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-detail2"></div><small id="error-detail2" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div></div>
         <button id="resetColors" class="btn small" type="button">Restaurar cores padrão</button>
       </section>
-      <section class="settings-section" aria-labelledby="soundsTitle"><h3 id="soundsTitle">Sons de notificação</h3><p class="hint">Escolha entre os oito áudios incluídos no app. “Sem som” desativa só aquele aviso.</p>
+      <section class="settings-section" aria-labelledby="soundsTitle"><h3 id="soundsTitle">Sons de notificação</h3><p class="hint">Escolha entre os sons incluídos no app. “Sem som” desativa só aquele aviso. Os da voz tocam quando você está na voz.</p>
         <div class="sound-event"><div class="settings-sound"><label for="sound-join">Entrada na sala</label><select id="sound-join"></select><button class="btn small" id="preview-join" type="button" aria-label="Ouvir prévia: Entrada na sala">Ouvir</button></div><div class="event-volume"><label for="volume-join">Volume</label><input id="volume-join" type="range" min="0" max="100" step="1" aria-label="Volume: Entrada na sala"><output id="value-join" for="volume-join">100%</output></div></div>
         <div class="sound-event"><div class="settings-sound"><label for="sound-leave">Saída da sala</label><select id="sound-leave"></select><button class="btn small" id="preview-leave" type="button" aria-label="Ouvir prévia: Saída da sala">Ouvir</button></div><div class="event-volume"><label for="volume-leave">Volume</label><input id="volume-leave" type="range" min="0" max="100" step="1" aria-label="Volume: Saída da sala"><output id="value-leave" for="volume-leave">100%</output></div></div>
         <div class="sound-event"><div class="settings-sound"><label for="sound-chat">Mensagem no chat</label><select id="sound-chat"></select><button class="btn small" id="preview-chat" type="button" aria-label="Ouvir prévia: Mensagem no chat">Ouvir</button></div><div class="event-volume"><label for="volume-chat">Volume</label><input id="volume-chat" type="range" min="0" max="100" step="1" aria-label="Volume: Mensagem no chat"><output id="value-chat" for="volume-chat">100%</output></div></div>
         <div class="sound-event"><div class="settings-sound"><label for="sound-voiceJoin">Entrada no chat de voz</label><select id="sound-voiceJoin"></select><button class="btn small" id="preview-voiceJoin" type="button" aria-label="Ouvir prévia: Entrada no chat de voz">Ouvir</button></div><div class="event-volume"><label for="volume-voiceJoin">Volume</label><input id="volume-voiceJoin" type="range" min="0" max="100" step="1" aria-label="Volume: Entrada no chat de voz"><output id="value-voiceJoin" for="volume-voiceJoin">100%</output></div></div>
         <div class="sound-event"><div class="settings-sound"><label for="sound-voiceLeave">Saída do chat de voz</label><select id="sound-voiceLeave"></select><button class="btn small" id="preview-voiceLeave" type="button" aria-label="Ouvir prévia: Saída do chat de voz">Ouvir</button></div><div class="event-volume"><label for="volume-voiceLeave">Volume</label><input id="volume-voiceLeave" type="range" min="0" max="100" step="1" aria-label="Volume: Saída do chat de voz"><output id="value-voiceLeave" for="volume-voiceLeave">100%</output></div></div>
+        <div class="sound-event"><div class="settings-sound"><label for="sound-mute">Mutar o microfone</label><select id="sound-mute"></select><button class="btn small" id="preview-mute" type="button" aria-label="Ouvir prévia: Mutar o microfone">Ouvir</button></div><div class="event-volume"><label for="volume-mute">Volume</label><input id="volume-mute" type="range" min="0" max="100" step="1" aria-label="Volume: Mutar o microfone"><output id="value-mute" for="volume-mute">100%</output></div></div>
+        <div class="sound-event"><div class="settings-sound"><label for="sound-unmute">Desmutar o microfone</label><select id="sound-unmute"></select><button class="btn small" id="preview-unmute" type="button" aria-label="Ouvir prévia: Desmutar o microfone">Ouvir</button></div><div class="event-volume"><label for="volume-unmute">Volume</label><input id="volume-unmute" type="range" min="0" max="100" step="1" aria-label="Volume: Desmutar o microfone"><output id="value-unmute" for="volume-unmute">100%</output></div></div>
         <label class="vd-check"><input type="checkbox" id="muteChatSound"> Silenciar som do chat</label>
         <p class="hint">O chat avisa sobre novas mensagens enviadas e recebidas. O histórico é silencioso.</p>
         <label for="notificationVolume">Volume geral dos avisos</label><div class="vd-slider"><input type="range" id="notificationVolume" min="0" max="100" step="1"><output id="notificationVolumeValue" for="notificationVolume"></output></div><p class="hint">O volume geral multiplica os volumes individuais. Em 0%, todos os avisos ficam silenciosos.</p>
@@ -530,7 +561,9 @@
   <script src="renderer/rtc.js"></script>
   <script src="renderer/preferencias-modelo.js"></script>
   <script src="renderer/tema.js"></script>
+  <script src="renderer/fotos.js"></script>
   <script src="renderer/configuracoes.js"></script>
+  <script src="renderer/conectividade.js"></script>
   <script src="renderer/sala.js"></script>
   <script src="renderer/voz.js"></script>
   <script src="renderer/microfone.js"></script>
@@ -538,6 +571,7 @@
   <script src="renderer/assistir.js"></script>
   <script src="renderer/pip.js"></script>
   <script src="renderer/overlay.js"></script>
+  <script src="renderer/metadados.js"></script>
   <script src="renderer/chat.js"></script>
   <script src="renderer/estatisticas.js"></script>
   <script src="renderer/atualizacao.js"></script>

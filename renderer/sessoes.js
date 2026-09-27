@@ -39,6 +39,7 @@ function lembrarDaSala() {
 }
 
 function setSessionWatch(on) {
+  on = !!on && selectedNetworkProvider() !== 'netbird';
   if (on === sessoes.observando) return;
   sessoes.observando = on;
   window.api.sessoesObservar(on).catch(() => {});
@@ -101,7 +102,9 @@ function renderSessoes() {
   $('sessionsEmpty').hidden = all.length > 0;
   $('sessionsEmpty').textContent = sessoes.procurando
     ? 'Procurando sessões abertas na rede…'
-    : 'Nenhuma sessão aberta na rede agora. Quando alguém criar uma, ela aparece aqui.';
+    : selectedNetworkProvider() === 'netbird'
+      ? 'A descoberta automática ainda não está disponível pela VPN. Peça o endereço privado da sala e use “Entrar numa sala”.'
+      : 'Nenhuma sessão aberta na rede agora. Quando alguém criar uma, ela aparece aqui.';
 }
 
 function sessionRow(s) {

@@ -59,6 +59,25 @@ window.addEventListener('mousedown', (e) => {
 document.querySelectorAll('input[name="noise"]').forEach((r) => {
   r.onchange = () => { voiceCfg.ns = r.value; saveVoiceCfg(); renderVoiceDialog(); restartMic(); };
 });
+// Foto de perfil (renderer/fotos.js)
+$('profilePhotoPick').onclick = () => $('profilePhotoFile').click();
+$('profilePhotoFile').onchange = async () => {
+  const file = $('profilePhotoFile').files[0];
+  $('profilePhotoFile').value = '';
+  if (!file) return;
+  try { await setMyPhoto(file); } catch { toast('Não deu para abrir essa imagem. Escolha uma foto (JPG, PNG, WebP...).', 'error'); }
+};
+$('profilePhotoRemove').onclick = removeMyPhoto;
+renderMyPhoto();
+$('micSelect').onchange = () => {
+  const id = $('micSelect').value;
+  if (id === voiceCfg.micId) return;
+  voiceCfg.micId = id;
+  voiceCfg.micLabel = id ? $('micSelect').selectedOptions[0].textContent : '';
+  saveVoiceCfg();
+  restartMic();
+};
+navigator.mediaDevices.addEventListener('devicechange', () => { if (!$('voiceDialog').hidden) renderMicList(); });
 $('echoOn').onchange = () => { voiceCfg.echo = $('echoOn').checked; saveVoiceCfg(); restartMic(); };
 document.querySelectorAll('input[name="talkMode"]').forEach((r) => {
   r.onchange = () => {
@@ -151,12 +170,22 @@ $('shareDialog').addEventListener('change', (e) => {
 $('tabScreens').onclick = () => { state.sourceTab = 'screens'; renderSources(); };
 $('tabWindows').onclick = () => { state.sourceTab = 'windows'; renderSources(); };
 $('advToggle').onclick = () => setAdvanced($('advToggle').getAttribute('aria-expanded') !== 'true');
-setIcon($('closeShare'), 'close', 'Fechar');
+// Todo botão de fechar janela é um X (a dica e o leitor de tela dizem "Fechar")
+for (const id of ['closeShare', 'closeStats', 'closeVoiceDialog', 'closeGeneralSettings', 'closeProfile']) setIcon($(id), 'close', 'Fechar');
 setIcon($('refreshSources'), 'refresh', 'Atualizar lista');
 $('closeShare').onclick = closeShareDialog;
 
 // Tela inicial: Radmin VPN, última sala e "Entrar numa sala" aberto ali mesmo
 async function renderRadmin() {
+  if (selectedNetworkProvider() === 'netbird') {
+    let status;
+    try { status = await window.api.netbirdStatus(); } catch { status = null; }
+    const connected = !!status?.connected;
+    $('radminDot').className = 'dot ' + (connected ? 'ok' : 'warn');
+    $('radminTitle').textContent = connected ? 'VPN Tela P2P conectada' : 'VPN Tela P2P desconectada';
+    $('radminDetail').textContent = connected ? status.ip : status?.installed ? 'Conecte nas configurações gerais' : 'Instale o agente NetBird e configure o servidor';
+    return;
+  }
   let ips = [];
   try { ips = await window.api.getIps(); } catch {}
   const r = ips.find((i) => i.radmin);
@@ -297,6 +326,7 @@ $('chatInput').addEventListener('keydown', (e) => {
 });
 $('chatInput').addEventListener('input', fitChatInput);
 $('chatAttach').onclick = () => $('chatFile').click();
+document.addEventListener('paste', onChatPaste); // Ctrl+V com imagem ou arquivo: vai para o chat
 $('chatFile').onchange = () => { attachFiles([...$('chatFile').files]); $('chatFile').value = ''; };
 // Arrastar arquivo para o chat; fora dele, soltar um arquivo não faz a janela abrir o arquivo
 document.addEventListener('dragover', (e) => e.preventDefault());

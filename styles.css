@@ -366,6 +366,12 @@ kbd { font-family: Consolas, monospace; font-size: 11px; color: var(--muted); bo
   width: 28px; height: 28px; flex: none; border-radius: 50%; background: var(--person, var(--muted));
   color: var(--bg); font-size: 13px; font-weight: 700; display: grid; place-items: center;
 }
+/* Foto de perfil no lugar da inicial (renderer/fotos.js) */
+.avatar.photo, #navProfileAvatar.photo { background-size: cover; background-position: center; color: transparent !important; }
+.msg-line .avatar { display: inline-block; width: 18px; height: 18px; margin-right: 6px; vertical-align: -4px; }
+.msg.grouped .msg-line .avatar { display: none; }
+.voice-avatar .avatar { width: 20px; height: 20px; margin-left: -4px; }
+.profile-photo { display: flex; flex-wrap: wrap; gap: 8px; margin: -6px 0 16px; }
 .msg-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .msg-body .file-card { margin: 4px 0 2px; }
 .msg-text { white-space: pre-wrap; }
@@ -413,6 +419,7 @@ kbd { font-family: Consolas, monospace; font-size: 11px; color: var(--muted); bo
 .members { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .member { display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: 14px; }
 .member .avatar { width: 8px; height: 8px; border-radius: 2px; font-size: 0; }
+.member .avatar.photo { width: 22px; height: 22px; border-radius: 50%; }
 .member .info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .member .mname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .member .mstatus { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -618,6 +625,8 @@ fieldset.group > legend { margin-bottom: 10px; }
 .vd-slider input[type="range"] { flex: 1; accent-color: var(--accent); }
 .vd-slider input[type="range"]:disabled { opacity: .45; }
 .vd-value { min-width: 72px; text-align: right; font-size: 13px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.vd-select { font: inherit; font-size: 14px; color: var(--text); background: var(--sunken); border: 1px solid var(--field-line); border-radius: 8px; padding: 9px 10px; width: 100%; min-width: 0; }
+.vd-select:focus { border-color: var(--accent); outline: none; }
 .vd-check { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-2); cursor: pointer; }
 .vd-check input { accent-color: var(--accent); width: 16px; height: 16px; }
 .vd-check input:disabled + * , .vd-check:has(input:disabled) { opacity: .5; cursor: default; }
@@ -703,6 +712,7 @@ fieldset.group > legend { margin-bottom: 10px; }
 .settings-color-input input[aria-invalid=true] { border: 2px solid var(--warn); }
 .settings-sound { display: grid; grid-template-columns: 130px minmax(0,1fr) auto; align-items: center; gap: 10px; }
 .settings-sound select { width: 100%; min-width: 0; }
+.general-settings input[type=range] { accent-color: var(--accent); }
 .settings-sound label { font-size: 13px; }
 #resetColors { justify-self: start; }
 #generalSettingsDialog { z-index: 30; }
@@ -781,3 +791,17 @@ main { padding-top: var(--workspace-top); }
 #navProfileAvatar { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-size: 14px; font-weight: 700; }
 .workspace-tab[aria-expanded=true] { border-color: var(--accent); }
 .profile-summary .avatar { border-radius: 50%; }
+
+/* Sem a faixa de cima: o nome do app, o "Início / Na sala", o título "Transmissões" e o botão de pessoas nunca
+   aparecem (a lista de pessoas fica no botão do chat). Só a barra de painéis fica, solta no canto de cima à
+   direita: por cima da coluna do chat e da voz ou, sem elas, do canto da faixa do nome da tela. */
+.workspace-brand, .stream-pane-head { display: none; }
+.workspace-header { background: transparent; pointer-events: none; }
+#workspaceNav { pointer-events: auto; }
+main { padding-top: 0; }
+
+/* Transmissão sem som: aviso na faixa do nome da tela, e o volume some (não tem o que mudar) */
+.tile-noaudio { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--text-2); white-space: nowrap; }
+.tile-noaudio svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.tile.no-audio .tile-vol, .tile.no-audio .tile-mute { display: none; }
+.live-silent { font-weight: 600; }

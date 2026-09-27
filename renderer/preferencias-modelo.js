@@ -1,5 +1,6 @@
 'use strict';
 // Modelo puro compartilhado pelo renderer e pelos testes. Só IDs conhecidos viram URLs de áudio.
+// Os sons "Suave" não têm arquivo: são tons gerados na hora ([frequência Hz, início s, duração s, volume relativo]).
 const AppPreferences = (() => {
   const key = 'appPreferences.v1';
   const sounds = [
@@ -11,11 +12,17 @@ const AppPreferences = (() => {
     { id: 'notification041', label: 'Notificação 041', file: 'universfield-new-notification-041-493473.mp3' },
     { id: 'notification066', label: 'Notificação 066', file: 'universfield-new-notification-066-494545.mp3' },
     { id: 'wood', label: 'Madeira · toque', file: 'vittemacop-wood-allert-notification-switch-onoff-478077.mp3' },
+    { id: 'suaveEntrou', label: 'Suave · dois tons subindo', synth: [[660, 0, 0.13, 1], [880, 0.09, 0.2, 1]] },
+    { id: 'suaveSaiu', label: 'Suave · dois tons descendo', synth: [[880, 0, 0.13, 1], [587, 0.09, 0.22, 1]] },
+    { id: 'suaveMutou', label: 'Suave · toque curto descendo', synth: [[659, 0, 0.07, 0.8], [523, 0.055, 0.11, 0.8]] },
+    { id: 'suaveDesmutou', label: 'Suave · toque curto subindo', synth: [[523, 0, 0.07, 0.8], [659, 0.055, 0.11, 0.8]] },
   ];
-  const events = ['join', 'leave', 'chat', 'voiceJoin', 'voiceLeave'];
+  // mute/unmute: o seu microfone (o apertar para falar não conta)
+  const events = ['join', 'leave', 'chat', 'voiceJoin', 'voiceLeave', 'mute', 'unmute'];
   const defaults = { colors: { main: '#22271E', secondary: '#2D3327', detail1: '#D6C45C', detail2: '#A6D089' },
-    sounds: { join: 'notification035', leave: 'whoosh', chat: 'wood', voiceJoin: 'notification017', voiceLeave: 'notification039',
-      chatMuted: false, volume: 50, levels: { join: 100, leave: 100, chat: 100, voiceJoin: 100, voiceLeave: 100 } } };
+    sounds: { join: 'notification035', leave: 'whoosh', chat: 'wood', voiceJoin: 'suaveEntrou', voiceLeave: 'suaveSaiu',
+      mute: 'suaveMutou', unmute: 'suaveDesmutou',
+      chatMuted: false, volume: 50, levels: { join: 100, leave: 100, chat: 100, voiceJoin: 100, voiceLeave: 100, mute: 100, unmute: 100 } } };
   function hex(value) {
     if (typeof value !== 'string') return null;
     const s = value.trim().replace(/^#/, '');
@@ -64,9 +71,28 @@ const AppPreferences = (() => {
       'color-scheme': text === '#000000' ? 'light' : 'dark',
     };
   }
+  // Toca um som "Suave" pelo Web Audio; devolve um objeto com pause() para o stop() funcionar igual
+  function synthTone(notes, volume) {
+    const ctx = synthTone.ctx || (synthTone.ctx = new AudioContext());
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+    const t0 = ctx.currentTime + 0.02;
+    const nodes = [];
+    for (const [f, start, dur, rel] of notes) {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.frequency.value = f;
+      const s = t0 + start, peak = Math.max(0.0002, 0.9 * rel * volume);
+      g.gain.setValueAtTime(0.0001, s);
+      g.gain.exponentialRampToValueAtTime(peak, s + 0.008);
+      g.gain.exponentialRampToValueAtTime(0.0001, s + dur);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(s); o.stop(s + dur + 0.02);
+      nodes.push(o);
+    }
+    return { pause() { for (const o of nodes) try { o.stop(); } catch {} }, currentTime: 0 };
+  }
   class SoundPlayer {
-    constructor({ settings, createAudio = url => new Audio(url), now = () => Date.now() }) {
-      Object.assign(this, { settings, createAudio, now }); this.players = new Map(); this.last = new Map();
+    constructor({ settings, createAudio = url => new Audio(url), synth = synthTone, now = () => Date.now() }) {
+      Object.assign(this, { settings, createAudio, synth, now }); this.players = new Map(); this.last = new Map();
     }
     stop(event) {
       const player = this.players.get(event);
@@ -85,6 +111,7 @@ const AppPreferences = (() => {
       this.stop(slot);
       let player;
       try {
+        if (sound.synth) { this.players.set(slot, this.synth(sound.synth, volume)); return true; }
         player = this.createAudio('assets/audio/' + sound.file);
         player.volume = volume;
         this.players.set(slot, player);

@@ -18,7 +18,7 @@ function openShareDialog(switching = false) {
   renderShareSummary();
 }
 
-const QUALITY_SPEC = { '720p30': '720p 30 fps', '720p60': '720p 60 fps', '1080p30': '1080p 30 fps', '1080p60': '1080p 60 fps' };
+const QUALITY_SPEC = { '720p30': '720p 30 fps', '720p60': '720p 60 fps', '1080p30': '1080p 30 fps', '1080p60': '1080p 60 fps', '2160p30': '4K 30 fps' };
 function radioValue(name) { return document.querySelector(`input[name="${name}"]:checked`)?.value || ''; }
 function setRadio(name, value) {
   const el = document.querySelector(`input[name="${name}"][value="${value}"]`);
@@ -670,4 +670,9 @@ function renderWatchers() {
     : 'Ninguém está assistindo ainda. Só é enviado vídeo para quem clicar em Assistir.';
   const n = state.out.size;
   $('liveText').textContent = n === 0 ? 'ninguém assistindo' : n === 1 ? '1 assistindo' : `${n} assistindo`;
+  // Sem o som do PC (desligado ou a captura falhou): fica à vista na barra, não só num aviso que some
+  const silent = !!state.stream && !state.stream.getAudioTracks().length;
+  $('liveText').classList.toggle('live-silent', silent);
+  if (silent) $('liveText').textContent += ', sem som';
+  $('liveText').title = silent ? 'Sua transmissão está sem o som do PC. Para ter som, pare e transmita de novo com "Som do PC" ligado.' : '';
 }

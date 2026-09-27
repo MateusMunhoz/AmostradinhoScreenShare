@@ -13,7 +13,9 @@ const PART_SIZE = 64 * 1024 - 32;   // limite seguro de mensagem do canal de dad
 const HEADER = 17;                  // [tipo 1][seq 4][timestamp 8][parte 2][total 2]
 const KEY_INTERVAL = 4000;          // quadro-chave periódico do WebCodecs (ms)
 const KEY_REQUEST_GAP = 500;        // no máximo 2 pedidos de quadro-chave por segundo
-const NVENC_CODEC = 'avc1.64002a';  // H.264 High do videocap
+// Nível do H.264 pelo tamanho do quadro: 4.2 (2a) vai até 1080p; acima disso (1440p, 4K), 5.1 (33)
+const avcLevel = (w, h) => (w * h > 2_228_224 ? '33' : '2a');
+const nvencCodec = (w, h) => `avc1.6400${avcLevel(w, h)}`; // H.264 High do videocap (o NVENC escolhe o nível sozinho)
 
 const once = {
   active: false,
@@ -44,17 +46,18 @@ const even = (n) => Math.max(2, Math.round(n) & ~1);
 
 function encoderConfig(base, q, w, h) {
   return {
-    ...base, width: even(w), height: even(h), bitrate: q.bitrate, framerate: q.fps,
+    ...base, width: even(w), height: even(h), bitrate: bitrateFor(q, w, h), framerate: q.fps,
     latencyMode: 'realtime', bitrateMode: 'variable', avc: { format: 'annexb' },
   };
 }
 
-// H.264 High e Main (nível 4.2, até 1080p60), primeiro pela placa de vídeo, depois pelo processador
+// H.264 High, Main e Baseline (no nível que o tamanho pede), primeiro pela placa de vídeo, depois pelo processador
 async function pickEncoderConfig(q, w, h, softwareOnly = false) {
   if (typeof VideoEncoder !== 'function' || typeof MediaStreamTrackProcessor !== 'function') return null;
   const accels = softwareOnly ? ['no-preference'] : ['prefer-hardware', 'no-preference'];
   for (const hardwareAcceleration of accels) {
-    for (const codec of ['avc1.64002a', 'avc1.4d002a', 'avc1.42002a']) {
+    const lvl = avcLevel(w, h);
+    for (const codec of [`avc1.6400${lvl}`, `avc1.4d00${lvl}`, `avc1.4200${lvl}`]) {
       const base = { codec, hardwareAcceleration };
       try {
         const res = await VideoEncoder.isConfigSupported(encoderConfig(base, q, w, h));
@@ -136,9 +139,12 @@ async function startNvenc(sourceId) {
     return false;
   }
   Object.assign(once, {
-    active: true, engine: 'nvenc', base: { codec: NVENC_CODEC }, hardware: true, width: res.width, height: res.height,
+    active: true, engine: 'nvenc', base: { codec: nvencCodec(res.width, res.height) }, hardware: true, width: res.width, height: res.height,
     seq: 0, captured: 0, encoded: 0, dropped: 0, sentBytes: 0, nvencRunning: true,
   });
+  // 4K numa tela menor: a taxa acompanha o tamanho que o videocap está mandando de verdade
+  const rate = bitrateFor(q, res.width, res.height);
+  if (rate !== q.bitrate) window.api.videoCapCmd(`bitrate ${rate}`);
   onceViewersChanged(); // ninguém assistindo ainda: pausa
   return true;
 }
@@ -561,6 +567,9 @@ function refreshTileStream(link) {
     pip.video.play().catch(() => {});
     video.srcObject = new MediaStream(link.tracks.filter((t) => t.kind === 'audio'));
   } else {
+    // Voltando da janela flutuante (o quadro tinha só o áudio): sem passar por null, o Chrome não volta a
+    // tocar o som, porque a faixa de áudio é a mesma
+    if (video.srcObject && !video.srcObject.getVideoTracks().length) video.srcObject = null;
     video.srcObject = full;
   }
   video.play().catch(() => {});

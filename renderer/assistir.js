@@ -24,13 +24,20 @@ function createTile(id, name) {
   const labelText = document.createElement('span');
   labelText.className = 'tile-name-text';
   labelText.textContent = name;
-  label.append(labelText, speakBars());
+  // "sem som": quem transmite está sem o som do PC (desligado ou a captura falhou); aí o volume não tem o que mudar
+  const noAudio = document.createElement('span');
+  noAudio.className = 'tile-noaudio';
+  noAudio.hidden = true;
+  noAudio.innerHTML = ICON.muted;
+  noAudio.append('sem som');
+  noAudio.title = `${name} está transmitindo sem o som do PC`;
+  label.append(labelText, speakBars(), noAudio);
   const bar = document.createElement('div');
   bar.className = 'tile-bar';
   const barSpace = document.createElement('span');
   barSpace.className = 'tile-bar-space';
   const mute = document.createElement('button');
-  mute.className = 'btn icon';
+  mute.className = 'btn icon tile-mute';
   const vol = document.createElement('input');
   vol.type = 'range';
   vol.className = 'tile-vol';
@@ -42,16 +49,20 @@ function createTile(id, name) {
   };
   vol.oninput = () => {
     video.volume = parseFloat(vol.value) * duck.factor;
-    if (video.volume > 0) video.muted = false;
+    if (video.volume > 0) { video.muted = false; tile.userMuted = false; }
     syncMute();
   };
   // O volume do quadro fica guardado como o "som da transmissão" dessa pessoa
   vol.onchange = () => setVol(id, { screen: Math.round(parseFloat(vol.value) * 100), muted: false });
+  // O mudo do alto-falante é só desta tela e fica no quadro (userMuted): a atenuação e o volume salvo o respeitam
   mute.onclick = () => {
     // Em 0% (o começo de toda transmissão), o alto-falante liga o som em 100% e guarda
-    if (video.volume === 0 && !state.in.get(id)?.self) return setVol(id, { screen: 100, muted: false });
-    video.muted = !video.muted;
-    syncMute();
+    if (video.volume === 0 && !state.in.get(id)?.self) { tile.userMuted = false; return setVol(id, { screen: 100, muted: false }); }
+    if (state.in.get(id)?.self) { video.muted = !video.muted; syncMute(); return; }
+    const silent = tile.paused ? tile.mutedBefore : video.muted;
+    tile.userMuted = !silent;
+    if (silent && volOf(id).muted) return setVol(id, { muted: false }); // estava em "Silenciar para mim"
+    applyScreenVolume(id);
   };
   syncMute();
   const pipBtn = document.createElement('button');
@@ -116,7 +127,8 @@ function createTile(id, name) {
   });
   $('tiles').append(el);
   el.dataset.person = id;
-  return { el, video, vol, overlay, pipNote, fs, focusBtn, pipBtn, syncMute, name, paused: false, mutedBefore: false };
+  const tile = { el, video, vol, overlay, pipNote, fs, focusBtn, pipBtn, syncMute, name, paused: false, mutedBefore: false, userMuted: false };
+  return tile;
 }
 
 // Mostra a barra do vídeo por alguns segundos, para quem nunca passou o mouse em cima descobrir os botões
@@ -124,6 +136,18 @@ function revealBar(tile) {
   tile.el.classList.add('show-bar');
   clearTimeout(tile.barTimer);
   tile.barTimer = setTimeout(() => tile.el.classList.remove('show-bar'), 4000);
+}
+
+// A transmissão tem som? Vale o que quem transmite diz (versão 1.9.0 ou mais nova); sem isso, se a faixa de
+// som chegou alguns segundos depois de conectar
+function renderTileAudio(id) {
+  const link = state.in.get(id);
+  if (!link || link.self) return;
+  const info = state.members.get(id)?.shareInfo;
+  const hasTrack = link.tracks.some((t) => t.kind === 'audio');
+  const silent = info && typeof info.audio === 'boolean' ? !info.audio : link.audioChecked && !hasTrack;
+  link.tile.el.classList.toggle('no-audio', !!silent);
+  link.tile.el.querySelector('.tile-noaudio').hidden = !silent;
 }
 
 let soundHintShown = false; // o aviso do som desligado aparece uma vez só por vez que o app abre
@@ -134,6 +158,7 @@ function watch(id) {
   const link = { pc, chain: Promise.resolve(), tile, lastBytes: 0, lastTs: 0, videoOn: true, tracks: [], once: null };
   state.in.set(id, link);
   applyScreenVolume(id); // o volume que você deixou para essa pessoa da última vez
+  renderTileAudio(id);
   if (!soundHintShown && volOf(id).screen === 0) {
     soundHintShown = true;
     toast('O som das telas começa desligado. Role a roda do mouse em cima da tela (ou use o controle) para ouvir.');
@@ -141,7 +166,7 @@ function watch(id) {
 
   pc.ontrack = (e) => {
     if (e.track.kind === 'video') setVideoTrack(link, e.track);
-    else { link.tracks.push(e.track); refreshTileStream(link); }
+    else { link.tracks.push(e.track); refreshTileStream(link); renderTileAudio(id); }
   };
   // Quem transmite no modo "uma vez só" manda o vídeo já codificado por este canal
   pc.ondatachannel = (e) => { if (e.channel.label === 'video') setupOnceReceiver(link, e.channel); };
@@ -150,6 +175,8 @@ function watch(id) {
     const s = pc.connectionState;
     const o = tile.overlay;
     if (s === 'connected') {
+      clearTimeout(link.audioTimer);
+      link.audioTimer = setTimeout(() => { link.audioChecked = true; renderTileAudio(id); }, 4000);
       if (!o.hidden) revealBar(tile);
       o.hidden = true;
     } else {
@@ -407,7 +434,9 @@ function syncIncomingVideo() {
   for (const [id, link] of state.in) {
     // Na janela flutuante, o vídeo continua vindo mesmo com o app escondido (é para ver enquanto joga)
     const inPip = state.pips.has(id);
-    const on = inPip || (appVisible && (!state.focus || state.focus === id));
+    // Painel "Transmissão" desligado: as telas estão escondidas, então o vídeo pausa como com o app minimizado
+    const streamsShown = typeof workspaceViews !== 'object' || workspaceViews.streams !== false;
+    const on = inPip || (appVisible && streamsShown && (!state.focus || state.focus === id));
     if (link.videoOn === on) continue;
     link.videoOn = on;
     if (!link.self) sendSignal(id, { side: 'viewer', video: on });

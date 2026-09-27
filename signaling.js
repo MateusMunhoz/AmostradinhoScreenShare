@@ -40,6 +40,9 @@ function cleanShareInfo(i) {
   return out;
 }
 
+// Hash (SHA-256) da foto de perfil, ou vazio
+function cleanHash(h) { return typeof h === 'string' && /^[0-9a-f]{64}$/.test(h) ? h : ''; }
+
 // Endereços IPv4 que a pessoa diz ter (para os outros acharem ela se ela virar o host)
 function cleanAddrs(list) {
   return (Array.isArray(list) ? list : []).map(String).filter((a) => /^\d{1,3}(\.\d{1,3}){3}$/.test(a)).slice(0, 8);
@@ -157,9 +160,9 @@ function startServer(port, password = '', seed = {}) {
           const voiceSession = resume && typeof msg.voiceSession === 'string' && /^[\w-]{1,64}$/.test(msg.voiceSession) ? msg.voiceSession : '';
           me = {
             ws, name: String(msg.name || 'Anônimo').slice(0, 32), sharing: !!(resume && msg.sharing), version, addrs: cleanAddrs(msg.addrs),
-            voiceSession, muted: !!voiceSession && msg.muted === true, shareInfo,
+            voiceSession, muted: !!voiceSession && msg.muted === true, shareInfo, avatar: cleanHash(msg.avatar),
           };
-          const info = (mid, m) => ({ id: mid, name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs, voiceSession: m.voiceSession, muted: m.muted, shareInfo: m.shareInfo });
+          const info = (mid, m) => ({ id: mid, name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs, voiceSession: m.voiceSession, muted: m.muted, shareInfo: m.shareInfo, avatar: m.avatar });
           send(ws, {
             type: 'welcome',
             id,
@@ -180,6 +183,10 @@ function startServer(port, password = '', seed = {}) {
           me.voiceSession = msg.session;
           me.muted = !!msg.session && msg.muted === true;
           broadcast({ type: 'voice-state', id, session: me.voiceSession, muted: me.muted });
+        } else if (msg.type === 'avatar') {
+          // Foto de perfil: só o hash passa por aqui; a foto vai direto de quem tem para quem pede
+          me.avatar = cleanHash(msg.hash);
+          broadcast({ type: 'avatar-state', id, hash: me.avatar }, id);
         } else if (msg.type === 'share') {
           me.sharing = !!msg.sharing;
           me.shareInfo = me.sharing ? cleanShareInfo(msg.info) : null;

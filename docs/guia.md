@@ -3,6 +3,7 @@
 Tudo o que dá para fazer no Tela P2P, com os detalhes. Para começar do zero, veja o [README](../README.md).
 
 - [Sala](#sala)
+- [VPN Tela P2P](#vpn-tela-p2p)
 - [Sessões abertas](#sessões-abertas)
 - [Transmitir](#transmitir)
 - [Assistir](#assistir)
@@ -35,6 +36,22 @@ Tudo o que dá para fazer no Tela P2P, com os detalhes. Para começar do zero, v
   - o balão do chat;
   - **Sair**.
 - **Recolher o painel:** o balão do chat recolhe o painel, e os vídeos ocupam a largura toda. Recolhido, ele mostra quantas mensagens chegaram, e o endereço da sala passa para a barra.
+
+### VPN Tela P2P
+
+Para usar uma rede privada sem Radmin, todos precisam instalar o agente NetBird e estar autorizados
+na mesma instalação auto-hospedada do NetBird. Um administrador configura a VPS, as permissões e,
+se quiser entrada por chave, cria uma chave de setup no painel.
+
+1. Abra **Configurações gerais** e escolha **VPN Tela P2P (NetBird)**.
+2. Informe o endereço HTTPS do servidor. Para entrar com uma chave de setup, cole-a no campo opcional;
+   sem chave, o NetBird usa o fluxo de autenticação configurado no servidor.
+3. Clique em **Conectar à VPN**. Depois que o estado mostrar um IP privado, crie ou entre numa sala.
+4. Quem cria compartilha o endereço privado mostrado dentro da sala. Os amigos conectados à mesma rede
+   NetBird entram por **Entrar numa sala** usando esse endereço.
+
+A lista de **Sessões abertas** continua disponível para Radmin e rede local; pela VPN NetBird, a entrada
+é feita pelo endereço privado. A senha da sala continua sendo independente das permissões da VPN.
 
 ### Sessões abertas
 
@@ -93,6 +110,7 @@ Qualidade, codificação e jogo em tela cheia estão em [Desempenho](desempenho.
 - **Barra do vídeo:** aparece nos primeiros segundos, ao passar o mouse ou ao navegar com Tab. Tem silenciar, volume, janela flutuante, destacar, tela cheia e o X. Clicar duas vezes no vídeo também põe em tela cheia. Resolução, quadros e Mbps de cada tela ficam em [Estatísticas](#estatísticas), na aba Transmissão.
 - **Várias telas:** com duas ou mais, uma fica grande à esquerda e as outras numa coluna ao lado, todas ao vivo. Clique numa pequena (ou Enter nela) para trocar o destaque.
 - **Só esta:** o botão de destacar deixa só essa tela ocupando tudo. As outras ficam em pausa só para você, sem vídeo e sem som: quem transmite para de mandar o vídeo para você, e o seu PC deixa de decodificar. A faixa de cima mostra quem está em pausa. Clique num nome para trocar, ou em **Mostrar todas** (ou Esc) para voltar.
+- **Transmissão sem som:** se quem transmite está sem o som do PC (desligou em "Som do PC" ou a captura falhou), a faixa da tela mostra **sem som** e o controle de volume some. Quem transmite vê "sem som" no **Ao vivo**; para ter som, é parar e transmitir de novo com "Som do PC" ligado.
 - **Som das telas:** toda transmissão começa **sem som** (0%). Para ouvir, role a roda do mouse para cima em cima da tela (5% por clique), use o controle da barra do vídeo ou clique no alto-falante (liga em 100%). O volume de cada pessoa fica guardado pelo nome.
 - **Volume por pessoa:** veja [Voz](#voz).
 - **App minimizado:** com a janela minimizada ou coberta pelo jogo por 3 segundos, o app para de baixar o vídeo e fica só com o som. Ao voltar, o vídeo volta na hora. Quem transmite vê "(vídeo pausado)" ao lado do seu nome.
@@ -116,7 +134,7 @@ Para ver uma transmissão enquanto joga.
 
 - **Mensagens:** Enter envia e Shift+Enter quebra a linha. Links abrem no navegador.
 - **Organização:** cada linha fica no formato do console do jogo, "21:02 Nome : mensagem", com o nome na cor da pessoa. Mensagens seguidas da mesma pessoa ficam juntas, sem repetir o nome. As que chegam enquanto você não está olhando ganham a linha "N mensagens novas" e o botão "Ir para as mensagens novas".
-- **Arquivos:** use o clipe ou arraste para o chat, até 200 MB.
+- **Arquivos:** use o clipe, arraste para o chat ou cole com **Ctrl+V** (um print da tela ou um arquivo copiado), até 200 MB. O print colado ganha um nome com a hora, tipo `imagem-colada-21-07-45.png`.
   - **Baixar:** quem clica em **Baixar** recebe direto de quem mandou, vê a barra de progresso (dá para cancelar) e depois clica em **Salvar**.
   - **Imagens pequenas** aparecem sozinhas.
   - **Disponibilidade:** o arquivo fica disponível enquanto quem mandou estiver na sala.
@@ -150,6 +168,7 @@ Clique em **Entrar na voz**, na barra de baixo, para ligar o microfone padrão d
   Só muda o que você ouve. O botão mostra o valor quando não está no padrão. O app lembra o volume de cada pessoa pelo nome, para a próxima sala.
 - **Painel recolhido:** os nomes de quem está na voz ficam na barra de baixo, e clicar num abre o mesmo cartão.
 - **Roda do mouse:** em cima do nome na barra da voz ou do botão de volume na lista, muda a voz da pessoa (ou o som da tela, se ela não estiver na voz), de 5 em 5%. Em cima da tela da pessoa ou da janela flutuante (no modo de ajuste), muda o som da tela. Um balãozinho mostra o valor.
+- **Sons da voz:** dois tons subindo quando alguém entra na voz (ou você), dois descendo quando sai, e um toque curto quando você muta ou desmuta o microfone. Os de quem entra e sai só tocam enquanto você está na voz; quem muta do outro lado e o apertar para falar não tocam. O som e o volume de cada um ficam em **Configurações gerais** (a engrenagem no topo).
 - **Microfone negado:** se o Windows negar o microfone, permita o acesso para aplicativos de desktop nas configurações de privacidade.
 - **Voz e transmissão juntas:** se a captura que exclui o som do app falhar durante a conversa, a tela é transmitida sem áudio do PC, para não retransmitir as vozes. Se uma transmissão já estiver capturando todo o som do PC, pare, entre na voz e recomece a transmissão.
 - **Como funciona:** a voz usa WebRTC direto pela Radmin, uma conexão por par de pessoas, sem servidor. Usa o microfone padrão.
@@ -224,7 +243,7 @@ O painel **Voz** mostra os participantes, seus controles de volume e botões par
 
 Digite um hexadecimal de três ou seis dígitos, com ou sem `#`, ou use a amostra de cor. A mudança aparece imediatamente, inclusive nas janelas flutuantes abertas. Textos e tons de apoio se adaptam às cores escolhidas. Valores inválidos não substituem a última cor válida. **Restaurar cores padrão** recupera o tema oliva e amarelo, sem alterar os sons.
 
-Na mesma tela, escolha o som de **entrada na sala**, **saída da sala**, **mensagem no chat**, **entrada no chat de voz** e **saída do chat de voz**. Os oito MP3 fornecidos estão incluídos no aplicativo; não é necessário manter a pasta original ao lado do executável. **Ouvir** toca uma prévia. **Sem som** desativa um evento específico, e **Silenciar som do chat** mantém os outros avisos ativos. A prévia continua disponível com o chat silenciado.
+Na mesma tela, escolha o som de **entrada na sala**, **saída da sala**, **mensagem no chat**, **entrada no chat de voz**, **saída do chat de voz**, **mutar o microfone** e **desmutar o microfone**. Há os oito MP3 incluídos no app e quatro sons **Suave**, gerados na hora pelo próprio app (os padrões da voz e do microfone). Os da voz dos outros só tocam enquanto você está na voz. Os arquivos já vêm dentro do app; não é preciso manter a pasta original ao lado do executável. **Ouvir** toca uma prévia. **Sem som** desativa um evento específico, e **Silenciar som do chat** mantém os outros avisos ativos. A prévia continua disponível com o chat silenciado.
 
 Cada evento tem seu próprio volume de 0 a 100%. O **volume geral dos avisos** multiplica esses valores: geral em 50% e um evento em 40% resultam em 20% para aquele evento. Geral em 0% silencia todos sem apagar os ajustes individuais. Os volumes dos avisos são independentes do volume da voz e das transmissões.
 

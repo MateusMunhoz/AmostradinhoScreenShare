@@ -117,7 +117,7 @@ function setStatsTab(tab, focus = false) {
 
 const QUALITY_TEXT = (q) => {
   const m = /^(\d+)p(\d+)$/.exec(q || '');
-  return m ? `${m[1]}p a ${m[2]} fps` : '–';
+  return m ? `${m[1] === '2160' ? '4K' : `${m[1]}p`} a ${m[2]} fps` : '–';
 };
 
 // Um cartão por pessoa transmitindo (você primeiro): a configuração dela e o que chega aqui

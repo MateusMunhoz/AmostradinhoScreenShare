@@ -1,6 +1,6 @@
 'use strict';
 // Chat: mensagens, arquivos e não lidas.
-// Script clássico: divide o escopo global com os outros (ordem no index.html). Usa de: util, estado, tema, sala, voz, overlay, estatisticas.
+// Script clássico: divide o escopo global com os outros (ordem no index.html). Usa de: util, estado, metadados, tema, sala, voz, overlay, estatisticas.
 
 // ---------- Chat ----------
 // Mensagens passam pelo servidor da sala (que guarda as últimas 100 para quem entrar depois). Um arquivo
@@ -77,6 +77,7 @@ function renderUnread() {
 }
 
 function resetChat(welcome) {
+  resetChatOverlayMessages();
   for (const u of chat.urls) URL.revokeObjectURL(u);
   chat.urls = [];
   chat.files.clear();
@@ -103,7 +104,8 @@ function onChatMessage(m) {
   // Cópia da conversa: se eu virar o host, o novo servidor continua daqui
   const { type, ...entry } = m;
   chat.log.push(entry);
-  if (chat.log.length > 100) chat.log.shift();
+  if (chat.log.length > 100) forgetChatOverlayMessage(chat.log.shift());
+  noteChatOverlayMessage(entry);
   renderChatOverlay();
   const wasBottom = chatAtBottom();
   const unseen = m.from !== state.myId && (!chat.open || document.hidden || !wasBottom);
@@ -160,6 +162,8 @@ function appendMessage(m, live) {
   const sep = document.createElement('span');
   sep.className = 'msg-sep';
   sep.textContent = ' : ';
+  // Com foto de perfil, ela vem antes do nome (quem não tem continua só com o nome colorido)
+  if (photoHashOf(m.from)) line.append(avatar(m.name, m.from));
   line.append(who, sep);
   if (m.text) {
     const text = document.createElement('span');
@@ -255,15 +259,59 @@ function sendChat() {
   fitChatInput();
 }
 
-function attachFiles(list) {
+// O arquivo sai sem os metadados: localização, aparelho, datas, autor, pasta do PC (renderer/metadados.js).
+// Foto estranha demais para limpar byte a byte é redesenhada, o que também não leva metadado nenhum. Outro
+// arquivo estranho (vídeo, PDF, documento) não vai: devolve null.
+async function withoutMetadata(file) {
+  try {
+    const clean = await FileMetadata.clean(file, file.name);
+    return clean ? new File([clean.blob], clean.name, { type: file.type }) : file;
+  } catch (err) {
+    const kind = FileMetadata.kind(new Uint8Array(await file.slice(0, 16).arrayBuffer()));
+    console.warn('metadados:', file.name, kind, err.message);
+    if (!['jpeg', 'png', 'webp', 'gif'].includes(kind)) return null;
+    try {
+      const bmp = await createImageBitmap(file);
+      const c = new OffscreenCanvas(bmp.width, bmp.height);
+      c.getContext('2d').drawImage(bmp, 0, 0);
+      const type = kind === 'jpeg' ? 'image/jpeg' : kind === 'webp' ? 'image/webp' : 'image/png';
+      return new File([await c.convertToBlob({ type, quality: 0.95 })], FileMetadata.cleanName(file.name, 'foto'), { type });
+    } catch {
+      return null;
+    }
+  }
+}
+
+async function attachFiles(list) {
   if (!chat.supported) return;
-  for (const file of list) {
+  for (let file of list) {
     if (!file.size) continue;
     if (file.size > CHAT_MAX_FILE) { toast(`${file.name} passa de 200 MB e não pode ser enviado pelo chat.`, 'error'); continue; }
+    const clean = await withoutMetadata(file);
+    if (!clean) { toast(`Não deu para tirar os metadados de ${file.name} (arquivo fora do padrão), então ele não foi enviado. Para mandar assim mesmo, compacte num .zip.`, 'error'); continue; }
+    file = clean;
     const id = crypto.randomUUID();
     chat.files.set(id, file);
     send({ type: 'chat', file: { id, name: file.name, size: file.size, mime: file.type } });
   }
+}
+
+// Ctrl+V na sala com imagem (print da tela) ou arquivo copiado: manda para o chat, como o clipe. Texto
+// continua colando normal. Print chega sem nome ("image.png"): ganha um nome com a hora.
+function onChatPaste(e) {
+  if ($('room').hidden || !chat.supported) return;
+  const files = [...(e.clipboardData?.files || [])];
+  if (!files.length) return;
+  e.preventDefault();
+  const d = new Date();
+  const stamp = `${two(d.getHours())}-${two(d.getMinutes())}-${two(d.getSeconds())}`;
+  const named = files.map((f, i) => {
+    if (f.name && f.name !== 'image.png') return f;
+    const ext = (f.type.split('/')[1] || 'png').replace('jpeg', 'jpg');
+    return new File([f], `imagem-colada-${stamp}${files.length > 1 ? `-${i + 1}` : ''}.${ext}`, { type: f.type });
+  });
+  attachFiles(named);
+  if (!chat.open) toast(named.length === 1 ? `${named[0].name} foi para o chat.` : `${named.length} arquivos foram para o chat.`);
 }
 
 function fitChatInput() {

@@ -25,10 +25,10 @@ app.whenReady().then(async()=>{
     } else {
       await run(`window.navBefore=$('workspaceNav').getBoundingClientRect().toJSON();void 0;`);
       await check('Perfil e engrenagem disponíveis fora da sala',`!$('navProfile').hidden && !$('navSettings').hidden && $('navChat').hidden && $('navVoice').hidden && $('navStreams').hidden`);
-      await check('Botão abre configurações',`(() => {$('openGeneralSettingsHome').click();return !$('generalSettingsDialog').hidden;})()`);
-      await check('Oito sons e opção sem som',`$('sound-chat').options.length === 9`);
-      await check('Áudios locais decodificáveis',`(async()=>{for(const s of AppPreferences.sounds) await new Promise((resolve,reject)=>{const a=new Audio('assets/audio/'+s.file);a.onloadedmetadata=()=>a.duration>0?resolve():reject(new Error(s.file));a.onerror=()=>reject(new Error(s.file));});return true;})()`);
-      await run(`window.testPlayed=[];appSounds.createAudio=url=>({pause(){},play(){testPlayed.push(url);return Promise.resolve();}});appSounds.now=()=>testPlayed.length*1000+1000;void 0;`);
+      await check('Botão abre configurações',`(() => {$('navSettings').click();return !$('generalSettingsDialog').hidden;})()`);
+      await check('Todos os sons e a opção sem som',`$('sound-chat').options.length === AppPreferences.sounds.length + 1`);
+      await check('Áudios locais decodificáveis',`(async()=>{for(const s of AppPreferences.sounds.filter(s=>s.file)) await new Promise((resolve,reject)=>{const a=new Audio('assets/audio/'+s.file);a.onloadedmetadata=()=>a.duration>0?resolve():reject(new Error(s.file));a.onerror=()=>reject(new Error(s.file));});return true;})()`);
+      await run(`window.testPlayed=[];appSounds.createAudio=url=>({pause(){},play(){testPlayed.push(url);return Promise.resolve();}});appSounds.synth=notes=>{testPlayed.push('synth:'+notes[0][0]);return {pause(){}};};appSounds.now=()=>testPlayed.length*1000+1000;void 0;`);
       await run(`enterRoom({id:'self',features:['chat','voice'],members:[{id:'ana',name:'Ana'}],chat:[{id:'old',from:'ana',name:'Ana',ts:Date.now(),text:'histórico'}]},false,'127.0.0.1',8765)`);
       await check('Barra mantém exatamente a posição ao entrar',`(()=>{const r=$('workspaceNav').getBoundingClientRect();return r.x===navBefore.x&&r.y===navBefore.y&&r.width===navBefore.width;})()`);
       await check('Chat, voz e transmissão visíveis juntos',`!$('chatTab').hidden && !$('voicePane').hidden && !$('streamArea').hidden`);
@@ -39,8 +39,12 @@ app.whenReady().then(async()=>{
       await check('Silêncio do chat preserva outros sons',`testPlayed.length===4`);
       await run(`$('preview-chat').click()`);
       await check('Prévia funciona mesmo com chat silenciado',`testPlayed.length===5`);
-      await run(`onRoomMessage({type:'voice-state',id:'ana',session:'session1',muted:false});onRoomMessage({type:'voice-state',id:'ana',session:'session1',muted:true});onRoomMessage({type:'voice-state',id:'ana',session:'session2',muted:false});onRoomMessage({type:'voice-state',id:'ana',session:'',muted:false});`);
-      await check('Entrada e saída da voz tocam, mute e reconexão não',`testPlayed.length===7 && testPlayed[5].includes('017-') && testPlayed[6].includes('039-')`);
+      await run(`onRoomMessage({type:'voice-state',id:'ana',session:'s0',muted:false});onRoomMessage({type:'voice-state',id:'ana',session:'',muted:false});`);
+      await check('Fora da voz, a voz dos outros não toca',`testPlayed.length===5`);
+      await run(`voice.session='eu';onRoomMessage({type:'voice-state',id:'ana',session:'session1',muted:false});onRoomMessage({type:'voice-state',id:'ana',session:'session1',muted:true});onRoomMessage({type:'voice-state',id:'ana',session:'session2',muted:false});onRoomMessage({type:'voice-state',id:'ana',session:'',muted:false});`);
+      await check('Na voz: entrada e saída tocam (Suave), mute e reconexão não',`testPlayed.length===7 && testPlayed[5]==='synth:660' && testPlayed[6]==='synth:880'`);
+      await run(`voice.muted=true;renderVoice();voice.muted=false;renderVoice();voice.session='';renderVoice();`);
+      await check('Mutar e desmutar o seu microfone tocam',`testPlayed.length===9 && testPlayed[7]==='synth:659' && testPlayed[8]==='synth:523'`);
       await run(`$('volume-voiceJoin').value=35;$('volume-voiceJoin').dispatchEvent(new Event('input'));$('sound-voiceLeave').value='wood';$('sound-voiceLeave').dispatchEvent(new Event('change'));`);
       await run(`$('hex-main').value='#GGGGGG';$('hex-main').dispatchEvent(new Event('input'));`);
       await check('Hexadecimal inválido não é salvo',`$('hex-main').getAttribute('aria-invalid')==='true' && AppPreferences.read(localStorage).colors.main==='#22271E'`);
@@ -53,7 +57,8 @@ app.whenReady().then(async()=>{
       win.setSize(1202,780); await new Promise(r=>setTimeout(r,150));win.setSize(1200,780);await new Promise(r=>setTimeout(r,200));
       fs.writeFileSync(path.join(root,'.test-profile','settings-light.png'),(await win.webContents.capturePage()).toPNG());
       win.setSize(820,560); await new Promise(r=>setTimeout(r,150));
-      await check('Painel cabe em 820 × 560 e permite rolar',`(() => {const d=$('generalSettingsDialog');const r=d.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.bottom<=innerHeight&&d.scrollWidth<=d.clientWidth+1&&d.scrollHeight>d.clientHeight;})()`);
+      // Quem rola é o cartão do diálogo (o fundo escuro só centraliza)
+      await check('Painel cabe em 820 × 560 e permite rolar',`(() => {const c=$('generalSettingsDialog').firstElementChild;const r=c.getBoundingClientRect();return r.top>=0&&r.left>=0&&r.right<=innerWidth&&r.bottom<=innerHeight&&c.scrollWidth<=c.clientWidth+1&&c.scrollHeight>c.clientHeight;})()`);
       fs.writeFileSync(path.join(root,'.test-profile','settings-small.png'),(await win.webContents.capturePage()).toPNG());
       await run(`document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape'}))`);
       await check('Escape fecha configurações',`$('generalSettingsDialog').hidden`);
@@ -64,9 +69,10 @@ app.whenReady().then(async()=>{
         await run(`for(const [id,on] of [['navChat',${!!(mask&1)}],['navVoice',${!!(mask&2)}],['navStreams',${!!(mask&4)}]])if(($(id).getAttribute('aria-pressed')==='true')!==on)$(id).click();`);
         await check('Painéis independentes, combinação '+mask,`$('chatTab').hidden===${!(mask&1)} && $('voicePane').hidden===${!(mask&2)} && $('streamArea').hidden===${!(mask&4)} && document.documentElement.scrollWidth<=innerWidth`);
       }
-      await run(`$('navProfile').click();$('navSettings').click();`);
-      await check('Perfil e configurações coexistem com os outros painéis',`!$('profilePane').hidden && !$('generalSettingsDialog').hidden && !$('chatTab').hidden && !$('voicePane').hidden && !$('streamArea').hidden`);
-      await run(`$('closeProfile').click();closeGeneralSettings();$('navVoice').click();`);
+      // Perfil e configurações são janelas por cima: abrir uma fecha a outra; os painéis da sala continuam
+      await run(`openProfilePopup();openGeneralSettings();`);
+      await check('Configurações abrem por cima, fecham o perfil e mantêm os painéis',`$('profilePane').hidden && !$('generalSettingsDialog').hidden && !$('chatTab').hidden && !$('voicePane').hidden && !$('streamArea').hidden`);
+      await run(`closeGeneralSettings();$('navVoice').click();`);
       win.setSize(1600,950);await new Promise(r=>setTimeout(r,250));
       fs.writeFileSync(path.join(root,'.test-profile','workspace-room.png'),(await win.webContents.capturePage()).toPNG());
       await run(`leaveRoom();void 0;`);

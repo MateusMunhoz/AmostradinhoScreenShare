@@ -126,7 +126,9 @@ public class W9 { public delegate bool EnumProc(IntPtr h, IntPtr l);
 [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
 [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint p); }'
 function Title($h) { $sb = New-Object Text.StringBuilder 256; [void][W9]::GetWindowText($h, $sb, 256); $sb.ToString() }
-function Find($t) { $script:found = $null; [W9]::EnumWindows({ param($h, $l) if ((Title $h) -eq $t -and [W9]::IsWindowVisible($h)) { $script:found = $h }; $true }, [IntPtr]::Zero) | Out-Null; $script:found }`;
+# Só janelas das cópias de teste (electron.exe): o Tela P2P de verdade aberto no PC tem janelas com o mesmo título
+function Mine($h) { $p = [uint32]0; [void][W9]::GetWindowThreadProcessId($h, [ref]$p); (Get-Process -Id $p -EA 0).ProcessName -eq 'electron' }
+function Find($t) { $script:found = $null; [W9]::EnumWindows({ param($h, $l) if ((Title $h) -eq $t -and [W9]::IsWindowVisible($h) -and (Mine $h)) { $script:found = $h }; $true }, [IntPtr]::Zero) | Out-Null; $script:found }`;
 function ps(script) {
   return execFileSync('powershell', ['-NoProfile', '-Command', `${W32}\n${script}`]).toString().trim();
 }

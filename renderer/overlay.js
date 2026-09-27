@@ -7,7 +7,19 @@
 // falando na voz. Travada, o clique atravessa para o jogo. No modo de ajuste (Ctrl+Shift+E, o mesmo da
 // janela flutuante) dá para mover, redimensionar e responder. Ctrl+Shift+O esconde e mostra de novo.
 const OVERLAY_SHOW_MS = 20000;
-const overlay = { p: null, edit: false, compose: false, timer: null };
+const overlay = { p: null, edit: false, compose: false, timer: null, receivedAt: new Map() };
+
+// Horários m.ts vêm do relógio do servidor da sala, que pode divergir do relógio deste PC.
+// Para mensagens recebidas ao vivo, mede a janela de 20 s a partir do recebimento local.
+function noteChatOverlayMessage(m) {
+  if (m && m.id) overlay.receivedAt.set(m.id, Date.now());
+}
+function forgetChatOverlayMessage(m) {
+  if (m && m.id) overlay.receivedAt.delete(m.id);
+}
+function resetChatOverlayMessages() {
+  overlay.receivedAt.clear();
+}
 
 // Ctrl+Enter no jogo: abre o chat por cima do jogo (se estiver fechado) já com o campo de escrever
 async function onComposeKey() {
@@ -75,7 +87,7 @@ function buildChatOverlay(win) {
   const title = d.createElement('span');
   title.textContent = 'Chat da sala · arraste para mover';
   Object.assign(title.style, { flex: '1', fontWeight: '600' });
-  head.append(title, pipButton(d, 'Travar', () => window.api.pipSetEdit(false), true), pipButton(d, 'Fechar', () => closeChatOverlay(), false));
+  head.append(title, pipButton(d, 'Travar', () => window.api.pipSetEdit(false), true), pipCloseButton(d, 'Fechar o chat por cima do jogo', () => closeChatOverlay()));
   // Quem está falando agora
   const talkers = d.createElement('div');
   Object.assign(talkers.style, { display: 'flex', flexWrap: 'wrap', gap: '6px' });
@@ -135,7 +147,11 @@ function renderChatOverlay() {
 
   // As últimas 6; travada, cada uma some 20 s depois de chegar
   const now = Date.now();
-  const recent = chat.log.slice(-6).filter((m) => open || now - m.ts < OVERLAY_SHOW_MS);
+  const recent = chat.log.slice(-6).filter((m) => {
+    const receivedAt = m.id ? overlay.receivedAt.get(m.id) : undefined;
+    const timestamp = Number.isFinite(receivedAt) ? receivedAt : m.ts;
+    return open || (Number.isFinite(timestamp) && now - timestamp < OVERLAY_SHOW_MS);
+  });
   p.list.replaceChildren(...recent.map((m) => {
     const row = d.createElement('div');
     Object.assign(row.style, {

@@ -29,6 +29,17 @@ function pipButton(d, text, onClick, primary) {
   return b;
 }
 
+// Botão de fechar (um X) para as janelas montadas por código, no mesmo tamanho dos outros botões delas
+function pipCloseButton(d, label, onClick) {
+  const b = pipButton(d, '', onClick, false);
+  b.innerHTML = ICON.close;
+  b.title = label;
+  b.setAttribute('aria-label', label);
+  Object.assign(b.style, { width: '28px', padding: '0', display: 'inline-grid', placeItems: 'center' });
+  Object.assign(b.firstElementChild.style, { width: '16px', height: '16px', fill: 'none', stroke: 'currentColor', strokeWidth: '2', strokeLinecap: 'round' });
+  return b;
+}
+
 // Tudo por CSSOM: a página herda a regra de segurança do app, que não deixa estilo escrito em HTML
 function buildPip(win, id) {
   const d = win.document;
@@ -66,7 +77,7 @@ function buildPip(win, id) {
     b.title = { P: 'Pequena', M: 'Média', G: 'Grande' }[key];
     sizes.append(b);
   }
-  top.append(name, sizes, pipButton(d, 'Travar', () => window.api.pipSetEdit(false), true), pipButton(d, 'Fechar', () => closePip(id), false));
+  top.append(name, sizes, pipButton(d, 'Travar', () => window.api.pipSetEdit(false), true), pipCloseButton(d, 'Fechar a janela flutuante', () => closePip(id)));
   const bottom = d.createElement('div');
   Object.assign(bottom.style, { display: 'flex', flexDirection: 'column', gap: '6px', background: THEME.glass, margin: '0 -8px -8px', padding: '8px 10px' });
   const opacityRow = d.createElement('label');
@@ -196,12 +207,20 @@ function setPipStream(id) {
 function closePip(id) {
   const p = state.pips.get(id);
   state.pips.delete(id);
+  releasePipVideo(p);
   if (p && !p.win.closed) p.win.close();
   pipClosed(p);
 }
 
+// A janela flutuante solta a transmissão antes de fechar: enquanto o vídeo dela segura a faixa de áudio, o
+// quadro do app não volta a tocar o som (que é a mesma faixa)
+function releasePipVideo(p) {
+  try { if (p?.video) { p.video.pause(); p.video.srcObject = null; } } catch {}
+}
+
 // O vídeo volta para o quadro no app
 function pipClosed(p) {
+  releasePipVideo(p);
   const link = p && state.in.get(p.id);
   if (link) refreshTileStream(link);
   syncIncomingVideo();

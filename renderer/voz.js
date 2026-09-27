@@ -44,6 +44,8 @@ function wheelVolume(id, key, e, where = document) {
   const v = volOf(id);
   const max = key === 'voice' ? 200 : 100;
   const next = Math.max(0, Math.min(max, v[key] + steps * WHEEL_STEP));
+  const tile = key === 'screen' && state.in.get(id)?.tile;
+  if (tile) tile.userMuted = false; // mexer no volume da tela é querer ouvir
   setVol(id, { [key]: next, muted: false });
   if (!$('personCard').hidden && $('personCard').dataset.for === id) renderPersonCard();
   volBubble(where, `${key === 'voice' ? 'Voz' : 'Som da tela'} de ${nameOf(id)}: ${next}%`, e.clientX, e.clientY);
@@ -104,8 +106,9 @@ function applyScreenVolume(id) {
   const v = volOf(id);
   t.video.volume = (v.screen / 100) * duck.factor;
   t.vol.value = String(v.screen / 100);
-  if (!t.paused) t.video.muted = v.muted;
-  else t.mutedBefore = v.muted;
+  const muted = v.muted || t.userMuted; // "Silenciar para mim" ou o alto-falante da própria tela
+  if (!t.paused) t.video.muted = muted;
+  else t.mutedBefore = muted;
   t.syncMute();
 }
 
@@ -212,8 +215,17 @@ function renderSpeaking() {
 
 const inVoice = (id) => (id === state.myId ? !!voice.session : !!voice.members.get(id)?.session);
 
+// Entrar e sair da voz: o som toca para você mesmo e, de quem mais, só se você estiver na voz (quem só está
+// na sala, assistindo, não precisa ouvir cada entrada e saída da conversa)
 const voice = new VoiceChat({ send, changed: renderVoice, error: message => toast(message, 'error'), mixer,
-  activity: event => { void appSounds.play(event); } });
+  activity: (event, id) => { if (id === voice.id || voice.session) void appSounds.play(event); } });
+// Mutar e desmutar o seu microfone tocam som (o botão ou o atalho; o apertar para falar não)
+let voiceWasMuted = false;
+function syncMuteSound() {
+  const muted = !!voice.session && voice.muted;
+  if (voice.session && muted !== voiceWasMuted) void appSounds.play(muted ? 'mute' : 'unmute');
+  voiceWasMuted = muted;
+}
 function renderVoice() {
   const active = !!voice.session;
   const join = $('voiceJoin');
@@ -244,6 +256,7 @@ function renderVoice() {
   renderVoiceAvatars();
   if (state.myId) renderMembers();
   if (!$('personCard').hidden) renderPersonCard();
+  syncMuteSound();
 }
 
 // Painel recolhido: quem está na voz fica na barra; clicar abre o volume da pessoa
@@ -261,6 +274,7 @@ function renderVoiceAvatars() {
     const nm = document.createElement('span');
     nm.className = 'va-name';
     nm.textContent = nameOf(id);
+    if (photoHashOf(id)) b.append(avatar(nameOf(id), id)); // com foto, ela vem antes do nome
     b.append(nm, speakBars());
     const label = `${nameOf(id)}${voice.members.get(id).muted ? ', microfone desligado' : ''}. Mudar o volume`;
     b.title = label;
@@ -313,7 +327,7 @@ function renderPersonCard() {
   const sub = document.createElement('span');
   sub.textContent = v.muted ? 'Silenciada para você' : [inVoice(id) && 'Na voz', state.members.get(id)?.sharing && 'Transmitindo'].filter(Boolean).join(' · ') || 'Na sala';
   who.append(strong, sub);
-  const av = avatar(name);
+  const av = avatar(name, id);
   av.dataset.person = id;
   av.classList.toggle('speaking', speaking.has(id));
   head.append(av, who);

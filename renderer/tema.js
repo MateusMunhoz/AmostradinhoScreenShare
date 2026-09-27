@@ -19,11 +19,13 @@ function personColor(id) {
   return PERSON_COLORS[h % PERSON_COLORS.length];
 }
 
-function avatar(name) {
+// Bolinha da pessoa: a foto de perfil (renderer/fotos.js) ou a inicial. id vazio = eu.
+function avatar(name, id) {
   const el = document.createElement('span');
   el.className = 'avatar';
   el.textContent = (name.trim()[0] || '?').toUpperCase();
   el.setAttribute('aria-hidden', 'true');
+  paintAvatar(el, id);
   return el;
 }
 

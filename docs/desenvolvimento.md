@@ -18,6 +18,7 @@ Para gerar um `.exe` portátil sem publicar: `npm run dist`. O arquivo aparece e
 - **Sala:** quem cria a sala roda um servidor pequeno de sinalização (`signaling.js`, WebSocket) dentro do próprio app. Ele só apresenta as pessoas umas às outras e guarda as últimas 100 mensagens do chat.
 - **Vídeo, áudio, voz e arquivos:** vão direto de PC para PC, por WebRTC, pela rede da Radmin. Não passam por servidor.
 - **Troca de host:** cada um sabe a ordem de chegada e os endereços dos outros. Se o servidor some, o mais antigo abre outro na mesma porta, e todo mundo volta com o mesmo número. Por isso as conexões diretas (quem assiste quem) não caem.
+- **Rede usada pelo app:** em Configurações gerais, escolha Radmin/LAN (padrão atual) ou VPN Tela P2P (NetBird). A integração NetBird controla um agente instalado no Windows e aceita o endereço HTTPS de uma instalação auto-hospedada. O app prioriza o IP da VPN para compartilhar o endereço da sala; a descoberta automática de sessões continua sendo apenas na rede local/Radmin. O NetBird e o seu painel de coordenação precisam estar instalados e configurados separadamente; os usuários entram pela autenticação/permissão configurada nesse serviço.
 - **Arquivos principais:**
 
   | Arquivo | O que faz |
@@ -30,6 +31,7 @@ Para gerar um `.exe` portátil sem publicar: `npm run dist`. O arquivo aparece e
   | `encode-once.js` | O modo "uma vez só" (NVENC direto e WebCodecs). |
   | `voice.js` | A voz: conexões WebRTC de áudio entre as pessoas (feito pelo Cristian). |
   | `signaling.js` | O servidor da sala. |
+  | `main/netbird.js` | Consulta, conecta e desconecta o agente NetBird do servidor escolhido. |
   | `publicar.js` | Assina, gera o `.exe` e publica. |
   | `native/` | Código dos ajudantes nativos em C++. |
   | `bin/` | Os ajudantes compilados: `audiocap.exe` (som), `videocap.exe` (captura e NVENC), `teclas.exe` (apertar para falar). |
@@ -53,19 +55,21 @@ isso (chamam `watch`, `state`, `speaking`... direto na página).
 | 4 | `estado.js` | `state`, `update` e as qualidades de transmissão |
 | 5 | `rtc.js` | Ajustes do WebRTC: Opus, H.264 primeiro, codec, bitrate |
 | 6 | `tema.js` | Cores das janelas montadas por código, cor de cada pessoa, barrinhas de quem fala |
-| 7 | `sala.js` | Criar, entrar e sair, mensagens do servidor, sinalização, troca de host |
-| 8 | `voz.js` | Volume por pessoa, mixer, quem fala, atenuação, barra da voz, cartão da pessoa (cria o `voice`) |
-| 9 | `microfone.js` | RNNoise, eco, sensibilidade, ouvir a própria voz, apertar para falar, janela "Voz e atalhos" |
-| 10 | `membros.js` | Painel da sala: endereço e lista de pessoas |
-| 11 | `assistir.js` | Quadros de vídeo, ver a própria transmissão, destaque, tela cheia |
-| 12 | `pip.js` | Janelas flutuantes |
-| 13 | `overlay.js` | Chat por cima do jogo |
-| 14 | `chat.js` | Mensagens, arquivos, não lidas |
-| 15 | `estatisticas.js` | Desempenho, aba Transmissão, codificador em uso |
-| 16 | `atualizacao.js` | Atualização pela sala, pelo GitHub e o aviso |
-| 17 | `sessoes.js` | Sessões abertas na rede (a lista da tela inicial) |
-| 18 | `transmitir.js` | Escolher a fonte, som, iniciar, trocar e parar, quem assiste |
-| 19 | `inicio.js` | Tela inicial e a partida: liga os botões e listeners, carrega as preferências |
+| 7 | `fotos.js` | Foto de perfil sem servidor: a sua, pedir a dos outros pelo hash, pintar as bolinhas |
+| 8 | `sala.js` | Criar, entrar e sair, mensagens do servidor, sinalização, troca de host |
+| 9 | `voz.js` | Volume por pessoa, mixer, quem fala, atenuação, barra da voz, cartão da pessoa (cria o `voice`) |
+| 10 | `microfone.js` | Microfone escolhido, RNNoise, eco, sensibilidade, ouvir a própria voz, apertar para falar, janela "Voz e atalhos" |
+| 11 | `membros.js` | Painel da sala: endereço e lista de pessoas |
+| 12 | `assistir.js` | Quadros de vídeo, ver a própria transmissão, destaque, tela cheia |
+| 13 | `pip.js` | Janelas flutuantes |
+| 14 | `overlay.js` | Chat por cima do jogo |
+| 15 | `metadados.js` | Tira localização, autor, datas e outros metadados dos arquivos (fotos, vídeos, PDF, Office) antes de irem para o chat |
+| 16 | `chat.js` | Mensagens, arquivos, não lidas |
+| 17 | `estatisticas.js` | Desempenho, aba Transmissão, codificador em uso |
+| 18 | `atualizacao.js` | Atualização pela sala, pelo GitHub e o aviso |
+| 19 | `sessoes.js` | Sessões abertas na rede (a lista da tela inicial) |
+| 20 | `transmitir.js` | Escolher a fonte, som, iniciar, trocar e parar, quem assiste |
+| 21 | `inicio.js` | Tela inicial e a partida: liga os botões e listeners, carrega as preferências |
 
 **A regra que evita erro na carga:** só o `inicio.js` roda código quando a página abre (listeners,
 `onclick`, preferências). Os outros só declaram funções e variáveis. Um arquivo que rodasse algo na
