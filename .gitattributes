@@ -10,3 +10,5 @@
 *.woff2 binary
 *.png binary
 *.ico binary
+
+*.mp3 binary

@@ -1,0 +1,56 @@
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const P = require('../renderer/preferencias-modelo');
+
+test('Preferências: hexadecimal, dados inválidos e persistência', () => {
+  assert.equal(P.hex('aB3'), '#AABB33');
+  assert.equal(P.hex('#1a2b3c'), '#1A2B3C');
+  for (const v of ['', '#12345', 'red', '#gggggg', null]) assert.equal(P.hex(v), null);
+  let saved = '{invalid'; const storage = {getItem: () => saved, setItem: (_k,v) => {saved=v;}};
+  assert.deepEqual(P.read(storage), P.defaults);
+  const desired = P.normalize({colors:{main:'#fff',secondary:'#000',detail1:'#ff0000',detail2:'#00ff00'},sounds:{join:'none',leave:'wood',chat:'notification066',chatMuted:true,volume:27}});
+  P.write(storage, desired);
+  assert.deepEqual(P.read(storage), desired);
+  assert.equal(P.normalize({sounds:{chat:'../../secret',volume:500}}).sounds.chat, P.defaults.sounds.chat);
+  assert.equal(P.normalize({sounds:{volume:500}}).sounds.volume, 100);
+});
+test('Cores escolhidas permanecem exatas e textos se adaptam a fundos opostos', () => {
+  const colors={main:'#FFFFFF',secondary:'#000000',detail1:'#123456',detail2:'#ABCDEF'};
+  const palette=P.palette(colors);
+  assert.equal(palette['--bg'], colors.main); assert.equal(palette['--panel'],colors.secondary);
+  assert.equal(palette['--primary'], colors.detail1); assert.equal(palette['--ok'],colors.detail2);
+  assert.equal(palette['--text'],'#000000'); assert.equal(palette['--surface-text'],'#FFFFFF');
+});
+
+test('Volumes por evento preservam preferências antigas e multiplicam o volume geral', async () => {
+  const prefs=P.normalize({sounds:{join:'wood',volume:40,levels:{chat:30,voiceJoin:50,voiceLeave:-5,leave:'inválido'}}});
+  assert.equal(prefs.sounds.join,'wood'); assert.equal(prefs.sounds.levels.join,100);
+  assert.equal(prefs.sounds.levels.leave,100); assert.equal(prefs.sounds.levels.voiceLeave,0);
+  const played=[]; const player=new P.SoundPlayer({settings:()=>prefs,createAudio:url=>({pause(){},play(){played.push({url,volume:this.volume});return Promise.resolve();}})});
+  await player.play('voiceJoin',true); assert.equal(played.at(-1).volume,.2);
+  await player.play('chat',true); assert.equal(played.at(-1).volume,.12);
+  assert.equal(await player.play('voiceLeave',true),false);
+  prefs.sounds.volume=0; assert.equal(await player.play('voiceJoin',true),false);
+  assert.equal(prefs.sounds.levels.voiceJoin,50);
+  let saved;P.write({setItem:(_k,v)=>{saved=v;}},prefs);
+  assert.deepEqual(P.read({getItem:()=>saved}),prefs);
+});
+test('Sons: silêncio do chat, prévia, volume, seleção e falha de reprodução', async () => {
+  const prefs=P.normalize(null); let time=1000; const played=[];
+  const player=new P.SoundPlayer({settings:()=>prefs,now:()=>time,createAudio:url=>({volume:0,pause(){},async play(){played.push({url,volume:this.volume});}})});
+  prefs.sounds.chatMuted=true;
+  assert.equal(await player.play('chat'),false);
+  assert.equal(await player.play('chat',true),true);
+  assert.equal(played[0].volume,.5);
+  prefs.sounds.join='notification066';
+  assert.equal(await player.play('join'),true);
+  assert.ok(played.at(-1).url.endsWith('universfield-new-notification-066-494545.mp3'));
+  assert.equal(await player.play('join'),false);
+  time+=200; assert.equal(await player.play('join'),true);
+  prefs.sounds.leave='none'; assert.equal(await player.play('leave'),false);
+  prefs.sounds.volume=0; assert.equal(await player.play('chat',true),false);
+  prefs.sounds.volume=50; player.createAudio=()=>({pause(){},play:()=>Promise.reject(new Error('decode'))});
+  assert.equal(await player.play('chat',true),false);
+  assert.equal(player.players.has('preview'),false);
+  player.stopAll(); assert.equal(player.players.size,0);
+});

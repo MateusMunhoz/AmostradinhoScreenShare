@@ -4,10 +4,10 @@
 class VoiceChat {
   constructor({ send, changed, error, media = navigator.mediaDevices,
     makePeer = () => new RTCPeerConnection({ iceServers: [] }),
-    makeAudio = () => new Audio(), token = () => crypto.randomUUID(), mixer = null }) {
+    makeAudio = () => new Audio(), token = () => crypto.randomUUID(), mixer = null, activity = () => {} }) {
     // mixer (opcional): o app toca as vozes por ele, com volume por pessoa e medidor de quem fala.
     // Sem mixer, cada voz toca direto no seu <audio>.
-    Object.assign(this, { send, changed, error, media, makePeer, makeAudio, token, mixer });
+    Object.assign(this, { send, changed, error, media, makePeer, makeAudio, token, mixer, activity });
     this.peers = new Map();
     this.members = new Map();
     this.epoch = 0;
@@ -42,6 +42,7 @@ class VoiceChat {
         this.error('O microfone foi desconectado. Conecte-o e entre na voz novamente.');
       };
       this.announce(); // Espera a confirmação do servidor antes de iniciar ofertas.
+      this.activity('voiceJoin', this.id);
     } catch (err) {
       if (epoch === this.epoch) {
         this.leave();
@@ -65,7 +66,7 @@ class VoiceChat {
     this.muted = false;
     this.deafened = false;
     this.mixer?.deafen(false);
-    if (notify && wasActive) this.announce();
+    if (notify && wasActive) { this.announce(); this.activity('voiceLeave', this.id); }
     this.changed();
   }
   mute() {
@@ -86,12 +87,19 @@ class VoiceChat {
       if (session === this.session && session) this.sync();
       return;
     }
+    const wasActive = !!this.members.get(id)?.session;
     if (this.members.get(id)?.session !== session) this.close(id);
     this.members.set(id, { session, muted });
+    if (wasActive !== !!session) this.activity(session ? 'voiceJoin' : 'voiceLeave', id);
     this.sync();
     this.changed();
   }
-  remove(id) { this.close(id); this.members.delete(id); this.changed(); }
+  remove(id) {
+    const wasActive = !!this.members.get(id)?.session;
+    this.close(id); this.members.delete(id);
+    if (wasActive) this.activity('voiceLeave', id);
+    this.changed();
+  }
   sync() {
     if (!this.session) return;
     for (const [id, member] of this.members) {

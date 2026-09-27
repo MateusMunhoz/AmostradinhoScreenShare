@@ -721,8 +721,7 @@ main { padding-top: var(--workspace-top); }
 .workspace-tab .nav-icon { display: inline-flex; }
 .workspace-tab svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .workspace-tab .unread { position: absolute; top: -8px; right: -4px; }
-.profile-tab { margin-left: auto; }
-.settings-tab { min-width: 36px; }
+.settings-tab { margin-left: auto; min-width: 36px; }
 #workspacePanes { position: fixed; top: var(--workspace-top); right: 16px; bottom: 16px; width: var(--workspace-width); display: flex; flex-direction: column; gap: 10px; z-index: 4; }
 .workspace-pane { --text: var(--surface-text); --text-2: var(--surface-text-2); --muted: var(--surface-muted); color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; flex: 1 1 0; min-width: 0; min-height: 0; overflow: auto; }
 .pane-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
@@ -735,7 +734,7 @@ main { padding-top: var(--workspace-top); }
 #workspacePanes .chat-list { min-height: 36px; }
 #workspacePanes .chat-form { flex: none; }
 #workspacePanes .people-pop { top: 50px; right: 8px; left: 8px; max-height: calc(100% - 60px); z-index: 8; }
-
+#generalSettingsDialog { z-index: auto; }
 .settings-pane .general-settings { width: auto; max-height: none; border: 0; padding: 0; overflow: visible; display: grid; gap: 16px; }
 .settings-pane .dialog-head h2 { font-size: 15px; }
 .settings-pane .settings-colors { grid-template-columns: repeat(2, minmax(0,1fr)); }
@@ -771,13 +770,3 @@ main { padding-top: var(--workspace-top); }
   .dock-share { font-size: 12px; padding: 8px; }
   .dock { gap: 6px; }
 }
-
-/* Perfil e preferências são diálogos sobrepostos; nunca dividem os painéis da sala. */
-.utility-popup { z-index: 30 !important; }
-.utility-popup .dialog { --text: var(--surface-text); --text-2: var(--surface-text-2); --muted: var(--surface-muted); background: var(--panel); color: var(--text); overflow-y: auto; }
-.profile-dialog { width: min(420px,100%); }
-.utility-popup .general-settings { width: min(680px,100%); }
-#navProfile { padding: 2px 5px; background: transparent; }
-#navProfileAvatar { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-size: 14px; font-weight: 700; }
-.workspace-tab[aria-expanded=true] { border-color: var(--accent); }
-.profile-summary .avatar { border-radius: 50%; }

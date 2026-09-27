@@ -54,6 +54,7 @@ function renderOverlayButton() {
 // Tudo por CSSOM, como a janela flutuante (a regra de segurança do app não deixa estilo escrito em HTML)
 function buildChatOverlay(win) {
   const d = win.document;
+  applyAppTheme(d);
   Object.assign(d.documentElement.style, { height: '100%', background: 'transparent' });
   Object.assign(d.body.style, {
     margin: '0', height: '100%', overflow: 'hidden', background: 'transparent', color: THEME.text,
@@ -91,7 +92,7 @@ function buildChatOverlay(win) {
   input.setAttribute('aria-label', 'Mensagem para a sala');
   Object.assign(input.style, {
     flex: '1', minWidth: '0', height: '34px', boxSizing: 'border-box', padding: '0 10px', borderRadius: '8px',
-    border: `1px solid ${THEME.field}`, background: 'rgba(27, 31, 23, .92)', color: THEME.text, font: 'inherit', fontSize: '13px', outline: 'none',
+    border: `1px solid ${THEME.field}`, background: THEME.glass, color: THEME.text, font: 'inherit', fontSize: '13px', outline: 'none',
   });
   input.onfocus = () => { input.style.borderColor = THEME.accent; };
   input.onblur = () => { input.style.borderColor = THEME.field; };
@@ -111,7 +112,7 @@ function buildChatOverlay(win) {
   form.append(input);
   const hint = d.createElement('span');
   hint.textContent = 'Ctrl+Shift+E trava · Ctrl+Shift+O esconde';
-  Object.assign(hint.style, { display: 'none', fontSize: '11px', color: '#d0d0d0', textShadow: '0 1px 2px #000' });
+  Object.assign(hint.style, { display: 'none', fontSize: '11px', color: THEME.muted, textShadow: 'none' });
   frame.append(head, talkers, list, form, hint);
   d.body.append(frame);
   return { win, frame, head, talkers, list, form, input, hint };
@@ -139,7 +140,7 @@ function renderChatOverlay() {
     const row = d.createElement('div');
     Object.assign(row.style, {
       alignSelf: 'flex-start', maxWidth: '100%', boxSizing: 'border-box', padding: '5px 9px', borderRadius: '8px',
-      background: 'rgba(0, 0, 0, .66)', lineHeight: '1.35', overflowWrap: 'anywhere', fontSize: '13px',
+      background: THEME.glass, lineHeight: '1.35', overflowWrap: 'anywhere', fontSize: '13px',
     });
     const who = d.createElement('strong');
     who.textContent = m.from === state.myId ? 'Você' : m.name;

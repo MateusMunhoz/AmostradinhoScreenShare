@@ -9,6 +9,7 @@ function show(id) {
   document.querySelectorAll('.screen').forEach((s) => { s.hidden = s.id !== id; });
   if (typeof renderUpdateBanner === 'function') renderUpdateBanner();
   if (id === 'home') renderHome();
+  syncWorkspace();
   if (typeof setSessionWatch === 'function') setSessionWatch(id === 'home'); // procura sessões só no início
 }
 
