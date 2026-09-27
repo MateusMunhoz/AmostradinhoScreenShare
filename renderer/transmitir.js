@@ -18,7 +18,7 @@ function openShareDialog(switching = false) {
   renderShareSummary();
 }
 
-const QUALITY_SPEC = { '720p30': '720p 30 fps', '720p60': '720p 60 fps', '1080p30': '1080p 30 fps', '1080p60': '1080p 60 fps' };
+const QUALITY_SPEC = { '720p30': '720p 30 fps', '720p60': '720p 60 fps', '1080p30': '1080p 30 fps', '1080p60': '1080p 60 fps', '2160p30': '4K 30 fps' };
 function radioValue(name) { return document.querySelector(`input[name="${name}"]:checked`)?.value || ''; }
 function setRadio(name, value) {
   const el = document.querySelector(`input[name="${name}"][value="${value}"]`);

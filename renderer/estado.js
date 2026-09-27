@@ -7,7 +7,15 @@ const QUALITY = {
   '720p60':  { w: 1280, h: 720,  fps: 60, bitrate: 4_000_000 },
   '1080p30': { w: 1920, h: 1080, fps: 30, bitrate: 4_500_000 },
   '1080p60': { w: 1920, h: 1080, fps: 60, bitrate: 7_000_000 },
+  // 4K: só faz diferença numa tela 4K (menor que isso, vai na resolução dela); pesa na internet de quem transmite
+  '2160p30': { w: 3840, h: 2160, fps: 30, bitrate: 20_000_000 },
 };
+// Taxa de vídeo para o tamanho que está saindo de verdade: no 4K, uma tela menor (1440p, 1080p) não precisa dos
+// 20 Mbps (vai proporcional aos pixels). As outras qualidades ficam como sempre foram.
+function bitrateFor(q, w, h) {
+  if (q.w <= 1920 || !w || !h) return q.bitrate;
+  return Math.max(QUALITY['1080p30'].bitrate, Math.round(q.bitrate * Math.min(1, (w * h) / (q.w * q.h))));
+}
 
 // Sem STUN/TURN: pela Radmin VPN os PCs se enxergam direto pelos IPs 26.x
 const RTC_CONFIG = { iceServers: [] };
