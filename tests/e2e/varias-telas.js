@@ -30,6 +30,15 @@ run('Várias telas (destaque com coluna)', 200000, async () => {
   check('Todas tocando e recebendo vídeo', t.every((x) => x.playing && x.videoOn));
   await B.shot('varias-telas.png');
 
+  // Painel "Transmissão" desligado: as telas ficam escondidas, então quem transmite para de mandar o vídeo
+  // para a Bia (o som continua); ligado de novo, o vídeo volta
+  await B.eval(`$('navStreams').click()`);
+  await sleep(300);
+  check('Transmissão desligada: vídeo das telas pausado', await B.eval(`$('streamArea').hidden && [...state.in.values()].every((l) => !l.videoOn)`));
+  await B.eval(`$('navStreams').click()`);
+  await sleep(300);
+  check('Transmissão ligada de novo: vídeo volta', await B.eval(`!$('streamArea').hidden && [...state.in.values()].every((l) => l.videoOn)`));
+
   const target = t.find((x) => x.small);
   await B.eval(`state.in.get('${target.id}').tile.el.click()`);
   await sleep(400);

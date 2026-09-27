@@ -6,12 +6,13 @@ const dgram = require('dgram');
 const { openApp, createRoom, joinRoom, check, sleep, run } = require('./ajuda');
 
 const P = { ana: 18821, carla: 18822, eva: 18823 };
-const lista = (X) => X.eval(`listaSessoes().map((s) => ({ id: s.id, host: s.host, pessoas: s.pessoas, senha: s.senha, porta: s.porta }))`);
+// Só as sessões deste teste (portas 18821 a 18830): sessões de verdade na rede da Radmin ficam de fora
+const lista = (X) => X.eval(`listaSessoes().filter((s) => s.porta >= 18821 && s.porta <= 18830).map((s) => ({ id: s.id, host: s.host, pessoas: s.pessoas, senha: s.senha, porta: s.porta }))`);
 
 run('Sessões abertas na rede', 150000, async () => {
   const O = await openApp('sessO', 9511);
   await O.eval(`$('name').value = 'Olga'`);
-  check('Tela inicial mostra a lista de sessões', await O.eval(`!$('sessionsEmpty').hidden && sessoes.observando`));
+  check('Tela inicial procura as sessões', await O.eval(`sessoes.observando && !!$('sessionList')`));
 
   const A = await openApp('sessA', 9512);
   await createRoom(A, { name: 'Ana', port: P.ana, password: 'abc' });
@@ -19,7 +20,7 @@ run('Sessões abertas na rede', 150000, async () => {
   let l = await lista(O);
   const ana = l.find((s) => s.host === 'Ana');
   check('A sessão da Ana aparece, com senha e 1 pessoa', ana && ana.senha === true && ana.pessoas === 1 && ana.porta === P.ana, JSON.stringify(ana));
-  check('Na tela: "Sessão de Ana", cadeado e Entrar', await O.eval(`(() => { const li = $('sessionList').querySelector('.session'); return li && li.textContent.includes('Sessão de Ana') && !!li.querySelector('.session-meta svg') && li.querySelector('button').textContent === 'Entrar'; })()`));
+  check('Na tela: "Sessão de Ana", cadeado e Entrar', await O.eval(`(() => { const li = [...$('sessionList').querySelectorAll('.session')].find((x) => x.textContent.includes('Sessão de Ana')); return li && !!li.querySelector('.session-meta svg') && li.querySelector('button').textContent === 'Entrar'; })()`));
   check('Quem está na sala não procura sessões', await A.eval(`!sessoes.observando`));
 
   const C = await openApp('sessC', 9513);
@@ -36,7 +37,7 @@ run('Sessões abertas na rede', 150000, async () => {
   const B = await openApp('sessB', 9515);
   await B.eval(`$('name').value = 'Bia'`);
   await B.waitFor(`listaSessoes().some((s) => s.host === 'Ana')`, 8000);
-  await B.eval(`$('sessionList').querySelector('.session button').click()`);
+  await B.eval(`[...$('sessionList').querySelectorAll('.session')].find((x) => x.textContent.includes('Sessão de Ana')).querySelector('button').click()`);
   check('Com senha: abre o painel de entrar com o endereço', await B.eval(`!$('joinPanel').hidden && $('roomAddr').value.endsWith(':${P.ana}')`));
   await B.eval(`(() => { $('joinPassword').value = 'abc'; $('joinBtn').click(); })()`);
   await B.waitFor(`!$('room').hidden`, 8000);
@@ -47,7 +48,7 @@ run('Sessões abertas na rede', 150000, async () => {
   // Troca de host: Ana sai sem encerrar; Dani (a mais antiga) vira o host; a sessão continua uma só
   await A.eval(`leaveRoom('Você saiu.')`);
   await D.waitFor(`state.isOwner`, 30000);
-  await O.waitFor(`(() => { const l = listaSessoes(); return l.length >= 1 && l.some((s) => s.id === '${ana.id}' && s.host === 'Dani'); })()`, 15000);
+  await O.waitFor(`listaSessoes().some((s) => s.id === '${ana.id}' && s.host === 'Dani')`, 15000);
   l = await lista(O);
   check('Depois da troca de host: a mesma sessão (mesmo id), agora da Dani', l.filter((s) => s.id === ana.id).length === 1 && l.filter((s) => s.host !== 'Carla').length === 1, JSON.stringify(l));
 

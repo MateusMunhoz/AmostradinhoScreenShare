@@ -703,6 +703,7 @@ fieldset.group > legend { margin-bottom: 10px; }
 .settings-color-input input[aria-invalid=true] { border: 2px solid var(--warn); }
 .settings-sound { display: grid; grid-template-columns: 130px minmax(0,1fr) auto; align-items: center; gap: 10px; }
 .settings-sound select { width: 100%; min-width: 0; }
+.general-settings input[type=range] { accent-color: var(--accent); }
 .settings-sound label { font-size: 13px; }
 #resetColors { justify-self: start; }
 #generalSettingsDialog { z-index: 30; }

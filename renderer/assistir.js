@@ -407,7 +407,9 @@ function syncIncomingVideo() {
   for (const [id, link] of state.in) {
     // Na janela flutuante, o vídeo continua vindo mesmo com o app escondido (é para ver enquanto joga)
     const inPip = state.pips.has(id);
-    const on = inPip || (appVisible && (!state.focus || state.focus === id));
+    // Painel "Transmissão" desligado: as telas estão escondidas, então o vídeo pausa como com o app minimizado
+    const streamsShown = typeof workspaceViews !== 'object' || workspaceViews.streams !== false;
+    const on = inPip || (appVisible && streamsShown && (!state.focus || state.focus === id));
     if (link.videoOn === on) continue;
     link.videoOn = on;
     if (!link.self) sendSignal(id, { side: 'viewer', video: on });

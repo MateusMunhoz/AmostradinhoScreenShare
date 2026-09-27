@@ -51,6 +51,7 @@ function syncWorkspace() {
   document.body.classList.toggle('has-workspace-pane', any);
   document.body.classList.toggle('workspace-in-room', inRoom);
   document.body.classList.toggle('workspace-wide', inRoom && !workspaceViews.streams && any);
+  if (inRoom) syncIncomingVideo(); // telas escondidas não baixam vídeo (o som continua)
   $('workspaceContext').textContent = inRoom ? 'Na sala' : 'Início';
   for (const [id, view] of [['navChat','chat'],['navVoice','voice'],['navStreams','streams']]) {
     $(id).hidden = !inRoom;
@@ -68,7 +69,7 @@ function syncWorkspace() {
   renderVoicePane();
 }
 function renderVoicePane() {
-  if (!workspaceReady) return;
+  if (!workspaceReady || $('voicePane').hidden) return; // escondido, não precisa redesenhar a cada mudança da voz
   const active = !!voice.session;
   const ids = [...voice.members].filter(([id,m]) => m.session && state.members.has(id)).map(([id]) => id);
   $('voicePaneStatus').textContent = !voice.supported ? 'Voz indisponível nesta sala.' : voice.pending ? 'Aguardando o microfone…'
