@@ -179,7 +179,7 @@ O botão de controles na barra de voz.
 
 - **Testar o microfone:** **Ouvir minha voz** toca no seu fone o som do seu microfone, do jeito que a sala ouve: depois da supressão de ruído e da sensibilidade. Funciona fora da voz (abre o microfone só para o teste) e dentro dela; na voz, desligue o microfone para testar sem os outros ouvirem. Dá para mexer nos filtros enquanto ouve. Use fone de ouvido: com caixa de som, o microfone pega o próprio som e apita. O teste para ao fechar a janela.
 - **Supressão de ruído:**
-  - **Forte, com IA** (padrão): passa sua voz pelo [RNNoise](https://github.com/xiph/rnnoise), uma IA que roda no seu PC e tira teclado, ventilador, barulho da rua e respiração.
+  - **Avançado** (padrão): passa sua voz pelo [RNNoise](https://github.com/xiph/rnnoise), uma IA que roda no seu PC e tira teclado, ventilador, barulho da rua e respiração.
   - **Básica:** o filtro do Chrome, só para chiado constante.
   - **Desligada.**
 - **Cancelamento de eco:** tira da sua voz o que sai das suas caixas (as vozes dos outros e o som das telas). Com fone, pode desligar. Dá para trocar este e o anterior no meio da conversa, sem sair da voz.

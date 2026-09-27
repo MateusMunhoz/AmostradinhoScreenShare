@@ -83,9 +83,20 @@ function renderVoicePane() {
   $('paneVoiceMute').setAttribute('aria-pressed', String(voice.muted));
   $('paneVoiceDeafen').textContent = voice.deafened ? 'Ouvir vozes' : 'Silenciar vozes';
   $('paneVoiceDeafen').setAttribute('aria-pressed', String(voice.deafened));
+  // Quem está transmitindo tem o botão Assistir na frente do nome; quem transmite fora da voz aparece embaixo
   const list = $('voicePaneMembers'); list.replaceChildren();
-  if (active) list.append(memberRow(null, `${getName()} (você)`, false));
-  for (const id of ids) list.append(memberRow(id, nameOf(id), false));
+  const sharing = (id) => !!state.members.get(id)?.sharing;
+  if (active) list.append(memberRow(null, `${getName()} (você)`, state.sharing));
+  for (const id of ids) list.append(memberRow(id, nameOf(id), sharing(id)));
+  const outside = [...state.members.keys()].filter((id) => sharing(id) && !ids.includes(id));
+  if (!active && state.sharing) outside.unshift(null);
+  if (outside.length) {
+    const head = document.createElement('li');
+    head.className = 'members-sub';
+    head.textContent = 'Transmitindo, fora da voz';
+    list.append(head);
+    for (const id of outside) list.append(id ? memberRow(id, nameOf(id), true) : memberRow(null, `${getName()} (você)`, true));
+  }
 }
 function setupWorkspace() {
   const host = $('workspacePanes');

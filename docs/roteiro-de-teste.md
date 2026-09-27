@@ -21,7 +21,7 @@ quem estava fazendo e o que aconteceu.
 5. **Quem está falando.** Cada um fala uma frase.
    Deve acontecer: acende o anel verde de quem fala na lista de pessoas e a bolinha verde no botão de pessoas.
 6. **Ouvir a própria voz.** De fone, abra Voz e atalhos e clique em **Ouvir minha voz**. Fale, troque a supressão
-   de ruído entre **Forte, com IA** e **Desligada** e digite no teclado.
+   de ruído entre **Avançado** e **Desligada** e digite no teclado.
    Deve acontecer: você se ouve na hora, sem atraso que atrapalhe; com a IA, o teclado some. Desligue o microfone
    na barra da voz e fale: você continua se ouvindo, e os outros não. Feche a janela: o som para.
 
