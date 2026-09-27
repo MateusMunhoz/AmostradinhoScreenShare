@@ -317,7 +317,8 @@ $('chatTab').addEventListener('drop', (e) => {
 $('closeStats').onclick = closeStats;
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
-  if (!$('voiceDialog').hidden) { if (!capturing) closeVoiceDialog(); }
+  if (!$('generalSettingsDialog').hidden) closeGeneralSettings();
+  else if (!$('voiceDialog').hidden) { if (!capturing) closeVoiceDialog(); }
   else if (!$('personCard').hidden) closePersonCard();
   else if (!$('peoplePop').hidden) { setPeopleOpen(false); $('peopleBtn').focus(); }
   else if (!$('statsDialog').hidden) closeStats();
@@ -333,4 +334,6 @@ document.addEventListener('visibilitychange', onVisibility);
 window.addEventListener('focus', syncPreview);
 window.addEventListener('blur', syncPreview);
 
+setupWorkspace();
+setupGeneralSettings();
 show('home');

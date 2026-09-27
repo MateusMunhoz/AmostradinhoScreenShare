@@ -11,21 +11,19 @@
   <header class="workspace-header">
     <span class="workspace-brand">Tela P2P <span id="workspaceContext">Início</span></span>
     <nav id="workspaceNav" aria-label="Painéis do aplicativo">
+      <button id="navProfile" type="button" class="workspace-tab" aria-pressed="false" aria-controls="profilePane"><span class="nav-icon" aria-hidden="true"></span><span>Perfil</span></button>
       <button id="navChat" type="button" class="workspace-tab room-tab" aria-pressed="true" aria-controls="chatTab" hidden><span class="nav-icon" aria-hidden="true"></span><span>Chat</span><span id="navUnread" class="unread" hidden></span></button>
       <button id="navVoice" type="button" class="workspace-tab room-tab" aria-pressed="true" aria-controls="voicePane" hidden><span class="nav-icon" aria-hidden="true"></span><span>Voz</span></button>
       <button id="navStreams" type="button" class="workspace-tab room-tab" aria-pressed="true" aria-controls="streamArea" hidden><span class="nav-icon" aria-hidden="true"></span><span>Transmissão</span></button>
-      <button id="navProfile" type="button" class="workspace-tab profile-tab" aria-label="Seu perfil" title="Seu perfil" aria-haspopup="dialog" aria-expanded="false" aria-controls="profilePane"><span id="navProfileAvatar" aria-hidden="true"></span></button>
-      <button id="navSettings" type="button" class="workspace-tab settings-tab" aria-label="Configurações gerais" title="Configurações gerais" aria-haspopup="dialog" aria-expanded="false" aria-controls="generalSettingsDialog"><span class="nav-icon" aria-hidden="true"></span></button>
+      <button id="navSettings" type="button" class="workspace-tab settings-tab" aria-label="Configurações gerais" title="Configurações gerais" aria-pressed="false" aria-controls="generalSettingsDialog"><span class="nav-icon" aria-hidden="true"></span></button>
     </nav>
   </header>
   <aside id="workspacePanes" aria-label="Painéis selecionados" hidden>
-    <section id="profilePane" class="modal global utility-popup" hidden>
-      <div class="dialog profile-dialog" role="dialog" aria-modal="true" aria-labelledby="profileTitle">
+    <section id="profilePane" class="workspace-pane" aria-labelledby="profileTitle" hidden>
       <div class="pane-head"><h2 id="profileTitle">Seu perfil</h2><button id="closeProfile" class="btn small" type="button">Fechar</button></div>
       <div class="profile-summary"><span id="profileAvatar" class="avatar"></span><strong id="profileDisplayName"></strong></div>
       <label class="field">Nome de exibição<input id="profileName" maxlength="32" autocomplete="off"></label>
       <p id="profileHint" class="hint"></p>
-      </div>
     </section>
     <section id="voicePane" class="workspace-pane" aria-labelledby="voicePaneTitle" hidden>
       <div class="pane-head"><h2 id="voicePaneTitle">Chat de voz</h2><button id="paneVoiceSettings" class="btn small" type="button">Ajustes de voz</button></div>
@@ -47,6 +45,7 @@
           <p class="lead">Uma sala para transmitir telas com os amigos, de PC para PC pela Radmin VPN.</p>
         </div>
         <div class="home-status">
+          <button class="btn" id="openGeneralSettingsHome" type="button">Configurações gerais</button>
           <p class="status-line">
             <span id="radminDot" class="dot"></span>
             <strong id="radminTitle">Procurando a Radmin VPN…</strong>
@@ -453,18 +452,6 @@
       </section>
 
       <section class="vd-section">
-        <div class="vd-row">
-          <h3 id="cueLabel">Sons da call</h3>
-          <button class="btn small" id="cueTest" type="button">Ouvir</button>
-        </div>
-        <p class="hint">Tocam quando alguém entra ou sai da voz e quando você muta ou desmuta o microfone.</p>
-        <div class="vd-slider">
-          <input type="range" id="cueVolume" min="0" max="100" step="5" aria-labelledby="cueLabel">
-          <span id="cueValue" class="vd-value"></span>
-        </div>
-      </section>
-
-      <section class="vd-section">
         <h3 id="modeLabel">Como falar</h3>
         <div class="seg" role="radiogroup" aria-labelledby="modeLabel">
           <label><input type="radio" name="talkMode" value="voz"><span>Detecção de voz</span></label>
@@ -505,8 +492,8 @@
   <!-- Volume de uma pessoa (abre pelo botão de volume na lista ou pela bolinha na barra) -->
   <div id="personCard" class="person-card" role="dialog" aria-label="Volume da pessoa" hidden></div>
 
-  <div id="generalSettingsDialog" class="modal global utility-popup" hidden>
-    <div class="dialog general-settings" role="dialog" aria-modal="true" aria-labelledby="generalSettingsTitle">
+  <div id="generalSettingsDialog" class="workspace-pane settings-pane" hidden>
+    <div class="general-settings" role="region" aria-labelledby="generalSettingsTitle">
       <div class="dialog-head"><h2 id="generalSettingsTitle">Configurações gerais</h2><button id="closeGeneralSettings" class="btn small" type="button">Fechar</button></div>
       <p class="hint" id="settingsSaveStatus" role="status">Salvo neste dispositivo. As escolhas continuam ao reabrir o app.</p>
       <section class="settings-section" aria-labelledby="colorsTitle">
@@ -538,7 +525,6 @@
   <script src="renderer/sala.js"></script>
   <script src="renderer/voz.js"></script>
   <script src="renderer/microfone.js"></script>
-  <script src="renderer/avisos.js"></script>
   <script src="renderer/membros.js"></script>
   <script src="renderer/assistir.js"></script>
   <script src="renderer/pip.js"></script>

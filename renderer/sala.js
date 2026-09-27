@@ -114,11 +114,13 @@ function enterRoom(welcome, owner, host, port) {
   const live = welcome.members.filter((m) => m.sharing).length;
   if (live) toast(live === 1 ? '1 pessoa está transmitindo. Clique em Assistir para ver.' : `${live} pessoas estão transmitindo. Escolha quem assistir.`);
   checkUpdates();
+  void appSounds.play('join');
 }
 
 // endRoom: o host encerra para todos; sem isso, ao sair ele passa a sala para quem está há mais tempo
 function leaveRoom(reason, kind = 'info', endRoom = false) {
   if (!state.myId) return;
+  void appSounds.play('leave');
   voice.reset(null);
   const ws = state.ws;
   state.ws = null;
@@ -274,11 +276,13 @@ function onRoomMessage(m) {
       voice.update(m.id, m.voiceSession || '', !!m.muted);
       renderMembers();
       updateStage();
+      if (!back && !m.resumed) void appSounds.play('join');
       if (!back) toast(`${m.name} entrou na sala`);
       checkUpdates();
       break;
     }
     case 'member-left': {
+      if (state.members.has(m.id)) void appSounds.play('leave');
       const name = nameOf(m.id);
       state.order = state.order.filter((id) => id !== m.id);
       voice.remove(m.id);

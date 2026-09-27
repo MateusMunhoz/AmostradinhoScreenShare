@@ -37,6 +37,10 @@ Para gerar um `.exe` portátil sem publicar: `npm run dist`. O arquivo aparece e
 
 ### A página (`renderer/`)
 
+As preferências gerais ficam em `renderer/preferencias-modelo.js` (validação, paleta, catálogo e reprodutor de sons) e `renderer/configuracoes.js` (interface e armazenamento em `localStorage`, chave `appPreferences.v1`). O modelo carrega antes de `tema.js`; o controlador, logo depois. `renderer/navegacao.js`, carregado antes de `inicio.js`, controla a barra fixa e os painéis simultâneos, persistindo a seleção da sala em `workspaceViews.v1`. Os arquivos de áudio ficam em `assets/audio/` e são incluídos tanto no executável quanto no pacote de atualização de `publicar.js`.
+
+`npm run test:settings` verifica a interface em janelas invisíveis, os oito MP3, os eventos sonoros, as cores na janela flutuante, as oito combinações dos painéis da sala, a posição da barra e a persistência entre dois processos do Electron. Usa um perfil temporário isolado. `npm test` inclui os testes de validação, volumes, reprodução e transições de participação na voz, além dos testes existentes.
+
 São `<script>` comuns (não módulos), carregados pelo `index.html` nesta ordem. Todos dividem o mesmo
 escopo global: uma função ou variável de um arquivo é vista pelos outros pelo nome. Os testes usam
 isso (chamam `watch`, `state`, `speaking`... direto na página).

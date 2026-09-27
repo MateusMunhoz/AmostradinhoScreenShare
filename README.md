@@ -17,6 +17,8 @@ Transmita a tela e converse por voz com os amigos, de PC para PC, pela Radmin VP
 - **Ver enquanto joga:** janelas flutuantes, uma por pessoa, sempre por cima do jogo e com o clique passando direto.
 - **Chat:** mensagens e arquivos até 200 MB. Também tem uma versão por cima do jogo: **Ctrl+Enter** escreve sem sair do jogo.
 - **Voz:** supressão de ruído com IA, cancelamento de eco, apertar para falar, volume de cada pessoa e indicador de quem está falando.
+- **Configurações gerais:** quatro cores por hexadecimal e sons de entrada/saída da sala, entrada/saída da voz e mensagens, com prévia, volume por evento, volume geral e silêncio do chat. As escolhas ficam salvas neste PC.
+- **Barra superior fixa:** perfil e configurações sempre acessíveis; na sala, chat, voz e transmissão podem ficar abertos juntos, dividindo o espaço. Ocultar o painel de voz não desliga o microfone.
 - **A sala não cai quando o host sai:** outra pessoa assume sozinha.
 
 Detalhes de cada coisa no [Guia de uso](docs/guia.md).

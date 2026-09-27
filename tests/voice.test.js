@@ -80,3 +80,27 @@ test('desconectar microfone encerra a chamada e notifica a sala', async () => {
   assert.equal(f.v.session, ''); assert.equal(f.sent.at(-1).session, '');
   assert.match(f.errors[0], /desconectado/);
 });
+
+test('avisos de voz seguem entradas e saídas, sem repetir em mute, reconexão ou reset', async () => {
+  const f = fixture(); const events=[]; f.v.activity=(event,id)=>events.push([event,id]);
+  f.v.reset({id:'2',features:['voice'],members:[{id:'1',voiceSession:'existing'}]});
+  assert.deepEqual(events,[]);
+  await f.v.join(); f.v.mute(); f.v.deafen();
+  assert.deepEqual(events,[['voiceJoin','2']]);
+  f.v.update('1','existing',true); f.v.update('1','reconnected',false);
+  assert.equal(events.length,1);
+  f.v.update('3','new',false); f.v.update('3','new',true);
+  f.v.update('3','',false); f.v.remove('3');
+  assert.deepEqual(events.slice(1),[['voiceJoin','3'],['voiceLeave','3']]);
+  f.v.remove('1'); f.v.remove('1');
+  assert.deepEqual(events.at(-1),['voiceLeave','1']);
+  f.v.leave(); f.v.leave();
+  assert.deepEqual(events.at(-1),['voiceLeave','2']);
+  const count=events.length; f.v.reset(null); assert.equal(events.length,count);
+});
+
+test('falha de microfone não toca entrada ou saída da voz', async () => {
+  const f=fixture({getUserMedia:async()=>{throw new Error('sem microfone');}});
+  const events=[]; f.v.activity=e=>events.push(e); await f.v.join();
+  assert.deepEqual(events,[]);
+});

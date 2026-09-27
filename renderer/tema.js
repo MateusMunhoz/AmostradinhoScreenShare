@@ -5,9 +5,9 @@
 // Cada pessoa tem uma cor (a mesma no chat e na lista); você é sempre o amarelo
 // Cores do tema lan house usadas nas janelas que o app monta por código (flutuantes e chat por cima do jogo)
 const THEME = {
-  bg: '#22271E', sunken: '#1B1F17', card: '#2D3327', raised: '#3A4232', line: '#434C3A', field: '#6B7560',
-  text: '#E4E9DD', muted: '#A9B29C', primary: '#D6C45C', onPrimary: '#221E06', accent: '#D6C45C',
-  accentSoft: 'rgba(214, 196, 92, .16)', ok: '#A6D089', ink: '#1B1F17', glass: 'rgba(27, 31, 23, .9)',
+  bg: 'var(--bg)', sunken: 'var(--sunken)', card: 'var(--panel)', raised: 'var(--panel-2)', line: 'var(--line)', field: 'var(--field-line)',
+  text: 'var(--text)', muted: 'var(--muted)', primary: 'var(--primary)', onPrimary: 'var(--primary-ink)', accent: 'var(--accent)',
+  accentSoft: 'var(--accent-soft)', ok: 'var(--ok)', ink: 'var(--primary-ink)', glass: 'var(--theme-glass)',
   font: '"Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif',
 };
 // Longe do amarelo (você) e do verde (quem fala), e legíveis sobre o oliva
@@ -58,7 +58,7 @@ function talkerChip(d, id) {
   const el = d.createElement('span');
   Object.assign(el.style, {
     display: 'inline-flex', alignItems: 'center', gap: '7px', height: '24px', padding: '0 9px', borderRadius: '5px',
-    background: 'rgba(20, 23, 17, .82)', border: `1px solid ${THEME.ok}`, color: THEME.text, fontSize: '12px', fontWeight: '600',
+    background: THEME.glass, border: `1px solid ${THEME.ok}`, color: THEME.text, fontSize: '12px', fontWeight: '600',
   });
   const dot = d.createElement('span');
   Object.assign(dot.style, { width: '8px', height: '8px', borderRadius: '2px', background: personColor(id) });
