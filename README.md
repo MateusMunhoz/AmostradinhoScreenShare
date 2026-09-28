@@ -32,6 +32,7 @@ Detalhes de cada coisa no [Guia de uso](docs/guia.md).
 | Mexer no código, testar e publicar | [docs/desenvolvimento.md](docs/desenvolvimento.md) |
 | Testar numa call com gente de verdade | [docs/roteiro-de-teste.md](docs/roteiro-de-teste.md) |
 | RazzeAPI, VPN WireGuard e implantação numa VPS | [docs/razze-api.md](docs/razze-api.md) |
+| O que vem por aí e como fazer (Discord e TeamSpeak como referência) | [docs/roadmap.md](docs/roadmap.md) |
 
 ## Problemas comuns
 
