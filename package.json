@@ -66,5 +66,8 @@
         "to": "pack"
       }
     ]
+  },
+  "allowScripts": {
+    "electron@33.4.11": true
   }
 }
