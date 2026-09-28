@@ -159,7 +159,7 @@ function renderChatOverlay() {
       background: THEME.glass, lineHeight: '1.35', overflowWrap: 'anywhere', fontSize: '13px',
     });
     const who = d.createElement('strong');
-    who.textContent = m.from === state.myId ? 'Você' : m.name;
+    who.textContent = m.name;
     who.style.color = m.from === state.myId ? THEME.accent : personColor(m.from);
     who.style.marginRight = '6px';
     row.append(who, m.text || `mandou ${m.file ? m.file.name : 'um arquivo'}`);

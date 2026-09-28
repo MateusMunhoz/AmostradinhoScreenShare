@@ -147,7 +147,7 @@ function appendMessage(m, live) {
   const grouped = !!prev && prev.from === m.from && m.ts - prev.ts < 5 * 60 * 1000;
   const li = document.createElement('li');
   li.className = 'msg' + (mine ? ' mine' : '') + (grouped ? ' grouped' : '');
-  const name = mine ? 'Você' : m.name;
+  const name = m.name; // as suas também com o seu nome, como os outros veem
   li.style.setProperty('--person', personColor(m.from));
   const d = new Date(m.ts);
   const when = document.createElement('time');
