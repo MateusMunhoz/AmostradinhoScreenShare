@@ -1,0 +1,65 @@
+'use strict';
+
+class RazzeApiError extends Error {
+  constructor(status, code, message) { super(message); this.name = 'RazzeApiError'; this.status = status; this.code = code; }
+}
+
+class RazzeApiClient {
+  constructor(baseUrl, options = {}) {
+    let parsed;
+    try { parsed = new URL(String(baseUrl || '').trim()); } catch { throw new Error('URL da RazzeAPI inválida.'); }
+    if (parsed.protocol !== 'https:' && !(parsed.protocol === 'http:' && ['localhost', '127.0.0.1'].includes(parsed.hostname))) {
+      throw new Error('A RazzeAPI deve usar HTTPS; HTTP só é aceito em localhost.');
+    }
+    if (parsed.username || parsed.password || parsed.search || parsed.hash) throw new Error('A URL da RazzeAPI não pode conter credenciais ou parâmetros.');
+    this.baseUrl = parsed.origin.replace(/\/+$/, '');
+    this.fetch = options.fetch || globalThis.fetch;
+    this.accessToken = '';
+  }
+
+  setAccessToken(token) { this.accessToken = typeof token === 'string' ? token : ''; }
+
+  async request(method, endpoint, body) {
+    const headers = { Accept: 'application/json' };
+    if (this.accessToken) headers.Authorization = 'Bearer ' + this.accessToken;
+    if (body !== undefined) headers['Content-Type'] = 'application/json';
+    let response;
+    try {
+      response = await this.fetch(this.baseUrl + endpoint, {
+        method, headers, body: body === undefined ? undefined : JSON.stringify(body), redirect: 'error',
+      });
+    } catch { throw new RazzeApiError(0, 'network_error', 'Não foi possível acessar a RazzeAPI.'); }
+    let payload = {};
+    try { payload = await response.json(); } catch {}
+    if (!response.ok) {
+      const error = payload && payload.error || {};
+      throw new RazzeApiError(response.status, error.code || 'request_failed', error.message || 'A RazzeAPI recusou a requisição.');
+    }
+    return payload;
+  }
+
+  health() { return this.request('GET', '/v1/health'); }
+  register(email, password, displayName) { return this.request('POST', '/v1/auth/register', { email, password, displayName }); }
+  login(email, password) { return this.request('POST', '/v1/auth/login', { email, password }); }
+  logout() { return this.request('POST', '/v1/auth/logout'); }
+  me() { return this.request('GET', '/v1/me'); }
+  listFriends() { return this.request('GET', '/v1/friends'); }
+  friendRequests() { return this.request('GET', '/v1/friends/requests'); }
+  requestFriend(email) { return this.request('POST', '/v1/friends/requests', { email }); }
+  acceptFriendRequest(id) { return this.request('POST', '/v1/friends/requests/' + encodeURIComponent(id) + '/accept'); }
+  removeFriend(id) { return this.request('DELETE', '/v1/friends/' + encodeURIComponent(id)); }
+  listNetworks() { return this.request('GET', '/v1/networks'); }
+  getNetwork(id) { return this.request('GET', '/v1/networks/' + encodeURIComponent(id)); }
+  createNetwork(network) { return this.request('POST', '/v1/networks', network); }
+  updateNetwork(id, patch) { return this.request('PATCH', '/v1/networks/' + encodeURIComponent(id), patch); }
+  deleteNetwork(id) { return this.request('DELETE', '/v1/networks/' + encodeURIComponent(id)); }
+  listMembers(id) { return this.request('GET', '/v1/networks/' + encodeURIComponent(id) + '/members'); }
+  listDevices(id) { return this.request('GET', '/v1/networks/' + encodeURIComponent(id) + '/devices'); }
+  registerDevice(id, device) { return this.request('POST', '/v1/networks/' + encodeURIComponent(id) + '/devices', device); }
+  updateDeviceEndpoint(id, deviceId, endpoint) { return this.request('PATCH', '/v1/networks/' + encodeURIComponent(id) + '/devices/' + encodeURIComponent(deviceId) + '/endpoint', endpoint); }
+  removeDevice(id, deviceId) { return this.request('DELETE', '/v1/networks/' + encodeURIComponent(id) + '/devices/' + encodeURIComponent(deviceId)); }
+  createInvite(id, options = {}) { return this.request('POST', '/v1/networks/' + encodeURIComponent(id) + '/invites', options); }
+  acceptInvite(token) { return this.request('POST', '/v1/invites/accept', { token }); }
+}
+
+module.exports = { RazzeApiClient, RazzeApiError };

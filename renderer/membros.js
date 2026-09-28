@@ -10,12 +10,12 @@ async function renderRoomAddress() {
   if (state.isOwner) {
     const provider = selectedNetworkProvider();
     const ips = await window.api.getIps(provider);
-    const preferred = provider === 'netbird' ? ips.filter((i) => i.netbird) : ips.filter((i) => i.radmin);
+    const preferred = provider === 'razze' ? ips.filter((i) => i.razze) : ips.filter((i) => i.radmin);
     $('noRadmin').hidden = preferred.length > 0;
-    $('noRadmin').textContent = provider === 'netbird'
-      ? 'Nenhum IP da VPN Tela P2P foi encontrado. Conecte ao NetBird nas configurações gerais.'
+    $('noRadmin').textContent = provider === 'razze'
+      ? 'Nenhum IP da VPN Razze foi encontrado. Conecte uma rede WireGuard nas configurações gerais.'
       : 'Nenhum IP da Radmin VPN (26.x.x.x) encontrado. Ligue a Radmin e entre na rede.';
-    const usable = provider === 'netbird' ? preferred : (preferred.length ? preferred : ips);
+    const usable = provider === 'razze' ? preferred : (preferred.length ? preferred : ips);
     addrs = usable.map((i) => `${i.address}:${state.port}`);
   } else {
     $('noRadmin').hidden = true;

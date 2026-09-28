@@ -1,0 +1,6 @@
+{$API_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy razze-api:8787 {
+		header_up X-Forwarded-For {remote_host}
+	}
+}

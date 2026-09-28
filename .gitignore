@@ -11,9 +11,14 @@ pack/*
 !bin/audiocap.exe
 !bin/videocap.exe
 !bin/teclas.exe
+!bin/selfvpn/wireguard.exe
 
 # Compilação dos ajudantes nativos (native/build.cmd)
 native/obj/
+
+# Segredos e banco local da RazzeAPI
+razze-api/.env
+razze-api/data/
 
 # Anotações locais
 Explicacao.txt

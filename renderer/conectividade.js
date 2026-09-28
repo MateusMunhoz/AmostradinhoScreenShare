@@ -1,15 +1,30 @@
 'use strict';
 
 const NETWORK_PREF_KEY = 'connectivity.v1';
+let razzeUser = null;
 
 function networkPreferences() {
   try {
     const p = JSON.parse(localStorage.getItem(NETWORK_PREF_KEY) || '{}');
     return {
-      provider: p.provider === 'netbird' ? 'netbird' : 'radmin',
-      managementUrl: typeof p.managementUrl === 'string' ? p.managementUrl : '',
+      provider: p.provider === 'razze' ? 'razze' : 'radmin',
+      apiUrl: typeof p.apiUrl === 'string' ? p.apiUrl : '',
+      activeNetworkId: typeof p.activeNetworkId === 'string' ? p.activeNetworkId : '',
     };
-  } catch { return { provider: 'radmin', managementUrl: '' }; }
+  } catch { return { provider: 'radmin', apiUrl: '', activeNetworkId: '' }; }
+}
+
+function inviteTokenFromValue(value) {
+  const raw = String(value || '').trim();
+  if (/^[A-Za-z0-9_-]{20,120}$/.test(raw)) return raw;
+  try {
+    const link = new URL(raw);
+    if (link.protocol === 'telap2p:' && link.hostname === 'invite') {
+      const token = link.pathname.replace(/^\//, '');
+      if (/^[A-Za-z0-9_-]{20,120}$/.test(token)) return token;
+    }
+  } catch {}
+  return '';
 }
 
 function saveNetworkPreferences(patch) {
@@ -21,37 +36,188 @@ function saveNetworkPreferences(patch) {
 function selectedNetworkProvider() { return networkPreferences().provider; }
 
 async function requireSelectedNetwork() {
-  if (selectedNetworkProvider() !== 'netbird') return;
+  if (selectedNetworkProvider() !== 'razze') return;
   const prefs = networkPreferences();
-  const status = await window.api.netbirdStatus();
-  if (!status.installed) throw new Error('Instale o agente NetBird e conecte à VPN nas configurações gerais.');
-  if (!status.connected || !status.ip) throw new Error('Conecte à VPN Tela P2P nas configurações gerais antes de criar ou entrar numa sala.');
-  let requested = '', connectedTo = '';
-  try { requested = new URL(prefs.managementUrl).origin; } catch {}
-  try { connectedTo = new URL(status.managementUrl).origin; } catch {}
-  if (!requested || !connectedTo || requested !== connectedTo) throw new Error('O NetBird está conectado a outro servidor. Confira o endereço nas configurações gerais.');
+  const state = await window.api.razzeState();
+  if (!state.configured || !state.authenticated) throw new Error('Configure o servidor Razze e entre na sua conta nas configurações gerais.');
+  if (!prefs.activeNetworkId) throw new Error('Entre em uma rede Razze e conecte o WireGuard nas configurações gerais.');
+  const tunnel = await window.api.razzeWireGuardStatus(prefs.activeNetworkId);
+  if (!tunnel.connected) throw new Error('Conecte o túnel WireGuard da rede escolhida antes de criar ou entrar numa sala.');
 }
 
 function renderConnectivitySettings() {
   const prefs = networkPreferences();
   $('networkProvider').value = prefs.provider;
-  $('netbirdManagementUrl').value = prefs.managementUrl;
-  $('netbirdSetupKey').value = '';
-  $('netbirdSettings').hidden = prefs.provider !== 'netbird';
-  refreshNetBirdStatus();
+  $('razzeApiUrl').value = prefs.apiUrl;
+  $('razzeSettings').hidden = prefs.provider !== 'razze';
+  refreshRazzeState();
 }
 
-async function refreshNetBirdStatus() {
-  const line = $('netbirdStatus');
-  if (!line) return;
+async function refreshRazzeState() {
+  const status = $('razzeStatus');
+  if (!status) return;
+  const state = await window.api.razzeState();
+  $('razzeAuth').hidden = state.authenticated;
+  $('razzeAccount').hidden = !state.authenticated;
+  if (!state.configured) {
+    status.textContent = 'Informe o endereço HTTPS do servidor Razze e teste a conexão.';
+    return;
+  }
   try {
-    const s = await window.api.netbirdStatus();
-    line.textContent = !s.installed
-      ? 'Agente NetBird não encontrado. Instale o cliente NetBird neste PC.'
-      : s.connected
-        ? `Conectado${s.ip ? ` · IP privado ${s.ip}` : ''}${s.managementUrl ? ` · ${s.managementUrl}` : ''}.`
-        : `Desconectado. ${s.error || 'Conecte ao servidor configurado.'}`;
-  } catch (e) { line.textContent = `Não foi possível consultar o NetBird: ${e.message}`; }
+    await window.api.razzeHealth();
+    status.textContent = state.authenticated ? 'Servidor acessível; sessão iniciada.' : 'Servidor acessível. Entre ou crie sua conta.';
+    if (state.authenticated) {
+      const { user } = await window.api.razzeMe();
+      razzeUser = user;
+      $('razzeAccountName').textContent = user?.displayName || user?.email || 'Conta Razze';
+      await refreshRazzeLists();
+    }
+  } catch (error) {
+    status.textContent = 'Razze: ' + error.message;
+    const current = await window.api.razzeState().catch(() => ({ authenticated: false }));
+    $('razzeAuth').hidden = current.authenticated;
+    $('razzeAccount').hidden = !current.authenticated;
+  }
+}
+
+async function refreshRazzeLists() {
+  const result = await window.api.razzeListNetworks();
+  const container = $('razzeNetworks');
+  container.replaceChildren(...(result.networks || []).map((network) => razzeNetworkCard(network)));
+  const friends = await window.api.razzeFriends();
+  const requests = await window.api.razzeFriendRequests();
+  const friendBox = $('razzeFriends');
+  friendBox.replaceChildren();
+  for (const friend of friends.friends || []) {
+    const row = document.createElement('div');
+    row.className = 'razze-row';
+    const label = document.createElement('span');
+    label.className = 'hint';
+    label.textContent = friend.displayName + ' · ' + friend.email;
+    const remove = document.createElement('button');
+    remove.className = 'btn small';
+    remove.textContent = 'Remover';
+    remove.onclick = async () => { await window.api.razzeRemoveFriend(friend.id); await refreshRazzeLists(); };
+    row.append(label, remove);
+    friendBox.append(row);
+  }
+  for (const request of requests.incoming || []) {
+    const row = document.createElement('div');
+    row.className = 'razze-row';
+    const label = document.createElement('span');
+    label.textContent = 'Pedido de ' + request.displayName + ' (' + request.email + ')';
+    const accept = document.createElement('button');
+    accept.className = 'btn small';
+    accept.textContent = 'Aceitar';
+    accept.onclick = async () => { await window.api.razzeAcceptFriend(request.id); await refreshRazzeLists(); };
+    row.append(label, accept);
+    friendBox.append(row);
+  }
+  for (const request of requests.outgoing || []) {
+    const row = document.createElement('div');
+    row.className = 'razze-row';
+    const label = document.createElement('span');
+    label.className = 'hint';
+    label.textContent = 'Pedido enviado para ' + request.displayName + ' (' + request.email + ') · aguardando resposta';
+    row.append(label);
+    friendBox.append(row);
+  }
+}
+
+function razzeNetworkCard(network) {
+  const card = document.createElement('article');
+  card.className = 'razze-network';
+  const title = document.createElement('strong');
+  title.textContent = network.name;
+  const subtitle = document.createElement('span');
+  subtitle.className = 'hint';
+  subtitle.textContent = network.description || network.visibility || 'Rede Razze';
+  const actions = document.createElement('div');
+  actions.className = 'razze-row';
+  const connect = document.createElement('button');
+  connect.className = 'btn small primary';
+  connect.textContent = network.isMember ? 'Conectar WireGuard' : 'Precisa de convite';
+  connect.disabled = !network.isMember;
+  if (network.isMember) window.api.razzeWireGuardStatus(network.id).then((state) => {
+    if (state.connected) connect.textContent = 'Atualizar peers';
+  }).catch(() => {});
+  connect.onclick = async () => {
+    const current = await window.api.razzeWireGuardStatus(network.id).catch(() => ({ connected: false }));
+    if (current.connected && !confirm('Atualizar a lista de participantes reinicia brevemente o túnel WireGuard. Continuar?')) return;
+    connect.disabled = true;
+    $('razzeStatus').textContent = current.connected ? 'Atualizando a lista de peers e reiniciando o túnel…' : 'Negociando endpoint e iniciando túnel WireGuard…';
+    try {
+      const result = await window.api.razzeWireGuardConnect(network.id, network.name);
+      saveNetworkPreferences({ activeNetworkId: network.id });
+      connect.textContent = 'Atualizar peers';
+      $('razzeStatus').textContent = 'VPN conectada em ' + result.overlayIp + (result.publicIp ? ' · endpoint público ' + result.publicIp : '') + '.';
+      renderRadmin();
+    } catch (error) { $('razzeStatus').textContent = 'Falha no WireGuard: ' + error.message; }
+    finally { connect.disabled = false; }
+  };
+  const disconnect = document.createElement('button');
+  disconnect.className = 'btn small';
+  disconnect.textContent = 'Desconectar';
+  disconnect.onclick = async () => {
+    disconnect.disabled = true;
+    try {
+      const result = await window.api.razzeWireGuardDisconnect(network.id);
+      if (!result.ok) throw new Error(result.error);
+      if (networkPreferences().activeNetworkId === network.id) saveNetworkPreferences({ activeNetworkId: '' });
+      connect.textContent = 'Conectar WireGuard';
+      $('razzeStatus').textContent = 'Túnel WireGuard desconectado.';
+      renderRadmin();
+    } catch (error) { $('razzeStatus').textContent = 'Falha ao desconectar: ' + error.message; }
+    finally { disconnect.disabled = false; }
+  };
+  actions.append(connect, disconnect);
+  if (razzeUser && network.ownerId === razzeUser.id) {
+    const invite = document.createElement('button');
+    invite.className = 'btn small';
+    invite.textContent = 'Criar convite';
+    invite.onclick = async () => {
+      try {
+        const created = await window.api.razzeCreateInvite(network.id, { maxUses: 10, ttlHours: 168 });
+        const link = 'telap2p://invite/' + created.token;
+        try { await navigator.clipboard.writeText(link); $('razzeStatus').textContent = 'Link de convite copiado. Válido por 7 dias e até 10 entradas.'; }
+        catch { prompt('Copie o link de convite', link); }
+      } catch (error) { $('razzeStatus').textContent = 'Não foi possível criar convite: ' + error.message; }
+    };
+    const edit = document.createElement('button');
+    edit.className = 'btn small';
+    edit.textContent = 'Editar';
+    edit.onclick = async () => {
+      const name = prompt('Nome da rede', network.name);
+      if (!name || !name.trim()) return;
+      const description = prompt('Descrição da rede', network.description || '');
+      if (description === null) return;
+      const visibility = prompt('Visibilidade: private, friends ou public', network.visibility || 'private');
+      if (!['private', 'friends', 'public'].includes(visibility)) { $('razzeStatus').textContent = 'Use private, friends ou public.'; return; }
+      try { await window.api.razzeUpdateNetwork(network.id, { name: name.trim(), description, visibility }); await refreshRazzeLists(); }
+      catch (error) { $('razzeStatus').textContent = 'Não foi possível editar a rede: ' + error.message; }
+    };
+    const remove = document.createElement('button');
+    remove.className = 'btn small danger';
+    remove.textContent = 'Excluir';
+    remove.onclick = async () => {
+      if (!confirm('Excluir a rede ' + network.name + '?')) return;
+      try {
+        const tunnel = await window.api.razzeWireGuardStatus(network.id).catch(() => ({ exists: false }));
+        if (tunnel.exists) {
+          const disconnected = await window.api.razzeWireGuardDisconnect(network.id);
+          if (!disconnected.ok) throw new Error('Não foi possível remover o túnel: ' + disconnected.error);
+        }
+        if (networkPreferences().activeNetworkId === network.id) saveNetworkPreferences({ activeNetworkId: '' });
+        await window.api.razzeDeleteNetwork(network.id);
+        await refreshRazzeLists();
+        renderRadmin();
+      }
+      catch (error) { $('razzeStatus').textContent = 'Não foi possível excluir a rede: ' + error.message; }
+    };
+    actions.append(invite, edit, remove);
+  }
+  card.append(title, subtitle, actions);
+  return card;
 }
 
 function setupConnectivitySettings() {
@@ -61,31 +227,91 @@ function setupConnectivitySettings() {
     renderRadmin();
     setSessionWatch(!$('home').hidden);
   };
-  $('netbirdManagementUrl').onchange = () => saveNetworkPreferences({ managementUrl: $('netbirdManagementUrl').value.trim() });
-  $('netbirdConnect').onclick = async () => {
-    const url = $('netbirdManagementUrl').value.trim();
-    saveNetworkPreferences({ managementUrl: url });
-    $('netbirdConnect').disabled = true;
-    $('netbirdStatus').textContent = 'Conectando…';
+  $('razzeSaveServer').onclick = async () => {
     try {
-      const setupKey = $('netbirdSetupKey').value;
-      const result = await window.api.netbirdConnect(url, setupKey);
-      $('netbirdStatus').textContent = result.ok
-        ? `Conectado à VPN${result.status?.ip ? ` · IP privado ${result.status.ip}` : ''}.`
-        : `Não foi possível conectar: ${result.error}`;
-      renderRadmin();
-    } catch (e) { $('netbirdStatus').textContent = `Falha ao conectar: ${e.message}`; }
-    finally { $('netbirdSetupKey').value = ''; $('netbirdConnect').disabled = false; }
+      const url = $('razzeApiUrl').value.trim();
+      const before = networkPreferences();
+      const state = await window.api.razzeConfigure(url);
+      if (before.apiUrl && before.apiUrl !== state.baseUrl) {
+        const disconnected = await window.api.razzeWireGuardDisconnectAll();
+        if (!disconnected.ok) throw new Error('O endereço foi salvo, mas não foi possível encerrar todos os túneis: ' + disconnected.errors.join('; '));
+      }
+      saveNetworkPreferences({ apiUrl: state.baseUrl, activeNetworkId: before.apiUrl === state.baseUrl ? before.activeNetworkId : '' });
+      await refreshRazzeState();
+    } catch (error) { $('razzeStatus').textContent = 'Servidor inválido: ' + error.message; }
   };
-  $('netbirdDisconnect').onclick = async () => {
-    $('netbirdDisconnect').disabled = true;
+  $('razzeLogin').onclick = async () => {
+    $('razzeLogin').disabled = true;
     try {
-      const result = await window.api.netbirdDisconnect();
-      $('netbirdStatus').textContent = result.ok ? 'VPN desconectada.' : `Não foi possível desconectar: ${result.error}`;
-      renderRadmin();
-    } catch (e) { $('netbirdStatus').textContent = `Falha ao desconectar: ${e.message}`; }
-    finally { $('netbirdDisconnect').disabled = false; }
+      const result = await window.api.razzeLogin($('razzeEmail').value.trim(), $('razzePassword').value);
+      razzeUser = result.user;
+      $('razzePassword').value = '';
+      await refreshRazzeState();
+    } catch (error) { $('razzeStatus').textContent = 'Não foi possível entrar: ' + error.message; }
+    finally { $('razzeLogin').disabled = false; }
   };
-  $('netbirdInstallHelp').onclick = () => window.api.openLink('https://docs.netbird.io/get-started/install/windows');
-  $('netbirdServerHelp').onclick = () => window.api.openLink('https://docs.netbird.io/selfhosted/selfhosted-guide');
+  $('razzeRegister').onclick = async () => {
+    $('razzeRegister').disabled = true;
+    try {
+      const result = await window.api.razzeRegister($('razzeEmail').value.trim(), $('razzePassword').value, $('razzeDisplayName').value.trim());
+      $('razzePassword').value = '';
+      $('razzeStatus').textContent = result.status === 'pending_approval' ? 'Cadastro enviado. Aguarde a aprovação do administrador do servidor.' : 'Conta criada.';
+    } catch (error) { $('razzeStatus').textContent = 'Não foi possível criar a conta: ' + error.message; }
+    finally { $('razzeRegister').disabled = false; }
+  };
+  $('razzeLogout').onclick = async () => {
+    const disconnected = await window.api.razzeWireGuardDisconnectAll();
+    if (!disconnected.ok) {
+      $('razzeStatus').textContent = 'Saia de todas as redes WireGuard antes de encerrar a conta: ' + disconnected.errors.join('; ');
+      return;
+    }
+    saveNetworkPreferences({ activeNetworkId: '' });
+    await window.api.razzeLogout();
+    razzeUser = null;
+    renderConnectivitySettings();
+  };
+  $('razzeCreateNetwork').onclick = async () => {
+    const name = $('razzeNetworkName').value.trim();
+    if (!name) return;
+    try {
+      await window.api.razzeCreateNetwork({ name, visibility: 'private' });
+      $('razzeNetworkName').value = '';
+      await refreshRazzeLists();
+    } catch (error) { $('razzeStatus').textContent = 'Não foi possível criar a rede: ' + error.message; }
+  };
+  $('razzeJoinInvite').onclick = async () => {
+    try {
+      const token = inviteTokenFromValue($('razzeInviteToken').value);
+      if (!token) throw new Error('Cole um token ou link telap2p://invite/... válido.');
+      await window.api.razzeAcceptInvite(token);
+      $('razzeInviteToken').value = '';
+      await refreshRazzeLists();
+      $('razzeStatus').textContent = 'Você entrou na rede.';
+    } catch (error) { $('razzeStatus').textContent = 'Convite inválido: ' + error.message; }
+  };
+  $('razzeAddFriend').onclick = async () => {
+    try {
+      const result = await window.api.razzeRequestFriend($('razzeFriendEmail').value.trim());
+      $('razzeFriendEmail').value = '';
+      $('razzeStatus').textContent = result.status === 'accepted' ? 'Amizade aceita.' : 'Pedido de amizade enviado.';
+      await refreshRazzeLists();
+    } catch (error) { $('razzeStatus').textContent = 'Não foi possível adicionar amigo: ' + error.message; }
+  };
+  const acceptInviteLink = async (token) => {
+    $('razzeInviteToken').value = token;
+    if ($('generalSettingsDialog').hidden) $('navSettings').click();
+    const state = await window.api.razzeState();
+    if (!state.authenticated) {
+      $('razzeStatus').textContent = 'Entre na sua conta Razze para aceitar o convite que chegou pelo link.';
+      return;
+    }
+    try {
+      await window.api.razzeAcceptInvite(token);
+      $('razzeInviteToken').value = '';
+      await refreshRazzeLists();
+      $('razzeStatus').textContent = 'Convite aceito. Você entrou na rede.';
+    } catch (error) { $('razzeStatus').textContent = 'Não foi possível aceitar o convite: ' + error.message; }
+  };
+  window.api.onRazzeInvite((token) => { void acceptInviteLink(token); });
+  window.api.razzePendingInvite().then((token) => { if (token) void acceptInviteLink(token); }).catch(() => {});
 }

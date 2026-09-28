@@ -525,19 +525,31 @@
       <p class="hint" id="settingsSaveStatus" role="status">Salvo neste dispositivo. As escolhas continuam ao reabrir o app.</p>
       <section class="settings-section" aria-labelledby="networkTitle">
         <h3 id="networkTitle">Conectividade entre PCs</h3>
-        <p class="hint">Escolha a rede usada pelo Tela P2P. A opção Radmin mantém o funcionamento atual. A VPN Tela P2P usa um agente NetBird e o servidor de coordenação configurado abaixo.</p>
+        <p class="hint">Escolha a rede usada pelo Tela P2P. Radmin mantém o funcionamento atual. Razze usa a API configurada abaixo para coordenar túneis WireGuard diretos entre os participantes.</p>
         <label for="networkProvider">Rede</label>
-        <select id="networkProvider"><option value="radmin">Radmin VPN ou rede local</option><option value="netbird">VPN Tela P2P (NetBird)</option></select>
-        <div id="netbirdSettings" hidden>
-          <label for="netbirdManagementUrl">Servidor de coordenação HTTPS</label>
-          <input id="netbirdManagementUrl" type="url" placeholder="https://vpn.seudominio.com" autocomplete="url">
-          <label for="netbirdSetupKey">Chave de acesso da rede <small>Opcional; gerada no painel do servidor</small></label>
-          <input id="netbirdSetupKey" type="password" autocomplete="new-password" spellcheck="false">
-          <p class="hint" id="netbirdStatus" role="status">Consulte o estado da VPN.</p>
-          <div class="button-row"><button id="netbirdConnect" class="btn primary" type="button">Conectar à VPN</button><button id="netbirdDisconnect" class="btn" type="button">Desconectar</button></div>
-          <p class="hint">O agente NetBird precisa estar instalado e autorizado nessa rede. A VPS de coordenação é auto-hospedada por você. Os convites e permissões são administrados no painel NetBird.</p>
-          <button id="netbirdInstallHelp" class="btn small" type="button">Como instalar o agente NetBird</button>
-          <button id="netbirdServerHelp" class="btn small" type="button">Guia para hospedar o servidor</button>
+        <select id="networkProvider"><option value="radmin">Radmin VPN ou rede local</option><option value="razze">VPN Razze (WireGuard)</option></select>
+        <div id="razzeSettings" hidden>
+          <label for="razzeApiUrl">Servidor Razze API (HTTPS)</label>
+          <input id="razzeApiUrl" type="url" placeholder="https://api.seudominio.com" autocomplete="url">
+          <button id="razzeSaveServer" class="btn small" type="button">Salvar e testar servidor</button>
+          <p class="hint" id="razzeStatus" role="status">Informe a URL do seu servidor Razze.</p>
+          <div id="razzeAuth">
+            <label for="razzeEmail">E-mail</label><input id="razzeEmail" type="email" autocomplete="username">
+            <label for="razzePassword">Senha</label><input id="razzePassword" type="password" autocomplete="current-password">
+            <label for="razzeDisplayName">Nome (para criar conta)</label><input id="razzeDisplayName" type="text" maxlength="60" autocomplete="name">
+            <div class="button-row"><button id="razzeLogin" class="btn primary" type="button">Entrar</button><button id="razzeRegister" class="btn" type="button">Criar conta</button></div>
+          </div>
+          <div id="razzeAccount" hidden>
+            <div class="button-row"><strong id="razzeAccountName"></strong><button id="razzeLogout" class="btn small" type="button">Sair</button></div>
+            <h4>Minhas redes</h4>
+            <div class="button-row"><input id="razzeNetworkName" type="text" maxlength="80" placeholder="Nome da nova rede"><button id="razzeCreateNetwork" class="btn primary" type="button">Criar rede</button></div>
+            <div id="razzeNetworks" class="razze-networks"></div>
+            <h4>Entrar por convite</h4>
+            <div class="button-row"><input id="razzeInviteToken" type="text" placeholder="Cole o convite da rede"><button id="razzeJoinInvite" class="btn" type="button">Entrar</button></div>
+            <h4>Amigos</h4>
+            <div class="button-row"><input id="razzeFriendEmail" type="email" placeholder="E-mail do amigo"><button id="razzeAddFriend" class="btn" type="button">Adicionar</button></div>
+            <div id="razzeFriends"></div>
+          </div>
         </div>
       </section>
       <section class="settings-section" aria-labelledby="colorsTitle">

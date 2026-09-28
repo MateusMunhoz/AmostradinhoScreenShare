@@ -39,19 +39,25 @@ Tudo o que dá para fazer no Tela P2P, com os detalhes. Para começar do zero, v
 
 ### VPN Tela P2P
 
-Para usar uma rede privada sem Radmin, todos precisam instalar o agente NetBird e estar autorizados
-na mesma instalação auto-hospedada do NetBird. Um administrador configura a VPS, as permissões e,
-se quiser entrada por chave, cria uma chave de setup no painel.
+Para usar uma rede virtual sem Radmin, todos precisam usar a mesma instalação da RazzeAPI. O administrador
+hospeda a API, configura a aprovação de contas e fornece o endereço HTTPS do servidor.
 
-1. Abra **Configurações gerais** e escolha **VPN Tela P2P (NetBird)**.
-2. Informe o endereço HTTPS do servidor. Para entrar com uma chave de setup, cole-a no campo opcional;
-   sem chave, o NetBird usa o fluxo de autenticação configurado no servidor.
-3. Clique em **Conectar à VPN**. Depois que o estado mostrar um IP privado, crie ou entre numa sala.
-4. Quem cria compartilha o endereço privado mostrado dentro da sala. Os amigos conectados à mesma rede
-   NetBird entram por **Entrar numa sala** usando esse endereço.
+1. Abra **Configurações gerais**, escolha **VPN Razze (WireGuard)** e informe o endereço HTTPS.
+2. Crie uma conta. O administrador precisa aprová-la; depois disso, entre com e-mail e senha.
+3. Crie uma rede ou aceite um convite enviado pelo dono. Todos os PCs precisam entrar na mesma rede.
+4. Clique em **Conectar WireGuard**. O Windows pedirá permissão administrativa para criar a interface
+   VPN. O app guarda a chave privada localmente e publica somente a chave pública no servidor.
+5. Depois de conectar, crie ou entre numa sala normalmente; o endereço privado da rede Razze aparece
+   junto do endereço Radmin. A descoberta de salas pela lista inicial continua disponível apenas em LAN/Radmin.
 
-A lista de **Sessões abertas** continua disponível para Radmin e rede local; pela VPN NetBird, a entrada
-é feita pelo endereço privado. A senha da sala continua sendo independente das permissões da VPN.
+O dono pode copiar um link `telap2p://invite/...` na configuração da rede. No PC que receber o link, abra
+o Tela P2P pelo link e entre na conta Razze para aceitar o convite. Também é possível colar o link no campo
+**Entrar por convite**.
+
+A conexão P2P WireGuard depende dos NATs dos dois lados permitirem hole punching. Redes com CGNAT restritivo
+  podem não conectar nesta versão; um relay WireGuard ainda não está incluído. Com o app aberto, a lista de peers
+  sincroniza a cada 30 segundos; depois de reabrir o Tela P2P, clique em **Atualizar peers** para sincronizar de novo.
+  A senha da sala continua sendo independente das permissões da VPN.
 
 ### Sessões abertas
 

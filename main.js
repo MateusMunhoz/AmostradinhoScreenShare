@@ -14,7 +14,34 @@ const { pips, livePip, freeSlot, pipBounds, setPipSize, setPipGroup, setPipOpaci
 const { chatBounds, setupChatOverlay, chatComposeRequest } = require('./main/chat-jogo');
 const { keys, setShortcut, setRoomKeys, setPtt } = require('./main/atalhos');
 const sessoes = require('./main/sessoes');
-const netbird = require('./main/netbird');
+const { createRazzeService } = require('./main/razze-service');
+const razze = createRazzeService();
+
+let pendingRazzeInvite = '';
+function consumeRazzeInvite(value) {
+  let parsed;
+  try { parsed = new URL(String(value || '')); } catch { return false; }
+  if (parsed.protocol !== 'telap2p:' || parsed.hostname !== 'invite') return false;
+  const token = parsed.pathname.replace(/^\//, '');
+  if (!/^[A-Za-z0-9_-]{20,120}$/.test(token)) return false;
+  pendingRazzeInvite = token;
+  if (janelas.main && !janelas.main.isDestroyed()) janelas.main.webContents.send('razze-invite', token);
+  return true;
+}
+function showMainWindow() {
+  const win = janelas.main;
+  if (!win || win.isDestroyed()) return;
+  if (win.isMinimized()) win.restore();
+  win.show();
+  win.focus();
+}
+process.argv.forEach(consumeRazzeInvite);
+const hasSingleInstance = app.requestSingleInstanceLock();
+if (!hasSingleInstance) app.quit();
+else {
+  app.on('second-instance', (_event, argv) => { argv.forEach(consumeRazzeInvite); showMainWindow(); });
+  app.on('open-url', (event, url) => { event.preventDefault(); consumeRazzeInvite(url); showMainWindow(); });
+}
 
 // Usa os IPs reais (26.x da Radmin) nos candidatos WebRTC em vez de endereços .local.
 // No Windows 10, a captura moderna do Windows (a que o Chromium usa) desenha uma borda amarela em volta
@@ -186,7 +213,10 @@ function createWindow() {
   win.loadFile(path.join(__dirname, 'index.html'));
 }
 
-app.whenReady().then(() => {
+if (hasSingleInstance) app.whenReady().then(() => {
+  const portableExe = process.env.PORTABLE_EXECUTABLE_FILE;
+  if (process.platform === 'win32' && app.isPackaged && portableExe) app.setAsDefaultProtocolClient('telap2p', portableExe);
+  else app.setAsDefaultProtocolClient('telap2p');
   // Quando a página pede getDisplayMedia, entregamos a tela escolhida + áudio do sistema
   session.defaultSession.setDisplayMediaRequestHandler(async (_request, callback) => {
     const sources = await desktopCapturer.getSources({ types: ['screen', 'window'] });
@@ -237,19 +267,37 @@ app.whenReady().then(() => {
     for (const [name, addrs] of Object.entries(os.networkInterfaces())) {
       for (const a of addrs || []) {
         const v4 = a.family === 'IPv4' || a.family === 4;
-        if (v4 && !a.internal) list.push({ name, address: a.address, radmin: a.address.startsWith('26.'), netbird: /netbird/i.test(name) });
+        if (v4 && !a.internal) list.push({ name, address: a.address, radmin: a.address.startsWith('26.'), razze: /razze/i.test(name) });
       }
     }
-    if (provider === 'netbird') {
-      const vpn = await netbird.status();
-      for (const item of list) if (vpn.ip && item.address === vpn.ip) item.netbird = true;
-      return list.sort((a, b) => Number(b.netbird) - Number(a.netbird));
+    if (provider === 'razze') {
+      return list.filter((item) => item.razze).sort((a, b) => a.name.localeCompare(b.name));
     }
     return list.sort((a, b) => Number(b.radmin) - Number(a.radmin));
   });
-  ipcMain.handle('netbird-status', () => netbird.status(true));
-  ipcMain.handle('netbird-connect', (_e, url, setupKey) => netbird.connect(url, setupKey));
-  ipcMain.handle('netbird-disconnect', () => netbird.disconnect());
+  ipcMain.handle('razze-state', () => razze.state());
+  ipcMain.handle('razze-pending-invite', () => { const token = pendingRazzeInvite; pendingRazzeInvite = ''; return token; });
+  ipcMain.handle('razze-configure', (_e, url) => razze.configure(String(url || '')));
+  ipcMain.handle('razze-health', () => razze.health());
+  ipcMain.handle('razze-me', () => razze.me());
+  ipcMain.handle('razze-register', (_e, email, password, name) => razze.register(String(email || ''), String(password || ''), String(name || '')));
+  ipcMain.handle('razze-login', (_e, email, password) => razze.login(String(email || ''), String(password || '')));
+  ipcMain.handle('razze-logout', () => razze.logout());
+  ipcMain.handle('razze-list-networks', () => razze.listNetworks());
+  ipcMain.handle('razze-create-network', (_e, network) => razze.createNetwork(network));
+  ipcMain.handle('razze-update-network', (_e, id, patch) => razze.updateNetwork(String(id || ''), patch));
+  ipcMain.handle('razze-delete-network', (_e, id) => razze.deleteNetwork(String(id || '')));
+  ipcMain.handle('razze-accept-invite', (_e, token) => razze.acceptInvite(String(token || '')));
+  ipcMain.handle('razze-create-invite', (_e, id, options) => razze.createInvite(String(id || ''), options));
+  ipcMain.handle('razze-friends', () => razze.listFriends());
+  ipcMain.handle('razze-friend-requests', () => razze.friendRequests());
+  ipcMain.handle('razze-request-friend', (_e, email) => razze.requestFriend(String(email || '')));
+  ipcMain.handle('razze-accept-friend', (_e, id) => razze.acceptFriendRequest(String(id || '')));
+  ipcMain.handle('razze-remove-friend', (_e, id) => razze.removeFriend(String(id || '')));
+  ipcMain.handle('razze-wg-status', (_e, networkId) => razze.wireguard.status(String(networkId || '')));
+  ipcMain.handle('razze-wg-connect', async (_e, networkId, name) => razze.wireguard.connect(razze.api(), String(networkId || ''), String(name || 'Razze')));
+  ipcMain.handle('razze-wg-disconnect', (_e, networkId) => razze.wireguard.disconnect(String(networkId || '')));
+  ipcMain.handle('razze-wg-disconnect-all', () => razze.wireguard.disconnectAll());
 
   setPriority('above'); // a página manda a escolha salva assim que abre
   ipcMain.handle('set-priority', (_e, level) => setPriority(level));
@@ -290,7 +338,7 @@ app.whenReady().then(() => {
   // A sala aberta aparece na lista de sessões de quem está na rede (menos se foi criada oculta)
   ipcMain.handle('start-server', async (_e, port, password, seed, provider = 'radmin') => {
     const res = await startServer(port, password, seed || {});
-    localDiscoveryEnabled = provider !== 'netbird';
+    localDiscoveryEnabled = provider === 'radmin';
     if (res.ok && localDiscoveryEnabled) sessoes.anunciar(roomInfo, updater.version);
     return res;
   });

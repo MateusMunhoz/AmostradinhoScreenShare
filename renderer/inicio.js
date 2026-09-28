@@ -177,13 +177,15 @@ $('closeShare').onclick = closeShareDialog;
 
 // Tela inicial: Radmin VPN, última sala e "Entrar numa sala" aberto ali mesmo
 async function renderRadmin() {
-  if (selectedNetworkProvider() === 'netbird') {
+  if (selectedNetworkProvider() === 'razze') {
     let status;
-    try { status = await window.api.netbirdStatus(); } catch { status = null; }
-    const connected = !!status?.connected;
+    const prefs = networkPreferences();
+    try { status = prefs.activeNetworkId ? await window.api.razzeWireGuardStatus(prefs.activeNetworkId) : null; } catch { status = null; }
+    const ips = await window.api.getIps('razze').catch(() => []);
+    const connected = !!status?.connected && ips.length > 0;
     $('radminDot').className = 'dot ' + (connected ? 'ok' : 'warn');
-    $('radminTitle').textContent = connected ? 'VPN Tela P2P conectada' : 'VPN Tela P2P desconectada';
-    $('radminDetail').textContent = connected ? status.ip : status?.installed ? 'Conecte nas configurações gerais' : 'Instale o agente NetBird e configure o servidor';
+    $('radminTitle').textContent = connected ? 'VPN Razze conectada' : 'VPN Razze desconectada';
+    $('radminDetail').textContent = connected ? ips.map((item) => item.address).join(', ') : status?.error || 'Conecte uma rede WireGuard nas configurações gerais';
     return;
   }
   let ips = [];

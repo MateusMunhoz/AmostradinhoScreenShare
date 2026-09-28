@@ -18,7 +18,7 @@ Para gerar um `.exe` portátil sem publicar: `npm run dist`. O arquivo aparece e
 - **Sala:** quem cria a sala roda um servidor pequeno de sinalização (`signaling.js`, WebSocket) dentro do próprio app. Ele só apresenta as pessoas umas às outras e guarda as últimas 100 mensagens do chat.
 - **Vídeo, áudio, voz e arquivos:** vão direto de PC para PC, por WebRTC, pela rede da Radmin. Não passam por servidor.
 - **Troca de host:** cada um sabe a ordem de chegada e os endereços dos outros. Se o servidor some, o mais antigo abre outro na mesma porta, e todo mundo volta com o mesmo número. Por isso as conexões diretas (quem assiste quem) não caem.
-- **Rede usada pelo app:** em Configurações gerais, escolha Radmin/LAN (padrão atual) ou VPN Tela P2P (NetBird). A integração NetBird controla um agente instalado no Windows e aceita o endereço HTTPS de uma instalação auto-hospedada. O app prioriza o IP da VPN para compartilhar o endereço da sala; a descoberta automática de sessões continua sendo apenas na rede local/Radmin. O NetBird e o seu painel de coordenação precisam estar instalados e configurados separadamente; os usuários entram pela autenticação/permissão configurada nesse serviço.
+- **Rede usada pelo app:** em Configurações gerais, escolha Radmin/LAN (padrão) ou VPN Razze. A RazzeAPI independente gerencia contas, amizades, redes, convites e chaves públicas; o executável oficial `bin/selfvpn/wireguard.exe` cria um serviço de túnel por rede no Windows. Os peers são descobertos pelo API e por STUN UDP. O primeiro MVP usa conexão direta; não há relay para CGNAT restritivo. A descoberta automática de salas continua apenas em LAN/Radmin.
 - **Arquivos principais:**
 
   | Arquivo | O que faz |
@@ -31,7 +31,9 @@ Para gerar um `.exe` portátil sem publicar: `npm run dist`. O arquivo aparece e
   | `encode-once.js` | O modo "uma vez só" (NVENC direto e WebCodecs). |
   | `voice.js` | A voz: conexões WebRTC de áudio entre as pessoas (feito pelo Cristian). |
   | `signaling.js` | O servidor da sala. |
-  | `main/netbird.js` | Consulta, conecta e desconecta o agente NetBird do servidor escolhido. |
+  | `main/razze-service.js` | Sessão da RazzeAPI e persistência protegida do token. |
+  | `main/razze-wireguard.js` | Chaves locais, STUN, configuração e serviço WireGuard no Windows. |
+  | `razze-api/server.js` | API central HTTP/SQLite e serviço STUN UDP. |
   | `publicar.js` | Assina, gera o `.exe` e publica. |
   | `native/` | Código dos ajudantes nativos em C++. |
   | `bin/` | Os ajudantes compilados: `audiocap.exe` (som), `videocap.exe` (captura e NVENC), `teclas.exe` (apertar para falar). |
