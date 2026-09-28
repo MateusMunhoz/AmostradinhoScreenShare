@@ -979,7 +979,10 @@ html[data-border=liquid] .select-pop { border-top-color: var(--edge-sheen); }
 @media (prefers-reduced-motion: no-preference) {
   .tiles.grid .tile:not(.dragging) { transition: box-shadow .15s; }
 }
-.tiles.grid.fit { align-content: center; }
-.tiles.grid.fit .tile { width: var(--tile-w); height: calc(var(--tile-w) * 9 / 16 + 34px); min-height: 0; justify-self: center; align-self: center; }
 .stage-layout button { display: inline-flex; align-items: center; gap: 6px; }
 .stage-layout svg { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+/* Grade: cada tela tem posição e tamanho calculados em palco.js (linhas de cima com menos telas, maiores);
+   com muitas telas, o palco rola em vez de deixar as telas pequenas demais */
+.tiles.flow { display: block; position: relative; overflow: hidden; }
+.tiles.flow.scroll { overflow-y: auto; }
+.tiles.flow .tile { position: absolute; min-height: 0; box-sizing: border-box; }

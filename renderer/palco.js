@@ -1,8 +1,8 @@
 'use strict';
 // Palco: como as telas assistidas se arrumam.
-// "grid": grade automática no estilo do Google Meet. Todas do mesmo tamanho, o maior possível em 16:9 para a
-//   área disponível; a grade muda sozinha quando alguém entra, sai ou a janela muda de tamanho, e a última linha
-//   incompleta fica centralizada.
+// "grid": grade automática no estilo do Google Meet. Cada tela é um vídeo 16:9 o maior possível; as linhas
+//   de cima têm menos telas (maiores) e as de baixo dividem o espaço entre mais. Muda sozinha quando alguém
+//   entra, sai ou a janela muda de tamanho; com telas demais, elas param no tamanho mínimo e o palco rola.
 // "spotlight": uma grande e as outras numa coluna ao lado (renderFocus, em assistir.js); a divisa entre as duas
 //   é arrastável e a largura fica salva.
 // Arrastar uma tela pela faixa do nome troca ela de lugar com a que estiver embaixo; soltar em cima da grande
@@ -16,7 +16,7 @@ const palco = {
   drag: null,
   justDragged: false,
 };
-const STAGE_GAP = 12, TILE_BAR = 34;
+const STAGE_GAP = 12, TILE_BAR = 34, TILE_MIN = 240; // TILE_MIN: largura mínima de uma tela na grade
 
 // Ids na ordem do palco: os que já tinham lugar, depois os novos
 function stageIds() {
@@ -31,37 +31,58 @@ function setStageLayout(layout) {
   renderFocus();
 }
 
-// Colunas que deixam cada tela o maior possível; cada tela ocupa 2 meias-colunas, assim a última linha
-// incompleta pode começar no meio de uma coluna e ficar centralizada
+// Linhas com números diferentes de telas: as de cima têm menos (e maiores), as de baixo dividem o espaço entre
+// mais. Ex.: 3 = 1 em cima e 2 embaixo; 5 = 2 e 3. Cada tela é um vídeo 16:9 mais a faixa do nome.
+function planRows(n, rows) {
+  const base = Math.floor(n / rows), extra = n % rows;
+  return Array.from({ length: rows }, (_, i) => base + (i >= rows - extra ? 1 : 0));
+}
+// Escolhe quantas linhas cobrem mais área sem nenhuma tela ficar estreita demais (TILE_MIN). Se nem assim
+// couber, as telas ficam no tamanho mínimo e o palco rola.
+function planGrid(n, W, H) {
+  let best = null;
+  for (let rows = 1; rows <= n; rows++) {
+    const counts = planRows(n, rows);
+    if (counts[0] < 1) break;
+    const widths = counts.map((k) => (W - STAGE_GAP * (k - 1)) / k);
+    const video = widths.reduce((s, w) => s + w * 9 / 16, 0);
+    const room = H - STAGE_GAP * (rows - 1) - TILE_BAR * rows;
+    const scale = Math.min(1, room / video);
+    const area = counts.reduce((s, k, i) => s + k * (widths[i] * scale) ** 2, 0);
+    if (widths[widths.length - 1] * scale < TILE_MIN) continue;
+    if (!best || area > best.area) best = { counts, scale, area, scroll: false };
+  }
+  if (best) return best;
+  const perRow = Math.max(1, Math.floor((W + STAGE_GAP) / (TILE_MIN + STAGE_GAP)));
+  return { counts: planRows(n, Math.ceil(n / perRow)), scale: 1, scroll: true };
+}
 function layoutGrid() {
   const tiles = $('tiles');
   const ids = stageIds().filter((id) => !state.in.get(id).tile.el.hidden);
   const n = ids.length;
+  tiles.classList.add('flow');
   if (!n) return;
   const W = tiles.clientWidth, H = tiles.clientHeight;
-  let best = { cols: 1, rows: n, size: -1 };
-  for (let cols = 1; cols <= n; cols++) {
-    const rows = Math.ceil(n / cols);
-    const w = (W - STAGE_GAP * (cols - 1)) / cols, h = (H - STAGE_GAP * (rows - 1)) / rows - TILE_BAR;
-    const size = Math.min(w, h * 16 / 9);
-    if (size > best.size + 0.5) best = { cols, rows, size };
-  }
-  const { cols, rows } = best;
-  // Com 2 ou mais, cada tela tem o tamanho exato de um vídeo 16:9 (mais a faixa do nome), centralizada na célula
-  tiles.classList.toggle('fit', n > 1);
-  tiles.style.setProperty('--tile-w', `${Math.max(0, Math.floor(best.size))}px`);
-  tiles.style.gridTemplateColumns = `repeat(${cols * 2}, minmax(0, 1fr))`;
-  tiles.style.gridTemplateRows = n > 1 ? `repeat(${rows}, auto)` : `repeat(${rows}, minmax(0, 1fr))`;
-  const last = n - (rows - 1) * cols;
-  ids.forEach((id, i) => {
-    const r = Math.floor(i / cols), c = i % cols;
-    const shift = r === rows - 1 ? cols - last : 0;
-    const el = state.in.get(id).tile.el;
-    el.style.gridRow = String(r + 1);
-    el.style.gridColumn = `${c * 2 + shift + 1} / span 2`;
+  const plan = n === 1 ? null : planGrid(n, W, H);
+  tiles.classList.toggle('scroll', !!plan?.scroll);
+  const put = (el, x, y, w, h) => Object.assign(el.style, { left: `${x}px`, top: `${y}px`, width: `${w}px`, height: `${h}px`, gridRow: '', gridColumn: '' });
+  if (!plan) return put(state.in.get(ids[0]).tile.el, 0, 0, W, H); // uma só: ocupa tudo
+  const rows = plan.counts.map((k) => {
+    const w = Math.floor(((W - STAGE_GAP * (k - 1)) / k) * plan.scale);
+    return { k, w, h: Math.round(w * 9 / 16) + TILE_BAR };
   });
+  const total = rows.reduce((s, r) => s + r.h, 0) + STAGE_GAP * (rows.length - 1);
+  let y = plan.scroll ? 0 : Math.max(0, Math.round((H - total) / 2));
+  let i = 0;
+  for (const r of rows) {
+    let x = Math.round((W - (r.w * r.k + STAGE_GAP * (r.k - 1))) / 2);
+    for (let c = 0; c < r.k; c++, i++) {
+      put(state.in.get(ids[i]).tile.el, x, y, r.w, r.h);
+      x += r.w + STAGE_GAP;
+    }
+    y += r.h + STAGE_GAP;
+  }
 }
-
 // Divisa do Destaque: fica no vão entre a tela grande e a coluna
 function placeSplitter() {
   const split = $('stageSplitter');
@@ -84,7 +105,7 @@ function layoutStage() {
   $('stageLayout').hidden = !many;
   for (const b of $('stageLayout').querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.layout === palco.layout));
   if (!tiles.classList.contains('column')) layoutGrid();
-  else tiles.classList.remove('fit');
+  else { tiles.classList.remove('flow', 'scroll'); for (const [, l] of state.in) Object.assign(l.tile.el.style, { left: '', top: '', width: '', height: '' }); }
   placeSplitter();
 }
 

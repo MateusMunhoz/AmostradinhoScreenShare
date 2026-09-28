@@ -23,7 +23,10 @@ run('Várias telas (destaque com coluna)', 200000, async () => {
   const grid = () => B.eval(`stageIds().map((id) => { const r = state.in.get(id).tile.el.getBoundingClientRect(); return { id, w: Math.round(r.width), h: Math.round(r.height), x: Math.round(r.x), y: Math.round(r.y) }; })`);
   let g = await grid();
   check('Grade: começa na grade, com o seletor Grade | Destaque', await B.eval(`palco.layout === 'grid' && $('tiles').classList.contains('grid') && !$('stageLayout').hidden`));
-  check('Grade: todas do mesmo tamanho', g.every((x) => Math.abs(x.w - g[0].w) <= 2 && Math.abs(x.h - g[0].h) <= 2), JSON.stringify(g));
+  const [top, ...bottom] = [...g].sort((a, b) => a.y - b.y || a.x - b.x);
+  check('Grade: 3 telas = 1 maior em cima e 2 iguais embaixo, lado a lado', top.w > bottom[0].w + 50 && bottom.length === 2 && bottom[0].y === bottom[1].y && Math.abs(bottom[0].w - bottom[1].w) <= 2 && bottom[0].y >= top.y + top.h, JSON.stringify(g));
+  check('Grade: vídeo em 16:9 e tudo dentro do palco, sem rolar', await B.eval(`[...state.in.values()].every((l) => { const b = l.tile.el.querySelector('.tile-body').getBoundingClientRect(); return Math.abs(b.width / b.height - 16 / 9) < 0.06; }) && $('tiles').scrollHeight <= $('tiles').clientHeight + 1 && !$('tiles').classList.contains('scroll')`));
+  check('Grade: linhas de cima com menos telas; com telas demais, rola', await B.eval(`JSON.stringify(planGrid(5, 1200, 700).counts) === '[2,3]' && planGrid(20, 800, 450).scroll && !planGrid(4, 1200, 700).scroll`));
   await B.shot('varias-telas-grade.png');
   // Arrastar a primeira pela faixa do nome e soltar em cima da última troca as duas de lugar
   const [first, , lastOne] = g;
