@@ -222,18 +222,6 @@ function syncAudioMode() {
   if (withAudio && !appsLoaded() && window.api.platform === 'win32') loadAudioApps();
 }
 
-// Linux: o som do PC vem do "monitor" do PulseAudio/PipeWire (aparece como uma entrada de áudio). Ele tem
-// tudo o que toca no PC, inclusive o som deste app, como a captura comum do Windows.
-async function linuxSystemAudioTrack() {
-  const devices = await navigator.mediaDevices.enumerateDevices();
-  const monitor = devices.find((d) => d.kind === 'audioinput' && /monitor/i.test(d.label));
-  if (!monitor) return null;
-  const s = await navigator.mediaDevices.getUserMedia({ audio: {
-    deviceId: { exact: monitor.deviceId }, echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 2,
-  } });
-  return s.getAudioTracks()[0] || null;
-}
-
 async function createAppAudioTrack(exes) {
   const res = await window.api.startAppAudio(exes);
   if (!res.ok) throw new Error(res.error);
@@ -290,15 +278,11 @@ async function startSharing() {
   // captura comum do Windows; com apps marcados, transmite sem som (melhor que vazar a call).
   let audioTrack = null;
   let loopback = false;
-  let linuxLoopback = false;
   if (audioMode !== 'none' && window.api.platform === 'linux') {
-    // O som do PC inteiro levaria junto a voz da call: com a voz ligada, vai sem som
+    // Linux: o som do PC inteiro vem junto da tela (PulseAudio/PipeWire), inclusive o deste app. Com a voz
+    // ligada, a voz da call iria junto: vai sem som
     if (voice.session || voice.pending) toast('No Linux o som do PC leva junto a voz da call. Transmitindo sem som enquanto você estiver na voz.', 'error');
-    else {
-      try { audioTrack = await linuxSystemAudioTrack(); } catch (err) { console.warn(err); }
-      if (audioTrack) linuxLoopback = true;
-      else toast('Não achei o som do PC (o monitor do PulseAudio/PipeWire). Transmitindo sem som.', 'error');
-    }
+    else loopback = true;
   } else if (audioMode !== 'none') {
     try {
       audioTrack = await createAppAudioTrack(excluded);
@@ -340,7 +324,7 @@ async function startSharing() {
     return toast(`Não foi possível capturar a tela: ${err.message}`, 'error');
   }
   if (audioTrack) state.stream.addTrack(audioTrack);
-  state.systemLoopback = loopback || linuxLoopback;
+  state.systemLoopback = loopback;
 
   const vTrack = state.stream.getVideoTracks()[0];
   if (vTrack) {

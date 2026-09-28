@@ -54,7 +54,8 @@ if (WIN10) disabledFeatures.push('AllowWgcScreenCapturer', 'AllowWgcWindowCaptur
 app.commandLine.appendSwitch('disable-features', disabledFeatures.join(','));
 // Cancelamento de eco do app inteiro: o filtro do microfone usa como referência tudo que o app toca
 // (as vozes, que saem pelo mixer, e o som das transmissões), não só o som de elementos <audio>
-app.commandLine.appendSwitch('enable-features', 'ChromeWideEchoCancellation');
+// Linux: o som do PC junto da tela vem do PulseAudio/PipeWire (no Windows, o Chromium já faz isso sozinho)
+app.commandLine.appendSwitch('enable-features', process.platform === 'linux' ? 'ChromeWideEchoCancellation,PulseaudioLoopbackForScreenShare' : 'ChromeWideEchoCancellation');
 // Deixa o vídeo do host tocar com som sem precisar clicar
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 // Com a janela minimizada, o Chromium joga a página para prioridade ociosa e modo de eficiência.
@@ -227,8 +228,7 @@ if (hasSingleInstance) app.whenReady().then(() => {
   session.defaultSession.setDisplayMediaRequestHandler(async (_request, callback) => {
     const sources = await desktopCapturer.getSources({ types: ['screen', 'window'] });
     const source = sources.find((s) => s.id === selectedSourceId) || sources[0];
-    // O som junto da tela ('loopback') só existe no Windows; no Linux o som do PC vem do monitor do PulseAudio
-    callback(captureSystemAudio && process.platform === 'win32' ? { video: source, audio: 'loopback' } : { video: source });
+    callback(captureSystemAudio ? { video: source, audio: 'loopback' } : { video: source });
   });
 
   ipcMain.handle('get-sources', async () => {

@@ -41,7 +41,7 @@ No Ubuntu 22.04 e no Mint 21, troque `libfuse2t64` por `libfuse2`. O `wireguard-
 O que muda em relação ao Windows:
 
 - **Radmin:** não existe no Linux. Pela internet, use a VPN Razze (ou a rede local).
-- **Som do PC na transmissão:** vai o som inteiro do PC (pelo PulseAudio ou PipeWire). Não dá para deixar apps de fora, e com a voz ligada a tela vai sem som (senão a voz da call iria junto).
+- **Som do PC na transmissão:** vai o som inteiro do PC (pelo PulseAudio ou PipeWire), inclusive o das telas que você assiste. Não dá para deixar apps de fora, e com a voz ligada a tela vai sem som (senão a voz da call iria junto).
 - **Codificação:** sempre pela do navegador (o NVENC direto é só do Windows).
 - **VPN Razze:** o túnel é do próprio Linux. Ao conectar, o sistema pede a sua senha uma vez. Ele não volta sozinho depois de reiniciar o PC: clique em **Conectar** de novo.
 - **Apertar para falar:** precisa de sessão X11 (no Wayland, o sistema não deixa ler a tecla com o app fora de foco).

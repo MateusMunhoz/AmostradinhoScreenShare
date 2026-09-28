@@ -58,7 +58,7 @@ test('gera configuração por peer, limitando AllowedIPs ao IP overlay', () => {
   assert.match(config, /PersistentKeepalive = 20/);
   assert.throws(() => buildTunnelConfig({ privateKey: ownKey, assignedIp: '10.64.2.3', listenPort: 51820, peers: [{ publicKey: 'invalid', assignedIp: '10.64.2.4' }] }), /Chave ou endereço/);
   assert.throws(() => buildTunnelConfig({ privateKey: ownKey, assignedIp: '10.64.256.3', listenPort: 51820, peers: [] }), /Endereço overlay inválido/);
-  assert.equal(tunnelNameFor('a'.repeat(32)), 'Razze' + 'a'.repeat(12));
+  assert.equal(tunnelNameFor('a'.repeat(32), 'win32'), 'Razze' + 'a'.repeat(12));
   assert.throws(() => tunnelNameFor('../invalid'), /ID de rede inválido/);
 });
 
@@ -109,7 +109,7 @@ test('orquestra registro de dispositivo, STUN e instalação do túnel', async (
     assert.equal(result.overlayIp, '10.64.3.2');
     assert.ok(commands.some((args) => args[0] === '/installtunnelservice'));
     assert.equal(typeof refreshCallback, 'function');
-    const confPath = path.join(profile, 'razze', 'tunnels', tunnelNameFor(networkId) + '.conf');
+    const confPath = path.join(profile, 'razze', 'tunnels', tunnelNameFor(networkId, 'win32') + '.conf');
     assert.match(fs.readFileSync(confPath, 'utf8'), /Endpoint = 198\.51\.100\.21:41001/);
     await new Promise((resolve) => setImmediate(resolve));
     assert.ok(probedPeers.includes('10.64.3.3'));
@@ -206,8 +206,8 @@ test('dois clientes obtêm peers pela RazzeAPI e sincronizam a configuração Wi
     await managerA.connect(aliceApi, network.id, 'Integração P2P');
     await new Promise((resolve) => setImmediate(resolve));
     await managerB.connect(bobApi, network.id, 'Integração P2P');
-    const configA = path.join(profiles[0], 'razze', 'tunnels', tunnelNameFor(network.id) + '.conf');
-    const configB = path.join(profiles[1], 'razze', 'tunnels', tunnelNameFor(network.id) + '.conf');
+    const configA = path.join(profiles[0], 'razze', 'tunnels', tunnelNameFor(network.id, 'win32') + '.conf');
+    const configB = path.join(profiles[1], 'razze', 'tunnels', tunnelNameFor(network.id, 'win32') + '.conf');
     const bobDevice = await aliceApi.listDevices(network.id);
     const bobPeer = bobDevice.peers.find((peer) => peer.userId !== alice.user.id);
     const alicePeer = bobDevice.peers.find((peer) => peer.userId === alice.user.id);
