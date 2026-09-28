@@ -54,13 +54,18 @@ run('Barra de baixo numa linha', 90000, async () => {
   let t = await A.eval(T);
   check('Painéis fechados: a barra recolhe numa aba, e as telas começam no topo', t.nav === 'none' && t.aba && t.telas <= 20, JSON.stringify(t));
   await A.shot('barra-recolhida.png');
-  await A.eval(`$('navExpand').click()`);
+  // Clique de mouse de verdade (o .click() por código passa até por cima do que não recebe clique)
+  const mouse = async (sel) => {
+    const c = await A.eval(`(() => { const r = document.querySelector('${sel}').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; })()`);
+    for (const type of ['mousePressed', 'mouseReleased']) await A.send('Input.dispatchMouseEvent', { type, x: c.x, y: c.y, button: 'left', clickCount: 1 });
+  };
+  await mouse('#navExpand');
   await sleep(300);
   t = await A.eval(T);
   const navBottom = await A.eval(`Math.round($('workspaceNav').getBoundingClientRect().bottom)`);
   check('A aba mostra a barra, e as telas descem para baixo dela', t.nav !== 'none' && !t.aba && t.telas >= navBottom && await A.eval(`!$('navCollapse').hidden && localStorage.getItem('barraRecolhida') === '0'`), JSON.stringify({ ...t, navBottom }));
   await A.shot('barra-aberta.png');
-  await A.eval(`$('navCollapse').click()`);
+  await mouse('#navCollapse');
   await sleep(300);
   check('A setinha na barra recolhe de novo (e fica salvo)', (await A.eval(T)).nav === 'none' && await A.eval(`localStorage.getItem('barraRecolhida') === '1'`));
   await A.eval(`(() => { workspaceViews.chat = true; workspaceViews.voice = true; saveWorkspaceViews(); syncWorkspace(); })()`);

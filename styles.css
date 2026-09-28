@@ -836,7 +836,7 @@ main { padding-top: var(--workspace-top); }
    direita: por cima da coluna do chat e da voz ou, sem elas, do canto da faixa do nome da tela. */
 .workspace-brand, .stream-pane-head { display: none; }
 .workspace-header { background: transparent; pointer-events: none; }
-#workspaceNav { pointer-events: auto; }
+#workspaceNav, .nav-expand { pointer-events: auto; } /* o cabeçalho deixa o clique passar; a barra e a aba recebem */
 main { padding-top: 0; }
 
 /* Transmissão sem som: aviso na faixa do nome da tela, e o volume some (não tem o que mudar) */
