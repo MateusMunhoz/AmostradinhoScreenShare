@@ -126,6 +126,21 @@ function relaunch() {
   app.quit();
 }
 
+// Vidro de verdade (Configurações gerais > Aparência): no Windows 11 22H2 ou mais novo, o fundo da janela vira
+// acrílico e a área de trabalho aparece desfocada atrás do app. Nos outros, a página desenha um fundo próprio e
+// o vidro fica só dentro do app. "opaque" volta à cor sólida.
+const WIN11_MATERIAL = process.platform === 'win32' && Number(os.release().split('.')[2]) >= 22621;
+function setWindowMaterial(mode, color) {
+  const win = janelas.main;
+  const glass = mode === 'clear' || mode === 'liquid';
+  if (!win || win.isDestroyed() || !WIN11_MATERIAL || typeof win.setBackgroundMaterial !== 'function') return { material: 'none', supported: false };
+  try {
+    if (glass) { win.setBackgroundColor('#00000000'); win.setBackgroundMaterial('acrylic'); }
+    else { win.setBackgroundMaterial('none'); win.setBackgroundColor(/^#[\da-f]{6}$/i.test(color) ? color : '#22271E'); }
+    return { material: glass ? 'acrylic' : 'none', supported: true };
+  } catch { return { material: 'none', supported: false }; }
+}
+
 // Fora da captura: enquanto você se vê transmitindo uma tela inteira, a janela do app e as flutuantes não
 // aparecem na captura (senão vira um espelho infinito). No Windows 10 2004 ou mais novo, a captura mostra o que
 // está atrás delas; nos mais velhos, um retângulo preto. Para quem usa o PC, nada muda.
@@ -305,6 +320,7 @@ if (hasSingleInstance) app.whenReady().then(() => {
   ipcMain.handle('stats-stop', () => stopStats());
 
   ipcMain.handle('get-version', () => updater.version);
+  ipcMain.handle('window-material', (_e, mode, color) => setWindowMaterial(mode, color));
   ipcMain.handle('get-own-pack', () => updater.readCurrentPack());
   ipcMain.handle('install-update', (_e, pack, sig) => updater.install(pack, sig));
   ipcMain.handle('github-check', () => github.check());

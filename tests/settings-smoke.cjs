@@ -7,7 +7,7 @@ app.whenReady().then(async()=>{
   for(const [channel,value] of Object.entries({
     'get-ips':[], 'get-version':'1.10.1', 'github-check':{ok:false}, 'set-priority':true,'stats-start':true,'stats-stop':true,
     'stop-app-audio':true,'stop-server':true,'room-keys':true,'sessoes-observar':true,'capture-exclude':true,'ptt':true,
-    'razze-state':{configured:false,baseUrl:'',authenticated:false}, 'razze-pending-invite':'',
+    'razze-state':{configured:false,baseUrl:'',authenticated:false}, 'razze-pending-invite':'', 'window-material':{material:'none',supported:false},
     'get-shortcuts':{compose:'CommandOrControl+Enter',mute:'CommandOrControl+Shift+M',edit:'CommandOrControl+Shift+E',hideChat:'CommandOrControl+Shift+O'},
   })) ipcMain.handle(channel,()=>value);
   const win=new BrowserWindow({show:false,width:1200,height:780,webPreferences:{backgroundThrottling:false,preload:path.join(root,'preload.js')}});
@@ -49,6 +49,17 @@ app.whenReady().then(async()=>{
       await run(`$('volume-voiceJoin').value=35;$('volume-voiceJoin').dispatchEvent(new Event('input'));$('sound-voiceLeave').value='wood';$('sound-voiceLeave').dispatchEvent(new Event('change'));`);
       await run(`$('hex-main').value='#GGGGGG';$('hex-main').dispatchEvent(new Event('input'));`);
       await check('Hexadecimal inválido não é salvo',`$('hex-main').getAttribute('aria-invalid')==='true' && AppPreferences.read(localStorage).colors.main==='#22271E'`);
+      await run(`document.querySelector('input[name=glass][value=liquid]').click();`);
+      await check('Vidro líquido aplicado na hora',`document.documentElement.dataset.glass==='liquid' && getComputedStyle($('workspaceNav')).backdropFilter.includes('liquidLens') && !$('glassLevelRow').hidden`);
+      await run(`$('fontFamily').value='georgia';$('fontFamily').dispatchEvent(new Event('change'));`);
+      await check('Fonte trocada no app, chat com a letra de console',`getComputedStyle(document.body).fontFamily.startsWith('Georgia') && getComputedStyle(document.querySelector('.chat-list')).fontFamily.startsWith('Tahoma')`);
+      await run(`$('fontChat').click();`);
+      await check('Fonte também no chat quando marcado',`getComputedStyle(document.querySelector('.chat-list')).fontFamily.startsWith('Georgia')`);
+      await run(`$('fontFamily').value='custom';$('fontFamily').dispatchEvent(new Event('change'));$('fontCustom').value='Fonte Que Nao Existe';$('fontCustom').dispatchEvent(new Event('input'));`);
+      await check('Nome digitado vira a fonte e avisa se não existe',`!$('fontCustomRow').hidden && getComputedStyle(document.body).fontFamily.startsWith('"Fonte Que Nao Existe"') && $('fontStatus').textContent.includes('não foi encontrada')`);
+      await check('Versão discreta no pé das configurações',`$('settingsVersion').textContent==='v1.10.1'`);
+      await run(`document.querySelector('input[name=glass][value=opaque]').click();$('fontFamily').value='system';$('fontFamily').dispatchEvent(new Event('change'));$('fontChat').click();`);
+      await check('Opaco e fonte padrão restauram o visual original',`document.documentElement.dataset.glass==='opaque' && getComputedStyle($('workspaceNav')).backdropFilter==='none' && getComputedStyle(document.body).fontFamily.startsWith('"Segoe UI Variable Text"')`);
       await run(`toggleChatOverlay();void 0;`);
       await run(`for(const [key,value] of Object.entries({main:'#F0F4FA',secondary:'#FFFFFF',detail1:'#3455DB',detail2:'#147D55'})){$('hex-'+key).value=value;$('hex-'+key).dispatchEvent(new Event('input'));} $('sound-join').value='notification066';$('sound-join').dispatchEvent(new Event('change'));$('notificationVolume').value=27;$('notificationVolume').dispatchEvent(new Event('input'));`);
       await check('Quatro cores aplicadas imediatamente',`getComputedStyle(document.body).backgroundColor==='rgb(240, 244, 250)' && getComputedStyle($('generalSettingsDialog').firstElementChild).backgroundColor==='rgb(255, 255, 255)'`);

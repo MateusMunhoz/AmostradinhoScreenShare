@@ -66,3 +66,31 @@ test('Sons Suave: gerados na hora, sem arquivo, padrão da voz e do microfone', 
   assert.deepEqual(played[0],{f:659,volume:.5});
   prefs.sounds.levels.unmute=0; assert.equal(await player.play('unmute'),false);
 });
+
+test('Aparência: modos de vidro, transparência e dados inválidos', () => {
+  assert.deepEqual(P.normalize(null).appearance, { glass: 'opaque', level: 70 });
+  assert.equal(P.glass(P.defaults.colors, { glass: 'opaque' }), null);
+  assert.equal(P.normalize({ appearance: { glass: 'metal', level: 999 } }).appearance.glass, 'opaque');
+  assert.equal(P.normalize({ appearance: { glass: 'liquid', level: 999 } }).appearance.level, 100);
+  const clear = P.glass(P.defaults.colors, { glass: 'clear', level: 70 }), liquid = P.glass(P.defaults.colors, { glass: 'liquid', level: 70 });
+  const a = v => Number(/, ([\d.]+)\)$/.exec(v)[1]);
+  assert.ok(a(clear['--panel']) < a(liquid['--panel']), 'o limpo é mais transparente que o líquido');
+  assert.ok(a(P.glass(P.defaults.colors, { glass: 'clear', level: 0 })['--panel']) > a(P.glass(P.defaults.colors, { glass: 'clear', level: 100 })['--panel']));
+  assert.equal(clear['--glass-base'], P.defaults.colors.main);
+});
+test('Fontes: catálogo, nome digitado seguro e pilha com a padrão no fim', () => {
+  assert.equal(new Set(P.fonts.map(f => f.id)).size, P.fonts.length);
+  assert.ok(P.fonts.filter(f => f.group === 'Outros idiomas').every(f => f.sample));
+  assert.equal(P.fontName('  Noto   Sans '), 'Noto Sans');
+  for (const bad of ['a"; } body { x', 'x'.repeat(65), 'url(x)', '', null]) assert.equal(P.fontName(bad), '');
+  assert.equal(P.normalize({ font: { family: 'custom', custom: 'a"b' } }).font.family, 'system');
+  assert.equal(P.normalize({ font: { family: 'nada' } }).font.family, 'system');
+  const custom = P.fontStacks({ family: 'custom', custom: 'Fira Sans', chat: true });
+  assert.ok(custom.body.startsWith('"Fira Sans", ') && custom.body.endsWith('system-ui, sans-serif'));
+  assert.equal(custom.console, custom.body);
+  assert.equal(P.fontStacks({ family: 'georgia' }).console, 'Tahoma, Verdana, sans-serif');
+  assert.equal(P.fontStacks(P.defaults.font).display, P.fonts[0].display);
+  let saved; const prefs = P.normalize({ appearance: { glass: 'liquid', level: 40 }, font: { family: 'korean', chat: true } });
+  P.write({ setItem: (_k, v) => { saved = v; } }, prefs);
+  assert.deepEqual(P.read({ getItem: () => saved }), prefs);
+});

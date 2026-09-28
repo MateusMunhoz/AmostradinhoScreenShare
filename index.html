@@ -552,6 +552,24 @@
           </div>
         </div>
       </section>
+      <section class="settings-section" aria-labelledby="appearanceTitle">
+        <h3 id="appearanceTitle">Aparência</h3>
+        <p class="hint" id="glassLabel">Material das janelas e painéis, no estilo do vidro do iOS.</p>
+        <div class="seg glass-seg" role="radiogroup" aria-labelledby="glassLabel">
+          <label><input type="radio" name="glass" value="opaque"><span class="glass-swatch" data-glass-swatch="opaque" aria-hidden="true"></span><span>Opaco</span></label>
+          <label><input type="radio" name="glass" value="clear"><span class="glass-swatch" data-glass-swatch="clear" aria-hidden="true"></span><span>Transparente</span></label>
+          <label><input type="radio" name="glass" value="liquid"><span class="glass-swatch" data-glass-swatch="liquid" aria-hidden="true"></span><span>Líquido</span></label>
+        </div>
+        <p class="hint" id="glassHint"></p>
+        <div id="glassLevelRow" class="settings-row" hidden><label for="glassLevel">Transparência</label><div class="vd-slider"><input type="range" id="glassLevel" min="0" max="100" step="1"><output id="glassLevelValue" for="glassLevel"></output></div></div>
+        <div class="settings-row"><label for="fontFamily">Fonte</label>
+          <div class="font-pick"><select id="fontFamily"></select><button id="loadLocalFonts" class="btn small" type="button">Fontes deste PC</button></div>
+        </div>
+        <div id="fontCustomRow" class="settings-row" hidden><label for="fontCustom">Nome da fonte instalada</label><input type="text" id="fontCustom" maxlength="64" spellcheck="false" autocomplete="off" placeholder="Ex.: Noto Sans, Roboto, Fira Sans" aria-describedby="fontCustomHint"><small id="fontCustomHint" class="hint">Use o nome exato, como aparece em Configurações do Windows › Fontes.</small></div>
+        <p id="fontPreview" class="font-preview" aria-live="polite"><strong>Tela P2P · Transmitindo ao vivo</strong><span>Ação, coração, pão e ânimo · 0123456789</span><span id="fontPreviewScript" hidden></span></p>
+        <label class="vd-check"><input type="checkbox" id="fontChat"> Usar também no chat (o padrão é a letra de console, Tahoma)</label>
+        <p class="hint" id="fontStatus" role="status"></p>
+      </section>
       <section class="settings-section" aria-labelledby="colorsTitle">
         <h3 id="colorsTitle">Cores do layout</h3><p class="hint">Use um hexadecimal, como #3366FF, ou escolha pela amostra. A prévia é imediata.</p>
         <div class="settings-colors"><div class="settings-color"><label for="hex-main">Principal<small>Fundo do aplicativo</small></label><div class="settings-color-input"><input type="color" id="color-main" aria-label="Escolher cor: Principal"><input type="text" id="hex-main" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-main"></div><small id="error-main" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-secondary">Secundária<small>Painéis e cartões</small></label><div class="settings-color-input"><input type="color" id="color-secondary" aria-label="Escolher cor: Secundária"><input type="text" id="hex-secondary" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-secondary"></div><small id="error-secondary" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-detail1">Detalhes 1<small>Botões e destaques</small></label><div class="settings-color-input"><input type="color" id="color-detail1" aria-label="Escolher cor: Detalhes 1"><input type="text" id="hex-detail1" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-detail1"></div><small id="error-detail1" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-detail2">Detalhes 2<small>Indicadores e avisos</small></label><div class="settings-color-input"><input type="color" id="color-detail2" aria-label="Escolher cor: Detalhes 2"><input type="text" id="hex-detail2" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-detail2"></div><small id="error-detail2" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><p class="settings-colors-sub"><strong>Cores de detalhe</strong><small>Em cinza: calculada a partir das cores principais. Escolha uma cor para usar a sua; apague o código para voltar ao automático.</small></p><div class="settings-color"><label for="hex-text">Texto<small>Letras do app</small></label><div class="settings-color-input"><input type="color" id="color-text" aria-label="Escolher cor: Texto"><input type="text" id="hex-text" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-text"></div><small id="error-text" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-live">Ao vivo<small>Quem transmite e o botão Transmitir</small></label><div class="settings-color-input"><input type="color" id="color-live" aria-label="Escolher cor: Ao vivo"><input type="text" id="hex-live" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-live"></div><small id="error-live" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-speaking">Quem fala<small>Borda e barrinhas de quem fala</small></label><div class="settings-color-input"><input type="color" id="color-speaking" aria-label="Escolher cor: Quem fala"><input type="text" id="hex-speaking" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-speaking"></div><small id="error-speaking" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-warn">Avisos<small>Erros e alertas</small></label><div class="settings-color-input"><input type="color" id="color-warn" aria-label="Escolher cor: Avisos"><input type="text" id="hex-warn" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-warn"></div><small id="error-warn" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-line">Bordas<small>Linhas dos painéis e campos</small></label><div class="settings-color-input"><input type="color" id="color-line" aria-label="Escolher cor: Bordas"><input type="text" id="hex-line" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-line"></div><small id="error-line" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div></div>
@@ -569,9 +587,19 @@
         <p class="hint">O chat avisa sobre novas mensagens enviadas e recebidas. O histórico é silencioso.</p>
         <label for="notificationVolume">Volume geral dos avisos</label><div class="vd-slider"><input type="range" id="notificationVolume" min="0" max="100" step="1"><output id="notificationVolumeValue" for="notificationVolume"></output></div><p class="hint">O volume geral multiplica os volumes individuais. Em 0%, todos os avisos ficam silenciosos.</p>
       </section>
+      <footer class="settings-version"><span>Tela P2P</span><span id="settingsVersion"></span></footer>
     </div>
   </div>
   <div id="toast" class="toast" role="status"></div>
+  <!-- Lente do modo Líquido: o fundo atrás das barras e botões ondula de leve, como vidro grosso -->
+  <svg class="glass-defs" width="0" height="0" aria-hidden="true" focusable="false">
+    <filter id="liquidLens" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.008 0.012" numOctaves="1" seed="7" result="noise"/>
+      <feGaussianBlur in="noise" stdDeviation="2" result="soft"/>
+      <feDisplacementMap in="SourceGraphic" in2="soft" scale="26" xChannelSelector="R" yChannelSelector="G" result="lens"/>
+      <feGaussianBlur in="lens" stdDeviation="7"/>
+    </filter>
+  </svg>
   <script src="encode-once.js"></script>
   <script src="voice.js"></script>
   <script src="renderer/util.js"></script>

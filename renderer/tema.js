@@ -8,7 +8,7 @@ const THEME = {
   bg: 'var(--bg)', sunken: 'var(--sunken)', card: 'var(--panel)', raised: 'var(--panel-2)', line: 'var(--line)', field: 'var(--field-line)',
   text: 'var(--text)', muted: 'var(--muted)', primary: 'var(--primary)', onPrimary: 'var(--primary-ink)', accent: 'var(--accent)',
   accentSoft: 'var(--accent-soft)', ok: 'var(--ok)', ink: 'var(--primary-ink)', glass: 'var(--theme-glass)',
-  font: '"Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif',
+  font: 'var(--font-body, "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif)', // a fonte escolhida em Aparência
 };
 // Longe do amarelo (você) e do verde (quem fala), e legíveis sobre o oliva
 const PERSON_COLORS = ['#E3A76F', '#8FC1E3', '#D59BD0', '#7FD1C1', '#B9C7F2', '#E6C3A0'];

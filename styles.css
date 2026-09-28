@@ -850,3 +850,69 @@ main { padding-top: 0; }
 .tile-noaudio svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .tile.no-audio .tile-vol, .tile.no-audio .tile-mute { display: none; }
 .live-silent { font-weight: 600; }
+
+/* ── Aparência (Configurações gerais) ──────────────────────────────────────────────────────────────── */
+.settings-row { display: grid; gap: 7px; }
+.settings-row > label { font-size: 13px; font-weight: 600; }
+.font-pick { display: flex; gap: 8px; }
+.font-pick select { flex: 1; min-width: 0; }
+.font-pick .btn { flex: none; }
+.font-preview { display: grid; gap: 4px; margin: 0; padding: 12px 14px; border: 1px dashed var(--line-strong); border-radius: 8px; background: var(--sunken); font-size: 15px; line-height: 1.4; overflow-wrap: anywhere; }
+.font-preview strong { font-size: 18px; font-weight: 600; }
+.font-preview span { color: var(--text-2); }
+.glass-seg label { height: 40px; }
+.glass-swatch { width: 18px; height: 18px; flex: none; border-radius: 6px; border: 1px solid var(--field-line); }
+[data-glass-swatch=opaque] { background: var(--text-2); }
+[data-glass-swatch=clear] { background: linear-gradient(rgba(255, 255, 255, .16), rgba(255, 255, 255, .16)), repeating-conic-gradient(var(--muted) 0 25%, transparent 0 50%) 0 0 / 8px 8px; }
+[data-glass-swatch=liquid] { border-radius: 999px; background: radial-gradient(circle at 32% 26%, rgba(255, 255, 255, .85), transparent 42%), linear-gradient(135deg, var(--accent), var(--ok)); box-shadow: inset 0 -2px 3px rgba(0, 0, 0, .25); }
+.general-settings input[aria-invalid=true] { border-color: var(--warn); }
+/* Versão: discreta, no pé das configurações */
+.settings-version { display: flex; justify-content: center; gap: 6px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 11px; color: var(--muted); letter-spacing: .02em; font-variant-numeric: tabular-nums; }
+.settings-version span:first-child { opacity: .7; }
+.glass-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+/* ── Vidro: Transparente e Líquido ────────────────────────────────────────────────────────────────────
+   As cores das superfícies viram translúcidas (preferencias-modelo.js › glass) e as superfícies abaixo
+   desfocam o que está atrás. No Windows 11 22H2+ a janela vira acrílico (data-material=acrylic) e o que fica
+   atrás é a própria área de trabalho; nos outros, um fundo desenhado com as cores do tema. */
+html[data-glass=clear], html[data-glass=liquid] {
+  background:
+    radial-gradient(55% 50% at 10% 12%, color-mix(in srgb, var(--primary) 42%, transparent), transparent 72%),
+    radial-gradient(45% 55% at 92% 8%, color-mix(in srgb, var(--ok) 36%, transparent), transparent 72%),
+    radial-gradient(60% 55% at 78% 100%, color-mix(in srgb, var(--warn) 30%, transparent), transparent 72%),
+    radial-gradient(50% 45% at 22% 92%, color-mix(in srgb, var(--primary) 20%, transparent), transparent 72%),
+    var(--glass-base);
+}
+html[data-glass=clear][data-material=acrylic], html[data-glass=liquid][data-material=acrylic] { background: transparent; }
+:is(html[data-glass=clear], html[data-glass=liquid]) :is(.home-card, .dock, .panel, .workspace-pane, #workspaceNav, .nav-expand, .dialog, .person-card, .people-pop, .update-banner, .toast, .stat-card, .stream-card, .join-panel, .session) {
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border-color: var(--glass-edge);
+}
+:is(html[data-glass=clear], html[data-glass=liquid]) .modal { -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+/* Vídeo nunca fica transparente */
+:is(html[data-glass=clear], html[data-glass=liquid]) .tile video { background: #000; }
+
+/* Líquido: vidro grosso. Brilho de luz no alto das bordas (especular), lente que entorta de leve o fundo nas
+   barras e botões, cantos em cápsula e um "aperto" com mola ao clicar. */
+html[data-glass=liquid] { --radius: 12px; --radius-lg: 18px; --lift: inset 0 1px 0 var(--glass-sheen); }
+html[data-glass=liquid] :is(.home-card, .dock, .panel, .workspace-pane, #workspaceNav, .nav-expand, .dialog, .person-card, .people-pop, .update-banner, .toast, .stat-card, .stream-card, .join-panel, .session) {
+  background-image: linear-gradient(165deg, rgba(255, 255, 255, .13), rgba(255, 255, 255, 0) 34%, rgba(255, 255, 255, 0) 72%, rgba(255, 255, 255, .05));
+  box-shadow: inset 0 1px 0 var(--glass-sheen), inset 1px 0 0 rgba(255, 255, 255, .06), inset 0 -1px 0 rgba(0, 0, 0, .18), 0 10px 30px rgba(0, 0, 0, .22);
+}
+html[data-glass=liquid] :is(#workspaceNav, .dock, .nav-expand, .toast, .seg) {
+  -webkit-backdrop-filter: url(#liquidLens) blur(calc(var(--glass-blur) * .6)) saturate(var(--glass-saturate)) brightness(1.06);
+  backdrop-filter: url(#liquidLens) blur(calc(var(--glass-blur) * .6)) saturate(var(--glass-saturate)) brightness(1.06);
+}
+html[data-glass=liquid] .home-card { border-radius: 28px; }
+html[data-glass=liquid] .dialog { border-radius: 24px; }
+html[data-glass=liquid] #workspaceNav { border-radius: 24px; }
+html[data-glass=liquid] :is(.btn, .workspace-tab, .seg, .seg button, .seg label) { border-radius: 999px; }
+html[data-glass=liquid] :is(.btn, .workspace-tab, .seg label, .seg button) { transition: transform .35s cubic-bezier(.34, 1.56, .64, 1), background-color .2s, box-shadow .2s; }
+html[data-glass=liquid] :is(.btn, .workspace-tab, .seg label, .seg button):active:not(:disabled) { transform: scale(.95); }
+html[data-glass=liquid] .btn:not(.primary):not(.live):not(.danger) { box-shadow: inset 0 1px 0 var(--glass-sheen), inset 0 -1px 0 rgba(0, 0, 0, .15); }
+html[data-glass=liquid] .btn.primary { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), inset 0 -2px 4px rgba(0, 0, 0, .18), 0 4px 14px color-mix(in srgb, var(--primary) 35%, transparent); }
+@media (prefers-reduced-motion: reduce) {
+  html[data-glass=liquid] :is(.btn, .workspace-tab, .seg label, .seg button) { transition: none; }
+  html[data-glass=liquid] :is(.btn, .workspace-tab, .seg label, .seg button):active:not(:disabled) { transform: none; }
+}
