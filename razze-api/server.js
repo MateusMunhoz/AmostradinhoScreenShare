@@ -51,6 +51,7 @@ function createApiServer(options = {}) {
   const hash = (value) => createHash('sha256').update(value).digest('hex');
   const now = () => Date.now();
   const authAttempts = new Map();
+  // Devolve a função que conta a tentativa: o cadastro conta sempre; o login só quando erra a senha
   const enforceAuthLimit = (req, route, maxAttempts, windowMs) => {
     const forwarded = process.env.RAZZE_TRUST_PROXY === '1' ? String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() : '';
     const address = forwarded || req.socket.remoteAddress || 'unknown';
@@ -59,8 +60,8 @@ function createApiServer(options = {}) {
     let record = authAttempts.get(key);
     if (!record || record.resetAt <= timestamp) record = { count: 0, resetAt: timestamp + windowMs };
     if (record.count >= maxAttempts) throw new ApiError(429, 'rate_limited', 'Muitas tentativas. Aguarde antes de tentar novamente.');
-    record.count++;
     authAttempts.set(key, record);
+    return () => { record.count++; };
     if (authAttempts.size > 10_000) {
       for (const [itemKey, item] of authAttempts) if (item.resetAt <= timestamp) authAttempts.delete(itemKey);
       while (authAttempts.size > 10_000) authAttempts.delete(authAttempts.keys().next().value);
@@ -145,13 +146,15 @@ function createApiServer(options = {}) {
 
   const handler = async (req, res) => {
     try {
-      const pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
+      let pathname;
+      try { pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname); }
+      catch { throw new ApiError(400, 'invalid_path', 'Endereço da requisição inválido.'); }
       const method = req.method || 'GET';
 
       if (method === 'GET' && pathname === '/v1/health') return send(res, 200, { ok: true, service: 'razze-api', stun: stunServer?.address() ? { port: stunServer.address().port, protocol: 'udp' } : null });
 
       if (method === 'POST' && pathname === '/v1/auth/register') {
-        enforceAuthLimit(req, 'register', 20, 60 * 60 * 1000);
+        enforceAuthLimit(req, 'register', 20, 60 * 60 * 1000)();
         const body = await readBody(req);
         const email = assertText(body.email, 'E-mail', 3, 254).toLowerCase();
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new ApiError(400, 'invalid_email', 'E-mail inválido.');
@@ -174,7 +177,7 @@ function createApiServer(options = {}) {
       }
 
       if (method === 'POST' && pathname === '/v1/auth/login') {
-        enforceAuthLimit(req, 'login', 10, 10 * 60 * 1000);
+        const failedLogin = enforceAuthLimit(req, 'login', 10, 10 * 60 * 1000);
         const body = await readBody(req);
         const email = assertText(body.email, 'E-mail', 3, 254).toLowerCase();
         const password = assertText(body.password, 'Senha', 1, 200);
@@ -182,6 +185,7 @@ function createApiServer(options = {}) {
         const candidate = await scryptAsync(password, user?.salt || 'razze-invalid-user-salt', 64);
         const stored = user ? Buffer.from(user.passwordHash, 'hex') : Buffer.alloc(64);
         if (!user || stored.length !== candidate.length || !timingSafeEqual(stored, candidate)) {
+          failedLogin();
           throw new ApiError(401, 'invalid_credentials', 'E-mail ou senha incorretos.');
         }
         if (user.status === 'pending') throw new ApiError(403, 'account_pending', 'Sua conta aguarda aprovação do servidor.');
@@ -360,6 +364,8 @@ function createApiServer(options = {}) {
         if (!decodedKey || decodedKey.length !== 32 || decodedKey.toString('base64') !== publicKey) throw new ApiError(400, 'invalid_public_key', 'Chave pública WireGuard inválida.');
         const existing = db.prepare('SELECT user_id AS userId, assigned_ip AS assignedIp FROM wireguard_devices WHERE network_id = ? AND device_id = ?').get(network.id, deviceId);
         if (existing && existing.userId !== userId) throw new ApiError(409, 'device_id_in_use', 'Este ID de dispositivo já pertence a outra conta.');
+        const keyOwner = db.prepare('SELECT device_id AS deviceId FROM wireguard_devices WHERE network_id = ? AND public_key = ?').get(network.id, publicKey);
+        if (keyOwner && keyOwner.deviceId !== deviceId) throw new ApiError(409, 'public_key_in_use', 'Esta chave WireGuard já está registrada em outro dispositivo da rede.');
         const subnetIndex = ensureSubnet(network.id);
         let assignedIp = existing?.assignedIp || '';
         if (!assignedIp) {

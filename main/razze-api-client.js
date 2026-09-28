@@ -7,13 +7,17 @@ class RazzeApiError extends Error {
 class RazzeApiClient {
   constructor(baseUrl, options = {}) {
     let parsed;
-    try { parsed = new URL(String(baseUrl || '').trim()); } catch { throw new Error('URL da RazzeAPI inválida.'); }
+    let raw = String(baseUrl || '').trim();
+    // Digitado sem o protocolo ("api.seudominio.com" ou "127.0.0.1:8787"): HTTPS, ou HTTP no próprio PC
+    if (raw && !/^[a-z][a-z0-9+.-]*:\/\//i.test(raw)) raw = (/^(localhost|127\.0\.0\.1)(:|\/|$)/i.test(raw) ? 'http://' : 'https://') + raw;
+    try { parsed = new URL(raw); } catch { throw new Error('URL da RazzeAPI inválida.'); }
     if (parsed.protocol !== 'https:' && !(parsed.protocol === 'http:' && ['localhost', '127.0.0.1'].includes(parsed.hostname))) {
       throw new Error('A RazzeAPI deve usar HTTPS; HTTP só é aceito em localhost.');
     }
     if (parsed.username || parsed.password || parsed.search || parsed.hash) throw new Error('A URL da RazzeAPI não pode conter credenciais ou parâmetros.');
     this.baseUrl = parsed.origin.replace(/\/+$/, '');
     this.fetch = options.fetch || globalThis.fetch;
+    this.timeoutMs = options.timeoutMs || 15_000;
     this.accessToken = '';
   }
 
@@ -27,8 +31,12 @@ class RazzeApiClient {
     try {
       response = await this.fetch(this.baseUrl + endpoint, {
         method, headers, body: body === undefined ? undefined : JSON.stringify(body), redirect: 'error',
+        signal: AbortSignal.timeout(this.timeoutMs),
       });
-    } catch { throw new RazzeApiError(0, 'network_error', 'Não foi possível acessar a RazzeAPI.'); }
+    } catch (error) {
+      if (error?.name === 'TimeoutError') throw new RazzeApiError(0, 'timeout', 'A RazzeAPI não respondeu a tempo.');
+      throw new RazzeApiError(0, 'network_error', 'Não foi possível acessar a RazzeAPI.');
+    }
     let payload = {};
     try { payload = await response.json(); } catch {}
     if (!response.ok) {
