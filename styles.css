@@ -796,6 +796,9 @@ main { padding-top: var(--workspace-top); }
 .has-workspace-pane .home-actions { padding: 16px 32px; }
 .has-workspace-pane .home-card { padding: 20px; }
 .workspace-in-room #openGeneralSettingsRoom { display: none; }
+/* Na sala, sem painel aberto: as telas começam embaixo da barra de cima (na altura dos painéis), e a barra
+   não fica solta por cima do vídeo */
+.workspace-in-room:not(.has-workspace-pane) #room { padding-top: var(--workspace-top); }
 .toast { top: calc(var(--workspace-top) + 8px); }
 @media (max-width: 900px) {
   .workspace-tab { padding: 0 6px; font-size: 11px; }

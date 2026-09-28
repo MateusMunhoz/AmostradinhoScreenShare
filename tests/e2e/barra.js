@@ -43,6 +43,14 @@ run('Barra de baixo numa linha', 90000, async () => {
   check('Os botões de sair, chat e microfone continuam à vista', await A.eval(`['leaveBtn', 'chatToggle', 'voiceMute', 'voiceDeafen', 'stopShareBtn'].every((id) => { const e = $(id); const r = e.getBoundingClientRect(); const d = document.querySelector('.dock').getBoundingClientRect(); return r.width > 0 && r.right <= d.right + 1; })`));
   await A.shot('barra.png');
 
+  // Todos os painéis fechados: a barra de cima não fica por cima das telas
+  await A.eval(`(() => { workspaceViews.chat = false; workspaceViews.voice = false; saveWorkspaceViews(); syncWorkspace(); })()`);
+  await sleep(300);
+  const topo = await A.eval(`(() => { const n = $('workspaceNav').getBoundingClientRect(), a = $('streamArea').getBoundingClientRect(); return { nav: Math.round(n.bottom), telas: Math.round(a.top), largura: Math.round(a.right) }; })()`);
+  check('Painéis fechados: as telas começam embaixo da barra de cima', topo.telas >= topo.nav, JSON.stringify(topo));
+  await A.shot('paineis-fechados.png');
+  await A.eval(`(() => { workspaceViews.chat = true; workspaceViews.voice = true; saveWorkspaceViews(); syncWorkspace(); })()`);
+
   // Tela larga (1920): tudo aparece, com os textos
   await A.send('Emulation.setDeviceMetricsOverride', { width: 1920, height: 1040, deviceScaleFactor: 1, mobile: false });
   await sleep(600);
