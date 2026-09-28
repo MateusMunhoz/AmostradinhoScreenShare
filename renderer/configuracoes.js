@@ -1,5 +1,5 @@
 'use strict';
-// Preferências locais: não são enviadas para a sala ou para outros participantes.
+// Preferências deste PC. Só a fonte do nome (nameFont) vai para a sala, pelo perfil (navegacao.js).
 let appPreferences = AppPreferences.read(localStorage);
 const appSounds = new AppPreferences.SoundPlayer({ settings: () => appPreferences });
 let settingsReturnFocus = null;
@@ -24,6 +24,10 @@ function applyAppTheme(d = document) {
   root.style.setProperty('--font-body', fonts.body);
   root.style.setProperty('--font-display', fonts.display);
   root.style.setProperty('--font-console', fonts.console);
+  const borders = AppPreferences.borders(appPreferences.colors, appPreferences.appearance);
+  if (borders) for (const [key, value] of Object.entries(borders)) root.style.setProperty(key, value);
+  else root.style.removeProperty('--edge-sheen');
+  root.dataset.border = appPreferences.appearance.border;
   // As janelas por cima do jogo usam painéis translúcidos, sem o fundo da página principal.
   if (d !== document) {
     root.style.setProperty('--text', 'var(--surface-text)');
@@ -102,11 +106,9 @@ function refreshAutoColors() {
 const localFonts = []; // nomes vindos de "Fontes deste PC" (só nesta sessão)
 function renderGlassHint() {
   const mode = appPreferences.appearance.glass;
-  const desktop = windowMaterial.supported ? ' A área de trabalho aparece desfocada atrás da janela.'
-    : ' A área de trabalho atrás da janela só aparece no Windows 11 22H2 ou mais novo; aqui o app desenha um fundo próprio.';
   $('glassHint').textContent = mode === 'opaque' ? 'Cores sólidas. É o mais leve para jogar e transmitir ao mesmo tempo.'
-    : mode === 'clear' ? 'Vidro limpo: painéis bem transparentes e pouco desfoque.' + desktop
-    : 'Vidro grosso: mais desfoque, cores mais vivas e brilho nas bordas. Usa mais a placa de vídeo; se o jogo perder FPS, volte para Opaco.' + desktop;
+    : mode === 'clear' ? 'Vidro limpo: painéis bem transparentes e pouco desfoque.'
+    : 'Vidro grosso: mais desfoque, cores mais vivas e brilho nas bordas. Usa mais a placa de vídeo; se o jogo perder FPS, volte para Opaco.';
 }
 function fontInstalled(name) {
   // Mede o mesmo texto com a fonte e sem ela: se nada muda nas duas bases, ela não está no PC
@@ -165,6 +167,7 @@ function renderAppearance() {
   $('glassLevelRow').hidden = a.glass === 'opaque';
   $('glassLevel').value = a.level;
   $('glassLevelValue').textContent = a.level + '%';
+  for (const input of document.querySelectorAll('input[name=border]')) input.checked = input.value === a.border;
   renderGlassHint();
   if (!$('fontFamily').options.length) renderFontOptions();
   renderFontPreview();
@@ -172,8 +175,13 @@ function renderAppearance() {
 function setupAppearance() {
   for (const input of document.querySelectorAll('input[name=glass]')) input.onchange = () => {
     if (!input.checked) return;
-    appPreferences.appearance = { glass: input.value, level: AppPreferences.glassLevel[input.value] ?? appPreferences.appearance.level };
+    appPreferences.appearance = { ...appPreferences.appearance, glass: input.value, level: AppPreferences.glassLevel[input.value] ?? appPreferences.appearance.level };
     saveAppPreferences(); renderAppearance();
+  };
+  for (const input of document.querySelectorAll('input[name=border]')) input.onchange = () => {
+    if (!input.checked) return;
+    appPreferences.appearance = { ...appPreferences.appearance, border: input.value };
+    saveAppPreferences();
   };
   $('glassLevel').oninput = () => {
     appPreferences.appearance.level = Number($('glassLevel').value);

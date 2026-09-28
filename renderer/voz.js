@@ -275,6 +275,7 @@ function renderVoiceAvatars() {
     const nm = document.createElement('span');
     nm.className = 'va-name';
     nm.textContent = nameOf(id);
+    paintName(nm, id);
     if (photoHashOf(id)) b.append(avatar(nameOf(id), id)); // com foto, ela vem antes do nome
     b.append(nm, speakBars());
     const label = `${nameOf(id)}${voice.members.get(id).muted ? ', microfone desligado' : ''}. Mudar o volume`;
@@ -325,6 +326,7 @@ function renderPersonCard() {
   const who = document.createElement('div');
   const strong = document.createElement('strong');
   strong.textContent = name;
+  paintName(strong, id);
   const sub = document.createElement('span');
   sub.textContent = v.muted ? 'Silenciada para você' : [inVoice(id) && 'Na voz', state.members.get(id)?.sharing && 'Transmitindo'].filter(Boolean).join(' · ') || 'Na sala';
   who.append(strong, sub);

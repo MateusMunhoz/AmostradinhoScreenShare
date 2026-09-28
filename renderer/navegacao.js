@@ -25,6 +25,26 @@ function closeProfilePopup() {
   syncWorkspace();
   (profileReturnFocus || $('navProfile')).focus();
 }
+// Fonte do nome (perfil): cada opção aparece na própria fonte; a escolha vale na hora e, na sala, vai para todos
+function setupNameFont() {
+  const select = $('profileNameFont');
+  const none = document.createElement('option'); none.value = ''; none.textContent = 'Padrão do app';
+  select.append(none);
+  const groups = new Map();
+  for (const f of AppPreferences.fonts.filter((x) => x.id !== 'system')) {
+    if (!groups.has(f.group)) { const g = document.createElement('optgroup'); g.label = f.group; groups.set(f.group, g); select.append(g); }
+    const o = document.createElement('option'); o.value = f.id; o.textContent = f.label;
+    o.style.fontFamily = AppPreferences.nameFontStack(f.id);
+    groups.get(f.group).append(o);
+  }
+  select.value = appPreferences.nameFont;
+  select.onchange = () => {
+    appPreferences.nameFont = AppPreferences.cleanNameFont(select.value);
+    saveAppPreferences();
+    repaintNames('');
+    if (state.myId) send({ type: 'name-font', font: appPreferences.nameFont });
+  };
+}
 function setupUtilityPopup(id, close) {
   closeOnBackdrop(id, close);
   $(id).addEventListener('keydown', e => {
@@ -71,6 +91,8 @@ function syncWorkspace() {
   $('profileName').disabled = inRoom;
   $('profileName').value = $('name').value;
   $('profileDisplayName').textContent = getName();
+  paintName($('profileDisplayName'), '');
+  $('profileNameFont').value = appPreferences.nameFont;
   $('profileAvatar').textContent = $('navProfileAvatar').textContent = [...getName()][0].toUpperCase();
   paintAvatar($('profileAvatar'));
   paintAvatar($('navProfileAvatar'));
@@ -173,6 +195,7 @@ function setupWorkspace() {
   for (const [id, view] of [['navVoice','voice'],['navStreams','streams']]) $(id).onclick = () => { workspaceViews[view] = !workspaceViews[view]; saveWorkspaceViews(); syncWorkspace(); };
   $('profileName').oninput = () => { if (state.myId) return; $('name').value = $('profileName').value; save('name', $('name').value); $('profileDisplayName').textContent = getName(); $('profileAvatar').textContent = $('navProfileAvatar').textContent = [...getName()][0].toUpperCase(); $('navProfile').title = $('navProfile').ariaLabel = 'Perfil de ' + getName(); };
   $('name').addEventListener('input', syncWorkspace);
+  setupNameFont();
   for (const [proxy, original] of [['paneVoiceJoin','voiceJoin'],['paneVoiceMute','voiceMute'],['paneVoiceDeafen','voiceDeafen'],['paneVoiceSettings','voiceSettingsBtn']]) $(proxy).onclick = () => $(original).click();
   $('streamPeople').onclick = () => {
     if (!workspaceViews.chat) setPanelOpen(true);

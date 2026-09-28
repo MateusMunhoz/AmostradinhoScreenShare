@@ -29,6 +29,23 @@ function avatar(name, id) {
   return el;
 }
 
+// Fonte do nome que cada pessoa escolheu no perfil. Chega pela sala só como id da lista (preferencias-modelo.js);
+// cada PC desenha com as próprias fontes, e quem não escolheu fica com a fonte do app. id vazio = eu.
+function nameFontOf(id) {
+  if (!id || id === 'me' || id === state.myId) return appPreferences.nameFont;
+  return state.members.get(id)?.nameFont || '';
+}
+function paintName(el, id) {
+  el.dataset.nameOf = !id || id === state.myId ? 'me' : id;
+  el.style.fontFamily = AppPreferences.nameFontStack(nameFontOf(id));
+  return el;
+}
+// Alguém trocou a fonte: repinta o nome dessa pessoa onde ele estiver (lista, voz, cartão, chat, vídeo, perfil)
+function repaintNames(id) {
+  const key = !id || id === state.myId ? 'me' : id;
+  for (const el of document.querySelectorAll(`[data-name-of="${CSS.escape(key)}"]`)) paintName(el, key === 'me' ? '' : key);
+}
+
 // As 3 barrinhas de quem fala (aparecem pelo CSS quando o elemento de cima está .speaking)
 function speakBars() {
   const eq = document.createElement('span');

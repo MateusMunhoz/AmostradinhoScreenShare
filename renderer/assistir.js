@@ -24,6 +24,7 @@ function createTile(id, name) {
   const labelText = document.createElement('span');
   labelText.className = 'tile-name-text';
   labelText.textContent = name;
+  paintName(labelText, id);
   // "sem som": quem transmite está sem o som do PC (desligado ou a captura falhou); aí o volume não tem o que mudar
   const noAudio = document.createElement('span');
   noAudio.className = 'tile-noaudio';

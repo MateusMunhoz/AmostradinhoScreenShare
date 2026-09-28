@@ -24,6 +24,7 @@ const AppPreferences = (() => {
   const optionalColors = ['text', 'live', 'speaking', 'warn', 'line'];
   // Aparência: o material das superfícies (como o Liquid Glass do iOS) e a fonte da interface
   const glassModes = ['opaque', 'clear', 'liquid'];
+  const borderModes = ['solid', 'clear', 'liquid']; // bordas: cor cheia, translúcidas ou com brilho de vidro
   const glassLevel = { clear: 70, liquid: 55 }; // transparência inicial de cada modo (0 = quase opaco, 100 = quase invisível)
   // Fontes do Windows 10 e 11. Cada pilha termina na fonte padrão, então letra que faltar cai nela.
   const baseStack = '"Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif';
@@ -74,6 +75,13 @@ const AppPreferences = (() => {
     const s = value.trim().replace(/\s+/g, ' ');
     return /^[\p{L}\p{N} ._'&+-]{1,64}$/u.test(s) ? s : '';
   }
+  // Fonte do nome: vai para a sala (só o id da lista, nunca um nome livre) e cada um desenha com as fontes do
+  // próprio PC. '' ou id desconhecido = fonte padrão do app.
+  const cleanNameFont = id => typeof id === 'string' && id !== 'system' && fonts.some(f => f.id === id) ? id : '';
+  function nameFontStack(id) {
+    const f = fonts.find(x => x.id === cleanNameFont(id));
+    return f ? `${f.family}, ${baseStack}` : '';
+  }
   function fontStacks(font) {
     const f = fonts.find(x => x.id === font?.family);
     let family = f?.family || '';
@@ -83,8 +91,8 @@ const AppPreferences = (() => {
     return { body, display, console: font?.chat && family ? body : 'Tahoma, Verdana, sans-serif' };
   }
   const defaults = { colors: { main: '#22271E', secondary: '#2D3327', detail1: '#D6C45C', detail2: '#A6D089', text: '', live: '', speaking: '', warn: '', line: '' },
-    appearance: { glass: 'opaque', level: glassLevel.clear },
-    font: { family: 'system', custom: '', chat: false },
+    appearance: { glass: 'opaque', level: glassLevel.clear, border: 'solid' },
+    font: { family: 'system', custom: '', chat: false }, nameFont: '',
     sounds: { join: 'notification035', leave: 'whoosh', chat: 'wood', voiceJoin: 'suaveEntrou', voiceLeave: 'suaveSaiu',
       mute: 'suaveMutou', unmute: 'suaveDesmutou',
       chatMuted: false, volume: 50, levels: { join: 100, leave: 100, chat: 100, voiceJoin: 100, voiceLeave: 100, mute: 100, unmute: 100 } } };
@@ -96,7 +104,8 @@ const AppPreferences = (() => {
   }
   function normalize(raw) {
     const result = { colors: { ...defaults.colors }, appearance: { ...defaults.appearance }, font: { ...defaults.font },
-      sounds: { ...defaults.sounds, levels: { ...defaults.sounds.levels } } };
+      nameFont: cleanNameFont(raw?.nameFont), sounds: { ...defaults.sounds, levels: { ...defaults.sounds.levels } } };
+    if (borderModes.includes(raw?.appearance?.border)) result.appearance.border = raw.appearance.border;
     if (glassModes.includes(raw?.appearance?.glass)) result.appearance.glass = raw.appearance.glass;
     const level = raw?.appearance?.level;
     if (typeof level === 'number' && Number.isFinite(level)) result.appearance.level = Math.max(0, Math.min(100, Math.round(level)));
@@ -167,6 +176,18 @@ const AppPreferences = (() => {
       '--glass-sheen': alpha('#FFFFFF', liquid ? .22 : .08),
     };
   }
+  // Bordas de vidro: "clear" deixa a cor das bordas translúcida; "liquid" clareia a borda e acende o alto dela
+  // (--edge-sheen), como a luz batendo na quina de um vidro. Valem em qualquer material, inclusive no Opaco.
+  function borders(colors, appearance) {
+    const c = normalize({ colors }).colors, a = normalize({ appearance }).appearance;
+    if (a.border === 'solid') return null;
+    const p = palette(colors), liquid = a.border === 'liquid';
+    const edge = (color, amount) => liquid ? alpha(mix(color, '#FFFFFF', .35), amount) : alpha(color, amount * .8);
+    return {
+      '--line': edge(p['--line'], .45), '--line-strong': edge(p['--line-strong'], .6), '--field-line': edge(p['--field-line'], .7),
+      '--edge-sheen': liquid ? alpha('#FFFFFF', .42) : alpha(ink(c.secondary), .18),
+    };
+  }
   // Toca um som "Suave" pelo Web Audio; devolve um objeto com pause() para o stop() funcionar igual
   function synthTone(notes, volume) {
     const ctx = synthTone.ctx || (synthTone.ctx = new AudioContext());
@@ -217,6 +238,6 @@ const AppPreferences = (() => {
     }
     stopAll() { for (const event of [...this.players.keys()]) this.stop(event); }
   }
-  return { key, sounds, events, defaults, optionalColors, glassModes, glassLevel, fonts, fontName, fontStacks, hex, normalize, read, write, palette, glass, SoundPlayer };
+  return { key, sounds, events, defaults, optionalColors, glassModes, glassLevel, borderModes, fonts, fontName, fontStacks, cleanNameFont, nameFontStack, borders, hex, normalize, read, write, palette, glass, SoundPlayer };
 })();
 if (typeof module !== 'undefined') module.exports = AppPreferences;

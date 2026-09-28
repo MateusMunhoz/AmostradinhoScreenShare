@@ -42,6 +42,8 @@ function cleanShareInfo(i) {
 
 // Hash (SHA-256) da foto de perfil, ou vazio
 function cleanHash(h) { return typeof h === 'string' && /^[0-9a-f]{64}$/.test(h) ? h : ''; }
+// Fonte do nome: só o id da lista de fontes do app (letras); cada app confere de novo se conhece o id
+function cleanNameFont(f) { return typeof f === 'string' && /^[A-Za-z]{1,32}$/.test(f) ? f : ''; }
 
 // Endereços IPv4 que a pessoa diz ter (para os outros acharem ela se ela virar o host)
 function cleanAddrs(list) {
@@ -160,9 +162,9 @@ function startServer(port, password = '', seed = {}) {
           const voiceSession = resume && typeof msg.voiceSession === 'string' && /^[\w-]{1,64}$/.test(msg.voiceSession) ? msg.voiceSession : '';
           me = {
             ws, name: String(msg.name || 'Anônimo').slice(0, 32), sharing: !!(resume && msg.sharing), version, addrs: cleanAddrs(msg.addrs),
-            voiceSession, muted: !!voiceSession && msg.muted === true, shareInfo, avatar: cleanHash(msg.avatar),
+            voiceSession, muted: !!voiceSession && msg.muted === true, shareInfo, avatar: cleanHash(msg.avatar), nameFont: cleanNameFont(msg.nameFont),
           };
-          const info = (mid, m) => ({ id: mid, name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs, voiceSession: m.voiceSession, muted: m.muted, shareInfo: m.shareInfo, avatar: m.avatar });
+          const info = (mid, m) => ({ id: mid, name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs, voiceSession: m.voiceSession, muted: m.muted, shareInfo: m.shareInfo, avatar: m.avatar, nameFont: m.nameFont });
           send(ws, {
             type: 'welcome',
             id,
@@ -187,6 +189,9 @@ function startServer(port, password = '', seed = {}) {
           // Foto de perfil: só o hash passa por aqui; a foto vai direto de quem tem para quem pede
           me.avatar = cleanHash(msg.hash);
           broadcast({ type: 'avatar-state', id, hash: me.avatar }, id);
+        } else if (msg.type === 'name-font') {
+          me.nameFont = cleanNameFont(msg.font);
+          broadcast({ type: 'name-font-state', id, font: me.nameFont }, id);
         } else if (msg.type === 'share') {
           me.sharing = !!msg.sharing;
           me.shareInfo = me.sharing ? cleanShareInfo(msg.info) : null;

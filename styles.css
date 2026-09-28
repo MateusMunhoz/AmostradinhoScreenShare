@@ -853,7 +853,7 @@ main { padding-top: 0; }
 
 /* ── Aparência (Configurações gerais) ──────────────────────────────────────────────────────────────── */
 .settings-row { display: grid; gap: 7px; }
-.settings-row > label { font-size: 13px; font-weight: 600; }
+.settings-row > label, .settings-row > .settings-label { font-size: 13px; font-weight: 600; }
 .font-pick { display: flex; gap: 8px; }
 .font-pick select { flex: 1; min-width: 0; }
 .font-pick .btn { flex: none; }
@@ -865,6 +865,10 @@ main { padding-top: 0; }
 [data-glass-swatch=opaque] { background: var(--text-2); }
 [data-glass-swatch=clear] { background: linear-gradient(rgba(255, 255, 255, .16), rgba(255, 255, 255, .16)), repeating-conic-gradient(var(--muted) 0 25%, transparent 0 50%) 0 0 / 8px 8px; }
 [data-glass-swatch=liquid] { border-radius: 999px; background: radial-gradient(circle at 32% 26%, rgba(255, 255, 255, .85), transparent 42%), linear-gradient(135deg, var(--accent), var(--ok)); box-shadow: inset 0 -2px 3px rgba(0, 0, 0, .25); }
+[data-border-swatch] { background: transparent; border-width: 2px; }
+[data-border-swatch=solid] { border-color: var(--accent); }
+[data-border-swatch=clear] { border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+[data-border-swatch=liquid] { border-radius: 999px; border-color: color-mix(in srgb, var(--accent) 45%, rgba(255, 255, 255, .5)); border-top-color: rgba(255, 255, 255, .85); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35); }
 .general-settings input[aria-invalid=true] { border-color: var(--warn); }
 /* Versão: discreta, no pé das configurações */
 .settings-version { display: flex; justify-content: center; gap: 6px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 11px; color: var(--muted); letter-spacing: .02em; font-variant-numeric: tabular-nums; }
@@ -888,6 +892,14 @@ html[data-glass=clear][data-material=acrylic], html[data-glass=liquid][data-mate
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   border-color: var(--glass-edge);
+}
+/* Bordas Líquido: a quina de cima pega luz, como a borda de um vidro. As cores translúcidas vêm de
+   preferencias-modelo.js › borders (--line, --line-strong, --field-line). */
+:is(html[data-border=clear], html[data-border=liquid]) :is(.home-card, .dock, .panel, .workspace-pane, #workspaceNav, .nav-expand, .dialog, .person-card, .people-pop, .update-banner, .toast, .stat-card, .stream-card, .join-panel, .session) {
+  border-color: var(--line-strong);
+}
+html[data-border=liquid] :is(.home-card, .dock, .panel, .workspace-pane, #workspaceNav, .nav-expand, .dialog, .person-card, .people-pop, .update-banner, .toast, .stat-card, .stream-card, .join-panel, .session, .btn:not(.primary):not(.live):not(.danger), input, select, textarea) {
+  border-top-color: var(--edge-sheen);
 }
 /* Vídeo nunca fica transparente */
 :is(html[data-glass=clear], html[data-glass=liquid]) .tile video { background: #000; }

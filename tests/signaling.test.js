@@ -110,3 +110,20 @@ test('sessão: id, pessoas e senha para quem procura, sem entrar; sala oculta n�
   assert.equal(roomSize(), 1);
   assert.equal(await askInfo(port2), null, 'oculta não responde info');
 });
+
+test('fonte do nome: vai no welcome e na troca; texto livre não passa', async t => {
+  const probe = net.createServer();
+  await new Promise(r => probe.listen(0, '127.0.0.1', r));
+  const port = probe.address().port;
+  await new Promise(r => probe.close(r));
+  assert.equal((await startServer(port)).ok, true);
+  t.after(stopServer);
+  const a = await client(port); t.after(() => a.ws.terminate());
+  const b = await client(port); t.after(() => b.ws.terminate());
+  a.send({ type: 'name-font', font: 'segoeScript' });
+  assert.deepEqual(await b.wait(m => m.type === 'name-font-state'), { type: 'name-font-state', id: a.welcome.id, font: 'segoeScript' });
+  const c = await client(port); t.after(() => c.ws.terminate());
+  assert.equal(c.welcome.members.find(m => m.id === a.welcome.id).nameFont, 'segoeScript');
+  a.send({ type: 'name-font', font: 'x"; } body{' });
+  assert.equal((await b.wait(m => m.type === 'name-font-state')).font, '');
+});

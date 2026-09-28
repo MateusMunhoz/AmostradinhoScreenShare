@@ -68,7 +68,7 @@ test('Sons Suave: gerados na hora, sem arquivo, padrão da voz e do microfone', 
 });
 
 test('Aparência: modos de vidro, transparência e dados inválidos', () => {
-  assert.deepEqual(P.normalize(null).appearance, { glass: 'opaque', level: 70 });
+  assert.deepEqual(P.normalize(null).appearance, { glass: 'opaque', level: 70, border: 'solid' });
   assert.equal(P.glass(P.defaults.colors, { glass: 'opaque' }), null);
   assert.equal(P.normalize({ appearance: { glass: 'metal', level: 999 } }).appearance.glass, 'opaque');
   assert.equal(P.normalize({ appearance: { glass: 'liquid', level: 999 } }).appearance.level, 100);
@@ -93,4 +93,20 @@ test('Fontes: catálogo, nome digitado seguro e pilha com a padrão no fim', () 
   let saved; const prefs = P.normalize({ appearance: { glass: 'liquid', level: 40 }, font: { family: 'korean', chat: true } });
   P.write({ setItem: (_k, v) => { saved = v; } }, prefs);
   assert.deepEqual(P.read({ getItem: () => saved }), prefs);
+});
+test('Bordas: normal, transparente e líquido, em qualquer material', () => {
+  assert.equal(P.normalize({ appearance: { border: 'neon' } }).appearance.border, 'solid');
+  assert.equal(P.borders(P.defaults.colors, { border: 'solid' }), null);
+  const pal = P.palette(P.defaults.colors);
+  const clear = P.borders(P.defaults.colors, { glass: 'opaque', border: 'clear' }), liquid = P.borders(P.defaults.colors, { border: 'liquid' });
+  for (const b of [clear, liquid]) for (const k of ['--line', '--line-strong', '--field-line', '--edge-sheen']) assert.match(b[k], /^rgba\(/);
+  assert.notEqual(clear['--line'], pal['--line']);
+  assert.ok(Number(/, ([\d.]+)\)$/.exec(liquid['--edge-sheen'])[1]) > Number(/, ([\d.]+)\)$/.exec(clear['--edge-sheen'])[1]), 'o líquido acende mais a quina');
+});
+test('Fonte do nome: só ids da lista, pilha com a padrão no fim, padrão vazio', () => {
+  assert.equal(P.normalize(null).nameFont, '');
+  assert.equal(P.normalize({ nameFont: 'segoeScript' }).nameFont, 'segoeScript');
+  for (const bad of ['system', 'custom', 'Arial; x', 'nada', 42, null]) assert.equal(P.cleanNameFont(bad), '');
+  assert.equal(P.nameFontStack(''), '');
+  assert.ok(P.nameFontStack('impact').startsWith('Impact, ') && P.nameFontStack('impact').endsWith('system-ui, sans-serif'));
 });

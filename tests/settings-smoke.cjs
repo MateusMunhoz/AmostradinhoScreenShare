@@ -51,6 +51,14 @@ app.whenReady().then(async()=>{
       await check('Hexadecimal inválido não é salvo',`$('hex-main').getAttribute('aria-invalid')==='true' && AppPreferences.read(localStorage).colors.main==='#22271E'`);
       await run(`document.querySelector('input[name=glass][value=liquid]').click();`);
       await check('Vidro líquido aplicado na hora',`document.documentElement.dataset.glass==='liquid' && getComputedStyle($('workspaceNav')).backdropFilter.includes('liquidLens') && !$('glassLevelRow').hidden`);
+      await run(`document.querySelector('input[name=border][value=liquid]').click();`);
+      await check('Bordas líquidas: quina de cima acesa, cor translúcida, e o vidro continua',`document.documentElement.dataset.border==='liquid' && document.documentElement.dataset.glass==='liquid' && getComputedStyle($('workspaceNav')).borderTopColor!==getComputedStyle($('workspaceNav')).borderBottomColor && getComputedStyle(document.documentElement).getPropertyValue('--line').startsWith('rgba(')`);
+      await run(`document.querySelector('input[name=border][value=solid]').click();`);
+      await check('Bordas normais voltam à cor cheia',`document.documentElement.dataset.border==='solid' && AppPreferences.read(localStorage).appearance.border==='solid' && getComputedStyle(document.documentElement).getPropertyValue('--line').startsWith('#')`);
+      await run(`$('profileNameFont').value='segoeScript';$('profileNameFont').dispatchEvent(new Event('change'));`);
+      await check('Fonte do nome salva e aplicada no perfil, sem mudar o resto do app',`AppPreferences.read(localStorage).nameFont==='segoeScript' && getComputedStyle($('profileDisplayName')).fontFamily.startsWith('"Segoe Script"') && !getComputedStyle(document.body).fontFamily.includes('Segoe Script') && memberRow(null,'Eu',false).querySelector('.mname').style.fontFamily.startsWith('"Segoe Script"')`);
+      await run(`$('profileNameFont').value='';$('profileNameFont').dispatchEvent(new Event('change'));`);
+      await check('Sem escolha, o nome volta à fonte padrão',`AppPreferences.read(localStorage).nameFont==='' && $('profileDisplayName').style.fontFamily===''`);
       await run(`$('fontFamily').value='georgia';$('fontFamily').dispatchEvent(new Event('change'));`);
       await check('Fonte trocada no app, chat com a letra de console',`getComputedStyle(document.body).fontFamily.startsWith('Georgia') && getComputedStyle(document.querySelector('.chat-list')).fontFamily.startsWith('Tahoma')`);
       await run(`$('fontChat').click();`);
