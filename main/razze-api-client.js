@@ -62,6 +62,7 @@ class RazzeApiClient {
   updateNetwork(id, patch) { return this.request('PATCH', '/v1/networks/' + encodeURIComponent(id), patch); }
   deleteNetwork(id) { return this.request('DELETE', '/v1/networks/' + encodeURIComponent(id)); }
   listMembers(id) { return this.request('GET', '/v1/networks/' + encodeURIComponent(id) + '/members'); }
+  removeMember(id, userId) { return this.request('DELETE', '/v1/networks/' + encodeURIComponent(id) + '/members/' + encodeURIComponent(userId)); }
   listDevices(id) { return this.request('GET', '/v1/networks/' + encodeURIComponent(id) + '/devices'); }
   registerDevice(id, device) { return this.request('POST', '/v1/networks/' + encodeURIComponent(id) + '/devices', device); }
   updateDeviceEndpoint(id, deviceId, endpoint) { return this.request('PATCH', '/v1/networks/' + encodeURIComponent(id) + '/devices/' + encodeURIComponent(deviceId) + '/endpoint', endpoint); }

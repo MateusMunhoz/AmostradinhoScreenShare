@@ -205,3 +205,35 @@ test('cliente aceita o endereço digitado sem http(s)://', () => {
   assert.equal(new RazzeApiClient('localhost:8787').baseUrl, 'http://localhost:8787');
   assert.throws(() => new RazzeApiClient('http://example.com'), /HTTPS/);
 });
+
+test('membro sai da rede, dono tira membro, e os dispositivos saem junto', async () => {
+  const conta = async (email) => {
+    const created = await request('/v1/auth/register', { method: 'POST', body: { email, displayName: email.split('@')[0], password: 'segredo-123' } });
+    await request('/v1/admin/users/' + created.body.user.id + '/approve', { method: 'POST' }, adminToken);
+    return { id: created.body.user.id, token: (await request('/v1/auth/login', { method: 'POST', body: { email, password: 'segredo-123' } })).body.accessToken };
+  };
+  const dono = await conta('dono-membros@example.com');
+  const mara = await conta('mara-membros@example.com');
+  const nico = await conta('nico-membros@example.com');
+  const network = (await request('/v1/networks', { method: 'POST', body: { name: 'Membros' } }, dono.token)).body.network;
+  const invite = (await request('/v1/networks/' + network.id + '/invites', { method: 'POST', body: { maxUses: 5 } }, dono.token)).body;
+  for (const who of [mara, nico]) await request('/v1/invites/accept', { method: 'POST', body: { token: invite.token } }, who.token);
+  const device = { deviceId: 'c'.repeat(32), publicKey: Buffer.alloc(32, 11).toString('base64') };
+  assert.equal((await request('/v1/networks/' + network.id + '/devices', { method: 'POST', body: device }, mara.token)).status, 201);
+
+  // Quem não é dono não tira os outros; o dono não sai da própria rede
+  assert.equal((await request('/v1/networks/' + network.id + '/members/' + nico.id, { method: 'DELETE' }, mara.token)).status, 403);
+  assert.equal((await request('/v1/networks/' + network.id + '/members/me', { method: 'DELETE' }, dono.token)).status, 400);
+
+  // Mara sai: some da lista de membros e o dispositivo dela sai do túnel dos outros
+  assert.equal((await request('/v1/networks/' + network.id + '/members/me', { method: 'DELETE' }, mara.token)).status, 200);
+  const peers = (await request('/v1/networks/' + network.id + '/devices', {}, dono.token)).body.peers;
+  assert.equal(peers.some((peer) => peer.deviceId === device.deviceId), false);
+  assert.equal((await request('/v1/networks/' + network.id + '/devices', {}, mara.token)).status, 404);
+
+  // O dono tira o Nico
+  assert.equal((await request('/v1/networks/' + network.id + '/members/' + nico.id, { method: 'DELETE' }, dono.token)).status, 200);
+  const members = (await request('/v1/networks/' + network.id + '/members', {}, dono.token)).body.members.map((m) => m.id);
+  assert.deepEqual(members, [dono.id]);
+  assert.equal((await request('/v1/networks/' + network.id + '/members/' + nico.id, { method: 'DELETE' }, dono.token)).status, 404);
+});

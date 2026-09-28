@@ -335,6 +335,24 @@ function createApiServer(options = {}) {
         }
       }
 
+      // Sair da rede (userId "me") ou o dono tirar alguém. Os dispositivos da pessoa nessa rede saem junto.
+      match = /^\/v1\/networks\/([a-f0-9]{32})\/members\/([a-f0-9]{32}|me)$/.exec(pathname);
+      if (method === 'DELETE' && match) {
+        const network = networkRow(match[1]);
+        if (!network || (network.ownerId !== userId && !isMember(network.id, userId))) throw new ApiError(404, 'not_found', 'Rede não encontrada.');
+        const target = match[2] === 'me' ? userId : match[2];
+        if (target !== userId && network.ownerId !== userId) throw new ApiError(403, 'forbidden', 'Somente o dono pode remover membros.');
+        if (target === network.ownerId) throw new ApiError(400, 'owner_cannot_leave', 'O dono não sai da própria rede. Para acabar com ela, exclua a rede.');
+        if (!isMember(network.id, target)) throw new ApiError(404, 'member_not_found', 'Essa pessoa não está na rede.');
+        db.exec('BEGIN IMMEDIATE');
+        try {
+          db.prepare('DELETE FROM wireguard_devices WHERE network_id = ? AND user_id = ?').run(network.id, target);
+          db.prepare('DELETE FROM network_members WHERE network_id = ? AND user_id = ?').run(network.id, target);
+          db.exec('COMMIT');
+        } catch (error) { db.exec('ROLLBACK'); throw error; }
+        return send(res, 200, { ok: true });
+      }
+
       match = /^\/v1\/networks\/([a-f0-9]{32})\/members$/.exec(pathname);
       if (method === 'GET' && match) {
         const network = networkRow(match[1]);

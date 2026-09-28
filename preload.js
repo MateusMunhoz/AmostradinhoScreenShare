@@ -52,6 +52,8 @@ contextBridge.exposeInMainWorld('api', {
   razzeUpdateNetwork: (id, patch) => ipcRenderer.invoke('razze-update-network', String(id || ''), patch),
   razzeDeleteNetwork: (id) => ipcRenderer.invoke('razze-delete-network', String(id || '')),
   razzeAcceptInvite: (token) => ipcRenderer.invoke('razze-accept-invite', String(token || '')),
+  razzeListMembers: (id) => ipcRenderer.invoke('razze-list-members', String(id || '')),
+  razzeRemoveMember: (id, userId) => ipcRenderer.invoke('razze-remove-member', String(id || ''), String(userId || '')),
   razzeCreateInvite: (id, options) => ipcRenderer.invoke('razze-create-invite', String(id || ''), options),
   razzeFriends: () => ipcRenderer.invoke('razze-friends'),
   razzeFriendRequests: () => ipcRenderer.invoke('razze-friend-requests'),

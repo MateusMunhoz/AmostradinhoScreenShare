@@ -81,6 +81,8 @@ const handlers = {
   'razze-update-network': (_event, id, patch) => service.updateNetwork(id, patch),
   'razze-delete-network': (_event, id) => service.deleteNetwork(id),
   'razze-accept-invite': (_event, token) => service.acceptInvite(token),
+  'razze-list-members': (_event, id) => service.listMembers(id),
+  'razze-remove-member': (_event, id, userId) => service.removeMember(id, userId),
   'razze-create-invite': (_event, id, options) => service.createInvite(id, options),
   'razze-friends': () => service.listFriends(),
   'razze-friend-requests': () => service.friendRequests(),
@@ -140,6 +142,18 @@ app.whenReady().then(async () => {
     await run(`$('razzeInviteToken').value = '${inviteLink}'; $('razzeJoinInvite').click()`);
     await sleep(120);
     check('Aceita o link de convite pela API', await run(`$('razzeStatus').textContent === 'Você entrou na rede.'`));
+    // Bob entra pelo convite (pela API) e a dona tira ele pela lista de Membros
+    const post = (p, body, token) => fetch(process.env.RAZZE_E2E_API_URL + p, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) }, body: JSON.stringify(body) }).then((r) => r.json());
+    const bob = await post('/v1/auth/login', { email: 'bob@example.test', password: 'senha-e2e-456' });
+    await post('/v1/invites/accept', { token: inviteToken }, bob.accessToken);
+    check('Dona não tem "Sair da rede" na própria rede', await run(`![...document.querySelectorAll('#razzeNetworks .razze-network button')].some((b) => b.textContent === 'Sair da rede')`));
+    await run(`[...document.querySelectorAll('#razzeNetworks .razze-network button')].find((b) => b.textContent === 'Membros').click()`);
+    await sleep(200);
+    check('Membros: mostra a dona e o Bob', await run(`(() => { const t = document.querySelector('.razze-members').textContent; return t.includes('Alice') && t.includes('dono') && t.includes('Bob'); })()`));
+    await run(`window.confirm = () => true; [...document.querySelectorAll('.razze-members button')].find((b) => b.textContent === 'Remover').click()`);
+    await sleep(250);
+    const networkBob = (await service.listNetworks()).networks.find((item) => item.name === 'Rede de teste').id;
+    check('Remover tira o Bob da rede', !(await service.listMembers(networkBob)).members.some((m) => m.email === 'bob@example.test') && await run(`!document.querySelector('.razze-members').textContent.includes('Bob')`));
     await run(`$('razzeFriendEmail').value = 'bob@example.test'; $('razzeAddFriend').click()`);
     await sleep(120);
     check('Pedido de amizade pendente aparece na lista', await run(`$('razzeFriends').textContent.includes('bob@example.test')`));

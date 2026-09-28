@@ -171,6 +171,75 @@ function razzeNetworkCard(network) {
     finally { disconnect.disabled = false; }
   };
   actions.append(connect, disconnect);
+  let membersBtn = null;
+  // Membro: sair da rede (o túnel dela desliga antes)
+  if (network.isMember && razzeUser && network.ownerId !== razzeUser.id) {
+    const leave = document.createElement('button');
+    leave.className = 'btn small danger';
+    leave.textContent = 'Sair da rede';
+    leave.onclick = async () => {
+      if (!confirm('Sair da rede ' + network.name + '? Para voltar, você vai precisar de um convite novo.')) return;
+      leave.disabled = true;
+      try {
+        const tunnel = await window.api.razzeWireGuardStatus(network.id).catch(() => ({ exists: false }));
+        if (tunnel.exists) {
+          const disconnected = await window.api.razzeWireGuardDisconnect(network.id);
+          if (!disconnected.ok) throw new Error('não foi possível desligar o túnel: ' + disconnected.error);
+        }
+        if (networkPreferences().activeNetworkId === network.id) saveNetworkPreferences({ activeNetworkId: '' });
+        await window.api.razzeRemoveMember(network.id, 'me');
+        $('razzeStatus').textContent = 'Você saiu da rede ' + network.name + '.';
+        await refreshRazzeLists();
+        renderRadmin();
+      } catch (error) { $('razzeStatus').textContent = 'Não foi possível sair da rede: ' + error.message; }
+      finally { leave.disabled = false; }
+    };
+    actions.append(leave);
+  }
+  if (razzeUser && network.ownerId === razzeUser.id) {
+    // Dono: ver quem está na rede e tirar alguém
+    const membersBox = document.createElement('div');
+    membersBox.className = 'razze-members';
+    membersBox.hidden = true;
+    const members = document.createElement('button');
+    members.className = 'btn small';
+    members.textContent = 'Membros';
+    const renderMembersList = async () => {
+      try {
+        const list = (await window.api.razzeListMembers(network.id)).members || [];
+        membersBox.replaceChildren(...list.map((member) => {
+          const row = document.createElement('div');
+          row.className = 'razze-row';
+          const label = document.createElement('span');
+          label.className = 'hint';
+          label.textContent = member.displayName + ' · ' + member.email + (member.id === network.ownerId ? ' · dono' : '');
+          row.append(label);
+          if (member.id !== network.ownerId) {
+            const remove = document.createElement('button');
+            remove.className = 'btn small danger';
+            remove.textContent = 'Remover';
+            remove.onclick = async () => {
+              if (!confirm('Tirar ' + member.displayName + ' da rede ' + network.name + '?')) return;
+              remove.disabled = true;
+              try {
+                await window.api.razzeRemoveMember(network.id, member.id);
+                $('razzeStatus').textContent = member.displayName + ' saiu da rede. Ela some do túnel dos outros na próxima atualização.';
+                await renderMembersList();
+              } catch (error) { $('razzeStatus').textContent = 'Não foi possível remover: ' + error.message; remove.disabled = false; }
+            };
+            row.append(remove);
+          }
+          return row;
+        }));
+      } catch (error) { $('razzeStatus').textContent = 'Não foi possível listar os membros: ' + error.message; }
+    };
+    members.onclick = async () => {
+      membersBox.hidden = !membersBox.hidden;
+      if (!membersBox.hidden) await renderMembersList();
+    };
+    membersBtn = members; // entra no fim da fileira, depois de Excluir
+    card.append(membersBox);
+  }
   if (razzeUser && network.ownerId === razzeUser.id) {
     const invite = document.createElement('button');
     invite.className = 'btn small';
@@ -216,7 +285,9 @@ function razzeNetworkCard(network) {
     };
     actions.append(invite, edit, remove);
   }
-  card.append(title, subtitle, actions);
+  if (membersBtn) actions.append(membersBtn);
+  const box = card.querySelector('.razze-members');
+  card.replaceChildren(title, subtitle, actions, ...(box ? [box] : []));
   return card;
 }
 
