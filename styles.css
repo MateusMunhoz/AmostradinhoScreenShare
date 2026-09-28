@@ -799,6 +799,20 @@ main { padding-top: var(--workspace-top); }
 /* Na sala, sem painel aberto: as telas começam embaixo da barra de cima (na altura dos painéis), e a barra
    não fica solta por cima do vídeo */
 .workspace-in-room:not(.has-workspace-pane) #room { padding-top: var(--workspace-top); }
+/* Barra de cima + chat + voz: um bloco só, dividido por linhas (sem espaço entre eles) */
+.workspace-in-room.has-workspace-pane:not(.workspace-wide) #workspaceNav { border-radius: 10px 10px 0 0; }
+.workspace-in-room.has-workspace-pane:not(.workspace-wide) #workspacePanes { top: 63px; gap: 0; }
+.workspace-in-room.has-workspace-pane:not(.workspace-wide) .workspace-pane { border-radius: 0; border-top: 0; }
+.workspace-in-room.has-workspace-pane:not(.workspace-wide) .workspace-pane.pane-last { border-radius: 0 0 10px 10px; }
+/* Sem chat nem voz: a barra recolhe numa aba na borda direita, e as telas ocupam a altura toda */
+.nav-collapse { margin-left: 2px; padding: 0 6px; }
+.nav-collapse svg, .nav-expand svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.nav-collapsed #workspaceNav { display: none; }
+.workspace-in-room.nav-collapsed #room { padding-top: 16px; padding-right: 34px; }
+.nav-expand { position: fixed; top: 16px; right: 0; z-index: 12; width: 26px; height: 48px; display: grid; place-items: center; padding: 0; cursor: pointer;
+  border: 1px solid var(--line); border-right: 0; border-radius: 10px 0 0 10px; background: var(--panel); color: var(--surface-text); }
+.nav-expand:hover { color: var(--accent); }
+.nav-expand[hidden] { display: none; }
 .toast { top: calc(var(--workspace-top) + 8px); }
 @media (max-width: 900px) {
   .workspace-tab { padding: 0 6px; font-size: 11px; }

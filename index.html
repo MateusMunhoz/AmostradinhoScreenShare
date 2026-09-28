@@ -16,7 +16,10 @@
       <button id="navStreams" type="button" class="workspace-tab room-tab" aria-pressed="true" aria-controls="streamArea" hidden><span class="nav-icon" aria-hidden="true"></span><span>Transmissão</span></button>
       <button id="navProfile" type="button" class="workspace-tab profile-tab" aria-label="Seu perfil" title="Seu perfil" aria-haspopup="dialog" aria-expanded="false" aria-controls="profilePane"><span id="navProfileAvatar" aria-hidden="true"></span></button>
       <button id="navSettings" type="button" class="workspace-tab settings-tab" aria-label="Configurações gerais" title="Configurações gerais" aria-haspopup="dialog" aria-expanded="false" aria-controls="generalSettingsDialog"><span class="nav-icon" aria-hidden="true"></span></button>
+      <!-- Na sala sem chat nem voz abertos: recolhe a barra numa aba na borda direita -->
+      <button id="navCollapse" type="button" class="workspace-tab nav-collapse" aria-label="Recolher a barra" title="Recolher a barra" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
     </nav>
+    <button id="navExpand" type="button" class="nav-expand" aria-label="Mostrar a barra: Chat, Voz, Transmissão, perfil e configurações" title="Mostrar a barra" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></button>
   </header>
   <aside id="workspacePanes" aria-label="Painéis selecionados" hidden>
     <section id="profilePane" class="modal global utility-popup" hidden>

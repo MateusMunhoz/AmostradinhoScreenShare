@@ -51,6 +51,14 @@ function syncWorkspace() {
   document.body.classList.toggle('has-workspace-pane', any);
   document.body.classList.toggle('workspace-in-room', inRoom);
   document.body.classList.toggle('workspace-wide', inRoom && !workspaceViews.streams && any);
+  // Barra e painéis formam um bloco só: o último painel aberto fecha o bloco com os cantos de baixo
+  $('chatTab').classList.toggle('pane-last', !workspaceViews.voice);
+  $('voicePane').classList.toggle('pane-last', workspaceViews.voice);
+  // Na sala sem chat nem voz: a barra pode ficar recolhida numa aba na borda direita (escolha salva)
+  const bare = inRoom && !any;
+  $('navCollapse').hidden = !bare;
+  $('navExpand').hidden = !(bare && navCollapsed);
+  document.body.classList.toggle('nav-collapsed', bare && navCollapsed);
   if (inRoom) syncIncomingVideo(); // telas escondidas não baixam vídeo (o som continua)
   $('workspaceContext').textContent = inRoom ? 'Na sala' : 'Início';
   for (const [id, view] of [['navChat','chat'],['navVoice','voice'],['navStreams','streams']]) {
@@ -119,6 +127,13 @@ function renderVoicePane() {
     for (const id of outside) list.append(id ? memberRow(id, nameOf(id), true) : memberRow(null, `${getName()} (você)`, true));
   }
 }
+let navCollapsed = load('barraRecolhida', '1') === '1';
+function setNavCollapsed(on) {
+  navCollapsed = on;
+  save('barraRecolhida', on ? '1' : '0');
+  syncWorkspace();
+  (on ? $('navExpand') : $('navCollapse')).focus();
+}
 function setupWorkspace() {
   const host = $('workspacePanes');
   host.insertBefore($('chatTab'), $('voicePane'));
@@ -130,6 +145,8 @@ function setupWorkspace() {
   const icons = {navSettings: '<svg viewBox="0 0 24 24"><path d="m9 3 1-2h4l1 2 2 1 2 0 2 3-1 2v3l1 2-2 3h-2l-2 1-1 3h-4l-1-3-2-1H5l-2-3 1-2V9L3 7l2-3h2z"/><circle cx="12" cy="11" r="3"/></svg>',
     navChat: ICON.chat, navVoice: ICON.mic, navStreams: '<svg viewBox="0 0 24 24"><path d="M3 4h18v13H3zM8 21h8M12 17v4"/></svg>'};
   for (const [id, icon] of Object.entries(icons)) $(id).querySelector('.nav-icon').innerHTML = icon;
+  $('navCollapse').onclick = () => setNavCollapsed(true);
+  $('navExpand').onclick = () => setNavCollapsed(false);
   $('navProfile').onclick = openProfilePopup;
   $('closeProfile').onclick = closeProfilePopup;
   setupUtilityPopup('profilePane', closeProfilePopup);

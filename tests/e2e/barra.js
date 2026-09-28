@@ -43,13 +43,29 @@ run('Barra de baixo numa linha', 90000, async () => {
   check('Os botões de sair, chat e microfone continuam à vista', await A.eval(`['leaveBtn', 'chatToggle', 'voiceMute', 'voiceDeafen', 'stopShareBtn'].every((id) => { const e = $(id); const r = e.getBoundingClientRect(); const d = document.querySelector('.dock').getBoundingClientRect(); return r.width > 0 && r.right <= d.right + 1; })`));
   await A.shot('barra.png');
 
-  // Todos os painéis fechados: a barra de cima não fica por cima das telas
-  await A.eval(`(() => { workspaceViews.chat = false; workspaceViews.voice = false; saveWorkspaceViews(); syncWorkspace(); })()`);
+  // Barra de cima + painéis: um bloco só, sem espaço entre eles
+  const bloco = await A.eval(`(() => { const n = $('workspaceNav').getBoundingClientRect(), p = $('workspacePanes').getBoundingClientRect(); return { nav: Math.round(n.bottom), paineis: Math.round(p.top), gap: getComputedStyle($('workspacePanes')).rowGap }; })()`);
+  check('Barra de cima e painéis formam um bloco (sem espaço)', Math.abs(bloco.paineis - bloco.nav) <= 1 && bloco.gap === '0px', JSON.stringify(bloco));
+
+  // Todos os painéis fechados: a barra começa recolhida numa aba na borda, e as telas usam a altura toda
+  await A.eval(`(() => { localStorage.removeItem('barraRecolhida'); navCollapsed = true; workspaceViews.chat = false; workspaceViews.voice = false; saveWorkspaceViews(); syncWorkspace(); })()`);
   await sleep(300);
-  const topo = await A.eval(`(() => { const n = $('workspaceNav').getBoundingClientRect(), a = $('streamArea').getBoundingClientRect(); return { nav: Math.round(n.bottom), telas: Math.round(a.top), largura: Math.round(a.right) }; })()`);
-  check('Painéis fechados: as telas começam embaixo da barra de cima', topo.telas >= topo.nav, JSON.stringify(topo));
-  await A.shot('paineis-fechados.png');
+  const T = `(() => { const a = $('streamArea').getBoundingClientRect(); return { telas: Math.round(a.top), nav: getComputedStyle($('workspaceNav')).display, aba: !$('navExpand').hidden }; })()`;
+  let t = await A.eval(T);
+  check('Painéis fechados: a barra recolhe numa aba, e as telas começam no topo', t.nav === 'none' && t.aba && t.telas <= 20, JSON.stringify(t));
+  await A.shot('barra-recolhida.png');
+  await A.eval(`$('navExpand').click()`);
+  await sleep(300);
+  t = await A.eval(T);
+  const navBottom = await A.eval(`Math.round($('workspaceNav').getBoundingClientRect().bottom)`);
+  check('A aba mostra a barra, e as telas descem para baixo dela', t.nav !== 'none' && !t.aba && t.telas >= navBottom && await A.eval(`!$('navCollapse').hidden && localStorage.getItem('barraRecolhida') === '0'`), JSON.stringify({ ...t, navBottom }));
+  await A.shot('barra-aberta.png');
+  await A.eval(`$('navCollapse').click()`);
+  await sleep(300);
+  check('A setinha na barra recolhe de novo (e fica salvo)', (await A.eval(T)).nav === 'none' && await A.eval(`localStorage.getItem('barraRecolhida') === '1'`));
   await A.eval(`(() => { workspaceViews.chat = true; workspaceViews.voice = true; saveWorkspaceViews(); syncWorkspace(); })()`);
+  await sleep(200);
+  check('Abrindo o chat de novo, a barra volta junto', await A.eval(`getComputedStyle($('workspaceNav')).display !== 'none' && $('navExpand').hidden && $('navCollapse').hidden`));
 
   // Tela larga (1920): tudo aparece, com os textos
   await A.send('Emulation.setDeviceMetricsOverride', { width: 1920, height: 1040, deviceScaleFactor: 1, mobile: false });
