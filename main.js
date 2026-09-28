@@ -126,19 +126,17 @@ function relaunch() {
   app.quit();
 }
 
-// Vidro de verdade (Configurações gerais > Aparência): no Windows 11 22H2 ou mais novo, o fundo da janela vira
-// acrílico e a área de trabalho aparece desfocada atrás do app. Nos outros, a página desenha um fundo próprio e
-// o vidro fica só dentro do app. "opaque" volta à cor sólida.
-const WIN11_MATERIAL = process.platform === 'win32' && Number(os.release().split('.')[2]) >= 22621;
-function setWindowMaterial(mode, color) {
+// Fundo da janela (Configurações gerais > Aparência). O vidro fica só dentro do app, sobre um fundo desenhado
+// pela página: a janela acrílica transparente do Windows 11 deixava rastros (a tela anterior continuava
+// aparecendo e o texto ganhava um brilho de tanto ser redesenhado por cima) com backdrop-filter. Sempre opaca.
+function setWindowMaterial(_mode, color) {
   const win = janelas.main;
-  const glass = mode === 'clear' || mode === 'liquid';
-  if (!win || win.isDestroyed() || !WIN11_MATERIAL || typeof win.setBackgroundMaterial !== 'function') return { material: 'none', supported: false };
+  if (!win || win.isDestroyed()) return { material: 'none', supported: false };
   try {
-    if (glass) { win.setBackgroundColor('#00000000'); win.setBackgroundMaterial('acrylic'); }
-    else { win.setBackgroundMaterial('none'); win.setBackgroundColor(/^#[\da-f]{6}$/i.test(color) ? color : '#22271E'); }
-    return { material: glass ? 'acrylic' : 'none', supported: true };
-  } catch { return { material: 'none', supported: false }; }
+    if (typeof win.setBackgroundMaterial === 'function') win.setBackgroundMaterial('none');
+    win.setBackgroundColor(/^#[\da-f]{6}$/i.test(color) ? color : '#22271E');
+  } catch {}
+  return { material: 'none', supported: false };
 }
 
 // Fora da captura: enquanto você se vê transmitindo uma tela inteira, a janela do app e as flutuantes não

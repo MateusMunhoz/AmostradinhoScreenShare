@@ -889,7 +889,6 @@ html[data-glass=clear][data-material=acrylic], html[data-glass=liquid][data-mate
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   border-color: var(--glass-edge);
 }
-:is(html[data-glass=clear], html[data-glass=liquid]) .modal { -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
 /* Vídeo nunca fica transparente */
 :is(html[data-glass=clear], html[data-glass=liquid]) .tile video { background: #000; }
 
