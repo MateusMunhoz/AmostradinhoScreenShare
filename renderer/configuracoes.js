@@ -28,12 +28,11 @@ function renderGeneralSettings() {
   const effective = AppPreferences.palette(appPreferences.colors);
   const shown = { text: '--text', live: '--live', speaking: '--ok', warn: '--warn', line: '--line' };
   for (const [key, value] of Object.entries(appPreferences.colors)) {
-    // Automática: o campo mostra (em cinza) a cor calculada, e o botão Auto fica ligado
+    // Automática: o campo mostra, em cinza, a cor calculada
     const color = value || effective[shown[key]];
     $('color-' + key).value = color;
     $('hex-' + key).value = color;
     $('hex-' + key).classList.toggle('is-auto', !value);
-    if ($('auto-' + key)) $('auto-' + key).setAttribute('aria-pressed', String(!value));
     $('hex-' + key).removeAttribute('aria-invalid');
     $('error-' + key).hidden = true;
   }
@@ -95,11 +94,9 @@ function setupGeneralSettings() {
       picker.value = normalized;
       if (source === picker) field.value = normalized;
       field.classList.remove('is-auto');
-      $('auto-' + key)?.setAttribute('aria-pressed', 'false');
       saveAppPreferences();
       refreshAutoColors();
     };
-    if (optional) $('auto-' + key).onclick = () => change('', field); // volta ao automático
     picker.oninput = () => change(picker.value, picker);
     field.oninput = () => change(field.value, field);
     field.onblur = () => { const value = AppPreferences.hex(field.value); if (value) field.value = value; };
