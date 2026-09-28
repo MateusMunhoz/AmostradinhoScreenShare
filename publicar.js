@@ -74,13 +74,14 @@ function publishGithub(version, productName, notes) {
     return false;
   }
   const exe = path.join(ROOT, 'dist', `${productName}.exe`);
+  const appImage = path.join(ROOT, 'dist', 'Tela-P2P.AppImage');
   const steps = [
     ['git', ['add', '-u']], // só o que o git já acompanha: arquivo novo (ex.: protótipos) nunca entra sozinho
     ['git', ['commit', '-m', `Versão ${version}`]],
     ['git', ['tag', '-a', `v${version}`, '-m', `Versão ${version}`]],
     ['git', ['push', 'origin', 'HEAD']],
     ['git', ['push', 'origin', `v${version}`]],
-    ['gh', ['release', 'create', `v${version}`, exe, path.join(ROOT, 'pack', 'pack.json'), path.join(ROOT, 'pack', 'pack.sig'),
+    ['gh', ['release', 'create', `v${version}`, exe, ...(fs.existsSync(appImage) ? [appImage] : []), path.join(ROOT, 'pack', 'pack.json'), path.join(ROOT, 'pack', 'pack.sig'),
       '--title', `${productName} ${version}`, ...(notes ? ['--notes', notes] : ['--generate-notes'])]],
   ];
   for (const [cmd, args] of steps) {
@@ -88,6 +89,27 @@ function publishGithub(version, productName, notes) {
     if (!ok(cmd, args)) fail(`Parou no passo acima. A versão ${version} já está assinada e o .exe gerado; corrija e rode os passos que faltam.`);
   }
   return true;
+}
+
+// O AppImage do Linux, com o mesmo pacote assinado. No Windows, compila dentro do Ubuntu do WSL
+// (linux/construir-appimage.sh). Sem WSL ou sem Node lá, a versão sai só com o .exe e avisa.
+function buildLinux() {
+  const appImage = path.join(ROOT, 'dist', 'Tela-P2P.AppImage');
+  fs.rmSync(appImage, { force: true }); // nunca publicar o AppImage de uma versão anterior
+  console.log('Gerando o AppImage para o Linux...');
+  let r;
+  if (process.platform === 'linux') {
+    r = spawnSync('npx electron-builder --linux AppImage --publish never', { cwd: ROOT, stdio: 'inherit', shell: true });
+  } else {
+    const temNode = spawnSync('wsl.exe', ['-e', 'bash', '-lc', 'command -v node >/dev/null && command -v npm >/dev/null'], { stdio: 'ignore' }).status === 0;
+    if (!temNode) {
+      console.log('\nAppImage pulado: precisa do WSL (Ubuntu) com o Node.js instalado lá (sudo apt install nodejs npm).');
+      return;
+    }
+    const src = spawnSync('wsl.exe', ['-e', 'wslpath', '-a', ROOT], { encoding: 'utf8' }).stdout.trim();
+    r = spawnSync('wsl.exe', ['-e', 'bash', `${src}/linux/construir-appimage.sh`, src], { stdio: 'inherit' });
+  }
+  if (r.status !== 0 || !fs.existsSync(appImage)) console.log('\nO AppImage não foi gerado: a versão sai só com o .exe.');
 }
 
 function publish(requested, { notes = '', github = true } = {}) {
@@ -130,6 +152,7 @@ function publish(requested, { notes = '', github = true } = {}) {
   console.log('Gerando o .exe para quem ainda não tem o app...');
   const r = spawnSync('npx electron-builder --win portable', { cwd: ROOT, stdio: 'inherit', shell: true });
   if (r.status !== 0) fail('O .exe não foi gerado, mas a atualização pela sala já funciona.');
+  buildLinux();
 
   const onGithub = github && publishGithub(version, pkg.build.productName, notes);
   console.log(`\nPronto. Os amigos recebem a ${version} ${onGithub ? 'pelo botão "Baixar atualização" do app ou ' : ''}pela sala, entrando numa sala com você.`);

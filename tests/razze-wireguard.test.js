@@ -285,3 +285,59 @@ test('ajudante: o app manda os pedidos pelo pipe e o ajudante obedece só a essa
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('Linux: túnel rz + 12 letras (limite de 15 do kernel) e estado pelo "ip link"', async () => {
+  assert.equal(tunnelNameFor('ab'.repeat(16), 'linux'), 'rzabababababab');
+  assert.equal(tunnelNameFor('ab'.repeat(16), 'win32'), 'Razzeabababababab');
+  const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'razze-linux-'));
+  let up = null;
+  const manager = createWireGuardManager({
+    app: { isPackaged: false, getPath: () => profile, getAppPath: () => profile, getName: () => 'Tela P2P' },
+    safeStorage: { isEncryptionAvailable: () => true }, platform: 'linux', binary: '/usr/bin/wg', privileged: {},
+    exec: async (file, args) => {
+      assert.deepEqual([file, ...args.slice(0, 4)], ['ip', '-o', 'link', 'show', 'dev']);
+      if (up === null) throw new Error('Device "rzabababababab" does not exist.');
+      return `9: rzabababababab: <POINTOPOINT,NOARP${up ? ',UP,LOWER_UP' : ''}> mtu 1380 qdisc noqueue state UNKNOWN`;
+    },
+  });
+  try {
+    assert.deepEqual(await manager.status('ab'.repeat(16)), { installed: true, exists: false, connected: false, tunnelName: 'rzabababababab' });
+    up = false;
+    assert.equal((await manager.status('ab'.repeat(16))).connected, false);
+    up = true;
+    assert.equal((await manager.status('ab'.repeat(16))).connected, true);
+  } finally { fs.rmSync(profile, { recursive: true, force: true }); }
+});
+
+test('Linux: o ajudante (shell como root) recusa pedido fora do padrão e responde na ordem', async (t) => {
+  const { spawn, spawnSync } = require('node:child_process');
+  if (spawnSync('sh', ['-c', 'true'], { stdio: 'ignore' }).status !== 0) return t.skip('sem sh neste PC');
+  const { createElevationLinux } = require('../main/razze-elevacao');
+  const tunnels = fs.mkdtempSync(path.join(os.tmpdir(), 'razze-sh-')).split(path.sep).join('/');
+  const conf = tunnels + '/rzabababababab.conf';
+  fs.writeFileSync(conf, buildTunnelConfig({ privateKey: Buffer.alloc(32, 1).toString('base64'), assignedIp: '10.64.0.2', listenPort: 41000, peers: [] }));
+  // Aqui sem root, sem ip e sem wg: o que passa na validação chega a tentar o comando e volta com o erro dele
+  const elevation = createElevationLinux({ tunnels, spawnHelper: (args) => spawn('sh', args.slice(1), { stdio: ['pipe', 'pipe', 'pipe'] }) });
+  try {
+    await assert.rejects(elevation.uninstall('rz; reboot'), /Nome de túnel inválido/);
+    await assert.rejects(elevation.syncconf('rzabababababab', '/etc/shadow'), /Pedido inválido/);
+    await assert.rejects(elevation.syncconf('rzabababababab', tunnels + '/../rzabababababab.wg.conf'), /Pedido inválido/);
+    const ordem = await Promise.allSettled([elevation.uninstall('rz?'), elevation.install(conf, { tunnel: 'rzabababababab', address: '10.64.0.2/24' })]);
+    assert.match(ordem[0].reason.message, /Nome de túnel inválido/);
+    assert.doesNotMatch(ordem[1].reason.message, /inválid/); // passou na validação (falhou só por não ter ip/wg aqui)
+    assert.equal(fs.existsSync(conf.replace(/\.conf$/, '.wg.conf')), false, 'o arquivo sem os campos do wg-quick é apagado');
+  } finally {
+    elevation.close();
+    fs.rmSync(tunnels, { recursive: true, force: true });
+  }
+});
+
+test('Linux: apertar para falar mapeia a tecla do Windows para o keycode do X', () => {
+  const { xinputAlvo } = require('../main/linux');
+  assert.deepEqual(xinputAlvo('V'.charCodeAt(0)), { tipo: 'key', codes: [55] });  // V = evdev 47 + 8
+  assert.deepEqual(xinputAlvo(20), { tipo: 'key', codes: [66] });                  // Caps Lock
+  assert.deepEqual(xinputAlvo(17), { tipo: 'key', codes: [37, 105] });             // Ctrl esquerdo e direito
+  assert.deepEqual(xinputAlvo(112), { tipo: 'key', codes: [67] });                 // F1
+  assert.deepEqual(xinputAlvo(5), { tipo: 'button', codes: [8] });                 // Mouse 4
+  assert.equal(xinputAlvo(250), null);
+});

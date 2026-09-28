@@ -2,7 +2,10 @@
 
 Transmita a tela e converse por voz com os amigos, de PC para PC, pela Radmin VPN ou pela VPN WireGuard Razze. No modo Radmin, não precisa de servidor pago: o app de quem cria a sala apresenta as pessoas, e o vídeo, o áudio e a voz vão direto de um PC para o outro.
 
-**Baixar:** pegue o `Tela P2P.exe` da versão mais nova em [Releases](https://github.com/MateusMunhoz/AmostradinhoScreenShare/releases/latest). Não precisa instalar: é só abrir. Depois disso, o próprio app avisa quando sair uma versão nova, e um botão atualiza.
+**Baixar:** pegue o arquivo da versão mais nova em [Releases](https://github.com/MateusMunhoz/AmostradinhoScreenShare/releases/latest). Não precisa instalar: é só abrir. Depois disso, o próprio app avisa quando sair uma versão nova, e um botão atualiza.
+
+- **Windows:** `Tela P2P.exe`.
+- **Linux (Ubuntu, Mint, com X11):** `Tela-P2P.AppImage`. Veja [Linux](#linux).
 
 ## Começar
 
@@ -22,6 +25,26 @@ Transmita a tela e converse por voz com os amigos, de PC para PC, pela Radmin VP
 - **A sala não cai quando o host sai:** outra pessoa assume sozinha.
 
 Detalhes de cada coisa no [Guia de uso](docs/guia.md).
+
+## Linux
+
+O app funciona no Ubuntu e no Mint (sessão X11). Da primeira vez, no terminal:
+
+```
+sudo apt install libfuse2t64 wireguard-tools xinput pkexec
+chmod +x Tela-P2P.AppImage
+./Tela-P2P.AppImage
+```
+
+No Ubuntu 22.04 e no Mint 21, troque `libfuse2t64` por `libfuse2`. O `wireguard-tools` e o `pkexec` são para a VPN Razze; o `xinput`, para o apertar para falar.
+
+O que muda em relação ao Windows:
+
+- **Radmin:** não existe no Linux. Pela internet, use a VPN Razze (ou a rede local).
+- **Som do PC na transmissão:** vai o som inteiro do PC (pelo PulseAudio ou PipeWire). Não dá para deixar apps de fora, e com a voz ligada a tela vai sem som (senão a voz da call iria junto).
+- **Codificação:** sempre pela do navegador (o NVENC direto é só do Windows).
+- **VPN Razze:** o túnel é do próprio Linux. Ao conectar, o sistema pede a sua senha uma vez. Ele não volta sozinho depois de reiniciar o PC: clique em **Conectar** de novo.
+- **Apertar para falar:** precisa de sessão X11 (no Wayland, o sistema não deixa ler a tecla com o app fora de foco).
 
 ## Documentação
 

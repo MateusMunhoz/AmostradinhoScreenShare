@@ -130,6 +130,11 @@ const updater = {
   },
 
   restart() {
+    if (process.env.APPIMAGE) { // Linux: reabre pelo arquivo .AppImage (a montagem atual some ao fechar)
+      app.relaunch({ execPath: process.env.APPIMAGE, args: [] });
+      app.exit(0);
+      return;
+    }
     const portable = process.env.PORTABLE_EXECUTABLE_FILE;
     if (portable) {
       // O .exe portátil apaga a pasta temporária quando fecha: abre o novo só depois de 2 s

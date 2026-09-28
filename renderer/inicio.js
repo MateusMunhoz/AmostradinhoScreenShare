@@ -190,6 +190,13 @@ async function renderRadmin() {
   }
   let ips = [];
   try { ips = await window.api.getIps(); } catch {}
+  if (window.api.platform === 'linux') { // a Radmin não existe no Linux: rede local, ou a Razze pela internet
+    const lan = ips[0];
+    $('radminDot').className = 'dot ' + (lan ? 'ok' : 'warn');
+    $('radminTitle').textContent = lan ? 'Rede local' : 'Sem rede';
+    $('radminDetail').textContent = lan ? `${lan.address} · pela internet, use a VPN Razze` : 'Conecte o PC a uma rede';
+    return;
+  }
   const r = ips.find((i) => i.radmin);
   $('radminDot').className = 'dot ' + (r ? 'ok' : 'warn');
   $('radminTitle').textContent = r ? 'Radmin VPN conectada' : 'Radmin VPN não encontrada';

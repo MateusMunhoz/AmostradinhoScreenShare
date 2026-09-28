@@ -97,6 +97,11 @@ function isOverlayAddress(value) {
 }
 
 function pingPeer(assignedIp, peerIp) {
+  if (process.platform === 'linux') {
+    return new Promise((resolve, reject) => execFile('ping', ['-c', '1', '-W', '2', '-I', assignedIp, peerIp], {
+      timeout: 3000, maxBuffer: 64 * 1024, encoding: 'utf8',
+    }, (error) => error ? reject(error) : resolve()));
+  }
   const systemRoot = process.env.SystemRoot || 'C:\\Windows';
   return new Promise((resolve, reject) => execFile(path.join(systemRoot, 'System32', 'PING.EXE'), ['-n', '1', '-w', '1200', '-S', assignedIp, peerIp], {
     windowsHide: true, timeout: 2500, maxBuffer: 64 * 1024, encoding: 'utf8',
@@ -104,6 +109,8 @@ function pingPeer(assignedIp, peerIp) {
 }
 
 function wireguardExecutable() {
+  // Linux: o túnel é do kernel; o app só precisa do wg (pacote wireguard-tools)
+  if (process.platform === 'linux') return ['/usr/bin/wg', '/usr/local/bin/wg', '/bin/wg', '/usr/sbin/wg'].find((f) => fs.existsSync(f)) || null;
   const candidates = [
     app.isPackaged ? path.join(process.resourcesPath, 'bin', 'selfvpn', 'wireguard.exe') : '',
     !app.isPackaged ? path.join(app.getAppPath(), 'bin', 'selfvpn', 'wireguard.exe') : '',
@@ -150,6 +157,12 @@ function createWireGuardManager(options = {}) {
   const activeTunnels = new Map();
   const refreshTimers = new Map();
   const tunnelsDir = path.join(electronApp.getPath('userData'), 'razze', 'tunnels');
+  const linux = platform === 'linux';
+  const nameFor = (networkId) => tunnelNameFor(networkId, platform);
+  const TUNNEL_NAME = linux ? /^rz[a-f0-9]{12}$/ : /^Razze[a-f0-9]{12}$/;
+  const semWireGuard = linux
+    ? 'O WireGuard não está instalado. No terminal: sudo apt install wireguard-tools'
+    : 'WireGuard não foi encontrado no pacote do Tela P2P.';
   // Instalar, remover e atualizar o túnel precisam de administrador: direto, se o app já estiver como
   // administrador, ou pelo ajudante que pede a permissão do Windows (main/razze-elevacao.js). Nos testes,
   // options.exec simula os comandos.
@@ -159,7 +172,9 @@ function createWireGuardManager(options = {}) {
       uninstall: (tunnel) => run(binary, ['/uninstalltunnelservice', tunnel]),
       syncconf: (tunnel, config) => run(options.wgBinary || 'wg.exe', ['syncconf', tunnel, config]),
     }
-    : require('./razze-elevacao').createElevation({ wireguard: binary, wg: wgExecutable(), tunnels: tunnelsDir }));
+    : linux
+      ? require('./razze-elevacao').createElevationLinux({ tunnels: tunnelsDir })
+      : require('./razze-elevacao').createElevation({ wireguard: binary, wg: wgExecutable(), tunnels: tunnelsDir }));
   const refreshTasks = new Map();
 
   function stopPeerRefresh(networkId) {
@@ -204,8 +219,18 @@ function createWireGuardManager(options = {}) {
   }
 
   async function status(networkId) {
-    if (!binary) return { installed: false, connected: false, error: 'WireGuard não foi encontrado no pacote do Tela P2P.' };
-    const tunnelName = tunnelNameFor(assertNetworkId(networkId));
+    if (!binary) return { installed: false, connected: false, error: semWireGuard };
+    const tunnelName = nameFor(assertNetworkId(networkId));
+    if (linux) {
+      // Linux: a interface existe? Com UP nas marcas, está ligada
+      try {
+        const output = await run('ip', ['-o', 'link', 'show', 'dev', tunnelName], 10_000);
+        return { installed: true, exists: true, connected: /<[^>]*\bUP\b[^>]*>/.test(output), tunnelName };
+      } catch (error) {
+        if (/does not exist|não existe|Cannot find device/i.test(error.message)) return { installed: true, exists: false, connected: false, tunnelName };
+        return { installed: true, exists: true, connected: false, tunnelName, error: error.message };
+      }
+    }
     try {
       const output = await run(path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'sc.exe'), ['query', 'WireGuardTunnel$' + tunnelName], 10_000);
       // O sc.exe traduz o rótulo (STATE em inglês, ESTADO em português), mas não o "4 RUNNING"
@@ -217,8 +242,8 @@ function createWireGuardManager(options = {}) {
   }
 
   async function connect(api, networkId, networkName = 'Razze') {
-    if (platform !== 'win32') throw new Error('A integração WireGuard do Tela P2P está disponível no Windows.');
-    if (!binary) throw new Error('WireGuard não foi encontrado. Confira bin/selfvpn/wireguard.exe no pacote.');
+    if (platform !== 'win32' && !linux) throw new Error('A VPN Razze funciona no Windows e no Linux.');
+    if (!binary) throw new Error(linux ? semWireGuard : 'WireGuard não foi encontrado. Confira bin/selfvpn/wireguard.exe no pacote.');
     networkId = assertNetworkId(networkId);
     await stopPeerRefresh(networkId);
     const current = await status(networkId);
@@ -231,7 +256,7 @@ function createWireGuardManager(options = {}) {
     await api.updateDeviceEndpoint(networkId, keys.deviceId, { host: publicEndpoint.host, port: publicEndpoint.port });
     const directory = path.join(electronApp.getPath('userData'), 'razze', 'tunnels');
     fs.mkdirSync(directory, { recursive: true });
-    const tunnelName = tunnelNameFor(networkId);
+    const tunnelName = nameFor(networkId);
     const configPath = path.join(directory, tunnelName + '.conf');
     const peersResult = await api.listDevices(networkId);
     const config = buildTunnelConfig({ privateKey: keys.privateKey, assignedIp: registered.device.assignedIp, listenPort: publicEndpoint.localPort, peers: peersResult.peers.filter((peer) => peer.deviceId !== keys.deviceId) });
@@ -247,8 +272,9 @@ function createWireGuardManager(options = {}) {
     }
     fs.writeFileSync(configPath, config, { mode: 0o600 });
     try {
-      await privileged.install(configPath);
+      await privileged.install(configPath, { tunnel: tunnelName, address: registered.device.assignedIp + '/24' });
     } catch (error) {
+      if (linux) throw new Error('Não foi possível ligar o túnel WireGuard: ' + error.message);
       throw new Error(/access is denied|acesso negado|administrator|administrador|elevat/i.test(error.message)
         ? 'O Windows exige permissão de administrador para criar a interface VPN. Execute o Tela P2P como administrador e tente novamente.'
         : 'Não foi possível iniciar o túnel WireGuard: ' + error.message);
@@ -307,7 +333,7 @@ function createWireGuardManager(options = {}) {
         if (!removed) throw new Error('O serviço WireGuard anterior ainda está encerrando.');
         if (activeTunnels.get(networkId) !== tunnel) return false;
         fs.writeFileSync(tunnel.configPath, config, { mode: 0o600 });
-        await privileged.install(tunnel.configPath);
+        await privileged.install(tunnel.configPath, { tunnel: tunnel.tunnelName, address: tunnel.assignedIp + '/24' });
         if (activeTunnels.get(networkId) !== tunnel) return false;
         let next = await status(networkId);
         for (let attempt = 0; attempt < 10 && !next.connected; attempt++) {
@@ -329,16 +355,19 @@ function createWireGuardManager(options = {}) {
   async function disconnect(networkId) {
     if (!binary) return { ok: false, error: 'WireGuard não foi encontrado.' };
     let tunnelName;
-    try { tunnelName = tunnelNameFor(assertNetworkId(networkId)); }
+    try { tunnelName = nameFor(assertNetworkId(networkId)); }
     catch (error) { return { ok: false, error: error.message }; }
     await stopPeerRefresh(String(networkId));
     return disconnectTunnel(tunnelName);
   }
 
   async function disconnectTunnel(tunnelName) {
-    if (!/^Razze[a-f0-9]{12}$/.test(tunnelName)) return { ok: false, error: 'Nome de túnel inválido.' };
+    if (!TUNNEL_NAME.test(tunnelName)) return { ok: false, error: 'Nome de túnel inválido.' };
     try {
-      const current = await run(path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'sc.exe'), ['query', 'WireGuardTunnel$' + tunnelName], 10_000)
+      const current = linux
+        ? await run('ip', ['-o', 'link', 'show', 'dev', tunnelName], 10_000)
+          .then((output) => ({ exists: true, output }), (error) => /does not exist|Cannot find device/i.test(error.message) ? ({ exists: false }) : Promise.reject(error))
+        : await run(path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'sc.exe'), ['query', 'WireGuardTunnel$' + tunnelName], 10_000)
         .then((output) => ({ exists: true, output }), (error) => /1060|does not exist|não existe/i.test(error.message) ? ({ exists: false }) : Promise.reject(error));
       if (!current.exists) {
         fs.rmSync(path.join(electronApp.getPath('userData'), 'razze', 'tunnels', tunnelName + '.conf'), { force: true });
@@ -358,7 +387,7 @@ function createWireGuardManager(options = {}) {
     let names = [];
     try {
       names = fs.readdirSync(directory)
-        .filter((file) => /^Razze[a-f0-9]{12}\.conf$/i.test(file))
+        .filter((file) => /^(Razze|rz)[a-f0-9]{12}\.conf$/i.test(file) && TUNNEL_NAME.test(file.slice(0, -5)))
         .map((file) => file.slice(0, -5));
     } catch (error) {
       if (error.code !== 'ENOENT') return { ok: false, disconnected: 0, errors: [error.message] };
@@ -374,7 +403,7 @@ function createWireGuardManager(options = {}) {
     if (activeTunnels.has(networkId)) return { resumed: false, connected: true };
     const current = await status(networkId);
     if (!current.connected) return { resumed: false, connected: false };
-    const tunnelName = tunnelNameFor(networkId);
+    const tunnelName = nameFor(networkId);
     const configPath = path.join(tunnelsDir, tunnelName + '.conf');
     let text = '';
     try { text = fs.readFileSync(configPath, 'utf8'); } catch { return { resumed: false, connected: true }; }
@@ -388,10 +417,11 @@ function createWireGuardManager(options = {}) {
   return { status, connect, refreshPeers, disconnect, disconnectAll, identity, resume };
 }
 
-function tunnelNameFor(networkId) {
+// No Linux, nome de interface tem no máximo 15 letras: "rz" + 12
+function tunnelNameFor(networkId, platform = process.platform) {
   const id = String(networkId || '');
   if (!/^[a-f0-9]{32}$/.test(id)) throw new Error('ID de rede inválido.');
-  return 'Razze' + id.slice(0, 12);
+  return (platform === 'linux' ? 'rz' : 'Razze') + id.slice(0, 12);
 }
 
 module.exports = { generateWireGuardKeys, decodeStunResponse, discoverEndpoint, buildTunnelConfig, wgSyncConfig, createWireGuardManager, tunnelNameFor, isOverlayAddress, isWireGuardKey };

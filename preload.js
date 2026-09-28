@@ -1,6 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
+  platform: process.platform, // 'win32' ou 'linux': o que só existe num dos dois some da tela
   getSources: () => ipcRenderer.invoke('get-sources'),
   selectSource: (id, withSystemAudio) => ipcRenderer.invoke('select-source', id, withSystemAudio),
   listAudioApps: () => ipcRenderer.invoke('list-audio-apps'),

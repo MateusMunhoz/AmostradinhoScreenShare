@@ -114,6 +114,12 @@ function cleanOldUpdates() {
 // caminho ("Tela P2P.exe" tem espaço) com \", que o cmd não entende: o comando falhava calado e o app
 // não voltava. Com os argumentos literais, o cmd recebe as aspas como estão.
 function relaunch() {
+  // AppImage (Linux): o app roda de uma montagem que some ao fechar; reabre pelo arquivo .AppImage
+  if (process.env.APPIMAGE) {
+    app.relaunch({ execPath: process.env.APPIMAGE, args: [] });
+    app.exit(0);
+    return;
+  }
   const exe = process.env.PORTABLE_EXECUTABLE_FILE;
   if (!exe) {
     app.relaunch();
@@ -221,7 +227,8 @@ if (hasSingleInstance) app.whenReady().then(() => {
   session.defaultSession.setDisplayMediaRequestHandler(async (_request, callback) => {
     const sources = await desktopCapturer.getSources({ types: ['screen', 'window'] });
     const source = sources.find((s) => s.id === selectedSourceId) || sources[0];
-    callback(captureSystemAudio ? { video: source, audio: 'loopback' } : { video: source });
+    // O som junto da tela ('loopback') só existe no Windows; no Linux o som do PC vem do monitor do PulseAudio
+    callback(captureSystemAudio && process.platform === 'win32' ? { video: source, audio: 'loopback' } : { video: source });
   });
 
   ipcMain.handle('get-sources', async () => {
@@ -242,6 +249,7 @@ if (hasSingleInstance) app.whenReady().then(() => {
   });
 
   ipcMain.handle('list-audio-apps', () => new Promise((resolve) => {
+    if (process.platform !== 'win32') return resolve([]);
     execFile(AUDIOCAP, ['--list'], { windowsHide: true, timeout: 5000 }, (err, stdout) => {
       if (err) return resolve([]);
       // Cada linha: "Discord.exe<TAB>Discord"
@@ -267,7 +275,8 @@ if (hasSingleInstance) app.whenReady().then(() => {
     for (const [name, addrs] of Object.entries(os.networkInterfaces())) {
       for (const a of addrs || []) {
         const v4 = a.family === 'IPv4' || a.family === 4;
-        if (v4 && !a.internal) list.push({ name, address: a.address, radmin: a.address.startsWith('26.'), razze: /razze/i.test(name) });
+        // Túnel da Razze: "Razze…" no Windows, "rz…" no Linux (nome de interface tem no máximo 15 letras)
+        if (v4 && !a.internal) list.push({ name, address: a.address, radmin: a.address.startsWith('26.'), razze: /razze/i.test(name) || /^rz[a-f0-9]{12}$/.test(name) });
       }
     }
     if (provider === 'razze') {
