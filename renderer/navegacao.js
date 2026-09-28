@@ -128,11 +128,28 @@ function renderVoicePane() {
   }
 }
 let navCollapsed = load('barraRecolhida', '1') === '1';
+let navRestore = null; // painéis que estavam abertos quando o › do chat recolheu tudo; a setinha abre de volta
 function setNavCollapsed(on) {
   navCollapsed = on;
   save('barraRecolhida', on ? '1' : '0');
+  if (!on && navRestore) {
+    workspaceViews.voice = navRestore.voice;
+    saveWorkspaceViews();
+    const chatWas = navRestore.chat;
+    navRestore = null;
+    if (chatWas) { setPanelOpen(true); $('navChat').focus(); return; }
+  }
   syncWorkspace();
   (on ? $('navExpand') : $('navCollapse')).focus();
+}
+// O › do painel da sala: esconde tudo da direita (chat, voz e a barra) e a tela cobre a janela toda
+function collapseRoomSide() {
+  navRestore = { chat: workspaceViews.chat, voice: workspaceViews.voice };
+  workspaceViews.voice = false;
+  navCollapsed = true;
+  save('barraRecolhida', '1');
+  setPanelOpen(false); // fecha o chat, salva e redesenha
+  $('navExpand').focus();
 }
 function setupWorkspace() {
   const host = $('workspacePanes');

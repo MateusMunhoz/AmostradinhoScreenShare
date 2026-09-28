@@ -72,6 +72,15 @@ run('Barra de baixo numa linha', 90000, async () => {
   await sleep(200);
   check('Abrindo o chat de novo, a barra volta junto', await A.eval(`getComputedStyle($('workspaceNav')).display !== 'none' && $('navExpand').hidden && $('navCollapse').hidden`));
 
+  // O › ao lado do contador de pessoas esconde tudo da direita; a setinha traz de volta os mesmos painéis
+  await mouse('#chatCollapse');
+  await sleep(300);
+  t = await A.eval(T);
+  check('O › do painel da sala esconde chat, voz e a barra (tela na janela toda)', t.nav === 'none' && t.aba && t.telas <= 20 && await A.eval(`$('workspacePanes').hidden && Math.round($('streamArea').getBoundingClientRect().right) > 1100`), JSON.stringify(t));
+  await mouse('#navExpand');
+  await sleep(300);
+  check('A setinha abre de volta o chat e a voz', await A.eval(`workspaceViews.chat && workspaceViews.voice && !$('workspacePanes').hidden && getComputedStyle($('workspaceNav')).display !== 'none' && $('navExpand').hidden`));
+
   // Tela larga (1920): tudo aparece, com os textos
   await A.send('Emulation.setDeviceMetricsOverride', { width: 1920, height: 1040, deviceScaleFactor: 1, mobile: false });
   await sleep(600);

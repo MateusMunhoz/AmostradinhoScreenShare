@@ -292,8 +292,8 @@ for (const id of ['statsTabPerf', 'statsTabStream']) {
 // Chat
 $('chatToggle').insertAdjacentHTML('afterbegin', ICON.chat);
 $('chatToggle').onclick = () => setPanelOpen(!chat.open);
-setIcon($('chatCollapse'), 'chevron', 'Recolher o painel da sala');
-$('chatCollapse').onclick = () => setPanelOpen(false);
+setIcon($('chatCollapse'), 'chevron', 'Recolher o painel da sala (chat, voz e a barra de cima)');
+$('chatCollapse').onclick = collapseRoomSide;
 $('peopleBtn').onclick = () => setPeopleOpen($('peoplePop').hidden);
 // Clicar fora da lista fecha (o cartão de volume, que abre de dentro dela, conta como dentro)
 document.addEventListener('mousedown', (e) => {
