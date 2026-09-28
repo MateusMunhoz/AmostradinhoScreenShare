@@ -147,6 +147,7 @@
             <div id="pausedStrip" class="paused-strip" role="group" aria-label="Transmissões em pausa" hidden></div>
             <div id="emptyStage" class="empty-stage"><p id="emptyText"></p></div>
             <div id="tiles" class="tiles" hidden></div>
+            <div id="stageSplitter" class="stage-splitter" role="separator" aria-orientation="vertical" aria-label="Largura da coluna de telas pequenas" aria-valuemin="15" aria-valuemax="50" tabindex="0" hidden></div>
             <!-- Janela de transmitir: fica só em cima das transmissões, sem cobrir a barra de baixo -->
             <div id="shareDialog" class="modal" hidden>
               <div class="dialog share" role="dialog" aria-modal="true" aria-labelledby="shareTitle">
@@ -286,6 +287,7 @@
               <button class="btn icon ghost" id="voiceSettingsBtn" type="button"></button>
             </div>
             <button class="btn icon" id="overlayToggle" type="button" aria-pressed="false"></button>
+            <div id="stageLayout" class="seg stage-layout" role="group" aria-label="Arrumação das telas" hidden><button type="button" data-layout="grid" title="Todas do mesmo tamanho, como no Google Meet">Grade</button><button type="button" data-layout="spotlight" title="Uma grande e as outras numa coluna ao lado">Destaque</button></div>
             <span class="dock-spacer"></span>
             <!-- Convidar: copia o endereço da sala (que aparece ao passar o mouse e em Pessoas na sala) -->
             <button class="btn dock-invite" id="dockAddr" type="button" hidden>
@@ -631,6 +633,7 @@
   <script src="renderer/microfone.js"></script>
   <script src="renderer/membros.js"></script>
   <script src="renderer/assistir.js"></script>
+  <script src="renderer/palco.js"></script>
   <script src="renderer/pip.js"></script>
   <script src="renderer/overlay.js"></script>
   <script src="renderer/metadados.js"></script>

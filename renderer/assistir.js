@@ -122,11 +122,12 @@ function createTile(id, name) {
   }, { passive: false });
   el.addEventListener('dblclick', (e) => { if (!bar.contains(e.target) && !el.classList.contains('small')) toggleFullscreen(el); });
   // Na coluna ao lado, clicar (ou Enter) numa tela pequena põe ela em destaque
-  el.addEventListener('click', () => { if (el.classList.contains('small')) setMain(id); });
+  el.addEventListener('click', () => { if (el.classList.contains('small') && !palco.justDragged) setMain(id); });
   el.addEventListener('keydown', (e) => {
     if (el.classList.contains('small') && e.target === el && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setMain(id); }
   });
   $('tiles').append(el);
+  setupTileDrag(id, el);
   el.dataset.person = id;
   const tile = { el, video, vol, overlay, pipNote, fs, focusBtn, pipBtn, syncMute, name, paused: false, mutedBefore: false, userMuted: false };
   return tile;
@@ -306,17 +307,20 @@ function setMain(id) {
 
 function renderFocus() {
   if (state.focus && (!state.in.has(state.focus) || state.in.size < 2)) state.focus = null;
-  if (!state.in.has(state.main)) state.main = state.in.keys().next().value || null;
+  if (!state.in.has(state.main)) state.main = stageIds()[0] || null;
   const focus = state.focus;
-  const column = !focus && state.in.size > 1;
+  const column = !focus && state.in.size > 1 && palco.layout === 'spotlight';
   const tiles = $('tiles');
   tiles.classList.toggle('focused', !!focus);
   tiles.classList.toggle('column', column);
-  // Linhas vazias em cima e embaixo deixam a coluna centralizada ao lado da tela grande
+  tiles.classList.toggle('grid', !column);
+  // Destaque: linhas vazias em cima e embaixo deixam a coluna centralizada ao lado da tela grande.
+  // Grade: colunas e linhas vêm de layoutGrid (palco.js).
+  tiles.style.gridTemplateColumns = '';
   tiles.style.gridTemplateRows = column ? `minmax(0, 1fr) repeat(${state.in.size - 1}, auto) minmax(0, 1fr)` : '';
   let row = 2;
-  for (const [id, link] of state.in) {
-    const t = link.tile;
+  for (const id of stageIds()) {
+    const t = state.in.get(id).tile;
     const paused = !!focus && id !== focus;
     const small = column && id !== state.main;
     t.el.classList.toggle('focus', id === focus);
@@ -331,6 +335,7 @@ function renderFocus() {
     if (id === focus) setIcon(t.focusBtn, 'grid', 'Mostrar todas');
     else setIcon(t.focusBtn, 'focus', `Destacar ${t.name} (as outras pausam)`);
   }
+  layoutStage();
   renderPausedStrip();
   syncIncomingVideo();
 }

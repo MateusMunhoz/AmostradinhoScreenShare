@@ -19,6 +19,26 @@ run('Várias telas (destaque com coluna)', 200000, async () => {
   await B.eval(`[...state.members].filter(([, m]) => m.sharing).forEach(([id]) => watch(id))`);
   await B.waitFor(`state.in.size === 3 && [...state.in.values()].every((l) => l.tile.video.videoWidth > 0)`, 30000);
   await sleep(800);
+  // Grade (padrão): todas do mesmo tamanho, o seletor aparece com 2 ou mais
+  const grid = () => B.eval(`stageIds().map((id) => { const r = state.in.get(id).tile.el.getBoundingClientRect(); return { id, w: Math.round(r.width), h: Math.round(r.height), x: Math.round(r.x), y: Math.round(r.y) }; })`);
+  let g = await grid();
+  check('Grade: começa na grade, com o seletor Grade | Destaque', await B.eval(`palco.layout === 'grid' && $('tiles').classList.contains('grid') && !$('stageLayout').hidden`));
+  check('Grade: todas do mesmo tamanho', g.every((x) => Math.abs(x.w - g[0].w) <= 2 && Math.abs(x.h - g[0].h) <= 2), JSON.stringify(g));
+  await B.shot('varias-telas-grade.png');
+  // Arrastar a primeira pela faixa do nome e soltar em cima da última troca as duas de lugar
+  const [first, , lastOne] = g;
+  await B.eval(`(() => { const h = state.in.get('${first.id}').tile.el.querySelector('.tile-name'); const at = (type, x, y) => h.dispatchEvent(new PointerEvent(type, { bubbles: true, clientX: x, clientY: y, button: 0, pointerId: 1 }));
+    at('pointerdown', ${first.x + 20}, ${first.y + 10}); at('pointermove', ${first.x + 40}, ${first.y + 30}); at('pointermove', ${lastOne.x + lastOne.w / 2}, ${lastOne.y + lastOne.h / 2}); at('pointerup', ${lastOne.x + lastOne.w / 2}, ${lastOne.y + lastOne.h / 2}); })()`);
+  await sleep(300);
+  const g2 = await grid();
+  check('Grade: arrastar uma tela sobre outra troca as duas', g2.find((x) => x.id === first.id).x === lastOne.x && g2.find((x) => x.id === first.id).y === lastOne.y && g2.find((x) => x.id === lastOne.id).x === first.x);
+  await B.eval(`$('stageLayout').querySelector('[data-layout=spotlight]').click()`);
+  await sleep(400);
+  check('Destaque: divisa arrastável aparece entre a grande e a coluna', await B.eval(`!$('stageSplitter').hidden && $('stageSplitter').getBoundingClientRect().height > 100`));
+  const before = await B.eval(`[...state.in.values()].find((l) => l.tile.el.classList.contains('small')).tile.el.getBoundingClientRect().width`);
+  await B.eval(`for (let i = 0; i < 5; i++) $('stageSplitter').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }))`);
+  await sleep(300);
+  check('Destaque: mover a divisa alarga a coluna e fica salvo', await B.eval(`[...state.in.values()].find((l) => l.tile.el.classList.contains('small')).tile.el.getBoundingClientRect().width > ${before} + 20 && Number(localStorage.getItem('stageSide')) > 0.3`));
 
   // O tamanho é o da área do vídeo (a faixa com o nome fica em cima dela)
   const info = () => B.eval(`[...state.in].map(([id, l]) => { const r = l.tile.el.querySelector('.tile-body').getBoundingClientRect(); return { id, name: l.tile.name, small: l.tile.el.classList.contains('small'), w: Math.round(r.width), h: Math.round(r.height), x: Math.round(r.x), playing: !l.tile.video.paused, videoOn: l.videoOn }; })`);

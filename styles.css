@@ -278,7 +278,7 @@ kbd { font-family: Consolas, monospace; font-size: 11px; color: var(--muted); bo
 /* Destaque: uma transmissão ocupa toda a área de vídeo; as outras ficam pausadas na faixa de cima */
 .tiles.focused { grid-template-columns: 1fr; }
 /* Destaque com coluna: uma grande à esquerda (linha 1 até a última) e as outras pequenas ao lado */
-.tiles.column { grid-template-columns: minmax(0, 1fr) clamp(180px, 26%, 320px); gap: 8px 10px; }
+.tiles.column { grid-template-columns: minmax(0, 1fr) var(--stage-side, clamp(180px, 26%, 320px)); gap: 8px 10px; }
 .tile.small { min-height: 0; cursor: pointer; }
 .tile.small .tile-body { flex: none; aspect-ratio: 16 / 9; }
 .tile.small .tile-bar { display: none; }
@@ -789,7 +789,7 @@ main { padding-top: var(--workspace-top); }
 .dock > * { flex: none; }
 .dock > .dock-spacer { flex: 1 1 0; min-width: 0; }
 .dock.tight-1 #liveText { display: none; }
-.dock.tight-2 .dock-invite .dock-label, .dock.tight-2 #voiceMeText { display: none; }
+.dock.tight-2 .dock-invite .dock-label, .dock.tight-2 #voiceMeText, .dock.tight-2 .stage-layout .dock-label { display: none; }
 .dock.tight-2 .dock-invite { padding: 0; width: 36px; justify-content: center; }
 .dock.tight-3 .voice-avatar .va-name { display: none; }
 .dock.tight-3 .voice-avatar:not(:has(.avatar))::before { content: attr(data-initial); font-weight: 700; }
@@ -961,3 +961,25 @@ html[data-border=liquid] .select-pop { border-top-color: var(--edge-sheen); }
 .settings-tabs button { flex: 1 1 0; min-width: 88px; }
 .general-settings .settings-section + .settings-section { padding-top: 0; border-top: 0; }
 #appearanceTitle { display: none; }
+
+/* Palco (renderer/palco.js): seletor Grade | Destaque, divisa arrastável do Destaque e arrastar telas */
+.stage-layout { flex: none; padding: 3px; }
+.stage-layout button { height: 28px; padding: 0 12px; font-size: 12px; }
+.stage-layout button[aria-pressed="true"] { background: var(--panel-2); color: var(--text); }
+.tiles.column .tile.small { min-width: 0; }
+.tile-name { cursor: grab; touch-action: none; }
+.tile-name:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.tile.dragging { z-index: 5; opacity: .85; cursor: grabbing; box-shadow: 0 16px 40px rgba(0, 0, 0, .5); }
+.tile.dragging .tile-name { cursor: grabbing; }
+.tile.drop-target { outline: 2px dashed var(--accent); outline-offset: -2px; }
+.stage-splitter { position: absolute; z-index: 4; width: 10px; margin-left: 0; cursor: col-resize; touch-action: none; border-radius: 5px; }
+.stage-splitter::after { content: ""; position: absolute; left: 4px; top: 50%; width: 2px; height: 40px; margin-top: -20px; border-radius: 1px; background: var(--line-strong); }
+.stage-splitter:hover::after, .stage-splitter.active::after, .stage-splitter:focus-visible::after { background: var(--accent); height: 64px; margin-top: -32px; }
+.stage-splitter:focus-visible { outline: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .tiles.grid .tile:not(.dragging) { transition: box-shadow .15s; }
+}
+.tiles.grid.fit { align-content: center; }
+.tiles.grid.fit .tile { width: var(--tile-w); height: calc(var(--tile-w) * 9 / 16 + 34px); min-height: 0; justify-self: center; align-self: center; }
+.stage-layout button { display: inline-flex; align-items: center; gap: 6px; }
+.stage-layout svg { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
