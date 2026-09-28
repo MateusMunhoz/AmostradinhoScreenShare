@@ -146,6 +146,7 @@ function leaveRoom(reason, kind = 'info', endRoom = false) {
   state.isOwner = false;
   state.hostId = null;
   state.order = [];
+  state.rewatch.clear();
   closeShareDialog();
   $('closeDialog').hidden = true;
   if (update.busy) { clearTimeout(update.busy.timer); update.busy = null; }
@@ -278,6 +279,10 @@ function onRoomMessage(m) {
       if (!state.order.includes(m.id)) state.order.push(m.id);
       if (back && back.sharing && !m.sharing) stopWatching(m.id, false);
       voice.update(m.id, m.voiceSession || '', !!m.muted);
+      // Caiu da sala enquanto eu assistia e voltou transmitindo em até 1 min: volta a assistir sozinho
+      const caiu = state.rewatch.get(m.id);
+      state.rewatch.delete(m.id);
+      if (caiu && m.sharing && Date.now() - caiu < 60000 && !state.in.has(m.id)) setTimeout(() => watch(m.id), 300);
       renderMembers();
       updateStage();
       if (!back && !m.resumed) void appSounds.play('join');
@@ -287,6 +292,7 @@ function onRoomMessage(m) {
     }
     case 'member-left': {
       if (state.members.has(m.id)) void appSounds.play('leave');
+      if (state.in.has(m.id) && !state.in.get(m.id).self) state.rewatch.set(m.id, Date.now());
       const name = nameOf(m.id);
       state.order = state.order.filter((id) => id !== m.id);
       voice.remove(m.id);
@@ -338,6 +344,7 @@ function handleSignal(from, data) {
     if (data.unsubscribe) return closeOut(from);
     const link = state.out.get(from);
     if (!link) return;
+    if (data.restart) return scheduleIceRestart(from, link, 0); // quem assiste perdeu a conexão
     if (typeof data.video === 'boolean') {
       link.videoOff = !data.video;
       onceVideoChanged(link);

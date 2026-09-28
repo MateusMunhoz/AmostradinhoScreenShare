@@ -506,7 +506,13 @@ function addWatcher(id, wantsOnce) {
   });
   pc.onicecandidate = (e) => { if (e.candidate) sendSignal(id, { side: 'sharer', candidate: e.candidate }); };
   pc.onconnectionstatechange = () => {
-    if (pc.connectionState === 'connected') link.chain = link.chain.then(() => applyBitrate(link)).catch(console.error);
+    if (pc.connectionState === 'connected') {
+      clearTimeout(link.restartTimer);
+      link.restartTimer = null;
+      link.restartUntil = 0;
+      link.chain = link.chain.then(() => applyBitrate(link)).catch(console.error);
+    } else if (pc.connectionState === 'failed') scheduleIceRestart(id, link, 0);
+    else if (pc.connectionState === 'disconnected') scheduleIceRestart(id, link, 4000);
     renderWatchers();
   };
   link.chain = link.chain.then(async () => {
@@ -518,9 +524,29 @@ function addWatcher(id, wantsOnce) {
   toast(`${nameOf(id)} está assistindo você`);
 }
 
+// A conexão com quem assiste caiu (a rede piscou, a VPN reiniciou): procura um caminho novo sem fechar a
+// conexão (ICE restart). Tenta de novo a cada 5 s por até 3 minutos; quem assiste não precisa clicar em nada.
+function scheduleIceRestart(id, link, delay) {
+  if (link.restartTimer) return;
+  if (!link.restartUntil) link.restartUntil = Date.now() + 3 * 60 * 1000;
+  link.restartTimer = setTimeout(() => {
+    link.restartTimer = null;
+    const pc = link.pc;
+    if (state.out.get(id) !== link || pc.connectionState === 'connected' || pc.signalingState === 'closed') return;
+    if (Date.now() > link.restartUntil) return;
+    link.chain = link.chain.then(async () => {
+      if (state.out.get(id) !== link || pc.signalingState === 'closed') return;
+      await pc.setLocalDescription(await pc.createOffer({ iceRestart: true }));
+      sendSignal(id, { side: 'sharer', sdp: pc.localDescription });
+    }).catch(console.error);
+    scheduleIceRestart(id, link, 5000); // se não voltar, tenta de novo
+  }, delay);
+}
+
 function closeOut(id) {
   const link = state.out.get(id);
   if (!link) return;
+  clearTimeout(link.restartTimer);
   if (link.dc) link.dc.close();
   link.pc.close();
   state.out.delete(id);
