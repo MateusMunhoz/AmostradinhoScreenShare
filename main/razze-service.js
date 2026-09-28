@@ -122,6 +122,8 @@ function createRazzeService(options = {}) {
     removeFriend: (id) => requireClient().removeFriend(id),
     wireguard,
     api: () => requireClient(),
+    // Ao abrir o app com o túnel já ligado: volta a buscar quem entrou na rede
+    resume: (networkId) => wireguard.resume(requireClient(), networkId),
   };
 }
 

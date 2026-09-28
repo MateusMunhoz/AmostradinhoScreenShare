@@ -7,7 +7,7 @@ const fs = require('node:fs');
 const net = require('node:net');
 const os = require('node:os');
 const path = require('node:path');
-const { generateWireGuardKeys, decodeStunResponse, discoverEndpoint, buildTunnelConfig, createWireGuardManager, tunnelNameFor } = require('../main/razze-wireguard');
+const { generateWireGuardKeys, decodeStunResponse, discoverEndpoint, buildTunnelConfig, wgSyncConfig, createWireGuardManager, tunnelNameFor } = require('../main/razze-wireguard');
 
 test('gera chaves WireGuard X25519 de 32 bytes em base64', () => {
   const keys = generateWireGuardKeys();
@@ -117,7 +117,10 @@ test('orquestra registro de dispositivo, STUN e instalação do túnel', async (
     assert.equal(await manager.refreshPeers(networkId), true);
     assert.match(fs.readFileSync(confPath, 'utf8'), /Endpoint = 198\.51\.100\.22:41002/);
     assert.ok(probedPeers.includes('10.64.3.4'));
-    assert.equal(commands.filter((args) => args[0] === '/installtunnelservice').length, 2);
+    // Peer novo: a lista muda com o túnel ligado (wg syncconf), sem reinstalar o serviço
+    assert.equal(commands.filter((args) => args[0] === '/installtunnelservice').length, 1);
+    assert.equal(commands.filter((args) => args[0] === 'syncconf').length, 1);
+    assert.ok(!fs.existsSync(confPath.replace(/\.conf$/, '.wg.conf')), 'o arquivo do syncconf é apagado depois');
     assert.equal(await manager.refreshPeers(networkId), false);
     const started = new Promise((resolve) => { startedResolve = resolve; });
     gate = new Promise((resolve) => { gateResolve = resolve; });
@@ -126,7 +129,8 @@ test('orquestra registro de dispositivo, STUN e instalação do túnel', async (
     const pendingDisconnect = manager.disconnect(networkId);
     gateResolve({ peers: [...peers, { deviceId: 'f'.repeat(32), publicKey: Buffer.alloc(32, 6).toString('base64'), assignedIp: '10.64.3.5' }] });
     await Promise.all([pendingRefresh, pendingDisconnect]);
-    assert.equal(commands.filter((args) => args[0] === '/installtunnelservice').length, 2, 'refresh iniciado antes do logout não reinstala o túnel');
+    assert.equal(commands.filter((args) => args[0] === '/installtunnelservice').length, 1, 'refresh iniciado antes do logout não reinstala o túnel');
+    assert.equal(commands.filter((args) => args[0] === 'syncconf').length, 1, 'nem atualiza a lista');
     assert.equal((await manager.disconnect(networkId)).ok, true);
     assert.equal(refreshCallback, null);
     assert.equal(fs.existsSync(confPath), false);
@@ -219,43 +223,65 @@ test('dois clientes obtêm peers pela RazzeAPI e sincronizam a configuração Wi
   }
 });
 
-test('no app empacotado, o serviço usa uma cópia do WireGuard na pasta do perfil (o .exe portátil some ao fechar)', async () => {
-  const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'razze-wg-'));
-  const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'razze-portatil-'));
-  const bundled = path.join(temporary, 'wireguard.exe');
-  fs.writeFileSync(bundled, 'binário de teste');
-  let installed = false;
-  const installs = [];
-  const manager = createWireGuardManager({
-    app: { isPackaged: true, getPath: () => profile, getAppPath: () => profile, getName: () => 'Tela P2P' },
-    safeStorage: { isEncryptionAvailable: () => true, encryptString: (value) => Buffer.from(value), decryptString: (value) => value.toString() },
-    binary: bundled, platform: 'win32',
-    discoverEndpoint: async () => ({ host: '198.51.100.20', port: 41000, localPort: 41000 }),
-    probePeer: async () => {}, setInterval: () => ({ unref() {} }), clearInterval: () => {},
-    exec: async (file, args) => {
-      if (args[0] === 'query') {
-        if (!installed) throw new Error('OpenService FAILED 1060');
-        return 'ESTADO             : 4  RUNNING';
-      }
-      if (args[0] === '/installtunnelservice') { installed = true; installs.push(file); }
-      return '';
-    },
-  });
-  const api = {
-    baseUrl: 'https://api.example.test',
-    health: async () => ({ stun: { port: 3478, protocol: 'udp' } }),
-    registerDevice: async (_id, device) => ({ device: { ...device, assignedIp: '10.64.3.2' } }),
-    updateDeviceEndpoint: async () => ({ ok: true }),
-    listDevices: async () => ({ peers: [] }),
-  };
+test('syncconf recebe só os campos do wg (sem Address e MTU do wg-quick)', () => {
+  const config = buildTunnelConfig({ privateKey: Buffer.alloc(32, 1).toString('base64'), assignedIp: '10.64.0.2', listenPort: 41000, peers: [{ publicKey: Buffer.alloc(32, 2).toString('base64'), assignedIp: '10.64.0.3' }] });
+  const sync = wgSyncConfig(config);
+  assert.doesNotMatch(sync, /Address|MTU/);
+  assert.match(sync, /PrivateKey = /);
+  assert.match(sync, /ListenPort = 41000/);
+  assert.match(sync, /AllowedIPs = 10\.64\.0\.3\/32/);
+});
+
+test('operações de administrador: copia para a pasta protegida e só aceita os túneis do app', async () => {
+  const { createPrivileged } = require('../main/razze-privilegiado');
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'razze-priv-'));
+  const origem = path.join(root, 'origem');
+  const tunnels = path.join(root, 'tunnels');
+  const destino = path.join(root, 'Program Files');
+  fs.mkdirSync(origem); fs.mkdirSync(tunnels);
+  fs.writeFileSync(path.join(origem, 'wireguard.exe'), 'wireguard');
+  fs.writeFileSync(path.join(origem, 'wg.exe'), 'wg');
+  const calls = [];
+  const privileged = createPrivileged({ wireguard: path.join(origem, 'wireguard.exe'), wg: path.join(origem, 'wg.exe'), tunnels, destino, run: async (file, args) => { calls.push([file, ...args]); return ''; } });
   try {
-    const result = await manager.connect(api, 'f'.repeat(32), 'Rede');
-    assert.equal(result.connected, true);
-    const stable = path.join(profile, 'razze', 'bin', 'wireguard.exe');
-    assert.deepEqual(installs, [stable]);
-    assert.equal(fs.readFileSync(stable, 'utf8'), 'binário de teste');
+    const conf = path.join(tunnels, 'Razze' + 'a'.repeat(12) + '.conf');
+    await privileged.install(conf);
+    await privileged.syncconf('Razze' + 'a'.repeat(12), conf.replace(/\.conf$/, '.wg.conf'));
+    await privileged.uninstall('Razze' + 'a'.repeat(12));
+    assert.deepEqual(calls, [
+      [path.join(destino, 'wireguard.exe'), '/installtunnelservice', conf],
+      [path.join(destino, 'wg.exe'), 'syncconf', 'Razze' + 'a'.repeat(12), conf.replace(/\.conf$/, '.wg.conf')],
+      [path.join(destino, 'wireguard.exe'), '/uninstalltunnelservice', 'Razze' + 'a'.repeat(12)],
+    ]);
+    assert.equal(fs.readFileSync(path.join(destino, 'wireguard.exe'), 'utf8'), 'wireguard');
+    // Nada fora da pasta dos túneis, nem com outro nome, nem túnel com nome estranho
+    await assert.rejects(privileged.install(path.join(root, 'Razze' + 'a'.repeat(12) + '.conf')), /inválida/);
+    await assert.rejects(privileged.install(path.join(tunnels, '..', 'x.conf')), /inválida/);
+    await assert.rejects(privileged.install(path.join(tunnels, 'outro.conf')), /inválida/);
+    await assert.rejects(privileged.uninstall('Razze; del C:'), /inválido/);
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
+test('ajudante: o app manda os pedidos pelo pipe e o ajudante obedece só a essa conexão', async () => {
+  const { spawn } = require('node:child_process');
+  const { createElevation } = require('../main/razze-elevacao');
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'razze-ajud-'));
+  const tunnels = path.join(root, 'tunnels');
+  fs.mkdirSync(tunnels);
+  fs.writeFileSync(path.join(root, 'wireguard.exe'), 'x');
+  let child;
+  // Aqui o ajudante roda sem administrador: ele recebe o pedido, valida e esbarra na cópia para o Program Files
+  const elevation = createElevation({
+    wireguard: path.join(root, 'wireguard.exe'), wg: path.join(root, 'wg.exe'), tunnels, elevado: () => false,
+    launch: (_exe, args, fim) => { child = spawn(process.execPath, args, { stdio: 'ignore' }); child.on('exit', (code) => fim(new Error('saiu ' + code))); },
+  });
+  try {
+    await assert.rejects(elevation.install(path.join(root, 'fora.conf')), /Configuração de túnel inválida|Não foi possível copiar/);
+    await assert.rejects(elevation.uninstall('nome ruim'), /Nome de túnel inválido|Não foi possível copiar/);
+    await assert.rejects(elevation.syncconf('Razze' + 'a'.repeat(12), path.join(tunnels, 'Razze' + 'a'.repeat(12) + '.wg.conf')), /wg\.exe não foi encontrado/);
   } finally {
-    fs.rmSync(profile, { recursive: true, force: true });
-    fs.rmSync(temporary, { recursive: true, force: true });
+    elevation.close();
+    await new Promise((resolve) => child ? child.once('exit', resolve) : resolve());
+    fs.rmSync(root, { recursive: true, force: true });
   }
 });

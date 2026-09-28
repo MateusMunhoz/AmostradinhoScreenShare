@@ -143,7 +143,7 @@ function razzeNetworkCard(network) {
   }).catch(() => {});
   connect.onclick = async () => {
     const current = await window.api.razzeWireGuardStatus(network.id).catch(() => ({ connected: false }));
-    if (current.connected && !confirm('Atualizar a lista de participantes reinicia brevemente o túnel WireGuard. Continuar?')) return;
+    if (current.connected && !confirm('Atualizar a lista de participantes agora? Se o Windows não deixar atualizar com o túnel ligado, ele reinicia por alguns segundos.')) return;
     connect.disabled = true;
     $('razzeStatus').textContent = current.connected ? 'Atualizando a lista de peers e reiniciando o túnel…' : 'Negociando endpoint e iniciando túnel WireGuard…';
     try {
@@ -384,5 +384,8 @@ function setupConnectivitySettings() {
     } catch (error) { $('razzeStatus').textContent = 'Não foi possível aceitar o convite: ' + error.message; }
   };
   window.api.onRazzeInvite((token) => { void acceptInviteLink(token); });
+  // Abriu o app com o túnel da rede ligado: volta a buscar quem entrou na rede (sem clicar em Atualizar peers)
+  const prefs = networkPreferences();
+  if (prefs.provider === 'razze' && prefs.activeNetworkId) window.api.razzeWireGuardResume(prefs.activeNetworkId).catch(() => {});
   window.api.razzePendingInvite().then((token) => { if (token) void acceptInviteLink(token); }).catch(() => {});
 }

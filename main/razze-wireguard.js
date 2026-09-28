@@ -112,6 +112,22 @@ function wireguardExecutable() {
   return candidates.find((candidate) => fs.existsSync(candidate)) || null;
 }
 
+// wg.exe (troca a lista de pessoas com o túnel ligado). Numa atualização pela sala ele vem no pacote,
+// ao lado deste arquivo; no .exe, em resources.
+function wgExecutable() {
+  const candidates = [
+    path.join(__dirname, '..', 'bin', 'selfvpn', 'wg.exe'),
+    app.isPackaged ? path.join(process.resourcesPath, 'bin', 'selfvpn', 'wg.exe') : '',
+    path.join(process.env.ProgramFiles || 'C:\\Program Files', 'WireGuard', 'wg.exe'),
+  ].filter(Boolean);
+  return candidates.find((candidate) => fs.existsSync(candidate)) || null;
+}
+
+// A configuração do wg (syncconf) não aceita os campos do wg-quick (Address, MTU, DNS)
+function wgSyncConfig(config) {
+  return config.split(/\r?\n/).filter((line) => !/^\s*(Address|MTU|DNS|Table|PreUp|PostUp|PreDown|PostDown)\s*=/i.test(line)).join('\r\n');
+}
+
 function exec(file, args, timeout = 120_000) {
   return new Promise((resolve, reject) => execFile(file, args, { windowsHide: true, timeout, maxBuffer: 1024 * 1024, encoding: 'utf8' }, (error, stdout, stderr) => {
     const output = (String(stdout || '') + String(stderr || '')).trim();
@@ -133,26 +149,17 @@ function createWireGuardManager(options = {}) {
   const peerRefreshIntervalMs = options.peerRefreshIntervalMs || 30_000;
   const activeTunnels = new Map();
   const refreshTimers = new Map();
-
-  // O serviço do túnel guarda o caminho do wireguard.exe e roda de novo ao ligar o PC. O .exe portátil do
-  // Tela P2P se descompacta numa pasta temporária que o Windows apaga ao fechar o app, então o serviço
-  // precisa de uma cópia numa pasta fixa (a do perfil, junto da configuração do túnel).
-  function serviceBinary() {
-    if (!electronApp.isPackaged) return binary;
-    const target = path.join(electronApp.getPath('userData'), 'razze', 'bin', 'wireguard.exe');
-    try {
-      const hash = (file) => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
-      if (!fs.existsSync(target) || hash(target) !== hash(binary)) {
-        fs.mkdirSync(path.dirname(target), { recursive: true });
-        fs.copyFileSync(binary, target);
-      }
-      return target;
-    } catch (error) {
-      // Cópia em uso por um túnel ligado: continua valendo a que já está lá
-      if (fs.existsSync(target)) return target;
-      throw new Error('Não foi possível copiar o WireGuard para a pasta do perfil: ' + error.message);
+  const tunnelsDir = path.join(electronApp.getPath('userData'), 'razze', 'tunnels');
+  // Instalar, remover e atualizar o túnel precisam de administrador: direto, se o app já estiver como
+  // administrador, ou pelo ajudante que pede a permissão do Windows (main/razze-elevacao.js). Nos testes,
+  // options.exec simula os comandos.
+  const privileged = options.privileged || (options.exec
+    ? {
+      install: (config) => run(binary, ['/installtunnelservice', config]),
+      uninstall: (tunnel) => run(binary, ['/uninstalltunnelservice', tunnel]),
+      syncconf: (tunnel, config) => run(options.wgBinary || 'wg.exe', ['syncconf', tunnel, config]),
     }
-  }
+    : require('./razze-elevacao').createElevation({ wireguard: binary, wg: wgExecutable(), tunnels: tunnelsDir }));
   const refreshTasks = new Map();
 
   function stopPeerRefresh(networkId) {
@@ -229,7 +236,7 @@ function createWireGuardManager(options = {}) {
     const peersResult = await api.listDevices(networkId);
     const config = buildTunnelConfig({ privateKey: keys.privateKey, assignedIp: registered.device.assignedIp, listenPort: publicEndpoint.localPort, peers: peersResult.peers.filter((peer) => peer.deviceId !== keys.deviceId) });
     if (current.exists) {
-      await run(binary, ['/uninstalltunnelservice', tunnelName]);
+      await privileged.uninstall(tunnelName);
       let removed = false;
       for (let attempt = 0; attempt < 30; attempt++) {
         const previous = await status(networkId);
@@ -240,7 +247,7 @@ function createWireGuardManager(options = {}) {
     }
     fs.writeFileSync(configPath, config, { mode: 0o600 });
     try {
-      await run(serviceBinary(), ['/installtunnelservice', configPath]);
+      await privileged.install(configPath);
     } catch (error) {
       throw new Error(/access is denied|acesso negado|administrator|administrador|elevat/i.test(error.message)
         ? 'O Windows exige permissão de administrador para criar a interface VPN. Execute o Tela P2P como administrador e tente novamente.'
@@ -277,9 +284,20 @@ function createWireGuardManager(options = {}) {
       let previous = '';
       try { previous = fs.readFileSync(tunnel.configPath, 'utf8'); } catch {}
       const changed = previous !== config;
+      let synced = false;
       if (changed) {
         if (activeTunnels.get(networkId) !== tunnel) return false;
-        await run(binary, ['/uninstalltunnelservice', tunnel.tunnelName]);
+        // Com o túnel ligado: só a lista de pessoas muda, e as conexões de quem já estava não caem
+        fs.writeFileSync(tunnel.configPath, config, { mode: 0o600 });
+        const syncPath = tunnel.configPath.replace(/\.conf$/, '.wg.conf');
+        fs.writeFileSync(syncPath, wgSyncConfig(config), { mode: 0o600 });
+        try { await privileged.syncconf(tunnel.tunnelName, syncPath); synced = true; }
+        catch (error) { console.warn('[Razze WireGuard] Não deu para atualizar sem reiniciar o túnel:', error.message); }
+        finally { fs.rmSync(syncPath, { force: true }); }
+      }
+      if (changed && !synced) {
+        if (activeTunnels.get(networkId) !== tunnel) return false;
+        await privileged.uninstall(tunnel.tunnelName);
         let removed = false;
         for (let attempt = 0; attempt < 30; attempt++) {
           const state = await status(networkId);
@@ -289,7 +307,7 @@ function createWireGuardManager(options = {}) {
         if (!removed) throw new Error('O serviço WireGuard anterior ainda está encerrando.');
         if (activeTunnels.get(networkId) !== tunnel) return false;
         fs.writeFileSync(tunnel.configPath, config, { mode: 0o600 });
-        await run(serviceBinary(), ['/installtunnelservice', tunnel.configPath]);
+        await privileged.install(tunnel.configPath);
         if (activeTunnels.get(networkId) !== tunnel) return false;
         let next = await status(networkId);
         for (let attempt = 0; attempt < 10 && !next.connected; attempt++) {
@@ -326,7 +344,7 @@ function createWireGuardManager(options = {}) {
         fs.rmSync(path.join(electronApp.getPath('userData'), 'razze', 'tunnels', tunnelName + '.conf'), { force: true });
         return { ok: true };
       }
-      await run(binary, ['/uninstalltunnelservice', tunnelName]);
+      await privileged.uninstall(tunnelName);
       fs.rmSync(path.join(electronApp.getPath('userData'), 'razze', 'tunnels', tunnelName + '.conf'), { force: true });
       return { ok: true };
     } catch (error) {
@@ -350,7 +368,24 @@ function createWireGuardManager(options = {}) {
     return { ok: errors.length === 0, disconnected: results.length - errors.length, errors };
   }
 
-  return { status, connect, refreshPeers, disconnect, disconnectAll, identity };
+  // O app abriu de novo com o túnel ligado: volta a buscar quem entrou na rede (sem reinstalar nada)
+  async function resume(api, networkId) {
+    networkId = assertNetworkId(networkId);
+    if (activeTunnels.has(networkId)) return { resumed: false, connected: true };
+    const current = await status(networkId);
+    if (!current.connected) return { resumed: false, connected: false };
+    const tunnelName = tunnelNameFor(networkId);
+    const configPath = path.join(tunnelsDir, tunnelName + '.conf');
+    let text = '';
+    try { text = fs.readFileSync(configPath, 'utf8'); } catch { return { resumed: false, connected: true }; }
+    const assignedIp = /^\s*Address\s*=\s*([\d.]+)/mi.exec(text)?.[1];
+    const listenPort = Number(/^\s*ListenPort\s*=\s*(\d+)/mi.exec(text)?.[1]);
+    if (!isOverlayAddress(assignedIp) || !Number.isInteger(listenPort)) return { resumed: false, connected: true };
+    startPeerRefresh(networkId, { api, networkId, networkName: 'Razze', tunnelName, configPath, privateKey: identity().privateKey, assignedIp, listenPort });
+    return { resumed: true, connected: true, overlayIp: assignedIp };
+  }
+
+  return { status, connect, refreshPeers, disconnect, disconnectAll, identity, resume };
 }
 
 function tunnelNameFor(networkId) {
@@ -359,4 +394,4 @@ function tunnelNameFor(networkId) {
   return 'Razze' + id.slice(0, 12);
 }
 
-module.exports = { generateWireGuardKeys, decodeStunResponse, discoverEndpoint, buildTunnelConfig, createWireGuardManager, tunnelNameFor, isOverlayAddress, isWireGuardKey };
+module.exports = { generateWireGuardKeys, decodeStunResponse, discoverEndpoint, buildTunnelConfig, wgSyncConfig, createWireGuardManager, tunnelNameFor, isOverlayAddress, isWireGuardKey };

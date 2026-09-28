@@ -64,6 +64,7 @@ contextBridge.exposeInMainWorld('api', {
   razzeWireGuardConnect: (networkId, name) => ipcRenderer.invoke('razze-wg-connect', String(networkId || ''), String(name || 'Razze')),
   razzeWireGuardDisconnect: (networkId) => ipcRenderer.invoke('razze-wg-disconnect', String(networkId || '')),
   razzeWireGuardDisconnectAll: () => ipcRenderer.invoke('razze-wg-disconnect-all'),
+  razzeWireGuardResume: (networkId) => ipcRenderer.invoke('razze-wg-resume', String(networkId || '')),
   getVersion: () => ipcRenderer.invoke('get-version'),
   setPriority: (level) => ipcRenderer.invoke('set-priority', level),
   statsStart: () => ipcRenderer.invoke('stats-start'),

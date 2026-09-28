@@ -300,6 +300,7 @@ if (hasSingleInstance) app.whenReady().then(() => {
   ipcMain.handle('razze-wg-connect', async (_e, networkId, name) => razze.wireguard.connect(razze.api(), String(networkId || ''), String(name || 'Razze')));
   ipcMain.handle('razze-wg-disconnect', (_e, networkId) => razze.wireguard.disconnect(String(networkId || '')));
   ipcMain.handle('razze-wg-disconnect-all', () => razze.wireguard.disconnectAll());
+  ipcMain.handle('razze-wg-resume', (_e, networkId) => razze.resume(String(networkId || '')));
 
   setPriority('above'); // a página manda a escolha salva assim que abre
   ipcMain.handle('set-priority', (_e, level) => setPriority(level));
