@@ -1,0 +1,14 @@
+{
+  "name": "razze-api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Plano de controle e STUN UDP para as redes WireGuard do Tela P2P",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test ../tests/razze-api.test.js"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

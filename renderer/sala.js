@@ -8,7 +8,7 @@ async function myAddrs() {
   try {
     const provider = selectedNetworkProvider();
     const ips = await window.api.getIps(provider);
-    if (provider === 'netbird') return ips.filter((i) => i.netbird).map((i) => i.address);
+    if (provider === 'razze') return ips.filter((i) => i.razze).map((i) => i.address);
     return ips.map((i) => i.address);
   } catch { return []; }
 }
@@ -20,7 +20,7 @@ async function connectRoom(url, hello, timeoutMs = 8000) {
     let joined = false;
     let errMsg = null;
     const timer = setTimeout(() => {
-      if (!joined) { errMsg = 'Tempo esgotado. Confira o endereço e se a Radmin VPN está ligada.'; ws.close(); }
+      if (!joined) { errMsg = 'Tempo esgotado. Confira o endereço e se a VPN ou rede escolhida está conectada.'; ws.close(); }
     }, timeoutMs);
 
     ws.onopen = () => ws.send(JSON.stringify({ type: 'hello', ...hello, addrs, version: update.myVersion, avatar: fotos.mine?.hash || '' }));

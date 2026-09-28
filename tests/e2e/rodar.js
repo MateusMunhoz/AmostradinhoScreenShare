@@ -6,7 +6,7 @@ const { spawnSync } = require('child_process');
 const path = require('path');
 const { APP, FOTOS, fullscreenApps } = require('./ajuda');
 
-const TESTS = ['carga.cjs', 'filtros.cjs', 'atualizacao.js', 'chat.js', 'janela-flutuante.js', 'varias-telas.js', 'varias-janelas.js', 'voz.js', 'troca-de-host.js', 'trocar-tela.js', 'ver-a-propria.js', 'sessoes.js', 'espelho.js', 'som.js', 'quatro-k.js', 'microfone.js', 'fotos.js', 'transmitir-janela.js', 'voz-painel.js', 'voz-assistir.js', 'barra.js'];
+const TESTS = ['carga.cjs', 'filtros.cjs', 'razze.js', 'atualizacao.js', 'chat.js', 'janela-flutuante.js', 'varias-telas.js', 'varias-janelas.js', 'voz.js', 'troca-de-host.js', 'trocar-tela.js', 'ver-a-propria.js', 'sessoes.js', 'espelho.js', 'som.js', 'quatro-k.js', 'microfone.js', 'fotos.js', 'transmitir-janela.js', 'voz-painel.js', 'voz-assistir.js', 'barra.js'];
 const only = process.argv[2];
 const list = only ? TESTS.filter((t) => t.replace(/\.c?js$/, '') === only) : TESTS;
 if (!list.length) {
@@ -14,8 +14,8 @@ if (!list.length) {
   process.exit(1);
 }
 
-// Só os de carga e filtros usam janela invisível; os outros abrem janelas e podem tirar o foco
-if (list.some((t) => t !== 'filtros.cjs' && t !== 'carga.cjs')) {
+// Os testes de carga, filtros e Razze usam janela invisível; os outros podem tirar o foco
+if (list.some((t) => !['filtros.cjs', 'carga.cjs', 'razze.js'].includes(t))) {
   const busy = fullscreenApps();
   if (busy.length) {
     console.log(`Tem uma janela ocupando a tela inteira (${busy.join(', ')}). Parece um jogo, e os testes abrem janelas que tiram o foco.`);

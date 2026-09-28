@@ -77,7 +77,8 @@ app.whenReady().then(async () => {
     for (const [channel, value] of Object.entries({
       'get-ips': [], 'get-version': '1.8.3', 'github-check': { ok: false },
       'set-priority': true, 'stats-start': true, 'stats-stop': true,
-      'stop-app-audio': true, 'stop-server': true,
+      'stop-app-audio': true, 'stop-server': true, 'sessoes-observar': true,
+      'room-keys': true, 'razze-pending-invite': '',
     })) ipcMain.handle(channel, () => value);
     const ui = new BrowserWindow({ show: false, width: 1200, height: 780,
       webPreferences: { preload: path.join(__dirname, '..', 'preload.js'), backgroundThrottling: false } });
