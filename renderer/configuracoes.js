@@ -28,8 +28,12 @@ function renderGeneralSettings() {
   const effective = AppPreferences.palette(appPreferences.colors);
   const shown = { text: '--text', live: '--live', speaking: '--ok', warn: '--warn', line: '--line' };
   for (const [key, value] of Object.entries(appPreferences.colors)) {
-    $('color-' + key).value = value || effective[shown[key]]; // automática: a amostra mostra a cor calculada
-    $('hex-' + key).value = value;
+    // Automática: o campo mostra (em cinza) a cor calculada, e o botão Auto fica ligado
+    const color = value || effective[shown[key]];
+    $('color-' + key).value = color;
+    $('hex-' + key).value = color;
+    $('hex-' + key).classList.toggle('is-auto', !value);
+    if ($('auto-' + key)) $('auto-' + key).setAttribute('aria-pressed', String(!value));
     $('hex-' + key).removeAttribute('aria-invalid');
     $('error-' + key).hidden = true;
   }
@@ -60,6 +64,15 @@ function closeGeneralSettings() {
   setUtilityBackground(false);
   settingsReturnFocus?.focus();
 }
+// As cores em Auto seguem as principais: ao mudar uma, o código e a amostra delas mudam junto
+function refreshAutoColors() {
+  const effective = AppPreferences.palette(appPreferences.colors);
+  const shown = { text: '--text', live: '--live', speaking: '--ok', warn: '--warn', line: '--line' };
+  for (const key of AppPreferences.optionalColors) {
+    if (appPreferences.colors[key] || document.activeElement === $('hex-' + key)) continue;
+    $('hex-' + key).value = $('color-' + key).value = effective[shown[key]];
+  }
+}
 function setupGeneralSettings() {
   setupConnectivitySettings();
   for (const [key] of Object.entries(appPreferences.colors)) {
@@ -81,8 +94,12 @@ function setupGeneralSettings() {
       appPreferences.colors[key] = normalized;
       picker.value = normalized;
       if (source === picker) field.value = normalized;
+      field.classList.remove('is-auto');
+      $('auto-' + key)?.setAttribute('aria-pressed', 'false');
       saveAppPreferences();
+      refreshAutoColors();
     };
+    if (optional) $('auto-' + key).onclick = () => change('', field); // volta ao automático
     picker.oninput = () => change(picker.value, picker);
     field.oninput = () => change(field.value, field);
     field.onblur = () => { const value = AppPreferences.hex(field.value); if (value) field.value = value; };

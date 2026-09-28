@@ -714,6 +714,11 @@ fieldset.group > legend { margin-bottom: 10px; }
 .settings-color-input input[type=color] { padding: 3px; width: 44px; height: 38px; flex: 0 0 44px; cursor: pointer; }
 .settings-color-input input[type=text] { min-width: 0; width: 100%; font-family: Consolas, monospace; }
 .settings-color-input input[aria-invalid=true] { border: 2px solid var(--warn); }
+.settings-color-input input.is-auto { color: var(--muted); }
+.settings-color-input .color-auto { flex: none; height: auto; padding: 0 10px; color: var(--muted); }
+.settings-color-input .color-auto[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+.settings-colors-sub { grid-column: 1 / -1; margin: 8px 0 0; padding-top: 12px; border-top: 1px solid var(--line); display: grid; gap: 3px; font-size: 13px; }
+.settings-colors-sub small { color: var(--muted); font-size: 12px; }
 .settings-sound { display: grid; grid-template-columns: 130px minmax(0,1fr) auto; align-items: center; gap: 10px; }
 .settings-sound select { width: 100%; min-width: 0; }
 .general-settings input[type=range] { accent-color: var(--accent); }

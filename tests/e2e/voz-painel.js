@@ -31,6 +31,17 @@ run('Voz e atalhos como painel à esquerda', 60000, async () => {
   check('Cor de "Quem fala" escolhida vale na hora', await A.eval(`getComputedStyle(document.documentElement).getPropertyValue('--ok').trim() === '#FF00AA'`));
   await A.eval(`(() => { $('hex-speaking').value = ''; $('hex-speaking').dispatchEvent(new Event('input')); })()`);
   check('Apagar volta ao automático (Detalhes 2)', await A.eval(`appPreferences.colors.speaking === '' && getComputedStyle(document.documentElement).getPropertyValue('--ok').trim() === appPreferences.colors.detail2 && $('hex-speaking').getAttribute('aria-invalid') !== 'true'`));
+  check('Em Auto, o campo mostra o código da cor calculada, em cinza', await A.eval(`$('hex-speaking').value === appPreferences.colors.detail2 && $('hex-speaking').classList.contains('is-auto') && $('auto-speaking').getAttribute('aria-pressed') === 'true'`));
+  await A.eval(`(() => { $('hex-detail2').value = '#123456'; $('hex-detail2').dispatchEvent(new Event('input')); })()`);
+  check('Mudar uma cor principal atualiza as que estão em Auto', await A.eval(`$('hex-speaking').value === '#123456' && $('hex-warn').value === '#123456'`));
+  await A.eval(`(() => { $('color-speaking').value = '#ff00aa'; $('color-speaking').dispatchEvent(new Event('input')); })()`);
+  check('Escolher pela amostra desliga o Auto', await A.eval(`appPreferences.colors.speaking === '#FF00AA' && $('auto-speaking').getAttribute('aria-pressed') === 'false' && !$('hex-speaking').classList.contains('is-auto')`));
+  await A.eval(`$('auto-speaking').click()`);
+  check('Clicar em Auto volta ao automático', await A.eval(`appPreferences.colors.speaking === '' && $('auto-speaking').getAttribute('aria-pressed') === 'true' && $('hex-speaking').value === '#123456'`));
+  await A.eval(`(() => { openGeneralSettings(); document.querySelector('.settings-colors-sub').scrollIntoView(); })()`);
+  await sleep(400);
+  await A.shot('cores-auto.png');
+  await A.eval(`closeGeneralSettings()`);
   await A.eval(`(() => { $('hex-text').value = '#00FF00'; $('hex-text').dispatchEvent(new Event('input')); })()`);
   check('Cor do texto escolhida vale nos painéis também', await A.eval(`getComputedStyle(document.documentElement).getPropertyValue('--surface-text').trim() === '#00FF00'`));
   await A.eval(`(() => { $('hex-text').value = ''; $('hex-text').dispatchEvent(new Event('input')); })()`);
