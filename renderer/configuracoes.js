@@ -48,9 +48,9 @@ function renderGeneralSettings() {
 }
 function openGeneralSettings() {
   if (!$('profilePane').hidden) closeProfilePopup();
+  if (!$('networkDialog').hidden) closeNetworkDialog();
   settingsReturnFocus = document.activeElement;
   renderGeneralSettings();
-  renderConnectivitySettings();
   $('generalSettingsDialog').hidden = false;
   syncWorkspace();
   setUtilityBackground(true);

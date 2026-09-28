@@ -14,6 +14,7 @@
       <button id="navChat" type="button" class="workspace-tab room-tab" aria-pressed="true" aria-controls="chatTab" hidden><span class="nav-icon" aria-hidden="true"></span><span>Chat</span><span id="navUnread" class="unread" hidden></span></button>
       <button id="navVoice" type="button" class="workspace-tab room-tab" aria-pressed="true" aria-controls="voicePane" hidden><span class="nav-icon" aria-hidden="true"></span><span>Voz</span></button>
       <button id="navStreams" type="button" class="workspace-tab room-tab" aria-pressed="true" aria-controls="streamArea" hidden><span class="nav-icon" aria-hidden="true"></span><span>Transmissão</span></button>
+      <button id="navNetwork" type="button" class="workspace-tab settings-tab network-tab" aria-label="Rede: Radmin ou VPN Razze" title="Rede" aria-haspopup="dialog" aria-expanded="false" aria-controls="networkDialog"><span class="nav-icon" aria-hidden="true"></span></button>
       <button id="navProfile" type="button" class="workspace-tab profile-tab" aria-label="Seu perfil" title="Seu perfil" aria-haspopup="dialog" aria-expanded="false" aria-controls="profilePane"><span id="navProfileAvatar" aria-hidden="true"></span></button>
       <button id="navSettings" type="button" class="workspace-tab settings-tab" aria-label="Configurações gerais" title="Configurações gerais" aria-haspopup="dialog" aria-expanded="false" aria-controls="generalSettingsDialog"><span class="nav-icon" aria-hidden="true"></span></button>
       <!-- Na sala sem chat nem voz abertos: recolhe a barra numa aba na borda direita -->
@@ -530,35 +531,6 @@
     <div class="dialog general-settings" role="dialog" aria-modal="true" aria-labelledby="generalSettingsTitle">
       <div class="dialog-head"><h2 id="generalSettingsTitle">Configurações gerais</h2><button id="closeGeneralSettings" class="btn icon" type="button"></button></div>
       <p class="hint" id="settingsSaveStatus" role="status">Salvo neste dispositivo. As escolhas continuam ao reabrir o app.</p>
-      <section class="settings-section" aria-labelledby="networkTitle">
-        <h3 id="networkTitle">Conectividade entre PCs</h3>
-        <p class="hint">Escolha a rede usada pelo Tela P2P. Radmin mantém o funcionamento atual. Razze usa a API configurada abaixo para coordenar túneis WireGuard diretos entre os participantes.</p>
-        <label for="networkProvider">Rede</label>
-        <select id="networkProvider"><option value="radmin">Radmin VPN ou rede local</option><option value="razze">VPN Razze (WireGuard)</option></select>
-        <div id="razzeSettings" hidden>
-          <label for="razzeApiUrl">Servidor Razze API (HTTPS)</label>
-          <input id="razzeApiUrl" type="url" placeholder="https://api.seudominio.com" autocomplete="url">
-          <button id="razzeSaveServer" class="btn small" type="button">Salvar e testar servidor</button>
-          <p class="hint" id="razzeStatus" role="status">Informe a URL do seu servidor Razze.</p>
-          <div id="razzeAuth">
-            <label for="razzeEmail">E-mail</label><input id="razzeEmail" type="email" autocomplete="username">
-            <label for="razzePassword">Senha</label><input id="razzePassword" type="password" autocomplete="current-password">
-            <label for="razzeDisplayName">Nome (para criar conta)</label><input id="razzeDisplayName" type="text" maxlength="60" autocomplete="name">
-            <div class="button-row"><button id="razzeLogin" class="btn primary" type="button">Entrar</button><button id="razzeRegister" class="btn" type="button">Criar conta</button></div>
-          </div>
-          <div id="razzeAccount" hidden>
-            <div class="button-row"><strong id="razzeAccountName"></strong><button id="razzeLogout" class="btn small" type="button">Sair</button></div>
-            <h4>Minhas redes</h4>
-            <div class="button-row"><input id="razzeNetworkName" type="text" maxlength="80" placeholder="Nome da nova rede"><button id="razzeCreateNetwork" class="btn primary" type="button">Criar rede</button></div>
-            <div id="razzeNetworks" class="razze-networks"></div>
-            <h4>Entrar por convite</h4>
-            <div class="button-row"><input id="razzeInviteToken" type="text" placeholder="Cole o convite da rede"><button id="razzeJoinInvite" class="btn" type="button">Entrar</button></div>
-            <h4>Amigos</h4>
-            <div class="button-row"><input id="razzeFriendEmail" type="email" placeholder="E-mail do amigo"><button id="razzeAddFriend" class="btn" type="button">Adicionar</button></div>
-            <div id="razzeFriends"></div>
-          </div>
-        </div>
-      </section>
       <section class="settings-section" aria-labelledby="colorsTitle">
         <h3 id="colorsTitle">Cores do layout</h3><p class="hint">Use um hexadecimal, como #3366FF, ou escolha pela amostra. A prévia é imediata.</p>
         <div class="settings-colors"><div class="settings-color"><label for="hex-main">Principal<small>Fundo do aplicativo</small></label><div class="settings-color-input"><input type="color" id="color-main" aria-label="Escolher cor: Principal"><input type="text" id="hex-main" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-main"></div><small id="error-main" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-secondary">Secundária<small>Painéis e cartões</small></label><div class="settings-color-input"><input type="color" id="color-secondary" aria-label="Escolher cor: Secundária"><input type="text" id="hex-secondary" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-secondary"></div><small id="error-secondary" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-detail1">Detalhes 1<small>Botões e destaques</small></label><div class="settings-color-input"><input type="color" id="color-detail1" aria-label="Escolher cor: Detalhes 1"><input type="text" id="hex-detail1" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-detail1"></div><small id="error-detail1" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-detail2">Detalhes 2<small>Indicadores e avisos</small></label><div class="settings-color-input"><input type="color" id="color-detail2" aria-label="Escolher cor: Detalhes 2"><input type="text" id="hex-detail2" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-detail2"></div><small id="error-detail2" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><p class="settings-colors-sub"><strong>Cores de detalhe</strong><small>Em cinza: calculada a partir das cores principais. Escolha uma cor para usar a sua; apague o código para voltar ao automático.</small></p><div class="settings-color"><label for="hex-text">Texto<small>Letras do app</small></label><div class="settings-color-input"><input type="color" id="color-text" aria-label="Escolher cor: Texto"><input type="text" id="hex-text" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-text"></div><small id="error-text" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-live">Ao vivo<small>Quem transmite e o botão Transmitir</small></label><div class="settings-color-input"><input type="color" id="color-live" aria-label="Escolher cor: Ao vivo"><input type="text" id="hex-live" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-live"></div><small id="error-live" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-speaking">Quem fala<small>Borda e barrinhas de quem fala</small></label><div class="settings-color-input"><input type="color" id="color-speaking" aria-label="Escolher cor: Quem fala"><input type="text" id="hex-speaking" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-speaking"></div><small id="error-speaking" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-warn">Avisos<small>Erros e alertas</small></label><div class="settings-color-input"><input type="color" id="color-warn" aria-label="Escolher cor: Avisos"><input type="text" id="hex-warn" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-warn"></div><small id="error-warn" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-line">Bordas<small>Linhas dos painéis e campos</small></label><div class="settings-color-input"><input type="color" id="color-line" aria-label="Escolher cor: Bordas"><input type="text" id="hex-line" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-line"></div><small id="error-line" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div></div>
@@ -576,6 +548,68 @@
         <p class="hint">O chat avisa sobre novas mensagens enviadas e recebidas. O histórico é silencioso.</p>
         <label for="notificationVolume">Volume geral dos avisos</label><div class="vd-slider"><input type="range" id="notificationVolume" min="0" max="100" step="1"><output id="notificationVolumeValue" for="notificationVolume"></output></div><p class="hint">O volume geral multiplica os volumes individuais. Em 0%, todos os avisos ficam silenciosos.</p>
       </section>
+    </div>
+  </div>
+
+  <!-- Rede (ícone de servidor na barra): como os PCs se conectam. Radmin ou rede local, ou a VPN Razze em passos:
+       servidor, conta, redes e amigos. Lógica em renderer/conectividade.js -->
+  <div id="networkDialog" class="modal global utility-popup" hidden>
+    <div class="dialog general-settings network-settings" role="dialog" aria-modal="true" aria-labelledby="networkDialogTitle">
+      <div class="dialog-head"><h2 id="networkDialogTitle">Rede</h2><button id="closeNetworkDialog" class="btn icon" type="button"></button></div>
+      <p class="net-summary" role="status"><span id="netSummaryDot" class="dot"></span><span id="netSummaryText"></span></p>
+      <section class="settings-section" aria-labelledby="networkTitle">
+        <h3 id="networkTitle">Como os PCs se conectam</h3>
+        <div class="seg net-seg" role="radiogroup" aria-labelledby="networkTitle">
+          <label><input type="radio" name="networkProvider" value="radmin"><span>Radmin ou rede local</span></label>
+          <label><input type="radio" name="networkProvider" value="razze"><span>Razze (WireGuard)</span></label>
+        </div>
+        <p class="hint" id="networkHint"></p>
+      </section>
+      <div id="razzeSettings" class="razze-steps" hidden>
+        <p class="razze-status" id="razzeStatus" role="status" aria-live="polite"></p>
+        <section class="net-step" aria-labelledby="razzeStepServerTitle">
+          <div class="net-step-head"><span class="net-step-num" id="razzeStepServerNum">1</span><h3 id="razzeStepServerTitle">Servidor</h3></div>
+          <div class="net-row">
+            <input id="razzeApiUrl" type="url" placeholder="https://api.seudominio.com" autocomplete="url" aria-label="Endereço do servidor Razze">
+            <button id="razzeSaveServer" class="btn small" type="button">Testar e salvar</button>
+          </div>
+        </section>
+        <section class="net-step" aria-labelledby="razzeStepAccountTitle">
+          <div class="net-step-head"><span class="net-step-num" id="razzeStepAccountNum">2</span><h3 id="razzeStepAccountTitle">Conta</h3></div>
+          <div id="razzeAuth" class="net-auth">
+            <div class="seg" role="tablist" aria-label="Entrar ou criar conta">
+              <button id="razzeTabLogin" type="button" role="tab" aria-selected="true">Entrar</button>
+              <button id="razzeTabRegister" type="button" role="tab" aria-selected="false">Criar conta</button>
+            </div>
+            <label class="field" id="razzeNameField" hidden><span>Seu nome na rede</span><input id="razzeDisplayName" type="text" maxlength="60" autocomplete="name"></label>
+            <label class="field"><span>E-mail</span><input id="razzeEmail" type="email" autocomplete="username"></label>
+            <label class="field"><span>Senha</span><input id="razzePassword" type="password" autocomplete="current-password"></label>
+            <button id="razzeLogin" class="btn primary" type="button">Entrar</button>
+            <button id="razzeRegister" class="btn primary" type="button" hidden>Criar conta</button>
+          </div>
+          <div id="razzeAccount" class="net-row net-account" hidden>
+            <span class="avatar" id="razzeAccountAvatar" aria-hidden="true"></span>
+            <span class="net-account-text"><strong id="razzeAccountName"></strong><span class="hint" id="razzeAccountEmail"></span></span>
+            <button id="razzeLogout" class="btn small" type="button">Sair da conta</button>
+          </div>
+        </section>
+        <section class="net-step" id="razzeStepNetworks" aria-labelledby="razzeStepNetworksTitle" hidden>
+          <div class="net-step-head"><span class="net-step-num" id="razzeStepNetworksNum">3</span><h3 id="razzeStepNetworksTitle">Redes</h3></div>
+          <div id="razzeNetworks" class="razze-networks"></div>
+          <p class="sessions-empty" id="razzeNetworksEmpty" hidden>Você ainda não está em nenhuma rede. Crie uma ou entre com um convite.</p>
+          <div class="net-two">
+            <label class="field"><span>Criar uma rede</span>
+              <span class="net-row"><input id="razzeNetworkName" type="text" maxlength="80" placeholder="Nome da rede"><button id="razzeCreateNetwork" class="btn small" type="button">Criar</button></span></label>
+            <label class="field"><span>Entrar com convite</span>
+              <span class="net-row"><input id="razzeInviteToken" type="text" placeholder="telap2p://invite/…"><button id="razzeJoinInvite" class="btn small" type="button">Entrar</button></span></label>
+          </div>
+        </section>
+        <section class="net-step" id="razzeStepFriends" aria-labelledby="razzeStepFriendsTitle" hidden>
+          <div class="net-step-head"><span class="net-step-num">4</span><h3 id="razzeStepFriendsTitle">Amigos</h3></div>
+          <div id="razzeFriends" class="razze-friends"></div>
+          <div class="net-row"><input id="razzeFriendEmail" type="email" placeholder="E-mail do amigo" aria-label="E-mail do amigo"><button id="razzeAddFriend" class="btn small" type="button">Adicionar</button></div>
+        </section>
+      </div>
     </div>
   </div>
   <div id="toast" class="toast" role="status"></div>

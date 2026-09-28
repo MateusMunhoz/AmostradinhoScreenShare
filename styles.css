@@ -724,6 +724,40 @@ fieldset.group > legend { margin-bottom: 10px; }
 .settings-section h3 { font-size: 15px; }
 .settings-section h4 { margin: 8px 0 0; font-size: 13px; }
 .razze-networks { display: grid; gap: 8px; }
+/* Janela Rede (ícone de servidor): resumo, escolha da rede e o Razze em passos numerados */
+.general-settings.network-settings { width: min(580px, 100%); }
+.network-settings input[type=url], .network-settings input[type=email], .network-settings input[type=password] {
+  color: var(--surface-text); background: var(--sunken); border: 1px solid var(--field-line); border-radius: 6px; padding: 8px 10px; font: inherit; min-width: 0; }
+.network-settings input:focus, .network-settings select:focus { border-color: var(--accent); outline: none; }
+.net-summary { margin: 0; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; background: var(--panel-2); font-size: 13px; }
+.net-seg label { flex: 1; justify-content: center; }
+.razze-steps { display: grid; gap: 12px; }
+.razze-status { margin: 0; font-size: 12.5px; color: var(--muted); }
+.razze-status:empty { display: none; }
+.net-step { display: grid; gap: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; }
+.net-step-head { display: flex; align-items: center; gap: 10px; }
+.net-step-head h3 { margin: 0; font-size: 14px; }
+.net-step-num { width: 22px; height: 22px; flex: none; display: grid; place-items: center; border-radius: 50%; font-size: 12px; font-weight: 700;
+  color: var(--muted); background: var(--panel-2); border: 1px solid var(--line); }
+.net-step-num.done { color: var(--bg); background: var(--ok); border-color: var(--ok); }
+.net-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.net-row > input { flex: 1; }
+.net-auth { display: grid; gap: 10px; }
+.net-auth .seg label, .net-auth .seg button { flex: 1; }
+.net-account .avatar { width: 32px; height: 32px; }
+.net-account-text { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow-wrap: anywhere; }
+.net-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 640px) { .net-two { grid-template-columns: 1fr; } }
+.razze-network-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.razze-network-titles { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.net-badge { flex: none; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+.net-badge.on { color: var(--ok); border-color: var(--ok); background: var(--ok-soft); }
+.razze-actions .razze-manage-toggle { margin-left: auto; }
+.razze-manage { display: grid; gap: 8px; padding-top: 8px; border-top: 1px dashed var(--line); }
+.razze-edit { display: grid; gap: 8px; }
+.razze-friends { display: grid; gap: 6px; }
+.razze-friends:empty { display: none; }
+.razze-friends .razze-row > span, .razze-members .razze-row > span { font-size: 13px; }
 .razze-network { display: grid; gap: 8px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); }
 .razze-row, #razzeAccount .button-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .razze-row > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
@@ -762,6 +796,8 @@ main { padding-top: var(--workspace-top); }
 .workspace-tab svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .workspace-tab .unread { position: absolute; top: -8px; right: -4px; }
 .profile-tab { margin-left: auto; }
+.network-tab { margin-left: auto; } /* rede, perfil e engrenagem juntos, à direita */
+.network-tab + .profile-tab { margin-left: 0; }
 .settings-tab { min-width: 36px; }
 #workspacePanes { position: fixed; top: var(--workspace-top); right: 16px; bottom: 16px; width: var(--workspace-width); display: flex; flex-direction: column; gap: 10px; z-index: 4; }
 .workspace-pane { --text: var(--surface-text); --text-2: var(--surface-text-2); --muted: var(--surface-muted); color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; flex: 1 1 0; min-width: 0; min-height: 0; overflow: auto; }
