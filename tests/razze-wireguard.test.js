@@ -145,7 +145,7 @@ test('desconecta todos os serviços persistidos do perfil sem depender da rede s
     safeStorage: { isEncryptionAvailable: () => true },
     binary: path.join(profile, 'wireguard.exe'), platform: 'win32',
     exec: async (_file, args) => {
-      if (args[0] === 'query') return 'STATE : 4 RUNNING';
+      if (args[0] === 'query') return 'ESTADO             : 4  RUNNING'; // Windows em português
       if (args[0] === '/uninstalltunnelservice') removed.push(args[1]);
       return '';
     },
@@ -216,5 +216,46 @@ test('dois clientes obtêm peers pela RazzeAPI e sincronizam a configuração Wi
     await Promise.all(managers.map((manager) => manager.disconnectAll()));
     await apiServer.close();
     for (const profile of profiles) fs.rmSync(profile, { recursive: true, force: true });
+  }
+});
+
+test('no app empacotado, o serviço usa uma cópia do WireGuard na pasta do perfil (o .exe portátil some ao fechar)', async () => {
+  const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'razze-wg-'));
+  const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'razze-portatil-'));
+  const bundled = path.join(temporary, 'wireguard.exe');
+  fs.writeFileSync(bundled, 'binário de teste');
+  let installed = false;
+  const installs = [];
+  const manager = createWireGuardManager({
+    app: { isPackaged: true, getPath: () => profile, getAppPath: () => profile, getName: () => 'Tela P2P' },
+    safeStorage: { isEncryptionAvailable: () => true, encryptString: (value) => Buffer.from(value), decryptString: (value) => value.toString() },
+    binary: bundled, platform: 'win32',
+    discoverEndpoint: async () => ({ host: '198.51.100.20', port: 41000, localPort: 41000 }),
+    probePeer: async () => {}, setInterval: () => ({ unref() {} }), clearInterval: () => {},
+    exec: async (file, args) => {
+      if (args[0] === 'query') {
+        if (!installed) throw new Error('OpenService FAILED 1060');
+        return 'ESTADO             : 4  RUNNING';
+      }
+      if (args[0] === '/installtunnelservice') { installed = true; installs.push(file); }
+      return '';
+    },
+  });
+  const api = {
+    baseUrl: 'https://api.example.test',
+    health: async () => ({ stun: { port: 3478, protocol: 'udp' } }),
+    registerDevice: async (_id, device) => ({ device: { ...device, assignedIp: '10.64.3.2' } }),
+    updateDeviceEndpoint: async () => ({ ok: true }),
+    listDevices: async () => ({ peers: [] }),
+  };
+  try {
+    const result = await manager.connect(api, 'f'.repeat(32), 'Rede');
+    assert.equal(result.connected, true);
+    const stable = path.join(profile, 'razze', 'bin', 'wireguard.exe');
+    assert.deepEqual(installs, [stable]);
+    assert.equal(fs.readFileSync(stable, 'utf8'), 'binário de teste');
+  } finally {
+    fs.rmSync(profile, { recursive: true, force: true });
+    fs.rmSync(temporary, { recursive: true, force: true });
   }
 });

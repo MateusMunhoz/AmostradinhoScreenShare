@@ -133,6 +133,26 @@ function createWireGuardManager(options = {}) {
   const peerRefreshIntervalMs = options.peerRefreshIntervalMs || 30_000;
   const activeTunnels = new Map();
   const refreshTimers = new Map();
+
+  // O serviço do túnel guarda o caminho do wireguard.exe e roda de novo ao ligar o PC. O .exe portátil do
+  // Tela P2P se descompacta numa pasta temporária que o Windows apaga ao fechar o app, então o serviço
+  // precisa de uma cópia numa pasta fixa (a do perfil, junto da configuração do túnel).
+  function serviceBinary() {
+    if (!electronApp.isPackaged) return binary;
+    const target = path.join(electronApp.getPath('userData'), 'razze', 'bin', 'wireguard.exe');
+    try {
+      const hash = (file) => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+      if (!fs.existsSync(target) || hash(target) !== hash(binary)) {
+        fs.mkdirSync(path.dirname(target), { recursive: true });
+        fs.copyFileSync(binary, target);
+      }
+      return target;
+    } catch (error) {
+      // Cópia em uso por um túnel ligado: continua valendo a que já está lá
+      if (fs.existsSync(target)) return target;
+      throw new Error('Não foi possível copiar o WireGuard para a pasta do perfil: ' + error.message);
+    }
+  }
   const refreshTasks = new Map();
 
   function stopPeerRefresh(networkId) {
@@ -181,7 +201,8 @@ function createWireGuardManager(options = {}) {
     const tunnelName = tunnelNameFor(assertNetworkId(networkId));
     try {
       const output = await run(path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'sc.exe'), ['query', 'WireGuardTunnel$' + tunnelName], 10_000);
-      return { installed: true, exists: true, connected: /STATE\s*:\s*4\s+RUNNING/i.test(output), tunnelName };
+      // O sc.exe traduz o rótulo (STATE em inglês, ESTADO em português), mas não o "4 RUNNING"
+      return { installed: true, exists: true, connected: /:\s*4\s+RUNNING\b/i.test(output), tunnelName };
     } catch (error) {
       if (/1060|does not exist|não existe/i.test(error.message)) return { installed: true, exists: false, connected: false, tunnelName };
       return { installed: true, exists: true, connected: false, tunnelName, error: error.message };
@@ -219,7 +240,7 @@ function createWireGuardManager(options = {}) {
     }
     fs.writeFileSync(configPath, config, { mode: 0o600 });
     try {
-      await run(binary, ['/installtunnelservice', configPath]);
+      await run(serviceBinary(), ['/installtunnelservice', configPath]);
     } catch (error) {
       throw new Error(/access is denied|acesso negado|administrator|administrador|elevat/i.test(error.message)
         ? 'O Windows exige permissão de administrador para criar a interface VPN. Execute o Tela P2P como administrador e tente novamente.'
@@ -268,7 +289,7 @@ function createWireGuardManager(options = {}) {
         if (!removed) throw new Error('O serviço WireGuard anterior ainda está encerrando.');
         if (activeTunnels.get(networkId) !== tunnel) return false;
         fs.writeFileSync(tunnel.configPath, config, { mode: 0o600 });
-        await run(binary, ['/installtunnelservice', tunnel.configPath]);
+        await run(serviceBinary(), ['/installtunnelservice', tunnel.configPath]);
         if (activeTunnels.get(networkId) !== tunnel) return false;
         let next = await status(networkId);
         for (let attempt = 0; attempt < 10 && !next.connected; attempt++) {
