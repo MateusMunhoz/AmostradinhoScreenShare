@@ -251,12 +251,9 @@
           <div id="workspaceEmpty" class="empty-stage" hidden><p>Escolha os painéis na barra superior: Chat, Voz ou Transmissão.</p></div>
           <!-- Barra da sala: transmitir, janela flutuante e o resto, embaixo dos vídeos -->
           <div class="dock" role="toolbar" aria-label="Controles da sala">
-            <button class="addr-pill" id="dockAddr" type="button" title="Copiar o endereço da sala" hidden>
-              <span id="dockAddrText"></span>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 9h11v11H9zM5 15H4V4h11v1"/></svg>
-            </button>
-            <button class="btn primary dock-share" id="shareBtn" type="button">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v12H3zM8 21h8M12 17v4"/></svg>Transmitir minha tela
+            <!-- Uma linha só: transmitir | voz | espaço | convidar, estatísticas, chat | sair -->
+            <button class="btn primary dock-share" id="shareBtn" type="button" title="Transmitir minha tela">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v12H3zM8 21h8M12 17v4"/></svg>Transmitir
             </button>
             <div class="live-chip" id="liveChip" hidden>
               <span class="live-pill">Ao vivo</span>
@@ -285,12 +282,16 @@
             </div>
             <button class="btn icon" id="overlayToggle" type="button" aria-pressed="false"></button>
             <span class="dock-spacer"></span>
+            <!-- Convidar: copia o endereço da sala (que aparece ao passar o mouse e em Pessoas na sala) -->
+            <button class="btn dock-invite" id="dockAddr" type="button" hidden>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 9h11v11H9zM5 15H4V4h11v1"/></svg><span class="dock-label">Convidar</span>
+            </button>
             <button class="btn icon" id="openGeneralSettingsRoom" type="button"></button>
             <button class="btn icon" id="openStatsRoom" type="button"></button>
             <button class="btn icon chat-toggle" id="chatToggle" type="button" aria-pressed="true">
               <span id="chatUnread" class="unread" hidden></span>
             </button>
-            <button class="btn icon" id="leaveBtn" type="button"></button>
+            <button class="btn icon dock-leave" id="leaveBtn" type="button"></button>
           </div>
         </div>
 

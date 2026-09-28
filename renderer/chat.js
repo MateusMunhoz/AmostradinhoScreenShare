@@ -32,7 +32,6 @@ function setPanelOpen(open) {
   saveWorkspaceViews();
   syncWorkspace();
   $('chatToggle').setAttribute('aria-pressed', String(open));
-  $('dockAddr').hidden = open || !state.roomAddr;
   if (open && chatAtBottom()) markRead();
   renderUnread();
   renderVoiceAvatars();

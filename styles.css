@@ -230,16 +230,16 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 .person-card .warn-on { border-color: var(--warn); color: var(--warn); background: rgba(224, 185, 106, .12); }
 .person-card .hint { margin: 0; font-size: 12px; line-height: 1.45; }
 .dock-share { display: inline-flex; align-items: center; gap: 8px; height: 40px; }
-.dock-share svg, .addr-pill svg, .pip-chip svg, .jump-new svg, .chat-drop svg {
+.dock-invite { display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 12px; font-size: 13px; }
+.dock-invite svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+/* Sair da sala: separado do resto por uma divisória, com cor de perigo ao passar o mouse */
+.dock .dock-leave { margin-left: 6px; position: relative; }
+.dock .dock-leave::before { content: ""; position: absolute; left: -9px; top: 6px; bottom: 6px; width: 1px; background: var(--line); }
+.dock .dock-leave:hover:not(:disabled) { color: var(--warn); border-color: var(--warn); }
+.dock-share svg, .pip-chip svg, .jump-new svg, .chat-drop svg {
   fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none;
 }
 .dock-share svg { width: 18px; height: 18px; }
-.addr-pill {
-  display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; cursor: pointer;
-  border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); color: var(--muted); font: inherit;
-}
-.addr-pill span { font-family: Consolas, monospace; font-size: 14px; font-weight: 600; color: var(--accent); }
-.addr-pill svg { width: 16px; height: 16px; }
 .live-chip {
   display: inline-flex; align-items: center; gap: 10px; height: 40px; box-sizing: border-box; padding: 0 5px 0 10px;
   border: 1px solid var(--live-fill); border-radius: 8px; background: var(--accent-soft); font-size: 13px;
@@ -775,7 +775,16 @@ main { padding-top: var(--workspace-top); }
 .workspace-wide #workspacePanes { width: auto; left: 16px; bottom: 116px; display: grid; grid-template-columns: repeat(auto-fit,minmax(min(280px,100%),1fr)); grid-auto-rows: minmax(0,1fr); }
 .workspace-wide .stage-col { justify-content: flex-end; }
 .workspace-wide .dock { min-height: 84px; }
-.dock { flex-wrap: wrap; flex-shrink: 0; }
+.dock { flex-wrap: nowrap; flex-shrink: 0; }
+/* Nunca quebra em duas linhas: sem espaço, a barra enxuga em etapas (fitDock em renderer/navegacao.js) */
+.dock > * { flex: none; }
+.dock > .dock-spacer { flex: 1 1 0; min-width: 0; }
+.dock.tight-1 #liveText { display: none; }
+.dock.tight-2 .dock-invite .dock-label, .dock.tight-2 #voiceMeText { display: none; }
+.dock.tight-2 .dock-invite { padding: 0; width: 36px; justify-content: center; }
+.dock.tight-3 .voice-avatar .va-name { display: none; }
+.dock.tight-3 .voice-avatar:not(:has(.avatar))::before { content: attr(data-initial); font-weight: 700; }
+.dock.tight-4 .voice-avatars { display: none !important; }
 #workspaceEmpty { flex: 1; }
 .has-workspace-pane .home-screen { display: flex; flex-direction: column; overflow: auto; }
 .has-workspace-pane .home-brand { padding: 24px 32px 12px; gap: 16px; }

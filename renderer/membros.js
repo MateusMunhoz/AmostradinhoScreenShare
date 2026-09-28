@@ -40,8 +40,8 @@ async function renderRoomAddress() {
     box.append(row);
   }
   state.roomAddr = addrs[0] || '';
-  $('dockAddrText').textContent = state.roomAddr;
-  $('dockAddr').hidden = chat.open || !state.roomAddr;
+  $('dockAddr').hidden = !state.roomAddr;
+  $('dockAddr').title = `Copiar o endereço da sala para convidar alguém: ${state.roomAddr}`;
 }
 
 function memberRow(id, name, sharing) {

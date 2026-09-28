@@ -70,6 +70,27 @@ function syncWorkspace() {
   $('profileHint').textContent = inRoom ? 'Este é o nome usado nesta sala. Para alterá-lo, saia da sala primeiro.' : 'Seu nome fica salvo neste dispositivo e é usado ao entrar em uma sala.';
   renderVoicePane();
 }
+// Barra de baixo numa linha só: sem espaço, enxuga em etapas até caber (o que some continua na tela em outro
+// lugar): 1) o texto "2 assistindo" do Ao vivo; 2) os textos "Na voz" e "Convidar" (ficam os ícones);
+// 3) os nomes nas bolinhas de quem está na voz (fica a foto ou a inicial); 4) as bolinhas (estão no painel Voz)
+const DOCK_STEPS = ['tight-1', 'tight-2', 'tight-3', 'tight-4'];
+function fitDock() {
+  const dock = document.querySelector('.dock');
+  if (!dock || !dock.offsetParent) return;
+  dock.classList.remove(...DOCK_STEPS);
+  for (const step of DOCK_STEPS) {
+    if (dock.scrollWidth <= dock.clientWidth + 1) break;
+    dock.classList.add(step);
+  }
+}
+function watchDock() {
+  const dock = document.querySelector('.dock');
+  let queued = false;
+  const again = () => { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; fitDock(); }); };
+  new ResizeObserver(again).observe(dock);
+  new MutationObserver(again).observe(dock, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['hidden'] });
+}
+
 function renderVoicePane() {
   if (!workspaceReady || $('voicePane').hidden) return; // escondido, não precisa redesenhar a cada mudança da voz
   const active = !!voice.session;

@@ -270,6 +270,7 @@ function renderVoiceAvatars() {
     b.type = 'button';
     b.className = 'voice-avatar';
     b.dataset.person = id;
+    b.dataset.initial = (nameOf(id).trim()[0] || '?').toUpperCase(); // barra apertada: sem o nome, fica a inicial
     b.style.setProperty('--person', personColor(id));
     const nm = document.createElement('span');
     nm.className = 'va-name';

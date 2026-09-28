@@ -312,7 +312,7 @@ $('chatList').addEventListener('scroll', () => {
 }, { passive: true });
 document.addEventListener('visibilitychange', () => { if (!document.hidden && chat.open && chatAtBottom()) markRead(); });
 $('dockAddr').onclick = async () => {
-  try { await navigator.clipboard.writeText(state.roomAddr); toast('Endereço copiado.'); } catch { toast('Não foi possível copiar.', 'error'); }
+  try { await navigator.clipboard.writeText(state.roomAddr); toast(`Endereço copiado: ${state.roomAddr}. Mande para quem vai entrar.`); } catch { toast('Não foi possível copiar.', 'error'); }
 };
 setIcon($('pipChipClose'), 'close', 'Fechar as janelas flutuantes');
 renderOverlayButton();
@@ -359,5 +359,6 @@ window.addEventListener('focus', syncPreview);
 window.addEventListener('blur', syncPreview);
 
 setupWorkspace();
+watchDock();
 setupGeneralSettings();
 show('home');
