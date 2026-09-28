@@ -44,49 +44,43 @@
   </aside>
   <main>
     <!-- Início -->
+    <!-- Início: um saguão. Você (foto e nome), as sessões abertas na rede como peça principal, criar ou entrar com
+         endereço, a última sala; embaixo, a conexão e a versão -->
     <section id="home" class="screen home-screen">
-      <div class="home-brand">
+      <div class="home-top">
         <div class="brand-mark">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h13v10H3zM8 19h13V9"/></svg>
           <span>Tela P2P</span>
         </div>
-        <div class="home-hero">
-          <h1>Sua tela,<br>direto no PC dos amigos.</h1>
-          <p class="lead">Uma sala para transmitir telas com os amigos, de PC para PC pela Radmin VPN.</p>
-        </div>
-        <div class="home-status">
-          <p class="status-line">
-            <span id="radminDot" class="dot"></span>
-            <strong id="radminTitle">Procurando a Radmin VPN…</strong>
-            <span id="radminDetail" class="status-detail"></span>
-          </p>
-          <p class="status-line version">
-            <span class="dot hollow"></span>
-            <span id="appVersion"></span>
-            <span aria-hidden="true">·</span>
-            <button class="link-btn" id="checkUpdates" type="button">Procurar atualização</button>
-          </p>
-        </div>
       </div>
 
-      <div class="home-actions">
-        <div class="home-card" id="homeCard">
-          <label class="field">
-            <span>Seu nome</span>
-            <input id="name" maxlength="32" placeholder="Como os outros vão te ver">
-          </label>
-          <section class="sessions" aria-labelledby="sessionsTitle">
-            <h2 class="sessions-title" id="sessionsTitle">Sessões abertas</h2>
-            <ul id="sessionList" class="session-list" aria-live="polite"></ul>
-            <p id="sessionsEmpty" class="hint"></p>
-          </section>
-          <div class="create-block">
-            <button class="btn primary big" id="goCreate" type="button">Criar sala</button>
-            <span class="hint center">Os amigos entram pelo seu endereço</span>
+      <div class="home-main">
+        <div class="home-hello">
+          <span id="homeAvatar" class="avatar home-avatar" aria-hidden="true"></span>
+          <div class="home-hello-text">
+            <h1 class="home-title">Sua tela, direto no PC dos amigos.</h1>
+            <label class="home-name">
+              <span>Você entra como</span>
+              <input id="name" maxlength="32" placeholder="Seu nome" autocomplete="off" spellcheck="false">
+            </label>
           </div>
-          <button class="btn big" id="goJoin" type="button" aria-expanded="false" aria-controls="joinPanel">Entrar numa sala</button>
+        </div>
+
+        <div class="home-card" id="homeCard">
+          <section class="sessions" aria-labelledby="sessionsTitle">
+            <h2 class="sessions-title" id="sessionsTitle">Sessões abertas na sua rede</h2>
+            <ul id="sessionList" class="session-list" aria-live="polite"></ul>
+            <p id="sessionsEmpty" class="sessions-empty"></p>
+          </section>
+          <div class="home-cta">
+            <div class="create-block">
+              <button class="btn primary big" id="goCreate" type="button">Criar sala</button>
+              <span class="hint center">Os amigos entram pelo seu endereço</span>
+            </div>
+            <button class="btn big" id="goJoin" type="button" aria-expanded="false" aria-controls="joinPanel">Entrar com endereço</button>
+          </div>
           <div id="joinPanel" class="join-panel" hidden>
-            <strong>Entrar numa sala</strong>
+            <strong>Entrar com endereço</strong>
             <label class="field">
               <span>Endereço de quem criou</span>
               <input id="roomAddr" class="mono" placeholder="26.123.45.67:8765">
@@ -108,6 +102,19 @@
             <button class="btn" id="rejoinBtn" type="button">Entrar de novo</button>
           </div>
         </div>
+      </div>
+
+      <div class="home-status">
+        <p class="status-line">
+          <span id="radminDot" class="dot"></span>
+          <strong id="radminTitle">Procurando a Radmin VPN…</strong>
+          <span id="radminDetail" class="status-detail"></span>
+        </p>
+        <p class="status-line version">
+          <span id="appVersion"></span>
+          <span aria-hidden="true">·</span>
+          <button class="link-btn" id="checkUpdates" type="button">Procurar atualização</button>
+        </p>
       </div>
     </section>
 

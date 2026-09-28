@@ -103,13 +103,18 @@ function renderSessoes() {
   $('sessionsEmpty').textContent = sessoes.procurando
     ? 'Procurando sessões abertas na rede…'
     : selectedNetworkProvider() === 'razze'
-      ? 'Peça o endereço privado da sala ao host e use “Entrar numa sala”.'
+      ? 'Peça o endereço privado da sala ao host e use “Entrar com endereço”.'
       : 'Nenhuma sessão aberta na rede agora. Quando alguém criar uma, ela aparece aqui.';
 }
 
 function sessionRow(s) {
   const li = document.createElement('li');
   li.className = 'session';
+  const dot = document.createElement('span');
+  dot.className = 'avatar';
+  dot.textContent = (s.host.trim()[0] || '?').toUpperCase();
+  dot.style.setProperty('--person', personColor(s.host));
+  dot.setAttribute('aria-hidden', 'true');
   const info = document.createElement('div');
   info.className = 'session-info';
   const name = document.createElement('strong');
@@ -125,7 +130,7 @@ function sessionRow(s) {
   btn.textContent = 'Entrar';
   btn.title = `Entrar na sessão de ${s.host} (${s.endereco}:${s.porta})`;
   btn.onclick = () => enterSession(s);
-  li.append(info, btn);
+  li.append(dot, info, btn);
   return li;
 }
 
