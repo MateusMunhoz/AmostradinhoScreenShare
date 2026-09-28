@@ -113,11 +113,11 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 
 /* Campos e botões */
 .field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted); }
-.field > input, .field select {
+.field > input, .field select, .field .select-btn {
   font: inherit; font-size: 15px; color: var(--text); background: var(--bg);
   border: 1px solid var(--field-line); border-radius: 8px; padding: 10px 12px; min-width: 0;
 }
-.field > input:focus, .field select:focus { border-color: var(--accent); outline: none; }
+.field > input:focus, .field select:focus, .field .select-btn:focus-visible, .field .select-btn[aria-expanded=true] { border-color: var(--accent); outline: none; }
 .btn {
   font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; border-radius: 6px;
   padding: 10px 18px; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); box-shadow: var(--lift);
@@ -630,7 +630,7 @@ fieldset.group > legend { margin-bottom: 10px; }
 .vd-slider input[type="range"]:disabled { opacity: .45; }
 .vd-value { min-width: 72px; text-align: right; font-size: 13px; color: var(--text-2); font-variant-numeric: tabular-nums; }
 .vd-select { font: inherit; font-size: 14px; color: var(--text); background: var(--sunken); border: 1px solid var(--field-line); border-radius: 8px; padding: 9px 10px; width: 100%; min-width: 0; }
-.vd-select:focus { border-color: var(--accent); outline: none; }
+.vd-select:focus, .vd-select.select-btn:focus-visible { border-color: var(--accent); outline: none; }
 .vd-check { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-2); cursor: pointer; }
 .vd-check input { accent-color: var(--accent); width: 16px; height: 16px; }
 .vd-check input:disabled + * , .vd-check:has(input:disabled) { opacity: .5; cursor: default; }
@@ -698,9 +698,9 @@ fieldset.group > legend { margin-bottom: 10px; }
 }
 .tile-bar, .tile-overlay, .chat-drop { background: var(--theme-glass); }
 .btn:not(.primary):not(.ghost):not(.danger):not(.on):not(.live) { color: var(--surface-text); }
-.field > input, .field select { color: var(--surface-text); background: var(--sunken); }
+.field > input, .field select, .field .select-btn { color: var(--surface-text); background: var(--sunken); }
 .join-panel .field > input { background: var(--sunken); }
-.general-settings input[type=text], .general-settings input[type=email], .general-settings input[type=password], .general-settings input[type=url], .general-settings select { color: var(--surface-text); background: var(--sunken); border: 1px solid var(--field-line); border-radius: 6px; padding: 8px 10px; font: inherit; }
+.general-settings input[type=text], .general-settings input[type=email], .general-settings input[type=password], .general-settings input[type=url], .general-settings select, .general-settings .select-btn { color: var(--surface-text); background: var(--sunken); border: 1px solid var(--field-line); border-radius: 6px; padding: 8px 10px; font: inherit; }
 .general-settings { --text: var(--surface-text); --text-2: var(--surface-text-2); --muted: var(--surface-muted); background: var(--panel); color: var(--text); width: min(680px, 100%); overflow-y: auto; }
 .settings-section { display: grid; gap: 12px; }
 .settings-section + .settings-section { padding-top: 16px; border-top: 1px solid var(--line); }
@@ -724,7 +724,7 @@ fieldset.group > legend { margin-bottom: 10px; }
 .settings-colors-sub { grid-column: 1 / -1; margin: 8px 0 0; padding-top: 12px; border-top: 1px solid var(--line); display: grid; gap: 3px; font-size: 13px; }
 .settings-colors-sub small { color: var(--muted); font-size: 12px; }
 .settings-sound { display: grid; grid-template-columns: 130px minmax(0,1fr) auto; align-items: center; gap: 10px; }
-.settings-sound select { width: 100%; min-width: 0; }
+.settings-sound select, .settings-sound .select-btn { width: 100%; min-width: 0; }
 .general-settings input[type=range] { accent-color: var(--accent); }
 .settings-sound label { font-size: 13px; }
 #resetColors { justify-self: start; }
@@ -773,7 +773,7 @@ main { padding-top: var(--workspace-top); }
 .settings-pane .settings-color-input input[type=text] { padding: 6px; font-size: 13px; }
 .settings-pane .settings-sound { grid-template-columns: minmax(0,1fr) auto; gap: 6px; }
 .settings-pane .settings-sound label { grid-column: 1 / -1; font-weight: 600; }
-.settings-pane .settings-sound select { font-size: 13px; }
+.settings-pane .settings-sound select, .settings-pane .settings-sound .select-btn { font-size: 13px; }
 .sound-event { display: grid; gap: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
 .event-volume { display: flex; align-items: center; gap: 8px; font-size: 12px; }
 .event-volume input { flex: 1; min-width: 0; }
@@ -855,7 +855,7 @@ main { padding-top: 0; }
 .settings-row { display: grid; gap: 7px; }
 .settings-row > label, .settings-row > .settings-label { font-size: 13px; font-weight: 600; }
 .font-pick { display: flex; gap: 8px; }
-.font-pick select { flex: 1; min-width: 0; }
+.font-pick select, .font-pick .select-btn { flex: 1; min-width: 0; }
 .font-pick .btn { flex: none; }
 .font-preview { display: grid; gap: 4px; margin: 0; padding: 12px 14px; border: 1px dashed var(--line-strong); border-radius: 8px; background: var(--sunken); font-size: 15px; line-height: 1.4; overflow-wrap: anywhere; }
 .font-preview strong { font-size: 18px; font-weight: 600; }
@@ -927,3 +927,37 @@ html[data-glass=liquid] .btn.primary { box-shadow: inset 0 1px 0 rgba(255, 255, 
   html[data-glass=liquid] :is(.btn, .workspace-tab, .seg label, .seg button) { transition: none; }
   html[data-glass=liquid] :is(.btn, .workspace-tab, .seg label, .seg button):active:not(:disabled) { transform: none; }
 }
+
+/* Listas de opções (renderer/lista.js): o <select> some e fica um botão com a lista no tema das janelas,
+   opaca ou de vidro conforme Aparência. */
+.select-native { display: none !important; }
+.select-btn { position: relative; display: block; width: 100%; text-align: left; cursor: pointer; padding-right: 32px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.select-btn > span { pointer-events: none; }
+.select-btn::after { content: ""; position: absolute; right: 13px; top: 50%; width: 7px; height: 7px; margin-top: -6px; border: solid var(--muted); border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.select-btn[aria-expanded=true]::after { margin-top: -2px; transform: rotate(-135deg); }
+.select-btn:disabled { opacity: .55; cursor: default; }
+.select-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.select-pop {
+  position: fixed; z-index: 60; box-sizing: border-box; max-width: calc(100vw - 16px); overflow-y: auto; padding: 6px;
+  color: var(--surface-text); background: var(--panel-2); border: 1px solid var(--line-strong); border-radius: 10px;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, .45); outline: none;
+}
+.select-group { padding: 8px 10px 4px; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--surface-muted); font-family: var(--font-body); }
+.select-item { padding: 7px 10px; border-radius: 6px; font-size: 14px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.select-item.active { background: var(--accent-soft); }
+.select-item[aria-selected=true] { font-weight: 700; box-shadow: inset 3px 0 0 var(--accent); }
+.select-item[aria-disabled=true] { opacity: .5; cursor: default; }
+:is(html[data-glass=clear], html[data-glass=liquid]) .select-pop {
+  background: var(--panel-3); /* um pouco mais cheia que os painéis: a lista fica por cima de texto */
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+}
+html[data-glass=liquid] .select-pop { border-radius: 18px; box-shadow: inset 0 1px 0 var(--glass-sheen), 0 14px 36px rgba(0, 0, 0, .35); }
+html[data-glass=liquid] .select-item { border-radius: 12px; }
+html[data-border=liquid] .select-pop { border-top-color: var(--edge-sheen); }
+
+/* Configurações em abas: uma seção por vez, sem a linha entre seções */
+.settings-tabs { flex-wrap: wrap; }
+.settings-tabs button { flex: 1 1 0; min-width: 88px; }
+.general-settings .settings-section + .settings-section { padding-top: 0; border-top: 0; }
+#appearanceTitle { display: none; }

@@ -223,8 +223,36 @@ function setupAppearance() {
     $('loadLocalFonts').disabled = false;
   };
 }
+// Abas das configurações: Rede, Aparência, Cores e Sons. Lembra a última aberta neste PC.
+function showSettingsTab(name, focus = false) {
+  const tabs = [...document.querySelectorAll('.settings-tabs [role=tab]')];
+  const tab = tabs.find((t) => t.dataset.tab === name) || tabs[0];
+  for (const t of tabs) {
+    const on = t === tab;
+    t.setAttribute('aria-selected', String(on));
+    t.tabIndex = on ? 0 : -1;
+    $('settingsPanel-' + t.dataset.tab).hidden = !on;
+  }
+  save('settingsTab', tab.dataset.tab);
+  if (focus) tab.focus();
+}
+function setupSettingsTabs() {
+  const tabs = [...document.querySelectorAll('.settings-tabs [role=tab]')];
+  for (const t of tabs) {
+    t.onclick = () => showSettingsTab(t.dataset.tab);
+    t.onkeydown = (e) => {
+      const i = tabs.indexOf(t);
+      const next = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: tabs.length - 1 }[e.key];
+      if (next === undefined) return;
+      e.preventDefault();
+      showSettingsTab(tabs[(next + tabs.length) % tabs.length].dataset.tab, true);
+    };
+  }
+  showSettingsTab(load('settingsTab') || 'network');
+}
 function setupGeneralSettings() {
   setupConnectivitySettings();
+  setupSettingsTabs();
   setupAppearance();
   window.api.getVersion().then((v) => { $('settingsVersion').textContent = v ? 'v' + v : ''; }).catch(() => {});
   for (const [key] of Object.entries(appPreferences.colors)) {

@@ -51,6 +51,11 @@ app.whenReady().then(async()=>{
       await check('Hexadecimal inválido não é salvo',`$('hex-main').getAttribute('aria-invalid')==='true' && AppPreferences.read(localStorage).colors.main==='#22271E'`);
       await run(`document.querySelector('input[name=glass][value=liquid]').click();`);
       await check('Vidro líquido aplicado na hora',`document.documentElement.dataset.glass==='liquid' && getComputedStyle($('workspaceNav')).backdropFilter.includes('liquidLens') && !$('glassLevelRow').hidden`);
+      await check('Abas: uma seção por vez',`(() => {$('settingsTab-colors').click();return !$('settingsPanel-colors').hidden && $('settingsPanel-network').hidden && $('settingsPanel-appearance').hidden && $('settingsTab-colors').getAttribute('aria-selected')==='true';})()`);
+      await run(`$('settingsTab-appearance').click();$('fontFamily').nextElementSibling.click();0`);
+      await check('Lista de fontes no tema, com vidro e cada fonte na própria letra',`(() => {const p=document.querySelector('.select-pop');return !!p && getComputedStyle(p).backdropFilter.includes('blur') && [...p.querySelectorAll('[role=option]')].some(o=>o.textContent.startsWith('Georgia')&&o.style.fontFamily.startsWith('Georgia')) && $('fontFamily').nextElementSibling.getAttribute('aria-expanded')==='true';})()`);
+      await run(`[...document.querySelectorAll('.select-pop [role=option]')].find(o=>o.textContent.startsWith('Georgia')).click();0`);
+      await check('Escolher na lista muda a fonte e fecha a lista',`!document.querySelector('.select-pop') && appPreferences.font.family==='georgia' && $('fontFamily').nextElementSibling.textContent.startsWith('Georgia')`);
       await run(`document.querySelector('input[name=border][value=liquid]').click();`);
       await check('Bordas líquidas: quina de cima acesa, cor translúcida, e o vidro continua',`document.documentElement.dataset.border==='liquid' && document.documentElement.dataset.glass==='liquid' && getComputedStyle($('workspaceNav')).borderTopColor!==getComputedStyle($('workspaceNav')).borderBottomColor && getComputedStyle(document.documentElement).getPropertyValue('--line').startsWith('rgba(')`);
       await run(`document.querySelector('input[name=border][value=solid]').click();`);
@@ -78,7 +83,7 @@ app.whenReady().then(async()=>{
       fs.writeFileSync(path.join(root,'.test-profile','settings-light.png'),(await win.webContents.capturePage()).toPNG());
       win.setSize(820,560); await new Promise(r=>setTimeout(r,150));
       // Quem rola é o cartão do diálogo (o fundo escuro só centraliza)
-      await check('Painel cabe em 820 × 560 e permite rolar',`(() => {const c=$('generalSettingsDialog').firstElementChild;const r=c.getBoundingClientRect();return r.top>=0&&r.left>=0&&r.right<=innerWidth&&r.bottom<=innerHeight&&c.scrollWidth<=c.clientWidth+1&&c.scrollHeight>c.clientHeight;})()`);
+      await check('Painel cabe em 820 × 560 e permite rolar',`(() => {showSettingsTab('sounds');const c=$('generalSettingsDialog').firstElementChild;const r=c.getBoundingClientRect();return r.top>=0&&r.left>=0&&r.right<=innerWidth&&r.bottom<=innerHeight&&c.scrollWidth<=c.clientWidth+1&&c.scrollHeight>c.clientHeight;})()`);
       fs.writeFileSync(path.join(root,'.test-profile','settings-small.png'),(await win.webContents.capturePage()).toPNG());
       await run(`document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape'}))`);
       await check('Escape fecha configurações',`$('generalSettingsDialog').hidden`);
