@@ -10,6 +10,7 @@ const { DatabaseSync } = require('node:sqlite');
 const { createHash, randomBytes, scrypt, timingSafeEqual } = require('node:crypto');
 const { promisify } = require('node:util');
 const scryptAsync = promisify(scrypt);
+const { createControl } = require('./control');
 
 const TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const MAX_BODY_BYTES = 32 * 1024;
@@ -46,10 +47,10 @@ function createApiServer(options = {}) {
   const userColumns = db.prepare('PRAGMA table_info(users)').all().map((column) => column.name);
   if (!userColumns.includes('status')) db.exec("ALTER TABLE users ADD COLUMN status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('pending', 'active', 'disabled'))");
 
-  const publicUser = (id) => db.prepare('SELECT id, email, display_name AS displayName, created_at AS createdAt FROM users WHERE id = ?').get(id) || null;
+  const publicUser = (id) => db.prepare('SELECT id, email, display_name AS displayName, role, created_at AS createdAt FROM users WHERE id = ?').get(id) || null;
   const newId = () => randomBytes(16).toString('hex');
   const hash = (value) => createHash('sha256').update(value).digest('hex');
-  const now = () => Date.now();
+  const now = options.now || (() => Date.now());
   const authAttempts = new Map();
   // Devolve a função que conta a tentativa: o cadastro conta sempre; o login só quando erra a senha
   const enforceAuthLimit = (req, route, maxAttempts, windowMs) => {
@@ -61,15 +62,29 @@ function createApiServer(options = {}) {
     if (!record || record.resetAt <= timestamp) record = { count: 0, resetAt: timestamp + windowMs };
     if (record.count >= maxAttempts) throw new ApiError(429, 'rate_limited', 'Muitas tentativas. Aguarde antes de tentar novamente.');
     authAttempts.set(key, record);
-    return () => { record.count++; };
     if (authAttempts.size > 10_000) {
       for (const [itemKey, item] of authAttempts) if (item.resetAt <= timestamp) authAttempts.delete(itemKey);
       while (authAttempts.size > 10_000) authAttempts.delete(authAttempts.keys().next().value);
     }
+    return () => { record.count++; };
   };
   const issueToken = (userId) => {
     const token = randomBytes(32).toString('base64url');
-    db.prepare('INSERT INTO sessions(token_hash, user_id, expires_at) VALUES(?, ?, ?)').run(hash(token), userId, now() + (options.tokenTtlMs || TOKEN_TTL_MS));
+    db.exec('BEGIN IMMEDIATE');
+    try {
+      db.prepare('DELETE FROM sessions WHERE user_id = ?').run(userId);
+      db.prepare(
+        'INSERT INTO sessions(token_hash, user_id, expires_at) VALUES(?, ?, ?)'
+      ).run(
+        hash(token),
+        userId,
+        now() + (options.tokenTtlMs || TOKEN_TTL_MS)
+      );
+      db.exec('COMMIT');
+    } catch (error) {
+      db.exec('ROLLBACK');
+      throw error;
+    }
     return token;
   };
   const requireUser = (req) => {
@@ -81,22 +96,17 @@ function createApiServer(options = {}) {
       if (session) db.prepare('DELETE FROM sessions WHERE token_hash = ?').run(tokenHash);
       throw new ApiError(401, 'unauthorized', 'Sessão inválida ou expirada.');
     }
+    const account = db.prepare('SELECT status FROM users WHERE id=?').get(session.userId);
+    if (account?.status !== 'active') throw new ApiError(403, 'account_disabled', 'Esta conta está desativada ou aguarda aprovação.');
+    req.authSessionHash = tokenHash;
     return session.userId;
-  };
-  const requireAdmin = (req) => {
-    const configured = options.adminToken || process.env.RAZZE_ADMIN_TOKEN || '';
-    if (!configured) throw new ApiError(503, 'admin_not_configured', 'Configure RAZZE_ADMIN_TOKEN no servidor.');
-    if (configured.length < 30 || /\s/.test(configured)) throw new ApiError(503, 'admin_token_weak', 'RAZZE_ADMIN_TOKEN deve ter pelo menos 30 caracteres e não conter espaços.');
-    const match = /^Bearer (\S+)$/.exec(String(req.headers.authorization || ''));
-    const supplied = Buffer.from(match?.[1] || '');
-    const expected = Buffer.from(configured);
-    if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) throw new ApiError(401, 'admin_unauthorized', 'Acesso administrativo não autorizado.');
   };
   const readBody = async (req) => {
     const chunks = [];
     let size = 0;
     for await (const chunk of req) {
       size += chunk.length;
+      req.bodyBytes = size;
       if (size > MAX_BODY_BYTES) throw new ApiError(413, 'body_too_large', 'A requisição excede o limite permitido.');
       chunks.push(chunk);
     }
@@ -144,16 +154,19 @@ function createApiServer(options = {}) {
     if (network.ownerId !== userId) throw new ApiError(403, 'forbidden', 'Somente o dono pode alterar esta rede.');
   };
 
+  const control = createControl({ db, options, now, hash, requireUser, readBody, send, ApiError, isMember });
   const handler = async (req, res) => {
     try {
       let pathname;
       try { pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname); }
       catch { throw new ApiError(400, 'invalid_path', 'Endereço da requisição inválido.'); }
       const method = req.method || 'GET';
+      if (control.serveAdmin(req, res, pathname)) return;
 
       if (method === 'GET' && pathname === '/v1/health') return send(res, 200, { ok: true, service: 'razze-api', stun: stunServer?.address() ? { port: stunServer.address().port, protocol: 'udp' } : null });
 
       if (method === 'POST' && pathname === '/v1/auth/register') {
+        if (!control.settings().registrationOpen) throw new ApiError(403, 'registration_closed', 'Novos cadastros estão desativados.');
         enforceAuthLimit(req, 'register', 20, 60 * 60 * 1000)();
         const body = await readBody(req);
         const email = assertText(body.email, 'E-mail', 3, 254).toLowerCase();
@@ -163,7 +176,7 @@ function createApiServer(options = {}) {
         const id = newId();
         const salt = randomBytes(16).toString('hex');
         const passwordHash = (await scryptAsync(password, salt, 64)).toString('hex');
-        const requiresApproval = options.requireApproval !== false;
+        const requiresApproval = control.settings().requireApproval;
         try {
           db.prepare('INSERT INTO users(id, email, display_name, password_salt, password_hash, status, created_at) VALUES(?, ?, ?, ?, ?, ?, ?)')
             .run(id, email, displayName, salt, passwordHash, requiresApproval ? 'pending' : 'active', now());
@@ -193,24 +206,7 @@ function createApiServer(options = {}) {
         return send(res, 200, { user: publicUser(user.id), accessToken: issueToken(user.id) });
       }
 
-      if (pathname.startsWith('/v1/admin/')) {
-        requireAdmin(req);
-        if (method === 'GET' && pathname === '/v1/admin/users') {
-          const users = db.prepare('SELECT id, email, display_name AS displayName, status, created_at AS createdAt FROM users ORDER BY created_at DESC').all();
-          return send(res, 200, { users });
-        }
-        if (method === 'GET' && pathname === '/v1/admin/networks') {
-          const networks = db.prepare('SELECT id, owner_id AS ownerId, name, description, visibility, created_at AS createdAt, updated_at AS updatedAt FROM networks ORDER BY created_at DESC').all();
-          return send(res, 200, { networks });
-        }
-        const approval = /^\/v1\/admin\/users\/([a-f0-9]{32})\/approve$/.exec(pathname);
-        if (method === 'POST' && approval) {
-          const result = db.prepare("UPDATE users SET status = 'active' WHERE id = ? AND status = 'pending'").run(approval[1]);
-          if (!result.changes) throw new ApiError(404, 'pending_user_not_found', 'Conta pendente não encontrada.');
-          return send(res, 200, { user: publicUser(approval[1]), status: 'active' });
-        }
-        throw new ApiError(404, 'not_found', 'Endpoint administrativo não encontrado.');
-      }
+      if (pathname.startsWith('/v1/admin/')) return await control.handleAdmin(req, res, pathname);
 
       if (method === 'POST' && pathname === '/v1/invites/accept') {
         const userId = requireUser(req);
@@ -233,6 +229,12 @@ function createApiServer(options = {}) {
       }
 
       const userId = requireUser(req);
+      if (method === 'POST' && pathname === '/v1/presence/heartbeat') return send(res, 200, await control.heartbeat(req, userId));
+      if (method === 'DELETE' && pathname === '/v1/presence') { control.offline(req); return send(res, 200, { ok: true }); }
+      if (method === 'GET' && pathname === '/v1/rooms') {
+        const networkId = new URL(req.url, 'http://localhost').searchParams.get('networkId');
+        return send(res, 200, { rooms: control.rooms(userId, networkId) });
+      }
       if (method === 'GET' && pathname === '/v1/me') return send(res, 200, { user: publicUser(userId) });
       if (method === 'POST' && pathname === '/v1/auth/logout') {
         const token = /^Bearer ([A-Za-z0-9_-]{30,})$/.exec(String(req.headers.authorization || ''))?.[1];
@@ -244,7 +246,7 @@ function createApiServer(options = {}) {
         const rows = db.prepare(
           "SELECT DISTINCT u.id, u.email, u.display_name AS displayName FROM friend_requests f JOIN users u ON (u.id = f.sender_id AND f.receiver_id = ?) OR (u.id = f.receiver_id AND f.sender_id = ?) WHERE f.status = 'accepted' ORDER BY u.display_name COLLATE NOCASE"
         ).all(userId, userId);
-        return send(res, 200, { friends: rows });
+        return send(res, 200, { friends: control.enrichUsers(rows) });
       }
       if (method === 'GET' && pathname === '/v1/friends/requests') {
         const incoming = db.prepare(
@@ -291,7 +293,7 @@ function createApiServer(options = {}) {
         const networks = db.prepare(
           "SELECT DISTINCT n.id, n.owner_id AS ownerId, n.name, n.description, n.visibility, CASE WHEN m.user_id IS NULL THEN 0 ELSE 1 END AS isMember, n.created_at AS createdAt, n.updated_at AS updatedAt FROM networks n LEFT JOIN friend_requests f1 ON f1.sender_id = n.owner_id AND f1.receiver_id = ? AND f1.status = 'accepted' LEFT JOIN friend_requests f2 ON f2.receiver_id = n.owner_id AND f2.sender_id = ? AND f2.status = 'accepted' LEFT JOIN network_members m ON m.network_id = n.id AND m.user_id = ? WHERE n.owner_id = ? OR m.user_id IS NOT NULL OR n.visibility = 'public' OR (n.visibility = 'friends' AND (f1.id IS NOT NULL OR f2.id IS NOT NULL)) ORDER BY n.updated_at DESC"
         ).all(userId, userId, userId, userId);
-        return send(res, 200, { networks });
+        return send(res, 200, { networks: control.enrichNetworks(networks, userId) });
       }
       if (method === 'POST' && pathname === '/v1/networks') {
         const body = await readBody(req);
@@ -360,7 +362,7 @@ function createApiServer(options = {}) {
         const members = db.prepare(
           'SELECT u.id, u.email, u.display_name AS displayName, m.joined_at AS joinedAt FROM network_members m JOIN users u ON u.id = m.user_id WHERE m.network_id = ? ORDER BY m.joined_at'
         ).all(network.id);
-        return send(res, 200, { members });
+        return send(res, 200, { members: control.enrichUsers(members) });
       }
 
       match = /^\/v1\/networks\/([a-f0-9]{32})\/devices$/.exec(pathname);
@@ -446,7 +448,7 @@ function createApiServer(options = {}) {
     }
   };
 
-  const server = http.createServer((req, res) => { void handler(req, res); });
+  const server = http.createServer((req, res) => { control.measure(req, res); void handler(req, res); });
   const stunServer = options.stun === false ? null : dgram.createSocket('udp4');
   let stunBound = false;
   let serviceStarted = false;

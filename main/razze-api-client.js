@@ -46,6 +46,9 @@ class RazzeApiClient {
     return payload;
   }
 
+  heartbeat(body) { return this.request('POST', '/v1/presence/heartbeat', body); }
+  offline() { return this.request('DELETE', '/v1/presence'); }
+  listRooms() { return this.request('GET', '/v1/rooms'); }
   health() { return this.request('GET', '/v1/health'); }
   register(email, password, displayName) { return this.request('POST', '/v1/auth/register', { email, password, displayName }); }
   login(email, password) { return this.request('POST', '/v1/auth/login', { email, password }); }

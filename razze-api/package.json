@@ -6,7 +6,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node --test ../tests/razze-api.test.js"
+    "test": "node --test ../tests/razze-api.test.js ../tests/razze-control.test.js"
   },
   "engines": {
     "node": ">=24"

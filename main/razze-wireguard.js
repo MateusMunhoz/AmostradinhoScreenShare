@@ -108,15 +108,18 @@ function pingPeer(assignedIp, peerIp) {
   }, (error) => error ? reject(error) : resolve()));
 }
 
-function wireguardExecutable() {
+function wireguardExecutable(options = {}) {
+  const electronApp = options.app || app;
+  const exists = options.exists || fs.existsSync;
   // Linux: o túnel é do kernel; o app só precisa do wg (pacote wireguard-tools)
-  if (process.platform === 'linux') return ['/usr/bin/wg', '/usr/local/bin/wg', '/bin/wg', '/usr/sbin/wg'].find((f) => fs.existsSync(f)) || null;
+  if ((options.platform || process.platform) === 'linux') return ['/usr/bin/wg', '/usr/local/bin/wg', '/bin/wg', '/usr/sbin/wg'].find(exists) || null;
   const candidates = [
-    app.isPackaged ? path.join(process.resourcesPath, 'bin', 'selfvpn', 'wireguard.exe') : '',
-    !app.isPackaged ? path.join(app.getAppPath(), 'bin', 'selfvpn', 'wireguard.exe') : '',
+    path.join(options.moduleDir || __dirname, '..', 'bin', 'selfvpn', 'wireguard.exe'),
+    electronApp.isPackaged ? path.join(options.resourcesPath || process.resourcesPath, 'bin', 'selfvpn', 'wireguard.exe') : '',
+    !electronApp.isPackaged ? path.join(electronApp.getAppPath(), 'bin', 'selfvpn', 'wireguard.exe') : '',
     path.join(process.env.ProgramFiles || 'C:\\Program Files', 'WireGuard', 'wireguard.exe'),
   ].filter(Boolean);
-  return candidates.find((candidate) => fs.existsSync(candidate)) || null;
+  return candidates.find(exists) || null;
 }
 
 // wg.exe (troca a lista de pessoas com o túnel ligado). Numa atualização pela sala ele vem no pacote,
@@ -147,7 +150,7 @@ function createWireGuardManager(options = {}) {
   const electronApp = options.app || app;
   const platform = options.platform || process.platform;
   const storePath = path.join(electronApp.getPath('userData'), 'razze', 'identity.json');
-  const binary = options.binary || wireguardExecutable();
+  const binary = options.binary || wireguardExecutable({ app: electronApp, platform });
   const run = options.exec || exec;
   const stun = options.discoverEndpoint || discoverEndpoint;
   const scheduleInterval = options.setInterval || setInterval;
@@ -424,4 +427,4 @@ function tunnelNameFor(networkId, platform = process.platform) {
   return (platform === 'linux' ? 'rz' : 'Razze') + id.slice(0, 12);
 }
 
-module.exports = { generateWireGuardKeys, decodeStunResponse, discoverEndpoint, buildTunnelConfig, wgSyncConfig, createWireGuardManager, tunnelNameFor, isOverlayAddress, isWireGuardKey };
+module.exports = { wireguardExecutable, generateWireGuardKeys, decodeStunResponse, discoverEndpoint, buildTunnelConfig, wgSyncConfig, createWireGuardManager, tunnelNameFor, isOverlayAddress, isWireGuardKey };

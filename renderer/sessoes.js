@@ -10,6 +10,8 @@ const SONDA_VALIDADE = 45000;
 const CONHECIDAS_MAX = 20;
 const sessoes = {
   observando: false,
+  provider: '',
+  razze: [],
   rede: [],                    // do anúncio pela rede: { id, host, porta, pessoas, senha, versao, endereco }
   diretas: new Map(),          // da pergunta direta: id -> { ...o mesmo, visto }
   sondaTimer: null,
@@ -39,13 +41,16 @@ function lembrarDaSala() {
 }
 
 function setSessionWatch(on) {
-  on = !!on && selectedNetworkProvider() !== 'razze';
-  if (on === sessoes.observando) return;
+  on = !!on;
+  const provider = selectedNetworkProvider();
+  if (on === sessoes.observando && provider === sessoes.provider) return;
+  sessoes.provider = provider;
   sessoes.observando = on;
-  window.api.sessoesObservar(on).catch(() => {});
+  window.api.sessoesObservar(on && provider !== 'razze').catch(() => {});
   clearInterval(sessoes.sondaTimer);
   clearTimeout(sessoes.procuraTimer);
-  if (on) {
+  sessoes.procurando = false;
+  if (on && provider !== 'razze') {
     sessoes.procurando = true;
     sessoes.procuraTimer = setTimeout(() => { sessoes.procurando = false; renderSessoes(); }, 3000);
     sondar();
@@ -87,6 +92,7 @@ function sondar() {
 
 // As duas fontes juntas, pelo id (o anúncio pela rede vale mais: é o mais atual)
 function listaSessoes() {
+  if (selectedNetworkProvider() === 'razze') return sessoes.razze.filter(s => s.networkId === networkPreferences().activeNetworkId).sort((a,b) => a.host.localeCompare(b.host, 'pt-BR'));
   const agora = Date.now();
   for (const [id, s] of sessoes.diretas) if (agora - s.visto > SONDA_VALIDADE) sessoes.diretas.delete(id);
   const porId = new Map(sessoes.diretas);
@@ -103,7 +109,7 @@ function renderSessoes() {
   $('sessionsEmpty').textContent = sessoes.procurando
     ? 'Procurando sessões abertas na rede…'
     : selectedNetworkProvider() === 'razze'
-      ? 'Peça o endereço privado da sala ao host e use “Entrar com endereço”.'
+      ? (razzeLive.error ? 'Não foi possível atualizar as salas: ' + razzeLive.error : networkPreferences().activeNetworkId ? 'Nenhuma sala aberta nesta rede agora.' : 'Conecte uma rede Razze para descobrir suas salas.')
       : 'Nenhuma sessão aberta na rede agora. Quando alguém criar uma, ela aparece aqui.';
 }
 

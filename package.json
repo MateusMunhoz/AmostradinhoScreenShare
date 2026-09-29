@@ -15,7 +15,8 @@
     "razze-api": "node razze-api/server.js",
     "test:razze-api": "node --test tests/razze-*.test.js",
     "dist:linux": "electron-builder --linux AppImage",
-    "icone": "electron gerar-icone.js"
+    "icone": "electron gerar-icone.js",
+    "test:razze-admin": "node tests/e2e/razze-admin.js"
   },
   "dependencies": {
     "ws": "^8.18.0"

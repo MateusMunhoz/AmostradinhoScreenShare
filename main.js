@@ -17,6 +17,14 @@ const sessoes = require('./main/sessoes');
 const { dedupeWindows, thumbSignature } = require('./main/fontes');
 const { createRazzeService } = require('./main/razze-service');
 const razze = createRazzeService();
+const { createPresence } = require('./main/razze-presence');
+let activeRazzeNetwork = '', roomRazzeNetwork = '';
+const razzePresence = createPresence({
+  service: razze,
+  clientName: os.hostname().slice(0, 80),
+  getRoom: () => { const info = roomInfo(); return roomRazzeNetwork && info ? { ...info, networkId: roomRazzeNetwork } : null; },
+  publish: (value) => { if (janelas.main && !janelas.main.isDestroyed()) janelas.main.webContents.send('razze-presence', value); },
+});
 
 let pendingRazzeInvite = '';
 function consumeRazzeInvite(value) {
@@ -328,12 +336,22 @@ if (hasSingleInstance) app.whenReady().then(() => {
   ipcMain.handle('copy-text', (_e, text) => { clipboard.writeText(String(text || '').slice(0, 4096)); return true; });
   ipcMain.handle('razze-state', () => razze.state());
   ipcMain.handle('razze-pending-invite', () => { const token = pendingRazzeInvite; pendingRazzeInvite = ''; return token; });
-  ipcMain.handle('razze-configure', (_e, url) => razze.configure(String(url || '')));
+  ipcMain.handle('razze-configure', async (_e, url) => {
+    const { RazzeApiClient } = require('./main/razze-api-client');
+    const normalized = new RazzeApiClient(String(url || '')).baseUrl;
+    if (razze.state().baseUrl !== normalized) {
+      await razzePresence.reset(); activeRazzeNetwork = ''; roomRazzeNetwork = '';
+    }
+    const result = razze.configure(normalized);
+    void razzePresence.tick();
+    return result;
+  });
   ipcMain.handle('razze-health', () => razze.health());
   ipcMain.handle('razze-me', () => razze.me());
   ipcMain.handle('razze-register', (_e, email, password, name) => razze.register(String(email || ''), String(password || ''), String(name || '')));
-  ipcMain.handle('razze-login', (_e, email, password) => razze.login(String(email || ''), String(password || '')));
-  ipcMain.handle('razze-logout', () => razze.logout());
+  ipcMain.handle('razze-login', async (_e, email, password) => { const result = await razze.login(String(email || ''), String(password || '')); void razzePresence.tick(); return result; });
+  ipcMain.handle('razze-logout', async () => { await razzePresence.reset(); activeRazzeNetwork = ''; roomRazzeNetwork = ''; return razze.logout(); });
+  ipcMain.handle('razze-presence-state', () => razzePresence.snapshot());
   ipcMain.handle('razze-list-networks', () => razze.listNetworks());
   ipcMain.handle('razze-create-network', (_e, network) => razze.createNetwork(network));
   ipcMain.handle('razze-update-network', (_e, id, patch) => razze.updateNetwork(String(id || ''), patch));
@@ -348,10 +366,10 @@ if (hasSingleInstance) app.whenReady().then(() => {
   ipcMain.handle('razze-accept-friend', (_e, id) => razze.acceptFriendRequest(String(id || '')));
   ipcMain.handle('razze-remove-friend', (_e, id) => razze.removeFriend(String(id || '')));
   ipcMain.handle('razze-wg-status', (_e, networkId) => razze.wireguard.status(String(networkId || '')));
-  ipcMain.handle('razze-wg-connect', async (_e, networkId, name) => razze.wireguard.connect(razze.api(), String(networkId || ''), String(name || 'Razze')));
-  ipcMain.handle('razze-wg-disconnect', (_e, networkId) => razze.wireguard.disconnect(String(networkId || '')));
-  ipcMain.handle('razze-wg-disconnect-all', () => razze.wireguard.disconnectAll());
-  ipcMain.handle('razze-wg-resume', (_e, networkId) => razze.resume(String(networkId || '')));
+  ipcMain.handle('razze-wg-connect', async (_e, networkId, name) => { const result = await razze.wireguard.connect(razze.api(), String(networkId || ''), String(name || 'Razze')); activeRazzeNetwork = String(networkId); razzePresence.track(activeRazzeNetwork); return result; });
+  ipcMain.handle('razze-wg-disconnect', async (_e, networkId) => { const result = await razze.wireguard.disconnect(String(networkId || '')); if (result.ok) { razzePresence.untrack(String(networkId)); if (activeRazzeNetwork === networkId) activeRazzeNetwork = ''; } return result; });
+  ipcMain.handle('razze-wg-disconnect-all', async () => { const result = await razze.wireguard.disconnectAll(); if (result.ok) { await razzePresence.reset(); activeRazzeNetwork = ''; roomRazzeNetwork = ''; void razzePresence.tick(); } return result; });
+  ipcMain.handle('razze-wg-resume', async (_e, networkId) => { const result = await razze.resume(String(networkId || '')); if (result.connected) { activeRazzeNetwork = String(networkId); razzePresence.track(activeRazzeNetwork); } return result; });
 
   setPriority('above'); // a página manda a escolha salva assim que abre
   ipcMain.handle('set-priority', (_e, level) => setPriority(level));
@@ -397,17 +415,29 @@ if (hasSingleInstance) app.whenReady().then(() => {
     const res = await startServer(port, password, seed || {});
     localDiscoveryEnabled = provider === 'radmin';
     if (res.ok && localDiscoveryEnabled) sessoes.anunciar(roomInfo, updater.version);
+    roomRazzeNetwork = res.ok && provider === 'razze' ? activeRazzeNetwork : '';
+    void razzePresence.tick();
     return res;
   });
   ipcMain.handle('stop-server', (_e, endRoom) => {
     endSession(!!endRoom);
     stopServer({ endRoom: !!endRoom });
+    roomRazzeNetwork = '';
+    void razzePresence.tick();
   });
-  onRoomChange(() => { if (localDiscoveryEnabled) sessoes.anunciarAgora(); });
+  onRoomChange(() => { if (localDiscoveryEnabled) sessoes.anunciarAgora(); void razzePresence.tick(); });
   ipcMain.handle('capture-exclude', (_e, on) => setCaptureExclude(on));
   ipcMain.handle('sessoes-observar', (e, on) => sessoes.observar(!!on, e.sender));
 
+  razzePresence.start();
   createWindow();
+});
+
+let presenceQuit = false;
+app.on('before-quit', (event) => {
+  if (presenceQuit) return;
+  event.preventDefault(); presenceQuit = true;
+  Promise.race([razzePresence.stop().catch(() => {}), new Promise(resolve => setTimeout(resolve, 1500))]).finally(() => app.quit());
 });
 
 app.on('will-quit', () => { globalShortcut.unregisterAll(); setPtt(0); });

@@ -9,6 +9,7 @@
 const NETWORK_PREF_KEY = 'connectivity.v1';
 let razzeUser = null;
 let networkReturnFocus = null;
+let razzeLive = { friends: [], networks: [], rooms: [], updatedAt: null, error: '' };
 const VISIBILITY = { private: 'Privada', friends: 'Só amigos', public: 'Pública' };
 
 function networkPreferences() {
@@ -170,6 +171,11 @@ async function refreshRazzeLists() {
   for (const friend of friends.friends || []) {
     row(friend.displayName + ' · ' + friend.email, false,
       btn('Remover', async () => { await window.api.razzeRemoveFriend(friend.id); await refreshRazzeLists(); }));
+    const presence = document.createElement('span');
+    presence.dataset.friendPresence = friend.id;
+    presence.className = 'net-badge' + (friend.online ? ' on' : '');
+    presence.textContent = friend.online ? 'Online' : 'Offline';
+    friendBox.lastElementChild.insertBefore(presence, friendBox.lastElementChild.lastElementChild);
   }
   for (const request of requests.outgoing || []) {
     row('Pedido enviado para ' + request.displayName + ' (' + request.email + ') · aguardando resposta', true);
@@ -193,7 +199,10 @@ function razzeNetworkCard(network) {
   const subtitle = document.createElement('span');
   subtitle.className = 'hint';
   subtitle.textContent = [network.description, VISIBILITY[network.visibility]].filter(Boolean).join(' · ') || 'Rede Razze';
-  titles.append(title, subtitle);
+  const online = document.createElement('span');
+  online.className = 'hint'; online.dataset.networkPresence = network.id;
+  online.textContent = network.onlineCount === null ? 'Entre na rede para ver a presença.' : (network.onlineCount || 0) + ' online · ' + (network.roomCount || 0) + ' salas abertas';
+  titles.append(title, subtitle, online);
   const badge = document.createElement('span');
   badge.className = 'net-badge';
   badge.textContent = network.isMember ? 'Desconectada' : 'Precisa de convite';
@@ -221,6 +230,7 @@ function razzeNetworkCard(network) {
     try {
       const result = await window.api.razzeWireGuardConnect(network.id, network.name);
       saveNetworkPreferences({ activeNetworkId: network.id });
+      renderSessoes();
       showTunnel(true, result.overlayIp);
       status('VPN conectada em ' + result.overlayIp + (result.publicIp ? ' · endpoint público ' + result.publicIp : '') + '.');
       setNetSummary(true, `Razze: conectado na rede ${network.name} · ${result.overlayIp}.`);
@@ -299,7 +309,7 @@ function razzeNetworkCard(network) {
           row.className = 'razze-row';
           const label = document.createElement('span');
           label.className = 'hint';
-          label.textContent = member.displayName + ' · ' + member.email + (member.id === network.ownerId ? ' · dono' : '');
+          label.textContent = member.displayName + ' · ' + member.email + (member.id === network.ownerId ? ' · dono' : '') + (member.online ? ' · Online' : ' · Offline');
           row.append(label);
           if (member.id !== network.ownerId) {
             const remove = btn('Remover', 'btn small danger');
@@ -401,7 +411,31 @@ function setRazzeAuthTab(register) {
   $('razzePassword').autocomplete = register ? 'new-password' : 'current-password';
 }
 
+function receiveRazzePresence(value) {
+  razzeLive = value || { friends: [], networks: [], rooms: [], error: '' };
+  const friends = new Map((razzeLive.friends || []).map(f => [f.id, f]));
+  document.querySelectorAll('[data-friend-presence]').forEach(node => {
+    const friend = friends.get(node.dataset.friendPresence);
+    node.textContent = razzeLive.error ? 'Indisponível' : friend?.online ? 'Online' : 'Offline';
+    node.classList.toggle('on', !razzeLive.error && !!friend?.online);
+  });
+  const networks = new Map((razzeLive.networks || []).map(n => [n.id, n]));
+  document.querySelectorAll('[data-network-presence]').forEach(node => {
+    const network = networks.get(node.dataset.networkPresence);
+    node.textContent = razzeLive.error ? 'Presença indisponível' : !network || network.onlineCount === null ? 'Entre na rede para ver a presença.' : network.onlineCount + ' online · ' + network.roomCount + ' salas abertas';
+  });
+  sessoes.razze = razzeLive.rooms || [];
+  renderSessoes();
+  if (razzeLive.authenticated === false && selectedNetworkProvider() === 'razze') {
+    razzeUser = null;
+    $('razzeStatus').textContent = razzeLive.error || 'Entre novamente na sua conta.';
+    void refreshRazzeState();
+  }
+}
+
 function setupConnectivitySettings() {
+  window.api.onRazzePresence(receiveRazzePresence);
+  window.api.razzePresence().then(receiveRazzePresence).catch(() => {});
   setIcon($('closeNetworkDialog'), 'close', 'Fechar');
   setupUtilityPopup('networkDialog', closeNetworkDialog);
   $('navNetwork').onclick = () => ($('networkDialog').hidden ? openNetworkDialog() : closeNetworkDialog());

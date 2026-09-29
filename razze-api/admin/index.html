@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Razze • Administração</title><link rel="stylesheet" href="/admin/style.css"><script defer src="/admin/app.js"></script></head>
+<body>
+<header><div><span class="mark">R</span><strong>Razze <span class="muted">Administração</span></strong></div><span id="server" class="muted"></span><button id="logout" hidden>Sair</button></header>
+<main>
+<section id="login" class="login panel"><p class="eyebrow">CONTROLE DO SERVIDOR</p><h1>Sua rede, em um só lugar.</h1><p class="muted">Entre com uma conta administradora deste servidor.</p>
+<form id="loginForm"><label>E-mail<input id="email" type="email" autocomplete="username" required></label><label>Senha<input id="password" type="password" autocomplete="current-password" required></label><button class="primary">Entrar</button></form>
+<details><summary>Primeiro acesso ou recuperação</summary><p>Use o RAZZE_ADMIN_TOKEN configurado na VPS para promover sua conta em Usuários. O token fica somente na memória desta página.</p><form id="tokenForm"><label>Token administrativo<input id="token" type="password" autocomplete="off" required></label><button>Acessar com token</button></form></details></section>
+<div id="workspace" hidden><div class="toolbar"><nav id="nav" aria-label="Administração"><button data-view="overview" class="active">Visão geral</button><button data-view="clients">Clientes</button><button data-view="users">Usuários</button><button data-view="networks">Redes</button><button data-view="settings">Configurações</button><button data-view="database">Banco de dados</button><button data-view="audit">Histórico</button></nav><button id="refresh">Atualizar</button></div><section id="content" aria-live="polite"></section></div>
+<p id="message" role="status" aria-live="polite"></p>
+</main><footer>RazzeAPI • Gestão de acesso, presença e redes</footer></body></html>

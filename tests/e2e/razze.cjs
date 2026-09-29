@@ -61,6 +61,7 @@ const handlers = {
   'ptt': () => true,
   'get-shortcuts': () => ({ compose: 'CommandOrControl+Enter', mute: 'CommandOrControl+Shift+M', edit: 'CommandOrControl+Shift+E', hideChat: 'CommandOrControl+Shift+O' }),
   'razze-state': () => service.state(),
+  'razze-presence-state': () => ({ friends: [], networks: [], rooms: [], updatedAt: null, error: '' }),
   'razze-configure': (_event, url) => service.configure(url),
   'razze-health': () => service.health(),
   'razze-register': async (_event, email, password, displayName) => {
@@ -182,6 +183,25 @@ app.whenReady().then(async () => {
       require('fs').writeFileSync(path.join(dir, 'razze.png'), (await win.webContents.capturePage()).toPNG());
     } catch {}
     check('Selo "Conectada" no cartão e resumo no topo', tunnelUi.badge.startsWith('Conectada') && tunnelUi.resumo.includes('conectado na rede Rede de teste'), JSON.stringify(tunnelUi));
+    const get = (p, token) => fetch(process.env.RAZZE_E2E_API_URL + p, { headers: { Authorization: 'Bearer ' + token } }).then(r => r.json());
+    const request = (await get('/v1/friends/requests', bob.accessToken)).incoming[0];
+    await post('/v1/friends/requests/' + request.id + '/accept', {}, bob.accessToken);
+    await post('/v1/invites/accept', { token: inviteToken }, bob.accessToken);
+    const bobDevice = 'b'.repeat(32);
+    await post('/v1/networks/' + networkId + '/devices', { deviceId: bobDevice, name: 'PC Bob', publicKey: Buffer.alloc(32, 2).toString('base64') }, bob.accessToken);
+    await post('/v1/presence/heartbeat', { connections: [{ networkId, deviceId: bobDevice }], room: { id: 'b'.repeat(16), networkId, host: 'Bob', porta: 8765, pessoas: 2, senha: true } }, bob.accessToken);
+    const sendPresence = async () => {
+      const friends = await service.listFriends(), networks = await service.listNetworks(), rooms = await service.api().listRooms();
+      win.webContents.send('razze-presence', { friends: friends.friends, networks: networks.networks, rooms: rooms.rooms, error: '', updatedAt: Date.now() });
+      await sleep(100);
+    };
+    await run('refreshRazzeLists()'); await sendPresence();
+    check('Amigo com heartbeat aparece Online', await run("document.querySelector('[data-friend-presence]').textContent === 'Online'"));
+    await run('setSessionWatch(true)');
+    check('Sala privada descoberta pela API aparece na lista inicial', await run("document.querySelector('#sessionList .session')?.textContent.includes('Bob') && document.querySelector('[data-network-presence]').textContent.includes('1 salas abertas')"));
+    await fetch(process.env.RAZZE_E2E_API_URL + '/v1/presence', { method: 'DELETE', headers: { Authorization: 'Bearer ' + bob.accessToken } });
+    await sendPresence();
+    check('Saída retira sala e muda amigo para Offline', await run("document.querySelector('[data-friend-presence]').textContent === 'Offline' && document.querySelectorAll('#sessionList .session').length === 0"));
     await run(`[...document.querySelectorAll('#razzeNetworks .razze-network button')].find((b) => b.textContent === 'Desconectar').click()`);
     await sleep(150);
     check('Desconecta túnel e restaura o rótulo', !(await wireguard.status(networkId)).connected && await run(`document.querySelector('#razzeNetworks .razze-network button').textContent === 'Conectar' && [...document.querySelectorAll('#razzeNetworks .razze-network button')].find((b) => b.textContent === 'Desconectar').hidden`));
