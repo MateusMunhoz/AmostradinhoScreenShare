@@ -70,7 +70,21 @@ function createApiServer(options = {}) {
   };
   const issueToken = (userId) => {
     const token = randomBytes(32).toString('base64url');
-    db.prepare('INSERT INTO sessions(token_hash, user_id, expires_at) VALUES(?, ?, ?)').run(hash(token), userId, now() + (options.tokenTtlMs || TOKEN_TTL_MS));
+    db.exec('BEGIN IMMEDIATE');
+    try {
+      db.prepare('DELETE FROM sessions WHERE user_id = ?').run(userId);
+      db.prepare(
+        'INSERT INTO sessions(token_hash, user_id, expires_at) VALUES(?, ?, ?)'
+      ).run(
+        hash(token),
+        userId,
+        now() + (options.tokenTtlMs || TOKEN_TTL_MS)
+      );
+      db.exec('COMMIT');
+    } catch (error) {
+      db.exec('ROLLBACK');
+      throw error;
+    }
     return token;
   };
   const requireUser = (req) => {

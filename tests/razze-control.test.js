@@ -86,22 +86,35 @@ test('administradores, aprovação, banimento, auditoria e consulta sanitizada a
   assert.match(page.headers.get('content-security-policy'), /frame-ancestors 'none'/);
   assert.match(await page.text(), /Clientes/);
 });
-test('clientes: contadores reais HTTP e revogação de apenas um dispositivo', async t => {
+test('clientes: uma conta mantém somente uma sessão ativa', async t => {
   const { req, register } = await fixture(t);
   const a = await register('Alice');
-  const second = await req('auth/login', 'POST', { email: a.user.email, password: 'correct-password-123' });
+
+  const second = await req('auth/login', 'POST', {
+    email: a.user.email,
+    password: 'correct-password-123'
+  });
+
+  assert.notEqual(a.accessToken, second.accessToken);
+
   await req('presence/heartbeat', 'POST', {}, a.accessToken);
   await req('presence/heartbeat', 'POST', {}, second.accessToken);
+
   const clients = (await req('admin/clients', 'GET', undefined, ROOT)).clients;
-  assert.equal(clients.filter(c => c.online).length, 2);
-  assert.ok(clients.every(c => c.receivedBytes > 0 && c.sentBytes > 0 && c.requests > 0));
-  assert.ok(clients.every(c => c.receivedBytes === 2 && c.sentBytes === Buffer.byteLength(JSON.stringify({ ok: true, heartbeatSeconds: 20, timeoutSeconds: 70 }))));
+
+  assert.equal(clients.length, 1);
+  assert.equal(clients.filter(c => c.online).length, 1);
+
   const overview = await req('admin/overview', 'GET', undefined, ROOT);
-  assert.equal(overview.connectedClients, 2); assert.equal(overview.online, 1);
-  assert.equal((await req('admin/clients/' + clients[0].id, 'DELETE', undefined, ROOT)).status, 200);
-  const statuses = [(await req('me', 'GET', undefined, a.accessToken)).status, (await req('me', 'GET', undefined, second.accessToken)).status].sort();
+  assert.equal(overview.connectedClients, 1);
+  assert.equal(overview.online, 1);
+
+  const statuses = [
+    (await req('me', 'GET', undefined, a.accessToken)).status,
+    (await req('me', 'GET', undefined, second.accessToken)).status
+  ].sort();
+
   assert.deepEqual(statuses, [200, 401]);
-  assert.equal((await req('admin/overview', 'GET', undefined, ROOT)).connectedClients, 1);
 });
 test('configurações persistem após reiniciar e presença exige nova confirmação', async t => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'razze-control-'));

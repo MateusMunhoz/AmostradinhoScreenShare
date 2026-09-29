@@ -25,6 +25,12 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
   `);
   // Após reiniciar, cada cliente precisa confirmar sua presença novamente.
   db.exec('DELETE FROM live_presence');
+  // Mantém somente a sessão mais recente de cada conta.
+  db.exec(`DELETE FROM sessions WHERE rowid NOT IN (
+    SELECT MAX(rowid)
+    FROM sessions
+    GROUP BY user_id
+  )`);
   const defaults = { requireApproval: options.requireApproval !== false, registrationOpen: true, presenceTimeoutSeconds: 70 };
   const settings = () => Object.assign({}, defaults, Object.fromEntries(db.prepare('SELECT key, value FROM server_settings').all().map(r => [r.key, JSON.parse(r.value)])));
   const tokenHash = req => hash(String(req.headers.authorization || '').replace(/^Bearer /, ''));
