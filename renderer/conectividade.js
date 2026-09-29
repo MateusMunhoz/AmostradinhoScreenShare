@@ -266,8 +266,24 @@ function razzeNetworkCard(network) {
       try {
         const created = await window.api.razzeCreateInvite(network.id, { maxUses: 10, ttlHours: 168 });
         const link = 'telap2p://invite/' + created.token;
-        try { await navigator.clipboard.writeText(link); status('Link de convite copiado. Vale por 7 dias e até 10 entradas.'); }
-        catch { prompt('Copie o link de convite', link); }
+        // O link fica à vista no cartão, com Copiar (se a cópia automática falhar, dá para selecionar e copiar)
+        const field = document.createElement('input');
+        field.className = 'razze-invite-link mono';
+        field.readOnly = true;
+        field.value = link;
+        field.onfocus = () => field.select();
+        const copy = btn('Copiar', 'btn small primary');
+        copy.onclick = async () => {
+          try { await copiar(link); copy.textContent = 'Copiado'; setTimeout(() => { copy.textContent = 'Copiar'; }, 1500); }
+          catch { field.focus(); status('Selecione o link e use Ctrl+C.'); }
+        };
+        const row = document.createElement('div');
+        row.className = 'razze-row razze-invite';
+        row.append(field, copy);
+        card.querySelector('.razze-invite')?.remove();
+        card.append(row);
+        try { await copiar(link); status('Convite criado e copiado. Mande o link para quem vai entrar: vale por 7 dias e até 10 entradas.'); }
+        catch { status('Convite criado. Copie o link abaixo e mande para quem vai entrar: vale por 7 dias e até 10 entradas.'); }
       } catch (error) { status('Não foi possível criar convite: ' + error.message); }
     };
     // Membros: quem está na rede, e tirar alguém

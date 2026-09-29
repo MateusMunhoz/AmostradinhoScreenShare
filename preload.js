@@ -36,6 +36,7 @@ contextBridge.exposeInMainWorld('api', {
   offVideoCap: () => { for (const ch of ['vchunk', 'vstats', 'vended']) ipcRenderer.removeAllListeners(ch); },
   offPcm: () => ipcRenderer.removeAllListeners('pcm'),
   getIps: (provider) => ipcRenderer.invoke('get-ips', provider),
+  copyText: (text) => ipcRenderer.invoke('copy-text', String(text || '')),
   razzeState: () => ipcRenderer.invoke('razze-state'),
   razzePendingInvite: () => ipcRenderer.invoke('razze-pending-invite'),
   onRazzeInvite: (callback) => {

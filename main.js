@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, desktopCapturer, session, globalShortcut, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, desktopCapturer, session, globalShortcut, shell, clipboard } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -284,6 +284,8 @@ if (hasSingleInstance) app.whenReady().then(() => {
     }
     return list.sort((a, b) => Number(b.radmin) - Number(a.radmin));
   });
+  // Copiar pelo processo principal: o navigator.clipboard da página falha quando a janela perde o foco
+  ipcMain.handle('copy-text', (_e, text) => { clipboard.writeText(String(text || '').slice(0, 4096)); return true; });
   ipcMain.handle('razze-state', () => razze.state());
   ipcMain.handle('razze-pending-invite', () => { const token = pendingRazzeInvite; pendingRazzeInvite = ''; return token; });
   ipcMain.handle('razze-configure', (_e, url) => razze.configure(String(url || '')));

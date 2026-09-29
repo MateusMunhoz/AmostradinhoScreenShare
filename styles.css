@@ -762,6 +762,7 @@ fieldset.group > legend { margin-bottom: 10px; }
 .razze-row, #razzeAccount .button-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .razze-row > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .razze-network > strong { overflow-wrap: anywhere; }
+.razze-invite-link { flex: 1; min-width: 0; height: 32px; padding: 0 10px; border: 1px solid var(--field-line); border-radius: 6px; background: var(--sunken); color: var(--surface-text); font-size: 12px; }
 .razze-members { display: grid; gap: 6px; padding-top: 6px; border-top: 1px solid var(--line); }
 .settings-colors { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; }
 .settings-color { display: grid; gap: 7px; }

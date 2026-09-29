@@ -28,6 +28,12 @@ function getName() { return $('name').value.trim() || 'Anônimo'; }
 function nameOf(id) { return state.members.get(id)?.name || 'Alguém'; }
 function setBusy(btn, busy, label) { btn.disabled = busy; btn.textContent = label; }
 
+// Copia para a área de transferência (pelo processo principal; a da página falha sem foco)
+async function copiar(text) {
+  try { return await window.api.copyText(text); }
+  catch { await navigator.clipboard.writeText(text); return true; }
+}
+
 function send(msg) {
   if (state.ws && state.ws.readyState === WebSocket.OPEN) state.ws.send(JSON.stringify(msg));
 }

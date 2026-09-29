@@ -31,7 +31,7 @@ async function renderRoomAddress() {
     copy.textContent = 'Copiar';
     copy.onclick = async () => {
       try {
-        await navigator.clipboard.writeText(addr);
+        await copiar(addr);
         copy.textContent = 'Copiado';
         setTimeout(() => { copy.textContent = 'Copiar'; }, 1500);
       } catch { toast('Não foi possível copiar. Selecione o endereço e use Ctrl+C.', 'error'); }

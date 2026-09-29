@@ -150,6 +150,7 @@ app.whenReady().then(async () => {
     const inviteLink = await run(`window.__razzeCopied || ''`);
     const inviteToken = inviteLink.split('/').pop();
     check('Gera link de convite pela API', inviteLink.startsWith('telap2p://invite/') && /^[A-Za-z0-9_-]{20,120}$/.test(inviteToken), inviteLink);
+    check('O link do convite fica à vista no cartão, com Copiar', await run(`(() => { const r = document.querySelector('#razzeNetworks .razze-invite'); return !!r && r.querySelector('input').value === ${JSON.stringify(inviteLink)} && r.querySelector('button').textContent === 'Copiar'; })()`));
     await run(`$('razzeInviteToken').value = '${inviteLink}'; $('razzeJoinInvite').click()`);
     await sleep(120);
     check('Aceita o link de convite pela API', await run(`$('razzeStatus').textContent === 'Você entrou na rede.'`));
