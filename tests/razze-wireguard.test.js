@@ -359,3 +359,48 @@ test('Linux: apertar para falar mapeia a tecla do Windows para o keycode do X', 
   assert.deepEqual(xinputAlvo(5), { tipo: 'button', codes: [8] });                 // Mouse 4
   assert.equal(xinputAlvo(250), null);
 });
+
+
+test('mapa enumera todos os túneis locais sem servidor e não retorna chaves privadas', async () => {
+  const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'razze-map-'));
+  const directory = path.join(profile, 'razze', 'tunnels');
+  fs.mkdirSync(directory, { recursive: true });
+  for (const letter of ['a', 'b', 'c']) fs.writeFileSync(path.join(directory, 'Razze' + letter.repeat(12) + '.conf'), '[Interface]\nPrivateKey = segredo\n');
+  fs.writeFileSync(path.join(directory, 'outro.conf'), 'ignorar');
+  const manager = createWireGuardManager({
+    app: { isPackaged: false, getPath: () => profile, getAppPath: () => profile, getName: () => 'Tela P2P' },
+    safeStorage: { isEncryptionAvailable: () => true },
+    binary: path.join(profile, 'wireguard.exe'), platform: 'win32',
+    exec: async (_file, args) => {
+      if (args[1].includes('b'.repeat(12))) return 'ESTADO : 1 STOPPED';
+      if (args[1].includes('c'.repeat(12))) throw new Error('Acesso negado');
+      return 'ESTADO : 4 RUNNING';
+    },
+  });
+  try {
+    const result = await manager.connections();
+    assert.equal(result.length, 3);
+    assert.equal(result.find(n => n.networkPrefix === 'a'.repeat(12)).connected, true);
+    assert.equal(result.find(n => n.networkPrefix === 'b'.repeat(12)).connected, false);
+    assert.match(result.find(n => n.networkPrefix === 'c'.repeat(12)).error, /Acesso negado/);
+    assert.equal(JSON.stringify(result).includes('segredo'), false);
+  } finally { fs.rmSync(profile, { recursive: true, force: true }); }
+});
+
+
+test('mapa encontra túnel ativo pela interface quando não existe pasta de configurações', async () => {
+  const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'razze-map-interface-'));
+  const tunnelName = 'Razze' + 'd'.repeat(12);
+  const manager = createWireGuardManager({
+    app: { isPackaged: false, getPath: () => profile, getAppPath: () => profile, getName: () => 'Tela P2P' },
+    safeStorage: { isEncryptionAvailable: () => true }, binary: path.join(profile, 'wireguard.exe'), platform: 'win32',
+    networkInterfaces: () => ({ [tunnelName]: [{ address: '10.77.0.2' }], Ethernet: [] }),
+    exec: async () => 'ESTADO : 4 RUNNING',
+  });
+  try {
+    const result = await manager.connections();
+    assert.equal(result.length, 1);
+    assert.equal(result[0].tunnelName, tunnelName);
+    assert.equal(result[0].connected, true);
+  } finally { fs.rmSync(profile, { recursive: true, force: true }); }
+});

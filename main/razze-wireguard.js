@@ -4,6 +4,7 @@ const crypto = require('node:crypto');
 const dgram = require('node:dgram');
 const fs = require('node:fs');
 const path = require('node:path');
+const os = require('node:os');
 const { execFile } = require('node:child_process');
 const { app, safeStorage } = require('electron');
 
@@ -222,8 +223,11 @@ function createWireGuardManager(options = {}) {
   }
 
   async function status(networkId) {
+    return tunnelStatus(nameFor(assertNetworkId(networkId)));
+  }
+
+  async function tunnelStatus(tunnelName) {
     if (!binary) return { installed: false, connected: false, error: semWireGuard };
-    const tunnelName = nameFor(assertNetworkId(networkId));
     if (linux) {
       // Linux: a interface existe? Com UP nas marcas, está ligada
       try {
@@ -242,6 +246,23 @@ function createWireGuardManager(options = {}) {
       if (/1060|does not exist|não existe/i.test(error.message)) return { installed: true, exists: false, connected: false, tunnelName };
       return { installed: true, exists: true, connected: false, tunnelName, error: error.message };
     }
+  }
+
+  // Inventário local: funciona mesmo quando o servidor está inacessível.
+  async function connections() {
+    let files;
+    try { files = fs.readdirSync(tunnelsDir); }
+    catch (error) { if (error.code === 'ENOENT') files = []; else throw error; }
+    const names = files.filter(file => /^(Razze|rz)[a-f0-9]{12}\.conf$/i.test(file) && TUNNEL_NAME.test(file.slice(0, -5))).map(file => file.slice(0, -5));
+    const interfaces = (options.networkInterfaces || os.networkInterfaces)();
+    const tracked = [...activeTunnels.values()].map(tunnel => tunnel.tunnelName);
+    const allNames = new Set([...names, ...tracked, ...Object.keys(interfaces).filter(name => TUNNEL_NAME.test(name))]);
+    return Promise.all([...allNames].map(async tunnelName => ({
+      ...await tunnelStatus(tunnelName),
+      networkName: [...activeTunnels.values()].find(tunnel => tunnel.tunnelName === tunnelName)?.networkName || '',
+      networkPrefix: tunnelName.replace(/^(Razze|rz)/i, ''),
+      tunnelName,
+    })));
   }
 
   async function connect(api, networkId, networkName = 'Razze') {
@@ -417,7 +438,7 @@ function createWireGuardManager(options = {}) {
     return { resumed: true, connected: true, overlayIp: assignedIp };
   }
 
-  return { status, connect, refreshPeers, disconnect, disconnectAll, identity, resume };
+  return { status, connections, connect, refreshPeers, disconnect, disconnectAll, identity, resume };
 }
 
 // No Linux, nome de interface tem no máximo 15 letras: "rz" + 12

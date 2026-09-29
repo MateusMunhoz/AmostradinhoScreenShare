@@ -56,8 +56,9 @@ class RazzeApiClient {
   me() { return this.request('GET', '/v1/me'); }
   listFriends() { return this.request('GET', '/v1/friends'); }
   friendRequests() { return this.request('GET', '/v1/friends/requests'); }
-  requestFriend(email) { return this.request('POST', '/v1/friends/requests', { email }); }
+  requestFriend(nickname) { return this.request('POST', '/v1/friends/requests', { nickname }); }
   acceptFriendRequest(id) { return this.request('POST', '/v1/friends/requests/' + encodeURIComponent(id) + '/accept'); }
+  cancelFriendRequest(id) { return this.request('DELETE', '/v1/friends/requests/' + encodeURIComponent(id)); }
   removeFriend(id) { return this.request('DELETE', '/v1/friends/' + encodeURIComponent(id)); }
   listNetworks() { return this.request('GET', '/v1/networks'); }
   getNetwork(id) { return this.request('GET', '/v1/networks/' + encodeURIComponent(id)); }

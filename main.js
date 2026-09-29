@@ -362,9 +362,11 @@ if (hasSingleInstance) app.whenReady().then(() => {
   ipcMain.handle('razze-create-invite', (_e, id, options) => razze.createInvite(String(id || ''), options));
   ipcMain.handle('razze-friends', () => razze.listFriends());
   ipcMain.handle('razze-friend-requests', () => razze.friendRequests());
-  ipcMain.handle('razze-request-friend', (_e, email) => razze.requestFriend(String(email || '')));
+  ipcMain.handle('razze-request-friend', (_e, nickname) => razze.requestFriend(String(nickname || '')));
   ipcMain.handle('razze-accept-friend', (_e, id) => razze.acceptFriendRequest(String(id || '')));
+  ipcMain.handle('razze-cancel-friend-request', (_e, id) => razze.cancelFriendRequest(String(id || '')));
   ipcMain.handle('razze-remove-friend', (_e, id) => razze.removeFriend(String(id || '')));
+  ipcMain.handle('razze-wg-connections', () => razze.wireguard.connections());
   ipcMain.handle('razze-wg-status', (_e, networkId) => razze.wireguard.status(String(networkId || '')));
   ipcMain.handle('razze-wg-connect', async (_e, networkId, name) => { const result = await razze.wireguard.connect(razze.api(), String(networkId || ''), String(name || 'Razze')); activeRazzeNetwork = String(networkId); razzePresence.track(activeRazzeNetwork); return result; });
   ipcMain.handle('razze-wg-disconnect', async (_e, networkId) => { const result = await razze.wireguard.disconnect(String(networkId || '')); if (result.ok) { razzePresence.untrack(String(networkId)); if (activeRazzeNetwork === networkId) activeRazzeNetwork = ''; } return result; });
