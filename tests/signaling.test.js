@@ -127,3 +127,68 @@ test('fonte do nome: vai no welcome e na troca; texto livre não passa', async t
   a.send({ type: 'name-font', font: 'x"; } body{' });
   assert.equal((await b.wait(m => m.type === 'name-font-state')).font, '');
 });
+
+// Sala criada no modo Razze: o servidor escuta em todas as redes do PC, mas só aceita o próprio PC e o túnel da Razze
+test('sala da rede Razze recusa quem chega por outra rede; sala comum aceita', async t => {
+  const { isRazzeAddress } = require('../signaling');
+  for (const ok of ['10.64.0.1', '10.100.3.4', '10.127.255.255', '::ffff:10.80.1.2']) assert.equal(isRazzeAddress(ok), true, ok);
+  for (const no of ['10.63.0.1', '10.128.0.1', '26.12.34.56', '192.168.0.5', '127.0.0.1', '', 'x']) assert.equal(isRazzeAddress(no), false, no);
+
+  // Um endereço deste PC que não é o de dentro (rede de casa, Radmin): faz o papel de "outra rede"
+  const lan = Object.values(require('node:os').networkInterfaces()).flat().find(i => i && i.family === 'IPv4' && !i.internal && !isRazzeAddress(i.address));
+  if (!lan) return t.skip('sem endereço de rede neste PC');
+  const probe = net.createServer();
+  await new Promise(r => probe.listen(0, '127.0.0.1', r));
+  const port = probe.address().port;
+  await new Promise(r => probe.close(r));
+  const hello = (host) => new Promise((resolve) => {
+    const ws = new WebSocket(`ws://${host}:${port}`);
+    ws.once('open', () => ws.send(JSON.stringify({ type: 'hello', name: 'Visita' })));
+    ws.once('message', raw => { resolve(JSON.parse(raw)); ws.close(); });
+    ws.once('error', () => resolve({ type: 'falhou' }));
+  });
+
+  assert.equal((await startServer(port, '', { onlyRazze: true })).ok, true);
+  t.after(() => stopServer());
+  const fora = await hello(lan.address);
+  assert.equal(fora.type, 'error', 'de outra rede não entra');
+  assert.match(fora.message, /rede Razze/);
+  assert.equal((await hello('127.0.0.1')).type, 'welcome', 'o próprio PC do host entra');
+  stopServer();
+
+  assert.equal((await startServer(port, '', {})).ok, true);
+  assert.equal((await hello(lan.address)).type, 'welcome', 'sala comum (Radmin) aceita de qualquer rede do PC');
+});
+
+// Entrou, deu erro, entrou de novo: a conexão antiga do mesmo PC ficava aberta e a pessoa aparecia repetida
+test('o mesmo PC entrando de novo derruba a conexão antiga (sem pessoas repetidas)', async t => {
+  const probe = net.createServer();
+  await new Promise(r => probe.listen(0, '127.0.0.1', r));
+  const port = probe.address().port;
+  await new Promise(r => probe.close(r));
+  assert.equal((await startServer(port, '', {})).ok, true);
+  t.after(() => stopServer());
+  const join = (name, client) => new Promise((resolve, reject) => {
+    const ws = new WebSocket(`ws://127.0.0.1:${port}`);
+    const messages = [];
+    ws.on('message', raw => { const m = JSON.parse(raw); messages.push(m); if (m.type === 'welcome') resolve({ ws, messages, id: m.id, members: m.members }); });
+    ws.once('open', () => ws.send(JSON.stringify({ type: 'hello', name, ...(client ? { client } : {}) })));
+    ws.once('error', reject);
+  });
+  const host = await join('Mateus', 'a'.repeat(32));
+  const fantasma = await join('Cristian', 'c'.repeat(32));
+  const fechou = new Promise(r => fantasma.ws.once('close', r));
+  const certo = await join('Cristian', 'c'.repeat(32));
+  await fechou;
+  assert.deepEqual(certo.members.map(m => m.name), ['Mateus'], 'quem entra de novo não vê a si mesmo repetido');
+  await new Promise(r => setTimeout(r, 100));
+  const saiu = host.messages.filter(m => m.type === 'member-left').map(m => m.id);
+  assert.deepEqual(saiu, [fantasma.id], 'o host vê a conexão antiga sair uma vez só');
+  const entrou = host.messages.filter(m => m.type === 'member-joined').map(m => m.id);
+  assert.deepEqual(entrou, [fantasma.id, certo.id]);
+  // Sem o código do PC (versão antiga) continua como antes: duas pessoas com o mesmo nome podem entrar
+  const velho1 = await join('Visita');
+  const velho2 = await join('Visita');
+  assert.notEqual(velho1.id, velho2.id);
+  for (const c of [host, certo, velho1, velho2]) c.ws.close();
+});

@@ -13,6 +13,14 @@ async function myAddrs() {
   } catch { return []; }
 }
 
+// Código fixo deste PC (não identifica ninguém fora da sala): o servidor usa para derrubar uma conexão antiga
+// do mesmo PC que tenha ficado aberta, em vez de mostrar a pessoa repetida
+function clientId() {
+  let id = load('clientId', '');
+  if (!/^[a-f0-9]{32}$/.test(id)) { id = crypto.randomUUID().replace(/-/g, ''); save('clientId', id); }
+  return id;
+}
+
 async function connectRoom(url, hello, timeoutMs = 8000) {
   const addrs = await myAddrs();
   return new Promise((resolve, reject) => {
@@ -23,12 +31,19 @@ async function connectRoom(url, hello, timeoutMs = 8000) {
       if (!joined) { errMsg = 'Tempo esgotado. Confira o endereço e se a VPN ou rede escolhida está conectada.'; ws.close(); }
     }, timeoutMs);
 
-    ws.onopen = () => ws.send(JSON.stringify({ type: 'hello', ...hello, addrs, version: update.myVersion, avatar: fotos.mine?.hash || '', nameFont: appPreferences.nameFont }));
+    ws.onopen = () => ws.send(JSON.stringify({ type: 'hello', ...hello, client: clientId(), addrs, version: update.myVersion, avatar: fotos.mine?.hash || '', nameFont: appPreferences.nameFont }));
     ws.onmessage = (e) => {
       let m;
       try { m = JSON.parse(e.data); } catch { return; }
       if (!joined) {
-        if (m.type === 'welcome') { joined = true; clearTimeout(timer); state.ws = ws; resolve(m); }
+        // "Pode entrar" depois de já ter desistido (tempo esgotado): fecha, senão fica um fantasma na sala
+        if (m.type === 'welcome' && errMsg) { ws.close(); return; }
+        if (m.type === 'welcome') {
+          joined = true; clearTimeout(timer);
+          // Conexão anterior ainda aberta (entrada que falhou no meio): fecha antes de usar a nova
+          if (state.ws && state.ws !== ws && state.ws.readyState <= WebSocket.OPEN) { const old = state.ws; state.ws = null; old.onclose = null; old.close(); }
+          state.ws = ws; resolve(m);
+        }
         else if (m.type === 'error') errMsg = m.message;
         return;
       }
@@ -47,6 +62,15 @@ async function connectRoom(url, hello, timeoutMs = 8000) {
   });
 }
 
+// A sala disse "pode entrar", mas deu erro antes de abrir a tela da sala: fecha a conexão (senão ela fica
+// aberta, respondendo ao servidor, e você aparece repetido na lista dos outros)
+function dropHalfJoin() {
+  const ws = state.ws;
+  state.ws = null;
+  state.myId = null;
+  if (ws) { ws.onclose = null; try { ws.close(); } catch {} }
+}
+
 async function createRoom() {
   const port = parseInt($('roomPort').value, 10) || 8765;
   const password = $('roomPassword').value;
@@ -63,6 +87,7 @@ async function createRoom() {
       state.password = password;
       enterRoom(welcome, true, '127.0.0.1', port);
     } catch (err) {
+      dropHalfJoin();
       await window.api.stopServer();
       throw err;
     }
@@ -85,7 +110,8 @@ async function joinRoom() {
     await requireSelectedNetwork();
     const welcome = await connectRoom(`ws://${host}:${port}`, { name: getName(), password: $('joinPassword').value });
     state.password = $('joinPassword').value;
-    enterRoom(welcome, false, host, port);
+    try { enterRoom(welcome, false, host, port); }
+    catch (err) { dropHalfJoin(); throw err; }
   } catch (err) {
     toast(err.message, 'error');
   } finally {
@@ -211,7 +237,8 @@ async function becomeHost() {
   // Se o app do host acabou de cair, a porta pode levar um instante para ficar livre
   let res;
   for (let i = 0; i < 6; i++) {
-    res = await window.api.startServer(state.port, state.password, { chat: chat.log, nextId: Math.max(0, ...known) + 1, hostId: state.myId, sessao: state.sessao });
+    // O modo da rede vai junto: sala da Razze continua só para quem está na Razze depois que o host muda
+    res = await window.api.startServer(state.port, state.password, { chat: chat.log, nextId: Math.max(0, ...known) + 1, hostId: state.myId, sessao: state.sessao }, selectedNetworkProvider());
     if (res.ok || !state.migrating) break;
     await new Promise((r) => setTimeout(r, 1000));
   }

@@ -75,11 +75,19 @@ function roomSize() {
   return room ? room.members.size : 0;
 }
 
-// seed: quando a sala passa para outra pessoa, o novo servidor continua a conversa e a numeração
+// Endereços do túnel da Razze: 10.64.0.0 a 10.127.255.255 (o mesmo teste de isOverlayAddress em main/razze-wireguard.js)
+function isRazzeAddress(address) {
+  const m = /^(?:::ffff:)?10\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(String(address || ''));
+  return !!m && Number(m[1]) >= 64 && Number(m[1]) <= 127 && Number(m[2]) <= 255 && Number(m[3]) <= 255;
+}
+
+// seed: quando a sala passa para outra pessoa, o novo servidor continua a conversa e a numeração.
+// seed.onlyRazze: sala criada no modo Razze (só aceita quem vem pela VPN Razze)
 function startServer(port, password = '', seed = {}) {
   stopServer();
   return new Promise((resolve) => {
     const server = new WebSocketServer({ port, host: '0.0.0.0', maxPayload: 256 * 1024 });
+    const onlyRazze = seed.onlyRazze === true;
     const members = new Map(); // id -> { ws, name, sharing, version, addrs }
     let nextId = Math.max(1, Math.floor(Number(seed.nextId)) || 1);
     const chatLog = (Array.isArray(seed.chat) ? seed.chat : []).slice(-CHAT_KEEP);
@@ -119,6 +127,17 @@ function startServer(port, password = '', seed = {}) {
     server.on('connection', (ws, req) => {
       let id = null;
       const isLocal = LOCAL.includes(req.socket.remoteAddress);
+      // Sala da rede Razze: só entra quem chega pelo túnel da Razze (ou o próprio PC). O servidor escuta em todas
+      // as redes do PC, então sem isso quem estivesse no Radmin ou na mesma rede de casa entrava sem a VPN.
+      if (onlyRazze && !isLocal && !isRazzeAddress(req.socket.remoteAddress)) {
+        ws.once('message', (raw) => {
+          let msg = null;
+          try { msg = JSON.parse(raw); } catch {}
+          if (msg?.type === 'hello') send(ws, { type: 'error', message: 'Esta sala é da rede Razze: conecte-se à rede Razze do host para entrar.' });
+          ws.close();
+        });
+        return;
+      }
       let me = null;
       ws.isAlive = true;
       ws.on('pong', () => { ws.isAlive = true; });
@@ -149,6 +168,17 @@ function startServer(port, password = '', seed = {}) {
           const version = /^\d+\.\d+\.\d+$/.test(msg.version) ? msg.version : '';
           // Voltando depois da troca de host: fica com o mesmo número, e as conexões diretas continuam valendo
           const resume = String(msg.resume || '');
+          // O mesmo PC entrando de novo (tentou, deu erro, tentou de novo): a conexão antiga era um fantasma que
+          // continuava respondendo e aparecia repetida na lista. Sai da lista e cai antes de a nova entrar.
+          const client = /^[a-f0-9]{32}$/.test(String(msg.client || '')) ? msg.client : '';
+          if (client) {
+            for (const [oldId, old] of members) {
+              if (old.client !== client || oldId === resume) continue;
+              members.delete(oldId);
+              broadcast({ type: 'member-left', id: oldId });
+              old.ws.terminate();
+            }
+          }
           if (/^\d{1,6}$/.test(resume) && !members.has(resume)) {
             id = resume;
             nextId = Math.max(nextId, Number(resume) + 1);
@@ -161,7 +191,7 @@ function startServer(port, password = '', seed = {}) {
           const shareInfo = resume && msg.sharing ? cleanShareInfo(msg.shareInfo) : null;
           const voiceSession = resume && typeof msg.voiceSession === 'string' && /^[\w-]{1,64}$/.test(msg.voiceSession) ? msg.voiceSession : '';
           me = {
-            ws, name: String(msg.name || 'Anônimo').slice(0, 32), sharing: !!(resume && msg.sharing), version, addrs: cleanAddrs(msg.addrs),
+            ws, client, name: String(msg.name || 'Anônimo').slice(0, 32), sharing: !!(resume && msg.sharing), version, addrs: cleanAddrs(msg.addrs),
             voiceSession, muted: !!voiceSession && msg.muted === true, deafened: !!voiceSession && msg.deafened === true, shareInfo, avatar: cleanHash(msg.avatar), nameFont: cleanNameFont(msg.nameFont),
           };
           const info = (mid, m) => ({ id: mid, name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs, voiceSession: m.voiceSession, muted: m.muted, deafened: m.deafened, shareInfo: m.shareInfo, avatar: m.avatar, nameFont: m.nameFont });
@@ -216,7 +246,7 @@ function startServer(port, password = '', seed = {}) {
       });
 
       ws.on('close', () => {
-        if (!me) return;
+        if (!me || members.get(id) !== me) return; // já tinha saído (substituída pela conexão nova do mesmo PC)
         members.delete(id);
         broadcast({ type: 'member-left', id });
         roomChanged();
@@ -240,4 +270,4 @@ function stopServer({ endRoom = false } = {}) {
   }
 }
 
-module.exports = { startServer, stopServer, roomInfo, roomSize, onRoomChange };
+module.exports = { startServer, stopServer, roomInfo, roomSize, onRoomChange, isRazzeAddress };

@@ -412,7 +412,7 @@ if (hasSingleInstance) app.whenReady().then(() => {
 
   // A sala aberta aparece na lista de sessões de quem está na rede (menos se foi criada oculta)
   ipcMain.handle('start-server', async (_e, port, password, seed, provider = 'radmin') => {
-    const res = await startServer(port, password, seed || {});
+    const res = await startServer(port, password, { ...(seed || {}), onlyRazze: provider === 'razze' });
     localDiscoveryEnabled = provider === 'radmin';
     if (res.ok && localDiscoveryEnabled) sessoes.anunciar(roomInfo, updater.version);
     roomRazzeNetwork = res.ok && provider === 'razze' ? activeRazzeNetwork : '';
