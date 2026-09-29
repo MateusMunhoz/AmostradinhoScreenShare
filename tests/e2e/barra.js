@@ -15,7 +15,7 @@ run('Barra de baixo numa linha', 90000, async () => {
   let r = await A.eval(ROW);
   check('Fora da voz: uma linha só', r.linhas === 1 && r.height <= 62, JSON.stringify(r));
   const ordem = r.ordem.join(' ');
-  check('Ordem: Transmitir, voz, ..., Convidar, estatísticas, chat, Sair', /^shareBtn voiceDock .*dockAddr openStatsRoom chatToggle leaveBtn$/.test(ordem.replace(/ dock-spacer/, '')), ordem);
+  check('Ordem: Transmitir, voz, ..., Convidar, estatísticas, chat, Início, Sair', /^shareBtn voiceDock .*dockAddr openStatsRoom chatToggle dockHome leaveBtn$/.test(ordem.replace(/ dock-spacer/, '')), ordem);
   check('Convidar mostra o endereço ao passar o mouse', await A.eval(`$('dockAddr').title.includes(state.roomAddr) && $('dockAddr').textContent.trim() === 'Convidar'`));
   // copiar() usa o processo principal e, sem ele, o navegador: as duas saídas são trocadas aqui
   await A.eval(`(() => { window.copiado = null; navigator.clipboard.writeText = async (t) => { copiado = t; }; copiar = async (t) => { copiado = t; return true; }; $('dockAddr').click(); })()`);

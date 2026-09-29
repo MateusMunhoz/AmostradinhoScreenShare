@@ -74,6 +74,7 @@ function renderUnread() {
   $('chatToggle').title = label;
   $('chatToggle').setAttribute('aria-label', label);
   $('chatJump').hidden = !n || !chat.open || chatAtBottom();
+  if (typeof renderHomeCall === 'function') renderHomeCall(); // o Voltar conta as novas
 }
 
 function resetChat(welcome) {
@@ -110,7 +111,8 @@ function onChatMessage(m) {
   noteChatOverlayMessage(entry);
   renderChatOverlay();
   const wasBottom = chatAtBottom();
-  const unseen = m.from !== state.myId && (!chat.open || document.hidden || !wasBottom);
+  const away = $('room').hidden; // no início, sem sair da sala: o chat não está à vista
+  const unseen = m.from !== state.myId && (!chat.open || away || document.hidden || !wasBottom);
   if (unseen && !chat.unread) {
     // Começa um lote de novas: a linha "mensagens novas" vai antes desta
     if (chat.divider) chat.divider.remove();
@@ -125,7 +127,7 @@ function onChatMessage(m) {
   if (unseen) {
     chat.unread++;
     chat.divider.textContent = `${chat.unread} ${chat.unread === 1 ? 'mensagem nova' : 'mensagens novas'}`;
-    if (!chat.open) toast(`${m.name}: ${m.text || `mandou ${m.file.name}`}`);
+    if (!chat.open || away) toast(`${m.name}: ${m.text || `mandou ${m.file.name}`}`);
   }
   renderUnread();
 }
@@ -316,9 +318,12 @@ $('ivPrev').onclick = () => stepViewer(-1);
 $('ivNext').onclick = () => stepViewer(1);
 $('ivCopy').onclick = copyViewerImage;
 $('ivImg').onclick = () => $('ivStage').classList.toggle('actual');
-// Clicar fora da imagem fecha (no tamanho real, a área tem barras de rolagem: aí só fora dela)
+// Clicar em qualquer lugar que não seja a imagem ou um botão fecha, inclusive a faixa de cima. No tamanho real, a
+// área da imagem tem barras de rolagem: clicar nela (para rolar) não fecha.
 $('imageViewer').addEventListener('mousedown', (e) => {
-  if (e.target === $('imageViewer') || (e.target === $('ivStage') && !$('ivStage').classList.contains('actual'))) closeImageViewer();
+  if (e.button !== 0 || e.target.closest('#ivImg, button, a')) return;
+  if (e.target === $('ivStage') && $('ivStage').classList.contains('actual')) return;
+  closeImageViewer();
 });
 // Aberta, as teclas são dela (antes dos atalhos do resto do app)
 document.addEventListener('keydown', (e) => {

@@ -257,6 +257,7 @@ function renderVoice() {
   if (state.myId) renderMembers();
   if (!$('personCard').hidden) renderPersonCard();
   syncMuteSound();
+  if (typeof renderHomeCall === 'function') renderHomeCall(); // a faixa do início mostra a sua voz
 }
 
 // Painel recolhido: quem está na voz fica na barra; clicar abre o volume da pessoa

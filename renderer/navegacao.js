@@ -94,7 +94,7 @@ function syncWorkspace() {
   $('navProfile').setAttribute('aria-expanded', String(profile));
   if (!inRoom) setPeopleOpen(false);
   fitNav();
-  $('profileName').disabled = inRoom;
+  $('profileName').disabled = !!state.myId;
   $('profileName').value = $('name').value;
   $('profileDisplayName').textContent = getName();
   paintName($('profileDisplayName'), '');
@@ -105,8 +105,9 @@ function syncWorkspace() {
   paintAvatar($('homeAvatar'));
   paintAvatar($('navProfileAvatar'));
   $('navProfile').title = $('navProfile').ariaLabel = 'Perfil de ' + getName();
-  $('profileHint').textContent = inRoom ? 'Este é o nome usado nesta sala. Para alterá-lo, saia da sala primeiro.' : 'Seu nome fica salvo neste dispositivo e é usado ao entrar em uma sala.';
+  $('profileHint').textContent = state.myId ? 'Este é o nome usado nesta sala. Para alterá-lo, saia da sala primeiro.' : 'Seu nome fica salvo neste dispositivo e é usado ao entrar em uma sala.';
   renderVoicePane();
+  renderHomeCall();
 }
 // Barra de baixo numa linha só: sem espaço, enxuga em etapas até caber (o que some continua na tela em outro
 // lugar): 1) o texto "2 assistindo" do Ao vivo; 2) os textos "Na voz" e "Convidar" (ficam os ícones);
@@ -115,7 +116,7 @@ const DOCK_STEPS = ['tight-1', 'tight-2', 'tight-3', 'tight-4'];
 // 5) ainda sem espaço: os botões saem da barra para o menu da setinha ^, nesta ordem (os mais usados por último).
 // stageLayout é o grupo Grade/Destaque: no menu vira os dois itens.
 const DOCK_OVERFLOW = ['openStatsRoom', 'overlayToggle', 'stageLayout', 'dockAddr', 'voiceSettingsBtn', 'chatToggle',
-  'voiceDeafen', 'selfViewBtn', 'switchShareBtn', 'voiceMute', 'voiceJoin', 'leaveBtn'];
+  'voiceDeafen', 'selfViewBtn', 'switchShareBtn', 'dockHome', 'voiceMute', 'voiceJoin', 'leaveBtn'];
 function fitDock() {
   const dock = document.querySelector('.dock');
   if (!dock || !dock.offsetParent) return;
@@ -229,6 +230,40 @@ function layoutVoicePane(active) {
   toggle($('paneVoiceDeafen'), voice.deafened, 'headphonesOff', 'headphones', 'Ouvir vozes', 'Silenciar vozes');
   actions.prepend($('paneVoiceMute'), $('paneVoiceDeafen'));
 }
+// ---------- Início sem sair da sala ----------
+// O botão Início da barra de baixo troca para o saguão; a sala continua (voz, chat, telas, avisos). No saguão, uma
+// faixa mostra a sala, quem está nela, a sua voz e o Voltar (com as mensagens novas).
+function goHomeKeepCall() { if (state.myId) show('home'); }
+function backToRoom() { if (state.myId) { show('room'); markChatSeenIfVisible(); } }
+function markChatSeenIfVisible() { if (chat.open && chatAtBottom()) markRead(); }
+function renderHomeCall() {
+  const inCall = !!state.myId;
+  $('homeCall').hidden = !inCall;
+  // Numa sala: criar ou entrar em outra fica bloqueado (sairia desta sem querer)
+  for (const id of ['goCreate', 'goJoin', 'rejoinBtn']) $(id).disabled = inCall;
+  $('goCreate').title = $('goJoin').title = inCall ? 'Você já está numa sala: volte para ela e saia antes' : '';
+  if (!inCall) return;
+  const host = state.hostId === state.myId ? 'você' : nameOf(state.hostId);
+  $('homeCallTitle').textContent = host === 'você' ? 'Sua sala' : `Sala de ${host}`;
+  const people = state.members.size + 1;
+  const sharing = [...state.members.values()].filter((m) => m.sharing).length + (state.sharing ? 1 : 0);
+  $('homeCallSub').textContent = [people === 1 ? 'só você' : `${people} pessoas`, voice.session ? (voice.muted ? 'você na voz, microfone desligado' : 'você na voz') : 'fora da voz',
+    sharing ? (sharing === 1 ? '1 transmitindo' : `${sharing} transmitindo`) : ''].filter(Boolean).join(' · ');
+  $('homeCallMute').hidden = $('homeCallDeafen').hidden = !voice.session;
+  setIcon($('homeCallMute'), voice.muted ? 'micOff' : 'mic', voice.muted ? 'Ligar o microfone' : 'Desligar o microfone');
+  $('homeCallMute').setAttribute('aria-pressed', String(voice.muted));
+  setIcon($('homeCallDeafen'), voice.deafened ? 'headphonesOff' : 'headphones', voice.deafened ? 'Ouvir as vozes' : 'Silenciar as vozes');
+  $('homeCallDeafen').setAttribute('aria-pressed', String(voice.deafened));
+  const n = chat.unread;
+  $('homeCallBack').textContent = n ? `Voltar para a sala · ${n > 99 ? '99+' : n} ${n === 1 ? 'nova' : 'novas'}` : 'Voltar para a sala';
+}
+function setupHomeCall() {
+  $('dockHome').onclick = goHomeKeepCall;
+  $('homeCallBack').onclick = backToRoom;
+  $('homeCallMute').onclick = () => $('voiceMute').click();
+  $('homeCallDeafen').onclick = () => $('voiceDeafen').click();
+}
+
 function renderVoicePane() {
   if (!workspaceReady || $('voicePane').hidden) return; // escondido, não precisa redesenhar a cada mudança da voz
   const active = !!voice.session;
@@ -306,6 +341,7 @@ function setupWorkspace() {
   $('profileName').oninput = () => { if (state.myId) return; $('name').value = $('profileName').value; save('name', $('name').value); $('profileDisplayName').textContent = getName(); $('profileAvatar').textContent = $('navProfileAvatar').textContent = [...getName()][0].toUpperCase(); $('navProfile').title = $('navProfile').ariaLabel = 'Perfil de ' + getName(); };
   $('name').addEventListener('input', syncWorkspace);
   setupNameFont();
+  setupHomeCall();
   for (const [proxy, original] of [['paneVoiceJoin','voiceJoin'],['paneVoiceMute','voiceMute'],['paneVoiceDeafen','voiceDeafen'],['paneVoiceSettings','voiceSettingsBtn']]) $(proxy).onclick = () => $(original).click();
   $('streamPeople').onclick = () => {
     if (!workspaceViews.chat) setPanelOpen(true);

@@ -252,6 +252,25 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 .dock-share { display: inline-flex; align-items: center; gap: 8px; height: 40px; }
 .dock-invite { display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 12px; font-size: 13px; }
 .dock-invite svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+/* Início: volta para o saguão sem sair da sala */
+.dock-home { display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 12px; font-size: 13px; }
+.dock-home svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.dock.tight-2 .dock-home .dock-label { display: none; }
+.dock.tight-2 .dock-home { padding: 0; width: 36px; justify-content: center; }
+
+/* Faixa da chamada no saguão (você saiu da tela da sala pelo Início, mas continua nela) */
+.home-call { display: flex; align-items: center; gap: 12px; padding: 12px 12px 12px 16px; border: 1px solid var(--accent); border-radius: 12px; background: var(--accent-soft); }
+.home-call[hidden] { display: none; }
+.home-call-dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 4px var(--ok-soft); animation: home-call-pulse 2s ease-in-out infinite; }
+@keyframes home-call-pulse { 50% { box-shadow: 0 0 0 7px transparent; } }
+@media (prefers-reduced-motion: reduce) { .home-call-dot { animation: none; } }
+.home-call-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.home-call-info strong { font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.home-call-info .hint { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.home-call .btn.icon { width: 36px; height: 36px; }
+.home-call .btn.icon[aria-pressed="true"] { border-color: var(--warn); color: var(--warn); background: var(--warn-soft); }
+.home-call #homeCallBack { flex: none; }
+.home-cta .btn:disabled { cursor: not-allowed; }
 /* Sair da sala: separado do resto por uma divisória, com cor de perigo ao passar o mouse */
 .dock .dock-leave { margin-left: 6px; position: relative; }
 .dock .dock-leave::before { content: ""; position: absolute; left: -9px; top: 6px; bottom: 6px; width: 1px; background: var(--line); }
@@ -455,7 +474,8 @@ kbd { font-family: Consolas, monospace; font-size: 11px; color: var(--muted); bo
 .staged-remove svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; }
 
 /* Imagem grande por cima do app */
-.image-viewer { position: fixed; inset: 0; z-index: 70; display: grid; grid-template-columns: 56px minmax(0, 1fr) 56px; grid-template-rows: auto minmax(0, 1fr); background: rgba(0, 0, 0, .86); }
+/* Fundo quase opaco e desfocado: a barra de cima do app (perfil, rede, engrenagem) não aparece atrás dos botões */
+.image-viewer { position: fixed; inset: 0; z-index: 70; display: grid; grid-template-columns: 56px minmax(0, 1fr) 56px; grid-template-rows: auto minmax(0, 1fr); background: rgba(0, 0, 0, .93); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
 .image-viewer[hidden] { display: none; }
 .iv-bar { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; padding: 10px 12px 10px 20px; color: #fff; }
 .iv-title { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 10px; overflow: hidden; }

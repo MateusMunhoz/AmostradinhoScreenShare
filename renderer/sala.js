@@ -72,6 +72,7 @@ function dropHalfJoin() {
 }
 
 async function createRoom() {
+  if (state.myId) return toast('Você já está numa sala. Volte para ela e saia antes de entrar em outra.', 'error');
   const port = parseInt($('roomPort').value, 10) || 8765;
   const password = $('roomPassword').value;
   save('roomPort', String(port));
@@ -99,6 +100,7 @@ async function createRoom() {
 }
 
 async function joinRoom() {
+  if (state.myId) return toast('Você já está numa sala. Volte para ela e saia antes de entrar em outra.', 'error');
   const raw = $('roomAddr').value.trim().replace(/^ws:\/\//, '');
   if (!raw) return toast('Digite o endereço que aparece na tela de quem criou a sala.', 'error');
   const [host, portStr] = raw.split(':');

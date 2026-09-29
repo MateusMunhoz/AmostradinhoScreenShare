@@ -61,6 +61,17 @@
       </div>
 
       <div class="home-main">
+        <!-- Você saiu da tela da sala pelo Início, mas continua nela (voz, chat, telas): faixa para voltar -->
+        <div id="homeCall" class="home-call" role="region" aria-label="Chamada em andamento" hidden>
+          <span class="home-call-dot" aria-hidden="true"></span>
+          <div class="home-call-info">
+            <strong id="homeCallTitle"></strong>
+            <span id="homeCallSub" class="hint"></span>
+          </div>
+          <button class="btn icon" id="homeCallMute" type="button" aria-pressed="false" hidden></button>
+          <button class="btn icon" id="homeCallDeafen" type="button" aria-pressed="false" hidden></button>
+          <button class="btn primary" id="homeCallBack" type="button">Voltar para a sala</button>
+        </div>
         <div class="home-hello">
           <span id="homeAvatar" class="avatar home-avatar" aria-hidden="true"></span>
           <div class="home-hello-text">
@@ -316,6 +327,10 @@
             <button class="btn icon" id="openStatsRoom" type="button"></button>
             <button class="btn icon chat-toggle" id="chatToggle" type="button" aria-pressed="true">
               <span id="chatUnread" class="unread" hidden></span>
+            </button>
+            <!-- Início: volta para o saguão sem sair da sala (voz, chat e telas continuam) -->
+            <button class="btn dock-home" id="dockHome" type="button" title="Ir para o início sem sair da sala">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/></svg><span class="dock-label">Início</span>
             </button>
             <!-- Janela estreita: o que não cabe na barra vai para este menu (fitDock em renderer/navegacao.js) -->
             <div class="dock-more" id="dockMoreWrap" hidden>
