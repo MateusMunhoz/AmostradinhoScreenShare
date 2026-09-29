@@ -81,7 +81,8 @@ async function openApp(tag, port, { fake = false, size = true } = {}) {
   spawn(ELECTRON, ['.', `--user-data-dir=${dir}`, `--remote-debugging-port=${port}`, ...(fake ? FAKE : [])], { cwd: APP, stdio: 'ignore' });
   const X = await attach(port);
   if (size) await X.send('Emulation.setDeviceMetricsOverride', { width: 1200, height: 780, deviceScaleFactor: 1, mobile: false });
-  await X.waitFor(`typeof state === 'object'`);
+  // A página inteira (todos os scripts), não só o primeiro: senão o teste chamava funções que ainda não existiam
+  await X.waitFor(`typeof state === 'object' && document.readyState === 'complete'`);
   // As janelas de teste ficam umas por cima das outras. O app pausa o vídeo de janela escondida,
   // então aqui todas fingem estar à vista.
   await X.eval(`(() => {
