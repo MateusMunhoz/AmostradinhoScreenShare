@@ -20,7 +20,7 @@ const ROOT = __dirname;
 const KEY_FILE = path.join(os.homedir(), '.tela-p2p', 'chave-de-atualizacao.pem');
 const BOOT = path.join(ROOT, 'boot.js');
 // O que viaja pela sala. boot.js fica de fora: ele confere as assinaturas e só muda com um .exe novo.
-const PACK_FILES = ['renderer/navegacao.js', 'renderer/preferencias-modelo.js', 'renderer/configuracoes.js', 'renderer/conectividade.js', ...require('./renderer/preferencias-modelo').sounds.filter(s => s.file).map(s => 'assets/audio/' + s.file), 'main.js', 'main/razze-api-client.js', 'main/razze-service.js', 'main/razze-wireguard.js', 'main/nativos.js', 'main/contexto.js', 'main/janela-flutuante.js', 'main/chat-jogo.js', 'main/atalhos.js', 'main/sessoes.js', 'preload.js', 'signaling.js', 'github.js', 'index.html', 'styles.css', 'renderer/util.js', 'renderer/estado.js', 'renderer/rtc.js', 'renderer/tema.js', 'renderer/fotos.js', 'renderer/sala.js', 'renderer/voz.js', 'renderer/microfone.js', 'renderer/membros.js', 'renderer/assistir.js', 'renderer/pip.js', 'renderer/overlay.js', 'renderer/metadados.js', 'renderer/chat.js', 'renderer/estatisticas.js', 'renderer/atualizacao.js', 'renderer/sessoes.js', 'renderer/transmitir.js', 'renderer/inicio.js', 'voice.js', 'encode-once.js', 'pcm-worklet.js', 'bin/audiocap.exe', 'bin/videocap.exe', 'bin/teclas.exe', 'bin/selfvpn/wireguard.exe', 'bin/selfvpn/COPYING',
+const PACK_FILES = ['renderer/navegacao.js', 'renderer/preferencias-modelo.js', 'renderer/configuracoes.js', 'renderer/conectividade.js', ...require('./renderer/preferencias-modelo').sounds.filter(s => s.file).map(s => 'assets/audio/' + s.file), 'main.js', 'main/razze-api-client.js', 'main/razze-service.js', 'main/razze-wireguard.js', 'main/nativos.js', 'main/contexto.js', 'main/janela-flutuante.js', 'main/chat-jogo.js', 'main/atalhos.js', 'main/sessoes.js', 'preload.js', 'signaling.js', 'github.js', 'index.html', 'styles.css', 'renderer/util.js', 'renderer/estado.js', 'renderer/rtc.js', 'renderer/tema.js', 'renderer/fotos.js', 'renderer/sala.js', 'renderer/voz.js', 'renderer/microfone.js', 'renderer/membros.js', 'renderer/assistir.js', 'renderer/pip.js', 'renderer/overlay.js', 'renderer/metadados.js', 'renderer/chat.js', 'renderer/estatisticas.js', 'renderer/atualizacao.js', 'renderer/sessoes.js', 'renderer/transmitir.js', 'renderer/inicio.js', 'voice.js', 'encode-once.js', 'pcm-worklet.js', 'bin/audiocap.exe', 'bin/videocap.exe', 'bin/teclas.exe', 'bin/selfvpn/wireguard.exe', 'bin/selfvpn/wg.exe', 'bin/selfvpn/COPYING', 'bin/selfvpn/NOTICE.md', 'main/razze-elevacao.js', 'main/razze-privilegiado.js', 'main/razze-ajudante.js',
   'vendor/noise/rnnoiseWorklet.js', 'vendor/noise/rnnoise.wasm', 'vendor/noise/rnnoise_simd.wasm', 'vendor/noise/LICENSE', 'vendor/noise/NOTICE.md'];
 
 function fail(msg) {
@@ -74,13 +74,14 @@ function publishGithub(version, productName, notes) {
     return false;
   }
   const exe = path.join(ROOT, 'dist', `${productName}.exe`);
+  const appImage = path.join(ROOT, 'dist', 'Tela-P2P.AppImage');
   const steps = [
     ['git', ['add', '-u']], // só o que o git já acompanha: arquivo novo (ex.: protótipos) nunca entra sozinho
     ['git', ['commit', '-m', `Versão ${version}`]],
     ['git', ['tag', '-a', `v${version}`, '-m', `Versão ${version}`]],
     ['git', ['push', 'origin', 'HEAD']],
     ['git', ['push', 'origin', `v${version}`]],
-    ['gh', ['release', 'create', `v${version}`, exe, path.join(ROOT, 'pack', 'pack.json'), path.join(ROOT, 'pack', 'pack.sig'),
+    ['gh', ['release', 'create', `v${version}`, exe, ...(fs.existsSync(appImage) ? [appImage] : []), path.join(ROOT, 'pack', 'pack.json'), path.join(ROOT, 'pack', 'pack.sig'),
       '--title', `${productName} ${version}`, ...(notes ? ['--notes', notes] : ['--generate-notes'])]],
   ];
   for (const [cmd, args] of steps) {
@@ -88,6 +89,27 @@ function publishGithub(version, productName, notes) {
     if (!ok(cmd, args)) fail(`Parou no passo acima. A versão ${version} já está assinada e o .exe gerado; corrija e rode os passos que faltam.`);
   }
   return true;
+}
+
+// O AppImage do Linux, com o mesmo pacote assinado. No Windows, compila dentro do Ubuntu do WSL
+// (linux/construir-appimage.sh). Sem WSL ou sem Node lá, a versão sai só com o .exe e avisa.
+function buildLinux() {
+  const appImage = path.join(ROOT, 'dist', 'Tela-P2P.AppImage');
+  fs.rmSync(appImage, { force: true }); // nunca publicar o AppImage de uma versão anterior
+  console.log('Gerando o AppImage para o Linux...');
+  let r;
+  if (process.platform === 'linux') {
+    r = spawnSync('npx electron-builder --linux AppImage --publish never', { cwd: ROOT, stdio: 'inherit', shell: true });
+  } else {
+    const temNode = spawnSync('wsl.exe', ['-e', 'bash', '-lc', 'command -v node >/dev/null && command -v npm >/dev/null'], { stdio: 'ignore' }).status === 0;
+    if (!temNode) {
+      console.log('\nAppImage pulado: precisa do WSL (Ubuntu) com o Node.js instalado lá (sudo apt install nodejs npm).');
+      return;
+    }
+    const src = spawnSync('wsl.exe', ['-e', 'wslpath', '-a', ROOT], { encoding: 'utf8' }).stdout.trim();
+    r = spawnSync('wsl.exe', ['-e', 'bash', `${src}/linux/construir-appimage.sh`, src], { stdio: 'inherit' });
+  }
+  if (r.status !== 0 || !fs.existsSync(appImage)) console.log('\nO AppImage não foi gerado: a versão sai só com o .exe.');
 }
 
 function publish(requested, { notes = '', github = true } = {}) {
@@ -130,6 +152,7 @@ function publish(requested, { notes = '', github = true } = {}) {
   console.log('Gerando o .exe para quem ainda não tem o app...');
   const r = spawnSync('npx electron-builder --win portable', { cwd: ROOT, stdio: 'inherit', shell: true });
   if (r.status !== 0) fail('O .exe não foi gerado, mas a atualização pela sala já funciona.');
+  buildLinux();
 
   const onGithub = github && publishGithub(version, pkg.build.productName, notes);
   console.log(`\nPronto. Os amigos recebem a ${version} ${onGithub ? 'pelo botão "Baixar atualização" do app ou ' : ''}pela sala, entrando numa sala com você.`);

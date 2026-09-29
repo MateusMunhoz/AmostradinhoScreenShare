@@ -90,9 +90,9 @@ function renderGeneralSettings() {
 }
 function openGeneralSettings() {
   if (!$('profilePane').hidden) closeProfilePopup();
+  if (!$('networkDialog').hidden) closeNetworkDialog();
   settingsReturnFocus = document.activeElement;
   renderGeneralSettings();
-  renderConnectivitySettings();
   $('generalSettingsDialog').hidden = false;
   syncWorkspace();
   setUtilityBackground(true);
@@ -271,7 +271,7 @@ function setupAppearance() {
     $('loadLocalFonts').disabled = false;
   };
 }
-// Abas das configurações: Rede, Aparência, Cores e Sons. Lembra a última aberta neste PC.
+// Abas das configurações: Aparência, Cores e Sons (a rede tem a própria janela, networkDialog). Lembra a última aberta.
 function showSettingsTab(name, focus = false) {
   const tabs = [...document.querySelectorAll('.settings-tabs [role=tab]')];
   const tab = tabs.find((t) => t.dataset.tab === name) || tabs[0];
@@ -296,7 +296,7 @@ function setupSettingsTabs() {
       showSettingsTab(tabs[(next + tabs.length) % tabs.length].dataset.tab, true);
     };
   }
-  showSettingsTab(load('settingsTab') || 'network');
+  showSettingsTab(load('settingsTab') || 'appearance');
 }
 function setupGeneralSettings() {
   setupConnectivitySettings();

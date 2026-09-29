@@ -120,7 +120,7 @@ function renderUpdateBanner() {
   $('ubTitle').textContent = m.mode === 'ready' ? `Versão ${m.version} pronta` : `Versão ${m.version} disponível`;
   $('ubText').textContent = m.mode === 'ready' ? `Já está baixada.${leaves}`
     : m.mode === 'github' ? `Baixa em poucos segundos e atualiza.${leaves}`
-    : 'Esta versão precisa do .exe novo. Baixe na página do GitHub e abra no lugar do antigo.';
+    : `Esta versão precisa do ${window.api.platform === 'linux' ? 'AppImage' : '.exe'} novo. Baixe na página do GitHub e abra no lugar do antigo.`;
   $('ubGo').textContent = m.mode === 'exe' ? 'Abrir no GitHub' : 'Atualizar agora';
   $('ubGo').disabled = false;
   $('ubLater').hidden = false;

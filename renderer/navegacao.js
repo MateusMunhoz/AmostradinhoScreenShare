@@ -13,6 +13,7 @@ function setUtilityBackground(inert) {
 }
 function openProfilePopup() {
   if (!$('generalSettingsDialog').hidden) closeGeneralSettings();
+  if (!$('networkDialog').hidden) closeNetworkDialog();
   profileReturnFocus = document.activeElement;
   $('profilePane').hidden = false;
   syncWorkspace();
@@ -86,6 +87,7 @@ function syncWorkspace() {
     $(id).setAttribute('aria-pressed', String(workspaceViews[view]));
   }
   $('navSettings').setAttribute('aria-expanded', String(settings));
+  $('navNetwork').setAttribute('aria-expanded', String(!$('networkDialog').hidden));
   $('navProfile').setAttribute('aria-expanded', String(profile));
   if (!inRoom) setPeopleOpen(false);
   $('profileName').disabled = inRoom;
@@ -95,6 +97,8 @@ function syncWorkspace() {
   $('profileNameFont').value = appPreferences.nameFont;
   $('profileAvatar').textContent = $('navProfileAvatar').textContent = [...getName()][0].toUpperCase();
   paintAvatar($('profileAvatar'));
+  $('homeAvatar').textContent = [...getName()][0].toUpperCase();
+  paintAvatar($('homeAvatar'));
   paintAvatar($('navProfileAvatar'));
   $('navProfile').title = $('navProfile').ariaLabel = 'Perfil de ' + getName();
   $('profileHint').textContent = inRoom ? 'Este é o nome usado nesta sala. Para alterá-lo, saia da sala primeiro.' : 'Seu nome fica salvo neste dispositivo e é usado ao entrar em uma sala.';
@@ -178,10 +182,10 @@ function setupWorkspace() {
   host.insertBefore($('chatTab'), $('voicePane'));
   $('chatTab').classList.add('workspace-pane');
   host.append($('peoplePop'));
-  document.body.append($('profilePane'), $('generalSettingsDialog'));
+  document.body.append($('profilePane'), $('generalSettingsDialog'), $('networkDialog'));
   $('sidePanel').hidden = true;
   $('generalSettingsDialog').setAttribute('aria-labelledby', 'generalSettingsTitle');
-  const icons = {navSettings: '<svg viewBox="0 0 24 24"><path d="m9 3 1-2h4l1 2 2 1 2 0 2 3-1 2v3l1 2-2 3h-2l-2 1-1 3h-4l-1-3-2-1H5l-2-3 1-2V9L3 7l2-3h2z"/><circle cx="12" cy="11" r="3"/></svg>',
+  const icons = {navNetwork: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="7" rx="1.5"/><rect x="3" y="13" width="18" height="7" rx="1.5"/><path d="M7 7.5h.01M7 16.5h.01M11 7.5h6M11 16.5h6"/></svg>', navSettings: '<svg viewBox="0 0 24 24"><path d="m9 3 1-2h4l1 2 2 1 2 0 2 3-1 2v3l1 2-2 3h-2l-2 1-1 3h-4l-1-3-2-1H5l-2-3 1-2V9L3 7l2-3h2z"/><circle cx="12" cy="11" r="3"/></svg>',
     navChat: ICON.chat, navVoice: ICON.mic, navStreams: '<svg viewBox="0 0 24 24"><path d="M3 4h18v13H3zM8 21h8M12 17v4"/></svg>'};
   for (const [id, icon] of Object.entries(icons)) $(id).querySelector('.nav-icon').innerHTML = icon;
   $('navCollapse').onclick = () => setNavCollapsed(true);

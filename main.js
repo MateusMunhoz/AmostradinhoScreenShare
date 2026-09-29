@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, desktopCapturer, session, globalShortcut, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, desktopCapturer, session, globalShortcut, shell, clipboard } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -54,7 +54,8 @@ if (WIN10) disabledFeatures.push('AllowWgcScreenCapturer', 'AllowWgcWindowCaptur
 app.commandLine.appendSwitch('disable-features', disabledFeatures.join(','));
 // Cancelamento de eco do app inteiro: o filtro do microfone usa como referência tudo que o app toca
 // (as vozes, que saem pelo mixer, e o som das transmissões), não só o som de elementos <audio>
-app.commandLine.appendSwitch('enable-features', 'ChromeWideEchoCancellation');
+// Linux: o som do PC junto da tela vem do PulseAudio/PipeWire (no Windows, o Chromium já faz isso sozinho)
+app.commandLine.appendSwitch('enable-features', process.platform === 'linux' ? 'ChromeWideEchoCancellation,PulseaudioLoopbackForScreenShare' : 'ChromeWideEchoCancellation');
 // Deixa o vídeo do host tocar com som sem precisar clicar
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 // Com a janela minimizada, o Chromium joga a página para prioridade ociosa e modo de eficiência.
@@ -114,6 +115,12 @@ function cleanOldUpdates() {
 // caminho ("Tela P2P.exe" tem espaço) com \", que o cmd não entende: o comando falhava calado e o app
 // não voltava. Com os argumentos literais, o cmd recebe as aspas como estão.
 function relaunch() {
+  // AppImage (Linux): o app roda de uma montagem que some ao fechar; reabre pelo arquivo .AppImage
+  if (process.env.APPIMAGE) {
+    app.relaunch({ execPath: process.env.APPIMAGE, args: [] });
+    app.exit(0);
+    return;
+  }
   const exe = process.env.PORTABLE_EXECUTABLE_FILE;
   if (!exe) {
     app.relaunch();
@@ -267,6 +274,7 @@ if (hasSingleInstance) app.whenReady().then(() => {
   });
 
   ipcMain.handle('list-audio-apps', () => new Promise((resolve) => {
+    if (process.platform !== 'win32') return resolve([]);
     execFile(AUDIOCAP, ['--list'], { windowsHide: true, timeout: 5000 }, (err, stdout) => {
       if (err) return resolve([]);
       // Cada linha: "Discord.exe<TAB>Discord"
@@ -292,7 +300,8 @@ if (hasSingleInstance) app.whenReady().then(() => {
     for (const [name, addrs] of Object.entries(os.networkInterfaces())) {
       for (const a of addrs || []) {
         const v4 = a.family === 'IPv4' || a.family === 4;
-        if (v4 && !a.internal) list.push({ name, address: a.address, radmin: a.address.startsWith('26.'), razze: /razze/i.test(name) });
+        // Túnel da Razze: "Razze…" no Windows, "rz…" no Linux (nome de interface tem no máximo 15 letras)
+        if (v4 && !a.internal) list.push({ name, address: a.address, radmin: a.address.startsWith('26.'), razze: /razze/i.test(name) || /^rz[a-f0-9]{12}$/.test(name) });
       }
     }
     if (provider === 'razze') {
@@ -300,6 +309,8 @@ if (hasSingleInstance) app.whenReady().then(() => {
     }
     return list.sort((a, b) => Number(b.radmin) - Number(a.radmin));
   });
+  // Copiar pelo processo principal: o navigator.clipboard da página falha quando a janela perde o foco
+  ipcMain.handle('copy-text', (_e, text) => { clipboard.writeText(String(text || '').slice(0, 4096)); return true; });
   ipcMain.handle('razze-state', () => razze.state());
   ipcMain.handle('razze-pending-invite', () => { const token = pendingRazzeInvite; pendingRazzeInvite = ''; return token; });
   ipcMain.handle('razze-configure', (_e, url) => razze.configure(String(url || '')));
@@ -313,6 +324,8 @@ if (hasSingleInstance) app.whenReady().then(() => {
   ipcMain.handle('razze-update-network', (_e, id, patch) => razze.updateNetwork(String(id || ''), patch));
   ipcMain.handle('razze-delete-network', (_e, id) => razze.deleteNetwork(String(id || '')));
   ipcMain.handle('razze-accept-invite', (_e, token) => razze.acceptInvite(String(token || '')));
+  ipcMain.handle('razze-list-members', (_e, id) => razze.listMembers(String(id || '')));
+  ipcMain.handle('razze-remove-member', (_e, id, userId) => razze.removeMember(String(id || ''), String(userId || '')));
   ipcMain.handle('razze-create-invite', (_e, id, options) => razze.createInvite(String(id || ''), options));
   ipcMain.handle('razze-friends', () => razze.listFriends());
   ipcMain.handle('razze-friend-requests', () => razze.friendRequests());
@@ -323,6 +336,7 @@ if (hasSingleInstance) app.whenReady().then(() => {
   ipcMain.handle('razze-wg-connect', async (_e, networkId, name) => razze.wireguard.connect(razze.api(), String(networkId || ''), String(name || 'Razze')));
   ipcMain.handle('razze-wg-disconnect', (_e, networkId) => razze.wireguard.disconnect(String(networkId || '')));
   ipcMain.handle('razze-wg-disconnect-all', () => razze.wireguard.disconnectAll());
+  ipcMain.handle('razze-wg-resume', (_e, networkId) => razze.resume(String(networkId || '')));
 
   setPriority('above'); // a página manda a escolha salva assim que abre
   ipcMain.handle('set-priority', (_e, level) => setPriority(level));

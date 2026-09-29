@@ -52,14 +52,25 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* Início */
-.home-screen { display: grid; grid-template-columns: minmax(0, 1fr) 480px; padding: 0; gap: 0; }
-.home-brand { display: flex; flex-direction: column; justify-content: space-between; gap: 32px; padding: 72px 64px 56px 80px; min-width: 0; }
+.home-screen { display: flex; flex-direction: column; padding: 16px 40px 20px; gap: 0; overflow-y: auto; }
+/* Marca na altura da barra de cima (perfil e configurações, à direita) */
+.home-top { flex: none; height: 48px; display: flex; align-items: center; }
 .brand-mark { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600; color: var(--muted); }
 .brand-mark svg { width: 26px; height: 26px; fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.home-hero { display: flex; flex-direction: column; gap: 18px; max-width: 520px; }
-.home-hero h1 { font-size: 60px; font-weight: 700; letter-spacing: -1.5px; line-height: 1.02; }
-.lead { margin: 0; color: var(--muted); font-size: 17px; line-height: 1.5; }
-.home-status { display: flex; flex-direction: column; gap: 12px; }
+/* O saguão: uma coluna no meio da janela */
+.home-main { flex: 1; width: min(720px, 100%); margin: 0 auto; display: flex; flex-direction: column; justify-content: center; gap: 22px; padding: 28px 0; }
+.home-hello { display: flex; align-items: center; gap: 18px; }
+.avatar.home-avatar { width: 60px; height: 60px; font-size: 24px; background-color: var(--accent); color: var(--accent-ink); }
+/* Com alguém com sala aberta, entrar nela é o mais provável: o amarelo fica só no Entrar, e Criar sala fica neutro */
+.home-card:has(.session) #goCreate { background: var(--panel-2); border-color: var(--line); color: var(--text); }
+.home-hello-text { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.home-title { margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -.5px; line-height: 1.15; }
+.home-name { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); }
+.home-name input { min-width: 0; width: 240px; padding: 3px 2px; font: inherit; font-size: 15px; font-weight: 600; color: var(--text);
+  background: transparent; border: 0; border-bottom: 1px dashed var(--field-line); border-radius: 0; }
+.home-name input:hover { border-bottom-color: var(--muted); }
+.home-name input:focus { outline: none; border-bottom: 1px solid var(--accent); }
+.home-status { flex: none; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; padding-top: 14px; border-top: 1px solid var(--line); }
 .status-line { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 14px; }
 .status-line.version { color: var(--muted); }
 .status-detail { color: var(--muted); }
@@ -67,12 +78,12 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 .dot.ok { background: var(--ok); }
 .dot.warn { background: var(--warn); }
 .dot.hollow { background: none; border: 1.5px solid var(--field-line); }
-.home-actions { display: flex; align-items: center; padding: 40px 56px 40px 0; min-width: 0; }
 .home-card {
-  width: 100%; display: flex; flex-direction: column; gap: 20px; padding: 32px;
-  background: var(--panel); border: 1px solid var(--line); border-radius: 18px;
+  width: 100%; display: flex; flex-direction: column; gap: 20px; padding: 24px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
 }
-.home-card .field > input { height: 46px; }
+.home-cta { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
+.home-cta:has(#goJoin[hidden]) { grid-template-columns: 1fr; } /* com o painel de endereço aberto, Criar sala ocupa a linha */
 .create-block { display: flex; flex-direction: column; gap: 6px; }
 .btn.big { height: 52px; font-size: 16px; border-radius: 10px; }
 .btn.big:not(.primary) { background: var(--panel-2); }
@@ -590,11 +601,10 @@ fieldset.group > legend { margin-bottom: 10px; }
 @media (max-width: 700px) {
   .stat-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
-@media (max-width: 1040px) {
-  .home-screen { grid-template-columns: minmax(0, 1fr) 420px; }
-  .home-brand { padding: 48px 40px; }
-  .home-hero h1 { font-size: 46px; }
-  .home-actions { padding: 32px 32px 32px 0; }
+@media (max-width: 700px) {
+  .home-screen { padding-left: 16px; padding-right: 16px; }
+  .home-cta { grid-template-columns: 1fr; }
+  .home-title { font-size: 22px; }
 }
 @media (max-width: 900px) {
   .room-grid { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
@@ -680,13 +690,19 @@ fieldset.group > legend { margin-bottom: 10px; }
 /* Sessões abertas na rede (tela inicial) */
 .sessions { display: flex; flex-direction: column; gap: 8px; }
 .sessions-title { margin: 0; font-size: 14px; font-weight: 600; color: var(--muted); letter-spacing: 0; }
-.session-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; max-height: 196px; overflow-y: auto; }
-.session { display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); box-shadow: var(--lift); }
+.session-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto; }
+.session { display: flex; align-items: center; gap: 14px; padding: 12px 12px 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); box-shadow: var(--lift); }
+.session .avatar { width: 36px; height: 36px; font-size: 15px; }
+.session .btn { height: 36px; padding: 0 18px; }
+.session-info strong { font-size: 15px !important; }
+.session-list:empty { display: none; }
+/* Ninguém com sala aberta: um espaço tracejado, no lugar dos cartões */
+.sessions-empty { margin: 0; padding: 18px; border: 1px dashed var(--line-strong); border-radius: 10px; text-align: center; font-size: 13px; color: var(--muted); line-height: 1.45; }
+.sessions-empty:empty { display: none; }
 .session-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .session-info strong { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .session-meta { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); }
 .session-meta svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.sessions .hint { font-size: 12.5px; }
 .check-line { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; cursor: pointer; }
 .check-line input { margin-top: 3px; width: 16px; height: 16px; accent-color: var(--accent); flex: none; }
 .check-line span { display: flex; flex-direction: column; gap: 3px; }
@@ -708,10 +724,46 @@ fieldset.group > legend { margin-bottom: 10px; }
 .settings-section h3 { font-size: 15px; }
 .settings-section h4 { margin: 8px 0 0; font-size: 13px; }
 .razze-networks { display: grid; gap: 8px; }
+/* Janela Rede (ícone de servidor): resumo, escolha da rede e o Razze em passos numerados */
+.general-settings.network-settings { width: min(580px, 100%); }
+.network-settings input[type=url], .network-settings input[type=email], .network-settings input[type=password] {
+  color: var(--surface-text); background: var(--sunken); border: 1px solid var(--field-line); border-radius: 6px; padding: 8px 10px; font: inherit; min-width: 0; }
+.network-settings input:focus, .network-settings select:focus { border-color: var(--accent); outline: none; }
+.net-summary { margin: 0; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; background: var(--panel-2); font-size: 13px; }
+.net-seg label { flex: 1; justify-content: center; }
+.razze-steps { display: grid; gap: 12px; }
+.razze-status { margin: 0; font-size: 12.5px; color: var(--muted); }
+.razze-status:empty { display: none; }
+.net-step { display: grid; gap: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; }
+.net-step-head { display: flex; align-items: center; gap: 10px; }
+.net-step-head h3 { margin: 0; font-size: 14px; }
+.net-step-num { width: 22px; height: 22px; flex: none; display: grid; place-items: center; border-radius: 50%; font-size: 12px; font-weight: 700;
+  color: var(--muted); background: var(--panel-2); border: 1px solid var(--line); }
+.net-step-num.done { color: var(--bg); background: var(--ok); border-color: var(--ok); }
+.net-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.net-row > input { flex: 1; }
+.net-auth { display: grid; gap: 10px; }
+.net-auth .seg label, .net-auth .seg button { flex: 1; }
+.net-account .avatar { width: 32px; height: 32px; }
+.net-account-text { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow-wrap: anywhere; }
+.net-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 640px) { .net-two { grid-template-columns: 1fr; } }
+.razze-network-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.razze-network-titles { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.net-badge { flex: none; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+.net-badge.on { color: var(--ok); border-color: var(--ok); background: var(--ok-soft); }
+.razze-actions .razze-manage-toggle { margin-left: auto; }
+.razze-manage { display: grid; gap: 8px; padding-top: 8px; border-top: 1px dashed var(--line); }
+.razze-edit { display: grid; gap: 8px; }
+.razze-friends { display: grid; gap: 6px; }
+.razze-friends:empty { display: none; }
+.razze-friends .razze-row > span, .razze-members .razze-row > span { font-size: 13px; }
 .razze-network { display: grid; gap: 8px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); }
 .razze-row, #razzeAccount .button-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .razze-row > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .razze-network > strong { overflow-wrap: anywhere; }
+.razze-invite-link { flex: 1; min-width: 0; height: 32px; padding: 0 10px; border: 1px solid var(--field-line); border-radius: 6px; background: var(--sunken); color: var(--surface-text); font-size: 12px; }
+.razze-members { display: grid; gap: 6px; padding-top: 6px; border-top: 1px solid var(--line); }
 .settings-colors { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; }
 .settings-color { display: grid; gap: 7px; }
 .settings-color label { font-size: 13px; font-weight: 600; }
@@ -795,13 +847,8 @@ main { padding-top: var(--workspace-top); }
 .dock.tight-3 .voice-avatar:not(:has(.avatar))::before { content: attr(data-initial); font-weight: 700; }
 .dock.tight-4 .voice-avatars { display: none !important; }
 #workspaceEmpty { flex: 1; }
-.has-workspace-pane .home-screen { display: flex; flex-direction: column; overflow: auto; }
-.has-workspace-pane .home-brand { padding: 24px 32px 12px; gap: 16px; }
-.has-workspace-pane .home-hero h1 { font-size: 32px; }
-.has-workspace-pane .home-hero .lead { font-size: 14px; }
-.has-workspace-pane .home-actions { padding: 16px 32px; }
-.has-workspace-pane .home-card { padding: 20px; }
 .workspace-in-room #openGeneralSettingsRoom { display: none; }
+body:not(.workspace-in-room) #workspaceNav { background: transparent; border-color: transparent; } /* na tela inicial só tem o perfil e a engrenagem: sem a caixa vazia, e no mesmo lugar para não pular ao entrar na sala */
 /* Na sala, sem painel aberto: as telas começam embaixo da barra de cima (na altura dos painéis), e a barra
    não fica solta por cima do vídeo */
 .workspace-in-room:not(.has-workspace-pane) #room { padding-top: var(--workspace-top); }
@@ -822,7 +869,6 @@ main { padding-top: var(--workspace-top); }
 .toast { top: calc(var(--workspace-top) + 8px); }
 @media (max-width: 900px) {
   .workspace-tab { padding: 0 6px; font-size: 11px; }
-  .has-workspace-pane .home-brand, .has-workspace-pane .home-actions { padding-left: 16px; padding-right: 16px; }
   .dock-share { font-size: 12px; padding: 8px; }
   .dock { gap: 6px; }
 }

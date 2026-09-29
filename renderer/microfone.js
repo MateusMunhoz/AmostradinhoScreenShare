@@ -218,7 +218,12 @@ function syncPtt() {
   if (want === ptt.active) return;
   ptt.active = want;
   ptt.down = false;
-  window.api.ptt(want).then((ok) => { if (!ok && want) toast('Não foi possível ligar o apertar para falar (teclas.exe não encontrado).', 'error'); }).catch(() => {});
+  window.api.ptt(want).then((ok) => {
+    if (ok || !want) return;
+    toast(window.api.platform === 'linux'
+      ? 'Não foi possível ligar o apertar para falar. No Linux ele precisa de uma sessão X11 e do xinput (sudo apt install xinput).'
+      : 'Não foi possível ligar o apertar para falar (teclas.exe não encontrado).', 'error');
+  }).catch(() => {});
   applyMicGate();
 }
 function onPttKey(down) {

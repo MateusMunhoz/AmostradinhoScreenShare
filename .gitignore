@@ -12,6 +12,7 @@ pack/*
 !bin/videocap.exe
 !bin/teclas.exe
 !bin/selfvpn/wireguard.exe
+!bin/selfvpn/wg.exe
 
 # Compilação dos ajudantes nativos (native/build.cmd)
 native/obj/

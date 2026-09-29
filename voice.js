@@ -137,10 +137,16 @@ class VoiceChat {
     };
     pc.onconnectionstatechange = () => {
       if (this.peers.get(id) !== p) return;
-      p.status = pc.connectionState === 'connected' ? 'conectado'
-        : ['failed', 'disconnected'].includes(pc.connectionState) ? 'conexão interrompida — entre novamente' : 'conectando';
+      const s = pc.connectionState;
+      clearTimeout(p.retry);
+      p.status = s === 'connected' ? 'conectado' : ['failed', 'disconnected'].includes(s) ? 'reconectando' : 'conectando';
+      // Caiu (a rede piscou, a VPN reiniciou): quem iniciou a chamada começa outra sozinho
+      if (s === 'failed') this.recover(id, p);
+      else if (s === 'disconnected') p.retry = setTimeout(() => this.recover(id, p), 5000);
       this.changed();
     };
+    // Nem conectou em 20 s (a oferta pode ter se perdido com a sala reconectando): tenta de novo
+    p.retry = setTimeout(() => this.recover(id, p), 20000);
     this.changed();
     return p;
   }
@@ -154,10 +160,18 @@ class VoiceChat {
       this.changed();
     });
   }
+  // Refaz a chamada com essa pessoa. Só quem inicia (o menor número) faz a oferta nova; o outro lado espera.
+  recover(id, p) {
+    if (this.peers.get(id) !== p || p.pc.connectionState === 'connected') return;
+    if (Number(this.id) < Number(id)) { this.close(id); this.sync(); }
+    else { clearTimeout(p.retry); p.retry = setTimeout(() => this.recover(id, p), 20000); }
+  }
   receive(id, data) {
     if (!this.session || data.targetSession !== this.session || !data.session ||
         this.members.get(id)?.session !== data.session || typeof data.call !== 'string') return;
     let p = this.peers.get(id);
+    // Oferta de uma chamada nova de quem inicia: a anterior caiu, troca por esta
+    if (p && p.call !== data.call && data.sdp?.type === 'offer' && Number(id) < Number(this.id)) { this.close(id); p = null; }
     if (!p) {
       // O menor ID inicia: evita duas ofertas concorrentes.
       if (Number(id) >= Number(this.id)) return;
@@ -184,6 +198,7 @@ class VoiceChat {
     const p = this.peers.get(id);
     if (!p) return;
     this.peers.delete(id);
+    clearTimeout(p.retry);
     p.pc.ontrack = p.pc.onicecandidate = p.pc.onconnectionstatechange = null;
     p.pc.close();
     p.audio.pause();

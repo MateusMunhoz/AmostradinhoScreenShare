@@ -16,6 +16,7 @@
       <button id="navVoice" type="button" class="workspace-tab room-tab" aria-pressed="true" aria-controls="voicePane" hidden><span class="nav-icon" aria-hidden="true"></span><span>Voz</span></button>
       <button id="navStreams" type="button" class="workspace-tab room-tab" aria-pressed="true" aria-controls="streamArea" hidden><span class="nav-icon" aria-hidden="true"></span><span>Transmissão</span></button>
       <button id="navProfile" type="button" class="workspace-tab profile-tab" aria-label="Seu perfil" title="Seu perfil" aria-haspopup="dialog" aria-expanded="false" aria-controls="profilePane"><span id="navProfileAvatar" aria-hidden="true"></span></button>
+      <button id="navNetwork" type="button" class="workspace-tab settings-tab network-tab" aria-label="Rede: Radmin ou VPN Razze" title="Rede" aria-haspopup="dialog" aria-expanded="false" aria-controls="networkDialog"><span class="nav-icon" aria-hidden="true"></span></button>
       <button id="navSettings" type="button" class="workspace-tab settings-tab" aria-label="Configurações gerais" title="Configurações gerais" aria-haspopup="dialog" aria-expanded="false" aria-controls="generalSettingsDialog"><span class="nav-icon" aria-hidden="true"></span></button>
       <!-- Na sala sem chat nem voz abertos: recolhe a barra numa aba na borda direita -->
       <button id="navCollapse" type="button" class="workspace-tab nav-collapse" aria-label="Recolher a barra" title="Recolher a barra" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
@@ -47,49 +48,43 @@
   </aside>
   <main>
     <!-- Início -->
+    <!-- Início: um saguão. Você (foto e nome), as sessões abertas na rede como peça principal, criar ou entrar com
+         endereço, a última sala; embaixo, a conexão e a versão -->
     <section id="home" class="screen home-screen">
-      <div class="home-brand">
+      <div class="home-top">
         <div class="brand-mark">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h13v10H3zM8 19h13V9"/></svg>
           <span>Tela P2P</span>
         </div>
-        <div class="home-hero">
-          <h1>Sua tela,<br>direto no PC dos amigos.</h1>
-          <p class="lead">Uma sala para transmitir telas com os amigos, de PC para PC pela Radmin VPN.</p>
-        </div>
-        <div class="home-status">
-          <p class="status-line">
-            <span id="radminDot" class="dot"></span>
-            <strong id="radminTitle">Procurando a Radmin VPN…</strong>
-            <span id="radminDetail" class="status-detail"></span>
-          </p>
-          <p class="status-line version">
-            <span class="dot hollow"></span>
-            <span id="appVersion"></span>
-            <span aria-hidden="true">·</span>
-            <button class="link-btn" id="checkUpdates" type="button">Procurar atualização</button>
-          </p>
-        </div>
       </div>
 
-      <div class="home-actions">
-        <div class="home-card" id="homeCard">
-          <label class="field">
-            <span>Seu nome</span>
-            <input id="name" maxlength="32" placeholder="Como os outros vão te ver">
-          </label>
-          <section class="sessions" aria-labelledby="sessionsTitle">
-            <h2 class="sessions-title" id="sessionsTitle">Sessões abertas</h2>
-            <ul id="sessionList" class="session-list" aria-live="polite"></ul>
-            <p id="sessionsEmpty" class="hint"></p>
-          </section>
-          <div class="create-block">
-            <button class="btn primary big" id="goCreate" type="button">Criar sala</button>
-            <span class="hint center">Os amigos entram pelo seu endereço</span>
+      <div class="home-main">
+        <div class="home-hello">
+          <span id="homeAvatar" class="avatar home-avatar" aria-hidden="true"></span>
+          <div class="home-hello-text">
+            <h1 class="home-title">Sua tela, direto no PC dos amigos.</h1>
+            <label class="home-name">
+              <span>Você entra como</span>
+              <input id="name" maxlength="32" placeholder="Seu nome" autocomplete="off" spellcheck="false">
+            </label>
           </div>
-          <button class="btn big" id="goJoin" type="button" aria-expanded="false" aria-controls="joinPanel">Entrar numa sala</button>
+        </div>
+
+        <div class="home-card" id="homeCard">
+          <section class="sessions" aria-labelledby="sessionsTitle">
+            <h2 class="sessions-title" id="sessionsTitle">Sessões abertas na sua rede</h2>
+            <ul id="sessionList" class="session-list" aria-live="polite"></ul>
+            <p id="sessionsEmpty" class="sessions-empty"></p>
+          </section>
+          <div class="home-cta">
+            <div class="create-block">
+              <button class="btn primary big" id="goCreate" type="button">Criar sala</button>
+              <span class="hint center">Os amigos entram pelo seu endereço</span>
+            </div>
+            <button class="btn big" id="goJoin" type="button" aria-expanded="false" aria-controls="joinPanel">Entrar com endereço</button>
+          </div>
           <div id="joinPanel" class="join-panel" hidden>
-            <strong>Entrar numa sala</strong>
+            <strong>Entrar com endereço</strong>
             <label class="field">
               <span>Endereço de quem criou</span>
               <input id="roomAddr" class="mono" placeholder="26.123.45.67:8765">
@@ -111,6 +106,19 @@
             <button class="btn" id="rejoinBtn" type="button">Entrar de novo</button>
           </div>
         </div>
+      </div>
+
+      <div class="home-status">
+        <p class="status-line">
+          <span id="radminDot" class="dot"></span>
+          <strong id="radminTitle">Procurando a Radmin VPN…</strong>
+          <span id="radminDetail" class="status-detail"></span>
+        </p>
+        <p class="status-line version">
+          <span id="appVersion"></span>
+          <span aria-hidden="true">·</span>
+          <button class="link-btn" id="checkUpdates" type="button">Procurar atualização</button>
+        </p>
       </div>
     </section>
 
@@ -530,40 +538,10 @@
       <div class="dialog-head"><h2 id="generalSettingsTitle">Configurações gerais</h2><button id="closeGeneralSettings" class="btn icon" type="button"></button></div>
       <p class="hint" id="settingsSaveStatus" role="status">Salvo neste dispositivo. As escolhas continuam ao reabrir o app.</p>
       <div class="settings-tabs seg" role="tablist" aria-label="Seções das configurações">
-        <button id="settingsTab-network" type="button" role="tab" data-tab="network" aria-controls="settingsPanel-network">Rede</button>
         <button id="settingsTab-appearance" type="button" role="tab" data-tab="appearance" aria-controls="settingsPanel-appearance">Aparência</button>
         <button id="settingsTab-colors" type="button" role="tab" data-tab="colors" aria-controls="settingsPanel-colors">Cores</button>
         <button id="settingsTab-sounds" type="button" role="tab" data-tab="sounds" aria-controls="settingsPanel-sounds">Sons</button>
       </div>
-      <section id="settingsPanel-network" class="settings-section" role="tabpanel" aria-labelledby="settingsTab-network">
-        <h3 id="networkTitle">Conectividade entre PCs</h3>
-        <p class="hint">Escolha a rede usada pelo Tela P2P. Radmin mantém o funcionamento atual. Razze usa a API configurada abaixo para coordenar túneis WireGuard diretos entre os participantes.</p>
-        <label for="networkProvider">Rede</label>
-        <select id="networkProvider"><option value="radmin">Radmin VPN ou rede local</option><option value="razze">VPN Razze (WireGuard)</option></select>
-        <div id="razzeSettings" hidden>
-          <label for="razzeApiUrl">Servidor Razze API (HTTPS)</label>
-          <input id="razzeApiUrl" type="url" placeholder="https://api.seudominio.com" autocomplete="url">
-          <button id="razzeSaveServer" class="btn small" type="button">Salvar e testar servidor</button>
-          <p class="hint" id="razzeStatus" role="status">Informe a URL do seu servidor Razze.</p>
-          <div id="razzeAuth">
-            <label for="razzeEmail">E-mail</label><input id="razzeEmail" type="email" autocomplete="username">
-            <label for="razzePassword">Senha</label><input id="razzePassword" type="password" autocomplete="current-password">
-            <label for="razzeDisplayName">Nome (para criar conta)</label><input id="razzeDisplayName" type="text" maxlength="60" autocomplete="name">
-            <div class="button-row"><button id="razzeLogin" class="btn primary" type="button">Entrar</button><button id="razzeRegister" class="btn" type="button">Criar conta</button></div>
-          </div>
-          <div id="razzeAccount" hidden>
-            <div class="button-row"><strong id="razzeAccountName"></strong><button id="razzeLogout" class="btn small" type="button">Sair</button></div>
-            <h4>Minhas redes</h4>
-            <div class="button-row"><input id="razzeNetworkName" type="text" maxlength="80" placeholder="Nome da nova rede"><button id="razzeCreateNetwork" class="btn primary" type="button">Criar rede</button></div>
-            <div id="razzeNetworks" class="razze-networks"></div>
-            <h4>Entrar por convite</h4>
-            <div class="button-row"><input id="razzeInviteToken" type="text" placeholder="Cole o convite da rede"><button id="razzeJoinInvite" class="btn" type="button">Entrar</button></div>
-            <h4>Amigos</h4>
-            <div class="button-row"><input id="razzeFriendEmail" type="email" placeholder="E-mail do amigo"><button id="razzeAddFriend" class="btn" type="button">Adicionar</button></div>
-            <div id="razzeFriends"></div>
-          </div>
-        </div>
-      </section>
       <section id="settingsPanel-appearance" class="settings-section" role="tabpanel" aria-labelledby="settingsTab-appearance" hidden>
         <h3 id="appearanceTitle">Aparência</h3>
         <div class="settings-row"><span id="themesLabel" class="settings-label">Temas prontos</span><div id="themeList" class="theme-list" role="radiogroup" aria-labelledby="themesLabel"></div><small id="themeHint" class="hint"></small></div>
@@ -608,6 +586,68 @@
         <label for="notificationVolume">Volume geral dos avisos</label><div class="vd-slider"><input type="range" id="notificationVolume" min="0" max="100" step="1"><output id="notificationVolumeValue" for="notificationVolume"></output></div><p class="hint">O volume geral multiplica os volumes individuais. Em 0%, todos os avisos ficam silenciosos.</p>
       </section>
       <footer class="settings-version"><span>Tela P2P</span><span id="settingsVersion"></span></footer>
+    </div>
+  </div>
+
+  <!-- Rede (ícone de servidor na barra): como os PCs se conectam. Radmin ou rede local, ou a VPN Razze em passos:
+       servidor, conta, redes e amigos. Lógica em renderer/conectividade.js -->
+  <div id="networkDialog" class="modal global utility-popup" hidden>
+    <div class="dialog general-settings network-settings" role="dialog" aria-modal="true" aria-labelledby="networkDialogTitle">
+      <div class="dialog-head"><h2 id="networkDialogTitle">Rede</h2><button id="closeNetworkDialog" class="btn icon" type="button"></button></div>
+      <p class="net-summary" role="status"><span id="netSummaryDot" class="dot"></span><span id="netSummaryText"></span></p>
+      <section class="settings-section" aria-labelledby="networkTitle">
+        <h3 id="networkTitle">Como os PCs se conectam</h3>
+        <div class="seg net-seg" role="radiogroup" aria-labelledby="networkTitle">
+          <label><input type="radio" name="networkProvider" value="radmin"><span>Radmin ou rede local</span></label>
+          <label><input type="radio" name="networkProvider" value="razze"><span>Razze (WireGuard)</span></label>
+        </div>
+        <p class="hint" id="networkHint"></p>
+      </section>
+      <div id="razzeSettings" class="razze-steps" hidden>
+        <p class="razze-status" id="razzeStatus" role="status" aria-live="polite"></p>
+        <section class="net-step" aria-labelledby="razzeStepServerTitle">
+          <div class="net-step-head"><span class="net-step-num" id="razzeStepServerNum">1</span><h3 id="razzeStepServerTitle">Servidor</h3></div>
+          <div class="net-row">
+            <input id="razzeApiUrl" type="url" placeholder="https://api.seudominio.com" autocomplete="url" aria-label="Endereço do servidor Razze">
+            <button id="razzeSaveServer" class="btn small" type="button">Testar e salvar</button>
+          </div>
+        </section>
+        <section class="net-step" aria-labelledby="razzeStepAccountTitle">
+          <div class="net-step-head"><span class="net-step-num" id="razzeStepAccountNum">2</span><h3 id="razzeStepAccountTitle">Conta</h3></div>
+          <div id="razzeAuth" class="net-auth">
+            <div class="seg" role="tablist" aria-label="Entrar ou criar conta">
+              <button id="razzeTabLogin" type="button" role="tab" aria-selected="true">Entrar</button>
+              <button id="razzeTabRegister" type="button" role="tab" aria-selected="false">Criar conta</button>
+            </div>
+            <label class="field" id="razzeNameField" hidden><span>Seu nome na rede</span><input id="razzeDisplayName" type="text" maxlength="60" autocomplete="name"></label>
+            <label class="field"><span>E-mail</span><input id="razzeEmail" type="email" autocomplete="username"></label>
+            <label class="field"><span>Senha</span><input id="razzePassword" type="password" autocomplete="current-password"></label>
+            <button id="razzeLogin" class="btn primary" type="button">Entrar</button>
+            <button id="razzeRegister" class="btn primary" type="button" hidden>Criar conta</button>
+          </div>
+          <div id="razzeAccount" class="net-row net-account" hidden>
+            <span class="avatar" id="razzeAccountAvatar" aria-hidden="true"></span>
+            <span class="net-account-text"><strong id="razzeAccountName"></strong><span class="hint" id="razzeAccountEmail"></span></span>
+            <button id="razzeLogout" class="btn small" type="button">Sair da conta</button>
+          </div>
+        </section>
+        <section class="net-step" id="razzeStepNetworks" aria-labelledby="razzeStepNetworksTitle" hidden>
+          <div class="net-step-head"><span class="net-step-num" id="razzeStepNetworksNum">3</span><h3 id="razzeStepNetworksTitle">Redes</h3></div>
+          <div id="razzeNetworks" class="razze-networks"></div>
+          <p class="sessions-empty" id="razzeNetworksEmpty" hidden>Você ainda não está em nenhuma rede. Crie uma ou entre com um convite.</p>
+          <div class="net-two">
+            <label class="field"><span>Criar uma rede</span>
+              <span class="net-row"><input id="razzeNetworkName" type="text" maxlength="80" placeholder="Nome da rede"><button id="razzeCreateNetwork" class="btn small" type="button">Criar</button></span></label>
+            <label class="field"><span>Entrar com convite</span>
+              <span class="net-row"><input id="razzeInviteToken" type="text" placeholder="telap2p://invite/…"><button id="razzeJoinInvite" class="btn small" type="button">Entrar</button></span></label>
+          </div>
+        </section>
+        <section class="net-step" id="razzeStepFriends" aria-labelledby="razzeStepFriendsTitle" hidden>
+          <div class="net-step-head"><span class="net-step-num">4</span><h3 id="razzeStepFriendsTitle">Amigos</h3></div>
+          <div id="razzeFriends" class="razze-friends"></div>
+          <div class="net-row"><input id="razzeFriendEmail" type="email" placeholder="E-mail do amigo" aria-label="E-mail do amigo"><button id="razzeAddFriend" class="btn small" type="button">Adicionar</button></div>
+        </section>
+      </div>
     </div>
   </div>
   <div id="toast" class="toast" role="status"></div>

@@ -96,9 +96,19 @@ let pttVk = 0;
 function setPtt(vk) {
   vk = Number(vk) || 0;
   if (vk === pttVk && (vk === 0 || pttProc)) return true;
-  if (pttProc) { const p = pttProc; pttProc = null; try { p.stdin.end(); p.kill(); } catch {} }
+  if (pttProc) { const p = pttProc; pttProc = null; try { p.stdin?.end(); p.kill(); } catch {} }
   pttVk = 0;
   if (!vk || vk < 1 || vk > 255) return true;
+  if (process.platform === 'linux') {
+    // No Linux (X11), o xinput faz o papel do teclas.exe
+    const proc = require('./linux').startPttLinux(vk, (down) => sendMain({ type: 'ptt', down }), () => {
+      if (pttProc === proc) { pttProc = null; pttVk = 0; sendMain({ type: 'ptt', down: false }); }
+    });
+    if (!proc) return false;
+    pttProc = proc;
+    pttVk = vk;
+    return true;
+  }
   if (!fs.existsSync(TECLAS)) return false;
   const proc = spawn(TECLAS, [String(vk)], { windowsHide: true, stdio: ['pipe', 'pipe', 'ignore'] });
   pttProc = proc;

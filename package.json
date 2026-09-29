@@ -1,6 +1,6 @@
 {
   "name": "tela-p2p",
-  "version": "1.11.10",
+  "version": "1.11.12",
   "description": "Configurações e Personalização de Layout",
   "main": "boot.js",
   "scripts": {
@@ -13,7 +13,8 @@
     "dist": "electron-builder --win portable",
     "publicar": "node publicar.js",
     "razze-api": "node razze-api/server.js",
-    "test:razze-api": "node --test tests/razze-*.test.js"
+    "test:razze-api": "node --test tests/razze-*.test.js",
+    "dist:linux": "electron-builder --linux AppImage"
   },
   "dependencies": {
     "ws": "^8.18.0"
@@ -52,22 +53,34 @@
     ],
     "win": {
       "target": "portable",
-      "signAndEditExecutable": false
+      "signAndEditExecutable": false,
+      "extraResources": [
+        {
+          "from": "bin",
+          "to": "bin"
+        }
+      ]
     },
     "portable": {
       "artifactName": "${productName}.${ext}"
     },
     "extraResources": [
       {
-        "from": "bin",
-        "to": "bin"
-      },
-      {
         "from": "pack",
         "to": "pack"
       }
-    ]
+    ],
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Network",
+      "artifactName": "Tela-P2P.${ext}",
+      "synopsis": "Transmita a tela e converse por voz com os amigos, de PC para PC",
+      "executableName": "tela-p2p"
+    }
   },
+  "author": "MateusMunhoz",
   "allowScripts": {
     "electron@33.4.11": true
   }

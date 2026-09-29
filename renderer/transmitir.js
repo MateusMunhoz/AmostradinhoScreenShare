@@ -217,8 +217,9 @@ async function loadAudioApps() {
 
 function syncAudioMode() {
   const withAudio = $('soundOn').checked;
-  $('excludeField').hidden = !withAudio;
-  if (withAudio && !appsLoaded()) loadAudioApps();
+  // Deixar apps de fora do som só existe no Windows (audiocap.exe)
+  $('excludeField').hidden = !withAudio || window.api.platform !== 'win32';
+  if (withAudio && !appsLoaded() && window.api.platform === 'win32') loadAudioApps();
 }
 
 async function createAppAudioTrack(exes) {
@@ -277,7 +278,12 @@ async function startSharing() {
   // captura comum do Windows; com apps marcados, transmite sem som (melhor que vazar a call).
   let audioTrack = null;
   let loopback = false;
-  if (audioMode !== 'none') {
+  if (audioMode !== 'none' && window.api.platform === 'linux') {
+    // Linux: o som do PC inteiro vem junto da tela (PulseAudio/PipeWire), inclusive o deste app. Com a voz
+    // ligada, a voz da call iria junto: vai sem som
+    if (voice.session || voice.pending) toast('No Linux o som do PC leva junto a voz da call. Transmitindo sem som enquanto você estiver na voz.', 'error');
+    else loopback = true;
+  } else if (audioMode !== 'none') {
     try {
       audioTrack = await createAppAudioTrack(excluded);
     } catch (err) {
@@ -506,7 +512,13 @@ function addWatcher(id, wantsOnce) {
   });
   pc.onicecandidate = (e) => { if (e.candidate) sendSignal(id, { side: 'sharer', candidate: e.candidate }); };
   pc.onconnectionstatechange = () => {
-    if (pc.connectionState === 'connected') link.chain = link.chain.then(() => applyBitrate(link)).catch(console.error);
+    if (pc.connectionState === 'connected') {
+      clearTimeout(link.restartTimer);
+      link.restartTimer = null;
+      link.restartUntil = 0;
+      link.chain = link.chain.then(() => applyBitrate(link)).catch(console.error);
+    } else if (pc.connectionState === 'failed') scheduleIceRestart(id, link, 0);
+    else if (pc.connectionState === 'disconnected') scheduleIceRestart(id, link, 4000);
     renderWatchers();
   };
   link.chain = link.chain.then(async () => {
@@ -518,9 +530,29 @@ function addWatcher(id, wantsOnce) {
   toast(`${nameOf(id)} está assistindo você`);
 }
 
+// A conexão com quem assiste caiu (a rede piscou, a VPN reiniciou): procura um caminho novo sem fechar a
+// conexão (ICE restart). Tenta de novo a cada 5 s por até 3 minutos; quem assiste não precisa clicar em nada.
+function scheduleIceRestart(id, link, delay) {
+  if (link.restartTimer) return;
+  if (!link.restartUntil) link.restartUntil = Date.now() + 3 * 60 * 1000;
+  link.restartTimer = setTimeout(() => {
+    link.restartTimer = null;
+    const pc = link.pc;
+    if (state.out.get(id) !== link || pc.connectionState === 'connected' || pc.signalingState === 'closed') return;
+    if (Date.now() > link.restartUntil) return;
+    link.chain = link.chain.then(async () => {
+      if (state.out.get(id) !== link || pc.signalingState === 'closed') return;
+      await pc.setLocalDescription(await pc.createOffer({ iceRestart: true }));
+      sendSignal(id, { side: 'sharer', sdp: pc.localDescription });
+    }).catch(console.error);
+    scheduleIceRestart(id, link, 5000); // se não voltar, tenta de novo
+  }, delay);
+}
+
 function closeOut(id) {
   const link = state.out.get(id);
   if (!link) return;
+  clearTimeout(link.restartTimer);
   if (link.dc) link.dc.close();
   link.pc.close();
   state.out.delete(id);

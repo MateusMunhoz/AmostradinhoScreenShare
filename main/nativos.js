@@ -4,6 +4,7 @@ const { app, desktopCapturer, screen } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { spawn, execFile } = require('child_process');
+const LINUX = process.platform === 'linux';
 
 // Ajudantes nativos (som e NVENC). Vêm junto das atualizações; no .exe ficam fora do .asar.
 const BIN = fs.existsSync(path.join(__dirname, '..', 'bin', 'audiocap.exe'))
@@ -19,6 +20,7 @@ const PRIORITIES = ['normal', 'above', 'high'];
 let boostProc = null;
 
 function setPriority(level) {
+  if (LINUX) return; // no Linux, subir a prioridade precisa de root: fica a normal
   if (!PRIORITIES.includes(level)) level = 'above';
   if (boostProc) boostProc.kill();
   try {
@@ -54,6 +56,10 @@ function processLabels() {
 
 function startStats(sender) {
   stopStats();
+  if (LINUX) {
+    statsProc = require('./linux').startStatsLinux((s) => { if (!sender.isDestroyed()) sender.send('stats', s); }, processLabels);
+    return { ok: true };
+  }
   let proc;
   try {
     proc = spawn(AUDIOCAP, ['--stats', String(process.pid)], { windowsHide: true });
@@ -95,7 +101,7 @@ let videoProbe = null;
 function probeVideoCap() {
   if (!videoProbe) {
     videoProbe = new Promise((resolve) => {
-      if (!fs.existsSync(VIDEOCAP)) return resolve({ nvenc: false, error: 'videocap.exe não encontrado' });
+      if (LINUX || !fs.existsSync(VIDEOCAP)) return resolve({ nvenc: false, error: 'videocap.exe não encontrado' });
       execFile(VIDEOCAP, ['--probe'], { windowsHide: true, timeout: 8000 }, (err, stdout) => {
         try { resolve(JSON.parse(stdout)); } catch { resolve({ nvenc: false, error: err ? err.message : 'resposta inválida' }); }
       });
@@ -205,6 +211,8 @@ function stopAppAudio() {
 // para quem você assiste não se ouvir de volta na sua transmissão.
 function startAppAudio(sender, excludeExes) {
   stopAppAudio();
+  // No Linux o som do PC vem direto na página (o "monitor" do PulseAudio/PipeWire)
+  if (LINUX) return Promise.resolve({ ok: false, error: 'separar o som dos apps só existe no Windows' });
   const args = ['--exclude-pid', String(process.pid)];
   for (const exe of Array.isArray(excludeExes) ? excludeExes.slice(0, 32) : []) {
     if (typeof exe === 'string' && exe) args.push('--exclude', exe);

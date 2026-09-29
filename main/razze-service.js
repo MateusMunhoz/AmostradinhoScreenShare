@@ -111,6 +111,7 @@ function createRazzeService(options = {}) {
     updateNetwork: (id, patch) => requireClient().updateNetwork(id, patch),
     deleteNetwork: (id) => requireClient().deleteNetwork(id),
     listMembers: (id) => requireClient().listMembers(id),
+    removeMember: (id, userId) => requireClient().removeMember(id, userId),
     listDevices: (id) => requireClient().listDevices(id),
     createInvite: (id, invite) => requireClient().createInvite(id, invite),
     acceptInvite: (token) => requireClient().acceptInvite(token),
@@ -121,6 +122,8 @@ function createRazzeService(options = {}) {
     removeFriend: (id) => requireClient().removeFriend(id),
     wireguard,
     api: () => requireClient(),
+    // Ao abrir o app com o túnel já ligado: volta a buscar quem entrou na rede
+    resume: (networkId) => wireguard.resume(requireClient(), networkId),
   };
 }
 

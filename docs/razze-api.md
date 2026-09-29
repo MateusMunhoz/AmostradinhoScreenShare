@@ -68,6 +68,7 @@ Todas as respostas usam JSON. Erros seguem `{ "error": { "code": "...", "message
 | `GET /v1/networks`, `POST /v1/networks` | Listar redes visíveis e criar rede |
 | `GET/PATCH/DELETE /v1/networks/:id` | Consultar, editar ou excluir rede própria |
 | `GET /v1/networks/:id/members` | Listar membros da rede |
+| `DELETE /v1/networks/:id/members/:userId` | Sair da rede (`userId` = `me`) ou o dono tirar alguém; os dispositivos da pessoa na rede saem junto |
 | `POST /v1/networks/:id/invites`, `POST /v1/invites/accept` | Criar e aceitar convite de uso limitado |
 | `GET/POST /v1/networks/:id/devices` | Listar peers e registrar dispositivo/chave pública |
 | `PATCH /v1/networks/:id/devices/:deviceId/endpoint` | Atualizar endpoint UDP reflexivo descoberto por STUN |
@@ -79,9 +80,11 @@ O cliente HTTP fica em `main/razze-api-client.js`; `main/razze-service.js` persi
 
 ## WireGuard e limites atuais
 
-O cliente gera a chave privada localmente, protege a identidade com `safeStorage` e envia somente a chave pública para o servidor. Ao conectar, usa STUN para descobrir o mapeamento UDP público, registra o endpoint, atribui um IP overlay e instala um serviço de túnel WireGuard no Windows. O Windows pode pedir permissão de administrador. A configuração que o serviço local precisa fica no perfil do usuário; a API nunca recebe a chave privada.
+O cliente gera a chave privada localmente, protege a identidade com `safeStorage` e envia somente a chave pública para o servidor. Ao conectar, usa STUN para descobrir o mapeamento UDP público, registra o endpoint, atribui um IP overlay e instala um serviço de túnel WireGuard no Windows. A configuração que o serviço local precisa fica no perfil do usuário; a API nunca recebe a chave privada.
 
-A primeira versão tenta conexões P2P diretas com STUN e keepalive. Ela envia sondagens IP aos peers para iniciar o handshake e ajudar na abertura simultânea do NAT. Enquanto o Tela P2P está aberto após conectar, consulta a lista de dispositivos a cada 30 segundos e atualiza o túnel somente quando chaves ou endpoints mudam; essa atualização reinicia brevemente o serviço WireGuard. Ao reabrir o app, use **Atualizar peers** uma vez para reconciliar a configuração e retomar a sincronização. NAT simétrico e CGNAT restritivo ainda podem impedir a conexão; não há relay nesta versão. O overlay opera em camada IP unicast; não emula broadcast Ethernet/L2. A descoberta de salas continua apenas em LAN/Radmin.
+**Administrador:** o app roda sem administrador. Quando precisa mexer no túnel, ele abre um ajudante (`main/razze-ajudante.js`) com a janela de permissão do Windows, uma vez por sessão; o ajudante fecha junto com o app. O ajudante só aceita três pedidos (instalar, remover e atualizar a lista de pessoas de um túnel `Razze…` da pasta de túneis do perfil) e roda o `wireguard.exe` e o `wg.exe` de uma cópia em `C:\Program Files\Tela P2P\WireGuard`: o serviço do túnel roda como SYSTEM e guarda esse caminho, então ele fica numa pasta em que só administrador escreve. Com o app aberto como administrador, faz tudo direto, sem o ajudante.
+
+A primeira versão tenta conexões P2P diretas com STUN e keepalive. Ela envia sondagens IP aos peers para iniciar o handshake e ajudar na abertura simultânea do NAT. Enquanto o Tela P2P está aberto, consulta a lista de dispositivos a cada 30 segundos e, quando chaves ou endpoints mudam, troca a lista de pessoas com o túnel ligado (`wg syncconf`): as conexões de quem já estava não caem. Só se o `wg.exe` falhar o túnel é reinstalado (reinicia por alguns segundos). Ao abrir o app com o túnel já ligado, a sincronização volta sozinha. Se uma conexão da tela ou da voz cair, o app refaz o caminho sozinho (ICE restart na tela; chamada nova na voz). NAT simétrico e CGNAT restritivo ainda podem impedir a conexão; não há relay nesta versão. O overlay opera em camada IP unicast; não emula broadcast Ethernet/L2. A descoberta de salas continua apenas em LAN/Radmin.
 
 A Radmin permanece independente para quem já usa esse caminho. A Razze não instala nem controla NetBird.
 

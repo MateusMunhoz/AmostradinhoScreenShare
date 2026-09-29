@@ -1,6 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
+  platform: process.platform, // 'win32' ou 'linux': o que só existe num dos dois some da tela
   getSources: () => ipcRenderer.invoke('get-sources'),
   selectSource: (id, withSystemAudio) => ipcRenderer.invoke('select-source', id, withSystemAudio),
   listAudioApps: () => ipcRenderer.invoke('list-audio-apps'),
@@ -35,6 +36,7 @@ contextBridge.exposeInMainWorld('api', {
   offVideoCap: () => { for (const ch of ['vchunk', 'vstats', 'vended']) ipcRenderer.removeAllListeners(ch); },
   offPcm: () => ipcRenderer.removeAllListeners('pcm'),
   getIps: (provider) => ipcRenderer.invoke('get-ips', provider),
+  copyText: (text) => ipcRenderer.invoke('copy-text', String(text || '')),
   razzeState: () => ipcRenderer.invoke('razze-state'),
   razzePendingInvite: () => ipcRenderer.invoke('razze-pending-invite'),
   onRazzeInvite: (callback) => {
@@ -52,6 +54,8 @@ contextBridge.exposeInMainWorld('api', {
   razzeUpdateNetwork: (id, patch) => ipcRenderer.invoke('razze-update-network', String(id || ''), patch),
   razzeDeleteNetwork: (id) => ipcRenderer.invoke('razze-delete-network', String(id || '')),
   razzeAcceptInvite: (token) => ipcRenderer.invoke('razze-accept-invite', String(token || '')),
+  razzeListMembers: (id) => ipcRenderer.invoke('razze-list-members', String(id || '')),
+  razzeRemoveMember: (id, userId) => ipcRenderer.invoke('razze-remove-member', String(id || ''), String(userId || '')),
   razzeCreateInvite: (id, options) => ipcRenderer.invoke('razze-create-invite', String(id || ''), options),
   razzeFriends: () => ipcRenderer.invoke('razze-friends'),
   razzeFriendRequests: () => ipcRenderer.invoke('razze-friend-requests'),
@@ -62,6 +66,7 @@ contextBridge.exposeInMainWorld('api', {
   razzeWireGuardConnect: (networkId, name) => ipcRenderer.invoke('razze-wg-connect', String(networkId || ''), String(name || 'Razze')),
   razzeWireGuardDisconnect: (networkId) => ipcRenderer.invoke('razze-wg-disconnect', String(networkId || '')),
   razzeWireGuardDisconnectAll: () => ipcRenderer.invoke('razze-wg-disconnect-all'),
+  razzeWireGuardResume: (networkId) => ipcRenderer.invoke('razze-wg-resume', String(networkId || '')),
   getVersion: () => ipcRenderer.invoke('get-version'),
   windowMaterial: (mode, color) => ipcRenderer.invoke('window-material', String(mode || ''), String(color || '')),
   setTitleBar: (color, symbolColor) => ipcRenderer.invoke('window-titlebar', String(color || ''), String(symbolColor || '')),

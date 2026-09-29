@@ -13,7 +13,7 @@ async function renderRoomAddress() {
     const preferred = provider === 'razze' ? ips.filter((i) => i.razze) : ips.filter((i) => i.radmin);
     $('noRadmin').hidden = preferred.length > 0;
     $('noRadmin').textContent = provider === 'razze'
-      ? 'Nenhum IP da VPN Razze foi encontrado. Conecte uma rede WireGuard nas configurações gerais.'
+      ? 'Nenhum IP da VPN Razze foi encontrado. Conecte uma rede na aba Rede (ícone de servidor, no topo).'
       : 'Nenhum IP da Radmin VPN (26.x.x.x) encontrado. Ligue a Radmin e entre na rede.';
     const usable = provider === 'razze' ? preferred : (preferred.length ? preferred : ips);
     addrs = usable.map((i) => `${i.address}:${state.port}`);
@@ -31,7 +31,7 @@ async function renderRoomAddress() {
     copy.textContent = 'Copiar';
     copy.onclick = async () => {
       try {
-        await navigator.clipboard.writeText(addr);
+        await copiar(addr);
         copy.textContent = 'Copiado';
         setTimeout(() => { copy.textContent = 'Copiar'; }, 1500);
       } catch { toast('Não foi possível copiar. Selecione o endereço e use Ctrl+C.', 'error'); }

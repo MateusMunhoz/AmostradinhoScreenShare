@@ -183,9 +183,9 @@ function watch(id) {
       o.hidden = true;
     } else {
       o.hidden = false;
-      o.textContent = s === 'failed'
-        ? 'A conexão direta falhou. Confira a Radmin VPN e libere o app no Firewall do Windows nos dois PCs.'
-        : s === 'disconnected' ? 'Conexão instável, tentando recuperar…' : 'Conectando…';
+      // Caiu: quem transmite refaz o caminho sozinho. Pede também daqui, caso o lado de lá não tenha percebido.
+      if (s === 'failed') sendSignal(id, { side: 'viewer', restart: true });
+      o.textContent = s === 'failed' || s === 'disconnected' ? 'A conexão caiu. Reconectando…' : 'Conectando…';
     }
   };
 

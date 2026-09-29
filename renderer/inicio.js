@@ -185,11 +185,18 @@ async function renderRadmin() {
     const connected = !!status?.connected && ips.length > 0;
     $('radminDot').className = 'dot ' + (connected ? 'ok' : 'warn');
     $('radminTitle').textContent = connected ? 'VPN Razze conectada' : 'VPN Razze desconectada';
-    $('radminDetail').textContent = connected ? ips.map((item) => item.address).join(', ') : status?.error || 'Conecte uma rede WireGuard nas configurações gerais';
+    $('radminDetail').textContent = connected ? ips.map((item) => item.address).join(', ') : status?.error || 'Conecte uma rede na aba Rede (ícone de servidor, no topo)';
     return;
   }
   let ips = [];
   try { ips = await window.api.getIps(); } catch {}
+  if (window.api.platform === 'linux') { // a Radmin não existe no Linux: rede local, ou a Razze pela internet
+    const lan = ips[0];
+    $('radminDot').className = 'dot ' + (lan ? 'ok' : 'warn');
+    $('radminTitle').textContent = lan ? 'Rede local' : 'Sem rede';
+    $('radminDetail').textContent = lan ? `${lan.address} · pela internet, use a VPN Razze` : 'Conecte o PC a uma rede';
+    return;
+  }
   const r = ips.find((i) => i.radmin);
   $('radminDot').className = 'dot ' + (r ? 'ok' : 'warn');
   $('radminTitle').textContent = r ? 'Radmin VPN conectada' : 'Radmin VPN não encontrada';
@@ -314,7 +321,7 @@ $('chatList').addEventListener('scroll', () => {
 }, { passive: true });
 document.addEventListener('visibilitychange', () => { if (!document.hidden && chat.open && chatAtBottom()) markRead(); });
 $('dockAddr').onclick = async () => {
-  try { await navigator.clipboard.writeText(state.roomAddr); toast(`Endereço copiado: ${state.roomAddr}. Mande para quem vai entrar.`); } catch { toast('Não foi possível copiar.', 'error'); }
+  try { await copiar(state.roomAddr); toast(`Endereço copiado: ${state.roomAddr}. Mande para quem vai entrar.`); } catch { toast('Não foi possível copiar.', 'error'); }
 };
 setIcon($('pipChipClose'), 'close', 'Fechar as janelas flutuantes');
 renderOverlayButton();
