@@ -435,6 +435,42 @@ kbd { font-family: Consolas, monospace; font-size: 11px; color: var(--muted); bo
 .file-bar { height: 4px; border-radius: 999px; background: var(--line); overflow: hidden; }
 .file-bar > span { display: block; height: 100%; width: 0; background: var(--accent); }
 .file-card img { max-width: 100%; max-height: 200px; border-radius: 6px; object-fit: contain; align-self: flex-start; }
+.file-card img.chat-image { cursor: zoom-in; }
+.file-card img.chat-image:hover { filter: brightness(1.08); }
+.file-card img.chat-image:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Bandeja: arquivos esperando o Enviar, em cima do campo de mensagem */
+.chat-staged { flex: none; display: flex; flex-wrap: wrap; gap: 8px; padding: 8px; border: 1px dashed var(--line-strong); border-radius: 8px; background: var(--sunken); max-height: 180px; overflow-y: auto; }
+.chat-staged[hidden] { display: none; }
+.staged-item { position: relative; display: flex; align-items: center; gap: 8px; height: 64px; box-sizing: border-box; padding: 0 30px 0 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); max-width: 220px; }
+.staged-item.image { width: 64px; padding: 0; overflow: hidden; }
+.staged-item.image img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.staged-icon { flex: none; display: grid; place-items: center; width: 28px; height: 28px; color: var(--muted); }
+.staged-icon svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.staged-info { min-width: 0; display: flex; flex-direction: column; font-size: 12px; }
+.staged-info > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.staged-remove { position: absolute; top: 3px; right: 3px; width: 22px; height: 22px; padding: 0; display: grid; place-items: center; border: 0; border-radius: 50%; background: rgba(0, 0, 0, .65); color: #fff; cursor: pointer; }
+.staged-remove:hover { background: rgba(0, 0, 0, .85); }
+.staged-remove:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.staged-remove svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; }
+
+/* Imagem grande por cima do app */
+.image-viewer { position: fixed; inset: 0; z-index: 70; display: grid; grid-template-columns: 56px minmax(0, 1fr) 56px; grid-template-rows: auto minmax(0, 1fr); background: rgba(0, 0, 0, .86); }
+.image-viewer[hidden] { display: none; }
+.iv-bar { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; padding: 10px 12px 10px 20px; color: #fff; }
+.iv-title { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 10px; overflow: hidden; }
+.iv-title strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+.iv-title .hint { color: rgba(255, 255, 255, .7); font-size: 12px; white-space: nowrap; }
+.iv-bar .btn { text-decoration: none; display: inline-flex; align-items: center; }
+.iv-stage { grid-row: 2; grid-column: 2; min-width: 0; min-height: 0; display: grid; place-items: center; padding: 8px 0 24px; overflow: hidden; }
+.iv-stage img { max-width: 100%; max-height: 100%; object-fit: contain; cursor: zoom-in; border-radius: 4px; box-shadow: 0 10px 40px rgba(0, 0, 0, .6); }
+.iv-stage.actual { overflow: auto; place-items: start center; }
+.iv-stage.actual img { max-width: none; max-height: none; cursor: zoom-out; }
+.iv-nav { grid-row: 2; align-self: center; justify-self: center; width: 44px; height: 44px; border-radius: 50%; background: rgba(255, 255, 255, .1); border-color: transparent; color: #fff; }
+.iv-nav:hover:not(:disabled) { background: rgba(255, 255, 255, .2); }
+.iv-nav[hidden] { display: none; }
+.iv-prev { grid-column: 1; } .iv-next { grid-column: 3; }
+.iv-prev svg { transform: rotate(180deg); }
 .file-card .btn { flex: none; text-decoration: none; display: inline-flex; align-items: center; }
 .chat-form { flex: none; display: flex; align-items: flex-end; gap: 6px; }
 .chat-form .btn.icon { width: 40px; height: 40px; }

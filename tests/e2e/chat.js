@@ -91,6 +91,10 @@ run('Chat', 170000, async () => {
   check('Ctrl+V com imagem: não cola como texto', await A.eval(paste(`dt.items.add(colado);`)) === true);
   check('Texto colado continua normal', await A.eval(paste(`dt.setData('text/plain', 'só texto');`)) === false);
   await A.eval(paste(`dt.items.add(new File(['conteudo do relatorio'], 'relatorio.txt', { type: 'text/plain' }));`));
+  // Colar põe na bandeja (preview antes de enviar): nada sai até o Enviar
+  await sleep(500);
+  check('Colado fica na bandeja, sem ir ainda', await A.eval(`chat.staged.length === 2 && !$('chatStaged').hidden`) && await B.eval(`$('chatList').querySelectorAll('.file-card').length === ${antes}`));
+  await A.eval(`sendChat()`);
   await B.waitFor(`$('chatList').querySelectorAll('.file-card').length === ${antes} + 2`, 5000);
   const nomes = await B.eval(`[...$('chatList').querySelectorAll('.file-card .file-name')].slice(-2).map((n) => n.textContent)`);
   check('Bia recebe o print com nome da hora e o arquivo com o nome dele', /^imagem-colada-\d\d-\d\d-\d\d\.png$/.test(nomes[0]) && nomes[1] === 'relatorio.txt', nomes.join(', '));

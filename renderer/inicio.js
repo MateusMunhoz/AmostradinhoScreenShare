@@ -350,7 +350,7 @@ $('chatInput').addEventListener('keydown', (e) => {
 $('chatInput').addEventListener('input', fitChatInput);
 $('chatAttach').onclick = () => $('chatFile').click();
 document.addEventListener('paste', onChatPaste); // Ctrl+V com imagem ou arquivo: vai para o chat
-$('chatFile').onchange = () => { attachFiles([...$('chatFile').files]); $('chatFile').value = ''; };
+$('chatFile').onchange = () => { stageFiles([...$('chatFile').files]); $('chatFile').value = ''; };
 // Arrastar arquivo para o chat; fora dele, soltar um arquivo não faz a janela abrir o arquivo
 document.addEventListener('dragover', (e) => e.preventDefault());
 document.addEventListener('drop', (e) => e.preventDefault());
@@ -359,7 +359,7 @@ $('chatTab').addEventListener('dragleave', (e) => { if (!$('chatTab').contains(e
 $('chatTab').addEventListener('drop', (e) => {
   e.preventDefault();
   $('chatDrop').hidden = true;
-  attachFiles([...e.dataTransfer.files]);
+  stageFiles([...e.dataTransfer.files]);
 });
 $('closeStats').onclick = closeStats;
 document.addEventListener('keydown', (e) => {

@@ -349,6 +349,8 @@
               <strong>Solte para mandar para a sala</strong>
               <span>Até 200 MB. Fica disponível enquanto você estiver na sala.</span>
             </div>
+            <!-- Arquivos esperando o Enviar: miniatura das imagens, nome dos outros, X para tirar -->
+            <div id="chatStaged" class="chat-staged" aria-label="Arquivos para enviar" hidden></div>
             <form id="chatForm" class="chat-form">
               <button type="button" class="btn icon" id="chatAttach"></button>
               <textarea id="chatInput" rows="1" maxlength="2000" placeholder="Mensagem para a sala" aria-label="Mensagem"></textarea>
@@ -398,6 +400,18 @@
   </main>
 
   <!-- Estatísticas: quanto o app usa de processador e placa de vídeo -->
+  <!-- Imagem do chat em tamanho grande (clicar na imagem): setas passam entre as imagens da conversa, Esc fecha -->
+  <div id="imageViewer" class="image-viewer" role="dialog" aria-modal="true" aria-labelledby="ivName" hidden>
+    <div class="iv-bar">
+      <span class="iv-title"><strong id="ivName"></strong><span id="ivCount" class="hint"></span></span>
+      <button class="btn small" id="ivCopy" type="button">Copiar</button>
+      <a class="btn small" id="ivSave" download>Salvar</a>
+      <button class="btn icon" id="ivClose" type="button"></button>
+    </div>
+    <button class="btn icon iv-nav iv-prev" id="ivPrev" type="button"></button>
+    <div class="iv-stage" id="ivStage"><img id="ivImg" alt=""></div>
+    <button class="btn icon iv-nav iv-next" id="ivNext" type="button"></button>
+  </div>
   <div id="statsDialog" class="modal global" hidden>
     <div class="dialog stats" role="dialog" aria-modal="true" aria-labelledby="statsTitle">
       <div class="dialog-head">

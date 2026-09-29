@@ -21,6 +21,7 @@ const chat = {
   downloads: new Map(),   // id -> { from, file, chunks, got, bytes, card }
   cards: new Map(),       // id do arquivo -> partes do cartão na tela
   urls: [],               // blob: criados, para liberar ao sair
+  staged: [],             // { file, url } esperando o Enviar (a bandeja em cima do campo de mensagem)
 };
 
 
@@ -91,6 +92,7 @@ function resetChat(welcome) {
   $('chatList').innerHTML = '';
   $('chatOff').hidden = !welcome || chat.supported;
   $('chatInput').disabled = $('chatAttach').disabled = !chat.supported;
+  clearStaged(); // sala nova: nada da bandeja da sala anterior
   $('chatSend').disabled = !chat.supported || !$('chatInput').value.trim();
   for (const m of (welcome && welcome.chat) || []) appendMessage(m, false);
   $('chatEmpty').hidden = !!$('chatList').children.length || !chat.supported;
@@ -248,15 +250,164 @@ function showImage(parts, url) {
   const img = document.createElement('img');
   img.src = url;
   img.alt = parts.f.name;
+  img.className = 'chat-image';
+  img.tabIndex = 0;
+  img.setAttribute('role', 'button');
+  img.setAttribute('aria-label', `Ampliar ${parts.f.name}`);
+  img.title = 'Clique para ampliar';
+  img.onclick = () => openImageViewer(img);
+  img.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openImageViewer(img); } };
   parts.card.insertBefore(img, parts.card.firstChild);
 }
 
+// ---------- Imagem grande ----------
+// Clicar numa imagem do chat abre ela por cima do app. Clicar nela alterna entre caber na tela e o tamanho real;
+// ← e → passam entre as imagens da conversa; Copiar, Salvar; Esc ou clicar fora fecha.
+const viewer = { list: [], index: 0, returnTo: null };
+function openImageViewer(img) {
+  viewer.list = [...$('chatList').querySelectorAll('img.chat-image')];
+  viewer.index = Math.max(0, viewer.list.indexOf(img));
+  viewer.returnTo = img;
+  $('imageViewer').hidden = false;
+  showViewerImage();
+  $('ivClose').focus();
+}
+function closeImageViewer() {
+  if ($('imageViewer').hidden) return;
+  $('imageViewer').hidden = true;
+  $('ivImg').removeAttribute('src');
+  if (viewer.returnTo?.isConnected) viewer.returnTo.focus();
+}
+function showViewerImage() {
+  const src = viewer.list[viewer.index];
+  if (!src) return closeImageViewer();
+  const name = src.alt;
+  $('ivImg').src = src.src;
+  $('ivImg').alt = name;
+  $('ivStage').classList.remove('actual');
+  $('ivName').textContent = name;
+  $('ivCount').textContent = viewer.list.length > 1 ? `${viewer.index + 1} de ${viewer.list.length}` : '';
+  $('ivSave').href = src.src;
+  $('ivSave').download = name;
+  $('ivPrev').hidden = $('ivNext').hidden = viewer.list.length < 2;
+}
+function stepViewer(dir) {
+  if (viewer.list.length < 2) return;
+  viewer.index = (viewer.index + dir + viewer.list.length) % viewer.list.length;
+  showViewerImage();
+}
+// Copiar: a imagem vira PNG (a área de transferência do Windows aceita PNG) e vai para colar no Discord, WhatsApp…
+async function copyViewerImage() {
+  try {
+    const img = $('ivImg');
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+    canvas.getContext('2d').drawImage(img, 0, 0);
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+    toast('Imagem copiada. É só colar onde quiser.');
+  } catch { toast('Não foi possível copiar a imagem.', 'error'); }
+}
+setIcon($('ivClose'), 'close', 'Fechar');
+setIcon($('ivPrev'), 'chevron', 'Imagem anterior');
+setIcon($('ivNext'), 'chevron', 'Próxima imagem');
+$('ivClose').onclick = closeImageViewer;
+$('ivPrev').onclick = () => stepViewer(-1);
+$('ivNext').onclick = () => stepViewer(1);
+$('ivCopy').onclick = copyViewerImage;
+$('ivImg').onclick = () => $('ivStage').classList.toggle('actual');
+// Clicar fora da imagem fecha (no tamanho real, a área tem barras de rolagem: aí só fora dela)
+$('imageViewer').addEventListener('mousedown', (e) => {
+  if (e.target === $('imageViewer') || (e.target === $('ivStage') && !$('ivStage').classList.contains('actual'))) closeImageViewer();
+});
+// Aberta, as teclas são dela (antes dos atalhos do resto do app)
+document.addEventListener('keydown', (e) => {
+  if ($('imageViewer').hidden) return;
+  if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); closeImageViewer(); }
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); e.stopImmediatePropagation(); stepViewer(e.key === 'ArrowLeft' ? -1 : 1); }
+  else if (e.key === 'Tab') {
+    const items = [...$('imageViewer').querySelectorAll('button:not([hidden]), a')];
+    const at = items.indexOf(document.activeElement);
+    if (e.shiftKey && at <= 0) { e.preventDefault(); items.at(-1).focus(); }
+    else if (!e.shiftKey && at === items.length - 1) { e.preventDefault(); items[0].focus(); }
+  }
+}, true);
+
+// Enviar: primeiro os arquivos da bandeja, depois o texto (que vira a legenda deles)
 function sendChat() {
   const input = $('chatInput');
   const text = input.value.trim();
-  if (!text || !chat.supported) return;
-  send({ type: 'chat', text });
+  if ((!text && !chat.staged.length) || !chat.supported) return;
+  const files = chat.staged.map((s) => s.file);
+  clearStaged();
+  if (files.length) attachFiles(files).then(() => { if (text) send({ type: 'chat', text }); });
+  else send({ type: 'chat', text });
   input.value = '';
+  fitChatInput();
+}
+
+// ---------- Bandeja: arquivos esperando o Enviar ----------
+// Colar, arrastar ou o clipe põem o arquivo aqui (não manda na hora): dá para ver, tirar e escrever uma legenda
+const CHAT_STAGE_MAX = 10;
+function stageFiles(list) {
+  if (!chat.supported) return;
+  for (const file of list) {
+    if (!file.size) continue;
+    if (file.size > CHAT_MAX_FILE) { toast(`${file.name} passa de 200 MB e não pode ser enviado pelo chat.`, 'error'); continue; }
+    if (chat.staged.length >= CHAT_STAGE_MAX) { toast(`Até ${CHAT_STAGE_MAX} arquivos por vez.`, 'error'); break; }
+    chat.staged.push({ file, url: CHAT_IMAGE_TYPES.includes(file.type) ? URL.createObjectURL(file) : '' });
+  }
+  if (!chat.open) setPanelOpen(true); // a bandeja fica no chat: abre para você ver o que vai
+  renderStaged();
+  $('chatInput').focus();
+}
+function unstage(i) {
+  const [gone] = chat.staged.splice(i, 1);
+  if (gone?.url) URL.revokeObjectURL(gone.url);
+  renderStaged();
+  $('chatInput').focus();
+}
+function clearStaged() {
+  for (const s of chat.staged) if (s.url) URL.revokeObjectURL(s.url);
+  chat.staged = [];
+  renderStaged();
+}
+function renderStaged() {
+  const tray = $('chatStaged');
+  tray.replaceChildren();
+  tray.hidden = !chat.staged.length;
+  chat.staged.forEach((s, i) => {
+    const item = document.createElement('div');
+    item.className = 'staged-item' + (s.url ? ' image' : '');
+    if (s.url) {
+      const img = document.createElement('img');
+      img.src = s.url;
+      img.alt = s.file.name;
+      item.append(img);
+    } else {
+      const icon = document.createElement('span');
+      icon.className = 'staged-icon';
+      icon.innerHTML = ICON.doc;
+      const info = document.createElement('span');
+      info.className = 'staged-info';
+      const name = document.createElement('span');
+      name.textContent = s.file.name;
+      const size = document.createElement('span');
+      size.className = 'hint';
+      size.textContent = formatBytes(s.file.size);
+      info.append(name, size);
+      item.append(icon, info);
+    }
+    item.title = `${s.file.name} · ${formatBytes(s.file.size)}`;
+    const x = document.createElement('button');
+    x.type = 'button';
+    x.className = 'staged-remove';
+    setIcon(x, 'close', `Tirar ${s.file.name}`);
+    x.onclick = () => unstage(i);
+    item.append(x);
+    tray.append(item);
+  });
+  $('chatInput').placeholder = chat.staged.length ? 'Legenda (opcional) e Enter para enviar' : 'Mensagem para a sala';
   fitChatInput();
 }
 
@@ -311,16 +462,15 @@ function onChatPaste(e) {
     const ext = (f.type.split('/')[1] || 'png').replace('jpeg', 'jpg');
     return new File([f], `imagem-colada-${stamp}${files.length > 1 ? `-${i + 1}` : ''}.${ext}`, { type: f.type });
   });
-  attachFiles(named);
-  if (!chat.open) toast(named.length === 1 ? `${named[0].name} foi para o chat.` : `${named.length} arquivos foram para o chat.`);
+  stageFiles(named);
 }
 
 function fitChatInput() {
   const t = $('chatInput');
   t.style.height = 'auto';
   t.style.height = `${Math.min(t.scrollHeight, 120)}px`;
-  // Enviar só acende com algo escrito (arquivo vai pelo clipe, na hora)
-  $('chatSend').disabled = !chat.supported || !t.value.trim();
+  // Enviar só acende com algo escrito ou arquivo na bandeja
+  $('chatSend').disabled = !chat.supported || (!t.value.trim() && !chat.staged.length);
 }
 
 function requestFile(from, f) {
