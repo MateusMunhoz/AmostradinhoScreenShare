@@ -20,7 +20,7 @@ const ROOT = __dirname;
 const KEY_FILE = path.join(os.homedir(), '.tela-p2p', 'chave-de-atualizacao.pem');
 const BOOT = path.join(ROOT, 'boot.js');
 // O que viaja pela sala. boot.js fica de fora: ele confere as assinaturas e só muda com um .exe novo.
-const PACK_FILES = ['renderer/navegacao.js', 'renderer/preferencias-modelo.js', 'renderer/configuracoes.js', 'renderer/conectividade.js', ...require('./renderer/preferencias-modelo').sounds.filter(s => s.file).map(s => 'assets/audio/' + s.file), 'main.js', 'main/razze-api-client.js', 'main/razze-service.js', 'main/razze-wireguard.js', 'main/nativos.js', 'main/contexto.js', 'main/janela-flutuante.js', 'main/chat-jogo.js', 'main/atalhos.js', 'main/sessoes.js', 'preload.js', 'signaling.js', 'github.js', 'index.html', 'styles.css', 'renderer/util.js', 'renderer/estado.js', 'renderer/rtc.js', 'renderer/tema.js', 'renderer/fotos.js', 'renderer/sala.js', 'renderer/voz.js', 'renderer/microfone.js', 'renderer/membros.js', 'renderer/assistir.js', 'renderer/pip.js', 'renderer/overlay.js', 'renderer/metadados.js', 'renderer/chat.js', 'renderer/estatisticas.js', 'renderer/atualizacao.js', 'renderer/sessoes.js', 'renderer/transmitir.js', 'renderer/inicio.js', 'voice.js', 'encode-once.js', 'pcm-worklet.js', 'bin/audiocap.exe', 'bin/videocap.exe', 'bin/teclas.exe', 'bin/selfvpn/wireguard.exe', 'bin/selfvpn/wg.exe', 'bin/selfvpn/COPYING', 'bin/selfvpn/NOTICE.md', 'main/razze-elevacao.js', 'main/razze-privilegiado.js', 'main/razze-ajudante.js',
+const PACK_FILES = ['renderer/navegacao.js', 'renderer/preferencias-modelo.js', 'renderer/configuracoes.js', 'renderer/conectividade.js', ...require('./renderer/preferencias-modelo').sounds.filter(s => s.file).map(s => 'assets/audio/' + s.file), 'main.js', 'main/razze-api-client.js', 'main/razze-service.js', 'main/razze-wireguard.js', 'main/nativos.js', 'main/contexto.js', 'main/janela-flutuante.js', 'main/chat-jogo.js', 'main/atalhos.js', 'main/sessoes.js', 'preload.js', 'signaling.js', 'github.js', 'index.html', 'styles.css', 'renderer/util.js', 'renderer/estado.js', 'renderer/rtc.js', 'renderer/tema.js', 'renderer/fotos.js', 'renderer/sala.js', 'renderer/voz.js', 'renderer/microfone.js', 'renderer/membros.js', 'renderer/assistir.js', 'renderer/pip.js', 'renderer/overlay.js', 'renderer/metadados.js', 'renderer/chat.js', 'renderer/estatisticas.js', 'renderer/atualizacao.js', 'renderer/sessoes.js', 'renderer/lista.js', 'renderer/palco.js', 'renderer/transmitir.js', 'renderer/inicio.js', 'voice.js', 'encode-once.js', 'pcm-worklet.js', 'bin/audiocap.exe', 'bin/videocap.exe', 'bin/teclas.exe', 'bin/selfvpn/wireguard.exe', 'bin/selfvpn/wg.exe', 'bin/selfvpn/COPYING', 'bin/selfvpn/NOTICE.md', 'main/razze-elevacao.js', 'main/razze-privilegiado.js', 'main/razze-ajudante.js',
   'vendor/noise/rnnoiseWorklet.js', 'vendor/noise/rnnoise.wasm', 'vendor/noise/rnnoise_simd.wasm', 'vendor/noise/LICENSE', 'vendor/noise/NOTICE.md'];
 
 function fail(msg) {
@@ -112,7 +112,17 @@ function buildLinux() {
   if (r.status !== 0 || !fs.existsSync(appImage)) console.log('\nO AppImage não foi gerado: a versão sai só com o .exe.');
 }
 
+// Todo arquivo que a página carrega (index.html) tem que ir no pacote: senão, quem atualiza pelo botão ou pela
+// sala recebe uma página que chama um arquivo que não veio, e o app abre quebrado
+function checkPackFiles() {
+  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  const used = [...html.matchAll(/<(?:script|link)[^>]+(?:src|href)="([^":]+)"/g)].map((m) => m[1]);
+  const missing = used.filter((f) => !PACK_FILES.includes(f));
+  if (missing.length) fail(`O index.html usa arquivos que não estão no PACK_FILES do publicar.js: ${missing.join(', ')}. Coloque eles na lista.`);
+}
+
 function publish(requested, { notes = '', github = true } = {}) {
+  checkPackFiles();
   if (!fs.existsSync(KEY_FILE)) fail('Nenhuma chave encontrada. Rode uma vez: node publicar.js --gerar-chave');
   const privateKey = fs.readFileSync(KEY_FILE, 'utf8');
   const myPublic = crypto.createPublicKey(privateKey).export({ type: 'spki', format: 'pem' }).trim();
