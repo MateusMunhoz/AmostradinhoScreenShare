@@ -317,28 +317,36 @@ kbd { font-family: Consolas, monospace; font-size: 11px; color: var(--muted); bo
 .tile-body { position: relative; flex: 1; min-height: 0; background: #000; }
 .tile video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; display: block; }
 .tile:fullscreen { border: 0; border-radius: 0; }
-.tile:fullscreen .tile-name { display: none; }
+/* Tela cheia: a faixa do nome (com os controles) vira uma faixa por cima do vídeo, que aparece com o mouse */
+.tile:fullscreen .tile-name { position: absolute; top: 0; left: 0; right: 0; z-index: 3; border-bottom: 0; background: var(--theme-glass); opacity: 0; transition: opacity .2s; }
+.tile:fullscreen:hover .tile-name, .tile:fullscreen .tile-name:focus-within { opacity: 1; }
 .tile-overlay {
   position: absolute; inset: 0; display: grid; place-items: center; padding: 20px; text-align: center;
   background: rgba(10, 11, 13, .85); color: var(--muted); font-size: 14px;
 }
+/* Faixa do nome: foto (com o anel na cor da pessoa), nome, "Ao vivo", qualidade e os controles à direita */
+.tile { container-type: inline-size; }
 .tile-name {
-  flex: none; height: 34px; display: flex; align-items: center; gap: 8px; padding: 0 12px; min-width: 0;
+  flex: none; height: 42px; display: flex; align-items: center; gap: 8px; padding: 0 6px 0 10px; min-width: 0;
   border-bottom: 1px solid var(--line); font-size: 13px; font-weight: 600;
 }
-.tile-name::before { content: ""; flex: none; width: 8px; height: 8px; border-radius: 2px; background: var(--person, var(--live)); }
+.tile-name > .avatar { width: 24px; height: 24px; font-size: 11px; background: var(--person, var(--live)); color: var(--bg); box-shadow: 0 0 0 2px var(--panel), 0 0 0 3px var(--person, var(--live)); }
 .tile-name-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tile-name .eq { margin-left: 2px; }
-.tile-bar {
-  position: absolute; right: 8px; bottom: 8px; max-width: calc(100% - 16px); display: flex; align-items: center; gap: 6px;
-  padding: 4px 4px 4px 8px; border-radius: 6px; background: rgba(27, 31, 23, .88); transition: opacity .2s;
-}
-.tile-bar .btn.icon { width: 32px; height: 32px; background: transparent; border-color: transparent; box-shadow: none; }
+.tile-chip { flex: none; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap; background: var(--panel-2); color: var(--muted); font-variant-numeric: tabular-nums; }
+.tile-chip[hidden] { display: none; }
+.tile-chip.live { background: var(--live-fill); color: var(--live-ink); }
+.tile-bar { margin-left: auto; flex: none; display: flex; align-items: center; gap: 2px; }
+.tile-bar .btn.icon { width: 30px; height: 30px; background: transparent; border-color: transparent; box-shadow: none; }
 .tile-bar .btn.icon:hover { background: var(--panel-2); }
-/* Aparece com o mouse em cima, com o teclado dentro (Tab) e nos primeiros segundos do vídeo */
-.tile:not(:hover):not(:focus-within):not(.show-bar) .tile-bar { opacity: 0; }
-.tile-bar-space { flex: 1; }
-.tile-vol { accent-color: var(--accent); width: 90px; margin-right: 4px; }
+.tile-bar-space { display: none; }
+.tile-vol { accent-color: var(--accent); width: 80px; margin: 0 4px 0 0; }
+/* Tela estreita: some primeiro a qualidade, depois o "Ao vivo" e por último a barra do volume (o botão de som e a
+   roda do mouse continuam) */
+@container (max-width: 540px) { .tile-quality { display: none; } }
+@container (max-width: 470px) { .tile-name .tile-chip.live { display: none; } }
+@container (max-width: 400px) { .tile-vol { display: none; } }
+.tile.small .tile-chip, .tile.small .tile-name > .avatar { display: none; }
 .tile-pip-note {
   position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 10px; padding: 24px; text-align: center; background: var(--sunken);
@@ -595,7 +603,13 @@ fieldset.group > legend { margin-bottom: 10px; }
 .share-summary-more { font-size: 12px; color: var(--muted); text-decoration: none; text-align: left; }
 .share-summary-more:hover:not(:disabled) { color: var(--accent); text-decoration: underline; }
 /* Ainda tem opções embaixo (Som do PC, Avançado): a lista esmaece na borda de baixo */
-.share-body.more-below { -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 48px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 48px), transparent); }
+/* Uma faixa em degradê presa na borda de baixo enquanto rola (some no fim). Antes era mask-image na área que rola:
+   em algumas placas de vídeo o Chromium desenhava a lista inteira preta */
+.share-body::after {
+  content: ""; display: block; position: sticky; bottom: 0; height: 48px; margin-top: -48px; pointer-events: none;
+  background: linear-gradient(to bottom, transparent, var(--panel)); opacity: 0; transition: opacity .15s;
+}
+.share-body.more-below::after { opacity: 1; }
 .share-foot .btn { height: 44px; }
 .field-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .app-list { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -730,10 +744,10 @@ fieldset.group > legend { margin-bottom: 10px; }
 .check-line small { font-size: 12px; line-height: 1.4; }
 
 /* Preferências locais e superfícies com contraste independente do fundo. */
-.home-card, .dock, .panel, .person-card, .people-pop, .tile-bar, .tile-overlay, .chat-drop, .update-banner {
+.home-card, .dock, .panel, .person-card, .people-pop, .tile-name, .tile-overlay, .chat-drop, .update-banner {
   --text: var(--surface-text); --text-2: var(--surface-text-2); --muted: var(--surface-muted); color: var(--text);
 }
-.tile-bar, .tile-overlay, .chat-drop { background: var(--theme-glass); }
+.tile-overlay, .chat-drop { background: var(--theme-glass); }
 .btn:not(.primary):not(.ghost):not(.danger):not(.on):not(.live) { color: var(--surface-text); }
 .field > input, .field select, .field .select-btn { color: var(--surface-text); background: var(--sunken); }
 .join-panel .field > input { background: var(--sunken); }
@@ -966,7 +980,7 @@ body:not(.workspace-in-room) #workspaceNav { background: transparent; border-col
 main { padding-top: 0; }
 
 /* Transmissão sem som: aviso na faixa do nome da tela, e o volume some (não tem o que mudar) */
-.tile-noaudio { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--text-2); white-space: nowrap; }
+.tile-noaudio { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--text-2); white-space: nowrap; }
 .tile-noaudio svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .tile.no-audio .tile-vol, .tile.no-audio .tile-mute { display: none; }
 .live-silent { font-weight: 600; }

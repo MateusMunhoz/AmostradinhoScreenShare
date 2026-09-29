@@ -17,14 +17,23 @@ function createTile(id, name) {
   const overlay = document.createElement('div');
   overlay.className = 'tile-overlay';
   overlay.textContent = 'Conectando…';
-  // Faixa de título em cima do vídeo: o nome e, quando a pessoa fala, as barrinhas
+  // Faixa de título em cima do vídeo: foto, nome, barrinhas de quem fala, "Ao vivo", a qualidade que está chegando
+  // e, à direita, os controles (volume, janela flutuante, destaque, tela cheia, parar)
   const label = document.createElement('div');
   label.className = 'tile-name';
   label.style.setProperty('--person', personColor(id));
+  const face = avatar(name.replace(/ \(você\)$/, ''), id);
   const labelText = document.createElement('span');
   labelText.className = 'tile-name-text';
   labelText.textContent = name;
   paintName(labelText, id);
+  const live = document.createElement('span');
+  live.className = 'tile-chip live';
+  live.textContent = 'Ao vivo';
+  const quality = document.createElement('span');
+  quality.className = 'tile-chip tile-quality';
+  quality.hidden = true;
+  quality.title = 'Resolução e quadros por segundo que estão chegando';
   // "sem som": quem transmite está sem o som do PC (desligado ou a captura falhou); aí o volume não tem o que mudar
   const noAudio = document.createElement('span');
   noAudio.className = 'tile-noaudio';
@@ -32,7 +41,7 @@ function createTile(id, name) {
   noAudio.innerHTML = ICON.muted;
   noAudio.append('sem som');
   noAudio.title = `${name} está transmitindo sem o som do PC`;
-  label.append(labelText, speakBars(), noAudio);
+  label.append(face, labelText, speakBars(), live, quality, noAudio);
   const bar = document.createElement('div');
   bar.className = 'tile-bar';
   const barSpace = document.createElement('span');
@@ -83,6 +92,19 @@ function createTile(id, name) {
   setIcon(close, 'close', 'Parar de assistir');
   close.onclick = () => stopWatching(id);
   bar.append(barSpace, mute, vol, pipBtn, focusBtn, fs, close);
+  label.append(bar); // os controles ficam na faixa do nome, sempre à vista
+  // Qualidade que está chegando: altura do vídeo e quadros por segundo (medidos a cada 2 s). Em pausa, só a altura.
+  let lastFrames = null;
+  const qualityTimer = setInterval(() => {
+    if (!el.isConnected) return clearInterval(qualityTimer);
+    const h = video.videoHeight;
+    quality.hidden = !h;
+    if (!h) return;
+    const frames = video.getVideoPlaybackQuality?.().totalVideoFrames || 0, now = performance.now();
+    const fps = lastFrames && !video.paused ? (frames - lastFrames.frames) / ((now - lastFrames.at) / 1000) : 0;
+    lastFrames = { frames, at: now };
+    quality.textContent = fps >= 1 ? `${h}p ${fps >= 20 ? Math.round(fps / 5) * 5 : Math.round(fps)}` : `${h}p`;
+  }, 2000);
   // Aviso no lugar do vídeo enquanto ele está na janela flutuante
   const pipNote = document.createElement('div');
   pipNote.className = 'tile-pip-note';
@@ -112,7 +134,7 @@ function createTile(id, name) {
   pipNote.append(pipIcon, pipTitle, pipText, pipActions, pipHint);
   const body = document.createElement('div');
   body.className = 'tile-body';
-  body.append(video, overlay, pipNote, bar);
+  body.append(video, overlay, pipNote);
   el.append(label, body);
   // Roda do mouse em cima da tela: som dessa transmissão (a sua própria não tem som)
   el.addEventListener('wheel', (e) => {

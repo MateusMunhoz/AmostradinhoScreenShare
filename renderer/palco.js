@@ -18,7 +18,7 @@ const palco = {
   tileMin: 240, // largura mínima de uma tela na grade; abaixo disso, as que sobram vão para a faixa de baixo
   strip: [], stripX: 0, stripMax: 0, stripStep: 0, stripView: 0, stripContent: 0, // faixa de baixo (rola)
 };
-const STAGE_GAP = 12, TILE_BAR = 34;
+const STAGE_GAP = 12, TILE_BAR = 42; // TILE_BAR: altura da faixa do nome (.tile-name em styles.css)
 
 // Ids na ordem do palco: os que já tinham lugar, depois os novos
 function stageIds() {
@@ -242,7 +242,7 @@ function setupTileDrag(id, el) {
     moveTile(id, delta);
   });
   handle.addEventListener('pointerdown', (e) => {
-    if (e.button !== 0 || e.target.closest('button') || state.in.size < 2 || state.focus) return;
+    if (e.button !== 0 || e.target.closest('button, input') || state.in.size < 2 || state.focus) return; // botões e o volume da faixa não arrastam
     palco.drag = { id, el, x: e.clientX, y: e.clientY, on: false, target: null };
     try { handle.setPointerCapture(e.pointerId); } catch {}
   });
