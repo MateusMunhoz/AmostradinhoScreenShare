@@ -39,7 +39,7 @@ O serviço HTTP fica apenas na rede interna do Compose; o Caddy publica HTTPS e 
 
 Para aprovar contas pela rota administrativa, use `RAZZE_ADMIN_TOKEN` apenas na máquina de administração. Configure-o temporariamente no terminal onde executará as chamadas abaixo; não o coloque no Tela P2P.
 
-O cadastro fica pendente até aprovação administrativa. Configure `RAZZE_ADMIN_TOKEN` com um segredo aleatório de pelo menos 30 caracteres antes de iniciar o serviço. Guarde esse segredo fora do cliente Electron.
+Por padrão, o cadastro fica pendente até aprovação administrativa. O painel `/admin/` permite ativar aprovação automática para novos cadastros; contas já pendentes continuam aguardando aprovação. Configure `RAZZE_ADMIN_TOKEN` com um segredo aleatório de pelo menos 30 caracteres antes de iniciar o serviço. Guarde esse segredo fora do cliente Electron.
 
 O serviço limita tentativas de cadastro por IP e login por IP. Se estiver atrás de proxy reverso, habilite `RAZZE_TRUST_PROXY=1` somente quando o proxy sobrescrever `X-Forwarded-For` com o endereço real do cliente.
 
@@ -84,7 +84,7 @@ O cliente gera a chave privada localmente, protege a identidade com `safeStorage
 
 **Administrador:** o app roda sem administrador. Quando precisa mexer no túnel, ele abre um ajudante (`main/razze-ajudante.js`) com a janela de permissão do Windows, uma vez por sessão; o ajudante fecha junto com o app. O ajudante só aceita três pedidos (instalar, remover e atualizar a lista de pessoas de um túnel `Razze…` da pasta de túneis do perfil) e roda o `wireguard.exe` e o `wg.exe` de uma cópia em `C:\Program Files\Tela P2P\WireGuard`: o serviço do túnel roda como SYSTEM e guarda esse caminho, então ele fica numa pasta em que só administrador escreve. Com o app aberto como administrador, faz tudo direto, sem o ajudante.
 
-A primeira versão tenta conexões P2P diretas com STUN e keepalive. Ela envia sondagens IP aos peers para iniciar o handshake e ajudar na abertura simultânea do NAT. Enquanto o Tela P2P está aberto, consulta a lista de dispositivos a cada 30 segundos e, quando chaves ou endpoints mudam, troca a lista de pessoas com o túnel ligado (`wg syncconf`): as conexões de quem já estava não caem. Só se o `wg.exe` falhar o túnel é reinstalado (reinicia por alguns segundos). Ao abrir o app com o túnel já ligado, a sincronização volta sozinha. Se uma conexão da tela ou da voz cair, o app refaz o caminho sozinho (ICE restart na tela; chamada nova na voz). NAT simétrico e CGNAT restritivo ainda podem impedir a conexão; não há relay nesta versão. O overlay opera em camada IP unicast; não emula broadcast Ethernet/L2. A descoberta de salas continua apenas em LAN/Radmin.
+A primeira versão tenta conexões P2P diretas com STUN e keepalive. Ela envia sondagens IP aos peers para iniciar o handshake e ajudar na abertura simultânea do NAT. Enquanto o Tela P2P está aberto, consulta a lista de dispositivos a cada 30 segundos e, quando chaves ou endpoints mudam, troca a lista de pessoas com o túnel ligado (`wg syncconf`): as conexões de quem já estava não caem. Só se o `wg.exe` falhar o túnel é reinstalado (reinicia por alguns segundos). Ao abrir o app com o túnel já ligado, a sincronização volta sozinha. Se uma conexão da tela ou da voz cair, o app refaz o caminho sozinho (ICE restart na tela; chamada nova na voz). NAT simétrico e CGNAT restritivo ainda podem impedir a conexão; não há relay nesta versão. O overlay opera em camada IP unicast; não emula broadcast Ethernet/L2. Em LAN/Radmin, a descoberta continua por UDP. No modo Razze, salas visíveis são anunciadas no heartbeat e listadas pela API somente para membros da mesma rede.
 
 A Radmin permanece independente para quem já usa esse caminho. A Razze não instala nem controla NetBird.
 
@@ -94,3 +94,30 @@ A Radmin permanece independente para quem já usa esse caminho. A Razze não ins
 npm run test:razze-api
 npm test
 ```
+
+## Painel administrativo e presença
+
+O módulo web separado fica em `razze-api/admin/` e abre em `https://SEU_DOMINIO/admin/`. Veja [primeiro acesso, ferramentas e implantação](../razze-api/admin/README.md). O painel usa as mesmas contas da API, com papel `admin`; o `RAZZE_ADMIN_TOKEN` permite configurar o primeiro administrador. Administradores podem consultar dados sanitizados, gerenciar contas/redes, revogar sessões e mudar a política de cadastro sem reiniciar.
+
+O processo principal do TelaP2P envia uma batida a cada 20 segundos, inclusive minimizado. A presença expira após 70 segundos sem contato (ajustável de 45 a 300 no painel). Amigos mostram Online/Offline; a rede mostra pessoas conectadas e salas abertas; a tela inicial lista as salas da rede selecionada. A publicação respeita a opção de sala oculta. Ao sair, o cliente retira sua presença; se cair ou a conexão falhar, o prazo remove os anúncios. A presença é por sessão, então sair em um dispositivo não apaga a presença de outro.
+
+Online confirma contato recente com a API; não prova conectividade P2P. As salas incluem endereço VPN, porta, número de participantes e indicação de senha, sem publicar a senha. A API valida a associação do dispositivo à rede e restringe a consulta das salas aos membros, mesmo em redes públicas.
+
+| Rota | Uso |
+|---|---|
+| `POST /v1/presence/heartbeat` | `{connections:[{networkId,deviceId}], room:null ou {id,networkId,host,porta,pessoas,senha}}` |
+| `DELETE /v1/presence` | Retirar a presença da sessão atual |
+| `GET /v1/rooms?networkId=ID` | Salas visíveis das redes de que o usuário é membro |
+| `GET /v1/admin/me`, `GET /v1/admin/overview` | Identidade administrativa e resumo |
+| `GET/PATCH /v1/admin/settings` | `requireApproval`, `registrationOpen`, `presenceTimeoutSeconds` persistentes |
+| `PATCH /v1/admin/users/:id` | Papel `user/admin`, status `pending/active/disabled` e `banReason` |
+| `POST /v1/admin/users/:id/revoke-sessions` | Revogar todas as sessões e dispositivos do usuário |
+| `GET /v1/admin/clients`, `DELETE /v1/admin/clients/:id` | Consumo por sessão e desconexão individual |
+| `DELETE /v1/admin/networks/:id` | Excluir rede como administrador |
+| `DELETE /v1/admin/networks/:id/invites` | Invalidar os convites da rede |
+| `GET /v1/admin/database` | Tabelas permitidas para consulta |
+| `GET /v1/admin/database/:table?offset=0&limit=50` | Consulta sanitizada; limite máximo 100 linhas |
+
+O painel distingue usuários de clientes (duas sessões da mesma conta contam como um usuário e dois clientes). Os contadores representam corpos HTTP autenticados recebidos/enviados pela API; não incluem STUN, TLS, CPU individual ou mídia P2P. O histórico está na tabela `audit_log`.
+
+Atualizações do TelaP2P procuram `wireguard.exe` também no diretório da atualização assinada, além dos resources do executável e da instalação do Windows. Assim, um executável anterior pode utilizar o binário recebido pelo atualizador.

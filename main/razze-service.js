@@ -90,7 +90,7 @@ function createRazzeService(options = {}) {
   async function me() {
     try { return await requireClient().me(); }
     catch (error) {
-      if (error.status === 401) {
+      if (error.status === 401 || error.status === 403) {
         accessToken = '';
         sealedToken = '';
         recreateClient();

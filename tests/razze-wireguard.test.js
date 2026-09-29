@@ -9,6 +9,24 @@ const os = require('node:os');
 const path = require('node:path');
 const { generateWireGuardKeys, decodeStunResponse, discoverEndpoint, buildTunnelConfig, wgSyncConfig, createWireGuardManager, tunnelNameFor } = require('../main/razze-wireguard');
 
+test('WireGuard atualizado é encontrado fora dos resources do executável antigo', () => {
+  const { wireguardExecutable } = require('../main/razze-wireguard');
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'razze-binary-'));
+  try {
+    const moduleDir = path.join(temp, 'atualizacoes', '1.11.14', 'app', 'main');
+    const updated = path.join(moduleDir, '..', 'bin', 'selfvpn', 'wireguard.exe');
+    const resourcesPath = path.join(temp, 'old-exe', 'resources');
+    const bundled = path.join(resourcesPath, 'bin', 'selfvpn', 'wireguard.exe');
+    fs.mkdirSync(path.dirname(updated), { recursive: true }); fs.writeFileSync(updated, 'updated');
+    const options = { app: { isPackaged: true }, platform: 'win32', resourcesPath, moduleDir };
+    assert.equal(wireguardExecutable(options), updated);
+    fs.mkdirSync(path.dirname(bundled), { recursive: true }); fs.writeFileSync(bundled, 'bundled');
+    assert.equal(wireguardExecutable(options), updated);
+    fs.unlinkSync(updated);
+    assert.equal(wireguardExecutable(options), bundled);
+  } finally { fs.rmSync(temp, { recursive: true, force: true }); }
+});
+
 test('gera chaves WireGuard X25519 de 32 bytes em base64', () => {
   const keys = generateWireGuardKeys();
   assert.equal(Buffer.from(keys.privateKey, 'base64').length, 32);

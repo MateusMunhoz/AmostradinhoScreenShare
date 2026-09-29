@@ -37,6 +37,8 @@ contextBridge.exposeInMainWorld('api', {
   offPcm: () => ipcRenderer.removeAllListeners('pcm'),
   getIps: (provider) => ipcRenderer.invoke('get-ips', provider),
   copyText: (text) => ipcRenderer.invoke('copy-text', String(text || '')),
+  razzePresence: () => ipcRenderer.invoke('razze-presence-state'),
+  onRazzePresence: (callback) => { ipcRenderer.removeAllListeners('razze-presence'); ipcRenderer.on('razze-presence', (_event, value) => callback(value)); },
   razzeState: () => ipcRenderer.invoke('razze-state'),
   razzePendingInvite: () => ipcRenderer.invoke('razze-pending-invite'),
   onRazzeInvite: (callback) => {

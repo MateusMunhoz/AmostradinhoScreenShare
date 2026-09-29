@@ -8,7 +8,8 @@ ENV NODE_ENV=production \
     RAZZE_DB_PATH=/data/razze.sqlite
 
 WORKDIR /app
-COPY package.json server.js ./
+COPY package.json server.js control.js ./
+COPY admin ./admin
 RUN mkdir -p /data \
     && chown -R node:node /app /data
 

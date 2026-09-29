@@ -14,7 +14,8 @@
     "publicar": "node publicar.js",
     "razze-api": "node razze-api/server.js",
     "test:razze-api": "node --test tests/razze-*.test.js",
-    "dist:linux": "electron-builder --linux AppImage"
+    "dist:linux": "electron-builder --linux AppImage",
+    "test:razze-admin": "node tests/e2e/razze-admin.js"
   },
   "dependencies": {
     "ws": "^8.18.0"
