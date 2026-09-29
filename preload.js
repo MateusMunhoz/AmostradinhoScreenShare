@@ -64,6 +64,7 @@ contextBridge.exposeInMainWorld('api', {
   razzeWireGuardDisconnectAll: () => ipcRenderer.invoke('razze-wg-disconnect-all'),
   getVersion: () => ipcRenderer.invoke('get-version'),
   windowMaterial: (mode, color) => ipcRenderer.invoke('window-material', String(mode || ''), String(color || '')),
+  setTitleBar: (color, symbolColor) => ipcRenderer.invoke('window-titlebar', String(color || ''), String(symbolColor || '')),
   setPriority: (level) => ipcRenderer.invoke('set-priority', level),
   statsStart: () => ipcRenderer.invoke('stats-start'),
   statsStop: () => ipcRenderer.invoke('stats-stop'),

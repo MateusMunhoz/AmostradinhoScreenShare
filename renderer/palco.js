@@ -15,8 +15,10 @@ const palco = {
   side: Math.min(0.5, Math.max(0.15, Number(load('stageSide')) || 0.26)), // largura da coluna no Destaque
   drag: null,
   justDragged: false,
+  tileMin: 240, // largura mínima de uma tela na grade; abaixo disso, as que sobram vão para a faixa de baixo
+  strip: [], stripX: 0, stripMax: 0, stripStep: 0, stripView: 0, stripContent: 0, // faixa de baixo (rola)
 };
-const STAGE_GAP = 12, TILE_BAR = 34, TILE_MIN = 240; // TILE_MIN: largura mínima de uma tela na grade
+const STAGE_GAP = 12, TILE_BAR = 34;
 
 // Ids na ordem do palco: os que já tinham lugar, depois os novos
 function stageIds() {
@@ -37,8 +39,8 @@ function planRows(n, rows) {
   const base = Math.floor(n / rows), extra = n % rows;
   return Array.from({ length: rows }, (_, i) => base + (i >= rows - extra ? 1 : 0));
 }
-// Escolhe quantas linhas cobrem mais área sem nenhuma tela ficar estreita demais (TILE_MIN). Se nem assim
-// couber, as telas ficam no tamanho mínimo e o palco rola.
+// Escolhe quantas linhas cobrem mais área sem nenhuma tela ficar estreita demais (palco.tileMin). Se nem
+// assim couber, devolve scroll: true (layoutGrid manda as que sobram para a faixa de baixo).
 function planGrid(n, W, H) {
   let best = null;
   for (let rows = 1; rows <= n; rows++) {
@@ -49,39 +51,135 @@ function planGrid(n, W, H) {
     const room = H - STAGE_GAP * (rows - 1) - TILE_BAR * rows;
     const scale = Math.min(1, room / video);
     const area = counts.reduce((s, k, i) => s + k * (widths[i] * scale) ** 2, 0);
-    if (widths[widths.length - 1] * scale < TILE_MIN) continue;
+    if (widths[widths.length - 1] * scale < palco.tileMin) continue;
     if (!best || area > best.area) best = { counts, scale, area, scroll: false };
   }
   if (best) return best;
-  const perRow = Math.max(1, Math.floor((W + STAGE_GAP) / (TILE_MIN + STAGE_GAP)));
+  const perRow = Math.max(1, Math.floor((W + STAGE_GAP) / (palco.tileMin + STAGE_GAP)));
   return { counts: planRows(n, Math.ceil(n / perRow)), scale: 1, scroll: true };
 }
+// Faixa de baixo: quando nem todas cabem na grade sem ficar estreitas demais, as primeiras ficam na grade e
+// as outras numa faixa embaixo, que rola para os lados (barra no tema, ‹ ›, rolagem lateral do touchpad ou
+// Shift + roda). Quantas vão para a grade depende do tamanho da janela: tudo se refaz ao redimensionar.
+function stripHeight(H) { return Math.round(Math.min(170, Math.max(110, H * 0.22))); }
 function layoutGrid() {
   const tiles = $('tiles');
   const ids = stageIds().filter((id) => !state.in.get(id).tile.el.hidden);
   const n = ids.length;
   tiles.classList.add('flow');
-  if (!n) return;
+  palco.strip = [];
+  if (!n) return renderStripBar();
   const W = tiles.clientWidth, H = tiles.clientHeight;
-  const plan = n === 1 ? null : planGrid(n, W, H);
-  tiles.classList.toggle('scroll', !!plan?.scroll);
   const put = (el, x, y, w, h) => Object.assign(el.style, { left: `${x}px`, top: `${y}px`, width: `${w}px`, height: `${h}px`, gridRow: '', gridColumn: '' });
-  if (!plan) return put(state.in.get(ids[0]).tile.el, 0, 0, W, H); // uma só: ocupa tudo
-  const rows = plan.counts.map((k) => {
-    const w = Math.floor(((W - STAGE_GAP * (k - 1)) / k) * plan.scale);
-    return { k, w, h: Math.round(w * 9 / 16) + TILE_BAR };
-  });
-  const total = rows.reduce((s, r) => s + r.h, 0) + STAGE_GAP * (rows.length - 1);
-  let y = plan.scroll ? 0 : Math.max(0, Math.round((H - total) / 2));
-  let i = 0;
-  for (const r of rows) {
-    let x = Math.round((W - (r.w * r.k + STAGE_GAP * (r.k - 1))) / 2);
-    for (let c = 0; c < r.k; c++, i++) {
-      put(state.in.get(ids[i]).tile.el, x, y, r.w, r.h);
-      x += r.w + STAGE_GAP;
-    }
-    y += r.h + STAGE_GAP;
+  if (n === 1) { put(state.in.get(ids[0]).tile.el, 0, 0, W, H); return renderStripBar(); } // uma só: ocupa tudo
+  let plan = planGrid(n, W, H), gridIds = ids, gridH = H;
+  if (plan.scroll) {
+    // A faixa ocupa a parte de baixo; na grade ficam quantas couberem acima dela
+    gridH = H - stripHeight(H) - STAGE_GAP;
+    let m = n - 1;
+    while (m > 1 && planGrid(m, W, gridH).scroll) m--;
+    gridIds = ids.slice(0, m);
+    palco.strip = ids.slice(m);
+    plan = m === 1 ? null : planGrid(m, W, gridH);
   }
+  if (!plan) put(state.in.get(gridIds[0]).tile.el, 0, 0, W, gridH);
+  else {
+    const rows = plan.counts.map((k) => {
+      const w = Math.floor(((W - STAGE_GAP * (k - 1)) / k) * plan.scale);
+      return { k, w, h: Math.round(w * 9 / 16) + TILE_BAR };
+    });
+    const total = rows.reduce((s, r) => s + r.h, 0) + STAGE_GAP * (rows.length - 1);
+    let y = Math.max(0, Math.round((gridH - total) / 2)), i = 0;
+    for (const r of rows) {
+      let x = Math.round((W - (r.w * r.k + STAGE_GAP * (r.k - 1))) / 2);
+      for (let c = 0; c < r.k; c++, i++) {
+        put(state.in.get(gridIds[i]).tile.el, x, y, r.w, r.h);
+        x += r.w + STAGE_GAP;
+      }
+      y += r.h + STAGE_GAP;
+    }
+  }
+  placeStrip();
+}
+// Telas da faixa: mesma altura, lado a lado, deslocadas por palco.stripX; se todas cabem, ficam centralizadas
+function placeStrip() {
+  const tiles = $('tiles'), W = tiles.clientWidth, H = tiles.clientHeight;
+  if (!palco.strip.length) return renderStripBar();
+  const S = stripHeight(H), h = S - 18, w = Math.round((h - TILE_BAR) * 16 / 9);
+  const content = palco.strip.length * w + STAGE_GAP * (palco.strip.length - 1);
+  palco.stripMax = Math.max(0, content - W);
+  palco.stripX = Math.min(palco.stripMax, Math.max(0, palco.stripX));
+  const x0 = palco.stripMax ? -palco.stripX : Math.round((W - content) / 2);
+  palco.strip.forEach((id, i) => Object.assign(state.in.get(id).tile.el.style, {
+    left: `${x0 + i * (w + STAGE_GAP)}px`, top: `${H - S}px`, width: `${w}px`, height: `${h}px`,
+  }));
+  Object.assign(palco, { stripStep: w + STAGE_GAP, stripView: W, stripContent: content });
+  renderStripBar();
+}
+function scrollStrip(dx) {
+  if (!palco.strip.length) return;
+  palco.stripX = Math.min(palco.stripMax, Math.max(0, palco.stripX + dx));
+  placeStrip();
+}
+// Barra de rolagem da faixa, logo abaixo dela: ‹, trilho com alça arrastável e ›
+function renderStripBar() {
+  const bar = $('stageScroll'), tiles = $('tiles');
+  const on = palco.strip.length > 0 && palco.stripMax > 0 && !tiles.hidden && !tiles.classList.contains('column');
+  bar.hidden = !on;
+  if (!on) return;
+  const area = $('streamArea').getBoundingClientRect(), t = tiles.getBoundingClientRect();
+  Object.assign(bar.style, { left: `${t.left - area.left}px`, width: `${t.width}px`, top: `${t.bottom - area.top - 16}px` });
+  const track = bar.querySelector('.stage-scroll-track'), thumb = bar.querySelector('.stage-scroll-thumb');
+  const tw = track.clientWidth, size = Math.max(32, tw * palco.stripView / palco.stripContent);
+  thumb.style.width = `${size}px`;
+  thumb.style.left = `${(tw - size) * (palco.stripX / palco.stripMax)}px`;
+  bar.querySelector('[data-dir="-1"]').disabled = palco.stripX <= 0;
+  bar.querySelector('[data-dir="1"]').disabled = palco.stripX >= palco.stripMax;
+  track.setAttribute('aria-valuenow', String(Math.round(100 * palco.stripX / palco.stripMax)));
+}
+function setupStrip() {
+  const bar = $('stageScroll'), track = bar.querySelector('.stage-scroll-track'), thumb = bar.querySelector('.stage-scroll-thumb');
+  for (const b of bar.querySelectorAll('button')) b.onclick = () => scrollStrip(Number(b.dataset.dir) * palco.stripStep);
+  let grab = null;
+  thumb.addEventListener('pointerdown', (e) => { grab = { x: e.clientX, start: palco.stripX }; try { thumb.setPointerCapture(e.pointerId); } catch {} e.preventDefault(); });
+  thumb.addEventListener('pointermove', (e) => {
+    if (!grab) return;
+    const free = track.clientWidth - thumb.offsetWidth;
+    if (free > 0) { palco.stripX = grab.start + (e.clientX - grab.x) * palco.stripMax / free; placeStrip(); }
+  });
+  const drop = () => { grab = null; };
+  thumb.addEventListener('pointerup', drop);
+  thumb.addEventListener('pointercancel', drop);
+  // Clicar no trilho, fora da alça, anda quase uma página
+  track.addEventListener('pointerdown', (e) => {
+    if (e.target !== track) return;
+    scrollStrip((e.clientX < thumb.getBoundingClientRect().left ? -1 : 1) * palco.stripView * 0.8);
+  });
+  track.addEventListener('keydown', (e) => {
+    const dx = { ArrowLeft: -palco.stripStep, ArrowRight: palco.stripStep, PageUp: -palco.stripView, PageDown: palco.stripView, Home: -palco.stripMax, End: palco.stripMax }[e.key];
+    if (dx === undefined) return;
+    e.preventDefault();
+    scrollStrip(dx);
+  });
+  // A roda em cima de uma tela muda o volume; na faixa, a rolagem lateral (touchpad ou Shift + roda) anda nela
+  $('tiles').addEventListener('wheel', (e) => {
+    if (!palco.stripMax) return;
+    const onStrip = palco.strip.some((id) => state.in.get(id)?.tile.el.contains(e.target));
+    const dx = e.shiftKey ? e.deltaY : e.deltaX;
+    if (!onStrip || !dx) return;
+    e.preventDefault();
+    e.stopPropagation();
+    scrollStrip(dx);
+  }, { capture: true, passive: false });
+  bar.addEventListener('wheel', (e) => { e.preventDefault(); scrollStrip(e.deltaX || e.deltaY); }, { passive: false });
+  // Tab até uma tela da faixa fora da vista: a faixa rola até ela
+  $('tiles').addEventListener('focusin', (e) => {
+    const i = palco.strip.findIndex((id) => state.in.get(id)?.tile.el.contains(e.target));
+    if (i < 0) return;
+    const left = i * palco.stripStep, right = left + palco.stripStep - STAGE_GAP;
+    if (left < palco.stripX) scrollStrip(left - palco.stripX);
+    else if (right > palco.stripX + palco.stripView) scrollStrip(right - palco.stripX - palco.stripView);
+  });
 }
 // Divisa do Destaque: fica no vão entre a tela grande e a coluna
 function placeSplitter() {
@@ -105,7 +203,12 @@ function layoutStage() {
   $('stageLayout').hidden = !many;
   for (const b of $('stageLayout').querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.layout === palco.layout));
   if (!tiles.classList.contains('column')) layoutGrid();
-  else { tiles.classList.remove('flow', 'scroll'); for (const [, l] of state.in) Object.assign(l.tile.el.style, { left: '', top: '', width: '', height: '' }); }
+  else {
+    tiles.classList.remove('flow');
+    palco.strip = [];
+    renderStripBar();
+    for (const [, l] of state.in) Object.assign(l.tile.el.style, { left: '', top: '', width: '', height: '' });
+  }
   placeSplitter();
 }
 
@@ -218,5 +321,8 @@ function setupStage() {
   });
   // Só reage quando o tamanho muda de verdade (janela, painel lateral); nada roda parado
   new ResizeObserver(() => { if (state.in.size) layoutStage(); }).observe($('tiles'));
+  setupStrip();
+  setIcon($('stageScroll').querySelector('[data-dir="-1"]'), 'prev', 'Telas anteriores');
+  setIcon($('stageScroll').querySelector('[data-dir="1"]'), 'next', 'Mais telas');
 }
 setupStage();

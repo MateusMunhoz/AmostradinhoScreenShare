@@ -17,6 +17,18 @@ function applyWindowMaterial() {
     if (!$('generalSettingsDialog').hidden) renderGlassHint();
   }).catch(() => {});
 }
+// Botões minimizar, maximizar e fechar do Windows nas cores do tema: fundo da cor principal (com vidro,
+// transparente, para o fundo desenhado aparecer) e símbolos na cor do texto
+let titleBarKey = '';
+function applyTitleBar() {
+  if (!window.api?.setTitleBar) return;
+  const c = appPreferences.colors, text = AppPreferences.palette(c)['--text'];
+  const color = appPreferences.appearance.glass === 'opaque' ? c.main : '#00000000';
+  const key = color + text;
+  if (key === titleBarKey) return;
+  titleBarKey = key;
+  window.api.setTitleBar(color, text).catch(() => {});
+}
 function applyAppTheme(d = document) {
   const root = d.documentElement;
   for (const [key, value] of Object.entries(AppPreferences.palette(appPreferences.colors))) root.style.setProperty(key, value);
@@ -39,6 +51,7 @@ function applyAppTheme(d = document) {
   for (const [key, value] of Object.entries(glass || {})) root.style.setProperty(key, value);
   root.dataset.glass = appPreferences.appearance.glass;
   applyWindowMaterial();
+  applyTitleBar();
 }
 applyAppTheme();
 
@@ -161,7 +174,42 @@ function renderFontPreview() {
   if (value === 'custom') $('fontStatus').textContent = !f.custom ? 'Digite o nome de uma fonte instalada no Windows.'
     : missing ? `“${f.custom}” não foi encontrada neste PC. O app usa a fonte padrão até ela ser instalada.` : `Usando “${f.custom}”.`;
 }
+// Temas prontos: cada botão mostra as 4 cores do tema; o que bate com as escolhas atuais fica marcado
+function renderThemes() {
+  const list = $('themeList');
+  if (!list.children.length) {
+    for (const t of AppPreferences.themes) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'theme-card';
+      b.setAttribute('role', 'radio');
+      b.dataset.theme = t.id;
+      const sw = document.createElement('span');
+      sw.className = 'theme-swatches';
+      sw.setAttribute('aria-hidden', 'true');
+      for (const key of ['main', 'secondary', 'detail1', 'detail2']) {
+        const s = document.createElement('span');
+        s.style.background = t.colors[key];
+        sw.append(s);
+      }
+      const name = document.createElement('span');
+      name.textContent = t.label;
+      b.append(sw, name);
+      b.onclick = () => {
+        appPreferences = AppPreferences.applyTheme(appPreferences, t.id);
+        saveAppPreferences();
+        renderGeneralSettings();
+      };
+      list.append(b);
+    }
+  }
+  const current = AppPreferences.currentTheme(appPreferences);
+  for (const b of list.children) b.setAttribute('aria-checked', String(b.dataset.theme === current));
+  $('themeHint').textContent = current ? 'Muda cores, material e bordas. Fonte e sons continuam como estão.'
+    : 'Personalizado. Escolha um tema para começar dele; depois dá para mudar qualquer cor na aba Cores.';
+}
 function renderAppearance() {
+  renderThemes();
   const a = appPreferences.appearance;
   for (const input of document.querySelectorAll('input[name=glass]')) input.checked = input.value === a.glass;
   $('glassLevelRow').hidden = a.glass === 'opaque';

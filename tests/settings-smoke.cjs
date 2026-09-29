@@ -7,7 +7,7 @@ app.whenReady().then(async()=>{
   for(const [channel,value] of Object.entries({
     'get-ips':[], 'get-version':'1.10.1', 'github-check':{ok:false}, 'set-priority':true,'stats-start':true,'stats-stop':true,
     'stop-app-audio':true,'stop-server':true,'room-keys':true,'sessoes-observar':true,'capture-exclude':true,'ptt':true,
-    'razze-state':{configured:false,baseUrl:'',authenticated:false}, 'razze-pending-invite':'', 'window-material':{material:'none',supported:false},
+    'razze-state':{configured:false,baseUrl:'',authenticated:false}, 'razze-pending-invite':'', 'window-material':{material:'none',supported:false}, 'window-titlebar':true,
     'get-shortcuts':{compose:'CommandOrControl+Enter',mute:'CommandOrControl+Shift+M',edit:'CommandOrControl+Shift+E',hideChat:'CommandOrControl+Shift+O'},
   })) ipcMain.handle(channel,()=>value);
   const win=new BrowserWindow({show:false,width:1200,height:780,webPreferences:{backgroundThrottling:false,preload:path.join(root,'preload.js')}});
@@ -60,6 +60,12 @@ app.whenReady().then(async()=>{
       await check('Bordas líquidas: quina de cima acesa, cor translúcida, e o vidro continua',`document.documentElement.dataset.border==='liquid' && document.documentElement.dataset.glass==='liquid' && getComputedStyle($('workspaceNav')).borderTopColor!==getComputedStyle($('workspaceNav')).borderBottomColor && getComputedStyle(document.documentElement).getPropertyValue('--line').startsWith('rgba(')`);
       await run(`document.querySelector('input[name=border][value=solid]').click();`);
       await check('Bordas normais voltam à cor cheia',`document.documentElement.dataset.border==='solid' && AppPreferences.read(localStorage).appearance.border==='solid' && getComputedStyle(document.documentElement).getPropertyValue('--line').startsWith('#')`);
+      await run(`document.querySelector('.theme-card[data-theme=neon]').click();0`);
+      await check('Tema pronto aplica cores, vidro e bordas e fica marcado',`appPreferences.colors.main==='#0B0A14' && document.documentElement.dataset.glass==='clear' && document.documentElement.dataset.border==='clear' && document.querySelector('.theme-card[data-theme=neon]').getAttribute('aria-checked')==='true' && document.querySelectorAll('.theme-card[aria-checked=true]').length===1`);
+      await check('Barra de título: botões do Windows transparentes com vidro e na cor do texto',`/^#00000000#[0-9A-F]{6}$/.test(titleBarKey) && getComputedStyle($('titlebar')).backgroundColor==='rgba(0, 0, 0, 0)'`);
+      await run(`document.querySelector('.theme-card[data-theme=claro]').click();0`);
+      await check('Tema opaco: barra de título na cor principal',`titleBarKey.startsWith('#EEF2F8') && document.documentElement.dataset.glass==='opaque'`);
+      await run(`document.querySelector('.theme-card[data-theme=lanhouse]').click();document.querySelector('input[name=glass][value=liquid]').click();0`);
       await run(`$('profileNameFont').value='segoeScript';$('profileNameFont').dispatchEvent(new Event('change'));`);
       await check('Fonte do nome salva e aplicada no perfil, sem mudar o resto do app',`AppPreferences.read(localStorage).nameFont==='segoeScript' && getComputedStyle($('profileDisplayName')).fontFamily.startsWith('"Segoe Script"') && !getComputedStyle(document.body).fontFamily.includes('Segoe Script') && memberRow(null,'Eu',false).querySelector('.mname').style.fontFamily.startsWith('"Segoe Script"')`);
       await run(`$('profileNameFont').value='';$('profileNameFont').dispatchEvent(new Event('change'));`);

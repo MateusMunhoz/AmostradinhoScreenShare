@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <div id="titlebar" class="titlebar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h13v10H3zM8 19h13V9"/></svg><span>Tela P2P</span></div>
   <header class="workspace-header">
     <span class="workspace-brand">Tela P2P <span id="workspaceContext">Início</span></span>
     <nav id="workspaceNav" aria-label="Painéis do aplicativo">
@@ -148,6 +149,7 @@
             <div id="emptyStage" class="empty-stage"><p id="emptyText"></p></div>
             <div id="tiles" class="tiles" hidden></div>
             <div id="stageSplitter" class="stage-splitter" role="separator" aria-orientation="vertical" aria-label="Largura da coluna de telas pequenas" aria-valuemin="15" aria-valuemax="50" tabindex="0" hidden></div>
+            <div id="stageScroll" class="stage-scroll" hidden><button type="button" data-dir="-1"></button><div class="stage-scroll-track" role="scrollbar" aria-orientation="horizontal" aria-controls="tiles" aria-label="Rolar a faixa de telas" aria-valuemin="0" aria-valuemax="100" tabindex="0"><div class="stage-scroll-thumb"></div></div><button type="button" data-dir="1"></button></div>
             <!-- Janela de transmitir: fica só em cima das transmissões, sem cobrir a barra de baixo -->
             <div id="shareDialog" class="modal" hidden>
               <div class="dialog share" role="dialog" aria-modal="true" aria-labelledby="shareTitle">
@@ -564,6 +566,7 @@
       </section>
       <section id="settingsPanel-appearance" class="settings-section" role="tabpanel" aria-labelledby="settingsTab-appearance" hidden>
         <h3 id="appearanceTitle">Aparência</h3>
+        <div class="settings-row"><span id="themesLabel" class="settings-label">Temas prontos</span><div id="themeList" class="theme-list" role="radiogroup" aria-labelledby="themesLabel"></div><small id="themeHint" class="hint"></small></div>
         <p class="hint" id="glassLabel">Material das janelas e painéis, no estilo do vidro do iOS.</p>
         <div class="seg glass-seg" role="radiogroup" aria-labelledby="glassLabel">
           <label><input type="radio" name="glass" value="opaque"><span class="glass-swatch" data-glass-swatch="opaque" aria-hidden="true"></span><span>Opaco</span></label>

@@ -96,6 +96,32 @@ const AppPreferences = (() => {
     sounds: { join: 'notification035', leave: 'whoosh', chat: 'wood', voiceJoin: 'suaveEntrou', voiceLeave: 'suaveSaiu',
       mute: 'suaveMutou', unmute: 'suaveDesmutou',
       chatMuted: false, volume: 50, levels: { join: 100, leave: 100, chat: 100, voiceJoin: 100, voiceLeave: 100, mute: 100, unmute: 100 } } };
+  // Temas prontos (Aparência > Temas): cores e material de uma vez. As cores de detalhe que não aparecem aqui
+  // voltam ao automático. Mantêm a leitura do app: destaque = você/ao vivo, detalhe 2 = quem fala.
+  const themes = [
+    { id: 'lanhouse', label: 'Lan house', colors: { main: '#22271E', secondary: '#2D3327', detail1: '#D6C45C', detail2: '#A6D089' }, appearance: { glass: 'opaque', border: 'solid' } },
+    { id: 'meianoite', label: 'Meia-noite', colors: { main: '#0E1220', secondary: '#1A2036', detail1: '#7AA2F7', detail2: '#9ECE6A' }, appearance: { glass: 'liquid', level: 55, border: 'liquid' } },
+    { id: 'neon', label: 'Neon', colors: { main: '#0B0A14', secondary: '#1A1730', detail1: '#FF4FB3', detail2: '#3EF0C8' }, appearance: { glass: 'clear', level: 70, border: 'clear' } },
+    { id: 'grafite', label: 'Grafite', colors: { main: '#1B1D22', secondary: '#2A2D35', detail1: '#E6A55A', detail2: '#7CC6A4' }, appearance: { glass: 'liquid', level: 45, border: 'solid' } },
+    { id: 'claro', label: 'Claro', colors: { main: '#EEF2F8', secondary: '#FFFFFF', detail1: '#3455DB', detail2: '#147D55' }, appearance: { glass: 'opaque', border: 'solid' } },
+    { id: 'contraste', label: 'Alto contraste', colors: { main: '#000000', secondary: '#0D0D0D', detail1: '#FFD400', detail2: '#00FF6E', text: '#FFFFFF', line: '#FFFFFF' }, appearance: { glass: 'opaque', border: 'solid' } },
+  ];
+  // Preferências com o tema aplicado (o resto, como fontes e sons, fica como está)
+  function applyTheme(prefs, id) {
+    const t = themes.find(x => x.id === id);
+    if (!t) return normalize(prefs);
+    const colors = { ...defaults.colors, text: '', live: '', speaking: '', warn: '', line: '', ...t.colors };
+    const appearance = { ...defaults.appearance, level: glassLevel[t.appearance.glass] ?? defaults.appearance.level, ...t.appearance };
+    return normalize({ ...prefs, colors, appearance });
+  }
+  // Qual tema pronto bate com as preferências atuais ('' = personalizado)
+  function currentTheme(prefs) {
+    const p = normalize(prefs);
+    return themes.find(t => {
+      const n = applyTheme(p, t.id);
+      return JSON.stringify(n.colors) === JSON.stringify(p.colors) && n.appearance.glass === p.appearance.glass && n.appearance.border === p.appearance.border;
+    })?.id || '';
+  }
   function hex(value) {
     if (typeof value !== 'string') return null;
     const s = value.trim().replace(/^#/, '');
@@ -169,6 +195,9 @@ const AppPreferences = (() => {
       '--panel-3': alpha(mix(c.secondary, ink(c.secondary), .13), round(panel + .14)),
       '--sunken': alpha(mix(c.secondary, '#000000', .15), round(panel + .1)),
       '--theme-glass': alpha(c.secondary, round(panel + .1)),
+      // Onde se lê bastante (diálogos, listas de opções, cartões, avisos): nunca abaixo de 78%, para o texto
+      // não se misturar com o que está atrás, por mais transparente que o resto esteja
+      '--panel-strong': alpha(c.secondary, round(Math.max(.78, panel + .2))),
       '--scrim': `rgba(0, 0, 0, ${round(.2 + panel * .3)})`,
       '--glass-base': c.main, '--glass-blur': liquid ? '24px' : '12px',
       '--glass-saturate': liquid ? '1.9' : '1.25',
@@ -238,6 +267,6 @@ const AppPreferences = (() => {
     }
     stopAll() { for (const event of [...this.players.keys()]) this.stop(event); }
   }
-  return { key, sounds, events, defaults, optionalColors, glassModes, glassLevel, borderModes, fonts, fontName, fontStacks, cleanNameFont, nameFontStack, borders, hex, normalize, read, write, palette, glass, SoundPlayer };
+  return { key, sounds, events, defaults, optionalColors, glassModes, glassLevel, borderModes, fonts, fontName, fontStacks, cleanNameFont, nameFontStack, borders, themes, applyTheme, currentTheme, hex, normalize, read, write, palette, glass, SoundPlayer };
 })();
 if (typeof module !== 'undefined') module.exports = AppPreferences;

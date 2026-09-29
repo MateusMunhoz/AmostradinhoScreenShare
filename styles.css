@@ -445,7 +445,7 @@ kbd { font-family: Consolas, monospace; font-size: 11px; color: var(--muted); bo
 /* Janela de escolher a tela */
 .modal { position: absolute; inset: 0; background: var(--scrim); display: grid; place-items: center; padding: 24px; z-index: 5; }
 .dialog {
-  width: min(960px, 100%); max-height: calc(100vh - 48px); display: flex; flex-direction: column; gap: 16px;
+  width: min(960px, 100%); max-height: calc(100vh - 48px - var(--titlebar)); display: flex; flex-direction: column; gap: 16px;
   background: var(--bg); border: 1px solid var(--line); border-radius: 14px; padding: 20px;
 }
 .dialog.narrow { width: min(440px, 100%); }
@@ -887,12 +887,23 @@ html[data-glass=clear], html[data-glass=liquid] {
     radial-gradient(50% 45% at 22% 92%, color-mix(in srgb, var(--primary) 20%, transparent), transparent 72%),
     var(--glass-base);
 }
-html[data-glass=clear][data-material=acrylic], html[data-glass=liquid][data-material=acrylic] { background: transparent; }
 :is(html[data-glass=clear], html[data-glass=liquid]) :is(.home-card, .dock, .panel, .workspace-pane, #workspaceNav, .nav-expand, .dialog, .person-card, .people-pop, .update-banner, .toast, .stat-card, .stream-card, .join-panel, .session) {
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   border-color: var(--glass-edge);
 }
+/* Leitura: diálogos, listas, cartões e avisos com um mínimo de opacidade (--panel-strong), por mais
+   transparente que o resto esteja */
+:is(html[data-glass=clear], html[data-glass=liquid]) :is(.dialog, .utility-popup .dialog, .select-pop, .person-card, .people-pop, .toast, .update-banner) {
+  background-color: var(--panel-strong);
+}
+/* Transparente: um reflexo leve no alto dos painéis, para o vidro não parecer só um recorte */
+html[data-glass=clear] :is(.home-card, .dock, .panel, .workspace-pane, #workspaceNav, .dialog, .stream-card, .join-panel) {
+  background-image: linear-gradient(180deg, var(--glass-sheen), transparent 40%);
+  box-shadow: inset 0 1px 0 var(--glass-sheen), 0 8px 24px rgba(0, 0, 0, .18);
+}
+/* A faixa do nome em cima do vídeo também vira vidro */
+:is(html[data-glass=clear], html[data-glass=liquid]) .tile { background: var(--panel); border-color: var(--glass-edge); }
 /* Bordas Líquido: a quina de cima pega luz, como a borda de um vidro. As cores translúcidas vêm de
    preferencias-modelo.js › borders (--line, --line-strong, --field-line). */
 :is(html[data-border=clear], html[data-border=liquid]) :is(.home-card, .dock, .panel, .workspace-pane, #workspaceNav, .nav-expand, .dialog, .person-card, .people-pop, .update-banner, .toast, .stat-card, .stream-card, .join-panel, .session) {
@@ -948,7 +959,7 @@ html[data-glass=liquid] .btn.primary { box-shadow: inset 0 1px 0 rgba(255, 255, 
 .select-item[aria-selected=true] { font-weight: 700; box-shadow: inset 3px 0 0 var(--accent); }
 .select-item[aria-disabled=true] { opacity: .5; cursor: default; }
 :is(html[data-glass=clear], html[data-glass=liquid]) .select-pop {
-  background: var(--panel-3); /* um pouco mais cheia que os painéis: a lista fica por cima de texto */
+  background: var(--panel-strong); /* mais cheia que os painéis: a lista fica por cima de texto */
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
 }
@@ -982,7 +993,45 @@ html[data-border=liquid] .select-pop { border-top-color: var(--edge-sheen); }
 .stage-layout button { display: inline-flex; align-items: center; gap: 6px; }
 .stage-layout svg { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 /* Grade: cada tela tem posição e tamanho calculados em palco.js (linhas de cima com menos telas, maiores);
-   com muitas telas, o palco rola em vez de deixar as telas pequenas demais */
+   com telas demais, as que sobram vão para a faixa de baixo, que rola para os lados */
 .tiles.flow { display: block; position: relative; overflow: hidden; }
-.tiles.flow.scroll { overflow-y: auto; }
 .tiles.flow .tile { position: absolute; min-height: 0; box-sizing: border-box; }
+/* Barra de rolagem da faixa de baixo: fina, nas cores do tema, com ‹ › nas pontas */
+.stage-scroll { position: absolute; z-index: 4; height: 16px; display: flex; align-items: center; gap: 6px; }
+.stage-scroll button {
+  flex: none; width: 22px; height: 16px; padding: 0; display: grid; place-items: center; cursor: pointer;
+  color: var(--text); background: var(--panel-2); border: 1px solid var(--line); border-radius: 999px;
+}
+.stage-scroll button:disabled { opacity: .35; cursor: default; }
+.stage-scroll button svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.stage-scroll-track { position: relative; flex: 1; height: 6px; border-radius: 999px; background: var(--sunken); cursor: pointer; }
+.stage-scroll-track:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.stage-scroll-thumb { position: absolute; top: -2px; height: 10px; border-radius: 999px; background: var(--line-strong); cursor: grab; touch-action: none; }
+.stage-scroll-thumb:hover, .stage-scroll-thumb:active { background: var(--accent); }
+.stage-scroll-thumb:active { cursor: grabbing; }
+
+/* Barra de título no tema (main.js: titleBarStyle hidden). A página desenha a faixa de 32px com o nome e é por
+   ela que se arrasta a janela; o Windows desenha só minimizar, maximizar e fechar, nas cores de applyTitleBar
+   (configuracoes.js). Com layout containment no body, os elementos fixos do app ficam abaixo da faixa. */
+:root { --titlebar: 32px; }
+body { height: calc(100% - var(--titlebar)); margin-top: var(--titlebar); contain: layout; }
+.titlebar {
+  position: fixed; top: calc(-1 * var(--titlebar)); left: 0; right: 0; z-index: 100; height: var(--titlebar);
+  display: flex; align-items: center; gap: 8px; padding: 0 12px; box-sizing: border-box;
+  background: var(--bg); color: var(--muted); font-size: 12px; font-weight: 600; user-select: none; -webkit-app-region: drag;
+}
+.titlebar svg { width: 16px; height: 16px; fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+:is(html[data-glass=clear], html[data-glass=liquid]) .titlebar { background: transparent; }
+
+/* Temas prontos (Aparência) */
+.theme-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+.theme-card {
+  display: grid; gap: 8px; padding: 8px; text-align: left; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+  color: var(--surface-text); background: var(--sunken); border: 1px solid var(--field-line); border-radius: 10px;
+}
+.theme-card:hover { border-color: var(--line-strong); }
+.theme-card[aria-checked=true] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.theme-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.theme-swatches { display: grid; grid-template-columns: 2fr 2fr 1fr 1fr; height: 28px; border-radius: 6px; overflow: hidden; border: 1px solid var(--line); }
+html[data-glass=liquid] .theme-card { border-radius: 16px; }
+html[data-glass=liquid] .theme-swatches { border-radius: 10px; }

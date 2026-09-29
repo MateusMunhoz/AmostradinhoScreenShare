@@ -77,6 +77,8 @@ test('Aparência: modos de vidro, transparência e dados inválidos', () => {
   assert.ok(a(clear['--panel']) < a(liquid['--panel']), 'o limpo é mais transparente que o líquido');
   assert.ok(a(P.glass(P.defaults.colors, { glass: 'clear', level: 0 })['--panel']) > a(P.glass(P.defaults.colors, { glass: 'clear', level: 100 })['--panel']));
   assert.equal(clear['--glass-base'], P.defaults.colors.main);
+  // Leitura: mesmo no mais transparente, diálogos e listas ficam com pelo menos 78% de opacidade
+  for (const glass of ['clear', 'liquid']) assert.ok(a(P.glass(P.defaults.colors, { glass, level: 100 })['--panel-strong']) >= .78);
 });
 test('Fontes: catálogo, nome digitado seguro e pilha com a padrão no fim', () => {
   assert.equal(new Set(P.fonts.map(f => f.id)).size, P.fonts.length);
@@ -109,4 +111,19 @@ test('Fonte do nome: só ids da lista, pilha com a padrão no fim, padrão vazio
   for (const bad of ['system', 'custom', 'Arial; x', 'nada', 42, null]) assert.equal(P.cleanNameFont(bad), '');
   assert.equal(P.nameFontStack(''), '');
   assert.ok(P.nameFontStack('impact').startsWith('Impact, ') && P.nameFontStack('impact').endsWith('system-ui, sans-serif'));
+});
+test('Temas prontos: aplicam cores e material, zeram detalhes e são reconhecidos', () => {
+  assert.ok(P.themes.length >= 5);
+  assert.equal(new Set(P.themes.map(t => t.id)).size, P.themes.length);
+  const custom = P.normalize({ colors: { main: '#123456', text: '#FF0000' }, font: { family: 'georgia' }, nameFont: 'impact' });
+  assert.equal(P.currentTheme(custom), '');
+  const neon = P.applyTheme(custom, 'neon');
+  assert.equal(neon.colors.main, '#0B0A14');
+  assert.equal(neon.colors.text, '', 'cor de detalhe do tema anterior volta ao automático');
+  assert.equal(neon.appearance.glass, 'clear');
+  assert.equal(neon.font.family, 'georgia');
+  assert.equal(neon.nameFont, 'impact');
+  assert.equal(P.currentTheme(neon), 'neon');
+  assert.equal(P.currentTheme(P.normalize(null)), 'lanhouse');
+  for (const t of P.themes) assert.equal(P.currentTheme(P.applyTheme(null, t.id)), t.id);
 });
