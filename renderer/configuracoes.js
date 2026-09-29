@@ -29,6 +29,17 @@ function applyTitleBar() {
   titleBarKey = key;
   window.api.setTitleBar(color, text).catch(() => {});
 }
+// Ícone da janela na barra de tarefas: o mesmo desenho da barra de título, na cor Detalhe 1 do tema
+let appIconColor = '';
+function applyAppIcon() {
+  const color = AppPreferences.palette(appPreferences.colors)['--accent'];
+  if (color === appIconColor || !window.api?.setWindowIcon) return;
+  appIconColor = color;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 256;
+  drawAppIcon(canvas.getContext('2d'), 256, color);
+  window.api.setWindowIcon(canvas.toDataURL('image/png')).catch(() => {});
+}
 function applyAppTheme(d = document) {
   const root = d.documentElement;
   for (const [key, value] of Object.entries(AppPreferences.palette(appPreferences.colors))) root.style.setProperty(key, value);
@@ -52,6 +63,7 @@ function applyAppTheme(d = document) {
   root.dataset.glass = appPreferences.appearance.glass;
   applyWindowMaterial();
   applyTitleBar();
+  applyAppIcon();
 }
 applyAppTheme();
 

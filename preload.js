@@ -70,6 +70,7 @@ contextBridge.exposeInMainWorld('api', {
   getVersion: () => ipcRenderer.invoke('get-version'),
   windowMaterial: (mode, color) => ipcRenderer.invoke('window-material', String(mode || ''), String(color || '')),
   setTitleBar: (color, symbolColor) => ipcRenderer.invoke('window-titlebar', String(color || ''), String(symbolColor || '')),
+  setWindowIcon: (png) => ipcRenderer.invoke('window-icon', String(png || '')),
   setPriority: (level) => ipcRenderer.invoke('set-priority', level),
   statsStart: () => ipcRenderer.invoke('stats-start'),
   statsStop: () => ipcRenderer.invoke('stats-stop'),

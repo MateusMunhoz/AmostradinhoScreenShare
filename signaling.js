@@ -162,9 +162,9 @@ function startServer(port, password = '', seed = {}) {
           const voiceSession = resume && typeof msg.voiceSession === 'string' && /^[\w-]{1,64}$/.test(msg.voiceSession) ? msg.voiceSession : '';
           me = {
             ws, name: String(msg.name || 'Anônimo').slice(0, 32), sharing: !!(resume && msg.sharing), version, addrs: cleanAddrs(msg.addrs),
-            voiceSession, muted: !!voiceSession && msg.muted === true, shareInfo, avatar: cleanHash(msg.avatar), nameFont: cleanNameFont(msg.nameFont),
+            voiceSession, muted: !!voiceSession && msg.muted === true, deafened: !!voiceSession && msg.deafened === true, shareInfo, avatar: cleanHash(msg.avatar), nameFont: cleanNameFont(msg.nameFont),
           };
-          const info = (mid, m) => ({ id: mid, name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs, voiceSession: m.voiceSession, muted: m.muted, shareInfo: m.shareInfo, avatar: m.avatar, nameFont: m.nameFont });
+          const info = (mid, m) => ({ id: mid, name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs, voiceSession: m.voiceSession, muted: m.muted, deafened: m.deafened, shareInfo: m.shareInfo, avatar: m.avatar, nameFont: m.nameFont });
           send(ws, {
             type: 'welcome',
             id,
@@ -184,7 +184,8 @@ function startServer(port, password = '', seed = {}) {
           if (typeof msg.session !== 'string' || !/^[\w-]{0,64}$/.test(msg.session)) return;
           me.voiceSession = msg.session;
           me.muted = !!msg.session && msg.muted === true;
-          broadcast({ type: 'voice-state', id, session: me.voiceSession, muted: me.muted });
+          me.deafened = !!msg.session && msg.deafened === true; // fone silenciado: os outros veem na lista da voz
+          broadcast({ type: 'voice-state', id, session: me.voiceSession, muted: me.muted, deafened: me.deafened });
         } else if (msg.type === 'avatar') {
           // Foto de perfil: só o hash passa por aqui; a foto vai direto de quem tem para quem pede
           me.avatar = cleanHash(msg.hash);

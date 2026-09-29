@@ -42,8 +42,9 @@
     <section id="voicePane" class="workspace-pane" aria-labelledby="voicePaneTitle" hidden>
       <div class="pane-head"><h2 id="voicePaneTitle">Chat de voz</h2><button id="paneVoiceSettings" class="btn small" type="button">Voz e atalhos</button></div>
       <p id="voicePaneStatus" class="hint"></p>
-      <div class="pane-voice-actions"><button id="paneVoiceJoin" class="btn primary small" type="button">Entrar na voz</button><button id="paneVoiceMute" class="btn small" type="button" hidden>Microfone</button><button id="paneVoiceDeafen" class="btn small" type="button" hidden>Áudio</button></div>
       <ul id="voicePaneMembers" class="members"></ul>
+      <!-- Fora da voz: Entrar. Na voz: faixa de controles embaixo da lista (microfone, fone, Voz e atalhos | Sair da voz) -->
+      <div class="pane-voice-actions"><button id="paneVoiceMute" class="btn small icon pane-toggle" type="button" hidden></button><button id="paneVoiceDeafen" class="btn small icon pane-toggle" type="button" hidden></button><button id="paneVoiceJoin" class="btn primary small" type="button">Entrar na voz</button></div>
     </section>
   </aside>
   <main>
@@ -53,8 +54,9 @@
     <section id="home" class="screen home-screen">
       <div class="home-top">
         <div class="brand-mark">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h13v10H3zM8 19h13V9"/></svg>
-          <span>Tela P2P</span>
+          <!-- Duas telas que se cruzam: a sua (Detalhe 1), a do amigo (Detalhe 2) e o encontro na cor do texto -->
+          <svg viewBox="0 0 64 64" aria-hidden="true"><rect class="logo-meet" x="24" y="26" width="16" height="12"/><rect class="logo-you" x="6" y="8" width="34" height="30" rx="6"/><rect class="logo-friend" x="24" y="26" width="34" height="30" rx="6"/></svg>
+          <span>Tela <span class="logo-you">P</span>2<span class="logo-friend">P</span></span>
         </div>
       </div>
 
@@ -206,11 +208,11 @@
                       <label class="q-card">
                         <input type="radio" name="quality" value="2160p30">
                         <span class="q-dot" aria-hidden="true"></span>
-                        <span class="q-text"><strong>4K <span class="spec">· 2160p 30 fps</span></strong><span class="hint">Tela 4K e internet boa: uns 20 Mbps por pessoa (ou 20 no total com "Uma vez só")</span></span>
+                        <span class="q-text"><strong>4K <span class="spec">· 2160p 30 fps</span></strong><span class="hint">Tela 4K e internet boa: uns 20 Mbps para cada pessoa assistindo</span></span>
                       </label>
                     </fieldset>
 
-                    <div class="group">
+                    <div class="group" id="soundGroup">
                       <div class="group-head">
                         <span class="group-title" id="soundLabel">Som do PC</span>
                         <label class="switch">
@@ -253,12 +255,19 @@
                 </div>
 
                 <div class="share-foot">
-                  <p class="share-summary" id="shareSummary">
+                  <!-- Resumo em duas linhas: o que e a qualidade; embaixo, codificação e som (clica e vai até o Som) -->
+                  <div class="share-summary" id="shareSummary">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v12H3zM8 21h8M12 17v4"/></svg>
-                    <span id="shareSummaryText"></span>
-                  </p>
-                  <button class="btn ghost" id="cancelShare" type="button">Cancelar</button>
-                  <button class="btn live" id="startBtn" type="button" disabled>Iniciar transmissão</button>
+                    <div class="share-summary-lines">
+                      <span id="shareSummaryText"></span>
+                      <button class="link-btn share-summary-more" id="shareSummaryMore" type="button" hidden></button>
+                    </div>
+                  </div>
+                  <!-- Os dois botões andam juntos: sem espaço, descem os dois para a linha de baixo, à direita -->
+                  <div class="share-actions">
+                    <button class="btn ghost" id="cancelShare" type="button">Cancelar</button>
+                    <button class="btn live" id="startBtn" type="button" disabled>Iniciar transmissão</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -308,6 +317,11 @@
             <button class="btn icon chat-toggle" id="chatToggle" type="button" aria-pressed="true">
               <span id="chatUnread" class="unread" hidden></span>
             </button>
+            <!-- Janela estreita: o que não cabe na barra vai para este menu (fitDock em renderer/navegacao.js) -->
+            <div class="dock-more" id="dockMoreWrap" hidden>
+              <button class="btn icon" id="dockMore" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="dockMoreMenu"></button>
+              <div class="dock-more-menu" id="dockMoreMenu" role="menu" aria-label="Mais controles da sala" hidden></div>
+            </div>
             <button class="btn icon dock-leave" id="leaveBtn" type="button"></button>
           </div>
         </div>
@@ -323,7 +337,6 @@
                 <span id="memberCount">1</span>
                 <span class="people-speak" id="peopleSpeak" title="Alguém está falando" hidden></span>
               </button>
-              <button class="btn icon ghost" id="chatCollapse" type="button"></button>
             </div>
             <p id="chatOff" class="warn" hidden>O chat está desligado nesta sala: quem criou precisa da versão 1.7.0 ou mais nova.</p>
             <p id="chatEmpty" class="hint">Nenhuma mensagem ainda. Mande um oi ou arraste um arquivo para cá. Quem entrar depois vê as últimas 100 mensagens.</p>
@@ -669,6 +682,7 @@
   <script src="renderer/preferencias-modelo.js"></script>
   <script src="renderer/tema.js"></script>
   <script src="renderer/fotos.js"></script>
+  <script src="renderer/icone-app.js"></script>
   <script src="renderer/configuracoes.js"></script>
   <script src="renderer/conectividade.js"></script>
   <script src="renderer/sala.js"></script>

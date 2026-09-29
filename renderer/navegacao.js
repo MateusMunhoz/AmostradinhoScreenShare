@@ -39,6 +39,7 @@ function setupNameFont() {
     groups.get(f.group).append(o);
   }
   select.value = appPreferences.nameFont;
+  select.listSample = () => getName(); // na lista, cada fonte mostra também o seu nome escrito nela
   select.onchange = () => {
     appPreferences.nameFont = AppPreferences.cleanNameFont(select.value);
     saveAppPreferences();
@@ -75,9 +76,11 @@ function syncWorkspace() {
   // Barra e painéis formam um bloco só: o último painel aberto fecha o bloco com os cantos de baixo
   $('chatTab').classList.toggle('pane-last', !workspaceViews.voice);
   $('voicePane').classList.toggle('pane-last', workspaceViews.voice);
-  // Na sala sem chat nem voz: a barra pode ficar recolhida numa aba na borda direita (escolha salva)
+  // A setinha › é sempre o último item da barra, na sala: com chat ou voz abertos esconde tudo da direita;
+  // sem eles, recolhe só a barra (escolha salva). A ‹ que traz de volta aparece no mesmo lugar.
   const bare = inRoom && !any;
-  $('navCollapse').hidden = !bare;
+  $('navCollapse').hidden = !inRoom;
+  $('navCollapse').title = $('navCollapse').ariaLabel = any ? 'Esconder o chat, a voz e esta barra' : 'Recolher a barra';
   $('navExpand').hidden = !(bare && navCollapsed);
   document.body.classList.toggle('nav-collapsed', bare && navCollapsed);
   if (inRoom) syncIncomingVideo(); // telas escondidas não baixam vídeo (o som continua)
@@ -90,6 +93,7 @@ function syncWorkspace() {
   $('navNetwork').setAttribute('aria-expanded', String(!$('networkDialog').hidden));
   $('navProfile').setAttribute('aria-expanded', String(profile));
   if (!inRoom) setPeopleOpen(false);
+  fitNav();
   $('profileName').disabled = inRoom;
   $('profileName').value = $('name').value;
   $('profileDisplayName').textContent = getName();
@@ -108,36 +112,131 @@ function syncWorkspace() {
 // lugar): 1) o texto "2 assistindo" do Ao vivo; 2) os textos "Na voz" e "Convidar" (ficam os ícones);
 // 3) os nomes nas bolinhas de quem está na voz (fica a foto ou a inicial); 4) as bolinhas (estão no painel Voz)
 const DOCK_STEPS = ['tight-1', 'tight-2', 'tight-3', 'tight-4'];
+// 5) ainda sem espaço: os botões saem da barra para o menu da setinha ^, nesta ordem (os mais usados por último).
+// stageLayout é o grupo Grade/Destaque: no menu vira os dois itens.
+const DOCK_OVERFLOW = ['openStatsRoom', 'overlayToggle', 'stageLayout', 'dockAddr', 'voiceSettingsBtn', 'chatToggle',
+  'voiceDeafen', 'selfViewBtn', 'switchShareBtn', 'voiceMute', 'voiceJoin', 'leaveBtn'];
 function fitDock() {
   const dock = document.querySelector('.dock');
   if (!dock || !dock.offsetParent) return;
+  const fits = () => dock.scrollWidth <= dock.clientWidth + 1;
   dock.classList.remove(...DOCK_STEPS);
+  for (const el of dock.querySelectorAll('.dock-overflow')) el.classList.remove('dock-overflow');
+  $('dockMoreWrap').hidden = true;
   for (const step of DOCK_STEPS) {
-    if (dock.scrollWidth <= dock.clientWidth + 1) break;
+    if (fits()) break;
     dock.classList.add(step);
   }
+  if (!fits()) {
+    $('dockMoreWrap').hidden = false;
+    for (const id of DOCK_OVERFLOW) {
+      if (fits()) break;
+      if ($(id).getClientRects().length) $(id).classList.add('dock-overflow');
+    }
+  }
+  const moved = DOCK_OVERFLOW.filter((id) => $(id).classList.contains('dock-overflow'));
+  if (!moved.length) closeDockMore();
+  else if (!$('dockMoreMenu').hidden) buildDockMore();
+  // Mensagem nova com o botão do chat dentro do menu: a bolinha aparece na setinha
+  $('dockMore').classList.toggle('has-unread', moved.includes('chatToggle') && !$('chatUnread').hidden);
+}
+function buildDockMore() {
+  const menu = $('dockMoreMenu');
+  menu.replaceChildren();
+  for (const id of DOCK_OVERFLOW) {
+    const box = $(id);
+    if (!box.classList.contains('dock-overflow')) continue;
+    for (const original of box.matches('button') ? [box] : box.querySelectorAll('button')) {
+      const full = original.getAttribute('aria-label') || original.title || original.textContent.trim();
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'dock-more-item';
+      item.setAttribute('role', 'menuitem');
+      item.title = full;
+      item.disabled = original.disabled;
+      const icon = original.querySelector('svg');
+      if (icon) item.append(icon.cloneNode(true));
+      const label = document.createElement('span');
+      // O nome curto: o texto que o botão mostra na barra ("Convidar", "Grade") ou a dica até os dois-pontos
+      // ("Estatísticas: desempenho do PC…" vira "Estatísticas")
+      label.textContent = original.querySelector('.dock-label')?.textContent || (original.getAttribute('aria-label') ? full.split(':')[0] : original.textContent.trim() || full.split(':')[0]);
+      item.append(label);
+      if (original.getAttribute('aria-pressed') === 'true') item.classList.add('on');
+      if (id === 'chatToggle' && !$('chatUnread').hidden) item.append($('chatUnread').cloneNode(true));
+      item.onclick = () => { closeDockMore(); original.click(); };
+      menu.append(item);
+    }
+  }
+}
+function openDockMore() {
+  buildDockMore();
+  $('dockMoreMenu').hidden = false;
+  $('dockMore').setAttribute('aria-expanded', 'true');
+  $('dockMoreMenu').querySelector('button:not(:disabled)')?.focus();
+}
+function closeDockMore(focusButton = false) {
+  if ($('dockMoreMenu').hidden) return;
+  $('dockMoreMenu').hidden = true;
+  $('dockMore').setAttribute('aria-expanded', 'false');
+  if (focusButton) $('dockMore').focus();
 }
 function watchDock() {
   const dock = document.querySelector('.dock');
+  setIcon($('dockMore'), 'chevronUp', 'Mais controles (não couberam na barra)');
+  $('dockMore').onclick = () => ($('dockMoreMenu').hidden ? openDockMore() : closeDockMore(true));
+  $('dockMoreMenu').addEventListener('keydown', (e) => {
+    const items = [...$('dockMoreMenu').querySelectorAll('button:not(:disabled)')];
+    const at = items.indexOf(document.activeElement);
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeDockMore(true); }
+    else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      items[(at + (e.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length]?.focus();
+    } else if (e.key === 'Tab') closeDockMore();
+  });
+  document.addEventListener('mousedown', (e) => { if (!$('dockMoreWrap').contains(e.target)) closeDockMore(); });
   let queued = false;
   const again = () => { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; fitDock(); }); };
   new ResizeObserver(again).observe(dock);
-  new MutationObserver(again).observe(dock, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['hidden'] });
+  // O próprio menu muda ao medir e ao abrir: mudanças dentro dele não medem de novo (senão mede sem parar)
+  new MutationObserver((records) => { if (records.some((r) => !$('dockMoreWrap').contains(r.target))) again(); })
+    .observe(dock, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['hidden'] });
+}
+// Barra de cima sem espaço (janela estreita, fonte larga): Chat, Voz e Transmissão ficam só com o ícone
+function fitNav() {
+  const nav = $('workspaceNav');
+  nav.classList.remove('nav-tight');
+  if (nav.scrollWidth > nav.clientWidth + 1) nav.classList.add('nav-tight');
 }
 
+// Seção da voz. Fora dela: "Voz e atalhos" no título e Entrar como botão principal. Na voz: embaixo da lista, uma
+// faixa com microfone, fone e Voz e atalhos (só o ícone, o nome na dica) e, à direita, Sair da voz.
+function layoutVoicePane(active) {
+  const pane = $('voicePane'), head = pane.querySelector('.pane-head'), actions = pane.querySelector('.pane-voice-actions');
+  const settings = $('paneVoiceSettings'), join = $('paneVoiceJoin');
+  pane.classList.toggle('voice-in-call', active);
+  if (active) { setIcon(settings, 'sliders', 'Voz e atalhos'); settings.className = 'btn small icon'; actions.append(settings); }
+  else { settings.textContent = 'Voz e atalhos'; settings.className = 'btn small'; settings.removeAttribute('title'); settings.removeAttribute('aria-label'); head.append(settings); }
+  join.disabled = !voice.supported;
+  if (active) { join.innerHTML = ICON.phoneOff; join.append('Sair da voz'); join.className = 'btn small danger pane-leave'; }
+  else { join.textContent = voice.pending ? 'Cancelar' : 'Entrar na voz'; join.className = 'btn small' + (voice.pending ? '' : ' primary'); }
+  actions.append(join);
+  $('paneVoiceMute').hidden = $('paneVoiceDeafen').hidden = !active;
+  const toggle = (btn, on, iconOn, iconOff, textOn, textOff) => {
+    setIcon(btn, on ? iconOn : iconOff, on ? textOn : textOff);
+    btn.setAttribute('aria-pressed', String(on));
+  };
+  toggle($('paneVoiceMute'), voice.muted, 'micOff', 'mic', 'Ligar microfone', 'Desligar microfone');
+  toggle($('paneVoiceDeafen'), voice.deafened, 'headphonesOff', 'headphones', 'Ouvir vozes', 'Silenciar vozes');
+  actions.prepend($('paneVoiceMute'), $('paneVoiceDeafen'));
+}
 function renderVoicePane() {
   if (!workspaceReady || $('voicePane').hidden) return; // escondido, não precisa redesenhar a cada mudança da voz
   const active = !!voice.session;
   const ids = [...voice.members].filter(([id,m]) => m.session && state.members.has(id)).map(([id]) => id);
+  const people = (n) => (n === 1 ? '1 pessoa' : `${n} pessoas`);
   $('voicePaneStatus').textContent = !voice.supported ? 'Voz indisponível nesta sala.' : voice.pending ? 'Aguardando o microfone…'
-    : active ? `Você está na voz · ${ids.length + 1} participante(s)` : `${ids.length} participante(s). Abrir este painel não liga o microfone.`;
-  $('paneVoiceJoin').textContent = voice.pending ? 'Cancelar' : active ? 'Sair da voz' : 'Entrar na voz';
-  $('paneVoiceJoin').disabled = !voice.supported;
-  $('paneVoiceMute').hidden = $('paneVoiceDeafen').hidden = !active;
-  $('paneVoiceMute').textContent = voice.muted ? 'Ligar microfone' : 'Mutar microfone';
-  $('paneVoiceMute').setAttribute('aria-pressed', String(voice.muted));
-  $('paneVoiceDeafen').textContent = voice.deafened ? 'Ouvir vozes' : 'Silenciar vozes';
-  $('paneVoiceDeafen').setAttribute('aria-pressed', String(voice.deafened));
+    : active ? `Você está na voz · ${people(ids.length + 1)}` : `${people(ids.length)} na voz. Abrir este painel não liga o microfone.`;
+  layoutVoicePane(active);
   // Quem está transmitindo tem o botão Assistir na frente do nome; quem transmite fora da voz aparece embaixo
   const list = $('voicePaneMembers'); list.replaceChildren();
   const sharing = (id) => !!state.members.get(id)?.sharing;
@@ -188,7 +287,14 @@ function setupWorkspace() {
   const icons = {navNetwork: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="7" rx="1.5"/><rect x="3" y="13" width="18" height="7" rx="1.5"/><path d="M7 7.5h.01M7 16.5h.01M11 7.5h6M11 16.5h6"/></svg>', navSettings: '<svg viewBox="0 0 24 24"><path d="m9 3 1-2h4l1 2 2 1 2 0 2 3-1 2v3l1 2-2 3h-2l-2 1-1 3h-4l-1-3-2-1H5l-2-3 1-2V9L3 7l2-3h2z"/><circle cx="12" cy="11" r="3"/></svg>',
     navChat: ICON.chat, navVoice: ICON.mic, navStreams: '<svg viewBox="0 0 24 24"><path d="M3 4h18v13H3zM8 21h8M12 17v4"/></svg>'};
   for (const [id, icon] of Object.entries(icons)) $(id).querySelector('.nav-icon').innerHTML = icon;
-  $('navCollapse').onclick = () => setNavCollapsed(true);
+  $('navCollapse').onclick = () => (document.body.classList.contains('has-workspace-pane') ? collapseRoomSide() : setNavCollapsed(true));
+  // Só com o ícone (barra apertada), o nome da aba continua na dica e no leitor de tela
+  for (const id of ['navChat', 'navVoice', 'navStreams']) {
+    const name = $(id).querySelector('.nav-icon + span').textContent;
+    $(id).title = name;
+    $(id).setAttribute('aria-label', name);
+  }
+  new ResizeObserver(() => fitNav()).observe($('workspaceNav'));
   $('navExpand').onclick = () => setNavCollapsed(false);
   $('navProfile').onclick = openProfilePopup;
   $('closeProfile').onclick = closeProfilePopup;

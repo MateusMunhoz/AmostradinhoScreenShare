@@ -280,6 +280,22 @@ $('handoffLeave').onclick = () => leaveRoom(`Você saiu. ${nameOf(successors().f
 $('shareBtn').onclick = openShareDialog;
 $('stopShareBtn').onclick = () => stopSharing();
 $('cancelShare').onclick = closeShareDialog;
+// Resumo: a linha do som leva até o Som do PC (fica abaixo da Qualidade, fora da vista)
+// (rola só a lista: scrollIntoView rolava também a sala e a janela saía do lugar)
+$('shareSummaryMore').onclick = () => {
+  const body = document.querySelector('.share-body');
+  const top = body.scrollTop + $('soundGroup').getBoundingClientRect().top - body.getBoundingClientRect().top - 16;
+  body.scrollTo({ top, behavior: 'smooth' });
+  $('soundOn').focus({ preventScroll: true });
+};
+// Tem mais opções embaixo (Som do PC e Avançado): a borda de baixo da lista esmaece até chegar ao fim
+(() => {
+  const body = document.querySelector('.share-body');
+  const hint = () => body.classList.toggle('more-below', body.scrollTop + body.clientHeight < body.scrollHeight - 4);
+  body.addEventListener('scroll', hint, { passive: true });
+  new ResizeObserver(hint).observe(body);
+  new MutationObserver(hint).observe(body, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
+})();
 $('startBtn').onclick = () => (state.shareSwitching ? switchSource() : startSharing());
 $('switchShareBtn').onclick = () => openShareDialog(true);
 $('refreshSources').onclick = loadSources;
@@ -301,8 +317,6 @@ for (const id of ['statsTabPerf', 'statsTabStream']) {
 // Chat
 $('chatToggle').insertAdjacentHTML('afterbegin', ICON.chat);
 $('chatToggle').onclick = () => setPanelOpen(!chat.open);
-setIcon($('chatCollapse'), 'chevron', 'Recolher o painel da sala (chat, voz e a barra de cima)');
-$('chatCollapse').onclick = collapseRoomSide;
 $('peopleBtn').onclick = () => setPeopleOpen($('peoplePop').hidden);
 // Clicar fora da lista fecha (o cartão de volume, que abre de dentro dela, conta como dentro)
 document.addEventListener('mousedown', (e) => {

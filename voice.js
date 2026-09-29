@@ -20,7 +20,7 @@ class VoiceChat {
     this.leave(false);
     this.id = welcome?.id;
     this.supported = welcome?.features?.includes('voice') || false;
-    this.members = new Map((welcome?.members || []).map(m => [m.id, { session: m.voiceSession || '', muted: !!m.muted }]));
+    this.members = new Map((welcome?.members || []).map(m => [m.id, { session: m.voiceSession || '', muted: !!m.muted, deafened: !!m.deafened }]));
     this.changed();
   }
   async join() {
@@ -53,7 +53,7 @@ class VoiceChat {
       if (epoch === this.epoch) { this.pending = false; this.changed(); }
     }
   }
-  announce() { this.send({ type: 'voice-state', session: this.session, muted: this.muted }); }
+  announce() { this.send({ type: 'voice-state', session: this.session, muted: this.muted, deafened: this.deafened }); }
   leave(notify = true) {
     ++this.epoch;
     this.pending = false;
@@ -80,16 +80,17 @@ class VoiceChat {
     this.deafened = !this.deafened;
     if (this.mixer) this.mixer.deafen(this.deafened);
     else for (const p of this.peers.values()) p.audio.muted = this.deafened;
+    if (this.session) this.announce(); // os outros veem que você silenciou as vozes (fone)
     this.changed();
   }
-  update(id, session, muted) {
+  update(id, session, muted, deafened = false) {
     if (id === this.id) {
       if (session === this.session && session) this.sync();
       return;
     }
     const wasActive = !!this.members.get(id)?.session;
     if (this.members.get(id)?.session !== session) this.close(id);
-    this.members.set(id, { session, muted });
+    this.members.set(id, { session, muted, deafened: !!session && !!deafened });
     if (wasActive !== !!session) this.activity(session ? 'voiceJoin' : 'voiceLeave', id);
     this.sync();
     this.changed();

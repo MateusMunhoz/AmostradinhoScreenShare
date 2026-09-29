@@ -65,18 +65,21 @@ function memberRow(id, name, sharing) {
   const inPip = id && state.pips.has(id);
   const voiceOn = inVoice(who);
   const micOff = voiceOn && (id ? !!voice.members.get(id)?.muted : voice.muted);
+  // Fone silenciado ("Silenciar vozes"): a pessoa não está ouvindo ninguém
+  const deafOn = voiceOn && (id ? !!voice.members.get(id)?.deafened : voice.deafened);
   const parts = [];
   if (who === state.hostId) parts.push('Host');
   if (sharing) parts.push(inPip ? 'Transmitindo · na janela flutuante' : paused ? 'Transmitindo, em pausa para você' : 'Transmitindo');
-  if (voiceOn) parts.push(micOff ? 'na voz, microfone desligado' : 'na voz');
+  if (voiceOn) parts.push(['na voz', micOff && 'microfone desligado', deafOn && 'fone silenciado'].filter(Boolean).join(', '));
   status.textContent = parts.join(' · ') || 'Na sala';
   info.append(nameEl, status);
   li.append(dot, info);
-  if (micOff) {
+  for (const [on, icon, title] of [[micOff, 'micOff', 'Microfone desligado'], [deafOn, 'headphonesOff', 'Fone silenciado: não está ouvindo a voz']]) {
+    if (!on) continue;
     const mo = document.createElement('span');
     mo.className = 'mic-off-icon';
-    mo.innerHTML = ICON.micOff;
-    mo.title = 'Microfone desligado';
+    mo.innerHTML = ICON[icon];
+    mo.title = title;
     li.append(mo);
   }
 

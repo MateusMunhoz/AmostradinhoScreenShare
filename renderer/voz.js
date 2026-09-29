@@ -278,10 +278,13 @@ function renderVoiceAvatars() {
     paintName(nm, id);
     if (photoHashOf(id)) b.append(avatar(nameOf(id), id)); // com foto, ela vem antes do nome
     b.append(nm, speakBars());
-    const label = `${nameOf(id)}${voice.members.get(id).muted ? ', microfone desligado' : ''}. Mudar o volume`;
+    const m = voice.members.get(id);
+    // Fone silenciado: o ícone do fone cortado ao lado do nome
+    if (m.deafened) { const d = document.createElement('span'); d.className = 'va-deaf'; d.innerHTML = ICON.headphonesOff; b.append(d); }
+    const label = `${nameOf(id)}${m.muted ? ', microfone desligado' : ''}${m.deafened ? ', fone silenciado' : ''}. Mudar o volume`;
     b.title = label;
     b.setAttribute('aria-label', label);
-    b.classList.toggle('mic-off', !!voice.members.get(id).muted);
+    b.classList.toggle('mic-off', !!m.muted);
     b.classList.toggle('speaking', speaking.has(id));
     b.onclick = (e) => openPersonCard(id, b, e.detail === 0);
     onWheelVolume(b, id, 'voice');

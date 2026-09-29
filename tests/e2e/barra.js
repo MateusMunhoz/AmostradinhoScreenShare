@@ -17,7 +17,8 @@ run('Barra de baixo numa linha', 90000, async () => {
   const ordem = r.ordem.join(' ');
   check('Ordem: Transmitir, voz, ..., Convidar, estatísticas, chat, Sair', /^shareBtn voiceDock .*dockAddr openStatsRoom chatToggle leaveBtn$/.test(ordem.replace(/ dock-spacer/, '')), ordem);
   check('Convidar mostra o endereço ao passar o mouse', await A.eval(`$('dockAddr').title.includes(state.roomAddr) && $('dockAddr').textContent.trim() === 'Convidar'`));
-  await A.eval(`(() => { window.copiado = null; navigator.clipboard.writeText = async (t) => { copiado = t; }; $('dockAddr').click(); })()`);
+  // copiar() usa o processo principal e, sem ele, o navegador: as duas saídas são trocadas aqui
+  await A.eval(`(() => { window.copiado = null; navigator.clipboard.writeText = async (t) => { copiado = t; }; copiar = async (t) => { copiado = t; return true; }; $('dockAddr').click(); })()`);
   await sleep(200);
   check('Convidar copia o endereço', await A.eval(`copiado === state.roomAddr`));
 
@@ -70,13 +71,18 @@ run('Barra de baixo numa linha', 90000, async () => {
   check('A setinha na barra recolhe de novo (e fica salvo)', (await A.eval(T)).nav === 'none' && await A.eval(`localStorage.getItem('barraRecolhida') === '1'`));
   await A.eval(`(() => { workspaceViews.chat = true; workspaceViews.voice = true; saveWorkspaceViews(); syncWorkspace(); })()`);
   await sleep(200);
-  check('Abrindo o chat de novo, a barra volta junto', await A.eval(`getComputedStyle($('workspaceNav')).display !== 'none' && $('navExpand').hidden && $('navCollapse').hidden`));
+  check('Abrindo o chat de novo, a barra volta junto (com a setinha no fim)', await A.eval(`getComputedStyle($('workspaceNav')).display !== 'none' && $('navExpand').hidden && !$('navCollapse').hidden`));
 
-  // O › ao lado do contador de pessoas esconde tudo da direita; a setinha traz de volta os mesmos painéis
-  await mouse('#chatCollapse');
+  // Com o chat aberto, a mesma › no fim da barra esconde tudo da direita; a ‹ aparece no mesmo lugar e traz
+  // de volta os mesmos painéis
+  const CENTER = (id) => `(() => { const r = $('${id}').getBoundingClientRect(); return [Math.round(r.left + r.width / 2), Math.round(r.top + r.height / 2)]; })()`;
+  const antes = await A.eval(CENTER('navCollapse'));
+  await mouse('#navCollapse');
   await sleep(300);
+  const depois = await A.eval(CENTER('navExpand'));
+  check('A ‹ aparece no mesmo lugar da ›', Math.abs(antes[0] - depois[0]) <= 1 && Math.abs(antes[1] - depois[1]) <= 1, `› ${antes} / ‹ ${depois}`);
   t = await A.eval(T);
-  check('O › do painel da sala esconde chat, voz e a barra (tela na janela toda)', t.nav === 'none' && t.aba && t.telas <= 20 && await A.eval(`$('workspacePanes').hidden && Math.round($('streamArea').getBoundingClientRect().right) > 1100`), JSON.stringify(t));
+  check('A › esconde chat, voz e a barra (tela na janela toda)', t.nav === 'none' && t.aba && t.telas <= 20 && await A.eval(`$('workspacePanes').hidden && Math.round($('streamArea').getBoundingClientRect().right) > 1100`), JSON.stringify(t));
   await mouse('#navExpand');
   await sleep(300);
   check('A setinha abre de volta o chat e a voz', await A.eval(`workspaceViews.chat && workspaceViews.voice && !$('workspacePanes').hidden && getComputedStyle($('workspaceNav')).display !== 'none' && $('navExpand').hidden`));
@@ -87,4 +93,33 @@ run('Barra de baixo numa linha', 90000, async () => {
   f = await A.eval(FITS);
   check('Tela de 1920: cabe tudo, com "ninguém assistindo", "Na voz" e "Convidar"', f.cabe && f.etapas === 'nenhuma' && await A.eval(`$('liveText').offsetWidth > 0 && $('voiceMeText').offsetWidth > 0`), `etapas: ${f.etapas}`);
   await A.shot('barra-larga.png');
+
+  // Janela no tamanho mínimo (820 x 560), transmitindo e na voz, com chat e voz abertos: o que não cabe vai
+  // para o menu da setinha ^, e cada item do menu aperta o botão de verdade
+  await A.send('Emulation.setDeviceMetricsOverride', { width: 820, height: 560, deviceScaleFactor: 1, mobile: false });
+  await sleep(600);
+  f = await A.eval(FITS);
+  const menu = await A.eval(`(() => { $('dockMore').click(); return [...$('dockMoreMenu').children].map((b) => b.textContent); })()`);
+  check('Janela mínima: nada vaza da barra, e o que sobra está no menu', f.cabe && !(await A.eval(`$('dockMoreWrap').hidden`)) && menu.length > 0, `menu: ${menu.join(' | ')}`);
+  await A.shot('barra-minima-menu.png');
+  const statsItem = await A.eval(`[...$('dockMoreMenu').children].findIndex((b) => b.textContent === 'Estatísticas')`);
+  if (statsItem >= 0) {
+    await A.eval(`$('dockMoreMenu').children[${statsItem}].click()`);
+    await sleep(300);
+    check('O item do menu abre as estatísticas e fecha o menu', await A.eval(`!$('statsDialog').hidden && $('dockMoreMenu').hidden`));
+    await A.eval(`$('closeStats').click()`);
+  }
+  // Com as fontes mais largas (Cascadia Code, monoespaçada, e Verdana), a barra de cima continua cabendo, com a
+  // engrenagem e a setinha
+  for (const font of [null, 'cascadia', 'verdana']) {
+    if (font) {
+      await A.eval(`(() => { appPreferences.font = { ...appPreferences.font, family: '${font}' }; applyAppTheme(); })()`);
+      await sleep(400);
+    }
+    const nav = await A.eval(`(() => { const n = $('workspaceNav'), b = n.getBoundingClientRect(); return { cabe: n.scrollWidth <= n.clientWidth + 1, dentro: ['navSettings', 'navCollapse'].every((id) => $(id).getBoundingClientRect().right <= b.right) }; })()`);
+    check(`Janela mínima${font ? `, fonte ${font}` : ''}: a barra de cima cabe, com a engrenagem e a setinha dentro`, nav.cabe && nav.dentro, JSON.stringify(nav));
+    f = await A.eval(FITS);
+    check(`Janela mínima${font ? `, fonte ${font}` : ''}: nada vaza da barra de baixo`, f.cabe, `etapas: ${f.etapas}`);
+  }
+  await A.shot('barra-minima-mono.png');
 });

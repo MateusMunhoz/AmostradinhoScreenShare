@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, desktopCapturer, session, globalShortcut, shell, clipboard } = require('electron');
+const { app, BrowserWindow, ipcMain, desktopCapturer, session, globalShortcut, shell, clipboard, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -14,6 +14,7 @@ const { pips, livePip, freeSlot, pipBounds, setPipSize, setPipGroup, setPipOpaci
 const { chatBounds, setupChatOverlay, chatComposeRequest } = require('./main/chat-jogo');
 const { keys, setShortcut, setRoomKeys, setPtt } = require('./main/atalhos');
 const sessoes = require('./main/sessoes');
+const { dedupeWindows, thumbSignature } = require('./main/fontes');
 const { createRazzeService } = require('./main/razze-service');
 const razze = createRazzeService();
 
@@ -144,6 +145,16 @@ function setTitleBar(color, symbolColor) {
   if (!win || win.isDestroyed() || !ok(color) || !ok(symbolColor) || typeof win.setTitleBarOverlay !== 'function') return false;
   try { win.setTitleBarOverlay({ color, symbolColor, height: TITLEBAR_HEIGHT }); return true; } catch { return false; }
 }
+// Ícone da janela (barra de tarefas e Alt+Tab): o desenho da barra de título na cor do tema, que a página
+// desenha num canvas (renderer/icone-app.js). Só aceita um PNG pequeno.
+function setWindowIcon(png) {
+  const win = janelas.main;
+  if (!win || win.isDestroyed() || typeof png !== 'string' || !png.startsWith('data:image/png;base64,') || png.length > 512 * 1024) return false;
+  const img = nativeImage.createFromDataURL(png);
+  if (img.isEmpty()) return false;
+  win.setIcon(img);
+  return true;
+}
 function setWindowMaterial(_mode, color) {
   const win = janelas.main;
   if (!win || win.isDestroyed()) return { material: 'none', supported: false };
@@ -187,6 +198,8 @@ function createWindow() {
     titleBarStyle: 'hidden',
     titleBarOverlay: { color: '#22271E', symbolColor: '#FFFFFF', height: TITLEBAR_HEIGHT },
     title: 'Tela P2P',
+    // Até a página mandar o da cor do tema: o mesmo desenho na cor padrão (npm run icone)
+    icon: path.join(__dirname, 'assets', 'icone', process.platform === 'win32' ? 'tela-p2p.ico' : 'tela-p2p.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -262,9 +275,11 @@ if (hasSingleInstance) app.whenReady().then(() => {
       thumbnailSize: { width: 320, height: 180 },
     });
     const own = new Set(BrowserWindow.getAllWindows().map((w) => w.getMediaSourceId()));
-    return sources
-      .filter((s) => !s.thumbnail.isEmpty() && !own.has(s.id) && !HIDDEN_SOURCES.test(s.name))
-      .map((s) => ({ id: s.id, name: s.name, thumbnail: s.thumbnail.toDataURL(), dark: looksBlack(s.thumbnail) }))
+    const shown = sources.filter((s) => !s.thumbnail.isEmpty() && !own.has(s.id) && !HIDDEN_SOURCES.test(s.name));
+    // Janelas repetidas do mesmo app (WhatsApp e "(22) WhatsApp", com a mesma imagem) viram uma só
+    const unique = dedupeWindows(shown.map((s) => ({ id: s.id, name: s.name, source: s, sig: thumbSignature(s.thumbnail) })));
+    return unique
+      .map(({ id, name, source: s }) => ({ id, name, thumbnail: s.thumbnail.toDataURL(), dark: looksBlack(s.thumbnail) }))
       .sort((a, b) => a.dark - b.dark); // as pretas vão para o fim, na mesma ordem
   });
 
@@ -346,6 +361,7 @@ if (hasSingleInstance) app.whenReady().then(() => {
   ipcMain.handle('get-version', () => updater.version);
   ipcMain.handle('window-material', (_e, mode, color) => setWindowMaterial(mode, color));
   ipcMain.handle('window-titlebar', (_e, color, symbolColor) => setTitleBar(color, symbolColor));
+  ipcMain.handle('window-icon', (_e, png) => setWindowIcon(png));
   ipcMain.handle('get-own-pack', () => updater.readCurrentPack());
   ipcMain.handle('install-update', (_e, pack, sig) => updater.install(pack, sig));
   ipcMain.handle('github-check', () => github.check());

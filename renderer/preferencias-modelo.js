@@ -158,8 +158,20 @@ const AppPreferences = (() => {
     const other = rgb(b);
     return '#' + rgb(a).map((x, i) => Math.round(x * (1 - ratio) + other[i] * ratio).toString(16).padStart(2, '0')).join('').toUpperCase();
   }
-  function luminance(c) { return rgb(c).map(v => { v /= 255; return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }).reduce((n, v, i) => n + v * [0.2126, 0.7152, 0.0722][i], 0); }
-  const ink = c => luminance(c) > 0.179 ? '#000000' : '#FFFFFF';
+  // Texto preto ou branco sobre uma cor: o que tiver mais contraste pelo APCA (o contraste perceptivo do WCAG 3).
+  // O limiar antigo (luminância 0,179, do WCAG 2) punha preto cedo demais em tons médios: #787878 ficava com texto
+  // preto apagado, e azul, verde e rosa médios também. Pelo APCA, o cinza só passa para texto preto em #A4A4A4.
+  function apcaY(c) {
+    const [r, g, b] = rgb(c).map(v => (v / 255) ** 2.4);
+    const y = 0.2126729 * r + 0.7151522 * g + 0.0721750 * b;
+    return y < 0.022 ? y + (0.022 - y) ** 1.414 : y;
+  }
+  function apcaContrast(text, bg) {
+    const t = apcaY(text), b = apcaY(bg);
+    if (b > t) { const s = (b ** 0.56 - t ** 0.57) * 1.14; return s < 0.1 ? 0 : (s - 0.027) * 100; }
+    const s = (b ** 0.65 - t ** 0.62) * 1.14; return s > -0.1 ? 0 : (s + 0.027) * 100;
+  }
+  const ink = c => Math.abs(apcaContrast('#000000', c)) > Math.abs(apcaContrast('#FFFFFF', c)) ? '#000000' : '#FFFFFF';
   const alpha = (c, a) => `rgba(${rgb(c).join(', ')}, ${a})`;
   function palette(colors) {
     const c = normalize({ colors }).colors;
@@ -178,7 +190,7 @@ const AppPreferences = (() => {
       '--ok': speaking, '--ok-soft': alpha(speaking, .1), '--warn': warn, '--warn-soft': alpha(warn, .12),
       '--thumb': mix(c.secondary, '#000000', .15), '--theme-glass': alpha(c.secondary, .94),
       '--on-video': '#FFFFFF', '--scrim': 'rgba(0, 0, 0, .65)',
-      'color-scheme': luminance(c.main) > 0.179 ? 'light' : 'dark',
+      'color-scheme': ink(c.main) === '#000000' ? 'light' : 'dark', // barras de rolagem e campos seguem o texto
     };
   }
   // Superfícies de vidro: as mesmas cores, com transparência. level 0 = quase opaco, 100 = quase invisível.

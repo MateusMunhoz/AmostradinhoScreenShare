@@ -80,9 +80,13 @@ function renderShareSummary() {
       : same ? `${sourceLabel(src)} · é o que você já está transmitindo`
       : `${sourceLabel(src)} · a qualidade e o som continuam os mesmos`)
     : src
-      ? [sourceLabel(src), QUALITY_SPEC[radioValue('quality')], encodeText(), soundText()].join(' · ')
+      ? [sourceLabel(src), QUALITY_SPEC[radioValue('quality')]].join(' · ')
       : 'Escolha uma tela ou janela para começar';
-  $('shareSummary').title = $('shareSummaryText').textContent; // texto inteiro, se não couber
+  // Segunda linha: codificação e som, por inteiro (o som é o que mais dá errado); clicar leva até o Som do PC
+  const more = !state.shareSwitching && !!src;
+  $('shareSummaryMore').hidden = !more;
+  $('shareSummaryMore').textContent = more ? `${soundText()} · ${encodeText()}` : ''; // o som primeiro: se cortar, corta a codificação
+  $('shareSummary').title = [$('shareSummaryText').textContent, $('shareSummaryMore').textContent].filter(Boolean).join(' · '); // texto inteiro, se não couber
   $('startBtn').disabled = !src || same;
   if (!$('startBtn').dataset.busy) $('startBtn').textContent = state.shareSwitching ? 'Trocar para esta' : 'Iniciar transmissão';
   const open = $('advToggle').getAttribute('aria-expanded') === 'true';

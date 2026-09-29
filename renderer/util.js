@@ -52,6 +52,7 @@ const ICON = {
   leave: svg('M9 21H5V3h4M16 17l5-5-5-5M21 12H9'),
   chat: svg('M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'),
   chevron: svg('M9 6l6 6-6 6'),
+  chevronUp: svg('M6 15l6-6 6 6'),
   doc: svg('M14 3H6v18h12V7zM14 3v4h4'),
   check: svg('M20 6 9 17l-5-5'),
   warn: svg('M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z'),

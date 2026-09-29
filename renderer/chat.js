@@ -90,7 +90,8 @@ function resetChat(welcome) {
   chat.log = ((welcome && welcome.chat) || []).slice(-100);
   $('chatList').innerHTML = '';
   $('chatOff').hidden = !welcome || chat.supported;
-  $('chatInput').disabled = $('chatSend').disabled = $('chatAttach').disabled = !chat.supported;
+  $('chatInput').disabled = $('chatAttach').disabled = !chat.supported;
+  $('chatSend').disabled = !chat.supported || !$('chatInput').value.trim();
   for (const m of (welcome && welcome.chat) || []) appendMessage(m, false);
   $('chatEmpty').hidden = !!$('chatList').children.length || !chat.supported;
   setPanelOpen(workspaceViews.chat);
@@ -318,6 +319,8 @@ function fitChatInput() {
   const t = $('chatInput');
   t.style.height = 'auto';
   t.style.height = `${Math.min(t.scrollHeight, 120)}px`;
+  // Enviar só acende com algo escrito (arquivo vai pelo clipe, na hora)
+  $('chatSend').disabled = !chat.supported || !t.value.trim();
 }
 
 function requestFile(from, f) {

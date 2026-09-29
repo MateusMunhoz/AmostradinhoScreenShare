@@ -47,6 +47,8 @@ function enhanceSelect(select) {
   button.onclick = () => (openList?.select === select ? closeList(true) : openListFor(select));
   button.onkeydown = (e) => {
     if (['ArrowDown', 'ArrowUp', 'Enter', ' '].includes(e.key)) { e.preventDefault(); openListFor(select); }
+    // Com a lista fechada, digitar uma letra abre e já pula para a opção
+    else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); openListFor(select); typeToFind(e.key); }
   };
   refreshSelectButton(select);
 }
@@ -68,8 +70,20 @@ function openListFor(select) {
     item.className = 'select-item';
     item.setAttribute('role', 'option');
     item.id = `${pop.id}-${items.length}`;
-    item.textContent = option.textContent;
     item.style.fontFamily = option.style.fontFamily;
+    const text = document.createElement('span');
+    text.className = 'select-text';
+    text.textContent = option.textContent;
+    item.append(text);
+    // Amostra (ex.: o seu nome em cada fonte, na lista "Fonte do nome"): select.listSample() devolve o texto
+    const sample = select.listSample?.();
+    if (sample) {
+      const s = document.createElement('span');
+      s.className = 'select-sample';
+      s.setAttribute('aria-hidden', 'true');
+      s.textContent = sample;
+      item.append(s);
+    }
     item.setAttribute('aria-selected', String(option.selected));
     if (option.disabled) item.setAttribute('aria-disabled', 'true');
     item.onpointerdown = (e) => e.preventDefault(); // o foco fica na lista
@@ -104,16 +118,26 @@ function openListFor(select) {
 }
 
 // Abre para baixo; se não couber, para cima. Nunca passa da janela.
+// A lista é "fixed", mas não conta a partir da janela: o body desce 32 px por causa da barra de título e tem
+// contain: layout, então é ele que serve de referência. Mede onde fica o 0 de verdade (em cima, à esquerda e
+// embaixo) e desconta, senão a lista ficava 32 px mais baixa e passava da borda de baixo da janela.
 function placeList() {
   const { button, pop } = openList;
   const r = button.getBoundingClientRect(), gap = 4, margin = 8;
-  const below = innerHeight - r.bottom - margin, above = r.top - margin;
+  const below = innerHeight - margin - (r.bottom + gap), above = r.top - gap - margin;
   const down = below >= Math.min(320, pop.scrollHeight) || below >= above;
-  pop.style.left = Math.max(margin, Math.min(r.left, innerWidth - margin - r.width)) + 'px';
+  Object.assign(pop.style, { top: '0px', left: '0px', bottom: '' });
+  const origin = pop.getBoundingClientRect();
+  pop.style.top = ''; pop.style.bottom = '0px';
+  const floor = pop.getBoundingClientRect().bottom;
+  pop.style.left = Math.max(margin, Math.min(r.left, innerWidth - margin - r.width)) - origin.left + 'px';
   pop.style.minWidth = r.width + 'px';
-  pop.style.maxHeight = Math.max(120, Math.min(360, down ? below : above) - gap) + 'px';
-  if (down) { pop.style.top = r.bottom + gap + 'px'; pop.style.bottom = ''; }
-  else { pop.style.bottom = innerHeight - r.top + gap + 'px'; pop.style.top = ''; }
+  const maxH = Math.min(Math.max(120, Math.min(360, down ? below : above)), innerHeight - 2 * margin);
+  pop.style.maxHeight = maxH + 'px';
+  // Campo meio escondido (na beirada de uma área que rola): a lista sobe ou desce o que precisar para caber
+  // inteira na janela, mesmo cobrindo um pouco o campo
+  if (down) { pop.style.top = Math.min(r.bottom + gap, innerHeight - margin - maxH) - origin.top + 'px'; pop.style.bottom = ''; }
+  else { pop.style.bottom = floor - Math.max(r.top - gap, margin + maxH) + 'px'; pop.style.top = ''; }
 }
 
 function setActive(i) {
@@ -153,13 +177,22 @@ function listKey(e) {
   else if (e.key === 'End') { e.preventDefault(); setActive(step(list.items.length, -1)); }
   else if (e.key === 'PageDown' || e.key === 'PageUp') { e.preventDefault(); setActive(Math.max(0, Math.min(list.items.length - 1, list.active + (e.key === 'PageDown' ? 8 : -8)))); }
   else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); const x = list.items[list.active]; if (x && !x.option.disabled) choose(x.option); }
-  else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-    // Digitar as primeiras letras pula para a opção
-    const now = Date.now();
-    typed = (now - typedAt > 700 ? '' : typed) + e.key.toLowerCase(); typedAt = now;
-    const norm = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-    const i = list.items.findIndex((x) => norm(x.option.textContent).startsWith(norm(typed)));
-    if (i !== -1) setActive(i);
+  else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); typeToFind(e.key); }
+}
+// Digitar as primeiras letras pula para a opção. A mesma letra de novo vai para a próxima que começa com ela
+// ("g", "g": Gabriola, depois Georgia), como na lista do Windows.
+function typeToFind(key) {
+  const list = openList;
+  if (!list) return;
+  const now = Date.now();
+  typed = (now - typedAt > 700 ? '' : typed) + key.toLowerCase(); typedAt = now;
+  const norm = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const same = [...typed].every((c) => c === typed[0]);
+  const want = same ? typed[0] : typed;
+  const n = list.items.length, from = same ? list.active + 1 : 0;
+  for (let k = 0; k < n; k++) {
+    const i = (from + k) % n;
+    if (!list.items[i].option.disabled && norm(list.items[i].option.textContent).startsWith(norm(want))) { setActive(i); return; }
   }
 }
 

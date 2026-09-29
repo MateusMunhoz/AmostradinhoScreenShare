@@ -228,7 +228,7 @@ async function rejoin(host, timeoutMs) {
   try {
     welcome = await connectRoom(`ws://${host}:${state.port}`, {
       name: getName(), password: state.password, resume: myId, sharing: state.sharing, shareInfo: state.sharing ? state.shareInfo : undefined,
-      voiceSession: voice.session || '', muted: voice.muted,
+      voiceSession: voice.session || '', muted: voice.muted, deafened: voice.deafened,
     }, timeoutMs);
   } catch { return false; }
   if (!state.migrating || state.myId !== myId) { state.ws?.close(); return false; }
@@ -252,7 +252,7 @@ async function rejoin(host, timeoutMs) {
     state.members.set(m.id, { name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs || [], shareInfo: m.shareInfo || null, avatar: m.avatar || '', nameFont: AppPreferences.cleanNameFont(m.nameFont), back: true });
     if (!state.order.includes(m.id)) state.order.push(m.id);
     if (before && before.sharing && !m.sharing) stopWatching(m.id, false);
-    voice.update(m.id, m.voiceSession || '', !!m.muted);
+    voice.update(m.id, m.voiceSession || '', !!m.muted, !!m.deafened);
   }
   // Quem ainda não voltou tem um tempo para voltar; depois disso, conta como quem saiu
   clearTimeout(state.graceTimer);
@@ -278,7 +278,7 @@ function onRoomMessage(m) {
       state.members.set(m.id, { name: m.name, sharing: !!m.sharing, version: m.version, addrs: m.addrs || [], shareInfo: m.shareInfo || null, avatar: m.avatar || '', nameFont: AppPreferences.cleanNameFont(m.nameFont), back: true });
       if (!state.order.includes(m.id)) state.order.push(m.id);
       if (back && back.sharing && !m.sharing) stopWatching(m.id, false);
-      voice.update(m.id, m.voiceSession || '', !!m.muted);
+      voice.update(m.id, m.voiceSession || '', !!m.muted, !!m.deafened);
       // Caiu da sala enquanto eu assistia e voltou transmitindo em até 1 min: volta a assistir sozinho
       const caiu = state.rewatch.get(m.id);
       state.rewatch.delete(m.id);
@@ -330,7 +330,7 @@ function onRoomMessage(m) {
       break;
     }
     case 'voice-state':
-      if (m.id === state.myId || state.members.has(m.id)) voice.update(m.id, m.session, m.muted);
+      if (m.id === state.myId || state.members.has(m.id)) voice.update(m.id, m.session, m.muted, m.deafened);
       break;
     case 'signal':
       handleSignal(m.from, m.data || {});

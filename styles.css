@@ -55,8 +55,14 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 .home-screen { display: flex; flex-direction: column; padding: 16px 40px 20px; gap: 0; overflow-y: auto; }
 /* Marca na altura da barra de cima (perfil e configurações, à direita) */
 .home-top { flex: none; height: 48px; display: flex; align-items: center; }
-.brand-mark { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600; color: var(--muted); }
-.brand-mark svg { width: 26px; height: 26px; fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+/* O logo segue as cores da configuração: Detalhe 1 (--primary), Detalhe 2 (--ok) e o texto */
+.brand-mark { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-size: 18px; font-weight: 800; letter-spacing: -0.02em; color: var(--text); }
+.brand-mark svg { width: 30px; height: 30px; fill: none; stroke-width: 5; }
+.brand-mark .logo-meet { fill: var(--text); }
+.brand-mark svg .logo-you { stroke: var(--primary); }
+.brand-mark svg .logo-friend { stroke: var(--ok); }
+.brand-mark span .logo-you { color: var(--primary); }
+.brand-mark span .logo-friend { color: var(--ok); }
 /* O saguão: uma coluna no meio da janela */
 .home-main { flex: 1; width: min(720px, 100%); margin: 0 auto; display: flex; flex-direction: column; justify-content: center; gap: 22px; padding: 28px 0; }
 .home-hello { display: flex; align-items: center; gap: 18px; }
@@ -107,9 +113,10 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 .link-btn:disabled { color: var(--muted); cursor: default; text-decoration: none; }
 .link-btn:hover:not(:disabled) { color: var(--text); }
 
-/* Aviso de atualização: cartão no canto de cima, por cima de qualquer tela */
+/* Aviso de atualização: cartão no canto de cima, por cima de qualquer tela, mas logo abaixo da barra de cima
+   (perfil, rede, engrenagem e a setinha continuam clicáveis) */
 .update-banner {
-  position: fixed; top: 16px; right: 16px; z-index: 40; width: 380px; max-width: calc(100vw - 32px); box-sizing: border-box;
+  position: fixed; top: 72px; right: 16px; z-index: 40; width: 380px; max-width: calc(100vw - 32px); box-sizing: border-box;
   display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px 12px; padding: 14px;
   border: 1px solid var(--accent); border-radius: 12px; background: var(--panel-2); box-shadow: 0 12px 32px rgba(0, 0, 0, .5);
   animation: ub-in .25s ease-out;
@@ -215,6 +222,8 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 .voice-avatar .eq { margin-left: 0; }
 .voice-avatar.speaking { border-color: var(--ok); color: var(--ok); }
 .voice-avatar.mic-off { color: var(--muted); border-style: dashed; }
+.voice-avatar .va-deaf { display: inline-grid; place-items: center; color: var(--warn); }
+.voice-avatar .va-deaf svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .voice-avatar:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
 /* Lista "Na sala": microfone desligado e botão de volume da pessoa */
@@ -421,6 +430,8 @@ kbd { font-family: Consolas, monospace; font-size: 11px; color: var(--muted); bo
 .file-card .btn { flex: none; text-decoration: none; display: inline-flex; align-items: center; }
 .chat-form { flex: none; display: flex; align-items: flex-end; gap: 6px; }
 .chat-form .btn.icon { width: 40px; height: 40px; }
+/* Campo vazio: o enviar fica neutro (sem a cor e o brilho de botão principal) até ter o que mandar */
+html .chat-form #chatSend:disabled { opacity: 1; background: transparent; border-color: var(--line); color: var(--surface-muted); box-shadow: none; filter: none; }
 .chat-form textarea {
   flex: 1; min-width: 0; resize: none; max-height: 120px; font: inherit; font-size: 14px; line-height: 1.35;
   color: var(--text); background: var(--sunken); border: 1px solid var(--line); border-radius: 6px; padding: 9px 11px; box-sizing: border-box; min-height: 40px;
@@ -530,7 +541,7 @@ kbd { font-family: Consolas, monospace; font-size: 11px; color: var(--muted); bo
 .blocked-note strong { color: var(--muted); }
 .share-settings { display: flex; flex-direction: column; gap: 22px; padding: 20px 24px; background: var(--panel); border-top: 1px solid var(--line); }
 .group { display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 0; border: 0; min-width: 0; }
-.group-title { padding: 0; font-size: 13px; font-weight: 600; color: var(--muted); }
+.group-title { padding: 0; font-size: 14px; font-weight: 700; color: var(--text-2); }
 fieldset.group > legend { margin-bottom: 10px; }
 .group-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .q-card {
@@ -569,12 +580,22 @@ fieldset.group > legend { margin-bottom: 10px; }
 .adv-panel { display: flex; flex-direction: column; gap: 8px; }
 .adv-panel .seg { background: var(--bg); }
 .adv-panel .seg label { font-size: 13px; height: 34px; }
-.share-foot { display: flex; align-items: center; gap: 12px; padding: 14px 24px; border-top: 1px solid var(--line); background: var(--bg); }
-.share-summary { flex: 1; min-width: 0; margin: 0; display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); }
+.share-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 14px 24px; border-top: 1px solid var(--line); background: var(--bg); }
+/* Estreita: o resumo fica com a linha toda e os dois botões descem juntos, à direita. Cancelar e Iniciar nunca
+   se separam (o Iniciar sozinho embaixo à esquerda parecia outra coisa) */
+.share-summary { flex: 1 1 260px; min-width: 0; margin: 0; display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); }
+.share-actions { flex: none; display: flex; gap: 10px; margin-left: auto; }
 .share-summary.ready { color: var(--text); }
-.share-summary svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.share-summary svg { flex: none; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .share-summary.ready svg { stroke: var(--accent); }
-.share-summary span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.share-summary-lines { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.share-summary-lines > * { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#shareSummaryText { font-weight: 600; }
+/* A linha do som: discreta, mas clicável (leva até o Som do PC) */
+.share-summary-more { font-size: 12px; color: var(--muted); text-decoration: none; text-align: left; }
+.share-summary-more:hover:not(:disabled) { color: var(--accent); text-decoration: underline; }
+/* Ainda tem opções embaixo (Som do PC, Avançado): a lista esmaece na borda de baixo */
+.share-body.more-below { -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 48px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 48px), transparent); }
 .share-foot .btn { height: 44px; }
 .field-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .app-list { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -792,7 +813,10 @@ main { padding-top: var(--workspace-top); }
 #workspaceNav { position: absolute; top: 16px; right: 16px; width: var(--workspace-width); height: 48px; display: flex; align-items: stretch; gap: 3px; padding: 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
 .workspace-tab { display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 0 8px; border-radius: 6px; border: 1px solid transparent; background: transparent; color: var(--surface-text); font: inherit; font-size: 12px; cursor: pointer; white-space: nowrap; position: relative; }
 .workspace-tab:hover { background: var(--panel-2); }
-.workspace-tab[aria-pressed=true] { color: var(--primary-ink); background: var(--primary); border-color: var(--primary); }
+/* Chat, Voz e Transmissão ligados é o normal: tingido e discreto, sem competir com as ações (desligado fica
+   só o texto, apagado) */
+.workspace-tab.room-tab[aria-pressed=true] { color: var(--accent); background: var(--accent-soft); border-color: transparent; }
+.workspace-tab.room-tab[aria-pressed=false] { color: var(--surface-muted); }
 .workspace-tab .nav-icon { display: inline-flex; }
 .workspace-tab svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .workspace-tab .unread { position: absolute; top: -8px; right: -4px; }
@@ -803,6 +827,19 @@ main { padding-top: var(--workspace-top); }
 .pane-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
 .pane-head h2, .stream-pane-head h2 { font-size: 15px; }
 .pane-voice-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+/* Microfone e fone: ícone + texto, como na barra de baixo; desligado fica na cor de aviso */
+.pane-voice-actions .pane-toggle { display: inline-flex; align-items: center; gap: 6px; }
+.pane-voice-actions .pane-toggle svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.pane-voice-actions .pane-toggle[aria-pressed=true] { border-color: var(--warn); color: var(--warn); background: var(--warn-soft); }
+/* Na voz: a faixa de controles fica embaixo da lista, separada por uma linha. Microfone, fone e Voz e atalhos só
+   com o ícone (o nome na dica); Sair da voz à direita, com texto, na cor de perigo */
+.voice-in-call .pane-voice-actions { flex-wrap: nowrap; align-items: center; margin: 10px 0 0; padding-top: 10px; border-top: 1px solid var(--line); }
+.pane-voice-actions .btn.icon { width: 32px; padding: 0; justify-content: center; }
+.pane-voice-actions .btn.icon svg, .pane-voice-actions .pane-leave svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.pane-voice-actions .pane-leave { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; }
+.voice-in-call #voicePaneMembers { margin-bottom: 0; }
+/* Chat e voz abertos juntos: a voz ocupa só o que precisa (até metade), o chat fica com o resto */
+.workspace-in-room.has-workspace-pane:not(.workspace-wide) #chatTab:not([hidden]) ~ #voicePane { flex: 0 1 auto; max-height: 50%; }
 .profile-summary { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; overflow-wrap: anywhere; }
 .profile-summary .avatar { width: 40px; height: 40px; flex: none; background: var(--primary); color: var(--primary-ink); }
 #workspacePanes .chat { display: flex; flex-direction: column; min-height: 0; }
@@ -815,6 +852,12 @@ main { padding-top: var(--workspace-top); }
 .voice-side #voiceDialog { position: fixed; inset: 16px auto 16px 16px; width: var(--workspace-width); padding: 0; background: none; display: flex; align-items: stretch; z-index: 11; } /* começa na altura da barra de atalhos da direita, acima do cabeçalho */
 .voice-side #voiceDialog .dialog { --text: var(--surface-text); --text-2: var(--surface-text-2); --muted: var(--surface-muted); width: 100%; max-height: none; flex: 1; min-height: 0; overflow-y: auto; color: var(--text); background: var(--panel); border-radius: 10px; padding: 16px; }
 .voice-side main { padding-left: calc(var(--workspace-width) + 12px); }
+/* Janela estreita com chat ou voz abertos à direita: empurrar as telas deixaria só uma tira no meio, então
+   Voz e atalhos fica por cima das telas (fecha no X) */
+@media (max-width: 1199px) {
+  .voice-side.has-workspace-pane:not(.workspace-wide) main { padding-left: 16px; }
+  .voice-side.has-workspace-pane:not(.workspace-wide) #voiceDialog .dialog { box-shadow: 0 12px 40px rgba(0, 0, 0, .55); }
+}
 .voice-side.workspace-wide #workspacePanes { left: calc(var(--workspace-width) + 28px); }
 
 .settings-pane .general-settings { width: auto; max-height: none; border: 0; padding: 0; overflow: visible; display: grid; gap: 16px; }
@@ -846,6 +889,28 @@ main { padding-top: var(--workspace-top); }
 .dock.tight-3 .voice-avatar .va-name { display: none; }
 .dock.tight-3 .voice-avatar:not(:has(.avatar))::before { content: attr(data-initial); font-weight: 700; }
 .dock.tight-4 .voice-avatars { display: none !important; }
+/* 5) o que ainda não cabe vai para o menu da setinha, antes do Sair */
+.dock .dock-overflow { display: none !important; }
+.voice-dock:not(:has(> :not([hidden]):not(.dock-overflow))) { display: none; }
+.dock-more { position: relative; display: flex; }
+.dock-more[hidden] { display: none; }
+#dockMore[aria-expanded="true"] { border-color: var(--accent); color: var(--accent); }
+#dockMore.has-unread::after { content: ""; position: absolute; top: -3px; right: -3px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); border: 2px solid var(--panel); }
+.dock-more-menu {
+  position: absolute; right: 0; bottom: calc(100% + 12px); z-index: 25; min-width: 230px; max-width: min(320px, calc(100vw - 32px));
+  display: flex; flex-direction: column; gap: 2px; padding: 6px; box-sizing: border-box;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); box-shadow: 0 12px 32px rgba(0, 0, 0, .45);
+}
+.dock-more-menu[hidden] { display: none; }
+.dock-more-item {
+  display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 12px; border: 0; border-radius: 6px;
+  background: transparent; color: var(--surface-text); font: inherit; font-size: 13px; text-align: left; cursor: pointer;
+}
+.dock-more-item span:not(.unread) { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dock-more-item svg { flex: none; width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.dock-more-item:hover:not(:disabled), .dock-more-item:focus-visible { background: var(--panel-3); outline: none; }
+.dock-more-item.on { color: var(--accent); }
+.dock-more-item:disabled { opacity: .45; cursor: default; }
 #workspaceEmpty { flex: 1; }
 .workspace-in-room #openGeneralSettingsRoom { display: none; }
 body:not(.workspace-in-room) #workspaceNav { background: transparent; border-color: transparent; } /* na tela inicial só tem o perfil e a engrenagem: sem a caixa vazia, e no mesmo lugar para não pular ao entrar na sala */
@@ -858,12 +923,21 @@ body:not(.workspace-in-room) #workspaceNav { background: transparent; border-col
 .workspace-in-room.has-workspace-pane:not(.workspace-wide) .workspace-pane { border-radius: 0; border-top: 0; }
 .workspace-in-room.has-workspace-pane:not(.workspace-wide) .workspace-pane.pane-last { border-radius: 0 0 10px 10px; }
 /* Sem chat nem voz: a barra recolhe numa aba na borda direita, e as telas ocupam a altura toda */
-.nav-collapse { margin-left: 2px; padding: 0 6px; }
+/* A setinha › é o último item da barra; recolhida, a ‹ fica exatamente no mesmo lugar, numa caixinha com a
+   mesma borda (38 px = 1 de borda + 4 de folga + 28 do botão + 4 + 1) */
+.nav-collapse { flex: none; width: 28px; padding: 0; margin-left: 2px; }
+.nav-collapse:hover { color: var(--accent); }
 .nav-collapse svg, .nav-expand svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .nav-collapsed #workspaceNav { display: none; }
-.workspace-in-room.nav-collapsed #room { padding-top: 16px; padding-right: 34px; }
-.nav-expand { position: fixed; top: 16px; right: 0; z-index: 12; width: 26px; height: 48px; display: grid; place-items: center; padding: 0; cursor: pointer;
-  border: 1px solid var(--line); border-right: 0; border-radius: 10px 0 0 10px; background: var(--panel); color: var(--surface-text); }
+/* Sem painéis, a barra cresce o que precisar; com painéis, Chat, Voz e Transmissão ficam só no ícone se
+   faltar espaço (fitNav): a engrenagem e a setinha nunca ficam para fora da caixa */
+.workspace-in-room:not(.has-workspace-pane) #workspaceNav { width: auto; min-width: var(--workspace-width); box-sizing: border-box; }
+#workspaceNav > * { flex-shrink: 0; }
+#workspaceNav.nav-tight .room-tab > span:not(.nav-icon):not(.unread) { display: none; }
+#workspaceNav.nav-tight .room-tab { padding: 0 9px; }
+.workspace-in-room.nav-collapsed #room { padding-top: 16px; padding-right: 62px; }
+.nav-expand { position: fixed; top: 16px; right: 16px; z-index: 12; width: 38px; height: 48px; box-sizing: border-box; display: grid; place-items: center; padding: 4px; cursor: pointer;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--surface-text); }
 .nav-expand:hover { color: var(--accent); }
 .nav-expand[hidden] { display: none; }
 .toast { top: calc(var(--workspace-top) + 8px); }
@@ -999,17 +1073,26 @@ html[data-glass=liquid] .btn.primary { box-shadow: inset 0 1px 0 rgba(255, 255, 
   color: var(--surface-text); background: var(--panel-2); border: 1px solid var(--line-strong); border-radius: 10px;
   box-shadow: 0 14px 36px rgba(0, 0, 0, .45); outline: none;
 }
-.select-group { padding: 8px 10px 4px; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--surface-muted); font-family: var(--font-body); }
-.select-item { padding: 7px 10px; border-radius: 6px; font-size: 14px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.select-group { padding: 10px 10px 4px; font-size: 12px; font-weight: 700; color: var(--surface-text-2); font-family: var(--font-body); }
+/* Altura fixa: cada fonte tem o seu tamanho natural e as linhas ficavam desiguais */
+.select-item { display: flex; align-items: center; gap: 12px; height: 34px; box-sizing: border-box; padding: 0 10px; border-radius: 6px; font-size: 14px; line-height: 1.2; cursor: pointer; white-space: nowrap; }
+.select-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* A amostra (ex.: o seu nome nesta fonte), à direita e mais apagada */
+.select-sample { flex: none; max-width: 45%; overflow: hidden; text-overflow: ellipsis; color: var(--surface-muted); font-size: 15px; }
 .select-item.active { background: var(--accent-soft); }
 .select-item[aria-selected=true] { font-weight: 700; box-shadow: inset 3px 0 0 var(--accent); }
 .select-item[aria-disabled=true] { opacity: .5; cursor: default; }
-:is(html[data-glass=clear], html[data-glass=liquid]) .select-pop {
+:is(html[data-glass=clear], html[data-glass=liquid]) :is(.select-pop, .dock-more-menu) {
   background: var(--panel-strong); /* mais cheia que os painéis: a lista fica por cima de texto */
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
 }
-html[data-glass=liquid] .select-pop { border-radius: 18px; box-shadow: inset 0 1px 0 var(--glass-sheen), 0 14px 36px rgba(0, 0, 0, .35); }
+/* Os menus de botões ficam dentro de painéis que já desfocam (o desfoque deles não pega): o mesmo fundo três
+   vezes, na cor do tema, cobre ~99% e o botão de trás não aparece através do menu */
+:is(html[data-glass=clear], html[data-glass=liquid]) .dock-more-menu {
+  background: linear-gradient(var(--panel-strong), var(--panel-strong)), linear-gradient(var(--panel-strong), var(--panel-strong)), var(--panel-strong);
+}
+html[data-glass=liquid] :is(.select-pop, .dock-more-menu) { border-radius: 18px; box-shadow: inset 0 1px 0 var(--glass-sheen), 0 14px 36px rgba(0, 0, 0, .35); }
 html[data-glass=liquid] .select-item { border-radius: 12px; }
 html[data-border=liquid] .select-pop { border-top-color: var(--edge-sheen); }
 

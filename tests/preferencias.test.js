@@ -21,6 +21,20 @@ test('Cores escolhidas permanecem exatas e textos se adaptam a fundos opostos', 
   assert.equal(palette['--primary'], colors.detail1); assert.equal(palette['--ok'],colors.detail2);
   assert.equal(palette['--text'],'#000000'); assert.equal(palette['--surface-text'],'#FFFFFF');
 });
+test('Texto sobre tons médios: cinzas vizinhos não viram o tema, e cores vivas médias levam texto branco', () => {
+  const base={main:'#22271E',secondary:'#2D3327',detail1:'#D6C45C',detail2:'#A6D089'};
+  const on=(field,c)=>P.palette({...base,[field]:c});
+  // #757575 e #787878 ficavam um de cada lado do limiar antigo: o texto e o tema inteiro trocavam
+  for (const c of ['#757575','#787878','#8A8A8A']) {
+    assert.equal(on('main',c)['--text'],'#FFFFFF',c); assert.equal(on('main',c)['color-scheme'],'dark',c);
+    assert.equal(on('secondary',c)['--surface-text'],'#FFFFFF',c);
+  }
+  // Cinza claro de verdade continua com texto preto e tema claro
+  assert.equal(on('main','#B0B0B0')['--text'],'#000000'); assert.equal(on('main','#B0B0B0')['color-scheme'],'light');
+  // Botão principal: azul, verde, vermelho e rosa médios com texto branco; amarelo e verde claro do padrão, preto
+  for (const c of ['#3B82F6','#16A34A','#EF4444','#F472B6']) assert.equal(on('detail1',c)['--primary-ink'],'#FFFFFF',c);
+  for (const c of ['#D6C45C','#A6D089','#FFB74D']) assert.equal(on('detail1',c)['--primary-ink'],'#000000',c);
+});
 
 test('Volumes por evento preservam preferências antigas e multiplicam o volume geral', async () => {
   const prefs=P.normalize({sounds:{join:'wood',volume:40,levels:{chat:30,voiceJoin:50,voiceLeave:-5,leave:'inválido'}}});

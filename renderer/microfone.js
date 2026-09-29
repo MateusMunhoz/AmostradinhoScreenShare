@@ -47,7 +47,13 @@ async function buildMic() {
       if (!noiseWasm) throw new Error('arquivo da IA não encontrado');
       await ctx.audioWorklet.addModule('vendor/noise/rnnoiseWorklet.js');
       const bin = noiseWasm.buffer.slice(noiseWasm.byteOffset, noiseWasm.byteOffset + noiseWasm.byteLength);
-      node = new AudioWorkletNode(ctx, RNNOISE_ID, { processorOptions: { maxChannels: 1, wasmBinary: bin } });
+      // A IA limpa um canal só (maxChannels: 1). Microfone estéreo (muitos fones) entrava com dois e o segundo
+      // saía mudo: "ouvir minha voz" tocava só no lado esquerdo. Entra e sai mono; na saída, o mono vai
+      // igual para os dois lados.
+      node = new AudioWorkletNode(ctx, RNNOISE_ID, {
+        channelCount: 1, channelCountMode: 'explicit', channelInterpretation: 'speakers', outputChannelCount: [1],
+        processorOptions: { maxChannels: 1, wasmBinary: bin },
+      });
       src.connect(node);
       last = node;
     } catch (err) {
