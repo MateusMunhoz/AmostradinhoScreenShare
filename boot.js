@@ -89,7 +89,8 @@ function pickUpdate() {
 }
 
 let current = BUNDLED;
-const chosen = pickUpdate();
+// `npm run dev` (--local): roda sempre o código desta pasta, mesmo com uma atualização baixada da sala
+const chosen = process.argv.includes('--local') ? null : pickUpdate();
 
 const updater = {
   get version() { return current.version; },

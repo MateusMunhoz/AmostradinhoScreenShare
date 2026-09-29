@@ -1,16 +1,57 @@
 'use strict';
-// Preferências locais: não são enviadas para a sala ou para outros participantes.
+// Preferências deste PC. Só a fonte do nome (nameFont) vai para a sala, pelo perfil (navegacao.js).
 let appPreferences = AppPreferences.read(localStorage);
 const appSounds = new AppPreferences.SoundPlayer({ settings: () => appPreferences });
 let settingsReturnFocus = null;
 
+// Material da janela (acrílico do Windows 11) só muda quando o modo muda; a resposta diz se o sistema tem
+let windowMaterial = { key: '', material: 'none', supported: false };
+function applyWindowMaterial() {
+  const mode = appPreferences.appearance.glass, key = mode === 'opaque' ? 'opaque|' + appPreferences.colors.main : mode;
+  if (windowMaterial.key === key || !window.api?.windowMaterial) return;
+  windowMaterial.key = key;
+  window.api.windowMaterial(mode, appPreferences.colors.main).then((r) => {
+    if (windowMaterial.key !== key) return;
+    windowMaterial = { key, material: r?.material || 'none', supported: !!r?.supported };
+    document.documentElement.dataset.material = windowMaterial.material;
+    if (!$('generalSettingsDialog').hidden) renderGlassHint();
+  }).catch(() => {});
+}
+// Botões minimizar, maximizar e fechar do Windows nas cores do tema: fundo da cor principal (com vidro,
+// transparente, para o fundo desenhado aparecer) e símbolos na cor do texto
+let titleBarKey = '';
+function applyTitleBar() {
+  if (!window.api?.setTitleBar) return;
+  const c = appPreferences.colors, text = AppPreferences.palette(c)['--text'];
+  const color = appPreferences.appearance.glass === 'opaque' ? c.main : '#00000000';
+  const key = color + text;
+  if (key === titleBarKey) return;
+  titleBarKey = key;
+  window.api.setTitleBar(color, text).catch(() => {});
+}
 function applyAppTheme(d = document) {
-  for (const [key, value] of Object.entries(AppPreferences.palette(appPreferences.colors))) d.documentElement.style.setProperty(key, value);
+  const root = d.documentElement;
+  for (const [key, value] of Object.entries(AppPreferences.palette(appPreferences.colors))) root.style.setProperty(key, value);
+  const fonts = AppPreferences.fontStacks(appPreferences.font);
+  root.style.setProperty('--font-body', fonts.body);
+  root.style.setProperty('--font-display', fonts.display);
+  root.style.setProperty('--font-console', fonts.console);
+  const borders = AppPreferences.borders(appPreferences.colors, appPreferences.appearance);
+  if (borders) for (const [key, value] of Object.entries(borders)) root.style.setProperty(key, value);
+  else root.style.removeProperty('--edge-sheen');
+  root.dataset.border = appPreferences.appearance.border;
   // As janelas por cima do jogo usam painéis translúcidos, sem o fundo da página principal.
   if (d !== document) {
-    d.documentElement.style.setProperty('--text', 'var(--surface-text)');
-    d.documentElement.style.setProperty('--muted', 'var(--surface-muted)');
+    root.style.setProperty('--text', 'var(--surface-text)');
+    root.style.setProperty('--muted', 'var(--surface-muted)');
+    return;
   }
+  // Vidro: só na janela principal; as flutuantes já são translúcidas por cima do jogo
+  const glass = AppPreferences.glass(appPreferences.colors, appPreferences.appearance);
+  for (const [key, value] of Object.entries(glass || {})) root.style.setProperty(key, value);
+  root.dataset.glass = appPreferences.appearance.glass;
+  applyWindowMaterial();
+  applyTitleBar();
 }
 applyAppTheme();
 
@@ -42,6 +83,7 @@ function renderGeneralSettings() {
     $('volume-' + event).value = appPreferences.sounds.levels[event];
     $('value-' + event).textContent = appPreferences.sounds.levels[event] + '%';
   }
+  renderAppearance();
   $('muteChatSound').checked = appPreferences.sounds.chatMuted;
   $('notificationVolume').value = appPreferences.sounds.volume;
   $('notificationVolumeValue').textContent = `${appPreferences.sounds.volume}%`;
@@ -72,8 +114,195 @@ function refreshAutoColors() {
     $('hex-' + key).value = $('color-' + key).value = effective[shown[key]];
   }
 }
+
+// Aparência: vidro e fonte
+const localFonts = []; // nomes vindos de "Fontes deste PC" (só nesta sessão)
+function renderGlassHint() {
+  const mode = appPreferences.appearance.glass;
+  $('glassHint').textContent = mode === 'opaque' ? 'Cores sólidas. É o mais leve para jogar e transmitir ao mesmo tempo.'
+    : mode === 'clear' ? 'Vidro limpo: painéis bem transparentes e pouco desfoque.'
+    : 'Vidro grosso: mais desfoque, cores mais vivas e brilho nas bordas. Usa mais a placa de vídeo; se o jogo perder FPS, volte para Opaco.';
+}
+function fontInstalled(name) {
+  // Mede o mesmo texto com a fonte e sem ela: se nada muda nas duas bases, ela não está no PC
+  const c = fontInstalled.c || (fontInstalled.c = document.createElement('canvas').getContext('2d'));
+  const text = 'mmmmmmmmmmlli WQ@#ÁÇã 0123';
+  return ['monospace', 'serif'].some((base) => {
+    c.font = `40px ${base}`; const w = c.measureText(text).width;
+    c.font = `40px "${name}", ${base}`; return c.measureText(text).width !== w;
+  });
+}
+function fontSelectValue() {
+  const f = appPreferences.font;
+  if (f.family !== 'custom') return f.family;
+  return localFonts.includes(f.custom) ? 'local:' + f.custom : 'custom';
+}
+function renderFontOptions() {
+  const select = $('fontFamily');
+  select.replaceChildren();
+  const groups = new Map();
+  for (const f of AppPreferences.fonts) {
+    if (!groups.has(f.group)) { const g = document.createElement('optgroup'); g.label = f.group; groups.set(f.group, g); select.append(g); }
+    const o = document.createElement('option'); o.value = f.id; o.textContent = f.label;
+    o.style.fontFamily = AppPreferences.fontStacks({ family: f.id }).body;
+    groups.get(f.group).append(o);
+  }
+  if (localFonts.length) {
+    const g = document.createElement('optgroup'); g.label = `Deste PC (${localFonts.length})`;
+    for (const name of localFonts) {
+      const o = document.createElement('option'); o.value = 'local:' + name; o.textContent = name;
+      o.style.fontFamily = `"${name}", ${AppPreferences.fontStacks(null).body}`; g.append(o);
+    }
+    select.append(g);
+  }
+  const g = document.createElement('optgroup'); g.label = 'Personalizada';
+  const o = document.createElement('option'); o.value = 'custom'; o.textContent = 'Outra fonte instalada… (digitar o nome)';
+  g.append(o); select.append(g);
+}
+function renderFontPreview() {
+  const f = appPreferences.font, stacks = AppPreferences.fontStacks(f);
+  const preview = $('fontPreview'), script = $('fontPreviewScript');
+  preview.style.fontFamily = stacks.body;
+  const sample = AppPreferences.fonts.find(x => x.id === f.family)?.sample;
+  script.hidden = !sample; script.textContent = sample || '';
+  const value = fontSelectValue();
+  $('fontFamily').value = value;
+  $('fontCustomRow').hidden = value !== 'custom';
+  if (value === 'custom' && document.activeElement !== $('fontCustom')) $('fontCustom').value = f.custom;
+  $('fontChat').checked = f.chat;
+  const missing = f.family === 'custom' && f.custom && !fontInstalled(f.custom);
+  if (value === 'custom') $('fontStatus').textContent = !f.custom ? 'Digite o nome de uma fonte instalada no Windows.'
+    : missing ? `“${f.custom}” não foi encontrada neste PC. O app usa a fonte padrão até ela ser instalada.` : `Usando “${f.custom}”.`;
+}
+// Temas prontos: cada botão mostra as 4 cores do tema; o que bate com as escolhas atuais fica marcado
+function renderThemes() {
+  const list = $('themeList');
+  if (!list.children.length) {
+    for (const t of AppPreferences.themes) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'theme-card';
+      b.setAttribute('role', 'radio');
+      b.dataset.theme = t.id;
+      const sw = document.createElement('span');
+      sw.className = 'theme-swatches';
+      sw.setAttribute('aria-hidden', 'true');
+      for (const key of ['main', 'secondary', 'detail1', 'detail2']) {
+        const s = document.createElement('span');
+        s.style.background = t.colors[key];
+        sw.append(s);
+      }
+      const name = document.createElement('span');
+      name.textContent = t.label;
+      b.append(sw, name);
+      b.onclick = () => {
+        appPreferences = AppPreferences.applyTheme(appPreferences, t.id);
+        saveAppPreferences();
+        renderGeneralSettings();
+      };
+      list.append(b);
+    }
+  }
+  const current = AppPreferences.currentTheme(appPreferences);
+  for (const b of list.children) b.setAttribute('aria-checked', String(b.dataset.theme === current));
+  $('themeHint').textContent = current ? 'Muda cores, material e bordas. Fonte e sons continuam como estão.'
+    : 'Personalizado. Escolha um tema para começar dele; depois dá para mudar qualquer cor na aba Cores.';
+}
+function renderAppearance() {
+  renderThemes();
+  const a = appPreferences.appearance;
+  for (const input of document.querySelectorAll('input[name=glass]')) input.checked = input.value === a.glass;
+  $('glassLevelRow').hidden = a.glass === 'opaque';
+  $('glassLevel').value = a.level;
+  $('glassLevelValue').textContent = a.level + '%';
+  for (const input of document.querySelectorAll('input[name=border]')) input.checked = input.value === a.border;
+  renderGlassHint();
+  if (!$('fontFamily').options.length) renderFontOptions();
+  renderFontPreview();
+}
+function setupAppearance() {
+  for (const input of document.querySelectorAll('input[name=glass]')) input.onchange = () => {
+    if (!input.checked) return;
+    appPreferences.appearance = { ...appPreferences.appearance, glass: input.value, level: AppPreferences.glassLevel[input.value] ?? appPreferences.appearance.level };
+    saveAppPreferences(); renderAppearance();
+  };
+  for (const input of document.querySelectorAll('input[name=border]')) input.onchange = () => {
+    if (!input.checked) return;
+    appPreferences.appearance = { ...appPreferences.appearance, border: input.value };
+    saveAppPreferences();
+  };
+  $('glassLevel').oninput = () => {
+    appPreferences.appearance.level = Number($('glassLevel').value);
+    $('glassLevelValue').textContent = appPreferences.appearance.level + '%';
+    saveAppPreferences();
+  };
+  $('fontFamily').onchange = () => {
+    const v = $('fontFamily').value;
+    $('fontStatus').textContent = '';
+    if (v.startsWith('local:')) appPreferences.font = { ...appPreferences.font, family: 'custom', custom: v.slice(6) };
+    else if (v === 'custom') {
+      $('fontCustomRow').hidden = false; $('fontCustom').value = appPreferences.font.custom; $('fontCustom').focus();
+      if (!AppPreferences.fontName(appPreferences.font.custom)) { $('fontStatus').textContent = 'Digite o nome de uma fonte instalada no Windows.'; return; }
+      appPreferences.font = { ...appPreferences.font, family: 'custom' };
+    } else appPreferences.font = { ...appPreferences.font, family: v };
+    saveAppPreferences(); renderFontPreview();
+  };
+  $('fontCustom').oninput = () => {
+    const name = AppPreferences.fontName($('fontCustom').value);
+    $('fontCustom').setAttribute('aria-invalid', String(!!$('fontCustom').value.trim() && !name));
+    if (!name) return;
+    appPreferences.font = { ...appPreferences.font, family: 'custom', custom: name };
+    saveAppPreferences(); renderFontPreview(); $('fontFamily').value = 'custom'; $('fontCustomRow').hidden = false;
+  };
+  $('fontChat').onchange = () => { appPreferences.font = { ...appPreferences.font, chat: $('fontChat').checked }; saveAppPreferences(); };
+  $('loadLocalFonts').onclick = async () => {
+    if (typeof window.queryLocalFonts !== 'function') {
+      $('fontStatus').textContent = 'Este sistema não deixa o app listar as fontes. Escolha “Outra fonte instalada…” e digite o nome.';
+      return;
+    }
+    $('loadLocalFonts').disabled = true; $('fontStatus').textContent = 'Procurando as fontes deste PC…';
+    try {
+      const names = new Set();
+      for (const f of await window.queryLocalFonts()) { const n = AppPreferences.fontName(f.family); if (n) names.add(n); }
+      localFonts.splice(0, localFonts.length, ...[...names].sort((a, b) => a.localeCompare(b, 'pt-BR')));
+      renderFontOptions(); renderFontPreview();
+      $('fontStatus').textContent = localFonts.length ? `${localFonts.length} fontes deste PC no fim da lista, em “Deste PC”.` : 'Nenhuma fonte encontrada.';
+    } catch { $('fontStatus').textContent = 'Não foi possível listar as fontes. Escolha “Outra fonte instalada…” e digite o nome.'; }
+    $('loadLocalFonts').disabled = false;
+  };
+}
+// Abas das configurações: Aparência, Cores e Sons (a rede tem a própria janela, networkDialog). Lembra a última aberta.
+function showSettingsTab(name, focus = false) {
+  const tabs = [...document.querySelectorAll('.settings-tabs [role=tab]')];
+  const tab = tabs.find((t) => t.dataset.tab === name) || tabs[0];
+  for (const t of tabs) {
+    const on = t === tab;
+    t.setAttribute('aria-selected', String(on));
+    t.tabIndex = on ? 0 : -1;
+    $('settingsPanel-' + t.dataset.tab).hidden = !on;
+  }
+  save('settingsTab', tab.dataset.tab);
+  if (focus) tab.focus();
+}
+function setupSettingsTabs() {
+  const tabs = [...document.querySelectorAll('.settings-tabs [role=tab]')];
+  for (const t of tabs) {
+    t.onclick = () => showSettingsTab(t.dataset.tab);
+    t.onkeydown = (e) => {
+      const i = tabs.indexOf(t);
+      const next = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: tabs.length - 1 }[e.key];
+      if (next === undefined) return;
+      e.preventDefault();
+      showSettingsTab(tabs[(next + tabs.length) % tabs.length].dataset.tab, true);
+    };
+  }
+  showSettingsTab(load('settingsTab') || 'appearance');
+}
 function setupGeneralSettings() {
   setupConnectivitySettings();
+  setupSettingsTabs();
+  setupAppearance();
+  window.api.getVersion().then((v) => { $('settingsVersion').textContent = v ? 'v' + v : ''; }).catch(() => {});
   for (const [key] of Object.entries(appPreferences.colors)) {
     const picker = $('color-' + key), field = $('hex-' + key), error = $('error-' + key);
     const optional = AppPreferences.optionalColors.includes(key);

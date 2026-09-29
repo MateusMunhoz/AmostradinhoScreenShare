@@ -66,3 +66,64 @@ test('Sons Suave: gerados na hora, sem arquivo, padrão da voz e do microfone', 
   assert.deepEqual(played[0],{f:659,volume:.5});
   prefs.sounds.levels.unmute=0; assert.equal(await player.play('unmute'),false);
 });
+
+test('Aparência: modos de vidro, transparência e dados inválidos', () => {
+  assert.deepEqual(P.normalize(null).appearance, { glass: 'opaque', level: 70, border: 'solid' });
+  assert.equal(P.glass(P.defaults.colors, { glass: 'opaque' }), null);
+  assert.equal(P.normalize({ appearance: { glass: 'metal', level: 999 } }).appearance.glass, 'opaque');
+  assert.equal(P.normalize({ appearance: { glass: 'liquid', level: 999 } }).appearance.level, 100);
+  const clear = P.glass(P.defaults.colors, { glass: 'clear', level: 70 }), liquid = P.glass(P.defaults.colors, { glass: 'liquid', level: 70 });
+  const a = v => Number(/, ([\d.]+)\)$/.exec(v)[1]);
+  assert.ok(a(clear['--panel']) < a(liquid['--panel']), 'o limpo é mais transparente que o líquido');
+  assert.ok(a(P.glass(P.defaults.colors, { glass: 'clear', level: 0 })['--panel']) > a(P.glass(P.defaults.colors, { glass: 'clear', level: 100 })['--panel']));
+  assert.equal(clear['--glass-base'], P.defaults.colors.main);
+  // Leitura: mesmo no mais transparente, diálogos e listas ficam com pelo menos 78% de opacidade
+  for (const glass of ['clear', 'liquid']) assert.ok(a(P.glass(P.defaults.colors, { glass, level: 100 })['--panel-strong']) >= .78);
+});
+test('Fontes: catálogo, nome digitado seguro e pilha com a padrão no fim', () => {
+  assert.equal(new Set(P.fonts.map(f => f.id)).size, P.fonts.length);
+  assert.ok(P.fonts.filter(f => f.group === 'Outros idiomas').every(f => f.sample));
+  assert.equal(P.fontName('  Noto   Sans '), 'Noto Sans');
+  for (const bad of ['a"; } body { x', 'x'.repeat(65), 'url(x)', '', null]) assert.equal(P.fontName(bad), '');
+  assert.equal(P.normalize({ font: { family: 'custom', custom: 'a"b' } }).font.family, 'system');
+  assert.equal(P.normalize({ font: { family: 'nada' } }).font.family, 'system');
+  const custom = P.fontStacks({ family: 'custom', custom: 'Fira Sans', chat: true });
+  assert.ok(custom.body.startsWith('"Fira Sans", ') && custom.body.endsWith('system-ui, sans-serif'));
+  assert.equal(custom.console, custom.body);
+  assert.equal(P.fontStacks({ family: 'georgia' }).console, 'Tahoma, Verdana, sans-serif');
+  assert.equal(P.fontStacks(P.defaults.font).display, P.fonts[0].display);
+  let saved; const prefs = P.normalize({ appearance: { glass: 'liquid', level: 40 }, font: { family: 'korean', chat: true } });
+  P.write({ setItem: (_k, v) => { saved = v; } }, prefs);
+  assert.deepEqual(P.read({ getItem: () => saved }), prefs);
+});
+test('Bordas: normal, transparente e líquido, em qualquer material', () => {
+  assert.equal(P.normalize({ appearance: { border: 'neon' } }).appearance.border, 'solid');
+  assert.equal(P.borders(P.defaults.colors, { border: 'solid' }), null);
+  const pal = P.palette(P.defaults.colors);
+  const clear = P.borders(P.defaults.colors, { glass: 'opaque', border: 'clear' }), liquid = P.borders(P.defaults.colors, { border: 'liquid' });
+  for (const b of [clear, liquid]) for (const k of ['--line', '--line-strong', '--field-line', '--edge-sheen']) assert.match(b[k], /^rgba\(/);
+  assert.notEqual(clear['--line'], pal['--line']);
+  assert.ok(Number(/, ([\d.]+)\)$/.exec(liquid['--edge-sheen'])[1]) > Number(/, ([\d.]+)\)$/.exec(clear['--edge-sheen'])[1]), 'o líquido acende mais a quina');
+});
+test('Fonte do nome: só ids da lista, pilha com a padrão no fim, padrão vazio', () => {
+  assert.equal(P.normalize(null).nameFont, '');
+  assert.equal(P.normalize({ nameFont: 'segoeScript' }).nameFont, 'segoeScript');
+  for (const bad of ['system', 'custom', 'Arial; x', 'nada', 42, null]) assert.equal(P.cleanNameFont(bad), '');
+  assert.equal(P.nameFontStack(''), '');
+  assert.ok(P.nameFontStack('impact').startsWith('Impact, ') && P.nameFontStack('impact').endsWith('system-ui, sans-serif'));
+});
+test('Temas prontos: aplicam cores e material, zeram detalhes e são reconhecidos', () => {
+  assert.ok(P.themes.length >= 5);
+  assert.equal(new Set(P.themes.map(t => t.id)).size, P.themes.length);
+  const custom = P.normalize({ colors: { main: '#123456', text: '#FF0000' }, font: { family: 'georgia' }, nameFont: 'impact' });
+  assert.equal(P.currentTheme(custom), '');
+  const neon = P.applyTheme(custom, 'neon');
+  assert.equal(neon.colors.main, '#0B0A14');
+  assert.equal(neon.colors.text, '', 'cor de detalhe do tema anterior volta ao automático');
+  assert.equal(neon.appearance.glass, 'clear');
+  assert.equal(neon.font.family, 'georgia');
+  assert.equal(neon.nameFont, 'impact');
+  assert.equal(P.currentTheme(neon), 'neon');
+  assert.equal(P.currentTheme(P.normalize(null)), 'lanhouse');
+  for (const t of P.themes) assert.equal(P.currentTheme(P.applyTheme(null, t.id)), t.id);
+});

@@ -158,6 +158,7 @@ function appendMessage(m, live) {
   const who = document.createElement('strong');
   who.className = 'msg-who';
   who.textContent = name;
+  paintName(who, m.from);
   const sep = document.createElement('span');
   sep.className = 'msg-sep';
   sep.textContent = ' : ';

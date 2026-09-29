@@ -124,11 +124,11 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 
 /* Campos e botões */
 .field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted); }
-.field > input, .field select {
+.field > input, .field select, .field .select-btn {
   font: inherit; font-size: 15px; color: var(--text); background: var(--bg);
   border: 1px solid var(--field-line); border-radius: 8px; padding: 10px 12px; min-width: 0;
 }
-.field > input:focus, .field select:focus { border-color: var(--accent); outline: none; }
+.field > input:focus, .field select:focus, .field .select-btn:focus-visible, .field .select-btn[aria-expanded=true] { border-color: var(--accent); outline: none; }
 .btn {
   font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; border-radius: 6px;
   padding: 10px 18px; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); box-shadow: var(--lift);
@@ -289,7 +289,7 @@ kbd { font-family: Consolas, monospace; font-size: 11px; color: var(--muted); bo
 /* Destaque: uma transmissão ocupa toda a área de vídeo; as outras ficam pausadas na faixa de cima */
 .tiles.focused { grid-template-columns: 1fr; }
 /* Destaque com coluna: uma grande à esquerda (linha 1 até a última) e as outras pequenas ao lado */
-.tiles.column { grid-template-columns: minmax(0, 1fr) clamp(180px, 26%, 320px); gap: 8px 10px; }
+.tiles.column { grid-template-columns: minmax(0, 1fr) var(--stage-side, clamp(180px, 26%, 320px)); gap: 8px 10px; }
 .tile.small { min-height: 0; cursor: pointer; }
 .tile.small .tile-body { flex: none; aspect-ratio: 16 / 9; }
 .tile.small .tile-bar { display: none; }
@@ -456,7 +456,7 @@ kbd { font-family: Consolas, monospace; font-size: 11px; color: var(--muted); bo
 /* Janela de escolher a tela */
 .modal { position: absolute; inset: 0; background: var(--scrim); display: grid; place-items: center; padding: 24px; z-index: 5; }
 .dialog {
-  width: min(960px, 100%); max-height: calc(100vh - 48px); display: flex; flex-direction: column; gap: 16px;
+  width: min(960px, 100%); max-height: calc(100vh - 48px - var(--titlebar)); display: flex; flex-direction: column; gap: 16px;
   background: var(--bg); border: 1px solid var(--line); border-radius: 14px; padding: 20px;
 }
 .dialog.narrow { width: min(440px, 100%); }
@@ -640,7 +640,7 @@ fieldset.group > legend { margin-bottom: 10px; }
 .vd-slider input[type="range"]:disabled { opacity: .45; }
 .vd-value { min-width: 72px; text-align: right; font-size: 13px; color: var(--text-2); font-variant-numeric: tabular-nums; }
 .vd-select { font: inherit; font-size: 14px; color: var(--text); background: var(--sunken); border: 1px solid var(--field-line); border-radius: 8px; padding: 9px 10px; width: 100%; min-width: 0; }
-.vd-select:focus { border-color: var(--accent); outline: none; }
+.vd-select:focus, .vd-select.select-btn:focus-visible { border-color: var(--accent); outline: none; }
 .vd-check { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-2); cursor: pointer; }
 .vd-check input { accent-color: var(--accent); width: 16px; height: 16px; }
 .vd-check input:disabled + * , .vd-check:has(input:disabled) { opacity: .5; cursor: default; }
@@ -714,9 +714,9 @@ fieldset.group > legend { margin-bottom: 10px; }
 }
 .tile-bar, .tile-overlay, .chat-drop { background: var(--theme-glass); }
 .btn:not(.primary):not(.ghost):not(.danger):not(.on):not(.live) { color: var(--surface-text); }
-.field > input, .field select { color: var(--surface-text); background: var(--sunken); }
+.field > input, .field select, .field .select-btn { color: var(--surface-text); background: var(--sunken); }
 .join-panel .field > input { background: var(--sunken); }
-.general-settings input[type=text], .general-settings input[type=email], .general-settings input[type=password], .general-settings input[type=url], .general-settings select { color: var(--surface-text); background: var(--sunken); border: 1px solid var(--field-line); border-radius: 6px; padding: 8px 10px; font: inherit; }
+.general-settings input[type=text], .general-settings input[type=email], .general-settings input[type=password], .general-settings input[type=url], .general-settings select, .general-settings .select-btn { color: var(--surface-text); background: var(--sunken); border: 1px solid var(--field-line); border-radius: 6px; padding: 8px 10px; font: inherit; }
 .general-settings { --text: var(--surface-text); --text-2: var(--surface-text-2); --muted: var(--surface-muted); background: var(--panel); color: var(--text); width: min(680px, 100%); overflow-y: auto; }
 .settings-section { display: grid; gap: 12px; }
 .settings-section + .settings-section { padding-top: 16px; border-top: 1px solid var(--line); }
@@ -776,7 +776,7 @@ fieldset.group > legend { margin-bottom: 10px; }
 .settings-colors-sub { grid-column: 1 / -1; margin: 8px 0 0; padding-top: 12px; border-top: 1px solid var(--line); display: grid; gap: 3px; font-size: 13px; }
 .settings-colors-sub small { color: var(--muted); font-size: 12px; }
 .settings-sound { display: grid; grid-template-columns: 130px minmax(0,1fr) auto; align-items: center; gap: 10px; }
-.settings-sound select { width: 100%; min-width: 0; }
+.settings-sound select, .settings-sound .select-btn { width: 100%; min-width: 0; }
 .general-settings input[type=range] { accent-color: var(--accent); }
 .settings-sound label { font-size: 13px; }
 #resetColors { justify-self: start; }
@@ -825,7 +825,7 @@ main { padding-top: var(--workspace-top); }
 .settings-pane .settings-color-input input[type=text] { padding: 6px; font-size: 13px; }
 .settings-pane .settings-sound { grid-template-columns: minmax(0,1fr) auto; gap: 6px; }
 .settings-pane .settings-sound label { grid-column: 1 / -1; font-weight: 600; }
-.settings-pane .settings-sound select { font-size: 13px; }
+.settings-pane .settings-sound select, .settings-pane .settings-sound .select-btn { font-size: 13px; }
 .sound-event { display: grid; gap: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
 .event-volume { display: flex; align-items: center; gap: 8px; font-size: 12px; }
 .event-volume input { flex: 1; min-width: 0; }
@@ -841,7 +841,7 @@ main { padding-top: var(--workspace-top); }
 .dock > * { flex: none; }
 .dock > .dock-spacer { flex: 1 1 0; min-width: 0; }
 .dock.tight-1 #liveText { display: none; }
-.dock.tight-2 .dock-invite .dock-label, .dock.tight-2 #voiceMeText { display: none; }
+.dock.tight-2 .dock-invite .dock-label, .dock.tight-2 #voiceMeText, .dock.tight-2 .stage-layout .dock-label { display: none; }
 .dock.tight-2 .dock-invite { padding: 0; width: 36px; justify-content: center; }
 .dock.tight-3 .voice-avatar .va-name { display: none; }
 .dock.tight-3 .voice-avatar:not(:has(.avatar))::before { content: attr(data-initial); font-weight: 700; }
@@ -896,3 +896,188 @@ main { padding-top: 0; }
 .tile-noaudio svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .tile.no-audio .tile-vol, .tile.no-audio .tile-mute { display: none; }
 .live-silent { font-weight: 600; }
+
+/* ── Aparência (Configurações gerais) ──────────────────────────────────────────────────────────────── */
+.settings-row { display: grid; gap: 7px; }
+.settings-row > label, .settings-row > .settings-label { font-size: 13px; font-weight: 600; }
+.font-pick { display: flex; gap: 8px; }
+.font-pick select, .font-pick .select-btn { flex: 1; min-width: 0; }
+.font-pick .btn { flex: none; }
+.font-preview { display: grid; gap: 4px; margin: 0; padding: 12px 14px; border: 1px dashed var(--line-strong); border-radius: 8px; background: var(--sunken); font-size: 15px; line-height: 1.4; overflow-wrap: anywhere; }
+.font-preview strong { font-size: 18px; font-weight: 600; }
+.font-preview span { color: var(--text-2); }
+.glass-seg label { height: 40px; }
+.glass-swatch { width: 18px; height: 18px; flex: none; border-radius: 6px; border: 1px solid var(--field-line); }
+[data-glass-swatch=opaque] { background: var(--text-2); }
+[data-glass-swatch=clear] { background: linear-gradient(rgba(255, 255, 255, .16), rgba(255, 255, 255, .16)), repeating-conic-gradient(var(--muted) 0 25%, transparent 0 50%) 0 0 / 8px 8px; }
+[data-glass-swatch=liquid] { border-radius: 999px; background: radial-gradient(circle at 32% 26%, rgba(255, 255, 255, .85), transparent 42%), linear-gradient(135deg, var(--accent), var(--ok)); box-shadow: inset 0 -2px 3px rgba(0, 0, 0, .25); }
+[data-border-swatch] { background: transparent; border-width: 2px; }
+[data-border-swatch=solid] { border-color: var(--accent); }
+[data-border-swatch=clear] { border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+[data-border-swatch=liquid] { border-radius: 999px; border-color: color-mix(in srgb, var(--accent) 45%, rgba(255, 255, 255, .5)); border-top-color: rgba(255, 255, 255, .85); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35); }
+.general-settings input[aria-invalid=true] { border-color: var(--warn); }
+/* Versão: discreta, no pé das configurações */
+.settings-version { display: flex; justify-content: center; gap: 6px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 11px; color: var(--muted); letter-spacing: .02em; font-variant-numeric: tabular-nums; }
+.settings-version span:first-child { opacity: .7; }
+.glass-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+/* ── Vidro: Transparente e Líquido ────────────────────────────────────────────────────────────────────
+   As cores das superfícies viram translúcidas (preferencias-modelo.js › glass) e as superfícies abaixo
+   desfocam o que está atrás. No Windows 11 22H2+ a janela vira acrílico (data-material=acrylic) e o que fica
+   atrás é a própria área de trabalho; nos outros, um fundo desenhado com as cores do tema. */
+html[data-glass=clear], html[data-glass=liquid] {
+  background:
+    radial-gradient(55% 50% at 10% 12%, color-mix(in srgb, var(--primary) 42%, transparent), transparent 72%),
+    radial-gradient(45% 55% at 92% 8%, color-mix(in srgb, var(--ok) 36%, transparent), transparent 72%),
+    radial-gradient(60% 55% at 78% 100%, color-mix(in srgb, var(--warn) 30%, transparent), transparent 72%),
+    radial-gradient(50% 45% at 22% 92%, color-mix(in srgb, var(--primary) 20%, transparent), transparent 72%),
+    var(--glass-base);
+}
+:is(html[data-glass=clear], html[data-glass=liquid]) :is(.home-card, .dock, .panel, .workspace-pane, #workspaceNav, .nav-expand, .dialog, .person-card, .people-pop, .update-banner, .toast, .stat-card, .stream-card, .join-panel, .session) {
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border-color: var(--glass-edge);
+}
+/* Leitura: diálogos, listas, cartões e avisos com um mínimo de opacidade (--panel-strong), por mais
+   transparente que o resto esteja */
+:is(html[data-glass=clear], html[data-glass=liquid]) :is(.dialog, .utility-popup .dialog, .select-pop, .person-card, .people-pop, .toast, .update-banner) {
+  background-color: var(--panel-strong);
+}
+/* Transparente: um reflexo leve no alto dos painéis, para o vidro não parecer só um recorte */
+html[data-glass=clear] :is(.home-card, .dock, .panel, .workspace-pane, #workspaceNav, .dialog, .stream-card, .join-panel) {
+  background-image: linear-gradient(180deg, var(--glass-sheen), transparent 40%);
+  box-shadow: inset 0 1px 0 var(--glass-sheen), 0 8px 24px rgba(0, 0, 0, .18);
+}
+/* A faixa do nome em cima do vídeo também vira vidro */
+:is(html[data-glass=clear], html[data-glass=liquid]) .tile { background: var(--panel); border-color: var(--glass-edge); }
+/* Bordas Líquido: a quina de cima pega luz, como a borda de um vidro. As cores translúcidas vêm de
+   preferencias-modelo.js › borders (--line, --line-strong, --field-line). */
+:is(html[data-border=clear], html[data-border=liquid]) :is(.home-card, .dock, .panel, .workspace-pane, #workspaceNav, .nav-expand, .dialog, .person-card, .people-pop, .update-banner, .toast, .stat-card, .stream-card, .join-panel, .session) {
+  border-color: var(--line-strong);
+}
+html[data-border=liquid] :is(.home-card, .dock, .panel, .workspace-pane, #workspaceNav, .nav-expand, .dialog, .person-card, .people-pop, .update-banner, .toast, .stat-card, .stream-card, .join-panel, .session, .btn:not(.primary):not(.live):not(.danger), input, select, textarea) {
+  border-top-color: var(--edge-sheen);
+}
+/* Vídeo nunca fica transparente */
+:is(html[data-glass=clear], html[data-glass=liquid]) .tile video { background: #000; }
+
+/* Líquido: vidro grosso. Brilho de luz no alto das bordas (especular), lente que entorta de leve o fundo nas
+   barras e botões, cantos em cápsula e um "aperto" com mola ao clicar. */
+html[data-glass=liquid] { --radius: 12px; --radius-lg: 18px; --lift: inset 0 1px 0 var(--glass-sheen); }
+html[data-glass=liquid] :is(.home-card, .dock, .panel, .workspace-pane, #workspaceNav, .nav-expand, .dialog, .person-card, .people-pop, .update-banner, .toast, .stat-card, .stream-card, .join-panel, .session) {
+  background-image: linear-gradient(165deg, rgba(255, 255, 255, .13), rgba(255, 255, 255, 0) 34%, rgba(255, 255, 255, 0) 72%, rgba(255, 255, 255, .05));
+  box-shadow: inset 0 1px 0 var(--glass-sheen), inset 1px 0 0 rgba(255, 255, 255, .06), inset 0 -1px 0 rgba(0, 0, 0, .18), 0 10px 30px rgba(0, 0, 0, .22);
+}
+html[data-glass=liquid] :is(#workspaceNav, .dock, .nav-expand, .toast, .seg) {
+  -webkit-backdrop-filter: url(#liquidLens) blur(calc(var(--glass-blur) * .6)) saturate(var(--glass-saturate)) brightness(1.06);
+  backdrop-filter: url(#liquidLens) blur(calc(var(--glass-blur) * .6)) saturate(var(--glass-saturate)) brightness(1.06);
+}
+html[data-glass=liquid] .home-card { border-radius: 28px; }
+html[data-glass=liquid] .dialog { border-radius: 24px; }
+html[data-glass=liquid] #workspaceNav { border-radius: 24px; }
+html[data-glass=liquid] :is(.btn, .workspace-tab, .seg, .seg button, .seg label) { border-radius: 999px; }
+html[data-glass=liquid] :is(.btn, .workspace-tab, .seg label, .seg button) { transition: transform .35s cubic-bezier(.34, 1.56, .64, 1), background-color .2s, box-shadow .2s; }
+html[data-glass=liquid] :is(.btn, .workspace-tab, .seg label, .seg button):active:not(:disabled) { transform: scale(.95); }
+html[data-glass=liquid] .btn:not(.primary):not(.live):not(.danger) { box-shadow: inset 0 1px 0 var(--glass-sheen), inset 0 -1px 0 rgba(0, 0, 0, .15); }
+html[data-glass=liquid] .btn.primary { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), inset 0 -2px 4px rgba(0, 0, 0, .18), 0 4px 14px color-mix(in srgb, var(--primary) 35%, transparent); }
+@media (prefers-reduced-motion: reduce) {
+  html[data-glass=liquid] :is(.btn, .workspace-tab, .seg label, .seg button) { transition: none; }
+  html[data-glass=liquid] :is(.btn, .workspace-tab, .seg label, .seg button):active:not(:disabled) { transform: none; }
+}
+
+/* Listas de opções (renderer/lista.js): o <select> some e fica um botão com a lista no tema das janelas,
+   opaca ou de vidro conforme Aparência. */
+.select-native { display: none !important; }
+.select-btn { position: relative; display: block; width: 100%; text-align: left; cursor: pointer; padding-right: 32px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.select-btn > span { pointer-events: none; }
+.select-btn::after { content: ""; position: absolute; right: 13px; top: 50%; width: 7px; height: 7px; margin-top: -6px; border: solid var(--muted); border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.select-btn[aria-expanded=true]::after { margin-top: -2px; transform: rotate(-135deg); }
+.select-btn:disabled { opacity: .55; cursor: default; }
+.select-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.select-pop {
+  position: fixed; z-index: 60; box-sizing: border-box; max-width: calc(100vw - 16px); overflow-y: auto; padding: 6px;
+  color: var(--surface-text); background: var(--panel-2); border: 1px solid var(--line-strong); border-radius: 10px;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, .45); outline: none;
+}
+.select-group { padding: 8px 10px 4px; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--surface-muted); font-family: var(--font-body); }
+.select-item { padding: 7px 10px; border-radius: 6px; font-size: 14px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.select-item.active { background: var(--accent-soft); }
+.select-item[aria-selected=true] { font-weight: 700; box-shadow: inset 3px 0 0 var(--accent); }
+.select-item[aria-disabled=true] { opacity: .5; cursor: default; }
+:is(html[data-glass=clear], html[data-glass=liquid]) .select-pop {
+  background: var(--panel-strong); /* mais cheia que os painéis: a lista fica por cima de texto */
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+}
+html[data-glass=liquid] .select-pop { border-radius: 18px; box-shadow: inset 0 1px 0 var(--glass-sheen), 0 14px 36px rgba(0, 0, 0, .35); }
+html[data-glass=liquid] .select-item { border-radius: 12px; }
+html[data-border=liquid] .select-pop { border-top-color: var(--edge-sheen); }
+
+/* Configurações em abas: uma seção por vez, sem a linha entre seções */
+.settings-tabs { flex-wrap: wrap; }
+.settings-tabs button { flex: 1 1 0; min-width: 88px; }
+.general-settings .settings-section + .settings-section { padding-top: 0; border-top: 0; }
+#appearanceTitle { display: none; }
+
+/* Palco (renderer/palco.js): seletor Grade | Destaque, divisa arrastável do Destaque e arrastar telas */
+.stage-layout { flex: none; padding: 3px; }
+.stage-layout button { height: 28px; padding: 0 12px; font-size: 12px; }
+.stage-layout button[aria-pressed="true"] { background: var(--panel-2); color: var(--text); }
+.tiles.column .tile.small { min-width: 0; }
+.tile-name { cursor: grab; touch-action: none; }
+.tile-name:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.tile.dragging { z-index: 5; opacity: .85; cursor: grabbing; box-shadow: 0 16px 40px rgba(0, 0, 0, .5); }
+.tile.dragging .tile-name { cursor: grabbing; }
+.tile.drop-target { outline: 2px dashed var(--accent); outline-offset: -2px; }
+.stage-splitter { position: absolute; z-index: 4; width: 10px; margin-left: 0; cursor: col-resize; touch-action: none; border-radius: 5px; }
+.stage-splitter::after { content: ""; position: absolute; left: 4px; top: 50%; width: 2px; height: 40px; margin-top: -20px; border-radius: 1px; background: var(--line-strong); }
+.stage-splitter:hover::after, .stage-splitter.active::after, .stage-splitter:focus-visible::after { background: var(--accent); height: 64px; margin-top: -32px; }
+.stage-splitter:focus-visible { outline: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .tiles.grid .tile:not(.dragging) { transition: box-shadow .15s; }
+}
+.stage-layout button { display: inline-flex; align-items: center; gap: 6px; }
+.stage-layout svg { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+/* Grade: cada tela tem posição e tamanho calculados em palco.js (linhas de cima com menos telas, maiores);
+   com telas demais, as que sobram vão para a faixa de baixo, que rola para os lados */
+.tiles.flow { display: block; position: relative; overflow: hidden; }
+.tiles.flow .tile { position: absolute; min-height: 0; box-sizing: border-box; }
+/* Barra de rolagem da faixa de baixo: fina, nas cores do tema, com ‹ › nas pontas */
+.stage-scroll { position: absolute; z-index: 4; height: 16px; display: flex; align-items: center; gap: 6px; }
+.stage-scroll button {
+  flex: none; width: 22px; height: 16px; padding: 0; display: grid; place-items: center; cursor: pointer;
+  color: var(--text); background: var(--panel-2); border: 1px solid var(--line); border-radius: 999px;
+}
+.stage-scroll button:disabled { opacity: .35; cursor: default; }
+.stage-scroll button svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.stage-scroll-track { position: relative; flex: 1; height: 6px; border-radius: 999px; background: var(--sunken); cursor: pointer; }
+.stage-scroll-track:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.stage-scroll-thumb { position: absolute; top: -2px; height: 10px; border-radius: 999px; background: var(--line-strong); cursor: grab; touch-action: none; }
+.stage-scroll-thumb:hover, .stage-scroll-thumb:active { background: var(--accent); }
+.stage-scroll-thumb:active { cursor: grabbing; }
+
+/* Barra de título no tema (main.js: titleBarStyle hidden). A página desenha a faixa de 32px com o nome e é por
+   ela que se arrasta a janela; o Windows desenha só minimizar, maximizar e fechar, nas cores de applyTitleBar
+   (configuracoes.js). Com layout containment no body, os elementos fixos do app ficam abaixo da faixa. */
+:root { --titlebar: 32px; }
+body { height: calc(100% - var(--titlebar)); margin-top: var(--titlebar); contain: layout; }
+.titlebar {
+  position: fixed; top: calc(-1 * var(--titlebar)); left: 0; right: 0; z-index: 100; height: var(--titlebar);
+  display: flex; align-items: center; gap: 8px; padding: 0 12px; box-sizing: border-box;
+  background: var(--bg); color: var(--muted); font-size: 12px; font-weight: 600; user-select: none; -webkit-app-region: drag;
+}
+.titlebar svg { width: 16px; height: 16px; fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+:is(html[data-glass=clear], html[data-glass=liquid]) .titlebar { background: transparent; }
+
+/* Temas prontos (Aparência) */
+.theme-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+.theme-card {
+  display: grid; gap: 8px; padding: 8px; text-align: left; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+  color: var(--surface-text); background: var(--sunken); border: 1px solid var(--field-line); border-radius: 10px;
+}
+.theme-card:hover { border-color: var(--line-strong); }
+.theme-card[aria-checked=true] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.theme-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.theme-swatches { display: grid; grid-template-columns: 2fr 2fr 1fr 1fr; height: 28px; border-radius: 6px; overflow: hidden; border: 1px solid var(--line); }
+html[data-glass=liquid] .theme-card { border-radius: 16px; }
+html[data-glass=liquid] .theme-swatches { border-radius: 10px; }

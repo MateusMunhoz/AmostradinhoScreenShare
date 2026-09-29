@@ -50,7 +50,7 @@ run('Barra de baixo numa linha', 90000, async () => {
   // Todos os painéis fechados: a barra começa recolhida numa aba na borda, e as telas usam a altura toda
   await A.eval(`(() => { localStorage.removeItem('barraRecolhida'); navCollapsed = true; workspaceViews.chat = false; workspaceViews.voice = false; saveWorkspaceViews(); syncWorkspace(); })()`);
   await sleep(300);
-  const T = `(() => { const a = $('streamArea').getBoundingClientRect(); return { telas: Math.round(a.top), nav: getComputedStyle($('workspaceNav')).display, aba: !$('navExpand').hidden }; })()`;
+  const T = `(() => { const a = $('streamArea').getBoundingClientRect(); return { telas: Math.round(a.top - $('titlebar').offsetHeight), nav: getComputedStyle($('workspaceNav')).display, aba: !$('navExpand').hidden }; })()`;
   let t = await A.eval(T);
   check('Painéis fechados: a barra recolhe numa aba, e as telas começam no topo', t.nav === 'none' && t.aba && t.telas <= 20, JSON.stringify(t));
   await A.shot('barra-recolhida.png');
@@ -62,7 +62,7 @@ run('Barra de baixo numa linha', 90000, async () => {
   await mouse('#navExpand');
   await sleep(300);
   t = await A.eval(T);
-  const navBottom = await A.eval(`Math.round($('workspaceNav').getBoundingClientRect().bottom)`);
+  const navBottom = await A.eval(`Math.round($('workspaceNav').getBoundingClientRect().bottom - $('titlebar').offsetHeight)`);
   check('A aba mostra a barra, e as telas descem para baixo dela', t.nav !== 'none' && !t.aba && t.telas >= navBottom && await A.eval(`!$('navCollapse').hidden && localStorage.getItem('barraRecolhida') === '0'`), JSON.stringify({ ...t, navBottom }));
   await A.shot('barra-aberta.png');
   await mouse('#navCollapse');

@@ -5,6 +5,7 @@
   "main": "boot.js",
   "scripts": {
     "start": "electron .",
+    "dev": "electron . --local",
     "test": "node --test tests/*.test.js",
     "test:settings": "node tests/settings-run.cjs",
     "test:rtc": "electron tests/rtc-smoke.cjs",
@@ -79,5 +80,8 @@
       "executableName": "tela-p2p"
     }
   },
-  "author": "MateusMunhoz"
+  "author": "MateusMunhoz",
+  "allowScripts": {
+    "electron@33.4.11": true
+  }
 }

@@ -57,6 +57,7 @@ function memberRow(id, name, sharing) {
   const nameEl = document.createElement('span');
   nameEl.className = 'mname';
   nameEl.textContent = name;
+  paintName(nameEl, id);
   nameEl.append(speakBars());
   const status = document.createElement('span');
   status.className = 'mstatus';

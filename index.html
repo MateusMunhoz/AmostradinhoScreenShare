@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <div id="titlebar" class="titlebar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h13v10H3zM8 19h13V9"/></svg><span>Tela P2P</span></div>
   <header class="workspace-header">
     <span class="workspace-brand">Tela P2P <span id="workspaceContext">Início</span></span>
     <nav id="workspaceNav" aria-label="Painéis do aplicativo">
@@ -34,6 +35,8 @@
       </div>
       <label class="field">Nome de exibição<input id="profileName" maxlength="32" autocomplete="off"></label>
       <p id="profileHint" class="hint"></p>
+      <label class="field">Fonte do nome<select id="profileNameFont"></select></label>
+      <p class="hint">Todos na sala veem o seu nome nesta fonte. Sem escolha, fica a fonte padrão do app.</p>
       </div>
     </section>
     <section id="voicePane" class="workspace-pane" aria-labelledby="voicePaneTitle" hidden>
@@ -153,6 +156,8 @@
             <div id="pausedStrip" class="paused-strip" role="group" aria-label="Transmissões em pausa" hidden></div>
             <div id="emptyStage" class="empty-stage"><p id="emptyText"></p></div>
             <div id="tiles" class="tiles" hidden></div>
+            <div id="stageSplitter" class="stage-splitter" role="separator" aria-orientation="vertical" aria-label="Largura da coluna de telas pequenas" aria-valuemin="15" aria-valuemax="50" tabindex="0" hidden></div>
+            <div id="stageScroll" class="stage-scroll" hidden><button type="button" data-dir="-1"></button><div class="stage-scroll-track" role="scrollbar" aria-orientation="horizontal" aria-controls="tiles" aria-label="Rolar a faixa de telas" aria-valuemin="0" aria-valuemax="100" tabindex="0"><div class="stage-scroll-thumb"></div></div><button type="button" data-dir="1"></button></div>
             <!-- Janela de transmitir: fica só em cima das transmissões, sem cobrir a barra de baixo -->
             <div id="shareDialog" class="modal" hidden>
               <div class="dialog share" role="dialog" aria-modal="true" aria-labelledby="shareTitle">
@@ -292,6 +297,7 @@
               <button class="btn icon ghost" id="voiceSettingsBtn" type="button"></button>
             </div>
             <button class="btn icon" id="overlayToggle" type="button" aria-pressed="false"></button>
+            <div id="stageLayout" class="seg stage-layout" role="group" aria-label="Arrumação das telas" hidden><button type="button" data-layout="grid" title="Todas do mesmo tamanho, como no Google Meet">Grade</button><button type="button" data-layout="spotlight" title="Uma grande e as outras numa coluna ao lado">Destaque</button></div>
             <span class="dock-spacer"></span>
             <!-- Convidar: copia o endereço da sala (que aparece ao passar o mouse e em Pessoas na sala) -->
             <button class="btn dock-invite" id="dockAddr" type="button" hidden>
@@ -531,12 +537,43 @@
     <div class="dialog general-settings" role="dialog" aria-modal="true" aria-labelledby="generalSettingsTitle">
       <div class="dialog-head"><h2 id="generalSettingsTitle">Configurações gerais</h2><button id="closeGeneralSettings" class="btn icon" type="button"></button></div>
       <p class="hint" id="settingsSaveStatus" role="status">Salvo neste dispositivo. As escolhas continuam ao reabrir o app.</p>
-      <section class="settings-section" aria-labelledby="colorsTitle">
+      <div class="settings-tabs seg" role="tablist" aria-label="Seções das configurações">
+        <button id="settingsTab-appearance" type="button" role="tab" data-tab="appearance" aria-controls="settingsPanel-appearance">Aparência</button>
+        <button id="settingsTab-colors" type="button" role="tab" data-tab="colors" aria-controls="settingsPanel-colors">Cores</button>
+        <button id="settingsTab-sounds" type="button" role="tab" data-tab="sounds" aria-controls="settingsPanel-sounds">Sons</button>
+      </div>
+      <section id="settingsPanel-appearance" class="settings-section" role="tabpanel" aria-labelledby="settingsTab-appearance" hidden>
+        <h3 id="appearanceTitle">Aparência</h3>
+        <div class="settings-row"><span id="themesLabel" class="settings-label">Temas prontos</span><div id="themeList" class="theme-list" role="radiogroup" aria-labelledby="themesLabel"></div><small id="themeHint" class="hint"></small></div>
+        <p class="hint" id="glassLabel">Material das janelas e painéis, no estilo do vidro do iOS.</p>
+        <div class="seg glass-seg" role="radiogroup" aria-labelledby="glassLabel">
+          <label><input type="radio" name="glass" value="opaque"><span class="glass-swatch" data-glass-swatch="opaque" aria-hidden="true"></span><span>Opaco</span></label>
+          <label><input type="radio" name="glass" value="clear"><span class="glass-swatch" data-glass-swatch="clear" aria-hidden="true"></span><span>Transparente</span></label>
+          <label><input type="radio" name="glass" value="liquid"><span class="glass-swatch" data-glass-swatch="liquid" aria-hidden="true"></span><span>Líquido</span></label>
+        </div>
+        <p class="hint" id="glassHint"></p>
+        <div id="glassLevelRow" class="settings-row" hidden><label for="glassLevel">Transparência</label><div class="vd-slider"><input type="range" id="glassLevel" min="0" max="100" step="1"><output id="glassLevelValue" for="glassLevel"></output></div></div>
+        <div class="settings-row"><span id="borderLabel" class="settings-label">Bordas</span>
+          <div class="seg glass-seg" role="radiogroup" aria-labelledby="borderLabel">
+            <label><input type="radio" name="border" value="solid"><span class="glass-swatch" data-border-swatch="solid" aria-hidden="true"></span><span>Normal</span></label>
+            <label><input type="radio" name="border" value="clear"><span class="glass-swatch" data-border-swatch="clear" aria-hidden="true"></span><span>Transparente</span></label>
+            <label><input type="radio" name="border" value="liquid"><span class="glass-swatch" data-border-swatch="liquid" aria-hidden="true"></span><span>Líquido</span></label>
+          </div>
+        </div>
+        <div class="settings-row"><label for="fontFamily">Fonte</label>
+          <div class="font-pick"><select id="fontFamily"></select><button id="loadLocalFonts" class="btn small" type="button">Fontes deste PC</button></div>
+        </div>
+        <div id="fontCustomRow" class="settings-row" hidden><label for="fontCustom">Nome da fonte instalada</label><input type="text" id="fontCustom" maxlength="64" spellcheck="false" autocomplete="off" placeholder="Ex.: Noto Sans, Roboto, Fira Sans" aria-describedby="fontCustomHint"><small id="fontCustomHint" class="hint">Use o nome exato, como aparece em Configurações do Windows › Fontes.</small></div>
+        <p id="fontPreview" class="font-preview" aria-live="polite"><strong>Tela P2P · Transmitindo ao vivo</strong><span>Ação, coração, pão e ânimo · 0123456789</span><span id="fontPreviewScript" hidden></span></p>
+        <label class="vd-check"><input type="checkbox" id="fontChat"> Usar também no chat (o padrão é a letra de console, Tahoma)</label>
+        <p class="hint" id="fontStatus" role="status"></p>
+      </section>
+      <section id="settingsPanel-colors" class="settings-section" role="tabpanel" aria-labelledby="settingsTab-colors" hidden>
         <h3 id="colorsTitle">Cores do layout</h3><p class="hint">Use um hexadecimal, como #3366FF, ou escolha pela amostra. A prévia é imediata.</p>
         <div class="settings-colors"><div class="settings-color"><label for="hex-main">Principal<small>Fundo do aplicativo</small></label><div class="settings-color-input"><input type="color" id="color-main" aria-label="Escolher cor: Principal"><input type="text" id="hex-main" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-main"></div><small id="error-main" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-secondary">Secundária<small>Painéis e cartões</small></label><div class="settings-color-input"><input type="color" id="color-secondary" aria-label="Escolher cor: Secundária"><input type="text" id="hex-secondary" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-secondary"></div><small id="error-secondary" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-detail1">Detalhes 1<small>Botões e destaques</small></label><div class="settings-color-input"><input type="color" id="color-detail1" aria-label="Escolher cor: Detalhes 1"><input type="text" id="hex-detail1" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-detail1"></div><small id="error-detail1" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-detail2">Detalhes 2<small>Indicadores e avisos</small></label><div class="settings-color-input"><input type="color" id="color-detail2" aria-label="Escolher cor: Detalhes 2"><input type="text" id="hex-detail2" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-detail2"></div><small id="error-detail2" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><p class="settings-colors-sub"><strong>Cores de detalhe</strong><small>Em cinza: calculada a partir das cores principais. Escolha uma cor para usar a sua; apague o código para voltar ao automático.</small></p><div class="settings-color"><label for="hex-text">Texto<small>Letras do app</small></label><div class="settings-color-input"><input type="color" id="color-text" aria-label="Escolher cor: Texto"><input type="text" id="hex-text" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-text"></div><small id="error-text" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-live">Ao vivo<small>Quem transmite e o botão Transmitir</small></label><div class="settings-color-input"><input type="color" id="color-live" aria-label="Escolher cor: Ao vivo"><input type="text" id="hex-live" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-live"></div><small id="error-live" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-speaking">Quem fala<small>Borda e barrinhas de quem fala</small></label><div class="settings-color-input"><input type="color" id="color-speaking" aria-label="Escolher cor: Quem fala"><input type="text" id="hex-speaking" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-speaking"></div><small id="error-speaking" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-warn">Avisos<small>Erros e alertas</small></label><div class="settings-color-input"><input type="color" id="color-warn" aria-label="Escolher cor: Avisos"><input type="text" id="hex-warn" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-warn"></div><small id="error-warn" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-line">Bordas<small>Linhas dos painéis e campos</small></label><div class="settings-color-input"><input type="color" id="color-line" aria-label="Escolher cor: Bordas"><input type="text" id="hex-line" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-line"></div><small id="error-line" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div></div>
         <button id="resetColors" class="btn small" type="button">Restaurar cores padrão</button>
       </section>
-      <section class="settings-section" aria-labelledby="soundsTitle"><h3 id="soundsTitle">Sons de notificação</h3><p class="hint">Escolha entre os sons incluídos no app. “Sem som” desativa só aquele aviso. Os da voz tocam quando você está na voz.</p>
+      <section id="settingsPanel-sounds" class="settings-section" role="tabpanel" aria-labelledby="settingsTab-sounds" hidden><h3 id="soundsTitle">Sons de notificação</h3><p class="hint">Escolha entre os sons incluídos no app. “Sem som” desativa só aquele aviso. Os da voz tocam quando você está na voz.</p>
         <div class="sound-event"><div class="settings-sound"><label for="sound-join">Entrada na sala</label><select id="sound-join"></select><button class="btn small" id="preview-join" type="button" aria-label="Ouvir prévia: Entrada na sala">Ouvir</button></div><div class="event-volume"><label for="volume-join">Volume</label><input id="volume-join" type="range" min="0" max="100" step="1" aria-label="Volume: Entrada na sala"><output id="value-join" for="volume-join">100%</output></div></div>
         <div class="sound-event"><div class="settings-sound"><label for="sound-leave">Saída da sala</label><select id="sound-leave"></select><button class="btn small" id="preview-leave" type="button" aria-label="Ouvir prévia: Saída da sala">Ouvir</button></div><div class="event-volume"><label for="volume-leave">Volume</label><input id="volume-leave" type="range" min="0" max="100" step="1" aria-label="Volume: Saída da sala"><output id="value-leave" for="volume-leave">100%</output></div></div>
         <div class="sound-event"><div class="settings-sound"><label for="sound-chat">Mensagem no chat</label><select id="sound-chat"></select><button class="btn small" id="preview-chat" type="button" aria-label="Ouvir prévia: Mensagem no chat">Ouvir</button></div><div class="event-volume"><label for="volume-chat">Volume</label><input id="volume-chat" type="range" min="0" max="100" step="1" aria-label="Volume: Mensagem no chat"><output id="value-chat" for="volume-chat">100%</output></div></div>
@@ -548,6 +585,7 @@
         <p class="hint">O chat avisa sobre novas mensagens enviadas e recebidas. O histórico é silencioso.</p>
         <label for="notificationVolume">Volume geral dos avisos</label><div class="vd-slider"><input type="range" id="notificationVolume" min="0" max="100" step="1"><output id="notificationVolumeValue" for="notificationVolume"></output></div><p class="hint">O volume geral multiplica os volumes individuais. Em 0%, todos os avisos ficam silenciosos.</p>
       </section>
+      <footer class="settings-version"><span>Tela P2P</span><span id="settingsVersion"></span></footer>
     </div>
   </div>
 
@@ -613,9 +651,19 @@
     </div>
   </div>
   <div id="toast" class="toast" role="status"></div>
+  <!-- Lente do modo Líquido: o fundo atrás das barras e botões ondula de leve, como vidro grosso -->
+  <svg class="glass-defs" width="0" height="0" aria-hidden="true" focusable="false">
+    <filter id="liquidLens" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.008 0.012" numOctaves="1" seed="7" result="noise"/>
+      <feGaussianBlur in="noise" stdDeviation="2" result="soft"/>
+      <feDisplacementMap in="SourceGraphic" in2="soft" scale="26" xChannelSelector="R" yChannelSelector="G" result="lens"/>
+      <feGaussianBlur in="lens" stdDeviation="7"/>
+    </filter>
+  </svg>
   <script src="encode-once.js"></script>
   <script src="voice.js"></script>
   <script src="renderer/util.js"></script>
+  <script src="renderer/lista.js"></script>
   <script src="renderer/estado.js"></script>
   <script src="renderer/rtc.js"></script>
   <script src="renderer/preferencias-modelo.js"></script>
@@ -628,6 +676,7 @@
   <script src="renderer/microfone.js"></script>
   <script src="renderer/membros.js"></script>
   <script src="renderer/assistir.js"></script>
+  <script src="renderer/palco.js"></script>
   <script src="renderer/pip.js"></script>
   <script src="renderer/overlay.js"></script>
   <script src="renderer/metadados.js"></script>

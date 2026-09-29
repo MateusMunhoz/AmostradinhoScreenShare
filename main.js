@@ -133,6 +133,27 @@ function relaunch() {
   app.quit();
 }
 
+// Fundo da janela (Configurações gerais > Aparência). O vidro fica só dentro do app, sobre um fundo desenhado
+// pela página: a janela acrílica transparente do Windows 11 deixava rastros (a tela anterior continuava
+// aparecendo e o texto ganhava um brilho de tanto ser redesenhado por cima) com backdrop-filter. Sempre opaca.
+const TITLEBAR_HEIGHT = 32;
+// Cores dos botões minimizar, maximizar e fechar (o fundo da barra acompanha a página; com vidro, transparente)
+function setTitleBar(color, symbolColor) {
+  const win = janelas.main;
+  const ok = (c) => typeof c === 'string' && /^#[\da-f]{6}([\da-f]{2})?$/i.test(c);
+  if (!win || win.isDestroyed() || !ok(color) || !ok(symbolColor) || typeof win.setTitleBarOverlay !== 'function') return false;
+  try { win.setTitleBarOverlay({ color, symbolColor, height: TITLEBAR_HEIGHT }); return true; } catch { return false; }
+}
+function setWindowMaterial(_mode, color) {
+  const win = janelas.main;
+  if (!win || win.isDestroyed()) return { material: 'none', supported: false };
+  try {
+    if (typeof win.setBackgroundMaterial === 'function') win.setBackgroundMaterial('none');
+    win.setBackgroundColor(/^#[\da-f]{6}$/i.test(color) ? color : '#22271E');
+  } catch {}
+  return { material: 'none', supported: false };
+}
+
 // Fora da captura: enquanto você se vê transmitindo uma tela inteira, a janela do app e as flutuantes não
 // aparecem na captura (senão vira um espelho infinito). No Windows 10 2004 ou mais novo, a captura mostra o que
 // está atrás delas; nos mais velhos, um retângulo preto. Para quem usa o PC, nada muda.
@@ -161,6 +182,10 @@ function createWindow() {
     minHeight: 560,
     backgroundColor: '#22271E',
     autoHideMenuBar: true,
+    // Barra de título no tema: a página desenha a barra (titlebar em index.html) e o Windows só os botões
+    // minimizar, maximizar e fechar, nas cores que a página manda (setTitleBar)
+    titleBarStyle: 'hidden',
+    titleBarOverlay: { color: '#22271E', symbolColor: '#FFFFFF', height: TITLEBAR_HEIGHT },
     title: 'Tela P2P',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -319,6 +344,8 @@ if (hasSingleInstance) app.whenReady().then(() => {
   ipcMain.handle('stats-stop', () => stopStats());
 
   ipcMain.handle('get-version', () => updater.version);
+  ipcMain.handle('window-material', (_e, mode, color) => setWindowMaterial(mode, color));
+  ipcMain.handle('window-titlebar', (_e, color, symbolColor) => setTitleBar(color, symbolColor));
   ipcMain.handle('get-own-pack', () => updater.readCurrentPack());
   ipcMain.handle('install-update', (_e, pack, sig) => updater.install(pack, sig));
   ipcMain.handle('github-check', () => github.check());

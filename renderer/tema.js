@@ -8,7 +8,7 @@ const THEME = {
   bg: 'var(--bg)', sunken: 'var(--sunken)', card: 'var(--panel)', raised: 'var(--panel-2)', line: 'var(--line)', field: 'var(--field-line)',
   text: 'var(--text)', muted: 'var(--muted)', primary: 'var(--primary)', onPrimary: 'var(--primary-ink)', accent: 'var(--accent)',
   accentSoft: 'var(--accent-soft)', ok: 'var(--ok)', ink: 'var(--primary-ink)', glass: 'var(--theme-glass)',
-  font: '"Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif',
+  font: 'var(--font-body, "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif)', // a fonte escolhida em Aparência
 };
 // Longe do amarelo (você) e do verde (quem fala), e legíveis sobre o oliva
 const PERSON_COLORS = ['#E3A76F', '#8FC1E3', '#D59BD0', '#7FD1C1', '#B9C7F2', '#E6C3A0'];
@@ -27,6 +27,23 @@ function avatar(name, id) {
   el.setAttribute('aria-hidden', 'true');
   paintAvatar(el, id);
   return el;
+}
+
+// Fonte do nome que cada pessoa escolheu no perfil. Chega pela sala só como id da lista (preferencias-modelo.js);
+// cada PC desenha com as próprias fontes, e quem não escolheu fica com a fonte do app. id vazio = eu.
+function nameFontOf(id) {
+  if (!id || id === 'me' || id === state.myId) return appPreferences.nameFont;
+  return state.members.get(id)?.nameFont || '';
+}
+function paintName(el, id) {
+  el.dataset.nameOf = !id || id === state.myId ? 'me' : id;
+  el.style.fontFamily = AppPreferences.nameFontStack(nameFontOf(id));
+  return el;
+}
+// Alguém trocou a fonte: repinta o nome dessa pessoa onde ele estiver (lista, voz, cartão, chat, vídeo, perfil)
+function repaintNames(id) {
+  const key = !id || id === state.myId ? 'me' : id;
+  for (const el of document.querySelectorAll(`[data-name-of="${CSS.escape(key)}"]`)) paintName(el, key === 'me' ? '' : key);
 }
 
 // As 3 barrinhas de quem fala (aparecem pelo CSS quando o elemento de cima está .speaking)

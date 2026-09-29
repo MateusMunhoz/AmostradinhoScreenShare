@@ -22,10 +22,106 @@ const AppPreferences = (() => {
   // Cores: as 4 primeiras sempre valem; as outras começam vazias ('' = automático, calculada das 4) e só
   // passam a valer quando a pessoa escolhe
   const optionalColors = ['text', 'live', 'speaking', 'warn', 'line'];
+  // Aparência: o material das superfícies (como o Liquid Glass do iOS) e a fonte da interface
+  const glassModes = ['opaque', 'clear', 'liquid'];
+  const borderModes = ['solid', 'clear', 'liquid']; // bordas: cor cheia, translúcidas ou com brilho de vidro
+  const glassLevel = { clear: 70, liquid: 55 }; // transparência inicial de cada modo (0 = quase opaco, 100 = quase invisível)
+  // Fontes do Windows 10 e 11. Cada pilha termina na fonte padrão, então letra que faltar cai nela.
+  const baseStack = '"Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif';
+  const fonts = [
+    { id: 'system', group: 'Padrão', label: 'Padrão do app · Segoe UI Variable', family: '', display: '"Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif' },
+    { id: 'segoe', group: 'Clássicas', label: 'Segoe UI', family: '"Segoe UI"' },
+    { id: 'arial', group: 'Clássicas', label: 'Arial', family: 'Arial, Helvetica' },
+    { id: 'verdana', group: 'Clássicas', label: 'Verdana', family: 'Verdana' },
+    { id: 'tahoma', group: 'Clássicas', label: 'Tahoma · console do chat', family: 'Tahoma' },
+    { id: 'trebuchet', group: 'Clássicas', label: 'Trebuchet MS', family: '"Trebuchet MS"' },
+    { id: 'calibri', group: 'Clássicas', label: 'Calibri', family: 'Calibri' },
+    { id: 'candara', group: 'Clássicas', label: 'Candara', family: 'Candara' },
+    { id: 'corbel', group: 'Clássicas', label: 'Corbel', family: 'Corbel' },
+    { id: 'bahnschrift', group: 'Clássicas', label: 'Bahnschrift · condensada', family: 'Bahnschrift' },
+    { id: 'georgia', group: 'Com serifa', label: 'Georgia', family: 'Georgia' },
+    { id: 'cambria', group: 'Com serifa', label: 'Cambria', family: 'Cambria' },
+    { id: 'constantia', group: 'Com serifa', label: 'Constantia', family: 'Constantia' },
+    { id: 'palatino', group: 'Com serifa', label: 'Palatino Linotype', family: '"Palatino Linotype", Palatino' },
+    { id: 'sitka', group: 'Com serifa', label: 'Sitka Text', family: '"Sitka Text"' },
+    { id: 'times', group: 'Com serifa', label: 'Times New Roman', family: '"Times New Roman", Times' },
+    { id: 'segoePrint', group: 'Estilizadas', label: 'Segoe Print · manuscrita', family: '"Segoe Print"' },
+    { id: 'segoeScript', group: 'Estilizadas', label: 'Segoe Script · cursiva', family: '"Segoe Script"' },
+    { id: 'inkFree', group: 'Estilizadas', label: 'Ink Free · caneta', family: '"Ink Free"' },
+    { id: 'comic', group: 'Estilizadas', label: 'Comic Sans MS', family: '"Comic Sans MS"' },
+    { id: 'gabriola', group: 'Estilizadas', label: 'Gabriola · decorativa', family: 'Gabriola' },
+    { id: 'franklin', group: 'Estilizadas', label: 'Franklin Gothic', family: '"Franklin Gothic Medium"' },
+    { id: 'impact', group: 'Estilizadas', label: 'Impact · títulos', family: 'Impact' },
+    { id: 'cascadia', group: 'Monoespaçadas', label: 'Cascadia Code', family: '"Cascadia Code", "Cascadia Mono", Consolas' },
+    { id: 'consolas', group: 'Monoespaçadas', label: 'Consolas', family: 'Consolas' },
+    { id: 'courier', group: 'Monoespaçadas', label: 'Courier New', family: '"Courier New"' },
+    { id: 'lucidaConsole', group: 'Monoespaçadas', label: 'Lucida Console', family: '"Lucida Console"' },
+    { id: 'japanese', group: 'Outros idiomas', label: '日本語 · Yu Gothic UI', family: '"Yu Gothic UI", "Meiryo UI", Meiryo', sample: 'こんにちは、配信中です' },
+    { id: 'chineseSimplified', group: 'Outros idiomas', label: '简体中文 · Microsoft YaHei UI', family: '"Microsoft YaHei UI", "Microsoft YaHei"', sample: '你好，正在直播' },
+    { id: 'chineseTraditional', group: 'Outros idiomas', label: '繁體中文 · Microsoft JhengHei UI', family: '"Microsoft JhengHei UI", "Microsoft JhengHei"', sample: '你好，正在直播' },
+    { id: 'korean', group: 'Outros idiomas', label: '한국어 · Malgun Gothic', family: '"Malgun Gothic"', sample: '안녕하세요, 방송 중입니다' },
+    { id: 'hindi', group: 'Outros idiomas', label: 'हिन्दी · Nirmala UI', family: '"Nirmala UI"', sample: 'नमस्ते, लाइव है' },
+    { id: 'thai', group: 'Outros idiomas', label: 'ไทย · Leelawadee UI', family: '"Leelawadee UI"', sample: 'สวัสดี กำลังถ่ายทอดสด' },
+    { id: 'arabic', group: 'Outros idiomas', label: 'العربية · Sakkal Majalla', family: '"Sakkal Majalla", "Segoe UI"', sample: 'مرحبا، البث مباشر' },
+    { id: 'georgian', group: 'Outros idiomas', label: 'ქართული · Sylfaen', family: 'Sylfaen', sample: 'გამარჯობა, პირდაპირი ეთერი' },
+    { id: 'ethiopic', group: 'Outros idiomas', label: 'አማርኛ · Ebrima', family: 'Ebrima', sample: 'ሰላም' },
+    { id: 'cherokee', group: 'Outros idiomas', label: 'ᏣᎳᎩ · Gadugi', family: 'Gadugi', sample: 'ᎣᏏᏲ' },
+    { id: 'tibetan', group: 'Outros idiomas', label: 'བོད་ཡིག · Microsoft Himalaya', family: '"Microsoft Himalaya"', sample: 'བཀྲ་ཤིས་བདེ་ལེགས།' },
+    { id: 'myanmar', group: 'Outros idiomas', label: 'မြန်မာ · Myanmar Text', family: '"Myanmar Text"', sample: 'မင်္ဂလာပါ' },
+  ];
+  // Nome de fonte digitado ou vindo da lista do PC: só letras, números, espaço e pontuação simples (vira string CSS)
+  function fontName(value) {
+    if (typeof value !== 'string') return '';
+    const s = value.trim().replace(/\s+/g, ' ');
+    return /^[\p{L}\p{N} ._'&+-]{1,64}$/u.test(s) ? s : '';
+  }
+  // Fonte do nome: vai para a sala (só o id da lista, nunca um nome livre) e cada um desenha com as fontes do
+  // próprio PC. '' ou id desconhecido = fonte padrão do app.
+  const cleanNameFont = id => typeof id === 'string' && id !== 'system' && fonts.some(f => f.id === id) ? id : '';
+  function nameFontStack(id) {
+    const f = fonts.find(x => x.id === cleanNameFont(id));
+    return f ? `${f.family}, ${baseStack}` : '';
+  }
+  function fontStacks(font) {
+    const f = fonts.find(x => x.id === font?.family);
+    let family = f?.family || '';
+    if (font?.family === 'custom' && fontName(font.custom)) family = `"${fontName(font.custom)}"`;
+    const body = family ? `${family}, ${baseStack}` : baseStack;
+    const display = family ? body : fonts[0].display;
+    return { body, display, console: font?.chat && family ? body : 'Tahoma, Verdana, sans-serif' };
+  }
   const defaults = { colors: { main: '#22271E', secondary: '#2D3327', detail1: '#D6C45C', detail2: '#A6D089', text: '', live: '', speaking: '', warn: '', line: '' },
+    appearance: { glass: 'opaque', level: glassLevel.clear, border: 'solid' },
+    font: { family: 'system', custom: '', chat: false }, nameFont: '',
     sounds: { join: 'notification035', leave: 'whoosh', chat: 'wood', voiceJoin: 'suaveEntrou', voiceLeave: 'suaveSaiu',
       mute: 'suaveMutou', unmute: 'suaveDesmutou',
       chatMuted: false, volume: 50, levels: { join: 100, leave: 100, chat: 100, voiceJoin: 100, voiceLeave: 100, mute: 100, unmute: 100 } } };
+  // Temas prontos (Aparência > Temas): cores e material de uma vez. As cores de detalhe que não aparecem aqui
+  // voltam ao automático. Mantêm a leitura do app: destaque = você/ao vivo, detalhe 2 = quem fala.
+  const themes = [
+    { id: 'lanhouse', label: 'Lan house', colors: { main: '#22271E', secondary: '#2D3327', detail1: '#D6C45C', detail2: '#A6D089' }, appearance: { glass: 'opaque', border: 'solid' } },
+    { id: 'meianoite', label: 'Meia-noite', colors: { main: '#0E1220', secondary: '#1A2036', detail1: '#7AA2F7', detail2: '#9ECE6A' }, appearance: { glass: 'liquid', level: 55, border: 'liquid' } },
+    { id: 'neon', label: 'Neon', colors: { main: '#0B0A14', secondary: '#1A1730', detail1: '#FF4FB3', detail2: '#3EF0C8' }, appearance: { glass: 'clear', level: 70, border: 'clear' } },
+    { id: 'grafite', label: 'Grafite', colors: { main: '#1B1D22', secondary: '#2A2D35', detail1: '#E6A55A', detail2: '#7CC6A4' }, appearance: { glass: 'liquid', level: 45, border: 'solid' } },
+    { id: 'claro', label: 'Claro', colors: { main: '#EEF2F8', secondary: '#FFFFFF', detail1: '#3455DB', detail2: '#147D55' }, appearance: { glass: 'opaque', border: 'solid' } },
+    { id: 'contraste', label: 'Alto contraste', colors: { main: '#000000', secondary: '#0D0D0D', detail1: '#FFD400', detail2: '#00FF6E', text: '#FFFFFF', line: '#FFFFFF' }, appearance: { glass: 'opaque', border: 'solid' } },
+  ];
+  // Preferências com o tema aplicado (o resto, como fontes e sons, fica como está)
+  function applyTheme(prefs, id) {
+    const t = themes.find(x => x.id === id);
+    if (!t) return normalize(prefs);
+    const colors = { ...defaults.colors, text: '', live: '', speaking: '', warn: '', line: '', ...t.colors };
+    const appearance = { ...defaults.appearance, level: glassLevel[t.appearance.glass] ?? defaults.appearance.level, ...t.appearance };
+    return normalize({ ...prefs, colors, appearance });
+  }
+  // Qual tema pronto bate com as preferências atuais ('' = personalizado)
+  function currentTheme(prefs) {
+    const p = normalize(prefs);
+    return themes.find(t => {
+      const n = applyTheme(p, t.id);
+      return JSON.stringify(n.colors) === JSON.stringify(p.colors) && n.appearance.glass === p.appearance.glass && n.appearance.border === p.appearance.border;
+    })?.id || '';
+  }
   function hex(value) {
     if (typeof value !== 'string') return null;
     const s = value.trim().replace(/^#/, '');
@@ -33,7 +129,16 @@ const AppPreferences = (() => {
     return /^[\da-f]{6}$/i.test(s) ? '#' + s.toUpperCase() : null;
   }
   function normalize(raw) {
-    const result = { colors: { ...defaults.colors }, sounds: { ...defaults.sounds, levels: { ...defaults.sounds.levels } } };
+    const result = { colors: { ...defaults.colors }, appearance: { ...defaults.appearance }, font: { ...defaults.font },
+      nameFont: cleanNameFont(raw?.nameFont), sounds: { ...defaults.sounds, levels: { ...defaults.sounds.levels } } };
+    if (borderModes.includes(raw?.appearance?.border)) result.appearance.border = raw.appearance.border;
+    if (glassModes.includes(raw?.appearance?.glass)) result.appearance.glass = raw.appearance.glass;
+    const level = raw?.appearance?.level;
+    if (typeof level === 'number' && Number.isFinite(level)) result.appearance.level = Math.max(0, Math.min(100, Math.round(level)));
+    const custom = fontName(raw?.font?.custom);
+    if (raw?.font?.family === 'custom' ? !!custom : fonts.some(f => f.id === raw?.font?.family)) result.font.family = raw.font.family;
+    result.font.custom = custom;
+    if (typeof raw?.font?.chat === 'boolean') result.font.chat = raw.font.chat;
     for (const field of Object.keys(result.colors)) result.colors[field] = hex(raw?.colors?.[field]) || result.colors[field];
     for (const event of events) {
       const id = raw?.sounds?.[event];
@@ -74,6 +179,42 @@ const AppPreferences = (() => {
       '--thumb': mix(c.secondary, '#000000', .15), '--theme-glass': alpha(c.secondary, .94),
       '--on-video': '#FFFFFF', '--scrim': 'rgba(0, 0, 0, .65)',
       'color-scheme': luminance(c.main) > 0.179 ? 'light' : 'dark',
+    };
+  }
+  // Superfícies de vidro: as mesmas cores, com transparência. level 0 = quase opaco, 100 = quase invisível.
+  // "clear" é o vidro limpo (muito transparente, pouco desfoque); "liquid" desfoca e satura mais, com brilho nas bordas.
+  function glass(colors, appearance) {
+    const c = normalize({ colors }).colors, a = normalize({ appearance }).appearance;
+    if (a.glass === 'opaque') return null;
+    const t = a.level / 100, liquid = a.glass === 'liquid';
+    const panel = +(0.92 - t * (liquid ? 0.7 : 0.8)).toFixed(3);
+    const round = n => +Math.max(0, Math.min(1, n)).toFixed(3);
+    return {
+      '--bg': alpha(c.main, round(panel * 0.55)), '--panel': alpha(c.secondary, panel),
+      '--panel-2': alpha(mix(c.secondary, ink(c.secondary), .07), round(panel + .08)),
+      '--panel-3': alpha(mix(c.secondary, ink(c.secondary), .13), round(panel + .14)),
+      '--sunken': alpha(mix(c.secondary, '#000000', .15), round(panel + .1)),
+      '--theme-glass': alpha(c.secondary, round(panel + .1)),
+      // Onde se lê bastante (diálogos, listas de opções, cartões, avisos): nunca abaixo de 78%, para o texto
+      // não se misturar com o que está atrás, por mais transparente que o resto esteja
+      '--panel-strong': alpha(c.secondary, round(Math.max(.78, panel + .2))),
+      '--scrim': `rgba(0, 0, 0, ${round(.2 + panel * .3)})`,
+      '--glass-base': c.main, '--glass-blur': liquid ? '24px' : '12px',
+      '--glass-saturate': liquid ? '1.9' : '1.25',
+      '--glass-edge': alpha(ink(c.secondary), liquid ? .28 : .16),
+      '--glass-sheen': alpha('#FFFFFF', liquid ? .22 : .08),
+    };
+  }
+  // Bordas de vidro: "clear" deixa a cor das bordas translúcida; "liquid" clareia a borda e acende o alto dela
+  // (--edge-sheen), como a luz batendo na quina de um vidro. Valem em qualquer material, inclusive no Opaco.
+  function borders(colors, appearance) {
+    const c = normalize({ colors }).colors, a = normalize({ appearance }).appearance;
+    if (a.border === 'solid') return null;
+    const p = palette(colors), liquid = a.border === 'liquid';
+    const edge = (color, amount) => liquid ? alpha(mix(color, '#FFFFFF', .35), amount) : alpha(color, amount * .8);
+    return {
+      '--line': edge(p['--line'], .45), '--line-strong': edge(p['--line-strong'], .6), '--field-line': edge(p['--field-line'], .7),
+      '--edge-sheen': liquid ? alpha('#FFFFFF', .42) : alpha(ink(c.secondary), .18),
     };
   }
   // Toca um som "Suave" pelo Web Audio; devolve um objeto com pause() para o stop() funcionar igual
@@ -126,6 +267,6 @@ const AppPreferences = (() => {
     }
     stopAll() { for (const event of [...this.players.keys()]) this.stop(event); }
   }
-  return { key, sounds, events, defaults, optionalColors, hex, normalize, read, write, palette, SoundPlayer };
+  return { key, sounds, events, defaults, optionalColors, glassModes, glassLevel, borderModes, fonts, fontName, fontStacks, cleanNameFont, nameFontStack, borders, themes, applyTheme, currentTheme, hex, normalize, read, write, palette, glass, SoundPlayer };
 })();
 if (typeof module !== 'undefined') module.exports = AppPreferences;

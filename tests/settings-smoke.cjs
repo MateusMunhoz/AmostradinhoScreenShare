@@ -7,7 +7,7 @@ app.whenReady().then(async()=>{
   for(const [channel,value] of Object.entries({
     'get-ips':[], 'get-version':'1.10.1', 'github-check':{ok:false}, 'set-priority':true,'stats-start':true,'stats-stop':true,
     'stop-app-audio':true,'stop-server':true,'room-keys':true,'sessoes-observar':true,'capture-exclude':true,'ptt':true,
-    'razze-state':{configured:false,baseUrl:'',authenticated:false}, 'razze-pending-invite':'',
+    'razze-state':{configured:false,baseUrl:'',authenticated:false}, 'razze-pending-invite':'', 'window-material':{material:'none',supported:false}, 'window-titlebar':true,
     'get-shortcuts':{compose:'CommandOrControl+Enter',mute:'CommandOrControl+Shift+M',edit:'CommandOrControl+Shift+E',hideChat:'CommandOrControl+Shift+O'},
   })) ipcMain.handle(channel,()=>value);
   const win=new BrowserWindow({show:false,width:1200,height:780,webPreferences:{backgroundThrottling:false,preload:path.join(root,'preload.js')}});
@@ -49,6 +49,36 @@ app.whenReady().then(async()=>{
       await run(`$('volume-voiceJoin').value=35;$('volume-voiceJoin').dispatchEvent(new Event('input'));$('sound-voiceLeave').value='wood';$('sound-voiceLeave').dispatchEvent(new Event('change'));`);
       await run(`$('hex-main').value='#GGGGGG';$('hex-main').dispatchEvent(new Event('input'));`);
       await check('Hexadecimal inválido não é salvo',`$('hex-main').getAttribute('aria-invalid')==='true' && AppPreferences.read(localStorage).colors.main==='#22271E'`);
+      await run(`document.querySelector('input[name=glass][value=liquid]').click();`);
+      await check('Vidro líquido aplicado na hora',`document.documentElement.dataset.glass==='liquid' && getComputedStyle($('workspaceNav')).backdropFilter.includes('liquidLens') && !$('glassLevelRow').hidden`);
+      await check('Abas: uma seção por vez',`(() => {$('settingsTab-colors').click();return !$('settingsPanel-colors').hidden && $('settingsPanel-sounds').hidden && $('settingsPanel-appearance').hidden && !$('settingsTab-network') && $('settingsTab-colors').getAttribute('aria-selected')==='true';})()`);
+      await run(`$('settingsTab-appearance').click();$('fontFamily').nextElementSibling.click();0`);
+      await check('Lista de fontes no tema, com vidro e cada fonte na própria letra',`(() => {const p=document.querySelector('.select-pop');return !!p && getComputedStyle(p).backdropFilter.includes('blur') && [...p.querySelectorAll('[role=option]')].some(o=>o.textContent.startsWith('Georgia')&&o.style.fontFamily.startsWith('Georgia')) && $('fontFamily').nextElementSibling.getAttribute('aria-expanded')==='true';})()`);
+      await run(`[...document.querySelectorAll('.select-pop [role=option]')].find(o=>o.textContent.startsWith('Georgia')).click();0`);
+      await check('Escolher na lista muda a fonte e fecha a lista',`!document.querySelector('.select-pop') && appPreferences.font.family==='georgia' && $('fontFamily').nextElementSibling.textContent.startsWith('Georgia')`);
+      await run(`document.querySelector('input[name=border][value=liquid]').click();`);
+      await check('Bordas líquidas: quina de cima acesa, cor translúcida, e o vidro continua',`document.documentElement.dataset.border==='liquid' && document.documentElement.dataset.glass==='liquid' && getComputedStyle($('workspaceNav')).borderTopColor!==getComputedStyle($('workspaceNav')).borderBottomColor && getComputedStyle(document.documentElement).getPropertyValue('--line').startsWith('rgba(')`);
+      await run(`document.querySelector('input[name=border][value=solid]').click();`);
+      await check('Bordas normais voltam à cor cheia',`document.documentElement.dataset.border==='solid' && AppPreferences.read(localStorage).appearance.border==='solid' && getComputedStyle(document.documentElement).getPropertyValue('--line').startsWith('#')`);
+      await run(`document.querySelector('.theme-card[data-theme=neon]').click();0`);
+      await check('Tema pronto aplica cores, vidro e bordas e fica marcado',`appPreferences.colors.main==='#0B0A14' && document.documentElement.dataset.glass==='clear' && document.documentElement.dataset.border==='clear' && document.querySelector('.theme-card[data-theme=neon]').getAttribute('aria-checked')==='true' && document.querySelectorAll('.theme-card[aria-checked=true]').length===1`);
+      await check('Barra de título: botões do Windows transparentes com vidro e na cor do texto',`/^#00000000#[0-9A-F]{6}$/.test(titleBarKey) && getComputedStyle($('titlebar')).backgroundColor==='rgba(0, 0, 0, 0)'`);
+      await run(`document.querySelector('.theme-card[data-theme=claro]').click();0`);
+      await check('Tema opaco: barra de título na cor principal',`titleBarKey.startsWith('#EEF2F8') && document.documentElement.dataset.glass==='opaque'`);
+      await run(`document.querySelector('.theme-card[data-theme=lanhouse]').click();document.querySelector('input[name=glass][value=liquid]').click();0`);
+      await run(`$('profileNameFont').value='segoeScript';$('profileNameFont').dispatchEvent(new Event('change'));`);
+      await check('Fonte do nome salva e aplicada no perfil, sem mudar o resto do app',`AppPreferences.read(localStorage).nameFont==='segoeScript' && getComputedStyle($('profileDisplayName')).fontFamily.startsWith('"Segoe Script"') && !getComputedStyle(document.body).fontFamily.includes('Segoe Script') && memberRow(null,'Eu',false).querySelector('.mname').style.fontFamily.startsWith('"Segoe Script"')`);
+      await run(`$('profileNameFont').value='';$('profileNameFont').dispatchEvent(new Event('change'));`);
+      await check('Sem escolha, o nome volta à fonte padrão',`AppPreferences.read(localStorage).nameFont==='' && $('profileDisplayName').style.fontFamily===''`);
+      await run(`$('fontFamily').value='georgia';$('fontFamily').dispatchEvent(new Event('change'));`);
+      await check('Fonte trocada no app, chat com a letra de console',`getComputedStyle(document.body).fontFamily.startsWith('Georgia') && getComputedStyle(document.querySelector('.chat-list')).fontFamily.startsWith('Tahoma')`);
+      await run(`$('fontChat').click();`);
+      await check('Fonte também no chat quando marcado',`getComputedStyle(document.querySelector('.chat-list')).fontFamily.startsWith('Georgia')`);
+      await run(`$('fontFamily').value='custom';$('fontFamily').dispatchEvent(new Event('change'));$('fontCustom').value='Fonte Que Nao Existe';$('fontCustom').dispatchEvent(new Event('input'));`);
+      await check('Nome digitado vira a fonte e avisa se não existe',`!$('fontCustomRow').hidden && getComputedStyle(document.body).fontFamily.startsWith('"Fonte Que Nao Existe"') && $('fontStatus').textContent.includes('não foi encontrada')`);
+      await check('Versão discreta no pé das configurações',`$('settingsVersion').textContent==='v1.10.1'`);
+      await run(`document.querySelector('input[name=glass][value=opaque]').click();$('fontFamily').value='system';$('fontFamily').dispatchEvent(new Event('change'));$('fontChat').click();`);
+      await check('Opaco e fonte padrão restauram o visual original',`document.documentElement.dataset.glass==='opaque' && getComputedStyle($('workspaceNav')).backdropFilter==='none' && getComputedStyle(document.body).fontFamily.startsWith('"Segoe UI Variable Text"')`);
       await run(`toggleChatOverlay();void 0;`);
       await run(`for(const [key,value] of Object.entries({main:'#F0F4FA',secondary:'#FFFFFF',detail1:'#3455DB',detail2:'#147D55'})){$('hex-'+key).value=value;$('hex-'+key).dispatchEvent(new Event('input'));} $('sound-join').value='notification066';$('sound-join').dispatchEvent(new Event('change'));$('notificationVolume').value=27;$('notificationVolume').dispatchEvent(new Event('input'));`);
       await check('Quatro cores aplicadas imediatamente',`getComputedStyle(document.body).backgroundColor==='rgb(240, 244, 250)' && getComputedStyle($('generalSettingsDialog').firstElementChild).backgroundColor==='rgb(255, 255, 255)'`);
@@ -59,7 +89,7 @@ app.whenReady().then(async()=>{
       fs.writeFileSync(path.join(root,'.test-profile','settings-light.png'),(await win.webContents.capturePage()).toPNG());
       win.setSize(820,560); await new Promise(r=>setTimeout(r,150));
       // Quem rola é o cartão do diálogo (o fundo escuro só centraliza)
-      await check('Painel cabe em 820 × 560 e permite rolar',`(() => {const c=$('generalSettingsDialog').firstElementChild;const r=c.getBoundingClientRect();return r.top>=0&&r.left>=0&&r.right<=innerWidth&&r.bottom<=innerHeight&&c.scrollWidth<=c.clientWidth+1&&c.scrollHeight>c.clientHeight;})()`);
+      await check('Painel cabe em 820 × 560 e permite rolar',`(() => {showSettingsTab('sounds');const c=$('generalSettingsDialog').firstElementChild;const r=c.getBoundingClientRect();return r.top>=0&&r.left>=0&&r.right<=innerWidth&&r.bottom<=innerHeight&&c.scrollWidth<=c.clientWidth+1&&c.scrollHeight>c.clientHeight;})()`);
       fs.writeFileSync(path.join(root,'.test-profile','settings-small.png'),(await win.webContents.capturePage()).toPNG());
       await run(`document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape'}))`);
       await check('Escape fecha configurações',`$('generalSettingsDialog').hidden`);

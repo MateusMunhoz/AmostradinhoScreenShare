@@ -46,6 +46,8 @@ const ICON = {
   volume: svg('M11 5 6 9H2v6h4l5 4V5zM15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14'),
   muted: svg('M11 5 6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6'),
   close: svg('M18 6 6 18M6 6l12 12'),
+  prev: svg('M15 18l-6-6 6-6'),
+  next: svg('M9 18l6-6-6-6'),
   refresh: svg('M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6'),
   leave: svg('M9 21H5V3h4M16 17l5-5-5-5M21 12H9'),
   chat: svg('M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'),
