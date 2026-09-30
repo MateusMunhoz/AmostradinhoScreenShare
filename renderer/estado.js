@@ -17,7 +17,10 @@ function bitrateFor(q, w, h) {
   return Math.max(QUALITY['1080p30'].bitrate, Math.round(q.bitrate * Math.min(1, (w * h) / (q.w * q.h))));
 }
 
-// Sem STUN/TURN: pela Radmin VPN os PCs se enxergam direto pelos IPs 26.x
+// Radmin, Razze e rede local: sem STUN/TURN, os PCs se enxergam direto pelos IPs da VPN ou de casa.
+// Modo Internet: o servidor da VPS manda, ao entrar na sala, os servidores STUN e um acesso temporário ao TURN.
+// O ICE tenta primeiro o caminho direto e só passa pelo TURN quando não tem jeito (CGNAT, firewall).
+// O objeto é o mesmo o tempo todo (quem cria conexão lê na hora); só a lista muda ao entrar e sair da sala.
 const RTC_CONFIG = { iceServers: [] };
 
 const state = {
@@ -27,6 +30,7 @@ const state = {
   isOwner: false,
   host: '',
   port: 8765,
+  cloud: null,             // modo Internet: { url, code } do servidor da VPS e o código da sala
   members: new Map(),      // id -> { name, sharing, version, addrs }  (outras pessoas na sala)
   // Troca de host: quem roda o servidor, a ordem de chegada (o mais antigo assume) e a senha para voltar
   hostId: null,

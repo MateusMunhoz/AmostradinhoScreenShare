@@ -1,5 +1,6 @@
 'use strict';
-// Rede: como os PCs se conectam (Radmin ou rede local, ou a VPN Razze com WireGuard).
+// Rede: como os PCs se conectam (Radmin ou rede local, a VPN Razze com WireGuard, ou pela Internet com o servidor
+// da VPS: salas por código + senha, STUN e TURN, sem VPN nenhuma).
 // Script clássico: divide o escopo global com os outros (ordem no index.html). Usa de: util, estado, navegacao.
 //
 // Fica numa janela própria (ícone de servidor na barra de cima), separada das Configurações gerais. O Razze
@@ -15,11 +16,67 @@ function networkPreferences() {
   try {
     const p = JSON.parse(localStorage.getItem(NETWORK_PREF_KEY) || '{}');
     return {
-      provider: p.provider === 'razze' ? 'razze' : 'radmin',
+      provider: ['razze', 'internet'].includes(p.provider) ? p.provider : 'radmin',
       apiUrl: typeof p.apiUrl === 'string' ? p.apiUrl : '',
       activeNetworkId: typeof p.activeNetworkId === 'string' ? p.activeNetworkId : '',
+      internetUrl: typeof p.internetUrl === 'string' ? p.internetUrl : '',
     };
-  } catch { return { provider: 'radmin', apiUrl: '', activeNetworkId: '' }; }
+  } catch { return { provider: 'radmin', apiUrl: '', activeNetworkId: '', internetUrl: '' }; }
+}
+
+// Endereço do servidor do modo Internet, como o WebSocket precisa: "1.2.3.4:8765" vira ws://1.2.3.4:8765 e um
+// domínio sem porta vira wss:// (atrás do HTTPS). Vazio se não der para entender.
+function normalizeInternetUrl(value) {
+  let raw = String(value || '').trim();
+  if (!raw) return '';
+  raw = raw.replace(/^https:\/\//i, 'wss://').replace(/^http:\/\//i, 'ws://');
+  if (!/^wss?:\/\//i.test(raw)) raw = (/:\d+(\/|$)/.test(raw) || /^\d{1,3}(\.\d{1,3}){3}$/.test(raw) ? 'ws://' : 'wss://') + raw;
+  try {
+    const u = new URL(raw);
+    if (!['ws:', 'wss:'].includes(u.protocol) || !u.hostname) return '';
+    return `${u.protocol}//${u.host}${u.pathname === '/' ? '' : u.pathname.replace(/\/$/, '')}`;
+  } catch { return ''; }
+}
+
+function internetServerUrl() { return normalizeInternetUrl(networkPreferences().internetUrl); }
+
+// Pergunta ao servidor se ele é mesmo o do modo Internet (sem entrar em sala nenhuma)
+function testInternetServer(url, timeoutMs = 6000) {
+  return new Promise((resolve, reject) => {
+    let ws;
+    try { ws = new WebSocket(url); } catch { return reject(new Error('Endereço inválido.')); }
+    const timer = setTimeout(() => { ws.close(); reject(new Error('Sem resposta. Confira o endereço, a porta e o firewall da VPS.')); }, timeoutMs);
+    ws.onopen = () => ws.send(JSON.stringify({ type: 'info' }));
+    ws.onmessage = (e) => {
+      let m = null;
+      try { m = JSON.parse(e.data); } catch {}
+      clearTimeout(timer);
+      ws.close();
+      if (m?.type === 'info' && m.app === 'tela-p2p-internet') resolve({ turn: !!m.turn });
+      else reject(new Error('Esse endereço respondeu, mas não é um servidor do modo Internet.'));
+    };
+    ws.onerror = () => { clearTimeout(timer); reject(new Error('Não foi possível conectar. Confira o endereço, a porta e o firewall da VPS.')); };
+  });
+}
+
+// Tela inicial e Criar sala mudam de texto no modo Internet (código em vez de endereço, senha obrigatória)
+function renderHomeForNetwork() {
+  const internet = selectedNetworkProvider() === 'internet';
+  const sessions = document.querySelector('#homeCard .sessions');
+  if (sessions) sessions.hidden = internet; // não tem "sessões na sua rede" pela internet
+  $('goJoin').textContent = internet ? 'Entrar com código' : 'Entrar com endereço';
+  $('joinPanelTitle').textContent = internet ? 'Entrar com código' : 'Entrar com endereço';
+  $('roomAddrLabel').textContent = internet ? 'Código da sala' : 'Endereço de quem criou';
+  $('roomAddr').placeholder = internet ? 'ABC234' : '26.123.45.67:8765';
+  $('joinPassword').placeholder = internet ? 'A senha que quem criou passou' : 'Só se a sala tiver uma';
+  $('createBlockHint').textContent = internet ? 'Os amigos entram pelo código da sala' : 'Os amigos entram pelo seu endereço';
+  $('roomPortField').hidden = internet;
+  $('roomVisibleLine').hidden = internet;
+  $('roomPasswordLabel').textContent = internet ? 'Senha (obrigatória)' : 'Senha (opcional)';
+  $('roomPassword').placeholder = internet ? 'Mínimo 4 caracteres; use uma forte' : 'Vazio = sem senha';
+  $('createHint').textContent = internet
+    ? 'A sala fica no servidor e continua aberta enquanto tiver alguém nela. Mande o código e a senha para os amigos.'
+    : 'A sala fica aberta enquanto você estiver nela. Quando você sair, ela é encerrada para todos.';
 }
 
 function inviteTokenFromValue(value) {
@@ -44,6 +101,10 @@ function saveNetworkPreferences(patch) {
 function selectedNetworkProvider() { return networkPreferences().provider; }
 
 async function requireSelectedNetwork() {
+  if (selectedNetworkProvider() === 'internet') {
+    if (!internetServerUrl()) throw new Error('Coloque o endereço do servidor na aba Rede (ícone de servidor, no topo).');
+    return;
+  }
   if (selectedNetworkProvider() !== 'razze') return;
   const prefs = networkPreferences();
   const state = await window.api.razzeState();
@@ -111,9 +172,18 @@ function renderConnectivitySettings() {
   document.querySelectorAll('input[name="networkProvider"]').forEach((r) => { r.checked = r.value === prefs.provider; });
   $('razzeApiUrl').value = prefs.apiUrl;
   $('razzeSettings').hidden = prefs.provider !== 'razze';
+  $('internetSettings').hidden = prefs.provider !== 'internet';
+  $('internetUrl').value = prefs.internetUrl;
   $('networkHint').textContent = prefs.provider === 'razze'
     ? 'Uma VPN WireGuard coordenada pelo seu servidor Razze: cada um entra com a própria conta, numa rede criada por alguém do grupo.'
-    : 'Como sempre foi: os amigos entram pelo seu endereço da Radmin VPN ou da rede local, e as sessões abertas aparecem sozinhas.';
+    : prefs.provider === 'internet'
+      ? 'Sem VPN: a sala fica no seu servidor (VPS) e os amigos entram com código e senha. O vídeo vai direto entre os PCs; quando a internet de alguém não deixa (CGNAT, firewall), passa pelo TURN do servidor, sempre criptografado.'
+      : 'Como sempre foi: os amigos entram pelo seu endereço da Radmin VPN ou da rede local, e as sessões abertas aparecem sozinhas.';
+  if (prefs.provider === 'internet') {
+    const url = normalizeInternetUrl(prefs.internetUrl);
+    setNetSummary(!!url, url ? `Internet · servidor ${url}` : 'Internet: falta o endereço do servidor.');
+  }
+  renderHomeForNetwork();
   if (prefs.provider === 'radmin') { // o mesmo estado do rodapé da tela inicial (Radmin encontrada ou não)
     const ok = $('radminDot').classList.contains('ok');
     setNetSummary(ok, ok ? `${$('radminTitle').textContent} · ${$('radminDetail').textContent}. Os amigos entram pelo seu endereço.`
@@ -498,6 +568,22 @@ function setupConnectivitySettings() {
       setSessionWatch(!$('home').hidden);
     };
   });
+  $('internetSaveServer').onclick = async () => {
+    const url = normalizeInternetUrl($('internetUrl').value);
+    if (!url) { $('internetStatus').textContent = 'Endereço inválido. Exemplo: ws://203.0.113.10:8765'; return; }
+    $('internetSaveServer').disabled = true;
+    $('internetStatus').textContent = 'Testando…';
+    try {
+      const info = await testInternetServer(url);
+      saveNetworkPreferences({ internetUrl: url });
+      renderConnectivitySettings();
+      $('internetStatus').textContent = info.turn
+        ? 'Servidor ok, com TURN: funciona até para quem está atrás de CGNAT.'
+        : 'Servidor ok, mas sem TURN: quem estiver atrás de CGNAT pode não conseguir ver a tela.';
+    } catch (error) {
+      $('internetStatus').textContent = error.message;
+    } finally { $('internetSaveServer').disabled = false; }
+  };
   $('razzeTabLogin').onclick = () => setRazzeAuthTab(false);
   $('razzeTabRegister').onclick = () => setRazzeAuthTab(true);
   $('razzeSaveServer').onclick = async () => {
@@ -578,7 +664,7 @@ function setupConnectivitySettings() {
   };
   $('razzeAddFriend').onclick = () => addFriendByNickname($('razzeFriendNickname').value);
   // Enter nos campos de uma linha faz o mesmo que o botão ao lado
-  for (const [input, button] of [['razzeApiUrl', 'razzeSaveServer'], ['razzeNetworkName', 'razzeCreateNetwork'], ['razzeInviteToken', 'razzeJoinInvite'], ['razzeFriendNickname', 'razzeAddFriend']]) {
+  for (const [input, button] of [['internetUrl', 'internetSaveServer'], ['razzeApiUrl', 'razzeSaveServer'], ['razzeNetworkName', 'razzeCreateNetwork'], ['razzeInviteToken', 'razzeJoinInvite'], ['razzeFriendNickname', 'razzeAddFriend']]) {
     $(input).addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); $(button).click(); } });
   }
   document.addEventListener('contextmenu', async (event) => {
