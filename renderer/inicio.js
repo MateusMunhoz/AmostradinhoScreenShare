@@ -354,6 +354,8 @@ $('pipChipClose').onclick = () => { for (const id of [...state.pips.keys()]) clo
 setIcon($('chatAttach'), 'attach', 'Mandar arquivo (até 200 MB)');
 setIcon($('chatSend'), 'send', 'Enviar');
 $('chatForm').onsubmit = (e) => { e.preventDefault(); sendChat(); };
+// Clicar na área vazia da linha de escrever (em volta do campo) põe o cursor no campo
+$('chatForm').addEventListener('mousedown', (e) => { if (e.target === e.currentTarget) { e.preventDefault(); $('chatInput').focus(); } });
 $('chatInput').addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
 });

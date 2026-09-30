@@ -205,6 +205,10 @@ function watchDock() {
   // O próprio menu muda ao medir e ao abrir: mudanças dentro dele não medem de novo (senão mede sem parar)
   new MutationObserver((records) => { if (records.some((r) => !$('dockMoreWrap').contains(r.target))) again(); })
     .observe(dock, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['hidden'] });
+  // Trocar a fonte ou o tema muda a largura dos botões sem mudar a da barra: mede de novo (as fontes do app
+  // chegam depois, por isso também quando uma termina de carregar)
+  new MutationObserver(again).observe(document.documentElement, { attributes: true, attributeFilter: ['style', 'data-skin'] });
+  document.fonts?.addEventListener('loadingdone', again);
 }
 // Barra de cima sem espaço (janela estreita, fonte larga): Chat, Voz e Transmissão ficam só com o ícone
 function fitNav() {
