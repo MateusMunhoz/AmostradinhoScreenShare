@@ -238,7 +238,7 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
   padding: 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel-2); box-shadow: 0 12px 32px rgba(0, 0, 0, .5);
 }
 .person-card .pc-head { display: flex; align-items: center; gap: 12px; }
-.person-card .pc-head .avatar { width: 40px; height: 40px; font-size: 16px; background: var(--person); }
+.person-card .pc-head .avatar { width: 40px; height: 40px; font-size: 16px; background-color: var(--person); }
 /* Cartão da pessoa: foto grande no topo; com foto, clicar abre ela inteira */
 .person-card .pc-head .avatar.pc-photo { width: 72px; height: 72px; font-size: 28px; }
 .pc-photo-btn {
@@ -376,7 +376,7 @@ kbd { font-family: Consolas, monospace; font-size: 11px; color: var(--muted); bo
   flex: none; height: 42px; display: flex; align-items: center; gap: 8px; padding: 0 6px 0 10px; min-width: 0;
   border-bottom: 1px solid var(--line); font-size: 13px; font-weight: 600;
 }
-.tile-name > .avatar { width: 24px; height: 24px; font-size: 11px; background: var(--person, var(--live)); color: var(--bg); box-shadow: 0 0 0 2px var(--panel), 0 0 0 3px var(--person, var(--live)); }
+.tile-name > .avatar { width: 24px; height: 24px; font-size: 11px; background-color: var(--person, var(--live)); color: var(--bg); box-shadow: 0 0 0 2px var(--panel), 0 0 0 3px var(--person, var(--live)); }
 .tile-name-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tile-name .eq { margin-left: 2px; }
 .tile-chip { flex: none; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap; background: var(--panel-2); color: var(--muted); font-variant-numeric: tabular-nums; }
@@ -441,10 +441,10 @@ kbd { font-family: Consolas, monospace; font-size: 11px; color: var(--muted); bo
 .msg-body .file-card { font-family: var(--font-body); }
 .avatar {
   width: 28px; height: 28px; flex: none; border-radius: 50%; background: var(--person, var(--muted));
-  color: var(--bg); font-size: 13px; font-weight: 700; display: grid; place-items: center;
+  color: var(--bg); font-size: 13px; font-weight: 700; display: grid; place-items: center; user-select: none;
 }
 /* Foto de perfil no lugar da inicial (renderer/fotos.js) */
-.avatar.photo, #navProfileAvatar.photo { background-size: cover; background-position: center; color: transparent !important; }
+.avatar.photo, #navProfileAvatar.photo { background-size: cover !important; background-position: center !important; background-repeat: no-repeat; color: transparent !important; }
 .msg-line .avatar { display: inline-block; width: 18px; height: 18px; margin-right: 6px; vertical-align: -4px; }
 .msg.grouped .msg-line .avatar { display: none; }
 .voice-avatar .avatar { width: 20px; height: 20px; margin-left: -4px; }
