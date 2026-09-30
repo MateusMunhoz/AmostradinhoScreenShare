@@ -1,6 +1,6 @@
 # Tela P2P (AmostradinhoScreenShare)
 
-Transmita a tela e converse por voz com os amigos, de PC para PC, pela Radmin VPN ou pela VPN WireGuard Razze. No modo Radmin, não precisa de servidor pago: o app de quem cria a sala apresenta as pessoas, e o vídeo, o áudio e a voz vão direto de um PC para o outro.
+Transmita a tela e converse por voz com os amigos, de PC para PC, pela Radmin VPN, pela VPN WireGuard Razze ou pelo modo Internet (sem VPN, com um servidor numa VPS). No modo Radmin, não precisa de servidor pago: o app de quem cria a sala apresenta as pessoas, e o vídeo, o áudio e a voz vão direto de um PC para o outro.
 
 **Baixar:** pegue o arquivo da versão mais nova em [Releases](https://github.com/MateusMunhoz/AmostradinhoScreenShare/releases/latest). Não precisa instalar: é só abrir. Depois disso, o próprio app avisa quando sair uma versão nova, e um botão atualiza.
 
@@ -55,6 +55,7 @@ O que muda em relação ao Windows:
 | Mexer no código, testar e publicar | [docs/desenvolvimento.md](docs/desenvolvimento.md) |
 | Testar numa call com gente de verdade | [docs/roteiro-de-teste.md](docs/roteiro-de-teste.md) |
 | RazzeAPI, VPN WireGuard e implantação numa VPS | [docs/razze-api.md](docs/razze-api.md) |
+| Modo Internet (sem VPN: salas por código + senha, STUN e TURN numa VPS) | [servidor-internet/README.md](servidor-internet/README.md) |
 | O que vem por aí e como fazer (Discord e TeamSpeak como referência) | [docs/roadmap.md](docs/roadmap.md) |
 
 ## Problemas comuns

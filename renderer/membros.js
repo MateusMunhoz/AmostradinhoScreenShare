@@ -7,7 +7,10 @@ async function renderRoomAddress() {
   const box = $('roomAddress');
   box.innerHTML = '';
   let addrs;
-  if (state.isOwner) {
+  if (state.cloud) { // modo Internet: quem entra só precisa do código (e da senha)
+    $('noRadmin').hidden = true;
+    addrs = [state.cloud.code];
+  } else if (state.isOwner) {
     const provider = selectedNetworkProvider();
     const ips = await window.api.getIps(provider);
     const preferred = provider === 'razze' ? ips.filter((i) => i.razze) : ips.filter((i) => i.radmin);
@@ -41,7 +44,9 @@ async function renderRoomAddress() {
   }
   state.roomAddr = addrs[0] || '';
   $('dockAddr').hidden = !state.roomAddr;
-  $('dockAddr').title = `Copiar o endereço da sala para convidar alguém: ${state.roomAddr}`;
+  $('dockAddr').title = state.cloud
+    ? `Copiar o código da sala para convidar alguém: ${state.roomAddr}`
+    : `Copiar o endereço da sala para convidar alguém: ${state.roomAddr}`;
 }
 
 function memberRow(id, name, sharing) {

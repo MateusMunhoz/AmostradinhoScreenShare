@@ -3,7 +3,7 @@
 // Uma conexão bidirecional por par, independente das conexões das telas.
 class VoiceChat {
   constructor({ send, changed, error, media = navigator.mediaDevices,
-    makePeer = () => new RTCPeerConnection({ iceServers: [] }),
+    makePeer = () => new RTCPeerConnection(typeof RTC_CONFIG !== 'undefined' ? RTC_CONFIG : { iceServers: [] }),
     makeAudio = () => new Audio(), token = () => crypto.randomUUID(), mixer = null, activity = () => {} }) {
     // mixer (opcional): o app toca as vozes por ele, com volume por pessoa e medidor de quem fala.
     // Sem mixer, cada voz toca direto no seu <audio>.

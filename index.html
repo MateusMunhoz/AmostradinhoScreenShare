@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; img-src 'self' data: blob:; style-src 'self'; connect-src ws:; media-src 'self' blob: mediastream:">
+        content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; img-src 'self' data: blob:; style-src 'self'; connect-src ws: wss:; media-src 'self' blob: mediastream:">
   <title>Tela P2P</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="styles-arasaka.css">
@@ -125,14 +125,14 @@
           <div class="home-cta">
             <div class="create-block">
               <button class="btn primary big" id="goCreate" type="button">Criar sala</button>
-              <span class="hint center">Os amigos entram pelo seu endereço</span>
+              <span class="hint center" id="createBlockHint">Os amigos entram pelo seu endereço</span>
             </div>
             <button class="btn big" id="goJoin" type="button" aria-expanded="false" aria-controls="joinPanel">Entrar com endereço</button>
           </div>
           <div id="joinPanel" class="join-panel" hidden>
-            <strong>Entrar com endereço</strong>
+            <strong id="joinPanelTitle">Entrar com endereço</strong>
             <label class="field">
-              <span>Endereço de quem criou</span>
+              <span id="roomAddrLabel">Endereço de quem criou</span>
               <input id="roomAddr" class="mono" placeholder="26.123.45.67:8765">
             </label>
             <label class="field">
@@ -176,20 +176,20 @@
         <span></span>
       </div>
       <div class="form-card">
-        <label class="field">
+        <label class="field" id="roomPortField">
           <span>Porta</span>
           <input id="roomPort" type="number" value="8765" min="1024" max="65535">
         </label>
         <label class="field">
-          <span>Senha (opcional)</span>
+          <span id="roomPasswordLabel">Senha (opcional)</span>
           <input id="roomPassword" type="password" placeholder="Vazio = sem senha">
         </label>
-        <label class="check-line">
+        <label class="check-line" id="roomVisibleLine">
           <input type="checkbox" id="roomVisible" checked>
           <span>Mostrar esta sessão para quem está na rede<small class="hint">Aparece na tela inicial dos outros, com o seu nome e quantas pessoas estão nela. A senha continua sendo pedida.</small></span>
         </label>
         <button class="btn primary" id="createBtn">Criar sala</button>
-        <p class="hint">A sala fica aberta enquanto você estiver nela. Quando você sair, ela é encerrada para todos.</p>
+        <p class="hint" id="createHint">A sala fica aberta enquanto você estiver nela. Quando você sair, ela é encerrada para todos.</p>
       </div>
     </section>
 
@@ -688,8 +688,17 @@
         <div class="seg net-seg" role="radiogroup" aria-labelledby="networkTitle">
           <label><input type="radio" name="networkProvider" value="radmin"><span>Radmin ou rede local</span></label>
           <label><input type="radio" name="networkProvider" value="razze"><span>Razze (WireGuard)</span></label>
+          <label><input type="radio" name="networkProvider" value="internet"><span>Internet (servidor)</span></label>
         </div>
         <p class="hint" id="networkHint"></p>
+      </section>
+      <section id="internetSettings" class="settings-section" aria-labelledby="internetTitle" hidden>
+        <h3 id="internetTitle">Servidor</h3>
+        <div class="net-row">
+          <input id="internetUrl" type="text" class="mono" placeholder="ws://IP-DA-VPS:8765" autocomplete="url" spellcheck="false" aria-label="Endereço do servidor do modo Internet">
+          <button id="internetSaveServer" class="btn small" type="button">Testar e salvar</button>
+        </div>
+        <p class="hint" id="internetStatus" role="status" aria-live="polite"></p>
       </section>
       <div id="razzeSettings" class="razze-steps" hidden>
         <p class="razze-status" id="razzeStatus" role="status" aria-live="polite"></p>

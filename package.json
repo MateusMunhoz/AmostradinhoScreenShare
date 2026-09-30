@@ -45,6 +45,7 @@
       "main/**",
       "preload.js",
       "signaling.js",
+    "sala-protocolo.js",
       "github.js",
       "index.html",
       "styles.css",
