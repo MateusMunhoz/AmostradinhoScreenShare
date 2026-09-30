@@ -34,10 +34,10 @@ function applyTitleBar() {
 // Ícone da janela na barra de tarefas: o mesmo desenho da barra de título, na cor Detalhe 1 do tema
 let appIconColor = '';
 function applyAppIcon() {
-  // Tema E.V.A (letreiro ligado): o rosto do EVA-01; tema Arasaka: o emblema da corporação; senão, as duas telas
-  const eva = appPreferences.appearance.decor === 'eva';
+  // Tema E.V.A: o rosto do EVA-01; tema Arasaka: o emblema da corporação; senão, as duas telas
   const color = AppPreferences.palette(appPreferences.colors)['--accent'];
   const skin = document.documentElement.dataset.skin || '';
+  const eva = skin === 'eva';
   const key = eva ? 'eva' : color + skin;
   if (key === appIconColor || !window.api?.setWindowIcon) return;
   appIconColor = key;
@@ -63,8 +63,6 @@ function applyWallpaper() {
   if (src !== wallpaperShown) { wallpaperShown = src; el.style.setProperty('--wall-image', src ? `url("${src}")` : 'none'); }
   el.style.setProperty('--wall-blur', a.blur + 'px');
   el.style.setProperty('--wall-dim', String(a.dim / 100));
-  if (a.decor) root.dataset.decor = a.decor; else delete root.dataset.decor;
-  $('themeDecor').hidden = !a.decor;
 }
 function applyAppTheme(d = document) {
   const root = d.documentElement;
@@ -78,6 +76,13 @@ function applyAppTheme(d = document) {
     fonts.body = fonts.display = 'Bahnschrift, "Segoe UI", system-ui, sans-serif';
     fonts.console = '"Cascadia Mono", Consolas, monospace';
   }
+  // Com a fonte padrão, o E.V.A usa a Chakra Petch (painel) e a Share Tech Mono no chat, como terminal (incluídas no app)
+  if (skin === 'eva' && appPreferences.font.family === 'system') {
+    fonts.body = fonts.display = '"Chakra Petch", "Segoe UI", system-ui, sans-serif';
+    fonts.console = '"Share Tech Mono", Consolas, monospace';
+  }
+  // O letreiro na lateral (index.html › #themeDecor) é do E.V.A
+  if (d === document) $('themeDecor').hidden = skin !== 'eva';
   root.style.setProperty('--font-body', fonts.body);
   root.style.setProperty('--font-display', fonts.display);
   root.style.setProperty('--font-console', fonts.console);
@@ -287,8 +292,6 @@ function renderThemes() {
       name.textContent = t.label;
       b.append(sw, name);
       b.onclick = () => {
-        // Tema com letreiro (E.V.A) tem o próprio desenho: sai do tema da aba Tema (Arasaka) para não misturar
-        if (t.appearance.decor && appSkin) { appSkin = ''; save('tema', ''); }
         appPreferences = AppPreferences.applyTheme(appPreferences, t.id);
         saveAppPreferences();
         renderGeneralSettings();
@@ -298,9 +301,7 @@ function renderThemes() {
   }
   const current = AppPreferences.currentTheme(appPreferences);
   for (const b of list.children) b.setAttribute('aria-checked', String(b.dataset.theme === current));
-  $('themeHint').textContent = current ? (AppPreferences.themes.find(t => t.id === current).font
-    ? 'Perfil completo: cores, material, bordas, imagem de fundo, letreiro e fonte. Os sons continuam como estão.'
-    : 'Muda cores, material e bordas. Fonte e sons continuam como estão.')
+  $('themeHint').textContent = current ? 'Muda cores, material e bordas. Fonte e sons continuam como estão.'
     : 'Personalizado. Escolha um tema para começar dele; depois dá para mudar qualquer cor na aba Cores.';
 }
 function renderWallpaper(status) {

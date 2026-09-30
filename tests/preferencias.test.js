@@ -82,7 +82,7 @@ test('Sons Suave: gerados na hora, sem arquivo, padrão da voz e do microfone', 
 });
 
 test('Aparência: modos de vidro, transparência e dados inválidos', () => {
-  assert.deepEqual(P.normalize(null).appearance, { glass: 'opaque', level: 70, border: 'solid', wallpaper: '', blur: 0, dim: 40, decor: '', ambient: true });
+  assert.deepEqual(P.normalize(null).appearance, { glass: 'opaque', level: 70, border: 'solid', wallpaper: '', blur: 0, dim: 40, ambient: true });
   assert.equal(P.normalize({ appearance: { ambient: false } }).appearance.ambient, false);
   assert.equal(P.normalize({ appearance: { ambient: 'sim' } }).appearance.ambient, true);
   assert.equal(P.glass(P.defaults.colors, { glass: 'opaque' }), null);
@@ -143,68 +143,41 @@ test('Temas prontos: aplicam cores e material, zeram detalhes e são reconhecido
   assert.equal(P.currentTheme(P.normalize(null)), 'lanhouse');
   for (const t of P.themes) assert.equal(P.currentTheme(P.applyTheme(null, t.id)), t.id);
 });
-test('Imagem de fundo: só ids conhecidos, desfoque e escurecer limitados', () => {
-  assert.equal(P.normalize({ appearance: { wallpaper: 'eva' } }).appearance.wallpaper, 'eva');
+test('Imagem de fundo: só a da pessoa, desfoque e escurecer limitados', () => {
   assert.equal(P.normalize({ appearance: { wallpaper: 'custom' } }).appearance.wallpaper, 'custom');
-  for (const bad of ['http://x/y.jpg', 'url(x)', 42, null]) assert.equal(P.normalize({ appearance: { wallpaper: bad } }).appearance.wallpaper, '');
+  for (const bad of ['eva', 'http://x/y.jpg', 'url(x)', 42, null]) assert.equal(P.normalize({ appearance: { wallpaper: bad } }).appearance.wallpaper, '');
   const a = P.normalize({ appearance: { blur: 999, dim: -5 } }).appearance;
   assert.equal(a.blur, P.wallpaperLimits.blur);
   assert.equal(a.dim, 0);
   assert.equal(P.normalize({ appearance: { dim: 100 } }).appearance.dim, P.wallpaperLimits.dim, 'nunca some o app por trás do escuro total');
-  assert.equal(P.normalize({ appearance: { decor: 'eva' } }).appearance.decor, 'eva');
-  assert.equal(P.normalize({ appearance: { decor: 'gundam' } }).appearance.decor, '');
-  assert.equal(P.wallpaperUrl('eva'), 'assets/tema/eva-01.jpg');
   assert.equal(P.wallpaperUrl('nada'), '');
   // Imagem da pessoa: só data URL de imagem, nada de endereço externo
   assert.equal(P.cleanWallpaperData('data:image/jpeg;base64,/9j/4AAQ'), 'data:image/jpeg;base64,/9j/4AAQ');
   for (const bad of ['https://x/y.jpg', 'data:text/html;base64,PGI+', 'data:image/png;base64,"x")', null]) assert.equal(P.cleanWallpaperData(bad), '');
-});
-test('Tema E.V.A: perfil completo (cores, fundo, letreiro e fonte), com versão opaca', () => {
-  const eva = P.applyTheme(P.normalize({ nameFont: 'impact', sounds: { volume: 12 } }), 'eva');
-  assert.equal(eva.appearance.wallpaper, 'eva');
-  assert.equal(eva.appearance.decor, 'eva');
-  assert.notEqual(eva.appearance.glass, 'opaque');
-  assert.equal(eva.font.family, 'chakra');
-  assert.equal(eva.nameFont, 'impact');
-  assert.equal(eva.sounds.volume, 12);
-  const opaco = P.applyTheme(eva, 'evaOpaco');
-  assert.equal(opaco.appearance.glass, 'opaque');
-  assert.equal(opaco.appearance.wallpaper, 'eva');
-  assert.equal(P.currentTheme(opaco), 'evaOpaco');
-  // Sair do E.V.A tira o fundo e o letreiro dele; a imagem da própria pessoa fica
-  const lan = P.applyTheme(opaco, 'lanhouse');
-  assert.equal(lan.appearance.wallpaper, '');
-  assert.equal(lan.appearance.decor, '');
+  // Tema sem fundo próprio mantém a imagem da pessoa; material livre continua no tema
   const mine = P.applyTheme(P.normalize({ appearance: { wallpaper: 'custom', blur: 12, dim: 55 } }), 'neon');
   assert.deepEqual([mine.appearance.wallpaper, mine.appearance.blur, mine.appearance.dim], ['custom', 12, 55]);
   assert.equal(P.currentTheme(mine), 'neon');
-  // Mexer no desfoque não tira o tema do lugar
-  assert.equal(P.currentTheme({ ...eva, appearance: { ...eva.appearance, blur: 20, dim: 70 } }), 'eva');
-  // Semântica do app: você/ao vivo, quem fala e cuidado em cores diferentes
-  const pal = P.palette(eva.colors);
-  assert.equal(new Set([pal['--live'], pal['--ok'], pal['--warn']]).size, 3);
+  assert.equal(P.currentTheme({ ...mine, appearance: { ...mine.appearance, glass: 'liquid' } }), 'neon');
+});
+test('Tema E.V.A (aba Tema): um só, com as cores do EVA-01 e sem imagem de fundo', () => {
+  assert.equal(P.themes.some(t => /eva/i.test(t.id)), false, 'saiu de Temas prontos');
+  const eva = P.skins.find(k => k.id === 'eva');
+  assert.equal(eva.label, 'E.V.A by Asock');
+  assert.equal(P.cleanSkin('eva'), 'eva');
+  const p = P.applyTheme(P.normalize({ nameFont: 'impact', sounds: { volume: 12 }, appearance: { ambient: false } }), 'eva');
+  assert.equal(p.colors.detail1, '#FF8A1F', 'laranja no destaque');
+  assert.equal(p.colors.secondary, '#170C29', 'roxo nos painéis');
+  assert.equal(p.appearance.wallpaper, '');
+  assert.equal(p.appearance.ambient, false, 'o tema não mexe na luz ambiente');
+  assert.equal(p.nameFont, 'impact');
+  assert.equal(p.sounds.volume, 12);
+  const pal = P.palette(p.colors);
+  assert.equal(new Set([pal['--live'], pal['--ok'], pal['--warn']]).size, 3, 'você, quem fala e cuidado em cores diferentes');
 });
 test('Fontes incluídas no app: arquivos locais que existem', () => {
   const fs = require('node:fs'), path = require('node:path');
   const bundled = P.fonts.filter(f => f.files);
-  assert.ok(bundled.some(f => f.id === 'chakra') && bundled.some(f => f.id === 'shareTech'));
+  for (const id of ['chakra', 'shareTech', 'loveLetter']) assert.ok(bundled.some(f => f.id === id), id);
   for (const f of bundled) for (const file of f.files) assert.ok(fs.existsSync(path.join(__dirname, '..', file)), file);
-  assert.ok(fs.existsSync(path.join(__dirname, '..', 'assets/tema/eva-01.jpg')));
-});
-test('Temas E.V.A v1 e v2: material e bordas livres sem perder o tema', () => {
-  assert.equal(P.themes.find(t => t.id === 'eva').label, 'E.V.A by Asock v1');
-  assert.equal(P.themes.find(t => t.id === 'evaOpaco').label, 'E.V.A by Asock v2');
-  const v1 = P.applyTheme(null, 'eva');
-  for (const glass of P.glassModes) for (const border of P.borderModes) {
-    const p = { ...v1, appearance: { ...v1.appearance, glass, border } };
-    assert.match(P.currentTheme(p), /^eva/, `${glass}/${border}`);
-    assert.equal(P.normalize(p).appearance.decor, 'eva', 'o letreiro vem com o tema');
-  }
-  assert.equal(P.currentTheme({ ...v1, appearance: { ...v1.appearance, glass: 'liquid' } }), 'eva');
-  assert.equal(P.currentTheme({ ...v1, appearance: { ...v1.appearance, glass: 'opaque', border: 'solid' } }), 'evaOpaco');
-  // Outro tema continua exato: mudar o material do Neon ainda é Neon; cor trocada vira personalizado
-  const neon = P.applyTheme(null, 'neon');
-  assert.equal(P.currentTheme({ ...neon, appearance: { ...neon.appearance, glass: 'opaque' } }), 'neon');
-  assert.equal(P.currentTheme({ ...v1, colors: { ...v1.colors, detail1: '#123456' } }), '');
-  assert.ok(P.fonts.some(f => f.id === 'loveLetter' && f.files));
 });
