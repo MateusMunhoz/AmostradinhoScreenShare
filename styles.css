@@ -1394,3 +1394,34 @@ main { margin-left: var(--hub-w); }
 .app-confirm h2 { font-size: 16px; }
 .app-confirm-text { margin: 0; color: var(--text); font-size: 14px; line-height: 1.45; overflow-wrap: anywhere; }
 .app-confirm-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+
+/* HUB, aba Rede: as seções da antiga janela de Rede numa coluna estreita */
+:root { --hub-open-w: 360px; }
+.hub-network { --text: var(--surface-text); --text-2: var(--surface-text-2); gap: 12px; padding-right: 2px; }
+.hub-network > * { flex: none; }
+.hub-network .net-seg { flex-direction: column; }
+.hub-network .net-seg label { justify-content: flex-start; }
+.hub-network .net-two { grid-template-columns: 1fr; }
+.hub-network .net-step { padding: 12px; }
+.hub-network .settings-section + .settings-section { padding-top: 12px; }
+.hub-network #profileAccount { display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
+.hub-network .razze-network-head { flex-wrap: wrap; }
+.hub-network .razze-row-actions, .hub-network .razze-actions { flex-wrap: wrap; }
+.hub-network .net-row > input[type=text], .hub-network .net-row > input[type=url] { padding: 8px 10px; font-size: 13px; border: 1px solid var(--field-line); border-radius: 6px; background: var(--bg); color: var(--text); }
+
+/* Subsalas de voz no painel de voz (renderer/subsalas.js): cabeçalho de cada canal e quem está nele, recuado */
+.voice-channel { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding: 6px 6px 6px 8px; border-radius: 6px; background: var(--panel-2); font-size: 13px; }
+.voice-channel:first-child { margin-top: 0; }
+.voice-channel strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.voice-channel.here { box-shadow: inset 3px 0 0 var(--accent); }
+.voice-channel.here strong { color: var(--accent); }
+.voice-channel-icon { display: inline-flex; color: var(--muted); }
+.voice-channel-icon svg, .voice-channel-add svg, .voice-channel-delete svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.voice-channel-count { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.voice-channel-join { margin-left: auto; padding: 4px 10px; font-size: 12px; }
+.voice-channel.here .voice-channel-delete, .voice-channel:not(:has(.voice-channel-join)) .voice-channel-delete { margin-left: auto; }
+.voice-channel-delete { width: 26px; height: 26px; padding: 0; display: grid; place-items: center; background: transparent; border-color: transparent; color: var(--muted); }
+.voice-channel-delete:hover { color: var(--warn); }
+.member.in-channel { padding-left: 14px; }
+.voice-channel-add { margin-top: 8px; }
+.voice-channel-add .btn { display: inline-flex; align-items: center; gap: 6px; }

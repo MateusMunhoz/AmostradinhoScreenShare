@@ -119,7 +119,7 @@ async function refreshConnectionMap() {
       try { await window.api.razzeHealth(); server = { status: 'online', detail: 'Conectado' }; }
       catch { server = { status: 'offline', detail: 'Sem conexão' }; }
     }
-    $('connectionMapServer').textContent = account?.baseUrl || 'Configure o servidor na área de Rede.';
+    $('connectionMapServer').textContent = account?.baseUrl || 'Configure o servidor na aba Rede do HUB.';
     if (account?.authenticated && server.status === 'online') {
       try {
         const result = await window.api.razzeListNetworks();

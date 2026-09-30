@@ -192,3 +192,5 @@
 /* Vazia: a boas-vindas e a área da conversa formam uma tela só (sem a faixa entre as duas) */
 :root[data-skin="arasaka"] #chatEmpty:not([hidden]) { border-bottom: 0; margin-bottom: -8px; }
 :root[data-skin="arasaka"] #chatEmpty:not([hidden]) ~ .chat-list { border-top: 0; padding-top: 4px; }
+:root[data-skin="arasaka"] .voice-channel { border-radius: 0; }
+:root[data-skin="arasaka"] .voice-channel-count { font-family: var(--ak-mono); }

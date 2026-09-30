@@ -61,6 +61,7 @@ isso (chamam `watch`, `state`, `speaking`... direto na página).
 | 8 | `sala.js` | Criar, entrar e sair, mensagens do servidor, sinalização, troca de host |
 | 9 | `voz.js` | Volume por pessoa, mixer, quem fala, atenuação, barra da voz, cartão da pessoa (cria o `voice`) |
 | 10 | `microfone.js` | Microfone escolhido, RNNoise, eco, sensibilidade, ouvir a própria voz, apertar para falar, janela "Voz e atalhos" |
+| 10b | `subsalas.js` | Subsalas de voz: criar e apagar (Subsala_1, Subsala_2…), entrar numa subsala e a lista por canal no painel de voz |
 | 11 | `membros.js` | Painel da sala: endereço e lista de pessoas |
 | 12 | `assistir.js` | Quadros de vídeo, ver a própria transmissão, destaque, tela cheia |
 | 13 | `pip.js` | Janelas flutuantes |
@@ -71,7 +72,7 @@ isso (chamam `watch`, `state`, `speaking`... direto na página).
 | 18 | `atualizacao.js` | Atualização pela sala, pelo GitHub e o aviso |
 | 19 | `sessoes.js` | Sessões abertas na rede (a lista da tela inicial) |
 | 20 | `transmitir.js` | Escolher a fonte, som, iniciar, trocar e parar, quem assiste |
-| 20b | `hub.js` | HUB: a barra fininha da esquerda, com as abas Salas (salas abertas, a atual e o menu inicial) e Amigos (adicionar, filtrar, convidar, pedidos) |
+| 20b | `hub.js` | HUB: a barra fininha da esquerda, com as abas Salas (salas abertas, a atual e o menu inicial) , Amigos (adicionar, filtrar, convidar, pedidos) e Rede (conexão, servidores, redes Razze e login) |
 | 21 | `inicio.js` | Tela inicial e a partida: liga os botões e listeners, carrega as preferências |
 
 **A regra que evita erro na carga:** só o `inicio.js` roda código quando a página abre (listeners,

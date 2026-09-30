@@ -3,7 +3,7 @@
 // da VPS: salas por código + senha, STUN e TURN, sem VPN nenhuma).
 // Script clássico: divide o escopo global com os outros (ordem no index.html). Usa de: util, estado, navegacao.
 //
-// Fica numa janela própria (ícone de servidor na barra de cima), separada das Configurações gerais. O Razze
+// Fica no HUB, aba Rede (renderer/hub.js), separada das Configurações gerais. O Razze
 // reúne servidor e redes. A conta fica no Perfil e os amigos na aba Amigos.
 
 const NETWORK_PREF_KEY = 'connectivity.v1';
@@ -102,38 +102,20 @@ function selectedNetworkProvider() { return networkPreferences().provider; }
 
 async function requireSelectedNetwork() {
   if (selectedNetworkProvider() === 'internet') {
-    if (!internetServerUrl()) throw new Error('Coloque o endereço do servidor na aba Rede (ícone de servidor, no topo).');
+    if (!internetServerUrl()) throw new Error('Coloque o endereço do servidor na aba Rede (no HUB, à esquerda).');
     return;
   }
   if (selectedNetworkProvider() !== 'razze') return;
   const prefs = networkPreferences();
   const state = await window.api.razzeState();
-  if (!state.configured || !state.authenticated) throw new Error('Configure o servidor Razze na área de Rede e entre na sua conta na área de Perfil.');
-  if (!prefs.activeNetworkId) throw new Error('Conecte uma rede Razze na aba Rede (ícone de servidor, no topo).');
+  if (!state.configured || !state.authenticated) throw new Error('Configure o servidor Razze e entre na sua conta na aba Rede do HUB.');
+  if (!prefs.activeNetworkId) throw new Error('Conecte uma rede Razze na aba Rede (no HUB, à esquerda).');
   const tunnel = await window.api.razzeWireGuardStatus(prefs.activeNetworkId);
   if (!tunnel.connected) throw new Error('Conecte a rede Razze escolhida na aba Rede antes de criar ou entrar numa sala.');
 }
 
 // ---------- A janela ----------
-function openNetworkDialog() {
-  if (!$('connectionMapDialog').hidden) closeConnectionMap();
-  if (!$('friendsDialog').hidden) closeFriendsDialog();
-  if (!$('profilePane').hidden) closeProfilePopup();
-  if (!$('generalSettingsDialog').hidden) closeGeneralSettings();
-  networkReturnFocus = document.activeElement;
-  renderConnectivitySettings();
-  $('networkDialog').hidden = false;
-  syncWorkspace();
-  setUtilityBackground(true);
-  $('closeNetworkDialog').focus();
-}
-function closeNetworkDialog() {
-  $('networkDialog').hidden = true;
-  syncWorkspace();
-  setUtilityBackground(false);
-  (networkReturnFocus || $('navNetwork')).focus();
-}
-
+// Rede e conta: moram no HUB, aba Rede (renderer/hub.js: openNetworkDialog, closeNetworkDialog)
 // Amigos: moram no HUB (renderer/hub.js: openFriendsDialog, closeFriendsDialog, renderFriends)
 function setRazzeStatus(text) {
   for (const id of ['razzeStatus', 'razzeAccountStatus', 'razzeFriendsStatus']) $(id).textContent = text;
@@ -185,8 +167,8 @@ async function refreshRazzeState() {
     if (!on) setFriendsData({});
   };
   account(state.authenticated);
-  $('profileAccountHint').textContent = state.configured ? 'Entre na sua conta para gerenciar redes e amigos.' : 'Configure o servidor Razze na área de Rede antes de entrar na sua conta.';
-  $('friendsHint').textContent = state.configured ? 'Entre na sua conta Razze para ver quem está online, adicionar amigos e convidar para a sua sala.' : 'Os amigos usam uma conta Razze: configure o servidor na aba Rede e entre na conta pelo perfil.';
+  $('profileAccountHint').textContent = state.configured ? 'Entre na sua conta para gerenciar redes e amigos.' : 'Para entrar, escolha Razze (WireGuard) acima e salve o endereço do servidor.';
+  $('friendsHint').textContent = state.configured ? 'Entre na sua conta Razze para ver quem está online, adicionar amigos e convidar para a sua sala.' : 'Os amigos usam uma conta Razze: configure o servidor e entre na conta na aba Rede.';
   $('razzeLogin').disabled = $('razzeRegister').disabled = !state.configured;
   if (!state.configured) {
     setStepDone('razzeStepServerNum', false, 1);
@@ -196,7 +178,7 @@ async function refreshRazzeState() {
   try {
     await window.api.razzeHealth();
     setStepDone('razzeStepServerNum', true, 1);
-    if (!state.authenticated) { if (selectedNetworkProvider() === 'razze') setNetSummary(false, 'Razze: servidor ok. Entre ou crie sua conta na área de Perfil.'); return; }
+    if (!state.authenticated) { if (selectedNetworkProvider() === 'razze') setNetSummary(false, 'Razze: servidor ok. Entre ou crie sua conta logo abaixo.'); return; }
     const { user } = await window.api.razzeMe();
     razzeUser = user;
     $('razzeAccountName').textContent = user?.displayName || user?.email || 'Conta Razze';
@@ -485,12 +467,7 @@ function receiveRazzePresence(value) {
 function setupConnectivitySettings() {
   window.api.onRazzePresence(receiveRazzePresence);
   window.api.razzePresence().then(receiveRazzePresence).catch(() => {});
-  $('friendsOpenProfile').onclick = openProfilePopup;
-  $('profileOpenNetwork').onclick = openNetworkDialog;
-  setIcon($('closeNetworkDialog'), 'close', 'Fechar');
-  setupUtilityPopup('networkDialog', closeNetworkDialog);
-  $('navNetwork').onclick = () => ($('networkDialog').hidden ? openNetworkDialog() : closeNetworkDialog());
-  $('closeNetworkDialog').onclick = closeNetworkDialog;
+  $('friendsOpenProfile').onclick = openRazzeLogin;
   document.querySelectorAll('input[name="networkProvider"]').forEach((r) => {
     r.onchange = () => {
       saveNetworkPreferences({ provider: r.value });

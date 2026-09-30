@@ -52,22 +52,52 @@ function cleanSessao(s) {
 
 function cleanClient(c) { return /^[a-f0-9]{32}$/.test(String(c || '')) ? String(c) : ''; }
 
+// Subsalas de voz: canais dentro da sala. Só quem está no mesmo canal se conecta e se ouve; '' é a Voz geral.
+// Os nomes são sempre Subsala_N, com N = o maior número que existe + 1 (apagar a última libera o número dela).
+const SUBSALAS_MAX = 50;
+function cleanChannel(c) { return /^\d{1,6}$/.test(String(c ?? '')) ? String(c) : ''; }
+function createSubsalas(seed) {
+  const list = (Array.isArray(seed) ? seed : [])
+    .map((x) => cleanChannel(x?.id)).filter(Boolean)
+    .filter((id, i, all) => all.indexOf(id) === i).slice(0, SUBSALAS_MAX)
+    .sort((a, b) => Number(a) - Number(b))
+    .map((id) => ({ id, name: `Subsala_${id}` }));
+  return {
+    list,
+    has(id) { return !!id && list.some((x) => x.id === id); },
+    create() {
+      if (list.length >= SUBSALAS_MAX) return null;
+      const id = String(list.reduce((n, x) => Math.max(n, Number(x.id)), 0) + 1);
+      const sub = { id, name: `Subsala_${id}` };
+      list.push(sub);
+      return sub;
+    },
+    remove(id) {
+      const i = list.findIndex((x) => x.id === id);
+      if (i < 0) return false;
+      list.splice(i, 1);
+      return true;
+    },
+  };
+}
+
 // Uma pessoa nova na sala, a partir do "hello". resume: voltando para a mesma sala (mesmo número)
-function newMember(ws, msg, resume) {
+function newMember(ws, msg, resume, subsalas = null) {
   const shareInfo = resume && msg.sharing ? cleanShareInfo(msg.shareInfo) : null;
   // Na volta, quem estava na voz continua na mesma sessão (as conexões de voz também seguem de pé)
   const voiceSession = resume && typeof msg.voiceSession === 'string' && /^[\w-]{1,64}$/.test(msg.voiceSession) ? msg.voiceSession : '';
+  const voiceChannel = voiceSession && subsalas?.has(cleanChannel(msg.voiceChannel)) ? cleanChannel(msg.voiceChannel) : '';
   return {
     ws, client: cleanClient(msg.client), name: String(msg.name || 'Anônimo').slice(0, 32), sharing: !!(resume && msg.sharing),
     version: /^\d+\.\d+\.\d+$/.test(msg.version) ? msg.version : '', addrs: cleanAddrs(msg.addrs),
-    voiceSession, muted: !!voiceSession && msg.muted === true, deafened: !!voiceSession && msg.deafened === true, shareInfo,
+    voiceSession, voiceChannel, muted: !!voiceSession && msg.muted === true, deafened: !!voiceSession && msg.deafened === true, shareInfo,
     avatar: cleanHash(msg.avatar), avatarFull: cleanHash(msg.avatarFull), nameFont: cleanNameFont(msg.nameFont),
   };
 }
 
 // O que os outros ficam sabendo de cada pessoa
 function memberInfo(id, m) {
-  return { id, name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs, voiceSession: m.voiceSession, muted: m.muted, deafened: m.deafened, shareInfo: m.shareInfo, avatar: m.avatar, avatarFull: m.avatarFull, nameFont: m.nameFont };
+  return { id, name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs, voiceSession: m.voiceSession, voiceChannel: m.voiceChannel || '', muted: m.muted, deafened: m.deafened, shareInfo: m.shareInfo, avatar: m.avatar, avatarFull: m.avatarFull, nameFont: m.nameFont };
 }
 
 // Conversa da sala: guarda as últimas mensagens e numera as novas
@@ -85,14 +115,30 @@ function createChat(seedChat) {
   };
 }
 
-// Mensagem de quem já está na sala. members: Map id -> pessoa; broadcast(msg, exceptId)
-function handleMemberMessage({ members, broadcast, chat }, id, me, msg) {
+const voiceStateOf = (id, m) => ({ type: 'voice-state', id, session: m.voiceSession, channel: m.voiceChannel || '', muted: m.muted, deafened: m.deafened });
+
+// Mensagem de quem já está na sala. members: Map id -> pessoa; broadcast(msg, exceptId).
+// subsalas (opcional): sem ele, a sala não tem subsalas e todo mundo fica na Voz geral.
+function handleMemberMessage({ members, broadcast, chat, subsalas = null }, id, me, msg) {
   if (msg.type === 'voice-state') {
     if (typeof msg.session !== 'string' || !/^[\w-]{0,64}$/.test(msg.session)) return;
     me.voiceSession = msg.session;
+    me.voiceChannel = msg.session && subsalas?.has(cleanChannel(msg.channel)) ? cleanChannel(msg.channel) : '';
     me.muted = !!msg.session && msg.muted === true;
     me.deafened = !!msg.session && msg.deafened === true; // fone silenciado: os outros veem na lista da voz
-    broadcast({ type: 'voice-state', id, session: me.voiceSession, muted: me.muted, deafened: me.deafened });
+    broadcast(voiceStateOf(id, me));
+  } else if (msg.type === 'subsala-create' && subsalas) {
+    if (subsalas.create()) broadcast({ type: 'subsalas', list: subsalas.list });
+  } else if (msg.type === 'subsala-delete' && subsalas) {
+    const sub = cleanChannel(msg.id);
+    if (!subsalas.remove(sub)) return;
+    // Quem estava nela volta para a Voz geral (todo mundo fica sabendo, inclusive a própria pessoa)
+    for (const [mid, m] of members) {
+      if (m.voiceChannel !== sub) continue;
+      m.voiceChannel = '';
+      broadcast(voiceStateOf(mid, m));
+    }
+    broadcast({ type: 'subsalas', list: subsalas.list });
   } else if (msg.type === 'avatar') {
     // Foto de perfil: só o hash passa por aqui; a foto vai direto de quem tem para quem pede
     me.avatar = cleanHash(msg.hash);
@@ -117,12 +163,12 @@ function handleMemberMessage({ members, broadcast, chat }, id, me, msg) {
     const target = members.get(msg.to);
     if (msg.data?.side === 'voice' && (!me.voiceSession ||
         msg.data.session !== me.voiceSession || msg.data.targetSession !== target.voiceSession ||
-        !target.voiceSession)) return;
+        !target.voiceSession || (me.voiceChannel || '') !== (target.voiceChannel || ''))) return; // canais diferentes não se ouvem
     send(target.ws, { type: 'signal', from: id, data: msg.data });
   }
 }
 
 module.exports = {
-  MAX_MEMBERS, CHAT_KEEP, send, cleanShareInfo, cleanHash, cleanNameFont, cleanAddrs, cleanSessao, cleanClient,
-  newMember, memberInfo, createChat, handleMemberMessage,
+  MAX_MEMBERS, CHAT_KEEP, SUBSALAS_MAX, send, cleanShareInfo, cleanHash, cleanNameFont, cleanAddrs, cleanSessao, cleanClient,
+  cleanChannel, createSubsalas, newMember, memberInfo, createChat, handleMemberMessage,
 };

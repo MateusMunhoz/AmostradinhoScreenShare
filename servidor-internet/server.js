@@ -14,7 +14,7 @@ const http = require('http');
 const crypto = require('crypto');
 const { WebSocketServer } = require('ws');
 const {
-  MAX_MEMBERS, send, cleanSessao, cleanClient, newMember, memberInfo, createChat, handleMemberMessage,
+  MAX_MEMBERS, send, cleanSessao, cleanClient, newMember, memberInfo, createChat, createSubsalas, handleMemberMessage,
 } = require('../sala-protocolo');
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sem 0/O e 1/I, que confundem
@@ -116,7 +116,7 @@ function createInternetServer(options = {}) {
     const code = (() => { for (;;) { const c = makeCode(); if (!rooms.has(c)) return c; } })();
     const room = {
       code, check: passwordCheck(password), members: new Map(), away: new Map(), hostId: null, nextId: 1,
-      chat: createChat(), sessao: cleanSessao({ oculta: true }), createdAt: cfg.now(),
+      chat: createChat(), subsalas: createSubsalas(), sessao: cleanSessao({ oculta: true }), createdAt: cfg.now(),
     };
     room.broadcast = (msg, exceptId) => {
       for (const [mid, m] of room.members) if (mid !== exceptId && !room.away.has(mid)) send(m.ws, msg);
@@ -178,7 +178,7 @@ function createInternetServer(options = {}) {
         removeMember(room, id);
         return ws.close(1000, 'left');
       }
-      if (me) return handleMemberMessage({ members: room.members, broadcast: room.broadcast, chat: room.chat }, id, me, msg);
+      if (me) return handleMemberMessage({ members: room.members, broadcast: room.broadcast, chat: room.chat, subsalas: room.subsalas }, id, me, msg);
       if (busy) return;
       if (msg.type === 'info') { send(ws, { type: 'info', app: 'tela-p2p-internet', turn: !!(cfg.turnHost && cfg.turnSecret) }); return ws.close(); }
       if (msg.type !== 'hello') return;
@@ -226,7 +226,7 @@ function createInternetServer(options = {}) {
         if (active >= MAX_MEMBERS) { send(ws, { type: 'error', message: 'A sala está cheia.' }); room = null; return ws.close(); }
         id = String(room.nextId++);
       }
-      me = newMember(ws, msg, resuming ? resume : '');
+      me = newMember(ws, msg, resuming ? resume : '', room.subsalas);
       me.addrs = []; // pela internet não tem por que espalhar os IPs de casa de ninguém
       if (!room.hostId) room.hostId = id;
       send(ws, {
@@ -235,8 +235,9 @@ function createInternetServer(options = {}) {
         hostId: room.hostId,
         sala: room.code,
         members: [...room.members].filter(([mid]) => mid !== id).map(([mid, m]) => memberInfo(mid, m)),
-        features: ['chat', 'voice', 'internet', 'resume'],
+        features: ['chat', 'voice', 'internet', 'resume', 'subsalas'],
         chat: room.chat.log,
+        subsalas: room.subsalas.list,
         sessao: room.sessao,
         iceServers: iceServersFor(room.code, id),
       });

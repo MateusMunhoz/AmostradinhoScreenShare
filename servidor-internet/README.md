@@ -75,7 +75,7 @@ journalctl -u tela-p2p-internet -f             # salas criadas e fechadas
 tail -f /var/log/turnserver/turnserver.log     # uso do TURN
 ```
 
-No app: aba **Rede** (ícone de servidor) → **Internet (servidor)** → `ws://IP_DA_VPS:8765` → **Testar e salvar**. Tem que aparecer "Servidor ok, com TURN".
+No app: **HUB** (barra da esquerda) → aba **Rede** → **Internet (servidor)** → `ws://IP_DA_VPS:8765` → **Testar e salvar**. Tem que aparecer "Servidor ok, com TURN".
 
 Para provar que o TURN funciona, peça a alguém para entrar pelo 4G do celular (roteado para o PC). Ou, no DevTools do app de quem assiste, rode `RTC_CONFIG.iceTransportPolicy = 'relay'` antes de clicar em Assistir: com isso o vídeo só pode passar pelo TURN.
 

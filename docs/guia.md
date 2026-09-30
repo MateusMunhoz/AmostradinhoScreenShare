@@ -179,6 +179,17 @@ Clique em **Entrar na voz**, na barra de baixo, para ligar o microfone padrão d
 - **Voz e transmissão juntas:** se a captura que exclui o som do app falhar durante a conversa, a tela é transmitida sem áudio do PC, para não retransmitir as vozes. Se uma transmissão já estiver capturando todo o som do PC, pare, entre na voz e recomece a transmissão.
 - **Como funciona:** a voz usa WebRTC direto pela Radmin, uma conexão por par de pessoas, sem servidor. Usa o microfone padrão.
 
+### Subsalas de voz
+
+No painel **Chat de voz**, a voz fica dividida em canais: a **Voz geral** e as subsalas.
+
+- **Criar:** clique em **+ Nova subsala**. Os nomes são sempre `Subsala_1`, `Subsala_2`, e assim por diante: a nova recebe o número seguinte ao da maior que existe.
+- **Entrar:** clique em **Entrar** no canal. Fora da voz, isso liga o microfone já naquele canal; na voz, você muda de canal sem sair.
+- **Quem ouve quem:** só quem está no mesmo canal se ouve. O chat de texto e as transmissões continuam valendo para a sala toda.
+- **Apagar:** o **X** ao lado da subsala. Quem estava nela volta para a Voz geral.
+- **Troca de host:** as subsalas continuam, e cada um fica no canal em que estava.
+- **Modo Internet:** o servidor da VPS precisa estar atualizado para ter subsalas; sem isso, o painel mostra só a lista de sempre.
+
 ## Voz e atalhos
 
 O botão de controles na barra de voz.

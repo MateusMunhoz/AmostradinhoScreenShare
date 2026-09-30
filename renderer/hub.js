@@ -1,14 +1,16 @@
 'use strict';
 // HUB: a barra fininha na borda esquerda. Fechada, mostra "HUB" em pé (e quantos pedidos de amizade chegaram); aberta,
-// "HUB" deitado e duas abas:
+// "HUB" deitado e três abas:
 // - Salas: a sala em que você está (em destaque), as outras salas abertas na rede e o botão do menu inicial.
 // - Amigos: adicionar pelo nickname, filtrar (texto + Todos/Online/Pedidos), convidar para a sua sala, aceitar e
 //   cancelar pedidos. Os dados vêm da RazzeAPI (refreshRazzeLists e a presença em conectividade.js).
-// A aba Amigos tem o id friendsDialog: quem pergunta "os amigos estão à vista?" continua usando $('friendsDialog').hidden.
+// - Rede: como os PCs se conectam (Radmin, Razze, Internet), servidores, redes Razze e a conta (entrar, criar, sair).
+// As abas Amigos e Rede têm os ids friendsDialog e networkDialog: quem pergunta "estão à vista?" continua usando .hidden.
 // Aberto, procura sessões mesmo fora da tela inicial (sessionWatchWanted em sessoes.js).
 // Script clássico: divide o escopo global com os outros (ordem no index.html). Usa de: util, estado, sessoes, navegacao.
 
-const hub = { open: false, tab: load('hubTab', 'rooms') === 'friends' ? 'friends' : 'rooms' };
+const HUB_TABS = ['rooms', 'friends', 'network'];
+const hub = { open: false, tab: HUB_TABS.includes(load('hubTab', 'rooms')) ? load('hubTab', 'rooms') : 'rooms' };
 const friendsData = { friends: [], incoming: [], outgoing: [], error: '' };
 const friendsFilter = { text: '', view: 'all' }; // view: all | online | requests
 
@@ -23,7 +25,7 @@ function setHubOpen(on, tab) {
   renderHub();
   if (typeof syncWorkspace === 'function') syncWorkspace();
   if (hub.open && hub.tab === 'friends' && !$('razzeStepFriends').hidden) $('razzeFriendNickname').focus();
-  else if (hub.open) $('hubToggle').focus();
+  else if (hub.open && hub.tab !== 'network') $('hubToggle').focus();
 }
 function setHubTab(tab) { setHubOpen(true, tab); }
 
@@ -37,6 +39,20 @@ function openFriendsDialog() {
   setHubOpen(true, 'friends');
 }
 function closeFriendsDialog() { if (hub.open) setHubOpen(false); }
+function openNetworkDialog() {
+  if (!$('connectionMapDialog').hidden) closeConnectionMap();
+  if (!$('profilePane').hidden) closeProfilePopup();
+  if (!$('generalSettingsDialog').hidden) closeGeneralSettings();
+  renderConnectivitySettings();
+  setHubOpen(true, 'network');
+}
+function closeNetworkDialog() { if (hub.open) setHubOpen(false); }
+// "Entrar na conta" (aba Amigos, sem conta): vai para a aba Rede, no login
+function openRazzeLogin() {
+  openNetworkDialog();
+  $('profileAccount').scrollIntoView({ block: 'start' });
+  if (!$('razzeAuth').hidden) $('razzeEmail').focus();
+}
 
 function renderHub() {
   const rail = $('hubRail');
@@ -49,6 +65,8 @@ function renderHub() {
   $('hubFriendsBadge').textContent = String(pending);
   $('hubTabRooms').setAttribute('aria-selected', String(hub.tab === 'rooms'));
   $('hubTabFriends').setAttribute('aria-selected', String(hub.tab === 'friends'));
+  $('hubTabNetwork').setAttribute('aria-selected', String(hub.tab === 'network'));
+  $('networkDialog').hidden = !hub.open || hub.tab !== 'network';
   $('hubRooms').hidden = !hub.open || hub.tab !== 'rooms';
   $('friendsDialog').hidden = !hub.open || hub.tab !== 'friends';
   if (!hub.open) return;
@@ -244,6 +262,7 @@ function setupHub() {
   $('hubHome').onclick = () => { setHubOpen(false); goHomeKeepCall(); };
   $('hubTabRooms').onclick = () => setHubTab('rooms');
   $('hubTabFriends').onclick = () => setHubTab('friends');
+  $('hubTabNetwork').onclick = () => { renderConnectivitySettings(); setHubTab('network'); };
   $('friendsFilter').oninput = () => { friendsFilter.text = $('friendsFilter').value; renderFriends(); };
   for (const b of $('friendsViews').querySelectorAll('button')) b.onclick = () => { friendsFilter.view = b.dataset.view; renderFriends(); };
   $('hubRail').addEventListener('keydown', (e) => { if (e.key === 'Escape' && hub.open) { e.stopPropagation(); setHubOpen(false); } });

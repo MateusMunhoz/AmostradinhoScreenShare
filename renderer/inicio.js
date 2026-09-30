@@ -184,7 +184,7 @@ async function renderRadmin() {
     const url = internetServerUrl();
     $('radminDot').className = 'dot ' + (url ? 'ok' : 'warn');
     $('radminTitle').textContent = url ? 'Modo Internet' : 'Modo Internet sem servidor';
-    $('radminDetail').textContent = url ? url : 'Coloque o endereço do servidor na aba Rede (ícone de servidor, no topo)';
+    $('radminDetail').textContent = url ? url : 'Coloque o endereço do servidor na aba Rede (no HUB, à esquerda)';
     return;
   }
   if (selectedNetworkProvider() === 'razze') {
@@ -195,7 +195,7 @@ async function renderRadmin() {
     const connected = !!status?.connected && ips.length > 0;
     $('radminDot').className = 'dot ' + (connected ? 'ok' : 'warn');
     $('radminTitle').textContent = connected ? 'VPN Razze conectada' : 'VPN Razze desconectada';
-    $('radminDetail').textContent = connected ? ips.map((item) => item.address).join(', ') : status?.error || 'Conecte uma rede na aba Rede (ícone de servidor, no topo)';
+    $('radminDetail').textContent = connected ? ips.map((item) => item.address).join(', ') : status?.error || 'Conecte uma rede na aba Rede (no HUB, à esquerda)';
     return;
   }
   let ips = [];
