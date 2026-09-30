@@ -25,7 +25,7 @@ function applyTitleBar() {
   if (!window.api?.setTitleBar) return;
   const c = appPreferences.colors, text = AppPreferences.palette(c)['--text'];
   const a = appPreferences.appearance;
-  const color = a.glass === 'opaque' && !wallpaperSource() ? c.main : '#00000000';
+  const color = a.glass === 'opaque' ? c.main : '#00000000';
   const key = color + text;
   if (key === titleBarKey) return;
   titleBarKey = key;
@@ -47,23 +47,8 @@ function applyAppIcon() {
   else (skin === 'arasaka' ? drawArasakaIcon : drawAppIcon)(canvas.getContext('2d'), 256, color);
   window.api.setWindowIcon(canvas.toDataURL('image/png')).catch(() => {});
 }
-// Imagem de fundo: a incluída no app ou a da pessoa (guardada à parte, em wallpaperKey). O desfoque é um filtro
-// parado na camada de trás; só é refeito quando a imagem ou os controles mudam, nada fica animando durante o jogo.
-let customWallpaper = '';
-try { customWallpaper = AppPreferences.cleanWallpaperData(localStorage.getItem(AppPreferences.wallpaperKey)); } catch {}
-function wallpaperSource() {
-  const id = appPreferences.appearance.wallpaper;
-  return id === 'custom' ? customWallpaper : AppPreferences.wallpaperUrl(id);
-}
-let wallpaperShown = null;
-function applyWallpaper() {
-  const a = appPreferences.appearance, src = wallpaperSource(), el = $('wallpaper'), root = document.documentElement;
-  el.hidden = !src;
-  if (src) root.dataset.wallpaper = a.wallpaper; else delete root.dataset.wallpaper;
-  if (src !== wallpaperShown) { wallpaperShown = src; el.style.setProperty('--wall-image', src ? `url("${src}")` : 'none'); }
-  el.style.setProperty('--wall-blur', a.blur + 'px');
-  el.style.setProperty('--wall-dim', String(a.dim / 100));
-}
+// A imagem de fundo saiu do app: apaga a que tenha ficado guardada
+try { localStorage.removeItem('appWallpaper.v1'); } catch {}
 function applyAppTheme(d = document) {
   const root = d.documentElement;
   for (const [key, value] of Object.entries(AppPreferences.palette(appPreferences.colors))) root.style.setProperty(key, value);
@@ -100,7 +85,6 @@ function applyAppTheme(d = document) {
   const glass = AppPreferences.glass(appPreferences.colors, appPreferences.appearance);
   for (const [key, value] of Object.entries(glass || {})) root.style.setProperty(key, value);
   root.dataset.glass = appPreferences.appearance.glass;
-  applyWallpaper();
   applyWindowMaterial();
   applyTitleBar();
   applyAppIcon();
@@ -304,65 +288,7 @@ function renderThemes() {
   $('themeHint').textContent = current ? 'Muda cores, material e bordas. Fonte e sons continuam como estão.'
     : 'Personalizado. Escolha um tema para começar dele; depois dá para mudar qualquer cor na aba Cores.';
 }
-function renderWallpaper(status) {
-  const a = appPreferences.appearance, on = !!wallpaperSource();
-  for (const input of document.querySelectorAll('input[name=wallpaper]')) input.checked = input.value === (on ? a.wallpaper : '');
-  $('wallpaperControls').hidden = !on;
-  $('pickWallpaper').hidden = a.wallpaper !== 'custom';
-  $('wallpaperBlur').value = a.blur;
-  $('wallpaperBlurValue').textContent = a.blur + ' px';
-  $('wallpaperDim').value = a.dim;
-  $('wallpaperDimValue').textContent = a.dim + '%';
-  $('ambientLight').checked = a.ambient;
-  $('wallpaperHint').textContent = status ?? (on ? 'Desfoque para a imagem ficar mais suave atrás dos painéis; escureça para o texto ficar mais fácil de ler.' : '');
-}
-// A imagem da pessoa é reduzida (no máximo 1920 px de largura, JPEG) para caber no armazenamento do app
-function loadWallpaperFile(file) {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file), img = new Image();
-    img.onload = () => {
-      const scale = Math.min(1, 1920 / img.naturalWidth, 1200 / img.naturalHeight);
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.round(img.naturalWidth * scale); canvas.height = Math.round(img.naturalHeight * scale);
-      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-      URL.revokeObjectURL(url);
-      resolve(canvas.toDataURL('image/jpeg', 0.85));
-    };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('imagem')); };
-    img.src = url;
-  });
-}
-function setupWallpaper() {
-  const pick = () => { $('wallpaperFile').value = ''; $('wallpaperFile').click(); };
-  for (const input of document.querySelectorAll('input[name=wallpaper]')) input.onchange = () => {
-    if (!input.checked) return;
-    if (input.value === 'custom' && !customWallpaper) { renderWallpaper(); pick(); return; }
-    appPreferences.appearance = { ...appPreferences.appearance, wallpaper: input.value };
-    saveAppPreferences(); renderAppearance();
-  };
-  $('pickWallpaper').onclick = pick;
-  $('wallpaperFile').onchange = async () => {
-    const file = $('wallpaperFile').files[0];
-    if (!file) return;
-    try {
-      const data = AppPreferences.cleanWallpaperData(await loadWallpaperFile(file));
-      if (!data) throw new Error('imagem');
-      localStorage.setItem(AppPreferences.wallpaperKey, data);
-      customWallpaper = data;
-    } catch (e) {
-      renderWallpaper(e?.name === 'QuotaExceededError' ? 'A imagem é grande demais para guardar. Tente uma menor.' : 'Não foi possível abrir essa imagem. Use JPG, PNG ou WebP.');
-      return;
-    }
-    appPreferences.appearance = { ...appPreferences.appearance, wallpaper: 'custom' };
-    saveAppPreferences(); renderAppearance();
-  };
-  const slider = (id, key, unit) => { $(id).oninput = () => {
-    appPreferences.appearance[key] = Number($(id).value);
-    $(id + 'Value').textContent = appPreferences.appearance[key] + unit;
-    saveAppPreferences();
-  }; };
-  slider('wallpaperBlur', 'blur', ' px');
-  slider('wallpaperDim', 'dim', '%');
+function setupAmbient() {
   $('ambientLight').onchange = () => {
     appPreferences.appearance = { ...appPreferences.appearance, ambient: $('ambientLight').checked };
     saveAppPreferences();
@@ -378,7 +304,7 @@ function renderAppearance() {
   $('glassLevelValue').textContent = a.level + '%';
   for (const input of document.querySelectorAll('input[name=border]')) input.checked = input.value === a.border;
   renderGlassHint();
-  renderWallpaper();
+  $('ambientLight').checked = appPreferences.appearance.ambient;
   if (!$('fontFamily').options.length) renderFontOptions();
   renderFontPreview();
 }
@@ -393,7 +319,7 @@ function setupAppearance() {
     appPreferences.appearance = { ...appPreferences.appearance, border: input.value };
     saveAppPreferences();
   };
-  setupWallpaper();
+  setupAmbient();
   $('glassLevel').oninput = () => {
     appPreferences.appearance.level = Number($('glassLevel').value);
     $('glassLevelValue').textContent = appPreferences.appearance.level + '%';

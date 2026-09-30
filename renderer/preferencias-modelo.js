@@ -32,14 +32,6 @@ const AppPreferences = (() => {
   const glassModes = ['opaque', 'clear', 'liquid'];
   const borderModes = ['solid', 'clear', 'liquid']; // bordas: cor cheia, translúcidas ou com brilho de vidro
   const glassLevel = { clear: 70, liquid: 55 }; // transparência inicial de cada modo (0 = quase opaco, 100 = quase invisível)
-  // Imagem de fundo atrás do app: as incluídas no app (nenhuma por enquanto) ou 'custom', a imagem que a pessoa
-  // escolheu, guardada à parte (wallpaperKey) por ser grande. blur em px; dim = quanto a cor Principal cobre a imagem, em %.
-  const wallpapers = [];
-  const wallpaperKey = 'appWallpaper.v1';
-  const wallpaperLimits = { blur: 40, dim: 90 };
-  const wallpaperUrl = id => wallpapers.find(w => w.id === id)?.file || '';
-  // Só data URL de imagem em base64 (vira url("...") no CSS): nada de endereço externo nem aspas
-  const cleanWallpaperData = v => typeof v === 'string' && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(v) ? v : '';
   // Fontes do Windows 10 e 11. Cada pilha termina na fonte padrão, então letra que faltar cai nela.
   const baseStack = '"Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif';
   const fonts = [
@@ -110,7 +102,7 @@ const AppPreferences = (() => {
     return { body, display, console: font?.chat && family ? body : 'Tahoma, Verdana, sans-serif' };
   }
   const defaults = { colors: { main: '#22271E', secondary: '#2D3327', detail1: '#D6C45C', detail2: '#A6D089', text: '', live: '', speaking: '', warn: '', line: '' },
-    appearance: { glass: 'opaque', level: glassLevel.clear, border: 'solid', wallpaper: '', blur: 0, dim: 40, ambient: true },
+    appearance: { glass: 'opaque', level: glassLevel.clear, border: 'solid', ambient: true },
     font: { family: 'system', custom: '', chat: false }, nameFont: '',
     sounds: { join: 'notification035', leave: 'whoosh', chat: 'wood', voiceJoin: 'suaveEntrou', voiceLeave: 'suaveSaiu',
       mute: 'suaveMutou', unmute: 'suaveDesmutou', deafen: 'suaveFoneDesligou', undeafen: 'suaveFoneLigou',
@@ -144,14 +136,12 @@ const AppPreferences = (() => {
     const t = themes.find(x => x.id === id) || skins.find(x => x.id && x.id === id);
     if (!t) return normalize(prefs);
     const colors = { ...defaults.colors, text: '', live: '', speaking: '', warn: '', line: '', ...t.colors };
-    // Tema sem fundo próprio: a imagem da pessoa (custom) fica, com o desfoque dela; a de outro tema sai
     const before = normalize(prefs).appearance;
-    const keep = !t.appearance.wallpaper && before.wallpaper === 'custom' ? { wallpaper: 'custom', blur: before.blur, dim: before.dim } : {};
-    const appearance = { ...defaults.appearance, level: glassLevel[t.appearance.glass] ?? defaults.appearance.level, ambient: before.ambient, ...keep, ...t.appearance };
+    const appearance = { ...defaults.appearance, level: glassLevel[t.appearance.glass] ?? defaults.appearance.level, ambient: before.ambient, ...t.appearance };
     return normalize({ ...prefs, colors, appearance });
   }
   // Qual tema pronto bate com as preferências atuais ('' = personalizado). Desfoque, escurecer e fonte não contam.
-  // Material, bordas e imagem de fundo ficam livres: trocar Opaco, Transparente, Líquido ou Normal não tira o tema;
+  // Material e bordas ficam livres: trocar Opaco, Transparente, Líquido ou Normal não tira o tema;
   // se bater exato com um tema, é ele, senão o primeiro com as mesmas cores.
   function currentTheme(prefs) {
     const p = normalize(prefs);
@@ -159,7 +149,7 @@ const AppPreferences = (() => {
       const n = applyTheme(p, t.id);
       return JSON.stringify(n.colors) === JSON.stringify(p.colors) && keys.every(k => n.appearance[k] === p.appearance[k]);
     };
-    return (themes.find(same(['glass', 'border', 'wallpaper'])) || themes.find(same([])))?.id || '';
+    return (themes.find(same(['glass', 'border'])) || themes.find(same([])))?.id || '';
   }
   function hex(value) {
     if (typeof value !== 'string') return null;
@@ -174,12 +164,6 @@ const AppPreferences = (() => {
     if (glassModes.includes(raw?.appearance?.glass)) result.appearance.glass = raw.appearance.glass;
     const level = raw?.appearance?.level;
     if (typeof level === 'number' && Number.isFinite(level)) result.appearance.level = Math.max(0, Math.min(100, Math.round(level)));
-    const wall = raw?.appearance?.wallpaper;
-    if (wall === 'custom' || wallpapers.some(w => w.id === wall)) result.appearance.wallpaper = wall;
-    for (const k of ['blur', 'dim']) {
-      const v = raw?.appearance?.[k];
-      if (typeof v === 'number' && Number.isFinite(v)) result.appearance[k] = Math.max(0, Math.min(wallpaperLimits[k], Math.round(v)));
-    }
     if (typeof raw?.appearance?.ambient === 'boolean') result.appearance.ambient = raw.appearance.ambient;
     const custom = fontName(raw?.font?.custom);
     if (raw?.font?.family === 'custom' ? !!custom : fonts.some(f => f.id === raw?.font?.family)) result.font.family = raw.font.family;
@@ -326,6 +310,6 @@ const AppPreferences = (() => {
     stopAll() { for (const event of [...this.players.keys()]) this.stop(event); }
   }
   return { key, sounds, events, defaults, optionalColors, glassModes, glassLevel, borderModes, fonts,
-    wallpapers, wallpaperKey, wallpaperLimits, wallpaperUrl, cleanWallpaperData, fontName, fontStacks, cleanNameFont, nameFontStack, borders, themes, skins, cleanSkin, applyTheme, currentTheme, hex, normalize, read, write, palette, glass, SoundPlayer };
+    fontName, fontStacks, cleanNameFont, nameFontStack, borders, themes, skins, cleanSkin, applyTheme, currentTheme, hex, normalize, read, write, palette, glass, SoundPlayer };
 })();
 if (typeof module !== 'undefined') module.exports = AppPreferences;

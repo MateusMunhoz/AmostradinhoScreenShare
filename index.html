@@ -11,8 +11,6 @@
 </head>
 <body>
   <div id="titlebar" class="titlebar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h13v10H3zM8 19h13V9"/></svg><span>Tela P2P</span></div>
-  <!-- Imagem de fundo (Aparência › Imagem de fundo): desfoque e escurecer em configuracoes.js › applyWallpaper -->
-  <div id="wallpaper" class="wallpaper" aria-hidden="true" hidden></div>
   <!-- Letreiro na lateral, como o que vem pintado na armadura do EVA-01 (tema E.V.A). Some em janela estreita. -->
   <div id="themeDecor" class="theme-decor" aria-hidden="true" hidden>
     <span class="decor-num">01</span>
@@ -757,19 +755,6 @@
             <label><input type="radio" name="border" value="liquid"><span class="glass-swatch" data-border-swatch="liquid" aria-hidden="true"></span><span>Líquido</span></label>
           </div>
         </div>
-        <div class="settings-row"><span id="wallpaperLabel" class="settings-label">Imagem de fundo</span>
-          <div class="seg glass-seg" role="radiogroup" aria-labelledby="wallpaperLabel">
-            <label><input type="radio" name="wallpaper" value=""><span class="glass-swatch" data-wall-swatch="none" aria-hidden="true"></span><span>Nenhuma</span></label>
-            <label><input type="radio" name="wallpaper" value="custom"><span class="glass-swatch" data-wall-swatch="custom" aria-hidden="true"></span><span>Minha imagem</span></label>
-          </div>
-          <input type="file" id="wallpaperFile" accept="image/jpeg,image/png,image/webp" hidden>
-        </div>
-        <div id="wallpaperControls" class="wallpaper-controls" hidden>
-          <div class="settings-row"><label for="wallpaperBlur">Desfoque do fundo</label><div class="vd-slider"><input type="range" id="wallpaperBlur" min="0" max="40" step="1"><output id="wallpaperBlurValue" for="wallpaperBlur"></output></div></div>
-          <div class="settings-row"><label for="wallpaperDim">Escurecer o fundo</label><div class="vd-slider"><input type="range" id="wallpaperDim" min="0" max="90" step="1"><output id="wallpaperDimValue" for="wallpaperDim"></output></div></div>
-          <button id="pickWallpaper" class="btn small" type="button">Trocar minha imagem…</button>
-        </div>
-        <p class="hint" id="wallpaperHint" role="status"></p>
         <label class="vd-check"><input type="checkbox" id="ambientLight"> Luz ambiente nos vídeos: as barras pretas pegam as cores da transmissão</label>
         <div class="settings-row"><label for="fontFamily">Fonte</label>
           <div class="font-pick"><select id="fontFamily"></select><button id="loadLocalFonts" class="btn small" type="button">Fontes deste PC</button></div>

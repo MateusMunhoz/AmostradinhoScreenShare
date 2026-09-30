@@ -82,7 +82,7 @@ test('Sons Suave: gerados na hora, sem arquivo, padrão da voz e do microfone', 
 });
 
 test('Aparência: modos de vidro, transparência e dados inválidos', () => {
-  assert.deepEqual(P.normalize(null).appearance, { glass: 'opaque', level: 70, border: 'solid', wallpaper: '', blur: 0, dim: 40, ambient: true });
+  assert.deepEqual(P.normalize(null).appearance, { glass: 'opaque', level: 70, border: 'solid', ambient: true });
   assert.equal(P.normalize({ appearance: { ambient: false } }).appearance.ambient, false);
   assert.equal(P.normalize({ appearance: { ambient: 'sim' } }).appearance.ambient, true);
   assert.equal(P.glass(P.defaults.colors, { glass: 'opaque' }), null);
@@ -143,24 +143,12 @@ test('Temas prontos: aplicam cores e material, zeram detalhes e são reconhecido
   assert.equal(P.currentTheme(P.normalize(null)), 'lanhouse');
   for (const t of P.themes) assert.equal(P.currentTheme(P.applyTheme(null, t.id)), t.id);
 });
-test('Imagem de fundo: só a da pessoa, desfoque e escurecer limitados', () => {
-  assert.equal(P.normalize({ appearance: { wallpaper: 'custom' } }).appearance.wallpaper, 'custom');
-  for (const bad of ['eva', 'http://x/y.jpg', 'url(x)', 42, null]) assert.equal(P.normalize({ appearance: { wallpaper: bad } }).appearance.wallpaper, '');
-  const a = P.normalize({ appearance: { blur: 999, dim: -5 } }).appearance;
-  assert.equal(a.blur, P.wallpaperLimits.blur);
-  assert.equal(a.dim, 0);
-  assert.equal(P.normalize({ appearance: { dim: 100 } }).appearance.dim, P.wallpaperLimits.dim, 'nunca some o app por trás do escuro total');
-  assert.equal(P.wallpaperUrl('nada'), '');
-  // Imagem da pessoa: só data URL de imagem, nada de endereço externo
-  assert.equal(P.cleanWallpaperData('data:image/jpeg;base64,/9j/4AAQ'), 'data:image/jpeg;base64,/9j/4AAQ');
-  for (const bad of ['https://x/y.jpg', 'data:text/html;base64,PGI+', 'data:image/png;base64,"x")', null]) assert.equal(P.cleanWallpaperData(bad), '');
-  // Tema sem fundo próprio mantém a imagem da pessoa; material livre continua no tema
-  const mine = P.applyTheme(P.normalize({ appearance: { wallpaper: 'custom', blur: 12, dim: 55 } }), 'neon');
-  assert.deepEqual([mine.appearance.wallpaper, mine.appearance.blur, mine.appearance.dim], ['custom', 12, 55]);
-  assert.equal(P.currentTheme(mine), 'neon');
-  assert.equal(P.currentTheme({ ...mine, appearance: { ...mine.appearance, glass: 'liquid' } }), 'neon');
-});
-test('Tema E.V.A (aba Tema): um só, com as cores do EVA-01 e sem imagem de fundo', () => {
+test('Sem imagem de fundo; material e bordas livres dentro do tema', () => {
+  const old = P.normalize({ appearance: { wallpaper: 'custom', blur: 12, dim: 55 } }).appearance;
+  assert.deepEqual(Object.keys(old).sort(), ['ambient', 'border', 'glass', 'level'], 'preferência antiga de imagem é descartada');
+  const neon = P.applyTheme(null, 'neon');
+  assert.equal(P.currentTheme({ ...neon, appearance: { ...neon.appearance, glass: 'liquid', border: 'solid' } }), 'neon');
+});test('Tema E.V.A (aba Tema): um só, com as cores do EVA-01 e sem imagem de fundo', () => {
   assert.equal(P.themes.some(t => /eva/i.test(t.id)), false, 'saiu de Temas prontos');
   const eva = P.skins.find(k => k.id === 'eva');
   assert.equal(eva.label, 'E.V.A by Asock');
@@ -168,7 +156,6 @@ test('Tema E.V.A (aba Tema): um só, com as cores do EVA-01 e sem imagem de fund
   const p = P.applyTheme(P.normalize({ nameFont: 'impact', sounds: { volume: 12 }, appearance: { ambient: false } }), 'eva');
   assert.equal(p.colors.detail1, '#FF8A1F', 'laranja no destaque');
   assert.equal(p.colors.secondary, '#170C29', 'roxo nos painéis');
-  assert.equal(p.appearance.wallpaper, '');
   assert.equal(p.appearance.ambient, false, 'o tema não mexe na luz ambiente');
   assert.equal(p.nameFont, 'impact');
   assert.equal(p.sounds.volume, 12);

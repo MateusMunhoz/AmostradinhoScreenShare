@@ -42,8 +42,7 @@ app.whenReady().then(async()=>{
         const before = JSON.parse(JSON.stringify(appPreferences)), skinBefore = appSkin;
         document.querySelector('.skin-card[data-skin=eva]').click();
         const root = document.documentElement, on = root.dataset.skin === 'eva' && !$('themeDecor').hidden && appPreferences.colors.detail1 === '#FF8A1F'
-          && getComputedStyle(document.body).fontFamily.startsWith('"Chakra Petch"') && getComputedStyle($('chatList')).fontFamily.startsWith('"Share Tech Mono"')
-          && $('wallpaper').hidden && !document.querySelector('input[name=wallpaper][value=eva]');
+          && getComputedStyle(document.body).fontFamily.startsWith('"Chakra Petch"') && getComputedStyle($('chatList')).fontFamily.startsWith('"Share Tech Mono"') && !$('wallpaper') && !document.querySelector('input[name=wallpaper]');
         document.querySelector('.skin-card[data-skin=""]').click();
         const off = !root.dataset.skin && $('themeDecor').hidden;
         appPreferences = AppPreferences.normalize(before); chooseSkin(skinBefore); saveAppPreferences(); renderGeneralSettings();

@@ -1331,36 +1331,8 @@ html[data-glass=liquid] .theme-swatches { border-radius: 10px; }
 /* Love Letter: no lugar do ç ela tem um enfeite, então o ç (U+00E7) fica de fora e vem da reserva (Courier New) */
 @font-face { font-family: "Love Letter Typewriter"; font-weight: 400 700; font-display: swap; src: url(assets/fontes/love-letter-typewriter.woff2) format("woff2"); unicode-range: U+0000-00E6, U+00E8-FFFF; }
 
-/* ── Imagem de fundo (Aparência › Imagem de fundo) ────────────────────────────────────────────────────
-   Uma camada parada atrás de tudo: a imagem com desfoque (--wall-blur) e, por cima, a cor Principal cobrindo
-   --wall-dim dela. Com fundo ligado, a página e as faixas de cima ficam sem cor própria para a imagem aparecer;
-   no Opaco os painéis continuam sólidos e a imagem aparece só em volta deles. */
-.wallpaper {
-  position: fixed; left: 0; right: 0; bottom: 0; top: calc(-1 * var(--titlebar)); z-index: -1;
-  overflow: hidden; pointer-events: none; background: var(--bg-solid, #000);
-}
-.wallpaper::before {
-  content: ""; position: absolute; inset: calc(-2 * var(--wall-blur, 0px));
-  background: var(--wall-image) center 28% / cover no-repeat;
-  filter: blur(var(--wall-blur, 0px)) saturate(1.1);
-}
-/* Por cima: a cor Principal cobrindo --wall-dim da imagem, e um pouco mais no alto e no pé, onde ficam a barra
-   e o rodapé com texto miúdo */
-.wallpaper::after {
-  content: ""; position: absolute; inset: 0;
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--bg-solid) 55%, transparent), transparent 16%, transparent 80%, color-mix(in srgb, var(--bg-solid) 75%, transparent)),
-    color-mix(in srgb, var(--bg-solid) calc(var(--wall-dim, .4) * 100%), transparent);
-}
-html[data-wallpaper], html[data-wallpaper] body { background: transparent; }
-html[data-wallpaper] :is(.workspace-header, .titlebar) { background: transparent; }
 
 
-/* Amostras de Aparência › Imagem de fundo e o cartão do tema com a imagem */
-[data-wall-swatch=none] { background: var(--sunken); border: 1px dashed var(--field-line); }
-[data-wall-swatch=custom] { background: linear-gradient(135deg, var(--accent), var(--ok)); }
-.wallpaper-controls { display: grid; gap: 10px; justify-items: start; }
-.wallpaper-controls .settings-row { justify-self: stretch; }
 
 /* Luz ambiente (Aparência): atrás do vídeo, o quadro de 32 x 18 de assistir.js esticado e desfocado, para as
    barras pretas pegarem as cores da transmissão. O vídeo fica sem fundo próprio para ela aparecer. */
