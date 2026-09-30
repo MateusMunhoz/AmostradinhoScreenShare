@@ -1,6 +1,6 @@
 {
   "name": "tela-p2p",
-  "version": "1.11.22",
+  "version": "1.11.23",
   "description": "Configurações e Personalização de Layout",
   "main": "boot.js",
   "scripts": {
@@ -45,7 +45,7 @@
       "main/**",
       "preload.js",
       "signaling.js",
-    "sala-protocolo.js",
+      "sala-protocolo.js",
       "github.js",
       "index.html",
       "styles.css",
