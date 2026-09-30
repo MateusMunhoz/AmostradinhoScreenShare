@@ -171,6 +171,7 @@ function enterRoom(welcome, owner, host, port, cloud = null) {
   state.hostId = welcome.hostId || null;
   state.handoff = (welcome.features || []).includes('handoff');
   state.sessao = welcome.sessao || null;
+  state.subsalas = (welcome.features || []).includes('subsalas') && Array.isArray(welcome.subsalas) ? welcome.subsalas : null;
   state.order = [...welcome.members.map((m) => m.id), welcome.id];
   lembrarDaSala();
   voice.reset(welcome);
@@ -219,6 +220,7 @@ function leaveRoom(reason, kind = 'info', endRoom = false) {
   state.isOwner = false;
   state.hostId = null;
   state.cloud = null;
+  state.subsalas = null;
   RTC_CONFIG.iceServers = [];
   state.order = [];
   state.rewatch.clear();
@@ -300,7 +302,7 @@ async function becomeHost() {
   let res;
   for (let i = 0; i < 6; i++) {
     // O modo da rede vai junto: sala da Razze continua só para quem está na Razze depois que o host muda
-    res = await window.api.startServer(state.port, state.password, { chat: chat.log, nextId: Math.max(0, ...known) + 1, hostId: state.myId, sessao: state.sessao }, selectedNetworkProvider());
+    res = await window.api.startServer(state.port, state.password, { chat: chat.log, nextId: Math.max(0, ...known) + 1, hostId: state.myId, sessao: state.sessao, subsalas: state.subsalas || [] }, selectedNetworkProvider());
     if (res.ok || !state.migrating) break;
     await new Promise((r) => setTimeout(r, 1000));
   }
@@ -318,7 +320,7 @@ async function rejoin(host, timeoutMs) {
     welcome = await connectRoom(state.cloud ? state.cloud.url : `ws://${host}:${state.port}`, {
       name: getName(), password: state.password, resume: myId, sharing: state.sharing, shareInfo: state.sharing ? state.shareInfo : undefined,
       room: state.cloud ? state.cloud.code : undefined,
-      voiceSession: voice.session || '', muted: voice.muted, deafened: voice.deafened,
+      voiceSession: voice.session || '', voiceChannel: voice.channel, muted: voice.muted, deafened: voice.deafened,
     }, timeoutMs);
   } catch { return false; }
   if (!state.migrating || state.myId !== myId) { state.ws?.close(); return false; }
@@ -335,6 +337,7 @@ async function rejoin(host, timeoutMs) {
   state.hostId = welcome.hostId || null;
   state.handoff = (welcome.features || []).includes('handoff');
   state.sessao = welcome.sessao || state.sessao;
+  setSubsalas((welcome.features || []).includes('subsalas') ? welcome.subsalas : null);
   if (!state.isOwner && !state.cloud) save('roomAddr', `${host}:${state.port}`);
   const present = new Set(welcome.members.map((m) => m.id));
   for (const m of state.members.values()) delete m.back;
@@ -343,7 +346,7 @@ async function rejoin(host, timeoutMs) {
     state.members.set(m.id, { name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs || [], shareInfo: m.shareInfo || null, avatar: m.avatar || '', avatarFull: m.avatarFull || '', nameFont: AppPreferences.cleanNameFont(m.nameFont), back: true });
     if (!state.order.includes(m.id)) state.order.push(m.id);
     if (before && before.sharing && !m.sharing) stopWatching(m.id, false);
-    voice.update(m.id, m.voiceSession || '', !!m.muted, !!m.deafened);
+    voice.update(m.id, m.voiceSession || '', !!m.muted, !!m.deafened, m.voiceChannel);
   }
   // Quem ainda não voltou tem um tempo para voltar; depois disso, conta como quem saiu
   clearTimeout(state.graceTimer);
@@ -369,7 +372,7 @@ function onRoomMessage(m) {
       state.members.set(m.id, { name: m.name, sharing: !!m.sharing, version: m.version, addrs: m.addrs || [], shareInfo: m.shareInfo || null, avatar: m.avatar || '', avatarFull: m.avatarFull || '', nameFont: AppPreferences.cleanNameFont(m.nameFont), back: true });
       if (!state.order.includes(m.id)) state.order.push(m.id);
       if (back && back.sharing && !m.sharing) stopWatching(m.id, false);
-      voice.update(m.id, m.voiceSession || '', !!m.muted, !!m.deafened);
+      voice.update(m.id, m.voiceSession || '', !!m.muted, !!m.deafened, m.voiceChannel);
       // Caiu da sala enquanto eu assistia e voltou transmitindo em até 1 min: volta a assistir sozinho
       const caiu = state.rewatch.get(m.id);
       state.rewatch.delete(m.id);
@@ -421,7 +424,10 @@ function onRoomMessage(m) {
       break;
     }
     case 'voice-state':
-      if (m.id === state.myId || state.members.has(m.id)) voice.update(m.id, m.session, m.muted, m.deafened);
+      if (m.id === state.myId || state.members.has(m.id)) voice.update(m.id, m.session, m.muted, m.deafened, m.channel);
+      break;
+    case 'subsalas':
+      setSubsalas(m.list);
       break;
     case 'signal':
       handleSignal(m.from, m.data || {});

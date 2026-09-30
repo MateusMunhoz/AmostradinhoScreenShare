@@ -10,7 +10,7 @@ function show(id) {
   if (typeof renderUpdateBanner === 'function') renderUpdateBanner();
   if (id === 'home') renderHome();
   syncWorkspace();
-  if (typeof setSessionWatch === 'function') setSessionWatch(id === 'home'); // procura sessões só no início
+  if (typeof setSessionWatch === 'function') setSessionWatch(sessionWatchWanted()); // procura sessões só no início (ou com o HUB aberto)
 }
 
 let toastTimer;
@@ -99,4 +99,43 @@ const mbpsText = (v) => `${(v || 0).toFixed(1).replace('.', ',')} Mbps`;
 // arrastar um controle deslizante e soltar fora do cartão não conta como clique fora.
 function closeOnBackdrop(id, close) {
   $(id).addEventListener('mousedown', (e) => { if (e.target === $(id)) close(); });
+}
+
+// Confirmação no tema do app (o confirm() do navegador abre a caixa do Windows, que não segue as cores).
+// Promessa: true no botão de confirmar ou Enter; false em Cancelar, Esc ou clique no fundo.
+function appConfirm(text, { ok = 'Confirmar', cancel = 'Cancelar', danger = false, title = 'Confirmar' } = {}) {
+  return new Promise((resolve) => {
+    const back = document.activeElement;
+    const modal = document.createElement('div');
+    modal.className = 'modal global app-confirm';
+    const box = document.createElement('div');
+    box.className = 'dialog narrow';
+    box.setAttribute('role', 'alertdialog');
+    box.setAttribute('aria-modal', 'true');
+    const h = document.createElement('h2');
+    h.textContent = title;
+    const p = document.createElement('p');
+    p.className = 'app-confirm-text';
+    p.textContent = text;
+    const row = document.createElement('div');
+    row.className = 'app-confirm-actions';
+    const no = document.createElement('button');
+    no.type = 'button'; no.className = 'btn small'; no.textContent = cancel;
+    const yes = document.createElement('button');
+    yes.type = 'button'; yes.className = 'btn small ' + (danger ? 'danger' : 'primary'); yes.textContent = ok;
+    row.append(no, yes);
+    box.append(h, p, row);
+    modal.append(box);
+    const done = (value) => { modal.remove(); back?.focus?.(); resolve(value); };
+    yes.onclick = () => done(true);
+    no.onclick = () => done(false);
+    modal.addEventListener('mousedown', (e) => { if (e.target === modal) done(false); });
+    modal.addEventListener('keydown', (e) => {
+      e.stopPropagation();
+      if (e.key === 'Escape') { e.preventDefault(); done(false); }
+      else if (e.key === 'Tab') { e.preventDefault(); (document.activeElement === yes ? no : yes).focus(); }
+    });
+    document.body.append(modal);
+    yes.focus();
+  });
 }

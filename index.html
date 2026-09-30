@@ -31,14 +31,12 @@
       <button id="navVoice" type="button" class="workspace-tab room-tab" aria-pressed="true" aria-controls="voicePane" hidden><span class="nav-icon" aria-hidden="true"></span><span>Voz</span></button>
       <button id="navStreams" type="button" class="workspace-tab room-tab" aria-pressed="true" aria-controls="streamArea" hidden><span class="nav-icon" aria-hidden="true"></span><span>Transmissão</span></button>
       <button id="navConnectionMap" type="button" class="workspace-tab settings-tab" aria-label="Mapa de conexões" title="Mapa de conexões" aria-haspopup="dialog" aria-expanded="false" aria-controls="connectionMapDialog"><span class="nav-icon" aria-hidden="true"></span></button>
-      <button id="navFriends" type="button" class="workspace-tab" aria-label="Amigos" title="Amigos" aria-haspopup="dialog" aria-expanded="false" aria-controls="friendsDialog"><span class="nav-icon" aria-hidden="true"></span><span>Amigos</span></button>
       <button id="navProfile" type="button" class="workspace-tab profile-tab" aria-label="Seu perfil" title="Seu perfil" aria-haspopup="dialog" aria-expanded="false" aria-controls="profilePane"><span id="navProfileAvatar" aria-hidden="true"></span></button>
-      <button id="navNetwork" type="button" class="workspace-tab settings-tab network-tab" aria-label="Rede: Radmin ou VPN Razze" title="Rede" aria-haspopup="dialog" aria-expanded="false" aria-controls="networkDialog"><span class="nav-icon" aria-hidden="true"></span></button>
       <button id="navSettings" type="button" class="workspace-tab settings-tab" aria-label="Configurações gerais" title="Configurações gerais" aria-haspopup="dialog" aria-expanded="false" aria-controls="generalSettingsDialog"><span class="nav-icon" aria-hidden="true"></span></button>
       <!-- Na sala sem chat nem voz abertos: recolhe a barra numa aba na borda direita -->
       <button id="navCollapse" type="button" class="workspace-tab nav-collapse" aria-label="Recolher a barra" title="Recolher a barra" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
     </nav>
-    <button id="navExpand" type="button" class="nav-expand" aria-label="Mostrar a barra: Chat, Voz, Transmissão, amigos, mapa de conexões, perfil, rede e configurações" title="Mostrar a barra" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></button>
+    <button id="navExpand" type="button" class="nav-expand" aria-label="Mostrar a barra: Chat, Voz, Transmissão, mapa de conexões, perfil, rede e configurações" title="Mostrar a barra" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></button>
   </header>
   <aside id="workspacePanes" aria-label="Painéis selecionados" hidden>
     <section id="profilePane" class="modal global utility-popup" hidden>
@@ -60,30 +58,6 @@
       <p id="profileHint" class="hint"></p>
       <label class="field">Fonte do nome<select id="profileNameFont"></select></label>
       <p class="hint">Todos na sala veem o seu nome nesta fonte. Sem escolha, fica a fonte padrão do app.</p>
-      <div id="profileAccount">
-        <p id="razzeAccountStatus" class="razze-status" role="status" aria-live="polite"></p>
-        <p id="profileAccountHint" class="hint"></p>
-        <button id="profileOpenNetwork" class="btn small" type="button">Configurar rede e servidor</button>
-        <section class="net-step" aria-labelledby="razzeStepAccountTitle">
-          <div class="net-step-head"><h3 id="razzeStepAccountTitle">Conta Razze</h3></div>
-          <div id="razzeAuth" class="net-auth">
-            <div class="seg" role="tablist" aria-label="Entrar ou criar conta">
-              <button id="razzeTabLogin" type="button" role="tab" aria-selected="true">Entrar</button>
-              <button id="razzeTabRegister" type="button" role="tab" aria-selected="false">Criar conta</button>
-            </div>
-            <label class="field" id="razzeNameField" hidden><span>Seu nome na rede</span><input id="razzeDisplayName" type="text" maxlength="60" autocomplete="name"></label>
-            <label class="field"><span>E-mail</span><input id="razzeEmail" type="email" autocomplete="username"></label>
-            <label class="field"><span>Senha</span><input id="razzePassword" type="password" autocomplete="current-password"></label>
-            <button id="razzeLogin" class="btn primary" type="button">Entrar</button>
-            <button id="razzeRegister" class="btn primary" type="button" hidden>Criar conta</button>
-          </div>
-          <div id="razzeAccount" class="net-row net-account" hidden>
-            <span class="avatar" id="razzeAccountAvatar" aria-hidden="true"></span>
-            <span class="net-account-text"><strong id="razzeAccountName"></strong><span class="hint" id="razzeAccountEmail"></span></span>
-            <button id="razzeLogout" class="btn small" type="button">Sair da conta</button>
-          </div>
-        </section>
-      </div>
       </div>
     </section>
     <section id="voicePane" class="workspace-pane" aria-labelledby="voicePaneTitle" hidden>
@@ -93,6 +67,121 @@
       <!-- Fora da voz: Entrar. Na voz: faixa de controles embaixo da lista (microfone, fone, Voz e atalhos | Sair da voz) -->
       <div class="pane-voice-actions"><button id="paneVoiceMute" class="btn small icon pane-toggle" type="button" hidden></button><button id="paneVoiceDeafen" class="btn small icon pane-toggle" type="button" hidden></button><button id="paneVoiceJoin" class="btn primary small" type="button">Entrar na voz</button></div>
     </section>
+  </aside>
+  <!-- HUB: barra fininha na borda esquerda (renderer/hub.js). Aberta: abas Salas e Amigos -->
+  <aside id="hubRail" class="hub-rail" aria-label="HUB: salas e amigos">
+    <button id="hubToggle" type="button" class="hub-toggle" aria-expanded="false" aria-controls="hubBody" title="Abrir o HUB: salas e amigos"><span class="hub-word">HUB</span></button>
+    <span id="hubRailBadge" class="hub-rail-badge" title="Pedidos de amizade" hidden></span>
+    <div id="hubBody" class="hub-body" hidden>
+      <div class="seg hub-tabs" role="tablist" aria-label="O que ver no HUB">
+        <button id="hubTabRooms" type="button" role="tab" aria-selected="true" aria-controls="hubRooms">Salas</button>
+        <button id="hubTabFriends" type="button" role="tab" aria-selected="false" aria-controls="friendsDialog">Amigos <span id="hubFriendsBadge" class="hub-badge" hidden></span></button>
+        <button id="hubTabNetwork" type="button" role="tab" aria-selected="false" aria-controls="networkDialog">Rede</button>
+      </div>
+      <section id="hubRooms" class="hub-pane" role="tabpanel" aria-labelledby="hubTabRooms">
+        <div id="hubCurrentBox" hidden>
+          <h3 class="hub-section">Você está em</h3>
+          <div class="hub-current" aria-current="true">
+            <span class="hub-live" aria-hidden="true"></span>
+            <div class="hub-room-info"><strong id="hubCurrentName"></strong><span id="hubCurrentMeta" class="hub-room-meta"></span></div>
+          </div>
+        </div>
+        <h3 class="hub-section">Salas abertas</h3>
+        <ul id="hubList" class="hub-list"></ul>
+        <p id="hubEmpty" class="hint"></p>
+        <button id="hubHome" type="button" class="btn small hub-home">Menu inicial</button>
+      </section>
+      <!-- Amigos (dados em renderer/conectividade.js, lista em renderer/hub.js) -->
+      <section id="friendsDialog" class="hub-pane hub-friends" role="tabpanel" aria-labelledby="hubTabFriends" hidden>
+        <div id="friendsSignedOut" class="hub-signed-out">
+          <p id="friendsHint" class="hint"></p>
+          <button id="friendsOpenProfile" class="btn small primary" type="button">Entrar na conta</button>
+        </div>
+        <div id="razzeStepFriends" class="hub-friends-body" hidden>
+          <div class="hub-add">
+            <input id="razzeFriendNickname" type="text" maxlength="60" placeholder="Adicionar pelo nickname" aria-label="Nickname do amigo para adicionar" autocomplete="off">
+            <button id="razzeAddFriend" class="btn small primary icon" type="button" title="Mandar pedido de amizade" aria-label="Mandar pedido de amizade"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+          </div>
+          <input id="friendsFilter" class="hub-filter" type="search" placeholder="Filtrar amigos" aria-label="Filtrar amigos pelo nome" autocomplete="off">
+          <div id="friendsViews" class="seg hub-views" role="tablist" aria-label="Mostrar">
+            <button type="button" role="tab" data-view="all" aria-selected="true">Todos</button>
+            <button id="friendsViewOnline" type="button" role="tab" data-view="online" aria-selected="false">Online</button>
+            <button id="friendsViewRequests" type="button" role="tab" data-view="requests" aria-selected="false">Pedidos</button>
+          </div>
+          <p id="friendsSummary" class="hint"></p>
+          <p id="razzeFriendsStatus" class="razze-status" role="status" aria-live="polite"></p>
+          <div id="razzeFriends" class="hub-friend-list"></div>
+          <p id="friendsEmpty" class="hint" hidden></p>
+        </div>
+      </section>
+      <!-- Rede e conta: como os PCs se conectam, servidores, redes Razze e o login (lógica em renderer/conectividade.js) -->
+      <section id="networkDialog" class="hub-pane hub-network network-settings" role="tabpanel" aria-labelledby="hubTabNetwork" hidden>
+        <p class="net-summary" role="status"><span id="netSummaryDot" class="dot"></span><span id="netSummaryText"></span></p>
+        <section class="settings-section" aria-labelledby="networkTitle">
+          <h3 id="networkTitle">Como os PCs se conectam</h3>
+          <div class="seg net-seg" role="radiogroup" aria-labelledby="networkTitle">
+            <label><input type="radio" name="networkProvider" value="radmin"><span>Radmin ou rede local</span></label>
+            <label><input type="radio" name="networkProvider" value="razze"><span>Razze (WireGuard)</span></label>
+            <label><input type="radio" name="networkProvider" value="internet"><span>Internet (servidor)</span></label>
+          </div>
+          <p class="hint" id="networkHint"></p>
+        </section>
+        <section id="internetSettings" class="settings-section" aria-labelledby="internetTitle" hidden>
+          <h3 id="internetTitle">Servidor</h3>
+          <div class="net-row">
+            <input id="internetUrl" type="text" class="mono" placeholder="ws://IP-DA-VPS:8765" autocomplete="url" spellcheck="false" aria-label="Endereço do servidor do modo Internet">
+            <button id="internetSaveServer" class="btn small" type="button">Testar e salvar</button>
+          </div>
+          <p class="hint" id="internetStatus" role="status" aria-live="polite"></p>
+        </section>
+        <div id="razzeSettings" class="razze-steps" hidden>
+          <p class="razze-status" id="razzeStatus" role="status" aria-live="polite"></p>
+          <section class="net-step" aria-labelledby="razzeStepServerTitle">
+            <div class="net-step-head"><span class="net-step-num" id="razzeStepServerNum">1</span><h3 id="razzeStepServerTitle">Servidor</h3></div>
+            <div class="net-row">
+              <input id="razzeApiUrl" type="url" placeholder="https://api.seudominio.com" autocomplete="url" aria-label="Endereço do servidor Razze">
+              <button id="razzeSaveServer" class="btn small" type="button">Testar e salvar</button>
+            </div>
+          </section>
+
+          <section class="net-step" id="razzeStepNetworks" aria-labelledby="razzeStepNetworksTitle" hidden>
+            <div class="net-step-head"><span class="net-step-num" id="razzeStepNetworksNum">2</span><h3 id="razzeStepNetworksTitle">Redes</h3></div>
+            <div id="razzeNetworks" class="razze-networks"></div>
+            <p class="sessions-empty" id="razzeNetworksEmpty" hidden>Você ainda não está em nenhuma rede. Crie uma ou entre com um convite.</p>
+            <div class="net-two">
+              <label class="field"><span>Criar uma rede</span>
+                <span class="net-row"><input id="razzeNetworkName" type="text" maxlength="80" placeholder="Nome da rede"><button id="razzeCreateNetwork" class="btn small" type="button">Criar</button></span></label>
+              <label class="field"><span>Entrar com convite</span>
+                <span class="net-row"><input id="razzeInviteToken" type="text" placeholder="telap2p://invite/…"><button id="razzeJoinInvite" class="btn small" type="button">Entrar</button></span></label>
+            </div>
+          </section>
+
+        </div>
+        <div id="profileAccount">
+          <p id="razzeAccountStatus" class="razze-status" role="status" aria-live="polite"></p>
+          <p id="profileAccountHint" class="hint"></p>
+          <section class="net-step hub-account" aria-labelledby="razzeStepAccountTitle">
+            <div class="net-step-head"><h3 id="razzeStepAccountTitle">Conta Razze</h3></div>
+            <div id="razzeAuth" class="net-auth">
+              <div class="seg" role="tablist" aria-label="Entrar ou criar conta">
+                <button id="razzeTabLogin" type="button" role="tab" aria-selected="true">Entrar</button>
+                <button id="razzeTabRegister" type="button" role="tab" aria-selected="false">Criar conta</button>
+              </div>
+              <label class="field" id="razzeNameField" hidden><span>Seu nome na rede</span><input id="razzeDisplayName" type="text" maxlength="60" autocomplete="name"></label>
+              <label class="field"><span>E-mail</span><input id="razzeEmail" type="email" autocomplete="username"></label>
+              <label class="field"><span>Senha</span><input id="razzePassword" type="password" autocomplete="current-password"></label>
+              <button id="razzeLogin" class="btn primary" type="button">Entrar</button>
+              <button id="razzeRegister" class="btn primary" type="button" hidden>Criar conta</button>
+            </div>
+            <div id="razzeAccount" class="net-row net-account" hidden>
+              <span class="avatar" id="razzeAccountAvatar" aria-hidden="true"></span>
+              <span class="net-account-text"><strong id="razzeAccountName"></strong><span class="hint" id="razzeAccountEmail"></span></span>
+              <button id="razzeLogout" class="btn small" type="button">Sair da conta</button>
+            </div>
+          </section>
+        </div>
+      </section>
+    </div>
   </aside>
   <main>
     <!-- Início -->
@@ -214,7 +303,18 @@
           <div class="stage-area" id="streamArea">
             <div class="stream-pane-head"><h2>Transmissões</h2><button class="btn small" id="streamPeople" type="button">Pessoas na sala</button></div>
             <div id="pausedStrip" class="paused-strip" role="group" aria-label="Transmissões em pausa" hidden></div>
-            <div id="emptyStage" class="empty-stage"><p id="emptyText"></p></div>
+            <div id="emptyStage" class="empty-stage">
+              <!-- Placa do EVA-01 (só aparece no tema E.V.A, styles-eva.css) -->
+              <div class="eva-plate" aria-hidden="true">
+                <span class="eva-plate-mark"><span class="eva-plate-ne">NE</span><span class="eva-plate-rv">RV</span></span>
+                <span class="eva-plate-text">
+                  <span class="eva-plate-unit">UNIT-01</span>
+                  <span class="eva-plate-bar">EVANGELION-01 TEST TYPE</span>
+                  <span class="eva-plate-foot"><span>-PROJECT EVA-</span><span>TOKYO-3</span></span>
+                </span>
+              </div>
+              <p id="emptyText"></p>
+            </div>
             <div id="tiles" class="tiles" hidden></div>
             <div id="stageSplitter" class="stage-splitter" role="separator" aria-orientation="vertical" aria-label="Largura da coluna de telas pequenas" aria-valuemin="15" aria-valuemax="50" tabindex="0" hidden></div>
             <div id="stageScroll" class="stage-scroll" hidden><button type="button" data-dir="-1"></button><div class="stage-scroll-track" role="scrollbar" aria-orientation="horizontal" aria-controls="tiles" aria-label="Rolar a faixa de telas" aria-valuemin="0" aria-valuemax="100" tabindex="0"><div class="stage-scroll-thumb"></div></div><button type="button" data-dir="1"></button></div>
@@ -705,67 +805,6 @@
     </div>
   </div>
 
-  <!-- Rede (ícone de servidor na barra): como os PCs se conectam. Radmin ou rede local, ou a VPN Razze em passos:
-       servidor e redes. Conta no perfil; amigos na própria aba. Lógica em renderer/conectividade.js -->
-  <div id="networkDialog" class="modal global utility-popup" hidden>
-    <div class="dialog general-settings network-settings" role="dialog" aria-modal="true" aria-labelledby="networkDialogTitle">
-      <div class="dialog-head"><h2 id="networkDialogTitle">Rede</h2><button id="closeNetworkDialog" class="btn icon" type="button"></button></div>
-      <p class="net-summary" role="status"><span id="netSummaryDot" class="dot"></span><span id="netSummaryText"></span></p>
-      <section class="settings-section" aria-labelledby="networkTitle">
-        <h3 id="networkTitle">Como os PCs se conectam</h3>
-        <div class="seg net-seg" role="radiogroup" aria-labelledby="networkTitle">
-          <label><input type="radio" name="networkProvider" value="radmin"><span>Radmin ou rede local</span></label>
-          <label><input type="radio" name="networkProvider" value="razze"><span>Razze (WireGuard)</span></label>
-          <label><input type="radio" name="networkProvider" value="internet"><span>Internet (servidor)</span></label>
-        </div>
-        <p class="hint" id="networkHint"></p>
-      </section>
-      <section id="internetSettings" class="settings-section" aria-labelledby="internetTitle" hidden>
-        <h3 id="internetTitle">Servidor</h3>
-        <div class="net-row">
-          <input id="internetUrl" type="text" class="mono" placeholder="ws://IP-DA-VPS:8765" autocomplete="url" spellcheck="false" aria-label="Endereço do servidor do modo Internet">
-          <button id="internetSaveServer" class="btn small" type="button">Testar e salvar</button>
-        </div>
-        <p class="hint" id="internetStatus" role="status" aria-live="polite"></p>
-      </section>
-      <div id="razzeSettings" class="razze-steps" hidden>
-        <p class="razze-status" id="razzeStatus" role="status" aria-live="polite"></p>
-        <section class="net-step" aria-labelledby="razzeStepServerTitle">
-          <div class="net-step-head"><span class="net-step-num" id="razzeStepServerNum">1</span><h3 id="razzeStepServerTitle">Servidor</h3></div>
-          <div class="net-row">
-            <input id="razzeApiUrl" type="url" placeholder="https://api.seudominio.com" autocomplete="url" aria-label="Endereço do servidor Razze">
-            <button id="razzeSaveServer" class="btn small" type="button">Testar e salvar</button>
-          </div>
-        </section>
-
-        <section class="net-step" id="razzeStepNetworks" aria-labelledby="razzeStepNetworksTitle" hidden>
-          <div class="net-step-head"><span class="net-step-num" id="razzeStepNetworksNum">2</span><h3 id="razzeStepNetworksTitle">Redes</h3></div>
-          <div id="razzeNetworks" class="razze-networks"></div>
-          <p class="sessions-empty" id="razzeNetworksEmpty" hidden>Você ainda não está em nenhuma rede. Crie uma ou entre com um convite.</p>
-          <div class="net-two">
-            <label class="field"><span>Criar uma rede</span>
-              <span class="net-row"><input id="razzeNetworkName" type="text" maxlength="80" placeholder="Nome da rede"><button id="razzeCreateNetwork" class="btn small" type="button">Criar</button></span></label>
-            <label class="field"><span>Entrar com convite</span>
-              <span class="net-row"><input id="razzeInviteToken" type="text" placeholder="telap2p://invite/…"><button id="razzeJoinInvite" class="btn small" type="button">Entrar</button></span></label>
-          </div>
-        </section>
-
-      </div>
-    </div>
-  </div>
-  <div id="friendsDialog" class="modal global utility-popup" hidden>
-    <div class="dialog general-settings network-settings" role="dialog" aria-modal="true" aria-labelledby="friendsTitle">
-      <div class="dialog-head"><h2 id="friendsTitle">Amigos</h2><button id="closeFriendsDialog" class="btn icon" type="button"></button></div>
-      <p id="razzeFriendsStatus" class="razze-status" role="status" aria-live="polite"></p>
-      <p id="friendsHint" class="hint"></p>
-      <button id="friendsOpenProfile" class="btn small" type="button">Abrir perfil e conta</button>
-        <section class="net-step" id="razzeStepFriends" aria-labelledby="razzeStepFriendsTitle" hidden>
-          <div class="net-step-head"><h3 id="razzeStepFriendsTitle">Amigos</h3></div>
-          <div id="razzeFriends" class="razze-friends"></div>
-          <div class="net-row"><input id="razzeFriendNickname" type="text" maxlength="60" placeholder="Nickname do amigo" aria-label="Nickname do amigo"><button id="razzeAddFriend" class="btn small" type="button">Adicionar amigo</button></div>
-        </section>
-    </div>
-  </div>
   <div id="connectionMapDialog" class="modal global utility-popup" hidden>
     <div class="dialog general-settings connection-map-dialog" role="dialog" aria-modal="true" aria-labelledby="connectionMapTitle">
       <div class="dialog-head"><h2 id="connectionMapTitle">Mapa de conexões</h2><button id="closeConnectionMap" class="btn icon" type="button"></button></div>
@@ -803,6 +842,7 @@
   <script src="renderer/sala.js"></script>
   <script src="renderer/voz.js"></script>
   <script src="renderer/microfone.js"></script>
+  <script src="renderer/subsalas.js"></script>
   <script src="renderer/membros.js"></script>
   <script src="renderer/assistir.js"></script>
   <script src="renderer/palco.js"></script>
@@ -815,6 +855,7 @@
   <script src="renderer/sessoes.js"></script>
   <script src="renderer/transmitir.js"></script>
   <script src="renderer/mapa-conexoes.js"></script>
+  <script src="renderer/hub.js"></script>
   <script src="renderer/navegacao.js"></script>
   <script src="renderer/inicio.js"></script>
 </body>

@@ -1,6 +1,7 @@
 'use strict';
 
 // Uma conexão bidirecional por par, independente das conexões das telas.
+// Canal: '' é a Voz geral; um número é uma subsala. Só quem está no mesmo canal se conecta (e se ouve).
 class VoiceChat {
   constructor({ send, changed, error, media = navigator.mediaDevices,
     makePeer = () => new RTCPeerConnection(typeof RTC_CONFIG !== 'undefined' ? RTC_CONFIG : { iceServers: [] }),
@@ -12,6 +13,7 @@ class VoiceChat {
     this.members = new Map();
     this.epoch = 0;
     this.session = '';
+    this.channel = '';
     this.pending = false;
     this.muted = false;
     this.deafened = false;
@@ -20,11 +22,12 @@ class VoiceChat {
     this.leave(false);
     this.id = welcome?.id;
     this.supported = welcome?.features?.includes('voice') || false;
-    this.members = new Map((welcome?.members || []).map(m => [m.id, { session: m.voiceSession || '', muted: !!m.muted, deafened: !!m.deafened }]));
+    this.members = new Map((welcome?.members || []).map(m => [m.id, { session: m.voiceSession || '', channel: m.voiceSession ? String(m.voiceChannel || '') : '', muted: !!m.muted, deafened: !!m.deafened }]));
     this.changed();
   }
-  async join() {
+  async join(channel = '') {
     if (!this.supported || this.session || this.pending) return;
+    this.channel = String(channel || '');
     const epoch = ++this.epoch;
     this.pending = true;
     this.changed();
@@ -53,12 +56,27 @@ class VoiceChat {
       if (epoch === this.epoch) { this.pending = false; this.changed(); }
     }
   }
-  announce() { this.send({ type: 'voice-state', session: this.session, muted: this.muted, deafened: this.deafened }); }
+  announce() { this.send({ type: 'voice-state', session: this.session, channel: this.session ? this.channel : '', muted: this.muted, deafened: this.deafened }); }
+  // Ir para outro canal (Voz geral ou uma subsala). Fora da voz, entra direto nele.
+  setChannel(channel) {
+    channel = String(channel || '');
+    if (!this.session) return this.join(channel);
+    if (channel === this.channel) return;
+    this.moveTo(channel);
+    this.announce(); // as conexões novas começam quando o servidor confirmar (update do próprio id)
+  }
+  moveTo(channel) {
+    this.channel = channel;
+    for (const id of [...this.peers.keys()]) this.close(id);
+    this.activity('voiceJoin', this.id); // o som de entrar: você chegou num canal
+    this.changed();
+  }
   leave(notify = true) {
     ++this.epoch;
     this.pending = false;
     const wasActive = !!this.session;
     this.session = '';
+    this.channel = '';
     if (this.stream) for (const track of this.stream.getTracks()) { track.onended = null; track.stop(); }
     this.stream = null;
     this.mixer?.local(null);
@@ -91,15 +109,21 @@ class VoiceChat {
     if (this.session) this.announce(); // os outros veem que você silenciou as vozes (fone)
     this.changed();
   }
-  update(id, session, muted, deafened = false) {
+  update(id, session, muted, deafened = false, channel = '') {
+    channel = session ? String(channel || '') : '';
     if (id === this.id) {
+      // O servidor pode mudar o seu canal (a subsala em que você estava foi apagada): segue o que ele diz
+      if (session === this.session && session && channel !== this.channel) this.moveTo(channel);
       if (session === this.session && session) this.sync();
       return;
     }
-    const wasActive = !!this.members.get(id)?.session;
-    if (this.members.get(id)?.session !== session) this.close(id);
-    this.members.set(id, { session, muted, deafened: !!session && !!deafened });
-    if (wasActive !== !!session) this.activity(session ? 'voiceJoin' : 'voiceLeave', id);
+    const before = this.members.get(id);
+    const wasActive = !!before?.session;
+    if (before?.session !== session || (before?.channel || '') !== channel) this.close(id);
+    this.members.set(id, { session, channel, muted, deafened: !!session && !!deafened });
+    // Na voz, o som de entrar e sair vale para o seu canal: alguém chegou nele ou saiu dele (trocar de subsala conta)
+    const wasHere = wasActive && (before.channel || '') === this.channel, isHere = !!session && channel === this.channel;
+    if (this.session ? wasHere !== isHere : wasActive !== !!session) this.activity((this.session ? isHere : session) ? 'voiceJoin' : 'voiceLeave', id);
     this.sync();
     this.changed();
   }
@@ -112,7 +136,7 @@ class VoiceChat {
   sync() {
     if (!this.session) return;
     for (const [id, member] of this.members) {
-      if (member.session && !this.peers.has(id) && Number(this.id) < Number(id)) {
+      if (member.session && (member.channel || '') === this.channel && !this.peers.has(id) && Number(this.id) < Number(id)) {
         const p = this.connect(id, member.session, this.token());
         this.enqueue(p, async () => {
           await p.pc.setLocalDescription(await p.pc.createOffer());
@@ -177,7 +201,8 @@ class VoiceChat {
   }
   receive(id, data) {
     if (!this.session || data.targetSession !== this.session || !data.session ||
-        this.members.get(id)?.session !== data.session || typeof data.call !== 'string') return;
+        this.members.get(id)?.session !== data.session || (this.members.get(id)?.channel || '') !== this.channel ||
+        typeof data.call !== 'string') return;
     let p = this.peers.get(id);
     // Oferta de uma chamada nova de quem inicia: a anterior caiu, troca por esta
     if (p && p.call !== data.call && data.sdp?.type === 'offer' && Number(id) < Number(this.id)) { this.close(id); p = null; }

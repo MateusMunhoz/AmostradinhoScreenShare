@@ -9,7 +9,7 @@ let room = null;
 let roomChanged = () => {};
 
 const {
-  MAX_MEMBERS, send, cleanSessao, newMember, memberInfo, createChat, handleMemberMessage,
+  MAX_MEMBERS, send, cleanSessao, newMember, memberInfo, createChat, createSubsalas, handleMemberMessage,
 } = require('./sala-protocolo');
 
 const LOCAL = ['127.0.0.1', '::1', '::ffff:127.0.0.1'];
@@ -48,6 +48,7 @@ function startServer(port, password = '', seed = {}) {
     const members = new Map(); // id -> { ws, name, sharing, version, addrs }
     let nextId = Math.max(1, Math.floor(Number(seed.nextId)) || 1);
     const chat = createChat(seed.chat);
+    const subsalas = createSubsalas(seed.subsalas); // as subsalas de voz continuam depois da troca de host
     // Quem roda este servidor: numa sala nova, a primeira conexão do próprio PC; depois de uma troca,
     // já vem definido (os outros podem chegar antes do próprio novo host)
     let hostId = /^\d{1,6}$/.test(String(seed.hostId || '')) ? String(seed.hostId) : null;
@@ -142,14 +143,15 @@ function startServer(port, password = '', seed = {}) {
           }
           if (!hostId && isLocal) hostId = id;
           // A versão de cada um serve para os apps baixarem atualizações uns dos outros
-          me = newMember(ws, msg, resume);
+          me = newMember(ws, msg, resume, subsalas);
           send(ws, {
             type: 'welcome',
             id,
             hostId,
             members: [...members].map(([mid, m]) => memberInfo(mid, m)),
-            features: ['chat', 'voice', 'handoff', 'sessoes'],
+            features: ['chat', 'voice', 'handoff', 'sessoes', 'subsalas'],
             chat: chat.log,
+            subsalas: subsalas.list,
             sessao,
           });
           members.set(id, me);
@@ -158,7 +160,7 @@ function startServer(port, password = '', seed = {}) {
           return;
         }
 
-        handleMemberMessage({ members, broadcast, chat }, id, me, msg);
+        handleMemberMessage({ members, broadcast, chat, subsalas }, id, me, msg);
       });
 
       ws.on('close', () => {
