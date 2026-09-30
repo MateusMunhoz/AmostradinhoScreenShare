@@ -1,5 +1,6 @@
 // Gera assets/icone/tela-p2p.ico (o ícone do .exe) com o mesmo desenho da barra de título, na cor padrão do
-// tema (Detalhe 1). Roda pelo Electron para desenhar num canvas de verdade: npm run icone
+// tema (Detalhe 1), e assets/icone/tela-p2p-eva.ico (o do build E.V.A, npm run dist:eva) com o rosto do EVA-01.
+// Roda pelo Electron para desenhar num canvas de verdade: npm run icone
 // O .ico leva PNGs de 16 a 256 px; o Windows escolhe o tamanho certo para cada lugar.
 const { app, BrowserWindow } = require('electron');
 const fs = require('fs');
@@ -29,16 +30,18 @@ app.whenReady().then(async () => {
   const win = new BrowserWindow({ show: false, webPreferences: { offscreen: true } });
   await win.loadURL('data:text/html,<canvas></canvas>');
   const draw = fs.readFileSync(path.join(__dirname, 'renderer', 'icone-app.js'), 'utf8');
-  await win.webContents.executeJavaScript(draw.replace("'use strict';", '') + '; window.drawAppIcon = drawAppIcon; 1');
-  const pngs = [];
-  for (const size of SIZES) {
-    const url = await win.webContents.executeJavaScript(`(() => { const c = document.createElement('canvas'); c.width = c.height = ${size};
-      drawAppIcon(c.getContext('2d'), ${size}, ${JSON.stringify(COLOR)}); return c.toDataURL('image/png'); })()`);
-    pngs.push({ size, data: Buffer.from(url.split(',')[1], 'base64') });
-  }
+  await win.webContents.executeJavaScript(draw.replace("'use strict';", '') + '; window.drawAppIcon = drawAppIcon; window.drawEvaIcon = drawEvaIcon; 1');
   fs.mkdirSync(OUT, { recursive: true });
-  fs.writeFileSync(path.join(OUT, 'tela-p2p.ico'), packIco(pngs));
-  fs.writeFileSync(path.join(OUT, 'tela-p2p.png'), pngs.at(-1).data);
+  for (const [name, call] of [['tela-p2p', `drawAppIcon(ctx, size, ${JSON.stringify(COLOR)})`], ['tela-p2p-eva', 'drawEvaIcon(ctx, size)']]) {
+    const pngs = [];
+    for (const size of SIZES) {
+      const url = await win.webContents.executeJavaScript(`(() => { const size = ${size}, c = document.createElement('canvas'); c.width = c.height = size;
+        const ctx = c.getContext('2d'); ${call}; return c.toDataURL('image/png'); })()`);
+      pngs.push({ size, data: Buffer.from(url.split(',')[1], 'base64') });
+    }
+    fs.writeFileSync(path.join(OUT, name + '.ico'), packIco(pngs));
+    fs.writeFileSync(path.join(OUT, name + '.png'), pngs.at(-1).data);
+  }
   console.log('Ícone gerado em ' + path.relative(__dirname, OUT) + ': ' + SIZES.join(', ') + ' px');
   app.quit();
 });

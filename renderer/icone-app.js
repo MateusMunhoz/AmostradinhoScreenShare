@@ -17,26 +17,31 @@ function drawAppIcon(ctx, size, color) {
   ctx.lineTo(21 * s, 9 * s);
   ctx.stroke();
 }
-// Tema E.V.A: o rosto do EVA-01 no lugar das duas telas (desenho próprio, em 64 x 64: [cor, caminho SVG])
+// Tema E.V.A: o rosto do EVA-01 no lugar das duas telas. Desenho próprio em 64 x 64 ([cor, caminho SVG]), fundo
+// transparente; também vira o .ico do build E.V.A (gerar-icone.js > tela-p2p-eva.ico)
+const evaMirror = d => d.replace(/(-?[\d.]+) (-?[\d.]+)/g, (_, x, y) => `${64 - x} ${y}`); // espelha na vertical do meio
 const EVA_HEAD = [
-  ['#7A48B8', 'M32 0.5 L35 21 L29 21 Z'],
-  ['#6B3FA0', 'M32 14 C43 14 48 22 47.5 32 L44.5 46 L37.5 61.5 L26.5 61.5 L19.5 46 L16.5 32 C16 22 21 14 32 14 Z'],
-  ['#8A5CCB', 'M32 14 C40 14 44.5 19 45.5 25 L32 22 L18.5 25 C19.5 19 24 14 32 14 Z'],
-  ['#1A1030', 'M20.5 30.5 L43.5 30.5 L41.5 45 L36 52 L28 52 L22.5 45 Z'],
-  ['#A3F43C', 'M17.5 32.5 L21.5 32 L25.5 47 L23 53 Z'],
-  ['#A3F43C', 'M46.5 32.5 L42.5 32 L38.5 47 L41 53 Z'],
-  ['#F2FF6B', 'M22.5 33.5 L31 36.5 L30 38.8 L23 36.2 Z'],
-  ['#F2FF6B', 'M41.5 33.5 L33 36.5 L34 38.8 L41 36.2 Z'],
-  ['#A3F43C', 'M28 52 L36 52 L34.5 59.5 L29.5 59.5 Z'],
-  ['#E9E2F7', 'M28.5 46.5 L35.5 46.5 L35 48.2 L29 48.2 Z'],
+  ['#4E2A80', 'M9 29 L19 21 L24 33 L22 46 L14 51 L7 44 Z'],                       // aba lateral esquerda
+  ['#4E2A80', evaMirror('M9 29 L19 21 L24 33 L22 46 L14 51 L7 44 Z')],
+  ['#7443B5', 'M32 9 L44 15 L50.5 28 L46 44 L38 50 L32 52 L26 50 L18 44 L13.5 28 L20 15 Z'], // capacete
+  ['#9366D8', 'M32 9 L44 15 L50 27 L37 21 Z'],                                     // brilho do alto
+  ['#3A1F66', 'M19 29 L30 33 L32 39 L34 33 L45 29 L45 32.5 L34.5 36.5 L32 44 L29.5 36.5 L19 32.5 Z'], // sobrancelha
+  ['#F5E663', 'M21.5 34.5 L29 37.2 L28 39.4 L22 36.8 Z'],                          // olhos
+  ['#F5E663', evaMirror('M21.5 34.5 L29 37.2 L28 39.4 L22 36.8 Z')],
+  ['#A3F43C', 'M16.5 43.5 L23 46.5 L22 50 L14.5 47 Z'],                            // verde do maxilar
+  ['#A3F43C', evaMirror('M16.5 43.5 L23 46.5 L22 50 L14.5 47 Z')],
+  ['#7F8FE6', 'M24 48 L32 52 L40 48 L38.5 56 L33.5 60.5 L30.5 60.5 L25.5 56 Z'],  // maxilar
+  ['#A3F43C', 'M31 58 L33 58 L32.6 62.5 L31.4 62.5 Z'],                            // ponta do queixo
+  ['#241440', 'M31 1.5 L33 1.5 L33 42 L32 46 L31 42 Z'],                           // chifre
+  ['#A3F43C', 'M31.35 35 L32.65 35 L32.4 40 L31.6 40 Z'],                          // verde no chifre
 ];
 function drawEvaIcon(ctx, size) {
   ctx.clearRect(0, 0, size, size);
   ctx.save(); ctx.scale(size / 64, size / 64);
-  ctx.lineJoin = 'round'; ctx.strokeStyle = '#0B0714'; ctx.lineWidth = size <= 32 ? 2.4 : 1.5;
-  const [horn, helmet] = EVA_HEAD.map(([, d]) => new Path2D(d));
-  ctx.stroke(horn); ctx.stroke(helmet);
-  for (const [color, d] of EVA_HEAD) { ctx.fillStyle = color; ctx.fill(new Path2D(d)); }
+  ctx.lineJoin = 'round'; ctx.strokeStyle = '#120820'; ctx.lineWidth = size <= 24 ? 3 : size <= 48 ? 2.2 : 1.4;
+  const paths = EVA_HEAD.map(([color, d]) => [color, new Path2D(d)]);
+  for (const [, p] of paths) ctx.stroke(p); // contorno por baixo de tudo: separa a cabeça de qualquer fundo
+  for (const [color, p] of paths) { ctx.fillStyle = color; ctx.fill(p); }
   ctx.restore();
 }
 if (typeof module !== 'undefined') module.exports = { drawAppIcon, drawEvaIcon };

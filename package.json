@@ -12,6 +12,7 @@
     "test:rtc": "electron tests/rtc-smoke.cjs",
     "test:e2e": "node tests/e2e/rodar.js",
     "dist": "electron-builder --win portable",
+    "dist:eva": "electron-builder --win portable -c.win.icon=assets/icone/tela-p2p-eva.ico",
     "publicar": "node publicar.js",
     "razze-api": "node razze-api/server.js",
     "test:razze-api": "node --test tests/razze-*.test.js",
