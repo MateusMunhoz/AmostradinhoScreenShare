@@ -181,11 +181,13 @@ function watch(id) {
   const tile = createTile(id, nameOf(id));
   const link = { pc, chain: Promise.resolve(), tile, lastBytes: 0, lastTs: 0, videoOn: true, tracks: [], once: null };
   state.in.set(id, link);
-  applyScreenVolume(id); // o volume que você deixou para essa pessoa da última vez
+  // Toda transmissão começa sem som; o alto-falante do quadro liga no volume que você deixou para essa pessoa
+  tile.userMuted = true;
+  applyScreenVolume(id);
   renderTileAudio(id);
-  if (!soundHintShown && volOf(id).screen === 0) {
+  if (!soundHintShown) {
     soundHintShown = true;
-    toast('O som das telas começa desligado. Role a roda do mouse em cima da tela (ou use o controle) para ouvir.');
+    toast('As telas começam sem som. Clique no alto-falante da tela (ou role a roda do mouse em cima dela) para ouvir.');
   }
 
   pc.ontrack = (e) => {

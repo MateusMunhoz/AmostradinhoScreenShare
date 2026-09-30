@@ -364,16 +364,25 @@ function renderPersonCard() {
   av.dataset.person = id;
   av.classList.add('pc-photo');
   av.classList.toggle('speaking', speaking.has(id));
-  // Com foto: clicar abre ela inteira (sem o corte redondo), no visualizador de imagens
+  // Com foto: ela aparece inteira no topo (sem o corte redondo); clicar abre em tamanho grande
   if (photoHashOf(id)) {
     const photoBtn = document.createElement('button');
     photoBtn.type = 'button';
     photoBtn.className = 'pc-photo-btn';
-    photoBtn.setAttribute('aria-label', `Ver a foto de ${name}`);
-    photoBtn.title = 'Ver a foto inteira';
-    photoBtn.append(av);
+    photoBtn.classList.toggle('speaking', speaking.has(id));
+    photoBtn.setAttribute('aria-label', `Ver a foto de ${name} em tamanho grande`);
+    photoBtn.title = 'Ver em tamanho grande';
+    const img = document.createElement('img');
+    img.className = 'pc-photo-full';
+    img.alt = '';
+    const hash = state.members.get(id)?.avatarFull;
+    img.src = (hash && fotos.fullUrls.get(hash)) || photoUrl(photoHashOf(id));
+    // A inteira chega depois (a pequena é quadrada, cortada): troca quando vier
+    if (!hash || !fotos.fullUrls.has(hash)) fullPhotoOf(id).then((url) => { if (url && img.isConnected) img.src = url; });
+    photoBtn.append(img);
     photoBtn.onclick = () => openPhotoViewer(id, name, photoBtn);
-    head.append(photoBtn, who);
+    card.append(photoBtn);
+    head.append(who);
   } else head.append(av, who);
   card.append(head);
   const slider = (label, key, max, show) => {

@@ -241,8 +241,13 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 .person-card .pc-head .avatar { width: 40px; height: 40px; font-size: 16px; background: var(--person); }
 /* Cartão da pessoa: foto grande no topo; com foto, clicar abre ela inteira */
 .person-card .pc-head .avatar.pc-photo { width: 72px; height: 72px; font-size: 28px; }
-.pc-photo-btn { flex: none; padding: 0; border: 0; border-radius: 50%; background: none; cursor: zoom-in; position: relative; }
-.pc-photo-btn:hover .avatar { filter: brightness(1.1); box-shadow: 0 0 0 3px var(--person); }
+.pc-photo-btn {
+  display: block; width: 100%; height: 200px; padding: 0; border: 0; border-radius: 10px; overflow: hidden;
+  background: var(--panel); cursor: zoom-in; box-shadow: 0 0 0 1px var(--line);
+}
+.pc-photo-btn.speaking { box-shadow: 0 0 0 2px var(--ok); }
+.pc-photo-full { display: block; width: 100%; height: 100%; object-fit: contain; }
+.pc-photo-btn:hover .pc-photo-full { filter: brightness(1.08); }
 .pc-photo-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 /* Foto ou nome de outra pessoa: abre o perfil */
 [data-profile] { cursor: pointer; }
