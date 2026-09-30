@@ -135,9 +135,18 @@ const AppPreferences = (() => {
     { id: 'evaOpaco', label: 'E.V.A by Asock v2', colors: evaColors, font: { family: 'chakra' },
       appearance: { glass: 'opaque', border: 'solid', wallpaper: 'eva', blur: 0, dim: 40, decor: 'eva' } },
   ];
+  // Temas (Configurações > Tema): mudam o desenho do app inteiro, não só as cores. Escolher um aplica as cores dele
+  // (dá para ajustar depois na aba Cores sem perder o desenho). '' = o visual padrão. O desenho do Arasaka
+  // (Cyberpunk 2077) fica em styles-arasaka.css, sob html[data-skin=arasaka].
+  const skins = [
+    { id: '', label: 'Padrão', note: 'O visual normal do app, com as cores que você escolher.' },
+    { id: 'arasaka', label: 'Arasaka', note: 'Cyberpunk 2077: preto, vermelho em listras de monitor, cantos retos e o emblema da corporação.',
+      colors: { main: '#000000', secondary: '#080B0C', detail1: '#FF1F4F', detail2: '#5DE4C7', text: '#CFD6D4', line: '#233031' }, appearance: { glass: 'opaque', border: 'solid' } },
+  ];
+  const cleanSkin = (id) => skins.some((k) => k.id && k.id === id) ? id : '';
   // Preferências com o tema aplicado (o resto, como fontes e sons, fica como está)
   function applyTheme(prefs, id) {
-    const t = themes.find(x => x.id === id);
+    const t = themes.find(x => x.id === id) || skins.find(x => x.id && x.id === id);
     if (!t) return normalize(prefs);
     const colors = { ...defaults.colors, text: '', live: '', speaking: '', warn: '', line: '', ...t.colors };
     // Tema sem fundo próprio: a imagem da pessoa (custom) fica, com o desfoque dela; a de outro tema sai
@@ -324,6 +333,6 @@ const AppPreferences = (() => {
     stopAll() { for (const event of [...this.players.keys()]) this.stop(event); }
   }
   return { key, sounds, events, defaults, optionalColors, glassModes, glassLevel, borderModes, fonts,
-    wallpapers, wallpaperKey, wallpaperLimits, wallpaperUrl, cleanWallpaperData, decors, fontName, fontStacks, cleanNameFont, nameFontStack, borders, themes, applyTheme, currentTheme, hex, normalize, read, write, palette, glass, SoundPlayer };
+    wallpapers, wallpaperKey, wallpaperLimits, wallpaperUrl, cleanWallpaperData, decors, fontName, fontStacks, cleanNameFont, nameFontStack, borders, themes, skins, cleanSkin, applyTheme, currentTheme, hex, normalize, read, write, palette, glass, SoundPlayer };
 })();
 if (typeof module !== 'undefined') module.exports = AppPreferences;

@@ -40,3 +40,20 @@ function drawEvaIcon(ctx, size) {
   ctx.restore();
 }
 if (typeof module !== 'undefined') module.exports = { drawAppIcon, drawEvaIcon };
+
+// Tema Arasaka: o ícone da janela vira o emblema da corporação (anel, três esferas e o tronco), em 100 x 100.
+// O mesmo desenho está em styles-arasaka.css (máscara da barra de título e do saguão).
+function drawArasakaIcon(ctx, size, color) {
+  const s = size / 100;
+  ctx.clearRect(0, 0, size, size);
+  ctx.save();
+  ctx.scale(s, s);
+  ctx.fillStyle = ctx.strokeStyle = color;
+  for (const [x, y, r] of [[50, 27, 11], [29, 43, 10], [71, 43, 10]]) { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); }
+  ctx.lineWidth = size <= 32 ? 10 : 8;
+  ctx.beginPath(); ctx.arc(50, 50, 43, 0, Math.PI * 2); ctx.stroke();
+  ctx.lineWidth = 9;
+  ctx.stroke(new Path2D('M50 36V84M50 64 33 50M50 64 67 50'));
+  ctx.restore();
+}
+if (typeof module !== 'undefined') module.exports.drawArasakaIcon = drawArasakaIcon;

@@ -1,6 +1,7 @@
 'use strict';
 // Preferências deste PC. Só a fonte do nome (nameFont) vai para a sala, pelo perfil (navegacao.js).
 let appPreferences = AppPreferences.read(localStorage);
+let appSkin = AppPreferences.cleanSkin(load('tema', '')); // Configurações > Tema ('' = padrão)
 const appSounds = new AppPreferences.SoundPlayer({ settings: () => appPreferences });
 let settingsReturnFocus = null;
 
@@ -33,14 +34,17 @@ function applyTitleBar() {
 // Ícone da janela na barra de tarefas: o mesmo desenho da barra de título, na cor Detalhe 1 do tema
 let appIconColor = '';
 function applyAppIcon() {
-  // No tema E.V.A (letreiro ligado), o rosto do EVA-01
+  // Tema E.V.A (letreiro ligado): o rosto do EVA-01; tema Arasaka: o emblema da corporação; senão, as duas telas
   const eva = appPreferences.appearance.decor === 'eva';
-  const color = eva ? 'eva' : AppPreferences.palette(appPreferences.colors)['--accent'];
-  if (color === appIconColor || !window.api?.setWindowIcon) return;
-  appIconColor = color;
+  const color = AppPreferences.palette(appPreferences.colors)['--accent'];
+  const skin = document.documentElement.dataset.skin || '';
+  const key = eva ? 'eva' : color + skin;
+  if (key === appIconColor || !window.api?.setWindowIcon) return;
+  appIconColor = key;
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = 256;
-  if (eva) drawEvaIcon(canvas.getContext('2d'), 256); else drawAppIcon(canvas.getContext('2d'), 256, color);
+  if (eva) drawEvaIcon(canvas.getContext('2d'), 256);
+  else (skin === 'arasaka' ? drawArasakaIcon : drawAppIcon)(canvas.getContext('2d'), 256, color);
   window.api.setWindowIcon(canvas.toDataURL('image/png')).catch(() => {});
 }
 // Imagem de fundo: a incluída no app ou a da pessoa (guardada à parte, em wallpaperKey). O desfoque é um filtro
@@ -65,7 +69,15 @@ function applyWallpaper() {
 function applyAppTheme(d = document) {
   const root = d.documentElement;
   for (const [key, value] of Object.entries(AppPreferences.palette(appPreferences.colors))) root.style.setProperty(key, value);
+  // Tema (aba Tema): o desenho do app inteiro. Continua mesmo se as cores forem ajustadas depois.
+  const skin = appSkin;
+  if (skin) root.dataset.skin = skin; else delete root.dataset.skin;
   const fonts = AppPreferences.fontStacks(appPreferences.font);
+  // Com a fonte padrão, o Arasaka usa a Bahnschrift (vem no Windows) e números em fonte fixa
+  if (skin === 'arasaka' && appPreferences.font.family === 'system') {
+    fonts.body = fonts.display = 'Bahnschrift, "Segoe UI", system-ui, sans-serif';
+    fonts.console = '"Cascadia Mono", Consolas, monospace';
+  }
   root.style.setProperty('--font-body', fonts.body);
   root.style.setProperty('--font-display', fonts.display);
   root.style.setProperty('--font-console', fonts.console);
@@ -211,6 +223,48 @@ function renderFontPreview() {
   if (value === 'custom') $('fontStatus').textContent = !f.custom ? 'Digite o nome de uma fonte instalada no Windows.'
     : missing ? `“${f.custom}” não foi encontrada neste PC. O app usa a fonte padrão até ela ser instalada.` : `Usando “${f.custom}”.`;
 }
+// Aba Tema: cada cartão mostra uma prévia do desenho. Escolher um tema aplica as cores dele; voltar ao Padrão
+// devolve as cores e o material que você tinha antes de escolher o tema.
+function chooseSkin(id) {
+  id = AppPreferences.cleanSkin(id);
+  if (id === appSkin) return;
+  if (!appSkin) save('temaCoresAntes', JSON.stringify({ colors: appPreferences.colors, appearance: appPreferences.appearance }));
+  if (id) appPreferences = AppPreferences.applyTheme(appPreferences, id);
+  else {
+    let before = null;
+    try { before = JSON.parse(load('temaCoresAntes', 'null')); } catch {}
+    appPreferences = before ? AppPreferences.normalize({ ...appPreferences, ...before }) : AppPreferences.applyTheme(appPreferences, 'lanhouse');
+  }
+  appSkin = id;
+  save('tema', id);
+  saveAppPreferences();
+  renderGeneralSettings();
+}
+function renderSkins() {
+  const list = $('skinList');
+  if (!list.children.length) {
+    for (const k of AppPreferences.skins) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'skin-card';
+      b.setAttribute('role', 'radio');
+      b.dataset.skin = k.id;
+      const preview = document.createElement('span');
+      preview.className = 'skin-preview';
+      preview.dataset.preview = k.id || 'padrao';
+      preview.setAttribute('aria-hidden', 'true');
+      const name = document.createElement('strong');
+      name.textContent = k.label;
+      const note = document.createElement('small');
+      note.textContent = k.note;
+      b.append(preview, name, note);
+      b.onclick = () => chooseSkin(k.id);
+      list.append(b);
+    }
+  }
+  for (const b of list.children) b.setAttribute('aria-checked', String(b.dataset.skin === appSkin));
+}
+
 // Temas prontos: cada botão mostra as 4 cores do tema; o que bate com as escolhas atuais fica marcado
 function renderThemes() {
   const list = $('themeList');
@@ -233,6 +287,8 @@ function renderThemes() {
       name.textContent = t.label;
       b.append(sw, name);
       b.onclick = () => {
+        // Tema com letreiro (E.V.A) tem o próprio desenho: sai do tema da aba Tema (Arasaka) para não misturar
+        if (t.appearance.decor && appSkin) { appSkin = ''; save('tema', ''); }
         appPreferences = AppPreferences.applyTheme(appPreferences, t.id);
         saveAppPreferences();
         renderGeneralSettings();
@@ -312,6 +368,7 @@ function setupWallpaper() {
   };
 }
 function renderAppearance() {
+  renderSkins();
   renderThemes();
   const a = appPreferences.appearance;
   for (const input of document.querySelectorAll('input[name=glass]')) input.checked = input.value === a.glass;
@@ -376,7 +433,7 @@ function setupAppearance() {
     $('loadLocalFonts').disabled = false;
   };
 }
-// Abas das configurações: Aparência, Cores e Sons (a rede tem a própria janela, networkDialog). Lembra a última aberta.
+// Abas das configurações: Tema, Aparência, Cores e Sons (a rede tem a própria janela, networkDialog). Lembra a última aberta.
 function showSettingsTab(name, focus = false) {
   const tabs = [...document.querySelectorAll('.settings-tabs [role=tab]')];
   const tab = tabs.find((t) => t.dataset.tab === name) || tabs[0];

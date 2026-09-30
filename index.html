@@ -6,6 +6,7 @@
         content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; img-src 'self' data: blob:; style-src 'self'; connect-src ws: wss:; media-src 'self' blob: mediastream:">
   <title>Tela P2P</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles-arasaka.css">
 </head>
 <body>
   <div id="titlebar" class="titlebar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h13v10H3zM8 19h13V9"/></svg><span>Tela P2P</span></div>
@@ -627,10 +628,16 @@
       <div class="dialog-head"><h2 id="generalSettingsTitle">Configurações gerais</h2><button id="closeGeneralSettings" class="btn icon" type="button"></button></div>
       <p class="hint" id="settingsSaveStatus" role="status">Salvo neste dispositivo. As escolhas continuam ao reabrir o app.</p>
       <div class="settings-tabs seg" role="tablist" aria-label="Seções das configurações">
+        <button id="settingsTab-skin" type="button" role="tab" data-tab="skin" aria-controls="settingsPanel-skin">Tema</button>
         <button id="settingsTab-appearance" type="button" role="tab" data-tab="appearance" aria-controls="settingsPanel-appearance">Aparência</button>
         <button id="settingsTab-colors" type="button" role="tab" data-tab="colors" aria-controls="settingsPanel-colors">Cores</button>
         <button id="settingsTab-sounds" type="button" role="tab" data-tab="sounds" aria-controls="settingsPanel-sounds">Sons</button>
       </div>
+      <section id="settingsPanel-skin" class="settings-section" role="tabpanel" aria-labelledby="settingsTab-skin" hidden>
+        <h3 id="skinTitle">Tema</h3>
+        <p class="hint">Muda o desenho do app inteiro: formas, letras e enfeites, não só as cores. As cores do tema vêm junto e dá para ajustar na aba Cores. Voltar ao Padrão devolve as cores que você tinha.</p>
+        <div id="skinList" class="skin-list" role="radiogroup" aria-labelledby="skinTitle"></div>
+      </section>
       <section id="settingsPanel-appearance" class="settings-section" role="tabpanel" aria-labelledby="settingsTab-appearance" hidden>
         <h3 id="appearanceTitle">Aparência</h3>
         <div class="settings-row"><span id="themesLabel" class="settings-label">Temas prontos</span><div id="themeList" class="theme-list" role="radiogroup" aria-labelledby="themesLabel"></div><small id="themeHint" class="hint"></small></div>
