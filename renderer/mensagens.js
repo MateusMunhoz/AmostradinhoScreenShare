@@ -121,17 +121,16 @@ async function dmSend(c) {
   const text = input.value.trim();
   if (!text) return;
   c.el.status.textContent = '';
-  input.disabled = true;
+  // O campo nunca é desativado (isso tiraria o foco): limpa na hora e, se não for, devolve o texto
+  input.value = '';
+  fitDmInput(input);
   try {
     const res = await window.api.razzeSendMessage(c.id, text);
     if (res?.message) { dmAdd(c, res.message); dmSaveConv(c); }
-    input.value = '';
-    fitDmInput(input);
   } catch (error) {
-    c.el.status.textContent = 'Não foi enviada: ' + (error?.message || 'erro desconhecido');
+    c.el.status.textContent = 'Não foi enviada: ' + String(error?.message || 'erro desconhecido').replace(/^.*RazzeApiError: /, '');
+    if (!input.value) { input.value = text; fitDmInput(input); }
   } finally {
-    input.disabled = false;
-    input.focus();
     renderDm();
   }
 }
@@ -304,11 +303,13 @@ function renderDmBar() {
   $('dmBarBadge').hidden = !total;
   $('dmBarBadge').textContent = total > 99 ? '99+' : String(total);
   const slots = $('dmSlots');
-  for (const b of dm.bar) {
+  // Na ordem da barra, mexendo só no que está fora do lugar: mover um elemento (mesmo para o mesmo lugar) tira o
+  // foco do campo de escrever, e isto roda a cada busca de mensagens
+  dm.bar.forEach((b, i) => {
     const c = dmConv(b.id);
     renderDmWindow(c, b.open);
-    slots.append(c.el.slot); // na ordem da barra
-  }
+    if (slots.children[i] !== c.el.slot) slots.insertBefore(c.el.slot, slots.children[i] || null);
+  });
   $('dmBarHint').hidden = dm.bar.length > 0;
 }
 
