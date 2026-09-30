@@ -87,6 +87,34 @@ test('amizades, redes e convites respeitam permissões', async () => {
   assert.equal((await request('/v1/admin/networks', {}, adminToken)).body.networks.length, 0);
 });
 
+test('mensagens diretas: só entre amigos, em ordem, buscadas pelo número de sequência', async () => {
+  // Alice e Bob ficaram amigos no teste anterior
+  const aliceId = (await request('/v1/me', {}, alice.accessToken)).body.user.id;
+  const bobId = (await request('/v1/me', {}, bob.accessToken)).body.user.id;
+  const first = await request('/v1/messages', { method: 'POST', body: { to: bobId, text: '  oi, Bob  ' } }, alice.accessToken);
+  assert.equal(first.status, 201);
+  assert.equal(first.body.message.text, 'oi, Bob');
+  assert.equal(first.body.message.from, aliceId);
+  const reply = await request('/v1/messages', { method: 'POST', body: { to: aliceId, text: 'oi!' } }, bob.accessToken);
+  assert.ok(reply.body.message.seq > first.body.message.seq);
+  // Cada um vê as duas (as que mandou e as que recebeu); com "after", só as mais novas
+  const bobInbox = await request('/v1/messages?after=0', {}, bob.accessToken);
+  assert.deepEqual(bobInbox.body.messages.map((m) => m.text), ['oi, Bob', 'oi!']);
+  assert.equal(bobInbox.body.more, false);
+  const newer = await request('/v1/messages?after=' + first.body.message.seq, {}, alice.accessToken);
+  assert.deepEqual(newer.body.messages.map((m) => m.text), ['oi!']);
+  // Quem não é amigo, a própria conta, texto vazio ou grande demais: recusado
+  assert.equal((await request('/v1/messages', { method: 'POST', body: { to: 'f'.repeat(32), text: 'oi' } }, alice.accessToken)).status, 403);
+  assert.equal((await request('/v1/messages', { method: 'POST', body: { to: aliceId, text: 'eu' } }, alice.accessToken)).status, 403);
+  assert.equal((await request('/v1/messages', { method: 'POST', body: { to: bobId, text: '   ' } }, alice.accessToken)).status, 400);
+  assert.equal((await request('/v1/messages', { method: 'POST', body: { to: bobId, text: 'x'.repeat(2001) } }, alice.accessToken)).status, 400);
+  assert.equal((await request('/v1/messages?after=0', {})).status, 401);
+  // Limite: 30 mensagens a cada 10 s por conta
+  let limited = 0;
+  for (let i = 0; i < 31; i++) if ((await request('/v1/messages', { method: 'POST', body: { to: aliceId, text: 'm' + i } }, bob.accessToken)).status === 429) limited++;
+  assert.ok(limited >= 1);
+});
+
 test('valida JSON, login e TLS do cliente', async () => {
   const invalid = await fetch(baseUrl + '/v1/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{' });
   assert.equal(invalid.status, 400);

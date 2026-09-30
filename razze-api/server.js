@@ -14,6 +14,11 @@ const { createControl } = require('./control');
 
 const TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const MAX_BODY_BYTES = 32 * 1024;
+// Mensagens diretas entre amigos: o servidor guarda por 30 dias (para chegar a quem está offline e aos outros PCs da
+// mesma conta); o histórico completo fica no PC de cada um
+const DM_KEEP_MS = 30 * 24 * 60 * 60 * 1000;
+const DM_MAX_TEXT = 2000;
+const DM_PAGE = 200;
 
 class ApiError extends Error {
   constructor(status, code, message) { super(message); this.status = status; this.code = code; }
@@ -42,7 +47,11 @@ function createApiServer(options = {}) {
     "CREATE TABLE IF NOT EXISTS invites (token_hash TEXT PRIMARY KEY, network_id TEXT NOT NULL REFERENCES networks(id) ON DELETE CASCADE, created_by TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, created_at INTEGER NOT NULL, expires_at INTEGER NOT NULL, max_uses INTEGER NOT NULL, uses INTEGER NOT NULL DEFAULT 0)",
     "CREATE INDEX IF NOT EXISTS idx_network_members_user ON network_members(user_id)",
     "CREATE INDEX IF NOT EXISTS idx_network_owner ON networks(owner_id)",
-    "CREATE INDEX IF NOT EXISTS idx_invites_network ON invites(network_id)"
+    "CREATE INDEX IF NOT EXISTS idx_invites_network ON invites(network_id)",
+    "CREATE TABLE IF NOT EXISTS direct_messages (seq INTEGER PRIMARY KEY AUTOINCREMENT, id TEXT NOT NULL UNIQUE, sender_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, receiver_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, body TEXT NOT NULL, created_at INTEGER NOT NULL)",
+    "CREATE INDEX IF NOT EXISTS idx_dm_receiver ON direct_messages(receiver_id, seq)",
+    "CREATE INDEX IF NOT EXISTS idx_dm_sender ON direct_messages(sender_id, seq)",
+    "CREATE INDEX IF NOT EXISTS idx_dm_created ON direct_messages(created_at)"
   ].join(';\n') + ';');
   const userColumns = db.prepare('PRAGMA table_info(users)').all().map((column) => column.name);
   if (!userColumns.includes('status')) db.exec("ALTER TABLE users ADD COLUMN status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('pending', 'active', 'disabled'))");
@@ -52,6 +61,9 @@ function createApiServer(options = {}) {
   const hash = (value) => createHash('sha256').update(value).digest('hex');
   const now = options.now || (() => Date.now());
   const authAttempts = new Map();
+  const dmRate = new Map(); // userId -> { count, resetAt }: no máximo 30 mensagens a cada 10 s por conta
+  const dmRow = (r) => ({ seq: r.seq, id: r.id, from: r.senderId, to: r.receiverId, text: r.body, createdAt: r.createdAt });
+  const DM_SELECT = 'SELECT seq, id, sender_id AS senderId, receiver_id AS receiverId, body, created_at AS createdAt FROM direct_messages';
   // Devolve a função que conta a tentativa: o cadastro conta sempre; o login só quando erra a senha
   const enforceAuthLimit = (req, route, maxAttempts, windowMs) => {
     const forwarded = process.env.RAZZE_TRUST_PROXY === '1' ? String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() : '';
@@ -300,6 +312,32 @@ function createApiServer(options = {}) {
         db.prepare("DELETE FROM friend_requests WHERE status = 'accepted' AND ((sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?))")
           .run(userId, match[1], match[1], userId);
         return send(res, 200, { ok: true });
+      }
+
+      // Mensagens diretas: mandar só para amigos; buscar as novas pelo número de sequência (after)
+      if (method === 'POST' && pathname === '/v1/messages') {
+        const body = await readBody(req);
+        const to = String(body.to || '');
+        if (!/^[a-f0-9]{32}$/.test(to)) throw new ApiError(400, 'invalid_input', 'Destinatário inválido.');
+        if (to === userId || !friendshipExists(userId, to)) throw new ApiError(403, 'not_friends', 'Só dá para mandar mensagem para amigos.');
+        const text = assertText(body.text, 'Mensagem', 1, DM_MAX_TEXT);
+        const timestamp = now();
+        let rate = dmRate.get(userId);
+        if (!rate || rate.resetAt <= timestamp) rate = { count: 0, resetAt: timestamp + 10_000 };
+        if (rate.count >= 30) throw new ApiError(429, 'rate_limited', 'Muitas mensagens seguidas. Espere alguns segundos.');
+        rate.count++;
+        dmRate.set(userId, rate);
+        if (dmRate.size > 10_000) for (const [key, item] of dmRate) if (item.resetAt <= timestamp) dmRate.delete(key);
+        db.prepare('DELETE FROM direct_messages WHERE created_at < ?').run(timestamp - DM_KEEP_MS);
+        const id = newId();
+        db.prepare('INSERT INTO direct_messages(id, sender_id, receiver_id, body, created_at) VALUES(?, ?, ?, ?, ?)').run(id, userId, to, text, timestamp);
+        return send(res, 201, { message: dmRow(db.prepare(DM_SELECT + ' WHERE id = ?').get(id)) });
+      }
+      if (method === 'GET' && pathname === '/v1/messages') {
+        const after = Math.max(0, Math.floor(Number(new URL(req.url, 'http://localhost').searchParams.get('after')) || 0));
+        const rows = db.prepare(DM_SELECT + ' WHERE seq > ? AND (receiver_id = ? OR sender_id = ?) AND created_at >= ? ORDER BY seq LIMIT ?')
+          .all(after, userId, userId, now() - DM_KEEP_MS, DM_PAGE + 1);
+        return send(res, 200, { messages: rows.slice(0, DM_PAGE).map(dmRow), more: rows.length > DM_PAGE });
       }
 
       if (method === 'GET' && pathname === '/v1/networks') {

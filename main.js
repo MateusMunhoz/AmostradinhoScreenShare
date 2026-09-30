@@ -17,6 +17,8 @@ const sessoes = require('./main/sessoes');
 const { dedupeWindows, thumbSignature } = require('./main/fontes');
 const { createRazzeService } = require('./main/razze-service');
 const razze = createRazzeService();
+const { createDmStore } = require('./main/mensagens');
+let dmStore = null; // criado quando o app fica pronto (precisa da pasta do usuário)
 const { createPresence } = require('./main/razze-presence');
 let activeRazzeNetwork = '', roomRazzeNetwork = '';
 const razzePresence = createPresence({
@@ -366,6 +368,13 @@ if (hasSingleInstance) app.whenReady().then(() => {
   ipcMain.handle('razze-accept-friend', (_e, id) => razze.acceptFriendRequest(String(id || '')));
   ipcMain.handle('razze-cancel-friend-request', (_e, id) => razze.cancelFriendRequest(String(id || '')));
   ipcMain.handle('razze-remove-friend', (_e, id) => razze.removeFriend(String(id || '')));
+  // Mensagens diretas: pela RazzeAPI; o histórico fica em arquivos locais (main/mensagens.js)
+  ipcMain.handle('razze-send-message', (_e, to, text) => razze.sendMessage(String(to || ''), String(text || '')));
+  ipcMain.handle('razze-messages', (_e, after) => razze.messages(Number(after) || 0));
+  dmStore = createDmStore(path.join(app.getPath('userData'), 'mensagens'));
+  ipcMain.handle('dm-list', (_e, account) => dmStore.list(String(account || '')));
+  ipcMain.handle('dm-load', (_e, account, friend) => dmStore.load(String(account || ''), String(friend || '')));
+  ipcMain.handle('dm-save', (_e, account, friend, data) => dmStore.save(String(account || ''), String(friend || ''), data));
   ipcMain.handle('razze-wg-connections', () => razze.wireguard.connections());
   ipcMain.handle('razze-wg-status', (_e, networkId) => razze.wireguard.status(String(networkId || '')));
   ipcMain.handle('razze-wg-connect', async (_e, networkId, name) => { const result = await razze.wireguard.connect(razze.api(), String(networkId || ''), String(name || 'Razze')); activeRazzeNetwork = String(networkId); razzePresence.track(activeRazzeNetwork); return result; });

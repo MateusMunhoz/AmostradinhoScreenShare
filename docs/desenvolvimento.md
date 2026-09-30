@@ -62,6 +62,7 @@ isso (chamam `watch`, `state`, `speaking`... direto na página).
 | 9 | `voz.js` | Volume por pessoa, mixer, quem fala, atenuação, barra da voz, cartão da pessoa (cria o `voice`) |
 | 10 | `microfone.js` | Microfone escolhido, RNNoise, eco, sensibilidade, ouvir a própria voz, apertar para falar, janela "Voz e atalhos" |
 | 10b | `subsalas.js` | Subsalas de voz: criar e apagar (Subsala_1, Subsala_2…), entrar numa subsala e a lista por canal no painel de voz |
+| 10c | `mensagens.js` | Mensagens diretas entre amigos: aba Mensagens do HUB, barra de conversas embaixo, busca na RazzeAPI a cada 4 s e histórico local |
 | 11 | `membros.js` | Painel da sala: endereço e lista de pessoas |
 | 12 | `assistir.js` | Quadros de vídeo, ver a própria transmissão, destaque, tela cheia |
 | 13 | `pip.js` | Janelas flutuantes |
@@ -94,6 +95,7 @@ Arquivo novo na página: entra no `index.html` (na posição certa), em `PACK_FI
 | `chat-jogo.js` | A janela do chat por cima do jogo e o modo de escrever (Ctrl+Enter) |
 | `atalhos.js` | Atalhos globais e o apertar para falar (`teclas.exe`) |
 | `sessoes.js` | Anúncio e busca das sessões abertas (UDP na rede da Radmin) |
+| `mensagens.js` | Histórico local das mensagens diretas: um arquivo por amigo em `%APPDATA%\Tela P2P\mensagens\<conta>` |
 
 `janela-flutuante.js`, `chat-jogo.js` e `atalhos.js` usam uns aos outros. Cada um faz o
 `module.exports` antes dos `require` dos outros, senão o Node entrega um objeto vazio no ciclo.

@@ -251,3 +251,11 @@
 :root[data-skin="eva"] .voice-channel-count { font-family: var(--eva-mono); color: var(--accent); }
 :root[data-skin="eva"] #chatEmpty { font-family: var(--eva-mono); color: var(--eva-purple-hi); }
 :root[data-skin="eva"] #chatEmpty::before { content: "> MAGI: CANAL ABERTO. AGUARDANDO TRANSMISSÃO…\A"; white-space: pre-wrap; color: var(--accent); letter-spacing: .06em; }
+
+/* ---------- Mensagens diretas: janelas com as marcas de mira, rótulo laranja e texto de terminal ---------- */
+:root[data-skin="eva"] .dm-window { border-radius: 2px; background: var(--eva-marks), linear-gradient(180deg, rgba(107, 63, 160, .22), transparent 120px), var(--panel); box-shadow: inset 0 2px 0 var(--accent), 0 14px 34px rgba(0, 0, 0, .5); }
+:root[data-skin="eva"] :is(.dm-chip-btn, .dm-dot) { border-radius: 2px; }
+:root[data-skin="eva"] .dm-bar-label { font-family: var(--eva-mono); text-transform: uppercase; letter-spacing: .2em; color: var(--accent); }
+:root[data-skin="eva"] .dm-chip { font-family: var(--eva-mono); font-size: 12px; letter-spacing: .04em; }
+:root[data-skin="eva"] :is(.dm-list, .dm-form textarea) { font-family: var(--eva-mono); color: var(--eva-amber); }
+:root[data-skin="eva"] .dm-form textarea { background: #000; caret-color: var(--accent); }

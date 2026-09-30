@@ -392,6 +392,7 @@ window.addEventListener('focus', syncPreview);
 window.addEventListener('blur', syncPreview);
 
 setupHub();
+setupDm();
 setupWorkspace();
 watchDock();
 setupGeneralSettings();
