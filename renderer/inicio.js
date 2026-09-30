@@ -5,7 +5,7 @@
 voice.media = { getUserMedia: () => openMic() };
 document.addEventListener('mousedown', (e) => {
   const card = $('personCard');
-  if (!card.hidden && !card.contains(e.target) && !e.target.closest('.vol-btn, .voice-avatar')) closePersonCard();
+  if (!card.hidden && !card.contains(e.target) && !e.target.closest('.vol-btn, .voice-avatar, [data-profile], #imageViewer')) closePersonCard();
 });
 
 $('voiceJoin').onclick = () => {
@@ -101,7 +101,7 @@ $('gateDb').oninput = () => { voiceCfg.gateDb = Number($('gateDb').value); saveV
 $('duckAmount').oninput = () => { voiceCfg.duck = Number($('duckAmount').value); saveVoiceCfg(); renderVoiceDialog(); updateDuck(); };
 $('duckSelf').onchange = () => { voiceCfg.duckSelf = $('duckSelf').checked; saveVoiceCfg(); updateDuck(); };
 $('shortcutReset').onclick = async () => {
-  const defaults = { compose: 'CommandOrControl+Enter', mute: 'CommandOrControl+Shift+M', edit: 'CommandOrControl+Shift+E', hideChat: 'CommandOrControl+Shift+O' };
+  const defaults = { compose: 'CommandOrControl+Enter', mute: 'CommandOrControl+Shift+M', deafen: 'CommandOrControl+Shift+D', edit: 'CommandOrControl+Shift+E', hideChat: 'CommandOrControl+Shift+O' };
   for (const action of Object.keys(defaults)) await window.api.setShortcut(action, '').catch(() => {}); // solta todos antes
   for (const [action, accel] of Object.entries(defaults)) await applyShortcut(action, accel);
 };
@@ -121,6 +121,7 @@ window.api.onPip((m) => {
   if (m.type === 'compose-key') onComposeKey();
   if (m.type === 'ptt') onPttKey(!!m.down);
   if (m.type === 'mute-key' && voice.session) voice.mute();
+  if (m.type === 'deafen-key' && voice.session) voice.deafen();
   if (m.type === 'compose') {
     overlay.compose = !!m.on;
     renderChatOverlay();

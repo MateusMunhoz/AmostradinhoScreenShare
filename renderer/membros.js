@@ -51,13 +51,14 @@ function memberRow(id, name, sharing) {
   li.style.setProperty('--person', personColor(id));
   li.dataset.person = who;
   li.classList.toggle('speaking', speaking.has(who));
-  const dot = avatar(id ? name : getName(), id);
+  const dot = markProfile(avatar(id ? name : getName(), id), id, name);
   const info = document.createElement('div');
   info.className = 'info';
   const nameEl = document.createElement('span');
   nameEl.className = 'mname';
   nameEl.textContent = name;
   paintName(nameEl, id);
+  markProfile(nameEl, id, name);
   nameEl.append(speakBars());
   const status = document.createElement('span');
   status.className = 'mstatus';

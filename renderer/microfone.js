@@ -256,6 +256,7 @@ function renderVoiceMe() {
 const SHORTCUT_NAMES = {
   compose: 'Escrever no chat por cima do jogo',
   mute: 'Ligar ou desligar o microfone',
+  deafen: 'Silenciar ou voltar a ouvir as vozes (fone; desliga o microfone junto)',
   edit: 'Ajustar ou travar as janelas por cima do jogo',
   hideChat: 'Esconder ou mostrar o chat por cima do jogo',
 };

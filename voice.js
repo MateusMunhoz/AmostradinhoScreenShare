@@ -71,15 +71,23 @@ class VoiceChat {
   }
   mute() {
     if (!this.session) return;
+    // Ligar o microfone com o fone silenciado liga o fone também (falar sem ouvir não faz sentido)
+    if (this.muted && this.deafened) { this.mutedBeforeDeafen = false; return this.deafen(); } // e o microfone fica ligado
     this.muted = !this.muted;
     this.stream.getAudioTracks().forEach(t => { t.enabled = !this.muted; });
     this.announce();
     this.changed();
   }
+  // Silenciar o fone desliga o microfone junto (como no Discord); voltar a ouvir devolve o microfone como estava
   deafen() {
     this.deafened = !this.deafened;
     if (this.mixer) this.mixer.deafen(this.deafened);
     else for (const p of this.peers.values()) p.audio.muted = this.deafened;
+    if (this.session && this.stream) {
+      if (this.deafened) { this.mutedBeforeDeafen = this.muted; this.muted = true; }
+      else { this.muted = !!this.mutedBeforeDeafen; this.mutedBeforeDeafen = false; }
+      this.stream.getAudioTracks().forEach(t => { t.enabled = !this.muted; });
+    }
     if (this.session) this.announce(); // os outros veem que você silenciou as vozes (fone)
     this.changed();
   }

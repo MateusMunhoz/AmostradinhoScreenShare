@@ -16,9 +16,15 @@ const AppPreferences = (() => {
     { id: 'suaveSaiu', label: 'Suave · dois tons descendo', synth: [[880, 0, 0.13, 1], [587, 0.09, 0.22, 1]] },
     { id: 'suaveMutou', label: 'Suave · toque curto descendo', synth: [[659, 0, 0.07, 0.8], [523, 0.055, 0.11, 0.8]] },
     { id: 'suaveDesmutou', label: 'Suave · toque curto subindo', synth: [[523, 0, 0.07, 0.8], [659, 0.055, 0.11, 0.8]] },
+    { id: 'suaveFoneDesligou', label: 'Suave · grave descendo', synth: [[440, 0, 0.09, 0.8], [330, 0.07, 0.16, 0.8]] },
+    { id: 'suaveFoneLigou', label: 'Suave · grave subindo', synth: [[330, 0, 0.09, 0.8], [440, 0.07, 0.16, 0.8]] },
+    { id: 'suaveTransmitiu', label: 'Suave · três tons subindo', synth: [[523, 0, 0.1, 0.9], [659, 0.08, 0.1, 0.9], [784, 0.16, 0.22, 0.9]] },
+    { id: 'suaveParouTransmitir', label: 'Suave · três tons descendo', synth: [[784, 0, 0.1, 0.9], [659, 0.08, 0.1, 0.9], [523, 0.16, 0.22, 0.9]] },
+    { id: 'suaveMencao', label: 'Suave · chamado agudo', synth: [[988, 0, 0.08, 1], [1319, 0.07, 0.08, 1], [988, 0.2, 0.08, 1], [1319, 0.27, 0.16, 1]] },
   ];
-  // mute/unmute: o seu microfone (o apertar para falar não conta)
-  const events = ['join', 'leave', 'chat', 'voiceJoin', 'voiceLeave', 'mute', 'unmute'];
+  // mute/unmute: o seu microfone (o apertar para falar não conta); deafen/undeafen: o seu fone (Silenciar vozes);
+  // shareStart/shareStop: a sua transmissão; mention: alguém escreveu @seu nome no chat
+  const events = ['join', 'leave', 'chat', 'mention', 'voiceJoin', 'voiceLeave', 'mute', 'unmute', 'deafen', 'undeafen', 'shareStart', 'shareStop'];
   // Cores: as 4 primeiras sempre valem; as outras começam vazias ('' = automático, calculada das 4) e só
   // passam a valer quando a pessoa escolhe
   const optionalColors = ['text', 'live', 'speaking', 'warn', 'line'];
@@ -94,8 +100,9 @@ const AppPreferences = (() => {
     appearance: { glass: 'opaque', level: glassLevel.clear, border: 'solid' },
     font: { family: 'system', custom: '', chat: false }, nameFont: '',
     sounds: { join: 'notification035', leave: 'whoosh', chat: 'wood', voiceJoin: 'suaveEntrou', voiceLeave: 'suaveSaiu',
-      mute: 'suaveMutou', unmute: 'suaveDesmutou',
-      chatMuted: false, volume: 50, levels: { join: 100, leave: 100, chat: 100, voiceJoin: 100, voiceLeave: 100, mute: 100, unmute: 100 } } };
+      mute: 'suaveMutou', unmute: 'suaveDesmutou', deafen: 'suaveFoneDesligou', undeafen: 'suaveFoneLigou',
+      shareStart: 'suaveTransmitiu', shareStop: 'suaveParouTransmitir', mention: 'suaveMencao',
+      chatMuted: false, volume: 50, levels: { join: 100, leave: 100, chat: 100, mention: 100, voiceJoin: 100, voiceLeave: 100, mute: 100, unmute: 100, deafen: 100, undeafen: 100, shareStart: 100, shareStop: 100 } } };
   // Temas prontos (Aparência > Temas): cores e material de uma vez. As cores de detalhe que não aparecem aqui
   // voltam ao automático. Mantêm a leitura do app: destaque = você/ao vivo, detalhe 2 = quem fala.
   const themes = [

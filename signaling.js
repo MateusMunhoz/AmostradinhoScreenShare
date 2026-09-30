@@ -192,9 +192,9 @@ function startServer(port, password = '', seed = {}) {
           const voiceSession = resume && typeof msg.voiceSession === 'string' && /^[\w-]{1,64}$/.test(msg.voiceSession) ? msg.voiceSession : '';
           me = {
             ws, client, name: String(msg.name || 'Anônimo').slice(0, 32), sharing: !!(resume && msg.sharing), version, addrs: cleanAddrs(msg.addrs),
-            voiceSession, muted: !!voiceSession && msg.muted === true, deafened: !!voiceSession && msg.deafened === true, shareInfo, avatar: cleanHash(msg.avatar), nameFont: cleanNameFont(msg.nameFont),
+            voiceSession, muted: !!voiceSession && msg.muted === true, deafened: !!voiceSession && msg.deafened === true, shareInfo, avatar: cleanHash(msg.avatar), avatarFull: cleanHash(msg.avatarFull), nameFont: cleanNameFont(msg.nameFont),
           };
-          const info = (mid, m) => ({ id: mid, name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs, voiceSession: m.voiceSession, muted: m.muted, deafened: m.deafened, shareInfo: m.shareInfo, avatar: m.avatar, nameFont: m.nameFont });
+          const info = (mid, m) => ({ id: mid, name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs, voiceSession: m.voiceSession, muted: m.muted, deafened: m.deafened, shareInfo: m.shareInfo, avatar: m.avatar, avatarFull: m.avatarFull, nameFont: m.nameFont });
           send(ws, {
             type: 'welcome',
             id,
@@ -219,7 +219,8 @@ function startServer(port, password = '', seed = {}) {
         } else if (msg.type === 'avatar') {
           // Foto de perfil: só o hash passa por aqui; a foto vai direto de quem tem para quem pede
           me.avatar = cleanHash(msg.hash);
-          broadcast({ type: 'avatar-state', id, hash: me.avatar }, id);
+          me.avatarFull = me.avatar ? cleanHash(msg.full) : ''; // a foto inteira (sem o corte), para o perfil
+          broadcast({ type: 'avatar-state', id, hash: me.avatar, full: me.avatarFull }, id);
         } else if (msg.type === 'name-font') {
           me.nameFont = cleanNameFont(msg.font);
           broadcast({ type: 'name-font-state', id, font: me.nameFont }, id);

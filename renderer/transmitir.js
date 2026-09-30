@@ -339,6 +339,7 @@ async function startSharing() {
   }
 
   state.sharing = true;
+  void appSounds.play('shareStart'); // começou a transmitir
   state.sharingSource = state.selectedSource;
   state.shareInfoKey = '';
   sendShareInfo();
@@ -400,6 +401,7 @@ function releaseChromeVideo() {
 function stopSharing(reason) {
   if (!state.sharing) return;
   state.sharing = false;
+  void appSounds.play('shareStop');
   state.sharingSource = null;
   if (state.shareSwitching) closeShareDialog();
   stopWatching(state.myId, false);

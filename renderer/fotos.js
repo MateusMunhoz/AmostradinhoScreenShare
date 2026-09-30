@@ -14,12 +14,20 @@
 const FOTO_SIZE = 128;
 const FOTO_MAX = 64 * 1024;      // bytes da imagem que alguém pode mandar
 const FOTO_KEEP = 50;            // fotos dos outros guardadas no PC (as mais recentes)
+// A foto inteira (sem o corte quadrado), para ver no perfil: até 1024 px no lado maior. Vai pela sala só quando
+// alguém abre o seu perfil, e cabe numa mensagem da sala (256 KB) já em base64.
+const FOTO_FULL_SIDE = 1024;
+const FOTO_FULL_MAX = 170 * 1024;
 const fotos = {
   mine: null,                    // { hash, data (base64) }
+  mineFull: null,                // { hash, data } a minha foto inteira
   urls: new Map(),               // hash -> data: URL, já lidas
+  fullUrls: new Map(),           // hash da foto inteira -> data: URL (só na memória: não enche o PC)
   asked: new Map(),              // hash -> quando pedi (não pede de novo antes de 20 s)
+  fullWaiting: new Map(),        // hash da foto inteira -> quem espera por ela (o visualizador)
 };
 try { const m = JSON.parse(load('fotoPerfil', 'null')); if (m && /^[0-9a-f]{64}$/.test(m.hash) && typeof m.data === 'string') fotos.mine = m; } catch {}
+try { const m = JSON.parse(load('fotoPerfilInteira', 'null')); if (m && /^[0-9a-f]{64}$/.test(m.hash) && typeof m.data === 'string') fotos.mineFull = m; } catch {}
 
 const hex = (buf) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
 async function sha256(bytes) { return hex(await crypto.subtle.digest('SHA-256', bytes)); }
@@ -86,31 +94,42 @@ function requestPhoto(hash, owner) {
 async function onPhotoSignal(from, data) {
   if (typeof data.want === 'string') {
     if (fotos.mine && data.want === fotos.mine.hash) sendSignal(from, { side: 'foto', hash: fotos.mine.hash, data: fotos.mine.data });
+    else if (fotos.mineFull && data.want === fotos.mineFull.hash) sendSignal(from, { side: 'foto', hash: fotos.mineFull.hash, data: fotos.mineFull.data, full: true });
     return;
   }
   const { hash } = data;
   if (typeof hash !== 'string' || !/^[0-9a-f]{64}$/.test(hash) || typeof data.data !== 'string') return;
-  if (data.data.length > Math.ceil(FOTO_MAX / 3) * 4 || !fotos.asked.has(hash)) return; // só o que eu pedi
+  const full = fotos.fullWaiting.has(hash);
+  if (data.data.length > Math.ceil((full ? FOTO_FULL_MAX : FOTO_MAX) / 3) * 4 || !fotos.asked.has(hash)) return; // só o que eu pedi
   if (!/^[A-Za-z0-9+/]+={0,2}$/.test(data.data)) return; // base64 puro: a foto vai parar dentro de um url("") do CSS
   let bytes;
   try { bytes = fromBase64(data.data); } catch { return; }
   if (await sha256(bytes) !== hash) return;
   try {
     const bmp = await createImageBitmap(new Blob([bytes], { type: imageMime(bytes) }));
-    const ok = bmp.width <= 512 && bmp.height <= 512;
+    const limit = full ? FOTO_FULL_SIDE : 512;
+    const ok = bmp.width <= limit && bmp.height <= limit;
     bmp.close();
     if (!ok) return;
   } catch { return; } // não é imagem
   fotos.asked.delete(hash);
+  if (full) {
+    const url = `data:${imageMime(bytes)};base64,${data.data}`;
+    fotos.fullUrls.set(hash, url);
+    for (const done of fotos.fullWaiting.get(hash) || []) done(url);
+    fotos.fullWaiting.delete(hash);
+    return;
+  }
   keepPhoto(hash, data.data);
   for (const [id, m] of state.members) if (m.avatar === hash) repaintAvatars(id);
 }
 
 // Alguém trocou de foto na sala
-function onAvatarState(id, hash) {
+function onAvatarState(id, hash, full) {
   const mem = state.members.get(id);
   if (!mem) return;
   mem.avatar = /^[0-9a-f]{64}$/.test(hash || '') ? hash : '';
+  mem.avatarFull = /^[0-9a-f]{64}$/.test(full || '') ? full : '';
   repaintAvatars(id);
   renderVoiceAvatars();
 }
@@ -118,6 +137,8 @@ function onAvatarState(id, hash) {
 // Minha foto: qualquer imagem vira um quadrado de 128x128 em WebP (sem metadados); vale na hora, na sala também
 async function setMyPhoto(file) {
   const bmp = await createImageBitmap(file); // a rotação da foto de celular já vem aplicada
+  fotos.mineFull = await fullPhoto(bmp);
+  save('fotoPerfilInteira', JSON.stringify(fotos.mineFull));
   const side = Math.min(bmp.width, bmp.height);
   const c = new OffscreenCanvas(FOTO_SIZE, FOTO_SIZE);
   const g = c.getContext('2d');
@@ -132,13 +153,50 @@ async function setMyPhoto(file) {
   const bytes = new Uint8Array(await blob.arrayBuffer());
   fotos.mine = { hash: await sha256(bytes), data: toBase64(bytes) };
   save('fotoPerfil', JSON.stringify(fotos.mine));
-  send({ type: 'avatar', hash: fotos.mine.hash });
+  send({ type: 'avatar', hash: fotos.mine.hash, full: fotos.mineFull?.hash || '' });
   renderMyPhoto();
+}
+// A foto inteira: sem cortar, até 1024 px no lado maior, em WebP (sem metadados), diminuindo até caber
+async function fullPhoto(bmp) {
+  for (const maxSide of [FOTO_FULL_SIDE, 768, 512]) {
+    const scale = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
+    const c = new OffscreenCanvas(Math.round(bmp.width * scale), Math.round(bmp.height * scale));
+    const g = c.getContext('2d');
+    g.imageSmoothingQuality = 'high';
+    g.drawImage(bmp, 0, 0, c.width, c.height);
+    for (const quality of [0.85, 0.72, 0.6]) {
+      const blob = await c.convertToBlob({ type: 'image/webp', quality });
+      if (blob.size > FOTO_FULL_MAX) continue;
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+      return { hash: await sha256(bytes), data: toBase64(bytes) };
+    }
+  }
+  return null;
+}
+// A foto inteira de alguém (data: URL). Promessa: pede ao dono se ainda não tem; sem foto inteira (versão antiga
+// ou foto de antes disso), resolve com a de 128 px.
+function fullPhotoOf(id) {
+  const owner = !id || id === state.myId ? 'me' : id;
+  const small = photoUrl(photoHashOf(owner));
+  if (owner === 'me') return Promise.resolve(fotos.mineFull ? `data:image/webp;base64,${fotos.mineFull.data}` : small);
+  const hash = state.members.get(owner)?.avatarFull || '';
+  if (!hash) return Promise.resolve(small);
+  if (fotos.fullUrls.has(hash)) return Promise.resolve(fotos.fullUrls.get(hash));
+  return new Promise((resolve) => {
+    const list = fotos.fullWaiting.get(hash) || [];
+    list.push(resolve);
+    fotos.fullWaiting.set(hash, list);
+    fotos.asked.set(hash, Date.now());
+    sendSignal(owner, { side: 'foto', want: hash });
+    setTimeout(() => { if (fotos.fullWaiting.get(hash)?.includes(resolve)) resolve(small); }, 8000); // não chegou: fica a pequena
+  });
 }
 function removeMyPhoto() {
   fotos.mine = null;
+  fotos.mineFull = null;
   save('fotoPerfil', 'null');
-  send({ type: 'avatar', hash: '' });
+  save('fotoPerfilInteira', 'null');
+  send({ type: 'avatar', hash: '', full: '' });
   renderMyPhoto();
 }
 function renderMyPhoto() {

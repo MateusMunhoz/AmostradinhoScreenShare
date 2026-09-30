@@ -239,6 +239,28 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 }
 .person-card .pc-head { display: flex; align-items: center; gap: 12px; }
 .person-card .pc-head .avatar { width: 40px; height: 40px; font-size: 16px; background: var(--person); }
+/* Cartão da pessoa: foto grande no topo; com foto, clicar abre ela inteira */
+.person-card .pc-head .avatar.pc-photo { width: 72px; height: 72px; font-size: 28px; }
+.pc-photo-btn { flex: none; padding: 0; border: 0; border-radius: 50%; background: none; cursor: zoom-in; position: relative; }
+.pc-photo-btn:hover .avatar { filter: brightness(1.1); box-shadow: 0 0 0 3px var(--person); }
+.pc-photo-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+/* Foto ou nome de outra pessoa: abre o perfil */
+[data-profile] { cursor: pointer; }
+.msg-who[data-profile]:hover, .mname[data-profile]:hover { text-decoration: underline; text-underline-offset: 2px; }
+[data-profile]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+/* Menções: @nome destacado; @você (ou @todos) mais forte, e a mensagem ganha uma faixa */
+.mention { padding: 0 3px; border-radius: 4px; font-weight: 700; color: var(--accent); background: var(--accent-soft); }
+.mention.me { color: var(--live-ink); background: var(--live-fill); }
+.msg.mentioned { margin-left: -8px; padding-left: 5px; border-left: 3px solid var(--live-fill); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.toast.mention { border-color: var(--live-fill); box-shadow: 0 0 0 1px var(--live-fill), 0 12px 32px rgba(0, 0, 0, .45); font-weight: 600; }
+/* Sugestões de @nome em cima do campo de mensagem */
+.mention-pop { flex: none; display: flex; flex-direction: column; gap: 2px; max-height: 220px; overflow-y: auto; padding: 4px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--panel-2); box-shadow: 0 8px 24px rgba(0, 0, 0, .35); }
+.mention-pop[hidden] { display: none; }
+.mention-item { display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 10px; border: 0; border-radius: 6px; background: transparent; color: var(--surface-text); font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+.mention-item .avatar { width: 22px; height: 22px; font-size: 11px; }
+.mention-item.active, .mention-item:hover { background: var(--panel-3); }
+.mention-all { background: var(--accent) !important; color: var(--accent-ink) !important; }
 .person-card .pc-head div { display: flex; flex-direction: column; }
 .person-card .pc-head strong { font-size: 15px; }
 .person-card .pc-head span { font-size: 12px; color: var(--muted); }

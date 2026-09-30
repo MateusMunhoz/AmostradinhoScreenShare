@@ -22,7 +22,7 @@ function createTile(id, name) {
   const label = document.createElement('div');
   label.className = 'tile-name';
   label.style.setProperty('--person', personColor(id));
-  const face = avatar(name.replace(/ \(você\)$/, ''), id);
+  const face = markProfile(avatar(name.replace(/ \(você\)$/, ''), id), id, name);
   const labelText = document.createElement('span');
   labelText.className = 'tile-name-text';
   labelText.textContent = name;

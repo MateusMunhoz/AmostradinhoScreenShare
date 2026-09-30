@@ -31,7 +31,7 @@ async function connectRoom(url, hello, timeoutMs = 8000) {
       if (!joined) { errMsg = 'Tempo esgotado. Confira o endereço e se a VPN ou rede escolhida está conectada.'; ws.close(); }
     }, timeoutMs);
 
-    ws.onopen = () => ws.send(JSON.stringify({ type: 'hello', ...hello, client: clientId(), addrs, version: update.myVersion, avatar: fotos.mine?.hash || '', nameFont: appPreferences.nameFont }));
+    ws.onopen = () => ws.send(JSON.stringify({ type: 'hello', ...hello, client: clientId(), addrs, version: update.myVersion, avatar: fotos.mine?.hash || '', avatarFull: fotos.mineFull?.hash || '', nameFont: appPreferences.nameFont }));
     ws.onmessage = (e) => {
       let m;
       try { m = JSON.parse(e.data); } catch { return; }
@@ -127,7 +127,7 @@ function enterRoom(welcome, owner, host, port) {
   state.host = host;
   state.port = port;
   state.members.clear();
-  for (const m of welcome.members) state.members.set(m.id, { name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs || [], shareInfo: m.shareInfo || null, avatar: m.avatar || '', nameFont: AppPreferences.cleanNameFont(m.nameFont) });
+  for (const m of welcome.members) state.members.set(m.id, { name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs || [], shareInfo: m.shareInfo || null, avatar: m.avatar || '', avatarFull: m.avatarFull || '', nameFont: AppPreferences.cleanNameFont(m.nameFont) });
   state.hostId = welcome.hostId || null;
   state.handoff = (welcome.features || []).includes('handoff');
   state.sessao = welcome.sessao || null;
@@ -278,7 +278,7 @@ async function rejoin(host, timeoutMs) {
   for (const m of state.members.values()) delete m.back;
   for (const m of welcome.members) {
     const before = state.members.get(m.id);
-    state.members.set(m.id, { name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs || [], shareInfo: m.shareInfo || null, avatar: m.avatar || '', nameFont: AppPreferences.cleanNameFont(m.nameFont), back: true });
+    state.members.set(m.id, { name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs || [], shareInfo: m.shareInfo || null, avatar: m.avatar || '', avatarFull: m.avatarFull || '', nameFont: AppPreferences.cleanNameFont(m.nameFont), back: true });
     if (!state.order.includes(m.id)) state.order.push(m.id);
     if (before && before.sharing && !m.sharing) stopWatching(m.id, false);
     voice.update(m.id, m.voiceSession || '', !!m.muted, !!m.deafened);
@@ -304,7 +304,7 @@ function onRoomMessage(m) {
     case 'member-joined': {
       // Quem volta depois da troca de host continua de onde estava (mesmo número, mesmas conexões)
       const back = state.members.get(m.id);
-      state.members.set(m.id, { name: m.name, sharing: !!m.sharing, version: m.version, addrs: m.addrs || [], shareInfo: m.shareInfo || null, avatar: m.avatar || '', nameFont: AppPreferences.cleanNameFont(m.nameFont), back: true });
+      state.members.set(m.id, { name: m.name, sharing: !!m.sharing, version: m.version, addrs: m.addrs || [], shareInfo: m.shareInfo || null, avatar: m.avatar || '', avatarFull: m.avatarFull || '', nameFont: AppPreferences.cleanNameFont(m.nameFont), back: true });
       if (!state.order.includes(m.id)) state.order.push(m.id);
       if (back && back.sharing && !m.sharing) stopWatching(m.id, false);
       voice.update(m.id, m.voiceSession || '', !!m.muted, !!m.deafened);
@@ -349,7 +349,7 @@ function onRoomMessage(m) {
       break;
     }
     case 'avatar-state':
-      onAvatarState(m.id, m.hash);
+      onAvatarState(m.id, m.hash, m.full);
       break;
     case 'name-font-state': {
       const mem = state.members.get(m.id);

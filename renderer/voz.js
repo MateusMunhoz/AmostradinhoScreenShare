@@ -219,12 +219,15 @@ const inVoice = (id) => (id === state.myId ? !!voice.session : !!voice.members.g
 // na sala, assistindo, não precisa ouvir cada entrada e saída da conversa)
 const voice = new VoiceChat({ send, changed: renderVoice, error: message => toast(message, 'error'), mixer,
   activity: (event, id) => { if (id === voice.id || voice.session) void appSounds.play(event); } });
-// Mutar e desmutar o seu microfone tocam som (o botão ou o atalho; o apertar para falar não)
-let voiceWasMuted = false;
+// Mutar e desmutar o seu microfone tocam som (o botão ou o atalho; o apertar para falar não). O fone tem o som
+// dele; quando o fone muda, o microfone muda junto e toca só o som do fone.
+let voiceWasMuted = false, voiceWasDeafened = false;
 function syncMuteSound() {
-  const muted = !!voice.session && voice.muted;
-  if (voice.session && muted !== voiceWasMuted) void appSounds.play(muted ? 'mute' : 'unmute');
+  const muted = !!voice.session && voice.muted, deafened = !!voice.session && voice.deafened;
+  if (voice.session && deafened !== voiceWasDeafened) void appSounds.play(deafened ? 'deafen' : 'undeafen');
+  else if (voice.session && muted !== voiceWasMuted) void appSounds.play(muted ? 'mute' : 'unmute');
   voiceWasMuted = muted;
+  voiceWasDeafened = deafened;
 }
 function renderVoice() {
   const active = !!voice.session;
@@ -294,6 +297,26 @@ function renderVoiceAvatars() {
 }
 
 // ---------- Cartão da pessoa: volume da voz, da transmissão e silenciar para mim ----------
+// Foto ou nome de outra pessoa (data-profile="id") em qualquer lugar: clicar ou Enter abre o cartão dela
+function markProfile(el, id, name) {
+  if (!id || id === state.myId) return el;
+  el.dataset.profile = id;
+  el.tabIndex = 0;
+  el.setAttribute('role', 'button');
+  el.title = `Ver o perfil de ${name}`;
+  return el;
+}
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-profile]');
+  if (!el || !state.members.has(el.dataset.profile)) return;
+  e.stopPropagation();
+  openPersonCard(el.dataset.profile, el, e.detail === 0);
+});
+document.addEventListener('keydown', (e) => {
+  if ((e.key !== 'Enter' && e.key !== ' ') || !e.target.matches?.('[data-profile]')) return;
+  e.preventDefault();
+  if (state.members.has(e.target.dataset.profile)) openPersonCard(e.target.dataset.profile, e.target, true);
+});
 function openPersonCard(id, anchor, byKeyboard = false) {
   const card = $('personCard');
   if (!card.hidden && card.dataset.for === id) return closePersonCard();
@@ -305,8 +328,11 @@ function openPersonCard(id, anchor, byKeyboard = false) {
   const w = card.offsetWidth, h = card.offsetHeight;
   const left = Math.min(Math.max(8, r.right - w), innerWidth - w - 8);
   const top = r.bottom + 6 + h < innerHeight - 8 ? r.bottom + 6 : Math.max(8, r.top - 6 - h);
-  card.style.left = `${left}px`;
-  card.style.top = `${top}px`;
+  // "fixed" aqui conta a partir do body (que desce pela barra de título): mede o 0 de verdade e desconta
+  card.style.left = '0px'; card.style.top = '0px';
+  const origin = card.getBoundingClientRect();
+  card.style.left = `${left - origin.left}px`;
+  card.style.top = `${top - origin.top}px`;
   // Pelo teclado, o foco vai para o controle; com o mouse, fica onde estava
   if (byKeyboard) card.querySelector('input, button')?.focus();
 }
@@ -336,8 +362,19 @@ function renderPersonCard() {
   who.append(strong, sub);
   const av = avatar(name, id);
   av.dataset.person = id;
+  av.classList.add('pc-photo');
   av.classList.toggle('speaking', speaking.has(id));
-  head.append(av, who);
+  // Com foto: clicar abre ela inteira (sem o corte redondo), no visualizador de imagens
+  if (photoHashOf(id)) {
+    const photoBtn = document.createElement('button');
+    photoBtn.type = 'button';
+    photoBtn.className = 'pc-photo-btn';
+    photoBtn.setAttribute('aria-label', `Ver a foto de ${name}`);
+    photoBtn.title = 'Ver a foto inteira';
+    photoBtn.append(av);
+    photoBtn.onclick = () => openPhotoViewer(id, name, photoBtn);
+    head.append(photoBtn, who);
+  } else head.append(av, who);
   card.append(head);
   const slider = (label, key, max, show) => {
     if (!show) return;

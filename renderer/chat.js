@@ -103,7 +103,8 @@ function resetChat(welcome) {
 
 function onChatMessage(m) {
   if (m.id && chat.log.some(entry => entry.id === m.id)) return;
-  void appSounds.play('chat');
+  const calledMe = m.from !== state.myId && mentionsMe(m.text);
+  void appSounds.play(calledMe ? 'mention' : 'chat'); // menção tem som próprio
   // Cópia da conversa: se eu virar o host, o novo servidor continua daqui
   const { type, ...entry } = m;
   chat.log.push(entry);
@@ -127,15 +128,16 @@ function onChatMessage(m) {
   if (unseen) {
     chat.unread++;
     chat.divider.textContent = `${chat.unread} ${chat.unread === 1 ? 'mensagem nova' : 'mensagens novas'}`;
-    if (!chat.open || away) toast(`${m.name}: ${m.text || `mandou ${m.file.name}`}`);
+    if ((!chat.open || away) && !calledMe) toast(`${m.name}: ${m.text || `mandou ${m.file.name}`}`);
   }
+  if (calledMe) notifyMention(m);
   renderUnread();
 }
 
-// Texto sempre como texto; só endereços http(s) viram link, que abre no navegador
+// Texto sempre como texto; só endereços http(s) viram link, que abre no navegador, e @nome vira destaque
 function textWithLinks(p, text) {
   for (const part of text.split(/(https?:\/\/[^\s]+)/i)) {
-    if (!/^https?:\/\//i.test(part)) { p.append(part); continue; }
+    if (!/^https?:\/\//i.test(part)) { appendMentions(p, part); continue; }
     const a = document.createElement('a');
     a.href = '#';
     a.textContent = part;
@@ -151,7 +153,7 @@ function appendMessage(m, live) {
   const prev = chat.lastMsg;
   const grouped = !!prev && prev.from === m.from && m.ts - prev.ts < 5 * 60 * 1000;
   const li = document.createElement('li');
-  li.className = 'msg' + (mine ? ' mine' : '') + (grouped ? ' grouped' : '');
+  li.className = 'msg' + (mine ? ' mine' : '') + (grouped ? ' grouped' : '') + (!mine && mentionsMe(m.text) ? ' mentioned' : '');
   const name = m.name; // as suas também com o seu nome, como os outros veem
   li.style.setProperty('--person', personColor(m.from));
   const d = new Date(m.ts);
@@ -164,11 +166,12 @@ function appendMessage(m, live) {
   who.className = 'msg-who';
   who.textContent = name;
   paintName(who, m.from);
+  if (!mine) markProfile(who, m.from, name);
   const sep = document.createElement('span');
   sep.className = 'msg-sep';
   sep.textContent = ' : ';
   // Com foto de perfil, ela vem antes do nome (quem não tem continua só com o nome colorido)
-  if (photoHashOf(m.from)) line.append(avatar(m.name, m.from));
+  if (photoHashOf(m.from)) line.append(mine ? avatar(m.name, m.from) : markProfile(avatar(m.name, m.from), m.from, name));
   line.append(who, sep);
   if (m.text) {
     const text = document.createElement('span');
@@ -274,6 +277,21 @@ function openImageViewer(img) {
   showViewerImage();
   $('ivClose').focus();
 }
+// A foto de perfil de alguém, inteira: abre na hora com a pequena e troca quando a inteira chegar
+function openPhotoViewer(id, name, anchor) {
+  const entry = { src: photoUrl(photoHashOf(id)), alt: `Foto de ${name}`, file: `foto-${name}.webp` };
+  viewer.list = [entry];
+  viewer.index = 0;
+  viewer.returnTo = anchor;
+  $('imageViewer').hidden = false;
+  showViewerImage();
+  $('ivClose').focus();
+  fullPhotoOf(id).then((url) => {
+    if (!url || viewer.list[0] !== entry || $('imageViewer').hidden) return;
+    entry.src = url;
+    showViewerImage();
+  });
+}
 function closeImageViewer() {
   if ($('imageViewer').hidden) return;
   $('imageViewer').hidden = true;
@@ -290,7 +308,7 @@ function showViewerImage() {
   $('ivName').textContent = name;
   $('ivCount').textContent = viewer.list.length > 1 ? `${viewer.index + 1} de ${viewer.list.length}` : '';
   $('ivSave').href = src.src;
-  $('ivSave').download = name;
+  $('ivSave').download = src.file || name;
   $('ivPrev').hidden = $('ivNext').hidden = viewer.list.length < 2;
 }
 function stepViewer(dir) {
@@ -586,3 +604,118 @@ function chatMemberLeft(id) {
     if (parts.from === id && parts.state === 'offer') fileFailed(fid, 'quem mandou saiu da sala');
   }
 }
+
+// ---------- Menções (@nome) ----------
+// @Nome de quem está na sala (ou @todos) chama a pessoa: som próprio, aviso diferente e, com o app em segundo
+// plano, uma notificação do Windows. Escrevendo @, uma lista sugere os nomes.
+const MENTION_ALL = 'todos';
+const escapeRe = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+// Depois do nome não pode vir letra ou número (senão "@Ana" chamaria a "Anabela")
+const MENTION_END = '(?![\\p{L}\\p{N}_])';
+function mentionsMe(text) {
+  if (!text || !text.includes('@')) return false;
+  return new RegExp(`@(${escapeRe(getName())}|${MENTION_ALL})${MENTION_END}`, 'iu').test(text);
+}
+function roomNames() {
+  const names = new Set([getName(), ...[...state.members.values()].map((m) => m.name)]);
+  return [...names].filter(Boolean).sort((a, b) => b.length - a.length); // compridos primeiro ("Ana Paula" antes de "Ana")
+}
+function appendMentions(p, text) {
+  if (!text.includes('@')) { p.append(text); return; }
+  const re = new RegExp(`@(${[...roomNames().map(escapeRe), MENTION_ALL].join('|')})${MENTION_END}`, 'giu');
+  let at = 0;
+  for (const m of text.matchAll(re)) {
+    p.append(text.slice(at, m.index));
+    const span = document.createElement('span');
+    const me = m[1].toLowerCase() === getName().toLowerCase() || m[1].toLowerCase() === MENTION_ALL;
+    span.className = 'mention' + (me ? ' me' : '');
+    span.textContent = m[0];
+    p.append(span);
+    at = m.index + m[0].length;
+  }
+  p.append(text.slice(at));
+}
+function notifyMention(m) {
+  const body = (m.text || '').slice(0, 140);
+  toast(`${m.name} mencionou você: ${body}`, 'mention');
+  if (document.hasFocus() && !document.hidden) return;
+  try {
+    const n = new Notification(`${m.name} mencionou você`, { body, silent: true }); // o som é o do app
+    n.onclick = () => {
+      window.focus();
+      if (!state.myId) return;
+      if ($('room').hidden) backToRoom();
+      setPanelOpen(true);
+      scrollChatToEnd();
+    };
+  } catch {}
+}
+
+// Sugestões enquanto escreve @: quem está na sala e "todos"; setas escolhem, Enter ou Tab põem, Esc fecha
+const mentionPick = { list: [], active: 0, start: -1 };
+function mentionQuery() {
+  const t = $('chatInput');
+  const before = t.value.slice(0, t.selectionStart);
+  const m = /(^|\s)@([^@\n]{0,24})$/.exec(before);
+  return m ? { start: before.length - m[2].length - 1, query: m[2] } : null;
+}
+function renderMentionPick() {
+  const pop = $('mentionPop');
+  const q = state.myId ? mentionQuery() : null;
+  const others = [...state.members].map(([id, m]) => ({ name: m.name, id }));
+  const options = q ? [...others, { name: MENTION_ALL, all: true }].filter((o) => o.name.toLowerCase().startsWith(q.query.toLowerCase())) : [];
+  if (!q || !options.length) { pop.hidden = true; mentionPick.list = []; return; }
+  mentionPick.list = options;
+  mentionPick.start = q.start;
+  mentionPick.active = Math.min(mentionPick.active, options.length - 1);
+  pop.replaceChildren();
+  options.forEach((o, i) => {
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'mention-item' + (i === mentionPick.active ? ' active' : '');
+    item.setAttribute('role', 'option');
+    item.setAttribute('aria-selected', String(i === mentionPick.active));
+    item.tabIndex = -1;
+    if (o.all) {
+      const dot = document.createElement('span');
+      dot.className = 'avatar mention-all';
+      dot.textContent = '@';
+      item.append(dot);
+    } else item.append(avatar(o.name, o.id));
+    const label = document.createElement('span');
+    label.textContent = o.all ? '@todos · chama todo mundo da sala' : o.name;
+    if (!o.all) paintName(label, o.id);
+    item.append(label);
+    item.onmousedown = (e) => { e.preventDefault(); insertMention(i); };
+    pop.append(item);
+  });
+  pop.hidden = false;
+}
+function insertMention(i) {
+  const o = mentionPick.list[i];
+  if (!o) return;
+  const t = $('chatInput');
+  const end = t.selectionStart;
+  const text = `@${o.name} `;
+  t.value = t.value.slice(0, mentionPick.start) + text + t.value.slice(end);
+  const caret = mentionPick.start + text.length;
+  t.setSelectionRange(caret, caret);
+  $('mentionPop').hidden = true;
+  mentionPick.list = [];
+  fitChatInput();
+  t.focus();
+}
+$('chatInput').addEventListener('input', () => { mentionPick.active = 0; renderMentionPick(); });
+$('chatInput').addEventListener('click', renderMentionPick);
+$('chatInput').addEventListener('blur', () => { $('mentionPop').hidden = true; });
+// Antes do Enter que envia (inicio.js): com a lista aberta, as teclas são dela
+$('chatInput').addEventListener('keydown', (e) => {
+  if ($('mentionPop').hidden || !mentionPick.list.length) return;
+  const n = mentionPick.list.length;
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { mentionPick.active = (mentionPick.active + (e.key === 'ArrowDown' ? 1 : n - 1)) % n; renderMentionPick(); }
+  else if (e.key === 'Enter' || e.key === 'Tab') insertMention(mentionPick.active);
+  else if (e.key === 'Escape') $('mentionPop').hidden = true;
+  else return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+}, true);

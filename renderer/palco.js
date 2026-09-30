@@ -242,7 +242,7 @@ function setupTileDrag(id, el) {
     moveTile(id, delta);
   });
   handle.addEventListener('pointerdown', (e) => {
-    if (e.button !== 0 || e.target.closest('button, input') || state.in.size < 2 || state.focus) return; // botões e o volume da faixa não arrastam
+    if (e.button !== 0 || e.target.closest('button, input, [data-profile]') || state.in.size < 2 || state.focus) return; // botões e o volume da faixa não arrastam
     palco.drag = { id, el, x: e.clientX, y: e.clientY, on: false, target: null };
     try { handle.setPointerCapture(e.pointerId); } catch {}
   });

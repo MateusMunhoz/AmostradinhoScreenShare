@@ -24,7 +24,7 @@ function fixture(media) {
   return { v, track, stream, sent, errors, peers };
 }
 
-test('microfone só liga ao entrar; mute, saída e limpeza são independentes', async () => {
+test('microfone só liga ao entrar; silenciar o fone desliga o microfone e voltar devolve como estava', async () => {
   const f = fixture();
   assert.equal(f.v.stream, null);
   await f.v.join();
@@ -32,9 +32,15 @@ test('microfone só liga ao entrar; mute, saída e limpeza são independentes', 
   const p = f.v.peers.get('3');
   await p.chain;
   assert.equal(f.sent.filter(m => m.data?.sdp).length, 1);
+  // Fone silenciado com o microfone ligado: desliga o microfone; voltar a ouvir liga de novo
+  f.v.deafen(); assert.equal(p.audio.muted, true); assert.equal(f.track.enabled, false); assert.equal(f.v.muted, true);
+  assert.equal(f.sent.at(-1).deafened, true); assert.equal(f.sent.at(-1).muted, true);
+  f.v.deafen(); assert.equal(p.audio.muted, false); assert.equal(f.track.enabled, true); assert.equal(f.v.muted, false);
+  // Microfone já desligado antes: continua desligado depois de voltar a ouvir
   f.v.mute(); assert.equal(f.track.enabled, false);
-  f.v.deafen(); assert.equal(p.audio.muted, true); assert.equal(f.track.enabled, false);
-  f.v.mute(); assert.equal(f.track.enabled, true); assert.equal(p.audio.muted, true);
+  f.v.deafen(); f.v.deafen(); assert.equal(f.track.enabled, false); assert.equal(f.v.muted, true); assert.equal(p.audio.muted, false);
+  // Ligar o microfone com o fone silenciado liga o fone também
+  f.v.deafen(); f.v.mute(); assert.equal(f.track.enabled, true); assert.equal(p.audio.muted, false); assert.equal(f.v.deafened, false);
   f.v.leave();
   assert.ok(f.track.stopped); assert.ok(p.pc.closed); assert.ok(p.audio.paused);
   assert.equal(p.audio.srcObject, null); assert.equal(f.v.peers.size, 0);

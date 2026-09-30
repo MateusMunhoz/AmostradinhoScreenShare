@@ -16,6 +16,7 @@ const DEFAULT_KEYS = {
   hideChat: 'CommandOrControl+Shift+O',
   compose: 'CommandOrControl+Enter',
   mute: 'CommandOrControl+Shift+M',
+  deafen: 'CommandOrControl+Shift+D',
 };
 const keysFile = () => path.join(app.getPath('userData'), 'atalhos.json');
 let shortcutKeys = null;
@@ -42,6 +43,7 @@ const ACTIONS = {
   },
   compose: { active: () => roomKeysOn, run: () => sendMain({ type: 'compose-key' }) },
   mute: { active: () => roomKeysOn, run: () => sendMain({ type: 'mute-key' }) },
+  deafen: { active: () => roomKeysOn, run: () => sendMain({ type: 'deafen-key' }) },
 };
 const registered = {}; // ação -> atalho registrado agora
 const busyWarned = {};
