@@ -391,6 +391,7 @@ document.addEventListener('visibilitychange', onVisibility);
 window.addEventListener('focus', syncPreview);
 window.addEventListener('blur', syncPreview);
 
+setupHub();
 setupWorkspace();
 watchDock();
 setupGeneralSettings();

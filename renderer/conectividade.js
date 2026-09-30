@@ -134,25 +134,7 @@ function closeNetworkDialog() {
   (networkReturnFocus || $('navNetwork')).focus();
 }
 
-let friendsReturnFocus = null;
-function openFriendsDialog() {
-  if (!$('connectionMapDialog').hidden) closeConnectionMap();
-  if (!$('profilePane').hidden) closeProfilePopup();
-  if (!$('networkDialog').hidden) closeNetworkDialog();
-  if (!$('generalSettingsDialog').hidden) closeGeneralSettings();
-  friendsReturnFocus = document.activeElement;
-  renderConnectivitySettings();
-  $('friendsDialog').hidden = false;
-  syncWorkspace();
-  setUtilityBackground(true);
-  $('closeFriendsDialog').focus();
-}
-function closeFriendsDialog() {
-  $('friendsDialog').hidden = true;
-  setUtilityBackground(false);
-  syncWorkspace();
-  (friendsReturnFocus || $('navFriends')).focus();
-}
+// Amigos: moram no HUB (renderer/hub.js: openFriendsDialog, closeFriendsDialog, renderFriends)
 function setRazzeStatus(text) {
   for (const id of ['razzeStatus', 'razzeAccountStatus', 'razzeFriendsStatus']) $(id).textContent = text;
 }
@@ -199,11 +181,12 @@ async function refreshRazzeState() {
     $('razzeAccount').hidden = !on;
     $('razzeStepNetworks').hidden = !on;
     $('razzeStepFriends').hidden = !on;
+    $('friendsSignedOut').hidden = on;
+    if (!on) setFriendsData({});
   };
   account(state.authenticated);
   $('profileAccountHint').textContent = state.configured ? 'Entre na sua conta para gerenciar redes e amigos.' : 'Configure o servidor Razze na área de Rede antes de entrar na sua conta.';
-  $('friendsHint').textContent = state.authenticated ? 'Adicione amigos pelo nickname e gerencie pedidos e convites para sua sala.' : 'Entre na sua conta Razze na área de Perfil para organizar seus amigos.';
-  $('friendsOpenProfile').hidden = state.authenticated;
+  $('friendsHint').textContent = state.configured ? 'Entre na sua conta Razze para ver quem está online, adicionar amigos e convidar para a sua sala.' : 'Os amigos usam uma conta Razze: configure o servidor na aba Rede e entre na conta pelo perfil.';
   $('razzeLogin').disabled = $('razzeRegister').disabled = !state.configured;
   if (!state.configured) {
     setStepDone('razzeStepServerNum', false, 1);
@@ -249,50 +232,7 @@ async function refreshRazzeLists() {
   void renderRazzeSummary(networks);
   const friends = await window.api.razzeFriends();
   const requests = await window.api.razzeFriendRequests();
-  const friendBox = $('razzeFriends');
-  friendBox.replaceChildren();
-  const row = (text, hint, button) => {
-    const r = document.createElement('div');
-    r.className = 'razze-row';
-    const label = document.createElement('span');
-    if (hint) label.className = 'hint';
-    label.textContent = text;
-    r.append(label);
-    if (button) r.append(button);
-    friendBox.append(r);
-  };
-  const btn = (text, onclick, cls = 'btn small') => { const b = document.createElement('button'); b.type = 'button'; b.className = cls; b.textContent = text; b.onclick = onclick; return b; };
-  for (const request of requests.incoming || []) {
-    row('Pedido de ' + request.displayName, false,
-      btn('Aceitar', async () => { await window.api.razzeAcceptFriend(request.id); await refreshRazzeLists(); }, 'btn small primary'));
-  }
-  for (const friend of friends.friends || []) {
-    const actions = document.createElement('div');
-    actions.className = 'razze-row-actions';
-    actions.append(btn('Remover amizade', async () => { await window.api.razzeRemoveFriend(friend.id); await refreshRazzeLists(); }));
-    if (state.myId) {
-      const invite = btn('Copiar endereço para convidar', async () => {
-        const address = state.roomAddr || (state.host ? `${state.host}:${state.port}` : '');
-        if (!address) { $('razzeFriendsStatus').textContent = 'Entre em uma sala primeiro para convidar ' + friend.displayName + '.'; return; }
-        try { await copiar(address); $('razzeFriendsStatus').textContent = `Endereço copiado para convidar ${friend.displayName}: ${address}`; }
-        catch { $('razzeFriendsStatus').textContent = 'Não foi possível copiar o endereço da sala.'; }
-      });
-      actions.append(invite);
-    }
-    row(friend.displayName, false, actions);
-    const presence = document.createElement('span');
-    presence.dataset.friendPresence = friend.id;
-    presence.className = 'net-badge' + (friend.online ? ' on' : '');
-    presence.textContent = friend.online ? 'Online' : 'Offline';
-    friendBox.lastElementChild.insertBefore(presence, friendBox.lastElementChild.lastElementChild);
-  }
-  for (const request of requests.outgoing || []) {
-    row('Pedido enviado para ' + request.displayName + ' · aguardando resposta', true,
-      btn('Cancelar pedido', async () => {
-        try { await window.api.razzeCancelFriendRequest(request.id); $('razzeFriendsStatus').textContent = 'Pedido cancelado.'; await refreshRazzeLists(); }
-        catch (error) { $('razzeFriendsStatus').textContent = 'Não foi possível cancelar o pedido: ' + error.message; }
-      }));
-  }
+  setFriendsData({ friends: friends.friends || [], incoming: requests.incoming || [], outgoing: requests.outgoing || [] });
 }
 
 // Cartão de uma rede: nome e se está conectada; um botão principal (Conectar ou Atualizar participantes),
@@ -337,7 +277,7 @@ function razzeNetworkCard(network) {
   if (network.isMember) window.api.razzeWireGuardStatus(network.id).then((s) => showTunnel(!!s.connected, s.overlayIp)).catch(() => {});
   connect.onclick = async () => {
     const current = await window.api.razzeWireGuardStatus(network.id).catch(() => ({ connected: false }));
-    if (current.connected && !confirm('Atualizar a lista de participantes agora? Se o Windows não deixar atualizar com o túnel ligado, ele reinicia por alguns segundos.')) return;
+    if (current.connected && !(await appConfirm('Atualizar a lista de participantes agora? Se o Windows não deixar atualizar com o túnel ligado, ele reinicia por alguns segundos.', { title: 'Atualizar participantes', ok: 'Atualizar' }))) return;
     connect.disabled = true;
     status(current.connected ? 'Atualizando os participantes e reiniciando o túnel…' : 'Negociando o endereço e ligando o túnel WireGuard…');
     try {
@@ -428,7 +368,7 @@ function razzeNetworkCard(network) {
           if (member.id !== network.ownerId) {
             const remove = btn('Remover', 'btn small danger');
             remove.onclick = async () => {
-              if (!confirm('Tirar ' + member.displayName + ' da rede ' + network.name + '?')) return;
+              if (!(await appConfirm('Tirar ' + member.displayName + ' da rede ' + network.name + '?', { title: 'Remover da rede', ok: 'Remover', danger: true }))) return;
               remove.disabled = true;
               try {
                 await window.api.razzeRemoveMember(network.id, member.id);
@@ -474,7 +414,7 @@ function razzeNetworkCard(network) {
     };
     const remove = btn('Excluir rede', 'btn small danger');
     remove.onclick = async () => {
-      if (!confirm('Excluir a rede ' + network.name + '? Todo mundo sai dela.')) return;
+      if (!(await appConfirm('Excluir a rede ' + network.name + '? Todo mundo sai dela.', { title: 'Excluir rede', ok: 'Excluir', danger: true }))) return;
       try {
         const tunnel = await window.api.razzeWireGuardStatus(network.id).catch(() => ({ exists: false }));
         if (tunnel.exists) {
@@ -493,7 +433,7 @@ function razzeNetworkCard(network) {
     // Membro: sair da rede (o túnel dela desliga antes)
     const leave = btn('Sair da rede', 'btn small danger');
     leave.onclick = async () => {
-      if (!confirm('Sair da rede ' + network.name + '? Para voltar, você vai precisar de um convite novo.')) return;
+      if (!(await appConfirm('Sair da rede ' + network.name + '? Para voltar, você vai precisar de um convite novo.', { title: 'Sair da rede', ok: 'Sair', danger: true }))) return;
       leave.disabled = true;
       try {
         const tunnel = await window.api.razzeWireGuardStatus(network.id).catch(() => ({ exists: false }));
@@ -527,12 +467,7 @@ function setRazzeAuthTab(register) {
 
 function receiveRazzePresence(value) {
   razzeLive = value || { friends: [], networks: [], rooms: [], error: '' };
-  const friends = new Map((razzeLive.friends || []).map(f => [f.id, f]));
-  document.querySelectorAll('[data-friend-presence]').forEach(node => {
-    const friend = friends.get(node.dataset.friendPresence);
-    node.textContent = razzeLive.error ? 'Indisponível' : friend?.online ? 'Online' : 'Offline';
-    node.classList.toggle('on', !razzeLive.error && !!friend?.online);
-  });
+  updateFriendsPresence(razzeLive);
   const networks = new Map((razzeLive.networks || []).map(n => [n.id, n]));
   document.querySelectorAll('[data-network-presence]').forEach(node => {
     const network = networks.get(node.dataset.networkPresence);
@@ -550,10 +485,6 @@ function receiveRazzePresence(value) {
 function setupConnectivitySettings() {
   window.api.onRazzePresence(receiveRazzePresence);
   window.api.razzePresence().then(receiveRazzePresence).catch(() => {});
-  setIcon($('closeFriendsDialog'), 'close', 'Fechar');
-  setupUtilityPopup('friendsDialog', closeFriendsDialog);
-  $('navFriends').onclick = openFriendsDialog;
-  $('closeFriendsDialog').onclick = closeFriendsDialog;
   $('friendsOpenProfile').onclick = openProfilePopup;
   $('profileOpenNetwork').onclick = openNetworkDialog;
   setIcon($('closeNetworkDialog'), 'close', 'Fechar');
@@ -565,7 +496,7 @@ function setupConnectivitySettings() {
       saveNetworkPreferences({ provider: r.value });
       renderConnectivitySettings();
       renderRadmin();
-      setSessionWatch(!$('home').hidden);
+      setSessionWatch(sessionWatchWanted());
     };
   });
   $('internetSaveServer').onclick = async () => {
@@ -655,10 +586,11 @@ function setupConnectivitySettings() {
     } catch (error) { setRazzeStatus('Convite inválido: ' + error.message); }
   };
   const addFriendByNickname = async (nickname) => {
+    if (!nickname.trim()) { $('razzeFriendNickname').focus(); return; }
     try {
       const result = await window.api.razzeRequestFriend(nickname.trim());
       $('razzeFriendNickname').value = '';
-      $('razzeFriendsStatus').textContent = result.status === 'accepted' ? 'Amizade aceita.' : 'Pedido enviado pelo nickname.';
+      $('razzeFriendsStatus').textContent = result.status === 'accepted' ? `Agora você e ${nickname.trim()} são amigos.` : `Pedido enviado para ${nickname.trim()}.`;
       await refreshRazzeLists();
     } catch (error) { $('razzeFriendsStatus').textContent = 'Não foi possível adicionar amigo: ' + error.message; }
   };

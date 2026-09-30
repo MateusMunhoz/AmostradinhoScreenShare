@@ -1039,7 +1039,7 @@ body:not(.workspace-in-room) #workspaceNav { background: transparent; border-col
    faltar espaço (fitNav): a engrenagem e a setinha nunca ficam para fora da caixa */
 .workspace-in-room:not(.has-workspace-pane) #workspaceNav { width: auto; min-width: var(--workspace-width); box-sizing: border-box; }
 #workspaceNav > * { flex-shrink: 0; }
-#workspaceNav.nav-tight :is(.room-tab, #navFriends) > span:not(.nav-icon):not(.unread) { display: none; }
+#workspaceNav.nav-tight .room-tab > span:not(.nav-icon):not(.unread) { display: none; }
 #workspaceNav.nav-tight .room-tab { padding: 0 9px; }
 .workspace-in-room.nav-collapsed #room { padding-top: 16px; padding-right: 62px; }
 .nav-expand { position: fixed; top: 16px; right: 16px; z-index: 12; width: 38px; height: 48px; box-sizing: border-box; display: grid; place-items: center; padding: 4px; cursor: pointer;
@@ -1321,4 +1321,76 @@ html[data-glass=liquid] .theme-swatches { border-radius: 10px; }
 .connection-detail { fill: var(--surface-muted); font-size: 12px; }
 .connection-map-details { margin: 0; padding-left: 20px; font-size: 13px; color: var(--surface-muted); }
 #connectionMapStatus { flex: 1; }
-.nav-tight #navFriends > .nav-icon + span { display: none; }
+
+/* HUB: barra fininha na borda esquerda (renderer/hub.js). Fechada, "HUB" em pé; aberta, fica por cima do conteúdo
+   (não empurra o vídeo), com "HUB" deitado e as abas Salas e Amigos */
+:root { --hub-w: 28px; --hub-open-w: 320px; }
+main { margin-left: var(--hub-w); }
+.workspace-brand { left: calc(24px + var(--hub-w)); }
+.voice-side #voiceDialog { left: calc(16px + var(--hub-w)); }
+.workspace-wide #workspacePanes { left: calc(16px + var(--hub-w)); }
+.voice-side.workspace-wide #workspacePanes { left: calc(var(--workspace-width) + 28px + var(--hub-w)); }
+.hub-rail { --text: var(--surface-text); --muted: var(--surface-muted); position: fixed; top: 0; bottom: 0; left: 0; z-index: 13; width: var(--hub-w);
+  display: flex; flex-direction: column; background: var(--panel); border-right: 1px solid var(--line); color: var(--text);
+  transition: width .16s ease, box-shadow .16s ease; overflow: hidden; }
+.hub-rail.open { width: var(--hub-open-w); box-shadow: 12px 0 40px rgba(0, 0, 0, .5); }
+.hub-toggle { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; padding: 0; border: 0; background: transparent;
+  color: var(--muted); font: inherit; font-size: 12px; font-weight: 700; letter-spacing: .3em; cursor: pointer; }
+.hub-toggle:hover, .hub-toggle:focus-visible { color: var(--accent); background: var(--panel-2); outline: none; }
+.hub-word { writing-mode: vertical-rl; text-orientation: upright; }
+.hub-rail.open .hub-toggle { flex: none; height: 48px; justify-content: flex-start; padding: 0 16px; color: var(--accent); font-size: 15px; border-bottom: 1px solid var(--line); }
+.hub-rail.open .hub-word { writing-mode: horizontal-tb; }
+/* Pedidos de amizade: número na faixa fechada e na aba Amigos */
+.hub-rail-badge, .hub-badge { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
+  background: var(--accent); color: var(--bg); font-size: 11px; font-weight: 700; letter-spacing: 0; }
+.hub-rail-badge { position: absolute; top: calc(50% + 34px); left: 50%; transform: translateX(-50%); pointer-events: none; }
+.hub-rail.open .hub-rail-badge { display: none; }
+.hub-body { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 10px; padding: 12px 14px 14px; width: var(--hub-open-w); }
+.hub-tabs { flex: none; }
+.hub-tabs button, .hub-views button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.hub-pane { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+.hub-section { margin: 6px 0 0; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.hub-current, .hub-room { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); }
+.hub-current { margin-top: 6px; border-color: var(--accent); background: var(--accent-soft, var(--panel-2)); }
+.hub-live { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px var(--panel); }
+.hub-room-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.hub-room-info strong { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hub-room-meta { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hub-room-meta.on { color: var(--ok); }
+.hub-room-meta svg { width: 12px; height: 12px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.hub-room .avatar { width: 30px; height: 30px; flex: none; font-size: 12px; background-color: var(--person, var(--primary)); color: var(--bg); }
+.hub-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.hub-home { margin-top: auto; }
+/* Amigos */
+.hub-signed-out { display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px dashed var(--line-strong, var(--line)); border-radius: 8px; }
+.hub-signed-out .btn { align-self: flex-start; }
+.hub-friends-body { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+.hub-add { display: flex; gap: 6px; }
+.hub-add input { flex: 1; }
+.hub-add input, .hub-filter { min-width: 0; width: 100%; padding: 8px 10px; font-size: 13px; }
+.hub-add .btn.icon { flex: none; width: 36px; padding: 0; display: grid; place-items: center; }
+.hub-add svg, .hub-remove svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.hub-views button { font-size: 12px; padding: 5px 4px; }
+.hub-friends .razze-status:empty, #friendsSummary:empty { display: none; }
+.hub-friend-list { display: flex; flex-direction: column; gap: 4px; }
+.hub-friend { padding: 8px 8px 8px 10px; gap: 8px; }
+.hub-avatar { position: relative; flex: none; display: inline-flex; }
+.hub-avatar::after { content: ""; position: absolute; right: -2px; bottom: -2px; width: 10px; height: 10px; border-radius: 50%; background: var(--muted); box-shadow: 0 0 0 2px var(--panel-2); }
+.hub-avatar.on::after { background: var(--ok); }
+.hub-friend:not(:has(.hub-avatar.on)) .avatar { opacity: .55; }
+.hub-remove { flex: none; width: 28px; height: 28px; padding: 0; display: grid; place-items: center; background: transparent; border-color: transparent; color: var(--muted); opacity: 0; }
+.hub-friend:hover .hub-remove, .hub-remove:focus-visible { opacity: 1; }
+.hub-remove:hover { color: var(--danger, var(--warn)); }
+/* Adicionar, filtro e abas ficam fixos no topo; só a lista rola. Botões das linhas compactos para o nome caber */
+.hub-friends { overflow: hidden; }
+.hub-friends-body { flex: 1; }
+.hub-friend-list { flex: 1; min-height: 0; overflow-y: auto; padding-right: 2px; }
+.hub-room .btn.small { flex: none; padding: 5px 10px; font-size: 12px; }
+.hub-filter, .hub-views, .hub-add, #friendsSummary, .hub-friends .razze-status { flex: none; }
+
+/* Confirmação no tema (appConfirm em renderer/util.js): por cima de tudo, até do HUB e das configurações */
+.modal.app-confirm { z-index: 60; }
+.app-confirm .dialog { gap: 12px; }
+.app-confirm h2 { font-size: 16px; }
+.app-confirm-text { margin: 0; color: var(--text); font-size: 14px; line-height: 1.45; overflow-wrap: anywhere; }
+.app-confirm-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }

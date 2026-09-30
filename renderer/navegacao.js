@@ -94,7 +94,6 @@ function syncWorkspace() {
   }
   $('navSettings').setAttribute('aria-expanded', String(settings));
   $('navConnectionMap').setAttribute('aria-expanded', String(!$('connectionMapDialog').hidden));
-  $('navFriends').setAttribute('aria-expanded', String(!$('friendsDialog').hidden));
   $('navNetwork').setAttribute('aria-expanded', String(!$('networkDialog').hidden));
   $('navProfile').setAttribute('aria-expanded', String(profile));
   if (!inRoom) setPeopleOpen(false);
@@ -113,6 +112,7 @@ function syncWorkspace() {
   $('profileHint').textContent = state.myId ? 'Este é o nome usado nesta sala. Para alterá-lo, saia da sala primeiro.' : 'Seu nome fica salvo neste dispositivo e é usado ao entrar em uma sala.';
   renderVoicePane();
   renderHomeCall();
+  renderHub();
 }
 // Barra de baixo numa linha só: sem espaço, enxuga em etapas até caber (o que some continua na tela em outro
 // lugar): 1) o texto "2 assistindo" do Ao vivo; 2) os textos "Na voz" e "Convidar" (ficam os ícones);
@@ -325,7 +325,7 @@ function setupWorkspace() {
   document.body.append($('profilePane'), $('generalSettingsDialog'), $('networkDialog'));
   $('sidePanel').hidden = true;
   $('generalSettingsDialog').setAttribute('aria-labelledby', 'generalSettingsTitle');
-  const icons = {navFriends: '<svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 4a3 3 0 0 1 0 6M18 14a5 5 0 0 1 3 5v2"/></svg>', navNetwork: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="7" rx="1.5"/><rect x="3" y="13" width="18" height="7" rx="1.5"/><path d="M7 7.5h.01M7 16.5h.01M11 7.5h6M11 16.5h6"/></svg>', navSettings: '<svg viewBox="0 0 24 24"><path d="m9 3 1-2h4l1 2 2 1 2 0 2 3-1 2v3l1 2-2 3h-2l-2 1-1 3h-4l-1-3-2-1H5l-2-3 1-2V9L3 7l2-3h2z"/><circle cx="12" cy="11" r="3"/></svg>',
+  const icons = {navNetwork: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="7" rx="1.5"/><rect x="3" y="13" width="18" height="7" rx="1.5"/><path d="M7 7.5h.01M7 16.5h.01M11 7.5h6M11 16.5h6"/></svg>', navSettings: '<svg viewBox="0 0 24 24"><path d="m9 3 1-2h4l1 2 2 1 2 0 2 3-1 2v3l1 2-2 3h-2l-2 1-1 3h-4l-1-3-2-1H5l-2-3 1-2V9L3 7l2-3h2z"/><circle cx="12" cy="11" r="3"/></svg>',
     navChat: ICON.chat, navVoice: ICON.mic, navStreams: '<svg viewBox="0 0 24 24"><path d="M3 4h18v13H3zM8 21h8M12 17v4"/></svg>'};
   for (const [id, icon] of Object.entries(icons)) $(id).querySelector('.nav-icon').innerHTML = icon;
   $('navCollapse').onclick = () => (document.body.classList.contains('has-workspace-pane') ? collapseRoomSide() : setNavCollapsed(true));

@@ -71,6 +71,7 @@ isso (chamam `watch`, `state`, `speaking`... direto na página).
 | 18 | `atualizacao.js` | Atualização pela sala, pelo GitHub e o aviso |
 | 19 | `sessoes.js` | Sessões abertas na rede (a lista da tela inicial) |
 | 20 | `transmitir.js` | Escolher a fonte, som, iniciar, trocar e parar, quem assiste |
+| 20b | `hub.js` | HUB: a barra fininha da esquerda, com as abas Salas (salas abertas, a atual e o menu inicial) e Amigos (adicionar, filtrar, convidar, pedidos) |
 | 21 | `inicio.js` | Tela inicial e a partida: liga os botões e listeners, carrega as preferências |
 
 **A regra que evita erro na carga:** só o `inicio.js` roda código quando a página abre (listeners,

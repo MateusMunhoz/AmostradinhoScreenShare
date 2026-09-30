@@ -126,3 +126,69 @@
   font: 400 11px/1 var(--font-console); letter-spacing: .2em; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 :root[data-skin="arasaka"] .empty-stage p { position: relative; z-index: 1; color: var(--text); text-shadow: 0 0 6px #000, 0 0 2px #000; }
+
+/* HUB: cantos retos, colchete de mira no topo e o nome no vermelho do tema */
+:root[data-skin="arasaka"] :is(.hub-current, .hub-room, .hub-signed-out, .hub-badge, .hub-rail-badge) { border-radius: 0; }
+:root[data-skin="arasaka"] .hub-section { color: var(--accent); letter-spacing: .24em; }
+:root[data-skin="arasaka"] .hub-rail { background: var(--bracket), var(--panel); }
+:root[data-skin="arasaka"] .hub-toggle { color: var(--accent); }
+:root[data-skin="arasaka"] .hub-current { background-image: var(--scan); }
+:root[data-skin="arasaka"] .hub-live { border-radius: 0; }
+:root[data-skin="arasaka"] .hub-room .btn.small { letter-spacing: .08em; }
+
+/* Chat como terminal: fonte fixa, tela preta com linhas de monitor, "[hh:mm] nome > texto", cursor piscando no fim
+   da conversa e a caixa de escrever como um prompt ("›" antes do texto, sem caixa, só a linha de baixo) */
+:root[data-skin="arasaka"] {
+  --ak-mono: "Cascadia Mono", Consolas, "Lucida Console", monospace;
+  --ak-term-bg: #030304;
+  --ak-term-text: #d9dde2;
+}
+:root[data-skin="arasaka"] :is(.chat-list, #chatEmpty, #chatOff, .chat-form textarea, .msg-body .file-card, .new-divider, .mention-pop) { font-family: var(--ak-mono); }
+:root[data-skin="arasaka"] .chat-list {
+  margin: 0; padding: 10px 12px; gap: 0; border: 1px solid var(--line); color: var(--ak-term-text);
+  background: repeating-linear-gradient(to bottom, rgba(255, 255, 255, .025) 0 1px, transparent 1px 3px), var(--ak-term-bg);
+  box-shadow: inset 0 0 28px rgba(0, 0, 0, .9);
+}
+:root[data-skin="arasaka"] .msg { margin-top: 2px; gap: 6px; font-size: 12.5px; line-height: 1.55; text-shadow: 0 0 6px rgba(255, 255, 255, .08); }
+:root[data-skin="arasaka"] .msg.grouped { margin-top: 0; }
+:root[data-skin="arasaka"] .msg-time { width: auto; padding-top: 0; font-size: 12.5px; color: var(--muted); letter-spacing: 0; }
+:root[data-skin="arasaka"] .msg-time::before { content: "["; }
+:root[data-skin="arasaka"] .msg-time::after { content: "]"; }
+:root[data-skin="arasaka"] .msg-who { font-weight: 600; text-shadow: 0 0 8px currentColor; }
+:root[data-skin="arasaka"] .msg-sep { font-size: 0; }
+:root[data-skin="arasaka"] .msg-sep::before { content: " › "; font-size: 12.5px; color: var(--accent); }
+:root[data-skin="arasaka"] .msg-line .avatar { border-radius: 0; width: 16px; height: 16px; vertical-align: -3px; }
+:root[data-skin="arasaka"] .msg-text a { color: var(--ok); text-decoration: underline; text-underline-offset: 2px; }
+:root[data-skin="arasaka"] .msg.mentioned { margin-left: -12px; padding-left: 9px; border-left: 2px solid var(--accent); border-radius: 0; background: rgba(255, 31, 79, .08); }
+:root[data-skin="arasaka"] .mention { border-radius: 0; padding: 0 2px; background: transparent; color: var(--accent); }
+:root[data-skin="arasaka"] .mention::before { content: "<"; opacity: .6; }
+:root[data-skin="arasaka"] .mention::after { content: ">"; opacity: .6; }
+:root[data-skin="arasaka"] .mention.me { background: var(--accent); color: #000; }
+/* Mensagens novas: uma linha tracejada, como um separador de log */
+:root[data-skin="arasaka"] .new-divider { font-weight: 400; font-size: 11px; letter-spacing: .2em; text-transform: uppercase; }
+:root[data-skin="arasaka"] .new-divider::before, :root[data-skin="arasaka"] .new-divider::after { height: 0; border-top: 1px dashed var(--accent); background: none; }
+/* Cursor piscando depois da última linha */
+:root[data-skin="arasaka"] .chat-list::after {
+  content: "›  █"; flex: none; margin-top: 4px; font-size: 12.5px; color: var(--accent); white-space: pre;
+  animation: ak-cursor 1.1s steps(1) infinite;
+}
+@keyframes ak-cursor { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { :root[data-skin="arasaka"] .chat-list::after { animation: none; } }
+/* Conversa vazia: a mensagem de boas-vindas como saída do terminal */
+:root[data-skin="arasaka"] #chatEmpty { padding: 10px 12px; border: 1px solid var(--line); background: var(--ak-term-bg); color: var(--muted); font-size: 12px; }
+:root[data-skin="arasaka"] #chatEmpty::before { content: "> CANAL ABERTO. AGUARDANDO TRANSMISSÃO…\A"; white-space: pre-wrap; color: var(--accent); letter-spacing: .06em; }
+/* Escrever: um prompt. "›" na frente, sem caixa, só a linha de baixo; o clipe fica antes do prompt */
+:root[data-skin="arasaka"] .chat-form { align-items: center; gap: 0; padding: 0 0 0 0; border: 1px solid var(--line); background: var(--ak-term-bg); }
+:root[data-skin="arasaka"] .chat-form #chatAttach { order: -1; border: 0; background: transparent; border-right: 1px solid var(--line); }
+:root[data-skin="arasaka"] .chat-form::before { content: "›"; flex: none; padding: 0 2px 0 12px; font: 600 15px/1 var(--ak-mono); color: var(--accent); text-shadow: 0 0 8px currentColor; }
+:root[data-skin="arasaka"] .chat-form textarea {
+  border: 0; border-radius: 0; background: transparent; padding: 11px 8px; font-size: 12.5px; color: var(--ak-term-text); caret-color: var(--accent);
+}
+:root[data-skin="arasaka"] .chat-form textarea::placeholder { color: var(--muted); text-transform: uppercase; letter-spacing: .12em; font-size: 11.5px; }
+:root[data-skin="arasaka"] .chat-form textarea:focus { border: 0; }
+:root[data-skin="arasaka"] .chat-form:focus-within { border-color: var(--accent); box-shadow: 0 0 0 1px rgba(255, 31, 79, .25), 0 0 14px rgba(255, 31, 79, .12); }
+:root[data-skin="arasaka"] .chat-form #chatSend { border: 0; border-left: 1px solid var(--line); background: transparent; color: var(--accent); }
+:root[data-skin="arasaka"] .chat-form #chatSend:not(:disabled):hover { background: rgba(255, 31, 79, .12); }
+/* Vazia: a boas-vindas e a área da conversa formam uma tela só (sem a faixa entre as duas) */
+:root[data-skin="arasaka"] #chatEmpty:not([hidden]) { border-bottom: 0; margin-bottom: -8px; }
+:root[data-skin="arasaka"] #chatEmpty:not([hidden]) ~ .chat-list { border-top: 0; padding-top: 4px; }
