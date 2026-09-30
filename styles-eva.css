@@ -98,7 +98,7 @@
 
 /* Palco vazio: o letreiro do EVA-01 ao fundo e a linha de estado do plug embaixo */
 :root[data-skin="eva"] .empty-stage { position: relative; overflow: hidden; border: 1px solid var(--line); background: rgba(0, 0, 0, .35); }
-/* Placa do EVA-01 no meio do palco: marcas de canto e o emblema da folha à esquerda, UNIT-01 grande, a faixa
+/* Placa do EVA-01 no meio do palco: marcas de canto e o emblema (a cabeça do EVA-01 de perfil, cortada pela diagonal) à esquerda, UNIT-01 grande, a faixa
    EVANGELION-01 TEST TYPE e a linha do projeto. Desenho próprio, nas cores do tema. */
 .eva-plate { display: none; }
 :root[data-skin="eva"] .empty-stage { align-content: center; gap: 22px; }
@@ -112,8 +112,8 @@
     linear-gradient(var(--eva-mark), var(--eva-mark)) 100% 100% / 14px 3px no-repeat, linear-gradient(var(--eva-mark), var(--eva-mark)) 100% 100% / 3px 14px no-repeat;
 }
 :root[data-skin="eva"] .eva-plate-mark::before {
-  content: ""; position: absolute; inset: 14px 12px 14px 22px; background: var(--eva-purple-hi);
-  -webkit-mask: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M34 6 C42 1 54 6 57 15 C65 9 77 12 78 22 C88 22 94 33 88 41 C96 47 94 60 84 62 C88 73 79 83 69 79 C67 90 55 94 49 85 Z' fill='black'/><path d='M8 2 L74 98' stroke='black' stroke-width='3'/></svg>") center / contain no-repeat; mask: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M34 6 C42 1 54 6 57 15 C65 9 77 12 78 22 C88 22 94 33 88 41 C96 47 94 60 84 62 C88 73 79 83 69 79 C67 90 55 94 49 85 Z' fill='black'/><path d='M8 2 L74 98' stroke='black' stroke-width='3'/></svg>") center / contain no-repeat;
+  content: ""; position: absolute; inset: 6px 4px 6px 8px; background: var(--eva-purple-hi);
+  -webkit-mask: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><g fill='black'><path d='M60 30 L92 8 L95 12 L66 36 Z'/><path d='M36 30 L46 18 L62 15 L73 21 L64 31 L50 40 L40 40 Z'/><path d='M53 42 L66 34 L79 30 L87 34 L78 42 L64 46 Z'/><path d='M66 49 L80 45 L86 49 L78 53 Z'/><path d='M87 39 L93 43 L89 50 Z'/><path d='M58 50 L74 56 L88 55 L96 72 L92 84 L84 72 L72 66 L60 64 Z'/><path d='M61 68 L72 70 L86 86 L82 92 L66 80 Z'/><path d='M44 42 L54 48 L58 70 L61 80 L52 62 Z'/></g><path d='M16 6 L70 98' stroke='black' stroke-width='3'/></svg>") center / contain no-repeat; mask: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><g fill='black'><path d='M60 30 L92 8 L95 12 L66 36 Z'/><path d='M36 30 L46 18 L62 15 L73 21 L64 31 L50 40 L40 40 Z'/><path d='M53 42 L66 34 L79 30 L87 34 L78 42 L64 46 Z'/><path d='M66 49 L80 45 L86 49 L78 53 Z'/><path d='M87 39 L93 43 L89 50 Z'/><path d='M58 50 L74 56 L88 55 L96 72 L92 84 L84 72 L72 66 L60 64 Z'/><path d='M61 68 L72 70 L86 86 L82 92 L66 80 Z'/><path d='M44 42 L54 48 L58 70 L61 80 L52 62 Z'/></g><path d='M16 6 L70 98' stroke='black' stroke-width='3'/></svg>") center / contain no-repeat;
 }
 :root[data-skin="eva"] :is(.eva-plate-ne, .eva-plate-rv) {
   position: absolute; font: 800 30px/1 var(--eva-mincho); color: var(--text); letter-spacing: .02em;
