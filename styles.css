@@ -1271,6 +1271,33 @@ body { height: calc(100% - var(--titlebar)); margin-top: var(--titlebar); contai
 html[data-glass=liquid] .theme-card { border-radius: 16px; }
 html[data-glass=liquid] .theme-swatches { border-radius: 10px; }
 
+/* Aba Tema: cartões grandes com uma prévia de cada desenho (as cores da prévia são as do tema, fixas) */
+.skin-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.skin-card {
+  display: grid; gap: 6px; padding: 10px; text-align: left; font: inherit; font-size: 13px; cursor: pointer;
+  color: var(--surface-text); background: var(--sunken); border: 1px solid var(--field-line); border-radius: 10px;
+}
+.skin-card:hover { border-color: var(--line-strong); }
+.skin-card[aria-checked=true] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.skin-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.skin-card strong { font-size: 14px; }
+.skin-card small { color: var(--surface-muted); line-height: 1.4; }
+.skin-preview { position: relative; display: block; height: 96px; border-radius: 6px; overflow: hidden; border: 1px solid var(--line); }
+/* Padrão: o saguão da lan house em miniatura */
+.skin-preview[data-preview=padrao] { background: #22271E; }
+.skin-preview[data-preview=padrao]::before { content: ""; position: absolute; left: 14%; right: 14%; top: 24px; height: 44px; border-radius: 6px; background: #2D3327; border: 1px solid #434C3A; }
+.skin-preview[data-preview=padrao]::after { content: ""; position: absolute; left: calc(14% + 10px); top: 36px; width: 38%; height: 20px; border-radius: 4px; background: #D6C45C; }
+/* Arasaka: o emblema e o nome na fonte do logo, com listras */
+.skin-preview[data-preview=arasaka] { background: #000; border-color: #3a0d18; }
+.skin-preview[data-preview=arasaka]::before {
+  content: ""; position: absolute; left: 50%; top: 10px; width: 40px; height: 40px; margin-left: -20px; background: #FF1F4F;
+  -webkit-mask: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><g fill='black'><circle cx='50' cy='27' r='11'/><circle cx='29' cy='43' r='10'/><circle cx='71' cy='43' r='10'/></g><g fill='none' stroke='black'><circle cx='50' cy='50' r='43' stroke-width='8'/><path d='M50 36V84M50 64 33 50M50 64 67 50' stroke-width='9'/></g></svg>") center / contain no-repeat;
+}
+.skin-preview[data-preview=arasaka]::after {
+  content: "arasaka"; position: absolute; left: 0; right: 0; bottom: 6px; text-align: center; font: 400 40px/1 cedge1, Bahnschrift, sans-serif;
+  background: repeating-linear-gradient(to bottom, #FF1F4F 0 2px, transparent 2px 4px); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+
 /* Mapa de conexões: as cores de estado são independentes do tema escolhido. */
 .connection-map-dialog { width: min(850px, 100%); }
 .connection-legend { display: flex; flex-wrap: wrap; gap: 18px; font-size: 13px; }

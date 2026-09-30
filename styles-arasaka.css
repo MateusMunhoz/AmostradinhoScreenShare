@@ -1,0 +1,128 @@
+/* Tema Arasaka (Cyberpunk 2077): só vale com o tema escolhido em Aparência (html[data-skin="arasaka"]).
+   As cores vêm do tema (preto, vermelho de detalhe, ciano de quem fala); aqui fica o desenho: cantos retos,
+   vermelho em listras de monitor, rótulos em caixa alta espaçados, números em fonte fixa, colchetes de mira
+   nos cantos dos painéis e o nome em pé no saguão. Menus e listas que abrem por cima não são cortados. */
+:root[data-skin="arasaka"] {
+  /* A fonte do logo: Cedge (askleo, FontStruct, licença não comercial), instalada no Windows */
+  --ak-font: cedge1, Bahnschrift, "Segoe UI", sans-serif;
+  --radius: 0px;
+  --radius-lg: 0px;
+  --scan: repeating-linear-gradient(to bottom, transparent 0 3px, rgba(0, 0, 0, .3) 3px 5px);
+  --bracket: linear-gradient(var(--accent), var(--accent)) 0 0 / 14px 2px no-repeat,
+             linear-gradient(var(--accent), var(--accent)) 0 0 / 2px 14px no-repeat;
+}
+:root[data-skin="arasaka"] ::selection { background: var(--accent); color: #000; }
+
+/* Cantos retos em tudo o que é caixa (a bolinha das pessoas continua redonda) */
+:root[data-skin="arasaka"] :is(.btn, .dock, .tile, .dialog, .workspace-pane, .panel, .home-card, .theme-card, .person-card,
+  .tile-chip, .toast, .workspace-tab, .dock-more-menu, .voice-more-menu, input, textarea, select, .seg, .seg label,
+  .live-chip, .file-card, .chat-staged, .image-viewer button, .pc-photo-btn, .update-banner, .session, .theme-swatches,
+  .seg > *, .seg button, .members li, .mention-pop, .people-pop, .skin-card, .skin-preview) { border-radius: 0 !important; }
+
+/* Colchete vermelho no canto de cima dos painéis, como a mira da referência */
+:root[data-skin="arasaka"] :is(.dock, .workspace-pane, .panel, .home-card, .dialog) { background: var(--bracket), var(--panel); }
+:root[data-skin="arasaka"] .dialog { background: var(--bracket), var(--bg); }
+
+/* Telas: o canto de cima à esquerda cortado, com a linha do corte */
+:root[data-skin="arasaka"] .tile { clip-path: polygon(18px 0, 100% 0, 100% 100%, 0 100%, 0 18px); }
+:root[data-skin="arasaka"] .tile::before {
+  content: ""; position: absolute; top: 0; left: 0; z-index: 4; width: 17px; height: 17px; pointer-events: none;
+  background: linear-gradient(135deg, transparent calc(50% - 1px), var(--line-strong) calc(50% - 1px) calc(50% + .5px), transparent calc(50% + .5px));
+}
+:root[data-skin="arasaka"] .tile.speaking::before {
+  background: linear-gradient(135deg, transparent calc(50% - 1.5px), var(--ok) calc(50% - 1.5px) calc(50% + 1px), transparent calc(50% + 1px));
+}
+:root[data-skin="arasaka"] .tile-name { padding-left: 24px; }
+/* Linhas de monitor por cima do vídeo */
+:root[data-skin="arasaka"] .tile-body::after {
+  content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, .16) 0 1px, transparent 1px 3px);
+}
+
+/* Vermelho em listras: botão principal, ao vivo e o que está transmitindo */
+:root[data-skin="arasaka"] :is(.btn.primary, .btn.live, .tile-chip.live, .dock-share .btn.live) { background-image: var(--scan); }
+:root[data-skin="arasaka"] :is(.btn.primary, .btn.live, .btn.danger) {
+  text-transform: uppercase; letter-spacing: .14em; font-weight: 600; box-shadow: none;
+}
+:root[data-skin="arasaka"] .btn { box-shadow: none; }
+:root[data-skin="arasaka"] .btn.primary:hover:not(:disabled) { background-image: none; }
+
+/* Rótulos em caixa alta e espaçados; números em fonte fixa */
+:root[data-skin="arasaka"] :is(.pane-head h2, .chat-title, .stream-pane-head h2, .dialog h2, .settings-section h3, h3) {
+  text-transform: uppercase; letter-spacing: .28em; font-size: 12.5px; font-weight: 600; color: var(--accent);
+}
+:root[data-skin="arasaka"] .tile-chip { font-family: var(--font-console); font-weight: 400; letter-spacing: .08em; text-transform: uppercase; }
+:root[data-skin="arasaka"] .tile-chip:not(.live) { background: transparent; border: 1px solid var(--ok); color: var(--ok); }
+:root[data-skin="arasaka"] .tile-name-text, :root[data-skin="arasaka"] .msg-who { color: var(--ok); }
+:root[data-skin="arasaka"] .msg-who[data-name-of="me"] { color: var(--accent); }
+:root[data-skin="arasaka"] .workspace-tab[aria-pressed=true], :root[data-skin="arasaka"] .workspace-tab[aria-expanded=true] {
+  border-color: var(--accent); color: var(--accent); background: rgba(255, 31, 79, .08);
+}
+
+/* Barra de título: o nome em vermelho, espaçado */
+:root[data-skin="arasaka"] .titlebar span { text-transform: uppercase; letter-spacing: .3em; font-size: 11px; color: var(--accent); }
+
+/* Saguão: o nome em pé, com listras, e uma linha vermelha ao lado */
+:root[data-skin="arasaka"] .home-screen::before {
+  content: "arasaka"; position: fixed; left: 26px; top: 110px; bottom: 40px; z-index: 0; pointer-events: none;
+  writing-mode: vertical-rl; transform: rotate(180deg); text-align: center;
+  font: 400 clamp(110px, 20vh, 200px)/.8 var(--ak-font); letter-spacing: .02em;
+  background: repeating-linear-gradient(to bottom, var(--accent) 0 3px, transparent 3px 5px);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+:root[data-skin="arasaka"] .home-screen::after {
+  content: ""; position: fixed; left: 150px; top: 22%; bottom: 20%; width: 1px; background: var(--accent); pointer-events: none;
+}
+:root[data-skin="arasaka"] .home-main { position: relative; z-index: 1; }
+:root[data-skin="arasaka"] .home-title { text-transform: uppercase; letter-spacing: .06em; }
+@media (max-width: 1050px) {
+  :root[data-skin="arasaka"] .home-screen::before, :root[data-skin="arasaka"] .home-screen::after { display: none; }
+}
+
+/* ---------- Emblema da corporação (desenhado aqui, em vetor) ----------
+   --ak-emblem: anel, três esferas e o tronco, como máscara (a cor vem do tema). A palavra "arasaka" usa a
+   fonte Cedge (--ak-font). */
+:root[data-skin="arasaka"] {
+  --ak-emblem: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><g fill='black'><circle cx='50' cy='27' r='11'/><circle cx='29' cy='43' r='10'/><circle cx='71' cy='43' r='10'/></g><g fill='none' stroke='black'><circle cx='50' cy='50' r='43' stroke-width='8'/><path d='M50 36V84M50 64 33 50M50 64 67 50' stroke-width='9'/></g></svg>");
+}
+
+/* Barra de título e logo do saguão: o emblema no lugar das duas telas */
+:root[data-skin="arasaka"] .titlebar svg, :root[data-skin="arasaka"] .brand-mark svg { display: none; }
+:root[data-skin="arasaka"] .titlebar::before, :root[data-skin="arasaka"] .brand-mark::before {
+  content: ""; flex: none; width: 16px; height: 16px; background: var(--accent);
+  -webkit-mask: var(--ak-emblem) center / contain no-repeat; mask: var(--ak-emblem) center / contain no-repeat;
+}
+:root[data-skin="arasaka"] .brand-mark::before { width: 30px; height: 30px; }
+
+/* Enfeites em japonês: barra de título, logo, títulos dos painéis e avisos */
+:root[data-skin="arasaka"] .titlebar span::after { content: " // ARASAKA"; color: var(--muted); }
+:root[data-skin="arasaka"] .titlebar::after {
+  content: "荒坂  ·  REDE SEGURA  ·  接続中"; position: absolute; right: 160px; font: 400 11px/1 var(--font-console);
+  letter-spacing: .25em; color: var(--ok); opacity: .8;
+}
+:root[data-skin="arasaka"] .brand-mark::after {
+  content: "// 荒坂 ARASAKA CORP."; margin-left: 6px; font: 600 11px/1 var(--font-body); letter-spacing: .3em; color: var(--accent);
+}
+:root[data-skin="arasaka"] .chat-title::after { content: "  会話"; color: var(--muted); letter-spacing: .1em; }
+:root[data-skin="arasaka"] #voicePaneTitle::after { content: "  音声"; color: var(--muted); letter-spacing: .1em; }
+:root[data-skin="arasaka"] .stream-pane-head h2::after { content: "  配信"; color: var(--muted); letter-spacing: .1em; }
+:root[data-skin="arasaka"] .toast::before { content: "荒坂 // "; color: var(--accent); font-weight: 700; }
+:root[data-skin="arasaka"] ::-webkit-scrollbar-thumb { background-color: rgba(255, 31, 79, .45) !important; border-radius: 0 !important; }
+
+/* Sem transmissão na tela: o emblema e "arasaka" na fonte do logo ao fundo, com listras, e a linha de sistema embaixo */
+:root[data-skin="arasaka"] .empty-stage {
+  position: relative; overflow: hidden; border-color: var(--line); align-content: end; padding-bottom: 58px;
+  background: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><pattern id='s' width='4' height='4' patternUnits='userSpaceOnUse'><rect width='4' height='2' fill='%23FF1F4F'/></pattern></defs><g opacity='.32'><g fill='url(%23s)'><circle cx='50' cy='27' r='11'/><circle cx='29' cy='43' r='10'/><circle cx='71' cy='43' r='10'/></g><g fill='none' stroke='url(%23s)'><circle cx='50' cy='50' r='43' stroke-width='8'/><path d='M50 36V84M50 64 33 50M50 64 67 50' stroke-width='9'/></g></g></svg>") center 12% / auto 30% no-repeat;
+}
+:root[data-skin="arasaka"] .empty-stage::before {
+  content: "arasaka"; position: absolute; left: 0; right: 0; top: 40%; z-index: 0; pointer-events: none; opacity: .34;
+  text-align: center; white-space: nowrap; font: 400 clamp(96px, 17vw, 260px)/1 var(--ak-font); letter-spacing: .02em;
+  background: repeating-linear-gradient(to bottom, var(--accent) 0 3px, transparent 3px 6px);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+:root[data-skin="arasaka"] .empty-stage::after {
+  content: "ARASAKA CORPORATION  //  荒坂  //  CANAL SEGURO  //  AGUARDANDO SINAL";
+  position: absolute; left: 22px; right: 22px; bottom: 16px; pointer-events: none; text-align: left;
+  font: 400 11px/1 var(--font-console); letter-spacing: .2em; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+:root[data-skin="arasaka"] .empty-stage p { position: relative; z-index: 1; color: var(--text); text-shadow: 0 0 6px #000, 0 0 2px #000; }

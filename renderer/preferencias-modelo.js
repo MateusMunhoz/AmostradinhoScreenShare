@@ -113,9 +113,18 @@ const AppPreferences = (() => {
     { id: 'claro', label: 'Claro', colors: { main: '#EEF2F8', secondary: '#FFFFFF', detail1: '#3455DB', detail2: '#147D55' }, appearance: { glass: 'opaque', border: 'solid' } },
     { id: 'contraste', label: 'Alto contraste', colors: { main: '#000000', secondary: '#0D0D0D', detail1: '#FFD400', detail2: '#00FF6E', text: '#FFFFFF', line: '#FFFFFF' }, appearance: { glass: 'opaque', border: 'solid' } },
   ];
+  // Temas (Configurações > Tema): mudam o desenho do app inteiro, não só as cores. Escolher um aplica as cores dele
+  // (dá para ajustar depois na aba Cores sem perder o desenho). '' = o visual padrão. O desenho do Arasaka
+  // (Cyberpunk 2077) fica em styles-arasaka.css, sob html[data-skin=arasaka].
+  const skins = [
+    { id: '', label: 'Padrão', note: 'O visual normal do app, com as cores que você escolher.' },
+    { id: 'arasaka', label: 'Arasaka', note: 'Cyberpunk 2077: preto, vermelho em listras de monitor, cantos retos e o emblema da corporação.',
+      colors: { main: '#000000', secondary: '#080B0C', detail1: '#FF1F4F', detail2: '#5DE4C7', text: '#CFD6D4', line: '#233031' }, appearance: { glass: 'opaque', border: 'solid' } },
+  ];
+  const cleanSkin = (id) => skins.some((k) => k.id && k.id === id) ? id : '';
   // Preferências com o tema aplicado (o resto, como fontes e sons, fica como está)
   function applyTheme(prefs, id) {
-    const t = themes.find(x => x.id === id);
+    const t = themes.find(x => x.id === id) || skins.find(x => x.id && x.id === id);
     if (!t) return normalize(prefs);
     const colors = { ...defaults.colors, text: '', live: '', speaking: '', warn: '', line: '', ...t.colors };
     const appearance = { ...defaults.appearance, level: glassLevel[t.appearance.glass] ?? defaults.appearance.level, ...t.appearance };
@@ -286,6 +295,6 @@ const AppPreferences = (() => {
     }
     stopAll() { for (const event of [...this.players.keys()]) this.stop(event); }
   }
-  return { key, sounds, events, defaults, optionalColors, glassModes, glassLevel, borderModes, fonts, fontName, fontStacks, cleanNameFont, nameFontStack, borders, themes, applyTheme, currentTheme, hex, normalize, read, write, palette, glass, SoundPlayer };
+  return { key, sounds, events, defaults, optionalColors, glassModes, glassLevel, borderModes, fonts, fontName, fontStacks, cleanNameFont, nameFontStack, borders, themes, skins, cleanSkin, applyTheme, currentTheme, hex, normalize, read, write, palette, glass, SoundPlayer };
 })();
 if (typeof module !== 'undefined') module.exports = AppPreferences;

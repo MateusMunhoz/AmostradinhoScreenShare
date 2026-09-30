@@ -48,6 +48,7 @@
       "github.js",
       "index.html",
       "styles.css",
+      "styles-arasaka.css",
       "renderer/**",
       "assets/audio/**",
       "assets/icone/**",
