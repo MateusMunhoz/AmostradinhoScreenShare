@@ -134,7 +134,22 @@ function createTile(id, name) {
   pipNote.append(pipIcon, pipTitle, pipText, pipActions, pipHint);
   const body = document.createElement('div');
   body.className = 'tile-body';
-  body.append(video, overlay, pipNote);
+  const ambient = document.createElement('canvas');
+  ambient.className = 'tile-ambient';
+  ambient.width = 32; ambient.height = 18;
+  ambient.hidden = true;
+  body.append(ambient, video, overlay, pipNote);
+  // Luz ambiente (Aparência): nas barras pretas, as cores do vídeo, desfocadas. Um quadro de 32 x 18 duas vezes
+  // por segundo, e só quando o vídeo não enche o quadro; o desfoque fica por conta do CSS (.tile-ambient).
+  const ambientCtx = ambient.getContext('2d', { alpha: false });
+  const ambientTimer = setInterval(() => {
+    if (!el.isConnected) return clearInterval(ambientTimer);
+    const vw = video.videoWidth, vh = video.videoHeight, bw = body.clientWidth, bh = body.clientHeight;
+    const bars = vw && vh && bw && bh && Math.abs((vw / vh) / (bw / bh) - 1) > 0.02;
+    const on = appPreferences.appearance.ambient && bars && !video.paused && pipNote.hidden && !document.hidden;
+    if (!on) { ambient.hidden = !(appPreferences.appearance.ambient && bars && pipNote.hidden); return; }
+    try { ambientCtx.drawImage(video, 0, 0, ambient.width, ambient.height); ambient.hidden = false; } catch { ambient.hidden = true; }
+  }, 500);
   el.append(label, body);
   // Roda do mouse em cima da tela: som dessa transmissão (a sua própria não tem som)
   el.addEventListener('wheel', (e) => {

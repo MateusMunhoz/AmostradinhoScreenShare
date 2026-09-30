@@ -72,8 +72,10 @@ const AppPreferences = (() => {
     { id: 'courier', group: 'Monoespaçadas', label: 'Courier New', family: '"Courier New"' },
     { id: 'lucidaConsole', group: 'Monoespaçadas', label: 'Lucida Console', family: '"Lucida Console"' },
     // Vêm com o app (assets/fontes, licença OFL; @font-face em styles.css): funcionam em qualquer PC
-    { id: 'chakra', group: 'Sci-fi · incluídas no app', label: 'Chakra Petch · painel de controle', family: '"Chakra Petch"', files: ['assets/fontes/chakra-petch-400.woff2', 'assets/fontes/chakra-petch-600.woff2', 'assets/fontes/chakra-petch-700.woff2'] },
-    { id: 'shareTech', group: 'Sci-fi · incluídas no app', label: 'Share Tech Mono · terminal', family: '"Share Tech Mono"', files: ['assets/fontes/share-tech-mono-400.woff2'] },
+    { id: 'chakra', group: 'Incluídas no app', label: 'Chakra Petch · painel de controle', family: '"Chakra Petch"', files: ['assets/fontes/chakra-petch-400.woff2', 'assets/fontes/chakra-petch-600.woff2', 'assets/fontes/chakra-petch-700.woff2'] },
+    { id: 'shareTech', group: 'Incluídas no app', label: 'Share Tech Mono · terminal', family: '"Share Tech Mono"', files: ['assets/fontes/share-tech-mono-400.woff2'] },
+    // A máquina de escrever de Serial Experiments Lain (Dixie's Delights, 1996; versão web de AKIRA-MIYAKE, MIT)
+    { id: 'loveLetter', group: 'Incluídas no app', label: 'Love Letter Typewriter · Lain', family: '"Love Letter Typewriter", "Courier New"', files: ['assets/fontes/love-letter-typewriter.woff2'] },
     { id: 'japanese', group: 'Outros idiomas', label: '日本語 · Yu Gothic UI', family: '"Yu Gothic UI", "Meiryo UI", Meiryo', sample: 'こんにちは、配信中です' },
     { id: 'chineseSimplified', group: 'Outros idiomas', label: '简体中文 · Microsoft YaHei UI', family: '"Microsoft YaHei UI", "Microsoft YaHei"', sample: '你好，正在直播' },
     { id: 'chineseTraditional', group: 'Outros idiomas', label: '繁體中文 · Microsoft JhengHei UI', family: '"Microsoft JhengHei UI", "Microsoft JhengHei"', sample: '你好，正在直播' },
@@ -109,7 +111,7 @@ const AppPreferences = (() => {
     return { body, display, console: font?.chat && family ? body : 'Tahoma, Verdana, sans-serif' };
   }
   const defaults = { colors: { main: '#22271E', secondary: '#2D3327', detail1: '#D6C45C', detail2: '#A6D089', text: '', live: '', speaking: '', warn: '', line: '' },
-    appearance: { glass: 'opaque', level: glassLevel.clear, border: 'solid', wallpaper: '', blur: 0, dim: 40, decor: '' },
+    appearance: { glass: 'opaque', level: glassLevel.clear, border: 'solid', wallpaper: '', blur: 0, dim: 40, decor: '', ambient: true },
     font: { family: 'system', custom: '', chat: false }, nameFont: '',
     sounds: { join: 'notification035', leave: 'whoosh', chat: 'wood', voiceJoin: 'suaveEntrou', voiceLeave: 'suaveSaiu',
       mute: 'suaveMutou', unmute: 'suaveDesmutou', deafen: 'suaveFoneDesligou', undeafen: 'suaveFoneLigou',
@@ -127,10 +129,10 @@ const AppPreferences = (() => {
     { id: 'contraste', label: 'Alto contraste', colors: { main: '#000000', secondary: '#0D0D0D', detail1: '#FFD400', detail2: '#00FF6E', text: '#FFFFFF', line: '#FFFFFF' }, appearance: { glass: 'opaque', border: 'solid' } },
     // E.V.A theme by Asock: o EVA-01. Preto-violeta de fundo, roxo da armadura nos painéis, verde fluorescente
     // no destaque (você/ao vivo), lilás para quem fala e o laranja do peito para cuidado. Perfil completo:
-    // fundo, letreiro lateral e fonte. A versão Opaco tem painéis sólidos, e a imagem aparece só em volta.
-    { id: 'eva', label: 'E.V.A · by Asock', colors: evaColors, font: { family: 'chakra' },
+    // fundo, letreiro lateral e fonte. v1 é a de vidro; na v2 (opaca) os painéis são sólidos e a imagem aparece em volta.
+    { id: 'eva', label: 'E.V.A by Asock v1', colors: evaColors, font: { family: 'chakra' },
       appearance: { glass: 'clear', level: 50, border: 'clear', wallpaper: 'eva', blur: 0, dim: 55, decor: 'eva' } },
-    { id: 'evaOpaco', label: 'E.V.A · Opaco', colors: evaColors, font: { family: 'chakra' },
+    { id: 'evaOpaco', label: 'E.V.A by Asock v2', colors: evaColors, font: { family: 'chakra' },
       appearance: { glass: 'opaque', border: 'solid', wallpaper: 'eva', blur: 0, dim: 40, decor: 'eva' } },
   ];
   // Preferências com o tema aplicado (o resto, como fontes e sons, fica como está)
@@ -141,18 +143,20 @@ const AppPreferences = (() => {
     // Tema sem fundo próprio: a imagem da pessoa (custom) fica, com o desfoque dela; a de outro tema sai
     const before = normalize(prefs).appearance;
     const keep = !t.appearance.wallpaper && before.wallpaper === 'custom' ? { wallpaper: 'custom', blur: before.blur, dim: before.dim } : {};
-    const appearance = { ...defaults.appearance, level: glassLevel[t.appearance.glass] ?? defaults.appearance.level, ...keep, ...t.appearance };
+    const appearance = { ...defaults.appearance, level: glassLevel[t.appearance.glass] ?? defaults.appearance.level, ambient: before.ambient, ...keep, ...t.appearance };
     const font = t.font ? { ...normalize(prefs).font, ...t.font } : prefs?.font;
     return normalize({ ...prefs, colors, appearance, font });
   }
   // Qual tema pronto bate com as preferências atuais ('' = personalizado). Desfoque, escurecer e fonte não contam.
+  // Material, bordas e imagem de fundo ficam livres: trocar Opaco, Transparente, Líquido ou Normal não tira o tema;
+  // se bater exato com um tema (v1 de vidro, v2 opaca), é ele, senão o primeiro com as mesmas cores e letreiro.
   function currentTheme(prefs) {
     const p = normalize(prefs);
-    return themes.find(t => {
+    const same = keys => t => {
       const n = applyTheme(p, t.id);
-      return JSON.stringify(n.colors) === JSON.stringify(p.colors)
-        && ['glass', 'border', 'wallpaper', 'decor'].every(k => n.appearance[k] === p.appearance[k]);
-    })?.id || '';
+      return JSON.stringify(n.colors) === JSON.stringify(p.colors) && keys.every(k => n.appearance[k] === p.appearance[k]);
+    };
+    return (themes.find(same(['glass', 'border', 'wallpaper', 'decor'])) || themes.find(same(['decor'])))?.id || '';
   }
   function hex(value) {
     if (typeof value !== 'string') return null;
@@ -174,6 +178,7 @@ const AppPreferences = (() => {
       if (typeof v === 'number' && Number.isFinite(v)) result.appearance[k] = Math.max(0, Math.min(wallpaperLimits[k], Math.round(v)));
     }
     if (decors.includes(raw?.appearance?.decor)) result.appearance.decor = raw.appearance.decor;
+    if (typeof raw?.appearance?.ambient === 'boolean') result.appearance.ambient = raw.appearance.ambient;
     const custom = fontName(raw?.font?.custom);
     if (raw?.font?.family === 'custom' ? !!custom : fonts.some(f => f.id === raw?.font?.family)) result.font.family = raw.font.family;
     result.font.custom = custom;

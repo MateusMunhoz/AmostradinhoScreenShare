@@ -82,7 +82,9 @@ test('Sons Suave: gerados na hora, sem arquivo, padrão da voz e do microfone', 
 });
 
 test('Aparência: modos de vidro, transparência e dados inválidos', () => {
-  assert.deepEqual(P.normalize(null).appearance, { glass: 'opaque', level: 70, border: 'solid', wallpaper: '', blur: 0, dim: 40, decor: '' });
+  assert.deepEqual(P.normalize(null).appearance, { glass: 'opaque', level: 70, border: 'solid', wallpaper: '', blur: 0, dim: 40, decor: '', ambient: true });
+  assert.equal(P.normalize({ appearance: { ambient: false } }).appearance.ambient, false);
+  assert.equal(P.normalize({ appearance: { ambient: 'sim' } }).appearance.ambient, true);
   assert.equal(P.glass(P.defaults.colors, { glass: 'opaque' }), null);
   assert.equal(P.normalize({ appearance: { glass: 'metal', level: 999 } }).appearance.glass, 'opaque');
   assert.equal(P.normalize({ appearance: { glass: 'liquid', level: 999 } }).appearance.level, 100);
@@ -188,4 +190,21 @@ test('Fontes incluídas no app: arquivos locais que existem', () => {
   assert.ok(bundled.some(f => f.id === 'chakra') && bundled.some(f => f.id === 'shareTech'));
   for (const f of bundled) for (const file of f.files) assert.ok(fs.existsSync(path.join(__dirname, '..', file)), file);
   assert.ok(fs.existsSync(path.join(__dirname, '..', 'assets/tema/eva-01.jpg')));
+});
+test('Temas E.V.A v1 e v2: material e bordas livres sem perder o tema', () => {
+  assert.equal(P.themes.find(t => t.id === 'eva').label, 'E.V.A by Asock v1');
+  assert.equal(P.themes.find(t => t.id === 'evaOpaco').label, 'E.V.A by Asock v2');
+  const v1 = P.applyTheme(null, 'eva');
+  for (const glass of P.glassModes) for (const border of P.borderModes) {
+    const p = { ...v1, appearance: { ...v1.appearance, glass, border } };
+    assert.match(P.currentTheme(p), /^eva/, `${glass}/${border}`);
+    assert.equal(P.normalize(p).appearance.decor, 'eva', 'o letreiro vem com o tema');
+  }
+  assert.equal(P.currentTheme({ ...v1, appearance: { ...v1.appearance, glass: 'liquid' } }), 'eva');
+  assert.equal(P.currentTheme({ ...v1, appearance: { ...v1.appearance, glass: 'opaque', border: 'solid' } }), 'evaOpaco');
+  // Outro tema continua exato: mudar o material do Neon ainda é Neon; cor trocada vira personalizado
+  const neon = P.applyTheme(null, 'neon');
+  assert.equal(P.currentTheme({ ...neon, appearance: { ...neon.appearance, glass: 'opaque' } }), 'neon');
+  assert.equal(P.currentTheme({ ...v1, colors: { ...v1.colors, detail1: '#123456' } }), '');
+  assert.ok(P.fonts.some(f => f.id === 'loveLetter' && f.files));
 });

@@ -1,0 +1,8 @@
+Love Letter Typewriter (love-letter-typewriter.woff2)
+
+Fonte original: "Love Letter Typewriter", Dixie's Delights, 1996. Distribuída como shareware / uso pessoal.
+Ficou conhecida por aparecer em Serial Experiments Lain (arquivos publicados por Chiaki J. Konaka).
+Este arquivo é a versão para web de AKIRA-MIYAKE (https://github.com/AKIRA-MIYAKE/LoveLetterTypewriterTTL),
+cujo repositório está sob a licença MIT (LICENSE-love-letter-typewriter.txt). A MIT cobre as correções dele;
+o desenho da fonte continua sendo da Dixie's Delights. Para distribuir o app além do uso pessoal,
+confira a licença da fonte original.

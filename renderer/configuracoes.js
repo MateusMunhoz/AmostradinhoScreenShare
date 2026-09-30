@@ -33,12 +33,14 @@ function applyTitleBar() {
 // Ícone da janela na barra de tarefas: o mesmo desenho da barra de título, na cor Detalhe 1 do tema
 let appIconColor = '';
 function applyAppIcon() {
-  const color = AppPreferences.palette(appPreferences.colors)['--accent'];
+  // No tema E.V.A (letreiro ligado), o rosto do EVA-01
+  const eva = appPreferences.appearance.decor === 'eva';
+  const color = eva ? 'eva' : AppPreferences.palette(appPreferences.colors)['--accent'];
   if (color === appIconColor || !window.api?.setWindowIcon) return;
   appIconColor = color;
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = 256;
-  drawAppIcon(canvas.getContext('2d'), 256, color);
+  if (eva) drawEvaIcon(canvas.getContext('2d'), 256); else drawAppIcon(canvas.getContext('2d'), 256, color);
   window.api.setWindowIcon(canvas.toDataURL('image/png')).catch(() => {});
 }
 // Imagem de fundo: a incluída no app ou a da pessoa (guardada à parte, em wallpaperKey). O desfoque é um filtro
@@ -254,7 +256,7 @@ function renderWallpaper(status) {
   $('wallpaperBlurValue').textContent = a.blur + ' px';
   $('wallpaperDim').value = a.dim;
   $('wallpaperDimValue').textContent = a.dim + '%';
-  $('themeDecorOn').checked = !!a.decor;
+  $('ambientLight').checked = a.ambient;
   $('wallpaperHint').textContent = status ?? (on ? 'Desfoque para a imagem ficar mais suave atrás dos painéis; escureça para o texto ficar mais fácil de ler.' : '');
 }
 // A imagem da pessoa é reduzida (no máximo 1920 px de largura, JPEG) para caber no armazenamento do app
@@ -304,9 +306,9 @@ function setupWallpaper() {
   }; };
   slider('wallpaperBlur', 'blur', ' px');
   slider('wallpaperDim', 'dim', '%');
-  $('themeDecorOn').onchange = () => {
-    appPreferences.appearance = { ...appPreferences.appearance, decor: $('themeDecorOn').checked ? 'eva' : '' };
-    saveAppPreferences(); renderThemes();
+  $('ambientLight').onchange = () => {
+    appPreferences.appearance = { ...appPreferences.appearance, ambient: $('ambientLight').checked };
+    saveAppPreferences();
   };
 }
 function renderAppearance() {
