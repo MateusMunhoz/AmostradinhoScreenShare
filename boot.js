@@ -13,6 +13,10 @@ const PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
 MCowBQYDK2VwAyEAvitBDfmcU8rG/PCKWq8QG03uT1nSoPT/MQ9BldYkbgA=
 -----END PUBLIC KEY-----`;
 
+// `npm run dev:teste`: outra pasta de dados, para abrir o código desta pasta junto com o app instalado, sem
+// fechar ele (a trava de uma janela só é por pasta de dados). Só fora do .exe.
+if (!app.isPackaged && process.argv.includes('--perfil-teste')) app.setPath('userData', path.join(app.getPath('appData'), 'tela-p2p-teste'));
+
 const BUNDLED = {
   version: app.getVersion(),
   dir: __dirname,
