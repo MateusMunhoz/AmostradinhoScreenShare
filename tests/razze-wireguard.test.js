@@ -371,6 +371,7 @@ test('mapa enumera todos os túneis locais sem servidor e não retorna chaves pr
     app: { isPackaged: false, getPath: () => profile, getAppPath: () => profile, getName: () => 'Tela P2P' },
     safeStorage: { isEncryptionAvailable: () => true },
     binary: path.join(profile, 'wireguard.exe'), platform: 'win32',
+    networkInterfaces: () => ({}), // sem as placas de verdade: um túnel Razze ligado neste PC entraria na conta
     exec: async (_file, args) => {
       if (args[1].includes('b'.repeat(12))) return 'ESTADO : 1 STOPPED';
       if (args[1].includes('c'.repeat(12))) throw new Error('Acesso negado');
