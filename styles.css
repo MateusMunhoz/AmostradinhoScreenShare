@@ -1026,7 +1026,7 @@ body:not(.workspace-in-room) #workspaceNav { background: transparent; border-col
    faltar espaço (fitNav): a engrenagem e a setinha nunca ficam para fora da caixa */
 .workspace-in-room:not(.has-workspace-pane) #workspaceNav { width: auto; min-width: var(--workspace-width); box-sizing: border-box; }
 #workspaceNav > * { flex-shrink: 0; }
-#workspaceNav.nav-tight .room-tab > span:not(.nav-icon):not(.unread) { display: none; }
+#workspaceNav.nav-tight :is(.room-tab, #navFriends) > span:not(.nav-icon):not(.unread) { display: none; }
 #workspaceNav.nav-tight .room-tab { padding: 0 9px; }
 .workspace-in-room.nav-collapsed #room { padding-top: 16px; padding-right: 62px; }
 .nav-expand { position: fixed; top: 16px; right: 16px; z-index: 12; width: 38px; height: 48px; box-sizing: border-box; display: grid; place-items: center; padding: 4px; cursor: pointer;
