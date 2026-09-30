@@ -101,6 +101,8 @@ function renderGeneralSettings() {
   $('notificationVolumeValue').textContent = `${appPreferences.sounds.volume}%`;
 }
 function openGeneralSettings() {
+  if (!$('connectionMapDialog').hidden) closeConnectionMap();
+  if (!$('friendsDialog').hidden) closeFriendsDialog();
   if (!$('profilePane').hidden) closeProfilePopup();
   if (!$('networkDialog').hidden) closeNetworkDialog();
   settingsReturnFocus = document.activeElement;

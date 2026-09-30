@@ -259,9 +259,16 @@ function createApiServer(options = {}) {
       }
       if (method === 'POST' && pathname === '/v1/friends/requests') {
         const body = await readBody(req);
-        const email = assertText(body.email, 'E-mail', 3, 254).toLowerCase();
-        const target = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
-        if (!target) throw new ApiError(404, 'user_not_found', 'Não existe uma conta com este e-mail.');
+        const nickname = String(body.nickname || '').trim();
+        const targetName = nickname
+          ? assertText(nickname, 'Nickname', 1, 60)
+          : assertText(body.email, 'E-mail', 3, 254).toLowerCase();
+        const matches = nickname
+          ? db.prepare('SELECT id FROM users WHERE display_name = ? COLLATE NOCASE AND status = \'active\'').all(targetName)
+          : [db.prepare('SELECT id FROM users WHERE email = ? AND status = \'active\'').get(targetName)].filter(Boolean);
+        if (!matches.length) throw new ApiError(404, 'user_not_found', `Não existe uma conta ativa com o nickname “${targetName}”.`);
+        if (matches.length > 1) throw new ApiError(409, 'nickname_ambiguous', 'Esse nickname pertence a mais de uma conta. Peça à pessoa para escolher um nickname único.');
+        const target = matches[0];
         if (target.id === userId) throw new ApiError(400, 'invalid_friend', 'Você não pode adicionar a própria conta.');
         if (friendshipExists(userId, target.id)) return send(res, 200, { status: 'accepted' });
         const reverse = db.prepare('SELECT id, status FROM friend_requests WHERE sender_id = ? AND receiver_id = ?').get(target.id, userId);
@@ -281,6 +288,12 @@ function createApiServer(options = {}) {
         const result = db.prepare("UPDATE friend_requests SET status = 'accepted' WHERE id = ? AND receiver_id = ? AND status = 'pending'").run(match[1], userId);
         if (!result.changes) throw new ApiError(404, 'request_not_found', 'Pedido de amizade não encontrado.');
         return send(res, 200, { status: 'accepted' });
+      }
+      match = /^\/v1\/friends\/requests\/([a-f0-9]{32})$/.exec(pathname);
+      if (method === 'DELETE' && match) {
+        const result = db.prepare("DELETE FROM friend_requests WHERE id = ? AND sender_id = ? AND status = 'pending'").run(match[1], userId);
+        if (!result.changes) throw new ApiError(404, 'request_not_found', 'Pedido enviado não encontrado ou já respondido.');
+        return send(res, 200, { ok: true });
       }
       match = /^\/v1\/friends\/([a-f0-9]{32})$/.exec(pathname);
       if (method === 'DELETE' && match) {

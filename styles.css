@@ -869,6 +869,7 @@ fieldset.group > legend { margin-bottom: 10px; }
 .razze-manage { display: grid; gap: 8px; padding-top: 8px; border-top: 1px dashed var(--line); }
 .razze-edit { display: grid; gap: 8px; }
 .razze-friends { display: grid; gap: 6px; }
+.razze-row-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .razze-friends:empty { display: none; }
 .razze-friends .razze-row > span, .razze-members .razze-row > span { font-size: 13px; }
 .razze-network { display: grid; gap: 8px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); }
@@ -1256,3 +1257,28 @@ body { height: calc(100% - var(--titlebar)); margin-top: var(--titlebar); contai
 .theme-swatches { display: grid; grid-template-columns: 2fr 2fr 1fr 1fr; height: 28px; border-radius: 6px; overflow: hidden; border: 1px solid var(--line); }
 html[data-glass=liquid] .theme-card { border-radius: 16px; }
 html[data-glass=liquid] .theme-swatches { border-radius: 10px; }
+
+/* Mapa de conexões: as cores de estado são independentes do tema escolhido. */
+.connection-map-dialog { width: min(850px, 100%); }
+.connection-legend { display: flex; flex-wrap: wrap; gap: 18px; font-size: 13px; }
+.connection-legend .online { color: #15803d; }
+.connection-legend .offline { color: #dc2626; }
+.connection-legend .unknown { color: var(--surface-muted); }
+.connection-graph-scroll { overflow: auto; max-height: 52vh; border: 1px solid var(--line); border-radius: 14px; background: var(--panel-2); }
+#connectionGraph { width: 100%; min-width: 580px; display: block; }
+.connection-edge { fill: none; stroke-width: 3; }
+.connection-edge.online { stroke: #22c55e; }
+.connection-edge.offline { stroke: #ef4444; stroke-dasharray: 8 6; }
+.connection-edge.unknown { stroke: #94a3b8; stroke-dasharray: 3 6; }
+.connection-node rect { fill: var(--panel); stroke: var(--line); stroke-width: 2; }
+.connection-node.online rect, .connection-node.online circle { stroke: #22c55e; }
+.connection-node.offline rect, .connection-node.offline circle { stroke: #ef4444; }
+.connection-node.online circle { fill: #22c55e; }
+.connection-node.offline circle { fill: #ef4444; }
+.connection-node.unknown circle { fill: #94a3b8; }
+.connection-node.local circle { fill: var(--accent); }
+.connection-name { fill: var(--surface-text); font-size: 14px; font-weight: 600; }
+.connection-detail { fill: var(--surface-muted); font-size: 12px; }
+.connection-map-details { margin: 0; padding-left: 20px; font-size: 13px; color: var(--surface-muted); }
+#connectionMapStatus { flex: 1; }
+.nav-tight #navFriends > .nav-icon + span { display: none; }

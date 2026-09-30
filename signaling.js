@@ -10,7 +10,8 @@ let room = null;
 let roomChanged = () => {};
 
 const LOCAL = ['127.0.0.1', '::1', '::ffff:127.0.0.1'];
-const MAX_MEMBERS = 12;
+// Limite total de pessoas na sala, incluindo quem a criou.
+const MAX_MEMBERS = 50;
 const CHAT_KEEP = 100;                        // mensagens que quem entra depois recebe
 const CHAT_MAX_FILE = 200 * 1024 * 1024;      // o arquivo vai de quem mandou direto para quem baixar
 
@@ -271,4 +272,4 @@ function stopServer({ endRoom = false } = {}) {
   }
 }
 
-module.exports = { startServer, stopServer, roomInfo, roomSize, onRoomChange, isRazzeAddress };
+module.exports = { startServer, stopServer, roomInfo, roomSize, onRoomChange, isRazzeAddress, MAX_MEMBERS };
