@@ -349,6 +349,7 @@ async function startSharing() {
   closeShareDialog();
   renderShareBox();
   renderMembers();
+  syncCaptureExclude(); // o Mapa de conexões já estava aberto
   setBusy(btn, false, 'Iniciar transmissão');
 }
 
@@ -415,6 +416,7 @@ function stopSharing(reason) {
   updateStage();
   renderShareBox();
   renderMembers();
+  syncCaptureExclude();
   if (reason) toast(reason);
 }
 

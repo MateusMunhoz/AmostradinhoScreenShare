@@ -248,13 +248,17 @@ async function selfTrack(link) {
 // (espelho infinito: o mouse se multiplica e tudo se repete, para você e para quem assiste). Enquanto isso,
 // a janela do app e as flutuantes saem da captura (o Windows mostra o que está atrás delas). Para você, nada
 // muda na tela. Transmitindo uma janela, não precisa.
+// O Mapa de conexões (endereços e redes) também: aberto durante a transmissão, o app sai da captura.
 let captureExcluded = false;
 function syncCaptureExclude() {
-  const on = !!state.myId && state.in.get(state.myId)?.self === true && state.sharing && /^screen:/.test(state.sharingSource || '');
+  const mirror = !!state.myId && state.in.get(state.myId)?.self === true && state.sharing && /^screen:/.test(state.sharingSource || '');
+  const secret = state.sharing && !$('connectionMapDialog').hidden;
+  const on = mirror || secret;
   if (on === captureExcluded) return;
   captureExcluded = on;
   window.api.captureExclude(on).catch(() => {});
-  if (on) toast('Enquanto você se vê, a janela do app fica fora da sua transmissão (senão ela vira um espelho infinito).');
+  if (on) toast(mirror ? 'Enquanto você se vê, a janela do app fica fora da sua transmissão (senão ela vira um espelho infinito).'
+    : 'O Mapa de conexões não aparece na sua transmissão: enquanto ele está aberto, o app fica fora dela.');
 }
 
 async function watchSelf() {

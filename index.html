@@ -34,6 +34,12 @@
         <button id="profilePhotoPick" class="btn small" type="button">Escolher foto</button>
         <button id="profilePhotoRemove" class="btn small ghost" type="button" hidden>Remover foto</button>
         <input id="profilePhotoFile" type="file" accept="image/*" hidden>
+        <div id="profilePhotoFit" class="photo-fit" role="radiogroup" aria-label="Como a foto aparece na bolinha" hidden>
+          <span>Na bolinha:</span>
+          <button type="button" role="radio" data-fit="inteira" title="A foto toda, sem zoom">Inteira</button>
+          <button type="button" role="radio" data-fit="preencher" title="Corta o meio da foto para preencher a bolinha">Preencher</button>
+        </div>
+        <p id="profilePhotoOld" class="hint photo-old" hidden>Esta foto é de uma versão antiga: os outros só veem ela cortada. Escolha a foto de novo para eles verem ela inteira.</p>
       </div>
       <label class="field">Nome de exibição<input id="profileName" maxlength="32" autocomplete="off"></label>
       <p id="profileHint" class="hint"></p>

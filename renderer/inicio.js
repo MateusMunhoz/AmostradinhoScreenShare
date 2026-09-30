@@ -68,6 +68,7 @@ $('profilePhotoFile').onchange = async () => {
   try { await setMyPhoto(file); } catch { toast('Não deu para abrir essa imagem. Escolha uma foto (JPG, PNG, WebP...).', 'error'); }
 };
 $('profilePhotoRemove').onclick = removeMyPhoto;
+for (const b of $('profilePhotoFit').querySelectorAll('[data-fit]')) b.onclick = () => setPhotoFit(b.dataset.fit);
 renderMyPhoto();
 $('micSelect').onchange = () => {
   const id = $('micSelect').value;

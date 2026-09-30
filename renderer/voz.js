@@ -364,8 +364,9 @@ function renderPersonCard() {
   av.dataset.person = id;
   av.classList.add('pc-photo');
   av.classList.toggle('speaking', speaking.has(id));
-  // Com foto: ela aparece inteira no topo (sem o corte redondo); clicar abre em tamanho grande
-  if (photoHashOf(id)) {
+  // Com a foto inteira: ela aparece no topo, sem o corte; clicar abre em tamanho grande. Quem só tem a bolinha
+  // (foto de uma versão antiga) fica com ela no tamanho dela, sem esticar.
+  if (photoHashOf(id) && state.members.get(id)?.avatarFull) {
     const photoBtn = document.createElement('button');
     photoBtn.type = 'button';
     photoBtn.className = 'pc-photo-btn';

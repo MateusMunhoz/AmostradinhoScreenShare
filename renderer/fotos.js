@@ -134,17 +134,45 @@ function onAvatarState(id, hash, full) {
   renderVoiceAvatars();
 }
 
+// Como a foto entra na bolinha: 'inteira' (a foto toda, as sobras com ela mesma desfocada) ou 'preencher'
+// (corta o quadrado do meio, com zoom)
+let fotoFit = load('fotoEncaixe', 'inteira') === 'preencher' ? 'preencher' : 'inteira';
+
 // Minha foto: qualquer imagem vira um quadrado de 128x128 em WebP (sem metadados); vale na hora, na sala também
 async function setMyPhoto(file) {
   const bmp = await createImageBitmap(file); // a rotação da foto de celular já vem aplicada
   fotos.mineFull = await fullPhoto(bmp);
   save('fotoPerfilInteira', JSON.stringify(fotos.mineFull));
-  const side = Math.min(bmp.width, bmp.height);
+  await setSmallPhoto(bmp);
+  bmp.close();
+}
+// Trocou entre "Inteira" e "Preencher": refaz a bolinha a partir da foto inteira guardada
+async function setPhotoFit(fit) {
+  fotoFit = fit === 'preencher' ? 'preencher' : 'inteira';
+  save('fotoEncaixe', fotoFit);
+  if (!fotos.mineFull) return renderMyPhoto();
+  const bmp = await createImageBitmap(new Blob([fromBase64(fotos.mineFull.data)], { type: 'image/webp' }));
+  await setSmallPhoto(bmp);
+  bmp.close();
+}
+async function setSmallPhoto(bmp) {
   const c = new OffscreenCanvas(FOTO_SIZE, FOTO_SIZE);
   const g = c.getContext('2d');
   g.imageSmoothingQuality = 'high';
-  g.drawImage(bmp, (bmp.width - side) / 2, (bmp.height - side) / 2, side, side, 0, 0, FOTO_SIZE, FOTO_SIZE);
-  bmp.close();
+  const ratio = bmp.width / bmp.height;
+  if (fotoFit === 'preencher' || Math.abs(ratio - 1) < 0.04) {
+    const side = Math.min(bmp.width, bmp.height);
+    g.drawImage(bmp, (bmp.width - side) / 2, (bmp.height - side) / 2, side, side, 0, 0, FOTO_SIZE, FOTO_SIZE);
+  } else {
+    // Fundo: a própria foto cobrindo o quadrado, desfocada e mais escura; por cima, ela inteira
+    const cover = FOTO_SIZE * 1.3 / Math.min(ratio, 1 / ratio);
+    const cw = ratio >= 1 ? cover : cover * ratio, ch = ratio >= 1 ? cover / ratio : cover;
+    g.filter = 'blur(8px) brightness(0.65)';
+    g.drawImage(bmp, (FOTO_SIZE - cw) / 2, (FOTO_SIZE - ch) / 2, cw, ch);
+    g.filter = 'none';
+    const w = ratio >= 1 ? FOTO_SIZE : FOTO_SIZE * ratio, h = ratio >= 1 ? FOTO_SIZE / ratio : FOTO_SIZE;
+    g.drawImage(bmp, (FOTO_SIZE - w) / 2, (FOTO_SIZE - h) / 2, w, h);
+  }
   let blob;
   for (const quality of [0.85, 0.7, 0.5]) {
     blob = await c.convertToBlob({ type: 'image/webp', quality });
@@ -203,5 +231,9 @@ function renderMyPhoto() {
   repaintAvatars('me');
   $('profilePhotoRemove').hidden = !fotos.mine;
   $('profilePhotoPick').textContent = fotos.mine ? 'Trocar foto' : 'Escolher foto';
+  $('profilePhotoFit').hidden = !fotos.mine || !fotos.mineFull;
+  for (const b of $('profilePhotoFit').querySelectorAll('[data-fit]')) b.setAttribute('aria-checked', String(b.dataset.fit === fotoFit));
+  // Foto escolhida antes da 1.11.19: só existe o recorte, e é ele que os outros veem no seu perfil
+  $('profilePhotoOld').hidden = !fotos.mine || !!fotos.mineFull;
   if (state.myId) renderVoiceAvatars();
 }

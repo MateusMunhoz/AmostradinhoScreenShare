@@ -46,6 +46,7 @@ function openConnectionMap() {
   $('connectionMapDialog').hidden = false;
   syncWorkspace();
   setUtilityBackground(true);
+  syncCaptureExclude(); // transmitindo: o mapa (endereços e redes) não vai para quem assiste
   $('closeConnectionMap').focus();
   void refreshConnectionMap();
   clearInterval(connectionMapTimer);
@@ -55,6 +56,7 @@ function closeConnectionMap() {
   clearInterval(connectionMapTimer);
   connectionMapTimer = null;
   $('connectionMapDialog').hidden = true;
+  syncCaptureExclude();
   setUtilityBackground(false);
   syncWorkspace();
   (connectionMapFocus || $('navConnectionMap')).focus();
