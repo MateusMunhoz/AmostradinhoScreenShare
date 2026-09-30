@@ -179,6 +179,14 @@ $('closeShare').onclick = closeShareDialog;
 
 // Tela inicial: Radmin VPN, última sala e "Entrar numa sala" aberto ali mesmo
 async function renderRadmin() {
+  renderHomeForNetwork();
+  if (selectedNetworkProvider() === 'internet') {
+    const url = internetServerUrl();
+    $('radminDot').className = 'dot ' + (url ? 'ok' : 'warn');
+    $('radminTitle').textContent = url ? 'Modo Internet' : 'Modo Internet sem servidor';
+    $('radminDetail').textContent = url ? url : 'Coloque o endereço do servidor na aba Rede (ícone de servidor, no topo)';
+    return;
+  }
   if (selectedNetworkProvider() === 'razze') {
     let status;
     const prefs = networkPreferences();
@@ -337,7 +345,7 @@ $('chatList').addEventListener('scroll', () => {
 }, { passive: true });
 document.addEventListener('visibilitychange', () => { if (!document.hidden && chat.open && chatAtBottom()) markRead(); });
 $('dockAddr').onclick = async () => {
-  try { await copiar(state.roomAddr); toast(`Endereço copiado: ${state.roomAddr}. Mande para quem vai entrar.`); } catch { toast('Não foi possível copiar.', 'error'); }
+  try { await copiar(state.roomAddr); toast(state.cloud ? `Código copiado: ${state.roomAddr}. Mande junto com a senha para quem vai entrar.` : `Endereço copiado: ${state.roomAddr}. Mande para quem vai entrar.`); } catch { toast('Não foi possível copiar.', 'error'); }
 };
 setIcon($('pipChipClose'), 'close', 'Fechar as janelas flutuantes');
 renderOverlayButton();

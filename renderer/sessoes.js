@@ -34,6 +34,7 @@ function lembrarSessoes(addrs) {
 
 // Chamado ao entrar numa sala: o endereço dela e o de quem está nela (se um deles abrir uma sala depois)
 function lembrarDaSala() {
+  if (state.cloud) return; // modo Internet: a sala está no servidor, não em endereços da rede
   const addrs = [];
   if (state.host && state.host !== '127.0.0.1') addrs.push(`${state.host}:${state.port}`);
   for (const m of state.members.values()) for (const ip of m.addrs || []) if (ip.startsWith('26.')) addrs.push(`${ip}:${state.port}`);
@@ -46,11 +47,12 @@ function setSessionWatch(on) {
   if (on === sessoes.observando && provider === sessoes.provider) return;
   sessoes.provider = provider;
   sessoes.observando = on;
-  window.api.sessoesObservar(on && provider !== 'razze').catch(() => {});
+  const lan = provider === 'radmin'; // Razze e Internet não anunciam sessões na rede local
+  window.api.sessoesObservar(on && lan).catch(() => {});
   clearInterval(sessoes.sondaTimer);
   clearTimeout(sessoes.procuraTimer);
   sessoes.procurando = false;
-  if (on && provider !== 'razze') {
+  if (on && lan) {
     sessoes.procurando = true;
     sessoes.procuraTimer = setTimeout(() => { sessoes.procurando = false; renderSessoes(); }, 3000);
     sondar();

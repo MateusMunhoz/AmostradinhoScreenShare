@@ -7,6 +7,7 @@
 async function myAddrs() {
   try {
     const provider = selectedNetworkProvider();
+    if (provider === 'internet') return []; // pela internet ninguém precisa (nem deve ver) os IPs da sua casa
     const ips = await window.api.getIps(provider);
     if (provider === 'razze') return ips.filter((i) => i.razze).map((i) => i.address);
     return ips.map((i) => i.address);
@@ -52,10 +53,13 @@ async function connectRoom(url, hello, timeoutMs = 8000) {
     ws.onclose = (e) => {
       clearTimeout(timer);
       if (!joined) {
-        reject(new Error(errMsg || 'Não foi possível conectar. Confira o endereço e se a Radmin VPN está ligada nos dois PCs.'));
+        reject(new Error(errMsg || (state.cloud || selectedNetworkProvider() === 'internet'
+          ? 'Não foi possível falar com o servidor. Confira o endereço na aba Rede e a sua internet.'
+          : 'Não foi possível conectar. Confira o endereço e se a Radmin VPN está ligada nos dois PCs.')));
       } else if (state.ws === ws) {
-        // Sem quem roda o servidor, a sala passa para quem está nela há mais tempo
-        if (e.reason !== 'room-closed' && state.handoff) migrateRoom(e.reason);
+        // Sem quem roda o servidor, a sala passa para quem está nela há mais tempo.
+        // No modo Internet o servidor continua de pé: só a minha conexão caiu, então volto para ele.
+        if (e.reason !== 'room-closed' && (state.handoff || state.cloud)) migrateRoom(e.reason);
         else leaveRoom(e.reason === 'room-closed' ? 'O host encerrou a sala.' : 'A conexão com a sala caiu.', 'error');
       }
     };
@@ -80,6 +84,15 @@ async function createRoom() {
   setBusy(btn, true, 'Criando…');
   try {
     await requireSelectedNetwork();
+    if (selectedNetworkProvider() === 'internet') {
+      if (password.length < 4) throw new Error('No modo Internet a sala precisa de senha (mínimo 4 caracteres).');
+      const url = internetServerUrl();
+      const welcome = await connectRoom(url, { name: getName(), password, create: true });
+      state.password = password;
+      try { enterRoom(welcome, false, url, 0, { url, code: welcome.sala }); }
+      catch (err) { dropHalfJoin(); throw err; }
+      return;
+    }
     // A sessão aparece para quem está na rede, menos se você desmarcou (e continua assim numa troca de host)
     const res = await window.api.startServer(port, password, { sessao: { oculta: !$('roomVisible').checked } }, selectedNetworkProvider());
     if (!res.ok) throw new Error(res.error);
@@ -101,6 +114,7 @@ async function createRoom() {
 
 async function joinRoom() {
   if (state.myId) return toast('Você já está numa sala. Volte para ela e saia antes de entrar em outra.', 'error');
+  if (selectedNetworkProvider() === 'internet') return joinInternetRoom();
   const raw = $('roomAddr').value.trim().replace(/^ws:\/\//, '');
   if (!raw) return toast('Digite o endereço que aparece na tela de quem criou a sala.', 'error');
   const [host, portStr] = raw.split(':');
@@ -121,7 +135,33 @@ async function joinRoom() {
   }
 }
 
-function enterRoom(welcome, owner, host, port) {
+// Modo Internet: entra pelo código da sala, no servidor da aba Rede
+async function joinInternetRoom() {
+  const code = $('roomAddr').value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (code.length !== 6) return toast('Digite o código de 6 letras e números que quem criou a sala passou.', 'error');
+  $('roomAddr').value = code;
+  save('roomAddr', code);
+  const btn = $('joinBtn');
+  setBusy(btn, true, 'Entrando…');
+  try {
+    await requireSelectedNetwork();
+    const url = internetServerUrl();
+    const password = $('joinPassword').value;
+    const welcome = await connectRoom(url, { name: getName(), password, room: code });
+    state.password = password;
+    try { enterRoom(welcome, false, url, 0, { url, code: welcome.sala || code }); }
+    catch (err) { dropHalfJoin(); throw err; }
+  } catch (err) {
+    toast(err.message, 'error');
+  } finally {
+    setBusy(btn, false, 'Entrar');
+  }
+}
+
+// cloud: modo Internet ({ url, code }); a lista de STUN/TURN vem do servidor, só para esta sala
+function enterRoom(welcome, owner, host, port, cloud = null) {
+  state.cloud = cloud;
+  RTC_CONFIG.iceServers = cloud && Array.isArray(welcome.iceServers) ? welcome.iceServers : [];
   state.myId = welcome.id;
   state.isOwner = owner;
   state.host = host;
@@ -158,7 +198,12 @@ function leaveRoom(reason, kind = 'info', endRoom = false) {
   state.ws = null;
   state.migrating = false;
   clearTimeout(state.graceTimer);
-  if (ws) { ws.onclose = null; ws.close(); }
+  if (ws) {
+    ws.onclose = null;
+    // Modo Internet: avisa o servidor que saí de propósito (senão ele espera um pouco achando que a internet caiu)
+    if (state.cloud && ws.readyState === WebSocket.OPEN) { try { ws.send(JSON.stringify({ type: 'leave' })); } catch {} }
+    ws.close();
+  }
   stopSharing();
   for (const id of [...state.in.keys()]) stopWatching(id, false);
   stopStats();
@@ -173,6 +218,8 @@ function leaveRoom(reason, kind = 'info', endRoom = false) {
   state.myId = null;
   state.isOwner = false;
   state.hostId = null;
+  state.cloud = null;
+  RTC_CONFIG.iceServers = [];
   state.order = [];
   state.rewatch.clear();
   closeShareDialog();
@@ -203,6 +250,7 @@ async function migrateRoom(reason) {
   const myId = state.myId;
   state.ws = null;
   state.migrating = true;
+  if (state.cloud) return reconnectCloud(myId);
   const oldHost = state.hostId;
   const hostName = oldHost && oldHost !== myId ? nameOf(oldHost) : 'O host';
   // Talvez só a minha conexão tenha caído: tenta voltar para o mesmo host antes de trocar
@@ -234,6 +282,18 @@ async function migrateRoom(reason) {
   if (state.migrating && state.myId === myId) leaveRoom('Não foi possível continuar a sala depois que o host saiu.', 'error');
 }
 
+// Modo Internet: a conexão com o servidor caiu (internet piscou). O servidor guarda o meu lugar por uns
+// segundos; volto com o mesmo número e as conexões diretas (quem assiste quem) continuam de pé.
+async function reconnectCloud(myId) {
+  toast('A conexão com o servidor caiu. Tentando voltar…');
+  const until = Date.now() + 18000;
+  while (Date.now() < until && state.migrating && state.myId === myId) {
+    if (await rejoin(state.cloud.url, 3000)) return;
+    await new Promise((r) => setTimeout(r, 1500));
+  }
+  if (state.migrating && state.myId === myId) leaveRoom('A conexão com o servidor caiu e não voltou.', 'error');
+}
+
 async function becomeHost() {
   const known = [...state.members.keys(), state.myId].map(Number).filter(Number.isFinite);
   // Se o app do host acabou de cair, a porta pode levar um instante para ficar livre
@@ -255,8 +315,9 @@ async function rejoin(host, timeoutMs) {
   const myId = state.myId;
   let welcome;
   try {
-    welcome = await connectRoom(`ws://${host}:${state.port}`, {
+    welcome = await connectRoom(state.cloud ? state.cloud.url : `ws://${host}:${state.port}`, {
       name: getName(), password: state.password, resume: myId, sharing: state.sharing, shareInfo: state.sharing ? state.shareInfo : undefined,
+      room: state.cloud ? state.cloud.code : undefined,
       voiceSession: voice.session || '', muted: voice.muted, deafened: voice.deafened,
     }, timeoutMs);
   } catch { return false; }
@@ -267,13 +328,14 @@ async function rejoin(host, timeoutMs) {
     return true;
   }
   state.migrating = false;
-  const sameHost = !!state.hostId && state.hostId === welcome.hostId;
-  state.isOwner = host === '127.0.0.1';
+  const sameHost = state.cloud ? true : !!state.hostId && state.hostId === welcome.hostId;
+  state.isOwner = !state.cloud && host === '127.0.0.1';
   state.host = host;
+  if (state.cloud && Array.isArray(welcome.iceServers)) RTC_CONFIG.iceServers = welcome.iceServers; // acesso ao TURN renovado
   state.hostId = welcome.hostId || null;
   state.handoff = (welcome.features || []).includes('handoff');
   state.sessao = welcome.sessao || state.sessao;
-  if (!state.isOwner) save('roomAddr', `${host}:${state.port}`);
+  if (!state.isOwner && !state.cloud) save('roomAddr', `${host}:${state.port}`);
   const present = new Set(welcome.members.map((m) => m.id));
   for (const m of state.members.values()) delete m.back;
   for (const m of welcome.members) {

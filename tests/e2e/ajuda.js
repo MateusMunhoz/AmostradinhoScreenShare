@@ -11,7 +11,7 @@ const APP = path.resolve(__dirname, '..', '..');
 const TMP = path.join(os.tmpdir(), 'tela-p2p-e2e');
 const FOTOS = path.join(TMP, 'fotos');
 fs.mkdirSync(FOTOS, { recursive: true });
-const ELECTRON = path.join(APP, 'node_modules', 'electron', 'dist', 'electron.exe');
+const ELECTRON = path.join(APP, 'node_modules', 'electron', 'dist', process.platform === 'win32' ? 'electron.exe' : 'electron');
 const FAKE = ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream', '--autoplay-policy=no-user-gesture-required'];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -183,6 +183,10 @@ $s = 0; [void][QU]::SHQueryUserNotificationState([ref]$s)
 // ajudantes (audiocap, videocap, teclas) que elas abriram. O app que você abriu pelo npm start ou pelo .exe,
 // mesmo rodando do mesmo Electron, não é tocado.
 function killTest() {
+  if (process.platform !== 'win32') { // Linux: as cópias de teste têm o perfil temporário na linha de comando
+    try { execFileSync('pkill', ['-f', 'tela-p2p-e2e']); } catch {}
+    return;
+  }
   const script = `
     $all = Get-CimInstance Win32_Process
     $test = @($all | Where-Object { $_.ProcessId -ne $PID -and $_.CommandLine -like '*tela-p2p-e2e*' } | ForEach-Object { $_.ProcessId })

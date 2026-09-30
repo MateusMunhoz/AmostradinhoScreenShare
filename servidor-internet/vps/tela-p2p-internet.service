@@ -1,0 +1,20 @@
+# /etc/systemd/system/tela-p2p-internet.service
+[Unit]
+Description=Tela P2P - servidor do modo Internet (salas + acesso ao TURN)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+EnvironmentFile=/etc/tela-p2p-internet.env
+WorkingDirectory=/opt/tela-p2p/servidor-internet
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=3
+DynamicUser=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target
