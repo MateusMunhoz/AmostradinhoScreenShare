@@ -38,6 +38,20 @@ app.whenReady().then(async()=>{
       await check('Nomes das redes persistem para o mapa offline', `(()=>{rememberConnectionMapNetworks([{id:'e'.repeat(32),name:'Rede persistida'}]);connectionMapNames.clear();rememberConnectionMapNetworks([]);return connectionMapNames.get('e'.repeat(12))==='Rede persistida';})()`);
       await check('Botão abre configurações',`(() => {$('navSettings').click();return !$('generalSettingsDialog').hidden;})()`);
       await check('Todos os sons e a opção sem som',`$('sound-chat').options.length === AppPreferences.sounds.length + 1`);
+      await check('Tema E.V.A liga fundo, letreiro e fonte; desfoque pelo controle; outro tema desliga', `(() => {
+        const before = JSON.parse(JSON.stringify(appPreferences));
+        document.querySelector('.theme-card[data-theme=eva]').click();
+        const on = !$('wallpaper').hidden && !$('themeDecor').hidden && document.documentElement.dataset.wallpaper === 'eva'
+          && getComputedStyle(document.body).fontFamily.startsWith('"Chakra Petch"') && !$('wallpaperControls').hidden;
+        $('wallpaperBlur').value = '18'; $('wallpaperBlur').dispatchEvent(new Event('input'));
+        const blur = appPreferences.appearance.blur === 18 && $('wallpaper').style.getPropertyValue('--wall-blur') === '18px' && AppPreferences.currentTheme(appPreferences) === 'eva';
+        document.querySelector('input[name=wallpaper][value=""]').click();
+        const none = $('wallpaper').hidden && !document.documentElement.dataset.wallpaper && $('wallpaperControls').hidden;
+        document.querySelector('.theme-card[data-theme=lanhouse]').click();
+        const off = $('themeDecor').hidden && !document.documentElement.dataset.decor;
+        appPreferences = AppPreferences.normalize(before); saveAppPreferences(); renderGeneralSettings();
+        return on && blur && none && off;
+      })()`);
       await check('Áudios locais decodificáveis',`(async()=>{for(const s of AppPreferences.sounds.filter(s=>s.file)) await new Promise((resolve,reject)=>{const a=new Audio('assets/audio/'+s.file);a.onloadedmetadata=()=>a.duration>0?resolve():reject(new Error(s.file));a.onerror=()=>reject(new Error(s.file));});return true;})()`);
       await run(`window.testPlayed=[];appSounds.createAudio=url=>({pause(){},play(){testPlayed.push(url);return Promise.resolve();}});appSounds.synth=notes=>{testPlayed.push('synth:'+notes[0][0]);return {pause(){}};};appSounds.now=()=>testPlayed.length*1000+1000;void 0;`);
       await run(`enterRoom({id:'self',features:['chat','voice'],members:[{id:'ana',name:'Ana'}],chat:[{id:'old',from:'ana',name:'Ana',ts:Date.now(),text:'histórico'}]},false,'127.0.0.1',8765)`);

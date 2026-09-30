@@ -82,7 +82,7 @@ test('Sons Suave: gerados na hora, sem arquivo, padrão da voz e do microfone', 
 });
 
 test('Aparência: modos de vidro, transparência e dados inválidos', () => {
-  assert.deepEqual(P.normalize(null).appearance, { glass: 'opaque', level: 70, border: 'solid' });
+  assert.deepEqual(P.normalize(null).appearance, { glass: 'opaque', level: 70, border: 'solid', wallpaper: '', blur: 0, dim: 40, decor: '' });
   assert.equal(P.glass(P.defaults.colors, { glass: 'opaque' }), null);
   assert.equal(P.normalize({ appearance: { glass: 'metal', level: 999 } }).appearance.glass, 'opaque');
   assert.equal(P.normalize({ appearance: { glass: 'liquid', level: 999 } }).appearance.level, 100);
@@ -140,4 +140,52 @@ test('Temas prontos: aplicam cores e material, zeram detalhes e são reconhecido
   assert.equal(P.currentTheme(neon), 'neon');
   assert.equal(P.currentTheme(P.normalize(null)), 'lanhouse');
   for (const t of P.themes) assert.equal(P.currentTheme(P.applyTheme(null, t.id)), t.id);
+});
+test('Imagem de fundo: só ids conhecidos, desfoque e escurecer limitados', () => {
+  assert.equal(P.normalize({ appearance: { wallpaper: 'eva' } }).appearance.wallpaper, 'eva');
+  assert.equal(P.normalize({ appearance: { wallpaper: 'custom' } }).appearance.wallpaper, 'custom');
+  for (const bad of ['http://x/y.jpg', 'url(x)', 42, null]) assert.equal(P.normalize({ appearance: { wallpaper: bad } }).appearance.wallpaper, '');
+  const a = P.normalize({ appearance: { blur: 999, dim: -5 } }).appearance;
+  assert.equal(a.blur, P.wallpaperLimits.blur);
+  assert.equal(a.dim, 0);
+  assert.equal(P.normalize({ appearance: { dim: 100 } }).appearance.dim, P.wallpaperLimits.dim, 'nunca some o app por trás do escuro total');
+  assert.equal(P.normalize({ appearance: { decor: 'eva' } }).appearance.decor, 'eva');
+  assert.equal(P.normalize({ appearance: { decor: 'gundam' } }).appearance.decor, '');
+  assert.equal(P.wallpaperUrl('eva'), 'assets/tema/eva-01.jpg');
+  assert.equal(P.wallpaperUrl('nada'), '');
+  // Imagem da pessoa: só data URL de imagem, nada de endereço externo
+  assert.equal(P.cleanWallpaperData('data:image/jpeg;base64,/9j/4AAQ'), 'data:image/jpeg;base64,/9j/4AAQ');
+  for (const bad of ['https://x/y.jpg', 'data:text/html;base64,PGI+', 'data:image/png;base64,"x")', null]) assert.equal(P.cleanWallpaperData(bad), '');
+});
+test('Tema E.V.A: perfil completo (cores, fundo, letreiro e fonte), com versão opaca', () => {
+  const eva = P.applyTheme(P.normalize({ nameFont: 'impact', sounds: { volume: 12 } }), 'eva');
+  assert.equal(eva.appearance.wallpaper, 'eva');
+  assert.equal(eva.appearance.decor, 'eva');
+  assert.notEqual(eva.appearance.glass, 'opaque');
+  assert.equal(eva.font.family, 'chakra');
+  assert.equal(eva.nameFont, 'impact');
+  assert.equal(eva.sounds.volume, 12);
+  const opaco = P.applyTheme(eva, 'evaOpaco');
+  assert.equal(opaco.appearance.glass, 'opaque');
+  assert.equal(opaco.appearance.wallpaper, 'eva');
+  assert.equal(P.currentTheme(opaco), 'evaOpaco');
+  // Sair do E.V.A tira o fundo e o letreiro dele; a imagem da própria pessoa fica
+  const lan = P.applyTheme(opaco, 'lanhouse');
+  assert.equal(lan.appearance.wallpaper, '');
+  assert.equal(lan.appearance.decor, '');
+  const mine = P.applyTheme(P.normalize({ appearance: { wallpaper: 'custom', blur: 12, dim: 55 } }), 'neon');
+  assert.deepEqual([mine.appearance.wallpaper, mine.appearance.blur, mine.appearance.dim], ['custom', 12, 55]);
+  assert.equal(P.currentTheme(mine), 'neon');
+  // Mexer no desfoque não tira o tema do lugar
+  assert.equal(P.currentTheme({ ...eva, appearance: { ...eva.appearance, blur: 20, dim: 70 } }), 'eva');
+  // Semântica do app: você/ao vivo, quem fala e cuidado em cores diferentes
+  const pal = P.palette(eva.colors);
+  assert.equal(new Set([pal['--live'], pal['--ok'], pal['--warn']]).size, 3);
+});
+test('Fontes incluídas no app: arquivos locais que existem', () => {
+  const fs = require('node:fs'), path = require('node:path');
+  const bundled = P.fonts.filter(f => f.files);
+  assert.ok(bundled.some(f => f.id === 'chakra') && bundled.some(f => f.id === 'shareTech'));
+  for (const f of bundled) for (const file of f.files) assert.ok(fs.existsSync(path.join(__dirname, '..', file)), file);
+  assert.ok(fs.existsSync(path.join(__dirname, '..', 'assets/tema/eva-01.jpg')));
 });

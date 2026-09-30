@@ -32,6 +32,15 @@ const AppPreferences = (() => {
   const glassModes = ['opaque', 'clear', 'liquid'];
   const borderModes = ['solid', 'clear', 'liquid']; // bordas: cor cheia, translúcidas ou com brilho de vidro
   const glassLevel = { clear: 70, liquid: 55 }; // transparência inicial de cada modo (0 = quase opaco, 100 = quase invisível)
+  // Imagem de fundo atrás do app: as incluídas (assets/tema) ou 'custom', a imagem que a pessoa escolheu, guardada
+  // à parte (wallpaperKey) por ser grande. blur em px; dim = quanto a cor Principal cobre a imagem, em %.
+  const wallpapers = [{ id: 'eva', label: 'EVA-01', file: 'assets/tema/eva-01.jpg' }];
+  const wallpaperKey = 'appWallpaper.v1';
+  const wallpaperLimits = { blur: 40, dim: 90 };
+  const wallpaperUrl = id => wallpapers.find(w => w.id === id)?.file || '';
+  // Só data URL de imagem em base64 (vira url("...") no CSS): nada de endereço externo nem aspas
+  const cleanWallpaperData = v => typeof v === 'string' && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(v) ? v : '';
+  const decors = ['eva']; // letreiro na lateral (index.html › #themeDecor)
   // Fontes do Windows 10 e 11. Cada pilha termina na fonte padrão, então letra que faltar cai nela.
   const baseStack = '"Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif';
   const fonts = [
@@ -62,6 +71,9 @@ const AppPreferences = (() => {
     { id: 'consolas', group: 'Monoespaçadas', label: 'Consolas', family: 'Consolas' },
     { id: 'courier', group: 'Monoespaçadas', label: 'Courier New', family: '"Courier New"' },
     { id: 'lucidaConsole', group: 'Monoespaçadas', label: 'Lucida Console', family: '"Lucida Console"' },
+    // Vêm com o app (assets/fontes, licença OFL; @font-face em styles.css): funcionam em qualquer PC
+    { id: 'chakra', group: 'Sci-fi · incluídas no app', label: 'Chakra Petch · painel de controle', family: '"Chakra Petch"', files: ['assets/fontes/chakra-petch-400.woff2', 'assets/fontes/chakra-petch-600.woff2', 'assets/fontes/chakra-petch-700.woff2'] },
+    { id: 'shareTech', group: 'Sci-fi · incluídas no app', label: 'Share Tech Mono · terminal', family: '"Share Tech Mono"', files: ['assets/fontes/share-tech-mono-400.woff2'] },
     { id: 'japanese', group: 'Outros idiomas', label: '日本語 · Yu Gothic UI', family: '"Yu Gothic UI", "Meiryo UI", Meiryo', sample: 'こんにちは、配信中です' },
     { id: 'chineseSimplified', group: 'Outros idiomas', label: '简体中文 · Microsoft YaHei UI', family: '"Microsoft YaHei UI", "Microsoft YaHei"', sample: '你好，正在直播' },
     { id: 'chineseTraditional', group: 'Outros idiomas', label: '繁體中文 · Microsoft JhengHei UI', family: '"Microsoft JhengHei UI", "Microsoft JhengHei"', sample: '你好，正在直播' },
@@ -97,12 +109,13 @@ const AppPreferences = (() => {
     return { body, display, console: font?.chat && family ? body : 'Tahoma, Verdana, sans-serif' };
   }
   const defaults = { colors: { main: '#22271E', secondary: '#2D3327', detail1: '#D6C45C', detail2: '#A6D089', text: '', live: '', speaking: '', warn: '', line: '' },
-    appearance: { glass: 'opaque', level: glassLevel.clear, border: 'solid' },
+    appearance: { glass: 'opaque', level: glassLevel.clear, border: 'solid', wallpaper: '', blur: 0, dim: 40, decor: '' },
     font: { family: 'system', custom: '', chat: false }, nameFont: '',
     sounds: { join: 'notification035', leave: 'whoosh', chat: 'wood', voiceJoin: 'suaveEntrou', voiceLeave: 'suaveSaiu',
       mute: 'suaveMutou', unmute: 'suaveDesmutou', deafen: 'suaveFoneDesligou', undeafen: 'suaveFoneLigou',
       shareStart: 'suaveTransmitiu', shareStop: 'suaveParouTransmitir', mention: 'suaveMencao',
       chatMuted: false, volume: 50, levels: { join: 100, leave: 100, chat: 100, mention: 100, voiceJoin: 100, voiceLeave: 100, mute: 100, unmute: 100, deafen: 100, undeafen: 100, shareStart: 100, shareStop: 100 } } };
+  const evaColors = { main: '#0B0714', secondary: '#1A1030', detail1: '#A3F43C', detail2: '#B58CFF', warn: '#FF8A1F', text: '#ECE7F6', line: '#3A2860' };
   // Temas prontos (Aparência > Temas): cores e material de uma vez. As cores de detalhe que não aparecem aqui
   // voltam ao automático. Mantêm a leitura do app: destaque = você/ao vivo, detalhe 2 = quem fala.
   const themes = [
@@ -112,21 +125,33 @@ const AppPreferences = (() => {
     { id: 'grafite', label: 'Grafite', colors: { main: '#1B1D22', secondary: '#2A2D35', detail1: '#E6A55A', detail2: '#7CC6A4' }, appearance: { glass: 'liquid', level: 45, border: 'solid' } },
     { id: 'claro', label: 'Claro', colors: { main: '#EEF2F8', secondary: '#FFFFFF', detail1: '#3455DB', detail2: '#147D55' }, appearance: { glass: 'opaque', border: 'solid' } },
     { id: 'contraste', label: 'Alto contraste', colors: { main: '#000000', secondary: '#0D0D0D', detail1: '#FFD400', detail2: '#00FF6E', text: '#FFFFFF', line: '#FFFFFF' }, appearance: { glass: 'opaque', border: 'solid' } },
+    // E.V.A theme by Asock: o EVA-01. Preto-violeta de fundo, roxo da armadura nos painéis, verde fluorescente
+    // no destaque (você/ao vivo), lilás para quem fala e o laranja do peito para cuidado. Perfil completo:
+    // fundo, letreiro lateral e fonte. A versão Opaco tem painéis sólidos, e a imagem aparece só em volta.
+    { id: 'eva', label: 'E.V.A · by Asock', colors: evaColors, font: { family: 'chakra' },
+      appearance: { glass: 'clear', level: 50, border: 'clear', wallpaper: 'eva', blur: 0, dim: 55, decor: 'eva' } },
+    { id: 'evaOpaco', label: 'E.V.A · Opaco', colors: evaColors, font: { family: 'chakra' },
+      appearance: { glass: 'opaque', border: 'solid', wallpaper: 'eva', blur: 0, dim: 40, decor: 'eva' } },
   ];
   // Preferências com o tema aplicado (o resto, como fontes e sons, fica como está)
   function applyTheme(prefs, id) {
     const t = themes.find(x => x.id === id);
     if (!t) return normalize(prefs);
     const colors = { ...defaults.colors, text: '', live: '', speaking: '', warn: '', line: '', ...t.colors };
-    const appearance = { ...defaults.appearance, level: glassLevel[t.appearance.glass] ?? defaults.appearance.level, ...t.appearance };
-    return normalize({ ...prefs, colors, appearance });
+    // Tema sem fundo próprio: a imagem da pessoa (custom) fica, com o desfoque dela; a de outro tema sai
+    const before = normalize(prefs).appearance;
+    const keep = !t.appearance.wallpaper && before.wallpaper === 'custom' ? { wallpaper: 'custom', blur: before.blur, dim: before.dim } : {};
+    const appearance = { ...defaults.appearance, level: glassLevel[t.appearance.glass] ?? defaults.appearance.level, ...keep, ...t.appearance };
+    const font = t.font ? { ...normalize(prefs).font, ...t.font } : prefs?.font;
+    return normalize({ ...prefs, colors, appearance, font });
   }
-  // Qual tema pronto bate com as preferências atuais ('' = personalizado)
+  // Qual tema pronto bate com as preferências atuais ('' = personalizado). Desfoque, escurecer e fonte não contam.
   function currentTheme(prefs) {
     const p = normalize(prefs);
     return themes.find(t => {
       const n = applyTheme(p, t.id);
-      return JSON.stringify(n.colors) === JSON.stringify(p.colors) && n.appearance.glass === p.appearance.glass && n.appearance.border === p.appearance.border;
+      return JSON.stringify(n.colors) === JSON.stringify(p.colors)
+        && ['glass', 'border', 'wallpaper', 'decor'].every(k => n.appearance[k] === p.appearance[k]);
     })?.id || '';
   }
   function hex(value) {
@@ -142,6 +167,13 @@ const AppPreferences = (() => {
     if (glassModes.includes(raw?.appearance?.glass)) result.appearance.glass = raw.appearance.glass;
     const level = raw?.appearance?.level;
     if (typeof level === 'number' && Number.isFinite(level)) result.appearance.level = Math.max(0, Math.min(100, Math.round(level)));
+    const wall = raw?.appearance?.wallpaper;
+    if (wall === 'custom' || wallpapers.some(w => w.id === wall)) result.appearance.wallpaper = wall;
+    for (const k of ['blur', 'dim']) {
+      const v = raw?.appearance?.[k];
+      if (typeof v === 'number' && Number.isFinite(v)) result.appearance[k] = Math.max(0, Math.min(wallpaperLimits[k], Math.round(v)));
+    }
+    if (decors.includes(raw?.appearance?.decor)) result.appearance.decor = raw.appearance.decor;
     const custom = fontName(raw?.font?.custom);
     if (raw?.font?.family === 'custom' ? !!custom : fonts.some(f => f.id === raw?.font?.family)) result.font.family = raw.font.family;
     result.font.custom = custom;
@@ -186,7 +218,7 @@ const AppPreferences = (() => {
     const live = c.live || c.detail1, speaking = c.speaking || c.detail2, warn = c.warn || c.detail2;
     const line = c.line || mix(c.secondary, surface, .18);
     return {
-      '--bg': c.main, '--panel': c.secondary, '--sunken': mix(c.secondary, '#000000', .15),
+      '--bg': c.main, '--bg-solid': c.main, '--panel': c.secondary, '--sunken': mix(c.secondary, '#000000', .15),
       '--panel-2': mix(c.secondary, surface, .07), '--panel-3': mix(c.secondary, surface, .13),
       '--text': text, '--text-2': mix(text, c.main, .15), '--muted': mix(text, c.main, .3),
       '--surface-text': surface, '--surface-text-2': mix(surface, c.secondary, .15), '--surface-muted': muted,
@@ -286,6 +318,7 @@ const AppPreferences = (() => {
     }
     stopAll() { for (const event of [...this.players.keys()]) this.stop(event); }
   }
-  return { key, sounds, events, defaults, optionalColors, glassModes, glassLevel, borderModes, fonts, fontName, fontStacks, cleanNameFont, nameFontStack, borders, themes, applyTheme, currentTheme, hex, normalize, read, write, palette, glass, SoundPlayer };
+  return { key, sounds, events, defaults, optionalColors, glassModes, glassLevel, borderModes, fonts,
+    wallpapers, wallpaperKey, wallpaperLimits, wallpaperUrl, cleanWallpaperData, decors, fontName, fontStacks, cleanNameFont, nameFontStack, borders, themes, applyTheme, currentTheme, hex, normalize, read, write, palette, glass, SoundPlayer };
 })();
 if (typeof module !== 'undefined') module.exports = AppPreferences;

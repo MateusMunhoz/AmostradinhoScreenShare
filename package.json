@@ -52,6 +52,8 @@
       "renderer/**",
       "assets/audio/**",
       "assets/icone/**",
+      "assets/fontes/**",
+      "assets/tema/**",
       "voice.js",
       "encode-once.js",
       "pcm-worklet.js",
