@@ -60,6 +60,8 @@ class RazzeApiClient {
   acceptFriendRequest(id) { return this.request('POST', '/v1/friends/requests/' + encodeURIComponent(id) + '/accept'); }
   cancelFriendRequest(id) { return this.request('DELETE', '/v1/friends/requests/' + encodeURIComponent(id)); }
   removeFriend(id) { return this.request('DELETE', '/v1/friends/' + encodeURIComponent(id)); }
+  sendMessage(to, text) { return this.request('POST', '/v1/messages', { to, text }); }
+  messages(after = 0) { return this.request('GET', '/v1/messages?after=' + Math.max(0, Math.floor(Number(after) || 0))); }
   listNetworks() { return this.request('GET', '/v1/networks'); }
   getNetwork(id) { return this.request('GET', '/v1/networks/' + encodeURIComponent(id)); }
   createNetwork(network) { return this.request('POST', '/v1/networks', network); }

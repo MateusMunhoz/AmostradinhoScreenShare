@@ -65,6 +65,8 @@ Todas as respostas usam JSON. Erros seguem `{ "error": { "code": "...", "message
 | `POST /v1/admin/users/:id/approve` | Aprovar conta pendente com `RAZZE_ADMIN_TOKEN` |
 | `GET /v1/friends`, `GET /v1/friends/requests` | Listar amizades e solicitações |
 | `POST /v1/friends/requests`, `POST /v1/friends/requests/:id/accept`, `DELETE /v1/friends/:userId` | Gerenciar amizades |
+| `POST /v1/messages` (`{ to, text }`) | Mandar mensagem direta para um amigo (até 2000 caracteres; 30 mensagens a cada 10 s por conta) |
+| `GET /v1/messages?after=<seq>` | Mensagens diretas (enviadas e recebidas) depois do número de sequência `after`, 200 por vez (`more` diz se há mais) |
 | `GET /v1/networks`, `POST /v1/networks` | Listar redes visíveis e criar rede |
 | `GET/PATCH/DELETE /v1/networks/:id` | Consultar, editar ou excluir rede própria |
 | `GET /v1/networks/:id/members` | Listar membros da rede |
@@ -73,6 +75,8 @@ Todas as respostas usam JSON. Erros seguem `{ "error": { "code": "...", "message
 | `GET/POST /v1/networks/:id/devices` | Listar peers e registrar dispositivo/chave pública |
 | `PATCH /v1/networks/:id/devices/:deviceId/endpoint` | Atualizar endpoint UDP reflexivo descoberto por STUN |
 | `DELETE /v1/networks/:id/devices/:deviceId` | Remover dispositivo da rede |
+
+As mensagens diretas ficam no banco por 30 dias (tabela `direct_messages`), para chegar a quem está offline e aos outros PCs da mesma conta. O histórico completo fica no PC de cada pessoa (`%APPDATA%\Tela P2P\mensagens`). O texto fica guardado sem criptografia de ponta a ponta: quem administra o servidor consegue ler.
 
 Redes podem ser `private`, `friends` ou `public`; para entrar, use um convite. Os convites armazenam apenas o hash do token e aceitam limite de usos e validade configuráveis. Cada rede recebe um bloco privado `/24` e os dispositivos recebem IPs overlay exclusivos.
 

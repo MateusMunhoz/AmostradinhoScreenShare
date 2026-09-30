@@ -121,6 +121,8 @@ function createRazzeService(options = {}) {
     acceptFriendRequest: (id) => requireClient().acceptFriendRequest(id),
     cancelFriendRequest: (id) => requireClient().cancelFriendRequest(id),
     removeFriend: (id) => requireClient().removeFriend(id),
+    sendMessage: (to, text) => requireClient().sendMessage(to, text),
+    messages: (after) => requireClient().messages(after),
     wireguard,
     api: () => requireClient(),
     // Ao abrir o app com o túnel já ligado: volta a buscar quem entrou na rede

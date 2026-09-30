@@ -194,3 +194,10 @@
 :root[data-skin="arasaka"] #chatEmpty:not([hidden]) ~ .chat-list { border-top: 0; padding-top: 4px; }
 :root[data-skin="arasaka"] .voice-channel { border-radius: 0; }
 :root[data-skin="arasaka"] .voice-channel-count { font-family: var(--ak-mono); }
+
+/* Barra de conversas no tema: cantos retos, rótulo no vermelho e o colchete de mira nas janelas */
+:root[data-skin="arasaka"] .dm-window { border-radius: 0; background: var(--bracket), var(--panel); }
+:root[data-skin="arasaka"] :is(.dm-chip-btn, .dm-dot) { border-radius: 0; }
+:root[data-skin="arasaka"] .dm-bar-label { color: var(--accent); }
+:root[data-skin="arasaka"] .dm-chip { font-family: var(--ak-mono); font-size: 12px; letter-spacing: .04em; }
+:root[data-skin="arasaka"] :is(.dm-list, .dm-form textarea) { font-family: var(--ak-mono); }

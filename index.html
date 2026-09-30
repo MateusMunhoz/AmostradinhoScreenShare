@@ -62,6 +62,7 @@
       <div class="seg hub-tabs" role="tablist" aria-label="O que ver no HUB">
         <button id="hubTabRooms" type="button" role="tab" aria-selected="true" aria-controls="hubRooms">Salas</button>
         <button id="hubTabFriends" type="button" role="tab" aria-selected="false" aria-controls="friendsDialog">Amigos <span id="hubFriendsBadge" class="hub-badge" hidden></span></button>
+        <button id="hubTabMessages" type="button" role="tab" aria-selected="false" aria-controls="hubMessages" title="Mensagens diretas">Mensagens <span id="hubMessagesBadge" class="hub-badge" hidden></span></button>
         <button id="hubTabNetwork" type="button" role="tab" aria-selected="false" aria-controls="networkDialog">Rede</button>
       </div>
       <section id="hubRooms" class="hub-pane" role="tabpanel" aria-labelledby="hubTabRooms">
@@ -98,6 +99,20 @@
           <p id="razzeFriendsStatus" class="razze-status" role="status" aria-live="polite"></p>
           <div id="razzeFriends" class="hub-friend-list"></div>
           <p id="friendsEmpty" class="hint" hidden></p>
+        </div>
+      </section>
+      <!-- Mensagens diretas: a lista das conversas; cada uma abre na barra de conversas (renderer/mensagens.js) -->
+      <section id="hubMessages" class="hub-pane hub-messages" role="tabpanel" aria-labelledby="hubTabMessages" hidden>
+        <div id="dmSignedOut" class="hub-signed-out">
+          <p class="hint">As mensagens diretas usam a conta Razze: entre na conta para conversar com os seus amigos, mesmo fora da sala.</p>
+          <button id="dmOpenLogin" class="btn small primary" type="button">Entrar na conta</button>
+        </div>
+        <div id="dmBody" class="hub-friends-body" hidden>
+          <input id="dmFilter" class="hub-filter" type="search" placeholder="Buscar conversa" aria-label="Buscar conversa pelo nome" autocomplete="off">
+          <p id="dmUnsupported" class="warn" hidden>O servidor Razze ainda não tem mensagens diretas. Quem cuida do servidor precisa atualizar a RazzeAPI.</p>
+          <p id="dmError" class="razze-status" role="status"></p>
+          <ul id="dmConvList" class="hub-list hub-friend-list"></ul>
+          <p id="dmConvEmpty" class="hint" hidden></p>
         </div>
       </section>
       <!-- Rede e conta: como os PCs se conectam, servidores, redes Razze e o login (lógica em renderer/conectividade.js) -->
@@ -169,6 +184,12 @@
       </section>
     </div>
   </aside>
+  <!-- Barra de conversas: embaixo, com um chip por conversa aberta; cada uma abre para cima (renderer/mensagens.js) -->
+  <footer id="dmBar" class="dm-bar" aria-label="Conversas" hidden>
+    <button id="dmBarLabel" type="button" class="dm-bar-label" title="Mensagens: abrir a lista de conversas no HUB">Mensagens <span id="dmBarBadge" class="hub-badge" hidden></span></button>
+    <div id="dmSlots" class="dm-slots"></div>
+    <span id="dmBarHint" class="dm-bar-hint">Abra uma conversa no HUB, aba Mensagens</span>
+  </footer>
   <main>
     <!-- Início -->
     <!-- Início: um saguão. Você (foto e nome), as sessões abertas na rede como peça principal, criar ou entrar com
@@ -817,6 +838,7 @@
   <script src="renderer/transmitir.js"></script>
   <script src="renderer/mapa-conexoes.js"></script>
   <script src="renderer/hub.js"></script>
+  <script src="renderer/mensagens.js"></script>
   <script src="renderer/navegacao.js"></script>
   <script src="renderer/inicio.js"></script>
 </body>

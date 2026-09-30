@@ -164,7 +164,7 @@ async function refreshRazzeState() {
     $('razzeStepNetworks').hidden = !on;
     $('razzeStepFriends').hidden = !on;
     $('friendsSignedOut').hidden = on;
-    if (!on) setFriendsData({});
+    if (!on) { setFriendsData({}); dmStop(); }
   };
   account(state.authenticated);
   $('profileAccountHint').textContent = state.configured ? 'Entre na sua conta para gerenciar redes e amigos.' : 'Para entrar, escolha Razze (WireGuard) acima e salve o endereço do servidor.';
@@ -181,6 +181,7 @@ async function refreshRazzeState() {
     if (!state.authenticated) { if (selectedNetworkProvider() === 'razze') setNetSummary(false, 'Razze: servidor ok. Entre ou crie sua conta logo abaixo.'); return; }
     const { user } = await window.api.razzeMe();
     razzeUser = user;
+    if (user?.id) void dmStart(user.id); // mensagens diretas desta conta (renderer/mensagens.js)
     $('razzeAccountName').textContent = user?.displayName || user?.email || 'Conta Razze';
     $('razzeAccountEmail').textContent = user?.displayName ? user.email || '' : '';
     $('razzeAccountAvatar').textContent = ((user?.displayName || user?.email || '?').trim()[0] || '?').toUpperCase();

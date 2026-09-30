@@ -190,6 +190,17 @@ No painel **Chat de voz**, a voz fica dividida em canais: a **Voz geral** e as s
 - **Troca de host:** as subsalas continuam, e cada um fica no canal em que estava.
 - **Modo Internet:** o servidor da VPS precisa estar atualizado para ter subsalas; sem isso, o painel mostra só a lista de sempre.
 
+## Mensagens diretas
+
+Conversa com um amigo (conta Razze), dentro ou fora da sala.
+
+- **Abrir:** no HUB, aba **Mensagens**, clique no amigo. Ou, na aba **Amigos**, no balão ao lado do nome.
+- **Barra de conversas:** fica embaixo da tela. Cada conversa aberta vira um chip. Clicar no chip abre a janela; o **—** minimiza de volta para o chip; o **X** tira da barra.
+- **Histórico:** fica salvo neste PC, um arquivo por amigo. Fechar a conversa no X não apaga nada: ao abrir de novo, tudo volta.
+- **Amigo offline:** a mensagem fica no servidor Razze por até 30 dias e chega quando ele abrir o app.
+- **Mensagem nova:** a conversa aparece na barra, minimizada, com o número de mensagens não lidas. O número também aparece no HUB.
+- **Arquivos:** por enquanto só texto (os arquivos do chat da sala vão direto de PC para PC, e o amigo pode não estar na mesma rede).
+
 ## Voz e atalhos
 
 O botão de controles na barra de voz.
