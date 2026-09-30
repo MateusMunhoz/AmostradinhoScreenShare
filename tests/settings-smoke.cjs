@@ -38,6 +38,16 @@ app.whenReady().then(async()=>{
       await check('Nomes das redes persistem para o mapa offline', `(()=>{rememberConnectionMapNetworks([{id:'e'.repeat(32),name:'Rede persistida'}]);connectionMapNames.clear();rememberConnectionMapNetworks([]);return connectionMapNames.get('e'.repeat(12))==='Rede persistida';})()`);
       await check('Botão abre configurações',`(() => {$('navSettings').click();return !$('generalSettingsDialog').hidden;})()`);
       await check('Todos os sons e a opção sem som',`$('sound-chat').options.length === AppPreferences.sounds.length + 1`);
+      await check('Tema E.V.A na aba Tema: desenho, letreiro, ícone e fontes; Padrão desliga', `(() => {
+        const before = JSON.parse(JSON.stringify(appPreferences)), skinBefore = appSkin;
+        document.querySelector('.skin-card[data-skin=eva]').click();
+        const root = document.documentElement, on = root.dataset.skin === 'eva' && !$('themeDecor').hidden && appPreferences.colors.detail1 === '#FF8A1F'
+          && getComputedStyle(document.body).fontFamily.startsWith('"Chakra Petch"') && getComputedStyle($('chatList')).fontFamily.startsWith('"Share Tech Mono"') && !$('wallpaper') && !document.querySelector('input[name=wallpaper]');
+        document.querySelector('.skin-card[data-skin=""]').click();
+        const off = !root.dataset.skin && $('themeDecor').hidden;
+        appPreferences = AppPreferences.normalize(before); chooseSkin(skinBefore); saveAppPreferences(); renderGeneralSettings();
+        return on && off;
+      })()`);
       await check('Áudios locais decodificáveis',`(async()=>{for(const s of AppPreferences.sounds.filter(s=>s.file)) await new Promise((resolve,reject)=>{const a=new Audio('assets/audio/'+s.file);a.onloadedmetadata=()=>a.duration>0?resolve():reject(new Error(s.file));a.onerror=()=>reject(new Error(s.file));});return true;})()`);
       await run(`window.testPlayed=[];appSounds.createAudio=url=>({pause(){},play(){testPlayed.push(url);return Promise.resolve();}});appSounds.synth=notes=>{testPlayed.push('synth:'+notes[0][0]);return {pause(){}};};appSounds.now=()=>testPlayed.length*1000+1000;void 0;`);
       await run(`enterRoom({id:'self',features:['chat','voice'],members:[{id:'ana',name:'Ana'}],chat:[{id:'old',from:'ana',name:'Ana',ts:Date.now(),text:'histórico'}]},false,'127.0.0.1',8765)`);

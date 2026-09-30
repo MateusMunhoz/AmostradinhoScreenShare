@@ -24,7 +24,8 @@ let titleBarKey = '';
 function applyTitleBar() {
   if (!window.api?.setTitleBar) return;
   const c = appPreferences.colors, text = AppPreferences.palette(c)['--text'];
-  const color = appPreferences.appearance.glass === 'opaque' ? c.main : '#00000000';
+  const a = appPreferences.appearance;
+  const color = a.glass === 'opaque' ? c.main : '#00000000';
   const key = color + text;
   if (key === titleBarKey) return;
   titleBarKey = key;
@@ -33,16 +34,21 @@ function applyTitleBar() {
 // Ícone da janela na barra de tarefas: o mesmo desenho da barra de título, na cor Detalhe 1 do tema
 let appIconColor = '';
 function applyAppIcon() {
+  // Tema E.V.A: o rosto do EVA-01; tema Arasaka: o emblema da corporação; senão, as duas telas
   const color = AppPreferences.palette(appPreferences.colors)['--accent'];
   const skin = document.documentElement.dataset.skin || '';
-  if (color + skin === appIconColor || !window.api?.setWindowIcon) return;
-  appIconColor = color + skin;
+  const eva = skin === 'eva';
+  const key = eva ? 'eva' : color + skin;
+  if (key === appIconColor || !window.api?.setWindowIcon) return;
+  appIconColor = key;
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = 256;
-  // Tema Arasaka: o emblema da corporação no lugar das duas telas
-  (skin === 'arasaka' ? drawArasakaIcon : drawAppIcon)(canvas.getContext('2d'), 256, color);
+  if (eva) drawEvaIcon(canvas.getContext('2d'), 256);
+  else (skin === 'arasaka' ? drawArasakaIcon : drawAppIcon)(canvas.getContext('2d'), 256, color);
   window.api.setWindowIcon(canvas.toDataURL('image/png')).catch(() => {});
 }
+// A imagem de fundo saiu do app: apaga a que tenha ficado guardada
+try { localStorage.removeItem('appWallpaper.v1'); } catch {}
 function applyAppTheme(d = document) {
   const root = d.documentElement;
   for (const [key, value] of Object.entries(AppPreferences.palette(appPreferences.colors))) root.style.setProperty(key, value);
@@ -55,6 +61,13 @@ function applyAppTheme(d = document) {
     fonts.body = fonts.display = 'Bahnschrift, "Segoe UI", system-ui, sans-serif';
     fonts.console = '"Cascadia Mono", Consolas, monospace';
   }
+  // Com a fonte padrão, o E.V.A usa a Chakra Petch (painel) e a Share Tech Mono no chat, como terminal (incluídas no app)
+  if (skin === 'eva' && appPreferences.font.family === 'system') {
+    fonts.body = fonts.display = '"Chakra Petch", "Segoe UI", system-ui, sans-serif';
+    fonts.console = '"Share Tech Mono", Consolas, monospace';
+  }
+  // O letreiro na lateral (index.html › #themeDecor) é do E.V.A
+  if (d === document) $('themeDecor').hidden = skin !== 'eva';
   root.style.setProperty('--font-body', fonts.body);
   root.style.setProperty('--font-display', fonts.display);
   root.style.setProperty('--font-console', fonts.console);
@@ -275,6 +288,12 @@ function renderThemes() {
   $('themeHint').textContent = current ? 'Muda cores, material e bordas. Fonte e sons continuam como estão.'
     : 'Personalizado. Escolha um tema para começar dele; depois dá para mudar qualquer cor na aba Cores.';
 }
+function setupAmbient() {
+  $('ambientLight').onchange = () => {
+    appPreferences.appearance = { ...appPreferences.appearance, ambient: $('ambientLight').checked };
+    saveAppPreferences();
+  };
+}
 function renderAppearance() {
   renderSkins();
   renderThemes();
@@ -285,6 +304,7 @@ function renderAppearance() {
   $('glassLevelValue').textContent = a.level + '%';
   for (const input of document.querySelectorAll('input[name=border]')) input.checked = input.value === a.border;
   renderGlassHint();
+  $('ambientLight').checked = appPreferences.appearance.ambient;
   if (!$('fontFamily').options.length) renderFontOptions();
   renderFontPreview();
 }
@@ -299,6 +319,7 @@ function setupAppearance() {
     appPreferences.appearance = { ...appPreferences.appearance, border: input.value };
     saveAppPreferences();
   };
+  setupAmbient();
   $('glassLevel').oninput = () => {
     appPreferences.appearance.level = Number($('glassLevel').value);
     $('glassLevelValue').textContent = appPreferences.appearance.level + '%';

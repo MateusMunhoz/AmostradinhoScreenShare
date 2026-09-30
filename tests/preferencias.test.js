@@ -82,7 +82,9 @@ test('Sons Suave: gerados na hora, sem arquivo, padrão da voz e do microfone', 
 });
 
 test('Aparência: modos de vidro, transparência e dados inválidos', () => {
-  assert.deepEqual(P.normalize(null).appearance, { glass: 'opaque', level: 70, border: 'solid' });
+  assert.deepEqual(P.normalize(null).appearance, { glass: 'opaque', level: 70, border: 'solid', ambient: true });
+  assert.equal(P.normalize({ appearance: { ambient: false } }).appearance.ambient, false);
+  assert.equal(P.normalize({ appearance: { ambient: 'sim' } }).appearance.ambient, true);
   assert.equal(P.glass(P.defaults.colors, { glass: 'opaque' }), null);
   assert.equal(P.normalize({ appearance: { glass: 'metal', level: 999 } }).appearance.glass, 'opaque');
   assert.equal(P.normalize({ appearance: { glass: 'liquid', level: 999 } }).appearance.level, 100);
@@ -140,4 +142,29 @@ test('Temas prontos: aplicam cores e material, zeram detalhes e são reconhecido
   assert.equal(P.currentTheme(neon), 'neon');
   assert.equal(P.currentTheme(P.normalize(null)), 'lanhouse');
   for (const t of P.themes) assert.equal(P.currentTheme(P.applyTheme(null, t.id)), t.id);
+});
+test('Sem imagem de fundo; material e bordas livres dentro do tema', () => {
+  const old = P.normalize({ appearance: { wallpaper: 'custom', blur: 12, dim: 55 } }).appearance;
+  assert.deepEqual(Object.keys(old).sort(), ['ambient', 'border', 'glass', 'level'], 'preferência antiga de imagem é descartada');
+  const neon = P.applyTheme(null, 'neon');
+  assert.equal(P.currentTheme({ ...neon, appearance: { ...neon.appearance, glass: 'liquid', border: 'solid' } }), 'neon');
+});test('Tema E.V.A (aba Tema): um só, com as cores do EVA-01 e sem imagem de fundo', () => {
+  assert.equal(P.themes.some(t => /eva/i.test(t.id)), false, 'saiu de Temas prontos');
+  const eva = P.skins.find(k => k.id === 'eva');
+  assert.equal(eva.label, 'E.V.A by Asock');
+  assert.equal(P.cleanSkin('eva'), 'eva');
+  const p = P.applyTheme(P.normalize({ nameFont: 'impact', sounds: { volume: 12 }, appearance: { ambient: false } }), 'eva');
+  assert.equal(p.colors.detail1, '#FF8A1F', 'laranja no destaque');
+  assert.equal(p.colors.secondary, '#170C29', 'roxo nos painéis');
+  assert.equal(p.appearance.ambient, false, 'o tema não mexe na luz ambiente');
+  assert.equal(p.nameFont, 'impact');
+  assert.equal(p.sounds.volume, 12);
+  const pal = P.palette(p.colors);
+  assert.equal(new Set([pal['--live'], pal['--ok'], pal['--warn']]).size, 3, 'você, quem fala e cuidado em cores diferentes');
+});
+test('Fontes incluídas no app: arquivos locais que existem', () => {
+  const fs = require('node:fs'), path = require('node:path');
+  const bundled = P.fonts.filter(f => f.files);
+  for (const id of ['chakra', 'shareTech', 'loveLetter']) assert.ok(bundled.some(f => f.id === id), id);
+  for (const f of bundled) for (const file of f.files) assert.ok(fs.existsSync(path.join(__dirname, '..', file)), file);
 });

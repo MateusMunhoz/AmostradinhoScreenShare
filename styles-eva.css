@@ -1,0 +1,261 @@
+/* Tema E.V.A by Asock (Evangelion): só vale com o tema escolhido na aba Tema (html[data-skin="eva"]).
+   A ideia é estar dentro do Entry Plug do EVA-01: roxo da armadura nos painéis, laranja do HUD no que é seu e no
+   que está ao vivo, verde de sincronia em quem fala e amarelo de alerta. Grade hexagonal ao fundo, cantos cortados,
+   marcas de mira nos cantos, títulos em mincho como os letreiros do anime e o chat num terminal de texto.
+   As cores vêm do tema (preferencias-modelo.js › skins); aqui fica só o desenho. Nada anima sozinho. */
+/* Mincho dos letreiros: Shippori Mincho B1 ExtraBold (OFL), só com as letras latinas e os kanji deste arquivo e do
+   letreiro lateral. Para um kanji novo aqui, gere o arquivo de novo com esses caracteres. */
+@font-face { font-family: "Shippori Mincho B1 EVA"; font-weight: 400 900; font-display: swap; src: url(assets/fontes/shippori-mincho-b1-800.woff2) format("woff2"); }
+:root[data-skin="eva"] {
+  --eva-purple: #6B3FA0;
+  --eva-purple-hi: #A57BE6;
+  --eva-mincho: "Shippori Mincho B1 EVA", "Yu Mincho", "MS Mincho", serif;
+  --eva-mono: "Share Tech Mono", Consolas, monospace;
+  --eva-amber: #FFC27A;                       /* texto do terminal */
+  --radius: 2px;
+  --radius-lg: 3px;
+  --eva-cut: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  /* Grade hexagonal (colmeia) em roxo, bem apagada */
+  --eva-hex: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='56' height='100'><path d='M28 66L0 50L0 16L28 0L56 16L56 50L28 66L28 100' fill='none' stroke='%236B3FA0' stroke-opacity='.22' stroke-width='1'/></svg>");
+  /* Marcas de mira em L nos quatro cantos (cor em --eva-mark) */
+  --eva-mark: var(--accent);
+  --eva-marks:
+    linear-gradient(var(--eva-mark), var(--eva-mark)) 0 0 / 12px 2px no-repeat,
+    linear-gradient(var(--eva-mark), var(--eva-mark)) 0 0 / 2px 12px no-repeat,
+    linear-gradient(var(--eva-mark), var(--eva-mark)) 100% 100% / 12px 2px no-repeat,
+    linear-gradient(var(--eva-mark), var(--eva-mark)) 100% 100% / 2px 12px no-repeat;
+  --eva-head: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><g fill='none' stroke='%23120820' stroke-width='2' stroke-linejoin='round'><path d='M9 29 L19 21 L24 33 L22 46 L14 51 L7 44 Z'/><path d='M55 29 L45 21 L40 33 L42 46 L50 51 L57 44 Z'/><path d='M32 9 L44 15 L50.5 28 L46 44 L38 50 L32 52 L26 50 L18 44 L13.5 28 L20 15 Z'/><path d='M32 9 L44 15 L50 27 L37 21 Z'/><path d='M19 29 L30 33 L32 39 L34 33 L45 29 L45 32.5 L34.5 36.5 L32 44 L29.5 36.5 L19 32.5 Z'/><path d='M21.5 34.5 L29 37.2 L28 39.4 L22 36.8 Z'/><path d='M42.5 34.5 L35 37.2 L36 39.4 L42 36.8 Z'/><path d='M16.5 43.5 L23 46.5 L22 50 L14.5 47 Z'/><path d='M47.5 43.5 L41 46.5 L42 50 L49.5 47 Z'/><path d='M24 48 L32 52 L40 48 L38.5 56 L33.5 60.5 L30.5 60.5 L25.5 56 Z'/><path d='M31 58 L33 58 L32.6 62.5 L31.4 62.5 Z'/><path d='M31 1.5 L33 1.5 L33 42 L32 46 L31 42 Z'/><path d='M31.35 35 L32.65 35 L32.4 40 L31.6 40 Z'/></g><path d='M9 29 L19 21 L24 33 L22 46 L14 51 L7 44 Z' fill='%234E2A80'/><path d='M55 29 L45 21 L40 33 L42 46 L50 51 L57 44 Z' fill='%234E2A80'/><path d='M32 9 L44 15 L50.5 28 L46 44 L38 50 L32 52 L26 50 L18 44 L13.5 28 L20 15 Z' fill='%237443B5'/><path d='M32 9 L44 15 L50 27 L37 21 Z' fill='%239366D8'/><path d='M19 29 L30 33 L32 39 L34 33 L45 29 L45 32.5 L34.5 36.5 L32 44 L29.5 36.5 L19 32.5 Z' fill='%233A1F66'/><path d='M21.5 34.5 L29 37.2 L28 39.4 L22 36.8 Z' fill='%23F5E663'/><path d='M42.5 34.5 L35 37.2 L36 39.4 L42 36.8 Z' fill='%23F5E663'/><path d='M16.5 43.5 L23 46.5 L22 50 L14.5 47 Z' fill='%23A3F43C'/><path d='M47.5 43.5 L41 46.5 L42 50 L49.5 47 Z' fill='%23A3F43C'/><path d='M24 48 L32 52 L40 48 L38.5 56 L33.5 60.5 L30.5 60.5 L25.5 56 Z' fill='%237F8FE6'/><path d='M31 58 L33 58 L32.6 62.5 L31.4 62.5 Z' fill='%23A3F43C'/><path d='M31 1.5 L33 1.5 L33 42 L32 46 L31 42 Z' fill='%23241440'/><path d='M31.35 35 L32.65 35 L32.4 40 L31.6 40 Z' fill='%23A3F43C'/></svg>");
+}
+:root[data-skin="eva"] ::selection { background: var(--accent); color: #000; }
+
+/* ---------- Fundo: o interior do plug. Colmeia roxa e o brilho laranja do LCL subindo de baixo ---------- */
+:root[data-skin="eva"] body {
+  background:
+    radial-gradient(120% 70% at 50% 115%, rgba(255, 138, 31, .13), transparent 62%),
+    radial-gradient(70% 60% at 0% 0%, rgba(107, 63, 160, .22), transparent 70%),
+    var(--eva-hex) 0 0 / 28px 50px,
+    var(--bg);
+}
+:root[data-skin="eva"] .workspace-header { background: transparent; }
+
+/* ---------- Caixas: roxo com o friso laranja no alto e as marcas de mira nos cantos ---------- */
+:root[data-skin="eva"] :is(.btn, .tile, .dialog, .workspace-pane, .panel, .home-card, .person-card, .tile-chip, .toast,
+  .workspace-tab, .dock-more-menu, .voice-more-menu, input, textarea, select, .seg, .seg label, .seg button, .file-card,
+  .chat-staged, .update-banner, .session, .members li, .mention-pop, .people-pop, .select-pop) { border-radius: 2px !important; }
+:root[data-skin="eva"] :is(.home-card, .dock, .workspace-pane, .panel, .dialog) {
+  background: var(--eva-marks), linear-gradient(180deg, rgba(107, 63, 160, .20), transparent 140px), var(--panel);
+  border-color: var(--line); box-shadow: inset 0 2px 0 var(--accent), 0 14px 34px rgba(0, 0, 0, .45);
+}
+:root[data-skin="eva"] .dialog { background: var(--eva-marks), linear-gradient(180deg, rgba(107, 63, 160, .22), transparent 160px), var(--bg); }
+:root[data-skin="eva"] .home-card { clip-path: var(--eva-cut); }
+
+/* ---------- Títulos: mincho grosso, como os letreiros pretos e brancos do anime; rótulos em fonte de terminal ---------- */
+:root[data-skin="eva"] :is(h1, .home-title, .dialog h2, .pane-head h2, .chat-title, .stream-pane-head h2) {
+  font-family: var(--eva-mincho); font-weight: 800; letter-spacing: -.01em; color: var(--text);
+}
+:root[data-skin="eva"] :is(.settings-section h3, h3, .settings-label) {
+  font-family: var(--eva-mono); font-weight: 400; text-transform: uppercase; letter-spacing: .22em; font-size: 12px; color: var(--accent);
+}
+:root[data-skin="eva"] .chat-title::after { content: "  通信回線"; font: 400 11px var(--eva-mono); letter-spacing: .2em; color: var(--accent); }
+:root[data-skin="eva"] #voicePaneTitle::after { content: "  音声"; font: 400 11px var(--eva-mono); letter-spacing: .2em; color: var(--accent); }
+:root[data-skin="eva"] .stream-pane-head h2::after { content: "  映像"; font: 400 11px var(--eva-mono); letter-spacing: .2em; color: var(--accent); }
+
+/* ---------- Botões: laranja com a quina cortada, em caixa alta; os outros com contorno roxo ---------- */
+:root[data-skin="eva"] :is(.btn.primary, .btn.live) {
+  clip-path: polygon(9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%, 0 9px);
+  text-transform: uppercase; letter-spacing: .12em; font-weight: 700; box-shadow: none; color: #000;
+}
+:root[data-skin="eva"] .btn:not(.primary):not(.live):not(.danger) { border-color: var(--line); box-shadow: none; }
+:root[data-skin="eva"] .btn:not(.primary):not(.live):not(.danger):hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+/* Sair, encerrar e parar: a faixa de perigo embaixo */
+:root[data-skin="eva"] :is(.btn.danger, .dock .dock-leave) {
+  border-image: repeating-linear-gradient(-45deg, var(--warn) 0 6px, #000 6px 12px) 0 0 3 0 / 0 0 3px 0;
+}
+:root[data-skin="eva"] .workspace-tab[aria-pressed=true], :root[data-skin="eva"] .workspace-tab[aria-expanded=true] {
+  border-color: var(--accent); color: var(--accent); background: rgba(255, 138, 31, .10);
+}
+
+/* ---------- Telas: marcas de mira laranja nos cantos (verdes em quem fala) e rótulos de HUD ---------- */
+:root[data-skin="eva"] .tile { border-color: var(--line); }
+:root[data-skin="eva"] .tile-body::before {
+  content: ""; position: absolute; inset: 8px; z-index: 2; pointer-events: none; opacity: .9;
+  --eva-mark: var(--accent);
+  background:
+    linear-gradient(var(--eva-mark), var(--eva-mark)) 0 0 / 16px 2px no-repeat,
+    linear-gradient(var(--eva-mark), var(--eva-mark)) 0 0 / 2px 16px no-repeat,
+    linear-gradient(var(--eva-mark), var(--eva-mark)) 100% 0 / 16px 2px no-repeat,
+    linear-gradient(var(--eva-mark), var(--eva-mark)) 100% 0 / 2px 16px no-repeat,
+    linear-gradient(var(--eva-mark), var(--eva-mark)) 0 100% / 16px 2px no-repeat,
+    linear-gradient(var(--eva-mark), var(--eva-mark)) 0 100% / 2px 16px no-repeat,
+    linear-gradient(var(--eva-mark), var(--eva-mark)) 100% 100% / 16px 2px no-repeat,
+    linear-gradient(var(--eva-mark), var(--eva-mark)) 100% 100% / 2px 16px no-repeat;
+}
+:root[data-skin="eva"] .tile.speaking .tile-body::before { --eva-mark: var(--ok); }
+:root[data-skin="eva"] .tile-name { font-family: var(--eva-mono); letter-spacing: .06em; }
+:root[data-skin="eva"] .tile-name-text { text-transform: uppercase; color: var(--accent); }
+:root[data-skin="eva"] .tile-chip { font-family: var(--eva-mono); font-weight: 400; letter-spacing: .12em; text-transform: uppercase; }
+:root[data-skin="eva"] .tile-chip:not(.live) { background: transparent; border: 1px solid var(--eva-purple-hi); color: var(--eva-purple-hi); }
+
+/* Palco vazio: o letreiro do EVA-01 ao fundo e a linha de estado do plug embaixo */
+:root[data-skin="eva"] .empty-stage { position: relative; overflow: hidden; border: 1px solid var(--line); background: rgba(0, 0, 0, .35); }
+/* Placa do EVA-01 no meio do palco: marcas de canto e o emblema (a cabeça do EVA-01 de perfil, cortada pela diagonal) à esquerda, UNIT-01 grande, a faixa
+   EVANGELION-01 TEST TYPE e a linha do projeto. Desenho próprio, nas cores do tema. */
+.eva-plate { display: none; }
+:root[data-skin="eva"] .empty-stage { align-content: center; gap: 22px; }
+:root[data-skin="eva"] .eva-plate { display: flex; align-items: center; gap: 22px; pointer-events: none; user-select: none; max-width: 100%; }
+:root[data-skin="eva"] .eva-plate-mark {
+  position: relative; flex: none; width: 150px; height: 150px; --eva-mark: #A57BE6;
+  background:
+    linear-gradient(var(--eva-mark), var(--eva-mark)) 0 0 / 14px 3px no-repeat, linear-gradient(var(--eva-mark), var(--eva-mark)) 0 0 / 3px 14px no-repeat,
+    linear-gradient(var(--eva-mark), var(--eva-mark)) 100% 0 / 14px 3px no-repeat, linear-gradient(var(--eva-mark), var(--eva-mark)) 100% 0 / 3px 14px no-repeat,
+    linear-gradient(var(--eva-mark), var(--eva-mark)) 0 100% / 14px 3px no-repeat, linear-gradient(var(--eva-mark), var(--eva-mark)) 0 100% / 3px 14px no-repeat,
+    linear-gradient(var(--eva-mark), var(--eva-mark)) 100% 100% / 14px 3px no-repeat, linear-gradient(var(--eva-mark), var(--eva-mark)) 100% 100% / 3px 14px no-repeat;
+}
+:root[data-skin="eva"] .eva-plate-mark::before {
+  content: ""; position: absolute; inset: 6px 4px 6px 8px; background: var(--eva-purple-hi);
+  -webkit-mask: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><g fill='black'><path d='M60 30 L92 8 L95 12 L66 36 Z'/><path d='M36 30 L46 18 L62 15 L73 21 L64 31 L50 40 L40 40 Z'/><path d='M53 42 L66 34 L79 30 L87 34 L78 42 L64 46 Z'/><path d='M66 49 L80 45 L86 49 L78 53 Z'/><path d='M87 39 L93 43 L89 50 Z'/><path d='M58 50 L74 56 L88 55 L96 72 L92 84 L84 72 L72 66 L60 64 Z'/><path d='M61 68 L72 70 L86 86 L82 92 L66 80 Z'/><path d='M44 42 L54 48 L58 70 L61 80 L52 62 Z'/></g><path d='M16 6 L70 98' stroke='black' stroke-width='3'/></svg>") center / contain no-repeat; mask: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><g fill='black'><path d='M60 30 L92 8 L95 12 L66 36 Z'/><path d='M36 30 L46 18 L62 15 L73 21 L64 31 L50 40 L40 40 Z'/><path d='M53 42 L66 34 L79 30 L87 34 L78 42 L64 46 Z'/><path d='M66 49 L80 45 L86 49 L78 53 Z'/><path d='M87 39 L93 43 L89 50 Z'/><path d='M58 50 L74 56 L88 55 L96 72 L92 84 L84 72 L72 66 L60 64 Z'/><path d='M61 68 L72 70 L86 86 L82 92 L66 80 Z'/><path d='M44 42 L54 48 L58 70 L61 80 L52 62 Z'/></g><path d='M16 6 L70 98' stroke='black' stroke-width='3'/></svg>") center / contain no-repeat;
+}
+:root[data-skin="eva"] :is(.eva-plate-ne, .eva-plate-rv) {
+  position: absolute; font: 800 30px/1 var(--eva-mincho); color: var(--text); letter-spacing: .02em;
+}
+:root[data-skin="eva"] .eva-plate-ne { left: 16px; top: 42px; }
+:root[data-skin="eva"] .eva-plate-rv { left: 44px; top: 84px; }
+:root[data-skin="eva"] .eva-plate-text { display: grid; gap: 6px; min-width: 0; }
+:root[data-skin="eva"] .eva-plate-unit {
+  font: 700 clamp(56px, 8vw, 104px)/.9 "Chakra Petch", var(--font-display); letter-spacing: .02em; color: var(--accent);
+}
+:root[data-skin="eva"] .eva-plate-bar {
+  padding: 4px 10px 3px; background: var(--accent); color: #000; text-align: center; white-space: nowrap;
+  font: 700 clamp(15px, 2vw, 24px)/1.1 "Chakra Petch", var(--font-display); letter-spacing: .03em;
+}
+:root[data-skin="eva"] .eva-plate-foot {
+  display: flex; justify-content: space-between; gap: 16px; white-space: nowrap;
+  font: 700 clamp(13px, 1.6vw, 20px)/1 "Chakra Petch", var(--font-display); letter-spacing: .06em; color: var(--eva-purple-hi);
+}
+@media (max-width: 760px) { :root[data-skin="eva"] .eva-plate-mark { display: none; } }
+:root[data-skin="eva"] .empty-stage::after {
+  content: "EVANGELION UNIT-01  //  起動待機 STANDBY  //  シンクロ率 0.0%  //  パターン待ち";
+  position: absolute; left: 18px; right: 18px; bottom: 14px; pointer-events: none; text-align: left; white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; font: 400 11px/1 var(--eva-mono); letter-spacing: .2em; color: var(--accent); opacity: .85;
+}
+:root[data-skin="eva"] .empty-stage p { position: relative; z-index: 1; color: var(--text); }
+
+/* ---------- Chat: um terminal. Fundo preto com linhas, texto âmbar, [hora] NOME > mensagem e o cursor laranja ---------- */
+:root[data-skin="eva"] .chat {
+  background: repeating-linear-gradient(to bottom, rgba(255, 138, 31, .035) 0 1px, transparent 1px 3px), #030205;
+  border-top: 1px solid var(--accent);
+}
+:root[data-skin="eva"] .chat-list { font-family: var(--eva-mono); color: var(--eva-amber); }
+:root[data-skin="eva"] .msg { font-size: 13px; line-height: 1.55; }
+:root[data-skin="eva"] .msg-time { color: var(--eva-purple-hi); width: 50px; }
+:root[data-skin="eva"] .msg-time::before { content: "["; }
+:root[data-skin="eva"] .msg-time::after { content: "]"; }
+:root[data-skin="eva"] .msg-line .avatar { display: none; }
+:root[data-skin="eva"] .msg-who { text-transform: uppercase; letter-spacing: .06em; font-weight: 400; }
+:root[data-skin="eva"] .msg-sep { font-size: 0; }
+:root[data-skin="eva"] .msg-sep::before { content: " > "; font-size: 13px; color: var(--accent); }
+:root[data-skin="eva"] .msg-text { color: var(--eva-amber); }
+:root[data-skin="eva"] .msg-text a { color: var(--ok); }
+:root[data-skin="eva"] .new-divider { font-family: var(--eva-mono); letter-spacing: .2em; text-transform: uppercase; }
+:root[data-skin="eva"] .chat-form { align-items: center; }
+:root[data-skin="eva"] .chat-form::before { content: "MAGI>"; flex: none; font: 400 13px/1 var(--eva-mono); letter-spacing: .08em; color: var(--accent); }
+:root[data-skin="eva"] .chat-form textarea {
+  font-family: var(--eva-mono); color: var(--eva-amber); caret-color: var(--accent); background: #000; border-color: var(--line);
+}
+:root[data-skin="eva"] .chat-form textarea::placeholder { color: rgba(255, 194, 122, .45); text-transform: uppercase; letter-spacing: .08em; }
+:root[data-skin="eva"] .chat-form textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 1px rgba(255, 138, 31, .35); }
+
+/* Avisos: tag do MAGI e a borda laranja */
+:root[data-skin="eva"] .toast { font-family: var(--eva-mono); letter-spacing: .04em; border-left: 3px solid var(--accent); }
+:root[data-skin="eva"] .toast::before { content: "MAGI // "; color: var(--accent); }
+:root[data-skin="eva"] ::-webkit-scrollbar-thumb { background-color: rgba(255, 138, 31, .5) !important; border-radius: 0 !important; }
+
+/* ---------- Barra de título e logo: o rosto do EVA-01 e as leituras do plug ---------- */
+:root[data-skin="eva"] .titlebar svg, :root[data-skin="eva"] .brand-mark svg { display: none; }
+:root[data-skin="eva"] .titlebar::before, :root[data-skin="eva"] .brand-mark::before {
+  content: ""; flex: none; width: 18px; height: 18px; background: var(--eva-head) center / contain no-repeat;
+}
+:root[data-skin="eva"] .brand-mark::before { width: 34px; height: 34px; }
+:root[data-skin="eva"] .titlebar span { font-family: var(--eva-mono); font-weight: 400; letter-spacing: .2em; text-transform: uppercase; color: var(--text); }
+:root[data-skin="eva"] .titlebar span::after { content: "  //  EVANGELION 初号機"; color: var(--accent); }
+:root[data-skin="eva"] .titlebar::after {
+  content: "ENTRY PLUG 挿入  ·  LCL 注水  ·  シンクロ率 41.3%"; position: absolute; right: 160px;
+  font: 400 11px/1 var(--eva-mono); letter-spacing: .2em; color: var(--ok); opacity: .85;
+}
+:root[data-skin="eva"] .brand-mark::after {
+  content: "// 汎用人型決戦兵器"; margin-left: 8px; font: 700 12px/1 var(--eva-mincho); letter-spacing: .2em; color: var(--accent);
+}
+@media (max-width: 1000px) { :root[data-skin="eva"] .titlebar::after { display: none; } }
+
+/* ---------- Letreiro na lateral (index.html › #themeDecor), como o pintado na armadura ---------- */
+.theme-decor {
+  position: fixed; left: var(--hub-w, 0px); top: calc(var(--workspace-top) + 8px); bottom: 16px; z-index: 1; width: 44px;
+  display: flex; flex-direction: column; align-items: center; gap: 12px; overflow: hidden;
+  pointer-events: none; user-select: none; color: var(--accent);
+  font-family: "Share Tech Mono", Consolas, monospace; font-size: 11px; letter-spacing: .24em; line-height: 1;
+}
+.theme-decor > span { writing-mode: vertical-rl; flex: none; }
+.theme-decor .decor-num {
+  writing-mode: horizontal-tb; font-family: "Chakra Petch", var(--font-display); font-weight: 700; font-size: 26px;
+  letter-spacing: -.02em; color: var(--accent); padding-bottom: 6px; border-bottom: 2px solid #A57BE6;
+}
+.theme-decor .decor-hazard {
+  width: 10px; height: 44px; border: 1px solid color-mix(in srgb, var(--warn) 70%, transparent);
+  background: repeating-linear-gradient(-45deg, var(--warn) 0 4px, transparent 4px 8px); opacity: .85;
+}
+.theme-decor .decor-jp { font-family: "Shippori Mincho B1 EVA", "Yu Mincho", "MS Mincho", serif; font-weight: 700; font-size: 15px; letter-spacing: .12em; color: var(--text); }
+.theme-decor .decor-unit { font-size: 19px; letter-spacing: .06em; color: var(--accent); }
+.theme-decor .decor-en { color: #A57BE6; }
+.theme-decor .decor-rail { flex: 1 1 0; min-height: 24px; width: 1px; background: linear-gradient(var(--accent), #6B3FA0 70%, transparent); }
+.theme-decor .decor-code { color: var(--ok); font-size: 10px; }
+.theme-decor .decor-sign { color: var(--muted); font-size: 9px; letter-spacing: .34em; }
+:root[data-skin="eva"] .screen { padding-left: 64px; }
+:root[data-skin="eva"] #room { padding-left: 56px; }
+@media (max-width: 900px), (max-height: 560px) {
+  .theme-decor { display: none; }
+  :root[data-skin="eva"] .screen { padding-left: 24px; }
+  :root[data-skin="eva"] #room { padding-left: 16px; }
+}
+@media (max-height: 820px) { .theme-decor .decor-sign { display: none; } }
+@media (max-height: 700px) { .theme-decor :is(.decor-code, .decor-en) { display: none; } }
+
+/* ---------- Prévia na aba Tema (vale sempre, com as cores fixas do tema) ---------- */
+.skin-preview[data-preview=eva] {
+  background:
+    radial-gradient(120% 80% at 50% 120%, rgba(255, 138, 31, .25), transparent 60%),
+    url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='56' height='100'><path d='M28 66L0 50L0 16L28 0L56 16L56 50L28 66L28 100' fill='none' stroke='%236B3FA0' stroke-opacity='.35' stroke-width='1'/></svg>") 0 0 / 20px 36px,
+    #07040C;
+  border-color: #3F2468;
+}
+.skin-preview[data-preview=eva]::before {
+  content: ""; position: absolute; left: 14px; top: 14px; width: 60px; height: 60px; background: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><g fill='none' stroke='%23120820' stroke-width='2' stroke-linejoin='round'><path d='M9 29 L19 21 L24 33 L22 46 L14 51 L7 44 Z'/><path d='M55 29 L45 21 L40 33 L42 46 L50 51 L57 44 Z'/><path d='M32 9 L44 15 L50.5 28 L46 44 L38 50 L32 52 L26 50 L18 44 L13.5 28 L20 15 Z'/><path d='M32 9 L44 15 L50 27 L37 21 Z'/><path d='M19 29 L30 33 L32 39 L34 33 L45 29 L45 32.5 L34.5 36.5 L32 44 L29.5 36.5 L19 32.5 Z'/><path d='M21.5 34.5 L29 37.2 L28 39.4 L22 36.8 Z'/><path d='M42.5 34.5 L35 37.2 L36 39.4 L42 36.8 Z'/><path d='M16.5 43.5 L23 46.5 L22 50 L14.5 47 Z'/><path d='M47.5 43.5 L41 46.5 L42 50 L49.5 47 Z'/><path d='M24 48 L32 52 L40 48 L38.5 56 L33.5 60.5 L30.5 60.5 L25.5 56 Z'/><path d='M31 58 L33 58 L32.6 62.5 L31.4 62.5 Z'/><path d='M31 1.5 L33 1.5 L33 42 L32 46 L31 42 Z'/><path d='M31.35 35 L32.65 35 L32.4 40 L31.6 40 Z'/></g><path d='M9 29 L19 21 L24 33 L22 46 L14 51 L7 44 Z' fill='%234E2A80'/><path d='M55 29 L45 21 L40 33 L42 46 L50 51 L57 44 Z' fill='%234E2A80'/><path d='M32 9 L44 15 L50.5 28 L46 44 L38 50 L32 52 L26 50 L18 44 L13.5 28 L20 15 Z' fill='%237443B5'/><path d='M32 9 L44 15 L50 27 L37 21 Z' fill='%239366D8'/><path d='M19 29 L30 33 L32 39 L34 33 L45 29 L45 32.5 L34.5 36.5 L32 44 L29.5 36.5 L19 32.5 Z' fill='%233A1F66'/><path d='M21.5 34.5 L29 37.2 L28 39.4 L22 36.8 Z' fill='%23F5E663'/><path d='M42.5 34.5 L35 37.2 L36 39.4 L42 36.8 Z' fill='%23F5E663'/><path d='M16.5 43.5 L23 46.5 L22 50 L14.5 47 Z' fill='%23A3F43C'/><path d='M47.5 43.5 L41 46.5 L42 50 L49.5 47 Z' fill='%23A3F43C'/><path d='M24 48 L32 52 L40 48 L38.5 56 L33.5 60.5 L30.5 60.5 L25.5 56 Z' fill='%237F8FE6'/><path d='M31 58 L33 58 L32.6 62.5 L31.4 62.5 Z' fill='%23A3F43C'/><path d='M31 1.5 L33 1.5 L33 42 L32 46 L31 42 Z' fill='%23241440'/><path d='M31.35 35 L32.65 35 L32.4 40 L31.6 40 Z' fill='%23A3F43C'/></svg>") center / contain no-repeat;
+}
+.skin-preview[data-preview=eva]::after {
+  content: "初号機"; position: absolute; right: 14px; top: 18px; font: 900 34px/1 "Shippori Mincho B1 EVA", "Yu Mincho", "MS Mincho", serif; color: #EFE6FF;
+  padding-bottom: 8px; border-bottom: 3px solid #FF8A1F;
+}
+
+/* ---------- Hub (a barra da esquerda) e subsalas ---------- */
+:root[data-skin="eva"] .hub-rail {
+  background: linear-gradient(90deg, transparent calc(100% - 2px), var(--accent) calc(100% - 2px)), linear-gradient(180deg, rgba(107, 63, 160, .25), transparent 40%), var(--panel);
+  border-right-color: var(--line);
+}
+:root[data-skin="eva"] .hub-rail.open { background: var(--eva-marks), linear-gradient(180deg, rgba(107, 63, 160, .25), transparent 200px), var(--panel); box-shadow: inset -2px 0 0 var(--accent), 12px 0 40px rgba(0, 0, 0, .55); }
+:root[data-skin="eva"] .hub-toggle { font-family: var(--eva-mono); font-weight: 400; color: var(--accent); }
+:root[data-skin="eva"] .hub-rail.open .hub-toggle { font-family: var(--eva-mincho); font-weight: 800; letter-spacing: .12em; color: var(--text); }
+:root[data-skin="eva"] .hub-section { font-family: var(--eva-mono); text-transform: uppercase; letter-spacing: .22em; color: var(--accent); }
+:root[data-skin="eva"] :is(.hub-current, .hub-room, .hub-signed-out, .hub-badge, .hub-rail-badge, .hub-live, .voice-channel) { border-radius: 2px; }
+:root[data-skin="eva"] .hub-current { border-left: 3px solid var(--accent); background: linear-gradient(90deg, rgba(255, 138, 31, .14), transparent 70%), var(--panel-2); }
+:root[data-skin="eva"] :is(.hub-badge, .hub-rail-badge) { background: var(--accent); color: #000; font-family: var(--eva-mono); }
+:root[data-skin="eva"] .hub-room .btn.small { letter-spacing: .08em; text-transform: uppercase; }
+:root[data-skin="eva"] .voice-channel-count { font-family: var(--eva-mono); color: var(--accent); }
+:root[data-skin="eva"] #chatEmpty { font-family: var(--eva-mono); color: var(--eva-purple-hi); }
+:root[data-skin="eva"] #chatEmpty::before { content: "> MAGI: CANAL ABERTO. AGUARDANDO TRANSMISSÃO…\A"; white-space: pre-wrap; color: var(--accent); letter-spacing: .06em; }
+
+/* ---------- Mensagens diretas: janelas com as marcas de mira, rótulo laranja e texto de terminal ---------- */
+:root[data-skin="eva"] .dm-window { border-radius: 2px; background: var(--eva-marks), linear-gradient(180deg, rgba(107, 63, 160, .22), transparent 120px), var(--panel); box-shadow: inset 0 2px 0 var(--accent), 0 14px 34px rgba(0, 0, 0, .5); }
+:root[data-skin="eva"] :is(.dm-chip-btn, .dm-dot) { border-radius: 2px; }
+:root[data-skin="eva"] .dm-bar-label { font-family: var(--eva-mono); text-transform: uppercase; letter-spacing: .2em; color: var(--accent); }
+:root[data-skin="eva"] .dm-chip { font-family: var(--eva-mono); font-size: 12px; letter-spacing: .04em; }
+:root[data-skin="eva"] :is(.dm-list, .dm-form textarea) { font-family: var(--eva-mono); color: var(--eva-amber); }
+:root[data-skin="eva"] .dm-form textarea { background: #000; caret-color: var(--accent); }

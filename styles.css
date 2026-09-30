@@ -1321,6 +1321,28 @@ html[data-glass=liquid] .theme-swatches { border-radius: 10px; }
 .connection-detail { fill: var(--surface-muted); font-size: 12px; }
 .connection-map-details { margin: 0; padding-left: 20px; font-size: 13px; color: var(--surface-muted); }
 #connectionMapStatus { flex: 1; }
+.nav-tight #navFriends > .nav-icon + span { display: none; }
+
+/* ── Fontes incluídas no app (assets/fontes; licenças ao lado de cada uma) ─────────────────────────────────────────────── */
+@font-face { font-family: "Chakra Petch"; font-weight: 400; font-display: swap; src: url(assets/fontes/chakra-petch-400.woff2) format("woff2"); }
+@font-face { font-family: "Chakra Petch"; font-weight: 500 600; font-display: swap; src: url(assets/fontes/chakra-petch-600.woff2) format("woff2"); }
+@font-face { font-family: "Chakra Petch"; font-weight: 700 900; font-display: swap; src: url(assets/fontes/chakra-petch-700.woff2) format("woff2"); }
+@font-face { font-family: "Share Tech Mono"; font-weight: 400; font-display: swap; src: url(assets/fontes/share-tech-mono-400.woff2) format("woff2"); }
+/* Love Letter: no lugar do ç ela tem um enfeite, então o ç (U+00E7) fica de fora e vem da reserva (Courier New) */
+@font-face { font-family: "Love Letter Typewriter"; font-weight: 400 700; font-display: swap; src: url(assets/fontes/love-letter-typewriter.woff2) format("woff2"); unicode-range: U+0000-00E6, U+00E8-FFFF; }
+
+
+
+
+/* Luz ambiente (Aparência): atrás do vídeo, o quadro de 32 x 18 de assistir.js esticado e desfocado, para as
+   barras pretas pegarem as cores da transmissão. O vídeo fica sem fundo próprio para ela aparecer. */
+.tile-ambient {
+  position: absolute; inset: -10%; width: 120%; height: 120%; display: block; pointer-events: none;
+  filter: blur(32px) saturate(1.4) brightness(.7);
+}
+.tile-body:has(> .tile-ambient:not([hidden])) video { background: transparent !important; }
+.tile-body { overflow: hidden; } /* a luz ambiente é maior que o vídeo: não passa por cima da faixa do nome */
+
 
 /* HUB: barra fininha na borda esquerda (renderer/hub.js). Fechada, "HUB" em pé; aberta, fica por cima do conteúdo
    (não empurra o vídeo), com "HUB" deitado e as abas Salas e Amigos */

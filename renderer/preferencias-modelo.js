@@ -62,6 +62,11 @@ const AppPreferences = (() => {
     { id: 'consolas', group: 'Monoespaçadas', label: 'Consolas', family: 'Consolas' },
     { id: 'courier', group: 'Monoespaçadas', label: 'Courier New', family: '"Courier New"' },
     { id: 'lucidaConsole', group: 'Monoespaçadas', label: 'Lucida Console', family: '"Lucida Console"' },
+    // Vêm com o app (assets/fontes, licença OFL; @font-face em styles.css): funcionam em qualquer PC
+    { id: 'chakra', group: 'Incluídas no app', label: 'Chakra Petch · painel de controle', family: '"Chakra Petch"', files: ['assets/fontes/chakra-petch-400.woff2', 'assets/fontes/chakra-petch-600.woff2', 'assets/fontes/chakra-petch-700.woff2'] },
+    { id: 'shareTech', group: 'Incluídas no app', label: 'Share Tech Mono · terminal', family: '"Share Tech Mono"', files: ['assets/fontes/share-tech-mono-400.woff2'] },
+    // A máquina de escrever de Serial Experiments Lain (Dixie's Delights, 1996; versão web de AKIRA-MIYAKE, MIT)
+    { id: 'loveLetter', group: 'Incluídas no app', label: 'Love Letter Typewriter · Lain', family: '"Love Letter Typewriter", "Courier New"', files: ['assets/fontes/love-letter-typewriter.woff2'] },
     { id: 'japanese', group: 'Outros idiomas', label: '日本語 · Yu Gothic UI', family: '"Yu Gothic UI", "Meiryo UI", Meiryo', sample: 'こんにちは、配信中です' },
     { id: 'chineseSimplified', group: 'Outros idiomas', label: '简体中文 · Microsoft YaHei UI', family: '"Microsoft YaHei UI", "Microsoft YaHei"', sample: '你好，正在直播' },
     { id: 'chineseTraditional', group: 'Outros idiomas', label: '繁體中文 · Microsoft JhengHei UI', family: '"Microsoft JhengHei UI", "Microsoft JhengHei"', sample: '你好，正在直播' },
@@ -97,7 +102,7 @@ const AppPreferences = (() => {
     return { body, display, console: font?.chat && family ? body : 'Tahoma, Verdana, sans-serif' };
   }
   const defaults = { colors: { main: '#22271E', secondary: '#2D3327', detail1: '#D6C45C', detail2: '#A6D089', text: '', live: '', speaking: '', warn: '', line: '' },
-    appearance: { glass: 'opaque', level: glassLevel.clear, border: 'solid' },
+    appearance: { glass: 'opaque', level: glassLevel.clear, border: 'solid', ambient: true },
     font: { family: 'system', custom: '', chat: false }, nameFont: '',
     sounds: { join: 'notification035', leave: 'whoosh', chat: 'wood', voiceJoin: 'suaveEntrou', voiceLeave: 'suaveSaiu',
       mute: 'suaveMutou', unmute: 'suaveDesmutou', deafen: 'suaveFoneDesligou', undeafen: 'suaveFoneLigou',
@@ -120,6 +125,10 @@ const AppPreferences = (() => {
     { id: '', label: 'Padrão', note: 'O visual normal do app, com as cores que você escolher.' },
     { id: 'arasaka', label: 'Arasaka', note: 'Cyberpunk 2077: preto, vermelho em listras de monitor, cantos retos e o emblema da corporação.',
       colors: { main: '#000000', secondary: '#080B0C', detail1: '#FF1F4F', detail2: '#5DE4C7', text: '#CFD6D4', line: '#233031' }, appearance: { glass: 'opaque', border: 'solid' } },
+    // E.V.A by Asock: dentro do Entry Plug do EVA-01. Roxo da armadura nos painéis, laranja do HUD no destaque
+    // (você/ao vivo), verde de quem fala e amarelo de alerta. O desenho fica em styles-eva.css (html[data-skin=eva]).
+    { id: 'eva', label: 'E.V.A by Asock', note: 'Evangelion: o cockpit do EVA-01. Roxo e laranja, HUD de sincronia, letreiros em japonês e o chat num terminal.',
+      colors: { main: '#07040C', secondary: '#170C29', detail1: '#FF8A1F', detail2: '#A3F43C', warn: '#FFD23F', text: '#EFE6FF', line: '#3F2468' }, appearance: { glass: 'opaque', border: 'solid' } },
   ];
   const cleanSkin = (id) => skins.some((k) => k.id && k.id === id) ? id : '';
   // Preferências com o tema aplicado (o resto, como fontes e sons, fica como está)
@@ -127,16 +136,20 @@ const AppPreferences = (() => {
     const t = themes.find(x => x.id === id) || skins.find(x => x.id && x.id === id);
     if (!t) return normalize(prefs);
     const colors = { ...defaults.colors, text: '', live: '', speaking: '', warn: '', line: '', ...t.colors };
-    const appearance = { ...defaults.appearance, level: glassLevel[t.appearance.glass] ?? defaults.appearance.level, ...t.appearance };
+    const before = normalize(prefs).appearance;
+    const appearance = { ...defaults.appearance, level: glassLevel[t.appearance.glass] ?? defaults.appearance.level, ambient: before.ambient, ...t.appearance };
     return normalize({ ...prefs, colors, appearance });
   }
-  // Qual tema pronto bate com as preferências atuais ('' = personalizado)
+  // Qual tema pronto bate com as preferências atuais ('' = personalizado). Desfoque, escurecer e fonte não contam.
+  // Material e bordas ficam livres: trocar Opaco, Transparente, Líquido ou Normal não tira o tema;
+  // se bater exato com um tema, é ele, senão o primeiro com as mesmas cores.
   function currentTheme(prefs) {
     const p = normalize(prefs);
-    return themes.find(t => {
+    const same = keys => t => {
       const n = applyTheme(p, t.id);
-      return JSON.stringify(n.colors) === JSON.stringify(p.colors) && n.appearance.glass === p.appearance.glass && n.appearance.border === p.appearance.border;
-    })?.id || '';
+      return JSON.stringify(n.colors) === JSON.stringify(p.colors) && keys.every(k => n.appearance[k] === p.appearance[k]);
+    };
+    return (themes.find(same(['glass', 'border'])) || themes.find(same([])))?.id || '';
   }
   function hex(value) {
     if (typeof value !== 'string') return null;
@@ -151,6 +164,7 @@ const AppPreferences = (() => {
     if (glassModes.includes(raw?.appearance?.glass)) result.appearance.glass = raw.appearance.glass;
     const level = raw?.appearance?.level;
     if (typeof level === 'number' && Number.isFinite(level)) result.appearance.level = Math.max(0, Math.min(100, Math.round(level)));
+    if (typeof raw?.appearance?.ambient === 'boolean') result.appearance.ambient = raw.appearance.ambient;
     const custom = fontName(raw?.font?.custom);
     if (raw?.font?.family === 'custom' ? !!custom : fonts.some(f => f.id === raw?.font?.family)) result.font.family = raw.font.family;
     result.font.custom = custom;
@@ -195,7 +209,7 @@ const AppPreferences = (() => {
     const live = c.live || c.detail1, speaking = c.speaking || c.detail2, warn = c.warn || c.detail2;
     const line = c.line || mix(c.secondary, surface, .18);
     return {
-      '--bg': c.main, '--panel': c.secondary, '--sunken': mix(c.secondary, '#000000', .15),
+      '--bg': c.main, '--bg-solid': c.main, '--panel': c.secondary, '--sunken': mix(c.secondary, '#000000', .15),
       '--panel-2': mix(c.secondary, surface, .07), '--panel-3': mix(c.secondary, surface, .13),
       '--text': text, '--text-2': mix(text, c.main, .15), '--muted': mix(text, c.main, .3),
       '--surface-text': surface, '--surface-text-2': mix(surface, c.secondary, .15), '--surface-muted': muted,
@@ -295,6 +309,7 @@ const AppPreferences = (() => {
     }
     stopAll() { for (const event of [...this.players.keys()]) this.stop(event); }
   }
-  return { key, sounds, events, defaults, optionalColors, glassModes, glassLevel, borderModes, fonts, fontName, fontStacks, cleanNameFont, nameFontStack, borders, themes, skins, cleanSkin, applyTheme, currentTheme, hex, normalize, read, write, palette, glass, SoundPlayer };
+  return { key, sounds, events, defaults, optionalColors, glassModes, glassLevel, borderModes, fonts,
+    fontName, fontStacks, cleanNameFont, nameFontStack, borders, themes, skins, cleanSkin, applyTheme, currentTheme, hex, normalize, read, write, palette, glass, SoundPlayer };
 })();
 if (typeof module !== 'undefined') module.exports = AppPreferences;

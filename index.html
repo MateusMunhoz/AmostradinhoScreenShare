@@ -7,9 +7,21 @@
   <title>Tela P2P</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="styles-arasaka.css">
+  <link rel="stylesheet" href="styles-eva.css">
 </head>
 <body>
   <div id="titlebar" class="titlebar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h13v10H3zM8 19h13V9"/></svg><span>Tela P2P</span></div>
+  <!-- Letreiro na lateral, como o que vem pintado na armadura do EVA-01 (tema E.V.A). Some em janela estreita. -->
+  <div id="themeDecor" class="theme-decor" aria-hidden="true" hidden>
+    <span class="decor-num">01</span>
+    <span class="decor-hazard"></span>
+    <span class="decor-jp">汎用人型決戦兵器</span>
+    <span class="decor-en">EVANGELION</span>
+    <span class="decor-rail"></span>
+    <span class="decor-jp decor-unit">初号機</span>
+    <span class="decor-code">TEST TYPE · UNIT-01</span>
+    <span class="decor-sign">THEME BY ASOCK</span>
+  </div>
   <header class="workspace-header">
     <span class="workspace-brand">Tela P2P <span id="workspaceContext">Início</span></span>
     <nav id="workspaceNav" aria-label="Painéis do aplicativo">
@@ -310,7 +322,18 @@
           <div class="stage-area" id="streamArea">
             <div class="stream-pane-head"><h2>Transmissões</h2><button class="btn small" id="streamPeople" type="button">Pessoas na sala</button></div>
             <div id="pausedStrip" class="paused-strip" role="group" aria-label="Transmissões em pausa" hidden></div>
-            <div id="emptyStage" class="empty-stage"><p id="emptyText"></p></div>
+            <div id="emptyStage" class="empty-stage">
+              <!-- Placa do EVA-01 (só aparece no tema E.V.A, styles-eva.css) -->
+              <div class="eva-plate" aria-hidden="true">
+                <span class="eva-plate-mark"><span class="eva-plate-ne">NE</span><span class="eva-plate-rv">RV</span></span>
+                <span class="eva-plate-text">
+                  <span class="eva-plate-unit">UNIT-01</span>
+                  <span class="eva-plate-bar">EVANGELION-01 TEST TYPE</span>
+                  <span class="eva-plate-foot"><span>-PROJECT EVA-</span><span>TOKYO-3</span></span>
+                </span>
+              </div>
+              <p id="emptyText"></p>
+            </div>
             <div id="tiles" class="tiles" hidden></div>
             <div id="stageSplitter" class="stage-splitter" role="separator" aria-orientation="vertical" aria-label="Largura da coluna de telas pequenas" aria-valuemin="15" aria-valuemax="50" tabindex="0" hidden></div>
             <div id="stageScroll" class="stage-scroll" hidden><button type="button" data-dir="-1"></button><div class="stage-scroll-track" role="scrollbar" aria-orientation="horizontal" aria-controls="tiles" aria-label="Rolar a faixa de telas" aria-valuemin="0" aria-valuemax="100" tabindex="0"><div class="stage-scroll-thumb"></div></div><button type="button" data-dir="1"></button></div>
@@ -753,6 +776,7 @@
             <label><input type="radio" name="border" value="liquid"><span class="glass-swatch" data-border-swatch="liquid" aria-hidden="true"></span><span>Líquido</span></label>
           </div>
         </div>
+        <label class="vd-check"><input type="checkbox" id="ambientLight"> Luz ambiente nos vídeos: as barras pretas pegam as cores da transmissão</label>
         <div class="settings-row"><label for="fontFamily">Fonte</label>
           <div class="font-pick"><select id="fontFamily"></select><button id="loadLocalFonts" class="btn small" type="button">Fontes deste PC</button></div>
         </div>

@@ -8,7 +8,8 @@ const rcedit = require('rcedit');
 module.exports = async function iconeNoExe(context) {
   if (context.electronPlatformName !== 'win32') return;
   const exe = path.join(context.appOutDir, `${context.packager.appInfo.productFilename}.exe`);
-  const icon = path.join(context.packager.projectDir, 'assets', 'icone', 'tela-p2p.ico');
+  // O ícone do build: o de win.icon (npm run dist:eva troca pelo do EVA-01), senão o padrão
+  const icon = path.join(context.packager.projectDir, context.packager.config.win?.icon || 'assets/icone/tela-p2p.ico');
   await rcedit(exe, { icon });
   console.log(`  • ícone do app aplicado  file=${path.relative(context.packager.projectDir, exe)}`);
 };
