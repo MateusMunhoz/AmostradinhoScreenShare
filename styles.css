@@ -555,14 +555,14 @@ kbd { font-family: Consolas, monospace; font-size: 11px; color: var(--muted); bo
 .iv-title { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 10px; overflow: hidden; }
 .iv-title strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
 .iv-title .hint { color: rgba(255, 255, 255, .7); font-size: 12px; white-space: nowrap; }
-.iv-bar .btn { text-decoration: none; display: inline-flex; align-items: center; }
+.iv-bar .btn { text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
 .iv-stage { grid-row: 2; grid-column: 2; min-width: 0; min-height: 0; display: grid; place-items: center; padding: 8px 0 24px; overflow: hidden; }
 .iv-stage img { max-width: 100%; max-height: 100%; object-fit: contain; cursor: zoom-in; border-radius: 4px; box-shadow: 0 10px 40px rgba(0, 0, 0, .6); }
 /* Foto de perfil: ocupa boa parte da tela mesmo quando a foto é pequena (a de 128 px ficava minúscula) */
 .iv-stage.photo img { width: min(100%, 72vh); height: auto; }
 .iv-stage.actual { overflow: auto; place-items: start center; }
 .iv-stage.actual img { max-width: none; max-height: none; cursor: zoom-out; }
-.iv-nav { grid-row: 2; align-self: center; justify-self: center; width: 44px; height: 44px; border-radius: 50%; background: rgba(255, 255, 255, .1); border-color: transparent; color: #fff; }
+.btn.icon.iv-nav { grid-row: 2; align-self: center; justify-self: center; width: 44px; height: 44px; border-radius: 50%; background: rgba(255, 255, 255, .1); border-color: transparent; color: #fff; }
 .iv-nav:hover:not(:disabled) { background: rgba(255, 255, 255, .2); }
 .iv-nav[hidden] { display: none; }
 .iv-prev { grid-column: 1; } .iv-next { grid-column: 3; }
@@ -1480,28 +1480,56 @@ main { margin-left: var(--hub-w); }
 .hub-signed-out { display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px dashed var(--line-strong, var(--line)); border-radius: 8px; }
 .hub-signed-out .btn { align-self: flex-start; }
 .hub-friends-body { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
-.hub-add { display: flex; gap: 6px; }
-.hub-add input { flex: 1; }
-.hub-add input, .hub-filter { min-width: 0; width: 100%; padding: 8px 10px; font-size: 13px; }
-.hub-add .btn.icon { flex: none; width: 36px; padding: 0; display: grid; place-items: center; }
-.hub-add svg, .hub-remove svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.hub-views button { font-size: 12px; padding: 5px 4px; }
-.hub-friends .razze-status:empty, #friendsSummary:empty { display: none; }
+/* Busca + Adicionar numa linha; o formulário de adicionar ocupa o lugar dela */
+.hub-search-row { display: flex; gap: 8px; }
+.hub-search-row[hidden], .hub-add-form[hidden] { display: none; }
+.hub-filter { min-width: 0; width: 100%; height: 36px; box-sizing: border-box; padding: 0 10px; font: inherit; font-size: 13px;
+  color: var(--text); background: var(--sunken); border: 1px solid var(--field-line); border-radius: 8px; }
+.hub-filter::placeholder { color: var(--muted); }
+.hub-filter:focus, .hub-filter:focus-visible { border-color: var(--accent); outline: 2px solid var(--accent-soft); outline-offset: 0; }
+.hub-filter[aria-invalid="true"] { border-color: var(--warn); }
+.hub-add-open { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 36px; }
+.hub-add-open svg, .hub-menu-item svg { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.hub-add-form { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+.hub-add-form label { font-size: 13px; font-weight: 600; }
+.hub-add-hint { margin: 0; font-size: 12px; line-height: 1.4; color: var(--muted); }
+.hub-add-hint.erro { color: var(--warn); }
+.hub-add-actions { display: flex; justify-content: flex-end; gap: 8px; }
+/* Todos / Online / Pedidos: chips */
+.hub-views { display: flex; gap: 6px; flex-wrap: wrap; }
+.hub-views button { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: 999px;
+  background: transparent; color: var(--muted); font: inherit; font-size: 12px; cursor: pointer; }
+.hub-views button:hover { color: var(--text); }
+.hub-views button[aria-selected="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--text); font-weight: 600; }
+.hub-friends .razze-status:empty { display: none; }
+.hub-empty-row { padding: 10px 12px; border: 1px dashed var(--line-strong); border-radius: 8px; font-size: 12px; line-height: 1.45; color: var(--muted); }
 .hub-friend-list { display: flex; flex-direction: column; gap: 4px; }
 .hub-friend { padding: 8px 8px 8px 10px; gap: 8px; }
 .hub-avatar { position: relative; flex: none; display: inline-flex; }
 .hub-avatar::after { content: ""; position: absolute; right: -2px; bottom: -2px; width: 10px; height: 10px; border-radius: 50%; background: var(--muted); box-shadow: 0 0 0 2px var(--panel-2); }
 .hub-avatar.on::after { background: var(--ok); }
 .hub-friend:not(:has(.hub-avatar.on)) .avatar { opacity: .55; }
-.hub-remove { flex: none; width: 28px; height: 28px; padding: 0; display: grid; place-items: center; background: transparent; border-color: transparent; color: var(--muted); opacity: 0; }
-.hub-friend:hover .hub-remove, .hub-remove:focus-visible { opacity: 1; }
-.hub-remove:hover { color: var(--danger, var(--warn)); }
+/* Menu "⋯": flutua ao lado do botão, por cima da linha, sem empurrar a lista */
+.hub-friend { position: relative; }
+.hub-room .btn.small.hub-more { flex: none; width: 28px; height: 28px; padding: 0; display: grid; place-items: center; background: transparent; border-color: transparent; box-shadow: none; color: var(--muted); }
+.hub-more:hover, .hub-more[aria-expanded="true"] { background: var(--panel-3); color: var(--text); }
+.hub-more svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; }
+.hub-menu { position: absolute; z-index: 5; right: 42px; top: 50%; transform: translateY(-50%); padding: 3px; border: 1px solid var(--line-strong); border-radius: 8px;
+  background: var(--panel-2); box-shadow: 0 10px 24px rgba(0, 0, 0, .5); }
+.hub-menu-item { display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 10px; border: 0; border-radius: 6px; background: transparent;
+  font: inherit; font-size: 12px; white-space: nowrap; cursor: pointer; }
+.hub-menu-item:hover, .hub-menu-item:focus-visible { background: var(--panel-3); outline: none; }
+.hub-danger-text { color: var(--warn); }
+/* Remover: a linha vira a pergunta */
+.hub-friend.hub-confirm { border-color: var(--warn); background: color-mix(in srgb, var(--warn) 8%, var(--panel-2)); }
+.hub-confirm .hub-room-info strong, .hub-confirm .hub-room-meta { white-space: normal; }
+.hub-room .btn.hub-danger { background: var(--warn); border-color: var(--warn); color: var(--bg); font-weight: 600; }
 /* Adicionar, filtro e abas ficam fixos no topo; só a lista rola. Botões das linhas compactos para o nome caber */
 .hub-friends { overflow: hidden; }
 .hub-friends-body { flex: 1; }
 .hub-friend-list { flex: 1; min-height: 0; overflow-y: auto; padding-right: 2px; }
 .hub-room .btn.small { flex: none; padding: 5px 10px; font-size: 12px; }
-.hub-filter, .hub-views, .hub-add, #friendsSummary, .hub-friends .razze-status { flex: none; }
+.hub-search-row, .hub-add-form, .hub-views, .hub-friends .razze-status { flex: none; }
 
 /* Confirmação no tema (appConfirm em renderer/util.js): por cima de tudo, até do HUB e das configurações */
 .modal.app-confirm { z-index: 60; }
@@ -1605,7 +1633,7 @@ main { margin-left: var(--hub-w); }
 .hub-conv:hover, .hub-conv:focus-visible { background: var(--panel-3); outline: none; }
 .hub-conv.has-unread .hub-room-info strong { color: var(--accent); }
 .hub-conv-time { flex: none; align-self: flex-start; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.hub-talk { flex: none; width: 28px; height: 28px; padding: 0; display: grid; place-items: center; }
+.hub-room .btn.hub-talk { flex: none; width: 28px; height: 28px; padding: 0; display: grid; place-items: center; }
 .hub-talk svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .hub-list > li { flex-shrink: 0; }
 .dm-slot { min-width: 160px; }

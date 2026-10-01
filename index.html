@@ -104,17 +104,25 @@
           <button id="friendsOpenProfile" class="btn small primary" type="button">Entrar na conta</button>
         </div>
         <div id="razzeStepFriends" class="hub-friends-body" hidden>
-          <div class="hub-add">
-            <input id="razzeFriendNickname" type="text" maxlength="60" placeholder="Adicionar pelo nickname" aria-label="Nickname do amigo para adicionar" autocomplete="off">
-            <button id="razzeAddFriend" class="btn small primary icon" type="button" title="Mandar pedido de amizade" aria-label="Mandar pedido de amizade"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+          <!-- Uma busca só; adicionar abre um formulário no lugar dela (hub.js: setFriendsAddOpen) -->
+          <div id="friendsSearchRow" class="hub-search-row">
+            <input id="friendsFilter" class="hub-filter" type="search" placeholder="Buscar amigos" aria-label="Buscar amigos pelo nome" autocomplete="off">
+            <button id="friendsAddOpen" class="btn small primary hub-add-open" type="button" aria-expanded="false" aria-controls="friendsAddForm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 20a6 6 0 0 0-12 0M9 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M16 11h6"/></svg>Adicionar</button>
           </div>
-          <input id="friendsFilter" class="hub-filter" type="search" placeholder="Filtrar amigos" aria-label="Filtrar amigos pelo nome" autocomplete="off">
-          <div id="friendsViews" class="seg hub-views" role="tablist" aria-label="Mostrar">
+          <div id="friendsAddForm" class="hub-add-form" hidden>
+            <label for="razzeFriendNickname">Adicionar amigo</label>
+            <input id="razzeFriendNickname" class="hub-filter" type="text" maxlength="60" autocomplete="off" aria-describedby="friendsAddHint">
+            <p id="friendsAddHint" class="hub-add-hint">Digite o nickname exato. A pessoa recebe um pedido e aparece aqui quando aceitar.</p>
+            <div class="hub-add-actions">
+              <button id="friendsAddCancel" class="btn small" type="button">Cancelar</button>
+              <button id="razzeAddFriend" class="btn small primary" type="button">Enviar pedido</button>
+            </div>
+          </div>
+          <div id="friendsViews" class="hub-views" role="tablist" aria-label="Mostrar">
             <button type="button" role="tab" data-view="all" aria-selected="true">Todos</button>
-            <button id="friendsViewOnline" type="button" role="tab" data-view="online" aria-selected="false">Online</button>
-            <button id="friendsViewRequests" type="button" role="tab" data-view="requests" aria-selected="false">Pedidos</button>
+            <button type="button" role="tab" data-view="online" aria-selected="false">Online</button>
+            <button type="button" role="tab" data-view="requests" aria-selected="false">Pedidos <span id="friendsRequestsBadge" class="hub-badge" hidden></span></button>
           </div>
-          <p id="friendsSummary" class="hint"></p>
           <p id="razzeFriendsStatus" class="razze-status" role="status" aria-live="polite"></p>
           <div id="razzeFriends" class="hub-friend-list"></div>
           <p id="friendsEmpty" class="hint" hidden></p>

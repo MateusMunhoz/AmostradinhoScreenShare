@@ -2,8 +2,9 @@
 // HUB: a barra fininha na borda esquerda. Fechada, mostra "HUB" em pé (e quantos pedidos de amizade chegaram); aberta,
 // "HUB" deitado e três abas:
 // - Salas: a sala em que você está (em destaque), as outras salas abertas na rede e o botão do menu inicial.
-// - Amigos: adicionar pelo nickname, filtrar (texto + Todos/Online/Pedidos), convidar para a sua sala, aceitar e
-//   cancelar pedidos. Os dados vêm da RazzeAPI (refreshRazzeLists e a presença em conectividade.js).
+// - Amigos: buscar (texto + Todos/Online/Pedidos), adicionar pelo nickname (formulário no lugar da busca), convidar
+//   para a sua sala, aceitar e cancelar pedidos, remover pelo menu "⋯" (confirma na própria linha). Os dados vêm da
+//   RazzeAPI (refreshRazzeLists e a presença em conectividade.js).
 // - Rede: como os PCs se conectam (Radmin, Razze, Internet), servidores, redes Razze e a conta (entrar, criar, sair).
 // As abas Amigos e Rede têm os ids friendsDialog e networkDialog: quem pergunta "estão à vista?" continua usando .hidden.
 // Aberto, procura sessões mesmo fora da tela inicial (sessionWatchWanted em sessoes.js).
@@ -13,6 +14,7 @@ const HUB_TABS = ['rooms', 'friends', 'network']; // as mensagens diretas ficam 
 const hub = { open: false, tab: HUB_TABS.includes(load('hubTab', 'rooms')) ? load('hubTab', 'rooms') : 'rooms' };
 const friendsData = { friends: [], incoming: [], outgoing: [], error: '' };
 const friendsFilter = { text: '', view: 'all' }; // view: all | online | requests
+const friendsUi = { menu: null, confirm: null }; // id do amigo com o menu "⋯" aberto / com a remoção para confirmar
 
 function setHubOpen(on, tab) {
   hub.open = !!on;
@@ -24,7 +26,7 @@ function setHubOpen(on, tab) {
   setSessionWatch(sessionWatchWanted());
   renderHub();
   if (typeof syncWorkspace === 'function') syncWorkspace();
-  if (hub.open && hub.tab === 'friends' && !$('razzeStepFriends').hidden) $('razzeFriendNickname').focus();
+  if (hub.open && hub.tab === 'friends' && !$('razzeStepFriends').hidden) $($('friendsAddForm').hidden ? 'friendsFilter' : 'razzeFriendNickname').focus();
   else if (hub.open && hub.tab !== 'network') $('hubToggle').focus();
 }
 function setHubTab(tab) { setHubOpen(true, tab); }
@@ -162,28 +164,52 @@ function updateFriendsPresence(live) {
 function friendsStatus(text) { $('razzeFriendsStatus').textContent = text; }
 const semAcento = (t) => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
+// Adicionar amigo: o formulário toma o lugar da busca enquanto está aberto
+function setFriendsAddOpen(on) {
+  $('friendsAddForm').hidden = !on;
+  $('friendsSearchRow').hidden = !!on;
+  $('friendsAddOpen').setAttribute('aria-expanded', String(!!on));
+  showFriendsAddError('');
+  if (on) $('razzeFriendNickname').focus();
+  else { $('razzeFriendNickname').value = ''; $('friendsAddOpen').focus(); }
+}
+// Erro do envio aparece embaixo do campo (vazio = sem erro)
+function showFriendsAddError(text) {
+  const hint = $('friendsAddHint');
+  hint.textContent = text || 'Digite o nickname exato. A pessoa recebe um pedido e aparece aqui quando aceitar.';
+  hint.classList.toggle('erro', !!text);
+  hint.setAttribute('role', text ? 'alert' : 'note');
+  $('razzeFriendNickname').setAttribute('aria-invalid', String(!!text));
+}
+function setFriendMenu(id, confirm = null) {
+  friendsUi.menu = id;
+  friendsUi.confirm = confirm;
+  renderFriends();
+}
+function focusFriendControl(key) { $('razzeFriends').querySelector(`[data-focus="${CSS.escape(key)}"]`)?.focus(); }
+
 function renderFriends() {
   const box = $('razzeFriends');
   if (!box) return;
+  // A presença redesenha a lista a cada poucos segundos: o foco volta para o mesmo botão
+  const keep = box.contains(document.activeElement) ? document.activeElement.dataset.focus : '';
   const needle = semAcento(friendsFilter.text.trim());
   const match = (x) => !needle || semAcento(x.displayName).includes(needle);
   const online = (f) => !friendsData.error && !!f.online;
   const requests = friendsData.incoming.length + friendsData.outgoing.length;
-  const onlineCount = friendsData.friends.filter(online).length;
-  $('friendsSummary').textContent = friendsData.friends.length
-    ? `${onlineCount} online · ${friendsData.friends.length} ${friendsData.friends.length === 1 ? 'amigo' : 'amigos'}` : '';
   for (const b of $('friendsViews').querySelectorAll('button')) b.setAttribute('aria-selected', String(b.dataset.view === friendsFilter.view));
-  $('friendsViewRequests').textContent = requests ? `Pedidos · ${requests}` : 'Pedidos';
-  $('friendsViewOnline').textContent = `Online · ${onlineCount}`;
+  $('friendsRequestsBadge').hidden = !requests;
+  $('friendsRequestsBadge').textContent = String(requests);
 
   const groups = [];
   const view = friendsFilter.view;
   const incoming = friendsData.incoming.filter(match), outgoing = friendsData.outgoing.filter(match);
   const on = friendsData.friends.filter((f) => online(f) && match(f)), off = friendsData.friends.filter((f) => !online(f) && match(f));
-  if (view !== 'online' && incoming.length) groups.push(['Pedidos recebidos', incoming.map(incomingRow)]);
+  if (view !== 'online' && incoming.length) groups.push([`Pedidos recebidos · ${incoming.length}`, incoming.map(incomingRow)]);
   if (view !== 'requests' && on.length) groups.push([`Online · ${on.length}`, on.map((f) => friendRow(f, true))]);
+  else if (view === 'all' && !needle && off.length) groups.push(['Online · 0', [friendsEmptyRow('Ninguém online agora. Crie uma sala em Salas e convide quando alguém chegar.')]]);
   if (view === 'all' && off.length) groups.push([`Offline · ${off.length}`, off.map((f) => friendRow(f, false))]);
-  if (view !== 'online' && outgoing.length) groups.push(['Pedidos enviados', outgoing.map(outgoingRow)]);
+  if (view !== 'online' && outgoing.length) groups.push([`Pedidos enviados · ${outgoing.length}`, outgoing.map(outgoingRow)]);
   box.replaceChildren();
   for (const [title, rows] of groups) {
     const h = document.createElement('h3');
@@ -199,32 +225,79 @@ function renderFriends() {
   empty.textContent = needle ? `Ninguém com “${friendsFilter.text.trim()}” por aqui.`
     : view === 'online' ? 'Nenhum amigo online agora.'
     : view === 'requests' ? 'Nenhum pedido de amizade pendente.'
-    : 'Você ainda não tem amigos. Digite o nickname de alguém acima e clique em +.';
+    : 'Você ainda não tem amigos. Clique em Adicionar e digite o nickname de alguém.';
+  if (keep) focusFriendControl(keep);
+}
+
+function friendsEmptyRow(text) {
+  const li = document.createElement('li');
+  li.className = 'hub-empty-row';
+  li.textContent = text;
+  return li;
+}
+function hubIconButton(icon, label, onclick, cls, focusKey) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'btn small icon ' + cls;
+  b.innerHTML = icon;
+  b.title = b.ariaLabel = label;
+  b.dataset.focus = focusKey;
+  b.onclick = onclick;
+  return b;
 }
 
 function friendRow(f, isOnline) {
   const li = document.createElement('li');
   li.className = 'hub-room hub-friend';
+  // Remover: a própria linha vira a pergunta, com o nome à vista
+  if (friendsUi.confirm === f.id) {
+    li.classList.add('hub-confirm');
+    li.setAttribute('role', 'group');
+    li.ariaLabel = `Remover ${f.displayName}`;
+    const no = hubButton('Não', () => { setFriendMenu(null); focusFriendControl('more:' + f.id); }, 'btn small');
+    no.dataset.focus = 'no:' + f.id;
+    const yes = hubButton('Remover', () => removeFriend(f), 'btn small hub-danger');
+    yes.dataset.focus = 'yes:' + f.id;
+    li.append(hubInfo(`Remover ${f.displayName}?`, 'Precisa de um novo pedido para voltar.'), no, yes);
+    return li;
+  }
   const info = hubInfo(f.displayName, isOnline ? 'Online' : friendsData.error ? 'Indisponível' : 'Offline');
   info.lastChild.dataset.friendPresence = f.id; // o teste da Razze confere o texto por aqui
   info.lastChild.classList.toggle('on', isOnline);
-  const inRoom = !!state.myId && !!state.roomAddr;
-  const invite = hubButton('Convidar', () => inviteFriend(f), 'btn small' + (inRoom && isOnline ? ' primary' : ''),
-    inRoom ? `Copiar o ${state.cloud ? 'código' : 'endereço'} da sua sala para mandar para ${f.displayName}` : 'Entre numa sala para convidar');
-  invite.disabled = !inRoom;
-  const remove = document.createElement('button');
-  remove.type = 'button';
-  remove.className = 'btn small icon hub-remove';
-  remove.innerHTML = ICON.close;
-  remove.title = remove.ariaLabel = `Remover ${f.displayName} dos amigos`;
-  remove.onclick = () => removeFriend(f);
-  const talk = document.createElement('button');
-  talk.type = 'button';
-  talk.className = 'btn small icon hub-talk';
-  talk.innerHTML = ICON.chat;
-  talk.title = talk.ariaLabel = `Mandar mensagem para ${f.displayName}`;
-  talk.onclick = () => openDm(f.id);
-  li.append(hubAvatar(f.displayName, isOnline), info, talk, invite, remove);
+  li.append(hubAvatar(f.displayName, isOnline), info,
+    hubIconButton(ICON.chat, `Mandar mensagem para ${f.displayName}`, () => openDm(f.id), 'hub-talk', 'talk:' + f.id));
+  // Convidar só faz sentido para quem está online
+  if (isOnline) {
+    const inRoom = !!state.myId && !!state.roomAddr;
+    const invite = hubButton('Convidar', () => inviteFriend(f), 'btn small' + (inRoom ? ' primary' : ''),
+      inRoom ? `Copiar o ${state.cloud ? 'código' : 'endereço'} da sua sala para mandar para ${f.displayName}` : 'Entre numa sala para convidar');
+    invite.disabled = !inRoom;
+    li.append(invite);
+  }
+  const open = friendsUi.menu === f.id;
+  const more = hubIconButton(ICON.more, `Mais opções para ${f.displayName}`, () => {
+    setFriendMenu(open ? null : f.id);
+    focusFriendControl((open ? 'more:' : 'remove:') + f.id);
+  }, 'hub-more', 'more:' + f.id);
+  more.setAttribute('aria-haspopup', 'menu');
+  more.setAttribute('aria-expanded', String(open));
+  li.append(more);
+  if (open) {
+    const menu = document.createElement('div');
+    menu.className = 'hub-menu';
+    menu.setAttribute('role', 'menu');
+    menu.ariaLabel = `Opções para ${f.displayName}`;
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'hub-menu-item hub-danger-text';
+    item.setAttribute('role', 'menuitem');
+    item.dataset.focus = 'remove:' + f.id;
+    item.innerHTML = ICON.userMinus;
+    item.append(`Remover ${f.displayName}`);
+    item.onclick = () => { setFriendMenu(null, f.id); focusFriendControl('no:' + f.id); };
+    menu.append(item);
+    li.append(menu);
+  }
   return li;
 }
 function incomingRow(r) {
@@ -238,7 +311,7 @@ function outgoingRow(r) {
   const li = document.createElement('li');
   li.className = 'hub-room hub-request';
   li.append(hubAvatar(r.displayName), hubInfo(r.displayName, 'Aguardando resposta'),
-    hubButton('Cancelar', () => cancelFriendRequest(r), 'btn small', `Cancelar o pedido para ${r.displayName}`));
+    hubButton('Cancelar pedido', () => cancelFriendRequest(r), 'btn small', `Cancelar o pedido para ${r.displayName}`));
   return li;
 }
 
@@ -250,8 +323,9 @@ async function cancelFriendRequest(r) {
   try { await window.api.razzeCancelFriendRequest(r.id); friendsStatus('Pedido cancelado.'); await refreshRazzeLists(); }
   catch (error) { friendsStatus('Não foi possível cancelar o pedido: ' + error.message); }
 }
+// A confirmação já aconteceu na própria linha (friendRow)
 async function removeFriend(f) {
-  if (!(await appConfirm(`Remover ${f.displayName} dos seus amigos?`, { title: 'Remover amigo', ok: 'Remover', danger: true }))) return;
+  friendsUi.confirm = null;
   try { await window.api.razzeRemoveFriend(f.id); friendsStatus(`${f.displayName} saiu da sua lista de amigos.`); await refreshRazzeLists(); }
   catch (error) { friendsStatus('Não foi possível remover: ' + error.message); }
 }
@@ -272,7 +346,27 @@ function setupHub() {
   $('hubTabNetwork').onclick = () => { renderConnectivitySettings(); setHubTab('network'); };
   $('friendsFilter').oninput = () => { friendsFilter.text = $('friendsFilter').value; renderFriends(); };
   for (const b of $('friendsViews').querySelectorAll('button')) b.onclick = () => { friendsFilter.view = b.dataset.view; renderFriends(); };
-  $('hubRail').addEventListener('keydown', (e) => { if (e.key === 'Escape' && hub.open) { e.stopPropagation(); setHubOpen(false); } });
-  // Clique fora do HUB aberto fecha (ele fica por cima das telas)
-  document.addEventListener('mousedown', (e) => { if (hub.open && !$('hubRail').contains(e.target) && !e.target.closest('.app-confirm, #dmBar')) setHubOpen(false); });
+  $('friendsAddOpen').onclick = () => setFriendsAddOpen(true);
+  $('friendsAddCancel').onclick = () => setFriendsAddOpen(false);
+  $('razzeFriendNickname').addEventListener('input', () => { if ($('friendsAddHint').classList.contains('erro')) showFriendsAddError(''); });
+  // Esc fecha primeiro o que estiver aberto dentro do HUB (menu, pergunta, formulário), depois o HUB
+  $('hubRail').addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape' || !hub.open) return;
+    e.stopPropagation();
+    const id = friendsUi.menu || friendsUi.confirm;
+    if (id) { setFriendMenu(null); focusFriendControl('more:' + id); }
+    else if (!$('friendsAddForm').hidden && $('friendsAddForm').contains(e.target)) setFriendsAddOpen(false);
+    else setHubOpen(false);
+  });
+  // Clique fora do HUB aberto fecha (ele fica por cima das telas); clique fora do menu "⋯" fecha o menu
+  document.addEventListener('mousedown', (e) => {
+    if (hub.open && !$('hubRail').contains(e.target) && !e.target.closest('.app-confirm, #dmBar')) setHubOpen(false);
+    else if (friendsUi.menu && !e.target.closest('.hub-menu, .hub-more')) closeFriendMenuQuietly();
+  });
+}
+// Fecha o menu sem redesenhar a lista: o clique que fechou pode ser num botão de outra linha e precisa chegar nele
+function closeFriendMenuQuietly() {
+  friendsUi.menu = null;
+  $('razzeFriends').querySelector('.hub-menu')?.remove();
+  $('razzeFriends').querySelector('.hub-more[aria-expanded="true"]')?.setAttribute('aria-expanded', 'false');
 }

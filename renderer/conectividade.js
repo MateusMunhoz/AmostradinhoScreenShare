@@ -567,10 +567,14 @@ function setupConnectivitySettings() {
     if (!nickname.trim()) { $('razzeFriendNickname').focus(); return; }
     try {
       const result = await window.api.razzeRequestFriend(nickname.trim());
-      $('razzeFriendNickname').value = '';
+      setFriendsAddOpen(false);
       $('razzeFriendsStatus').textContent = result.status === 'accepted' ? `Agora você e ${nickname.trim()} são amigos.` : `Pedido enviado para ${nickname.trim()}.`;
       await refreshRazzeLists();
-    } catch (error) { $('razzeFriendsStatus').textContent = 'Não foi possível adicionar amigo: ' + error.message; }
+    } catch (error) {
+      // O Electron põe "Error invoking remote method '…': Error:" na frente da mensagem do serviço
+      showFriendsAddError('Não foi possível adicionar: ' + String(error.message).replace(/^Error invoking remote method '[^']*': (?:\w*Error: )?/, ''));
+      $('razzeFriendNickname').focus();
+    }
   };
   $('razzeAddFriend').onclick = () => addFriendByNickname($('razzeFriendNickname').value);
   // Enter nos campos de uma linha faz o mesmo que o botão ao lado

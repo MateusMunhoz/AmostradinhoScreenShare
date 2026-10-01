@@ -52,6 +52,8 @@ const ICON = {
   reset: svg('M3 12a9 9 0 1 0 2.64-6.36M3 3v6h6'), // seta voltando: voltar ao padrão
   info: svg('M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 16v-5M12 8h.01'),
   userPlus: svg('M15 20a6 6 0 0 0-12 0M9 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M16 11h6'),
+  userMinus: svg('M15 20a6 6 0 0 0-12 0M9 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM16 11h6'),
+  more: svg('M5 12h.01M12 12h.01M19 12h.01'), // "⋯": três pontos (traço redondo)
   userCheck: svg('M15 20a6 6 0 0 0-12 0M9 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM16 11l2 2 4-4'),
   leave: svg('M9 21H5V3h4M16 17l5-5-5-5M21 12H9'),
   chat: svg('M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'),

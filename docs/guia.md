@@ -207,6 +207,15 @@ Uma música por canal (Voz geral ou subsala), que todo mundo ouve junto, no mesm
 - **Vídeo que não toca:** quem publicou pode não deixar tocar fora do YouTube; a tela avisa para trocar por outro.
 - **Modo Internet:** o servidor da VPS precisa estar atualizado; sem isso, a nota musical não aparece.
 
+## Amigos
+
+No HUB (a barra fina na borda esquerda), aba **Amigos**. Precisa de conta Razze.
+
+- **Buscar:** o campo do topo filtra a lista pelo nome. Os chips **Todos**, **Online** e **Pedidos** mudam o que aparece; o número no **Pedidos** conta os pedidos recebidos e enviados.
+- **Adicionar:** clique em **Adicionar**, digite o nickname exato e **Enviar pedido** (ou Enter). Se der errado, o motivo aparece embaixo do campo. Quando der certo, o pedido vai para **Pedidos enviados**.
+- **Convidar:** aparece só para quem está online; copia o endereço (ou o código) da sua sala.
+- **Remover:** no **⋯** da linha, **Remover [nome]**. A própria linha pergunta se é isso mesmo; **Não** ou Esc desiste.
+
 ## Mensagens diretas
 
 Conversa com um amigo (conta Razze), dentro ou fora da sala.
