@@ -713,7 +713,14 @@ function renderShareBox() {
   $('shareBtn').hidden = state.sharing;
   $('liveChip').hidden = !state.sharing;
   const selfOn = !!state.myId && state.in.has(state.myId);
-  setIcon($('selfViewBtn'), 'eye', selfOn ? 'Parar de ver a sua transmissão' : 'Ver a sua própria transmissão');
+  const me = selfOn ? 'Parar de ver a sua transmissão' : 'Ver a sua transmissão no palco';
+  $('selfViewBtn').title = me;
+  $('selfViewBtn').setAttribute('aria-label', me);
+  // Miniatura e nome do que está saindo (a imagem da lista de telas: a prévia ao vivo fica desligada, pesa no jogo)
+  const src = state.sources.find((s) => s.id === state.sharingSource);
+  $('liveSource').textContent = src ? sourceLabel(src) : 'Sua tela';
+  $('liveThumb').hidden = !src?.thumbnail;
+  if (src?.thumbnail) $('liveThumb').src = src.thumbnail;
   $('selfViewBtn').setAttribute('aria-pressed', String(selfOn));
   $('myShare').hidden = !state.sharing;
   syncPreview();
@@ -726,7 +733,8 @@ function renderWatchers() {
     ? `Assistindo você: ${names.join(', ')}`
     : 'Ninguém está assistindo ainda. Só é enviado vídeo para quem clicar em Assistir.';
   const n = state.out.size;
-  $('liveText').textContent = n === 0 ? 'ninguém assistindo' : n === 1 ? '1 assistindo' : `${n} assistindo`;
+  const who = [...state.out.keys()].map(nameOf);
+  $('liveText').textContent = n === 0 ? 'Ninguém assistindo' : n <= 2 ? `${joinNames(who)} assistindo` : `${who[0]} e mais ${n - 1} assistindo`;
   // Sem o som do PC (desligado ou a captura falhou): fica à vista na barra, não só num aviso que some
   const silent = !!state.stream && !state.stream.getAudioTracks().length;
   $('liveText').classList.toggle('live-silent', silent);

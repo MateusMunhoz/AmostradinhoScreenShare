@@ -28,7 +28,7 @@ Tudo o que dá para fazer no Tela P2P, com os detalhes. Para começar do zero, v
 
   Clicar fora ou apertar Esc fecha a lista.
 - **Barra de baixo:**
-  - **Transmitir minha tela** (vira "Ao vivo · N assistindo", com **Parar**);
+  - **Transmitir minha tela** (vira o bloco **Ao vivo**: a miniatura do que você transmite, que abre a sua tela no palco, o nome da tela e quem está assistindo, com **Trocar** e **Parar**);
   - a voz;
   - o chat por cima do jogo;
   - as janelas flutuantes abertas;
@@ -198,6 +198,7 @@ No painel **Chat de voz**, a voz fica dividida em canais: a **Voz geral** e as s
 Uma música por canal (Voz geral ou subsala), que todo mundo ouve junto, no mesmo ponto.
 
 - **Pôr:** no cabeçalho do canal em que você está (fora da voz, a Voz geral), clique na **nota musical** e cole o link de um vídeo do YouTube (`youtube.com/watch`, `youtu.be`, `shorts` ou `music.youtube.com`). A tela da música abre para você.
+- **Pelo chat:** escreva `/musica` e o link (ou `/tocar`). Antes de mandar, aparece a prévia do vídeo (capa e título) e onde ele vai tocar; **Enter** põe a música no seu canal, ou troca a que está tocando. Só `/` mostra os comandos; texto com `/` que não é comando vai como mensagem normal.
 - **Ouvir:** a música aparece embaixo do canal, no painel de voz (e no balão do sol, no Mapa), com **Ouvir**. Ela vira uma tela no palco, ao lado das transmissões: dá para pôr em destaque, tela cheia e arrastar.
 - **Controles de todos:** tocar e pausar, o ponto da música, **Trocar** e **Parar a música** valem para todo mundo. Só quem está naquele canal (ou quem pôs a música) controla.
 - **Só seus:** o volume (fica salvo neste PC) e o **X**, que para de ouvir sem parar para os outros.

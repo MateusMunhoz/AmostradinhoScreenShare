@@ -133,6 +133,8 @@ function createMusicTile(ch, entry) {
   iframe.className = 'music-frame';
   iframe.allow = 'autoplay; encrypted-media';
   iframe.title = 'Player do YouTube';
+  // Isolado: o player roda os scripts dele, mas não navega a janela do app nem abre janelas
+  iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation');
   const overlay = document.createElement('div');
   overlay.className = 'tile-overlay music-overlay';
   overlay.textContent = 'Carregando o YouTube…';

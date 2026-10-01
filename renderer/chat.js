@@ -733,3 +733,98 @@ $('chatInput').addEventListener('keydown', (e) => {
   e.preventDefault();
   e.stopImmediatePropagation();
 }, true);
+
+// ---------- Comandos do chat ----------
+// "/musica <link do YouTube>" (ou /tocar, /música): enquanto escreve, mostra a prévia do vídeo (o próprio player do
+// YouTube, parado: capa e título) e onde vai tocar; Enter põe (ou troca) a música do seu canal, como o botão do
+// painel de voz. Só "/" mostra os comandos. Texto que começa com "/" sem ser comando vai como mensagem normal.
+const CHAT_COMMANDS = [{ name: 'musica', aliases: ['música', 'tocar'], usage: '/musica <link do YouTube>', about: 'Toca no seu canal de voz, todos ouvem junto' }];
+const chatCmd = { videoId: '', ready: null, complete: null };
+function chatCommandOf(text) {
+  const m = /^\/(\S*)(?:\s+([\s\S]*))?$/.exec(text);
+  if (!m) return null;
+  const word = m[1].toLowerCase();
+  const cmd = CHAT_COMMANDS.find((c) => c.name === word || c.aliases.includes(word));
+  return { word, cmd, arg: (m[2] || '').trim(), typingWord: m[2] === undefined };
+}
+function renderChatCommand() {
+  const box = $('chatCmd');
+  const c = state.myId ? chatCommandOf($('chatInput').value) : null;
+  chatCmd.ready = null;
+  chatCmd.complete = null;
+  if (!c) { box.hidden = true; chatCmd.videoId = ''; return; }
+  // Ainda escrevendo o nome do comando: a lista do que existe
+  if (c.typingWord && !c.cmd) {
+    const options = CHAT_COMMANDS.filter((o) => [o.name, ...o.aliases].some((n) => n.startsWith(c.word)));
+    chatCmd.videoId = '';
+    if (!options.length) { box.hidden = true; return; }
+    box.replaceChildren(...options.map((o) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'chat-cmd-item';
+      const u = document.createElement('strong');
+      u.textContent = o.usage;
+      const a = document.createElement('span');
+      a.textContent = o.about;
+      b.append(u, a);
+      b.onmousedown = (e) => { e.preventDefault(); completeChatCommand(o); };
+      return b;
+    }));
+    chatCmd.complete = options[0];
+    box.hidden = false;
+    return;
+  }
+  if (!c.cmd) { box.hidden = true; chatCmd.videoId = ''; return; }
+  const ch = myVoiceChannel(), playing = state.musicas.get(ch);
+  const line = (text, cls = '') => { const p = document.createElement('p'); p.className = `chat-cmd-line ${cls}`; p.textContent = text; return p; };
+  const videoId = parseYouTube(c.arg);
+  const fail = (text, cls) => { box.replaceChildren(line(text, cls)); chatCmd.videoId = ''; };
+  if (!state.musicaOn) fail('Esta sala não tem música: quem criou precisa atualizar o app.', 'warn');
+  else if (!c.arg) fail('Cole o link de um vídeo do YouTube depois do comando.');
+  else if (!videoId) fail('Não reconheci esse link do YouTube.', 'warn');
+  else {
+    // A prévia é o player do YouTube parado (sem clique): mostra a capa e o título do vídeo
+    if (chatCmd.videoId !== videoId || !box.querySelector('iframe')) {
+      const frame = document.createElement('iframe');
+      frame.className = 'chat-cmd-preview';
+      frame.title = 'Prévia do vídeo';
+      frame.src = `${YT_ORIGIN}/embed/${videoId}?controls=0&disablekb=1&fs=0&rel=0&iv_load_policy=3&playsinline=1`;
+      frame.setAttribute('allow', 'encrypted-media');
+      frame.setAttribute('sandbox', 'allow-scripts allow-same-origin'); // isolado: não navega a janela do app nem abre janelas
+      frame.tabIndex = -1;
+      box.replaceChildren(frame);
+      chatCmd.videoId = videoId;
+    } else box.querySelector('.chat-cmd-line')?.remove();
+    box.append(line(playing ? `Enter para trocar a música de ${channelName(ch)}` : `Enter para tocar em ${channelName(ch)}`, 'go'));
+    chatCmd.ready = { ch, videoId, playing };
+  }
+  box.hidden = false;
+}
+function completeChatCommand(o) {
+  const t = $('chatInput');
+  t.value = `/${o.name} `;
+  t.focus();
+  t.setSelectionRange(t.value.length, t.value.length);
+  fitChatInput();
+  renderChatCommand();
+}
+function runChatCommand() {
+  const r = chatCmd.ready;
+  if (!r) return;
+  if (r.playing) musicCtl(r.playing, 'trocar', { videoId: r.videoId });
+  else { musica.wantOpen = r.ch; send({ type: 'musica-set', videoId: r.videoId }); }
+  $('chatInput').value = '';
+  fitChatInput();
+  renderChatCommand();
+}
+$('chatInput').addEventListener('input', renderChatCommand);
+// Antes do Enter que envia (inicio.js): com um comando na linha, Enter (ou Tab) é dele, e não vai como mensagem
+$('chatInput').addEventListener('keydown', (e) => {
+  if ($('chatCmd').hidden) return;
+  if ((e.key === 'Enter' || e.key === 'Tab') && !e.shiftKey && chatCmd.complete) completeChatCommand(chatCmd.complete);
+  else if (e.key === 'Enter' && !e.shiftKey && chatCommandOf($('chatInput').value)?.cmd) runChatCommand();
+  else if (e.key === 'Escape') $('chatCmd').hidden = true;
+  else return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+}, true);

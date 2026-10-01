@@ -486,9 +486,9 @@
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v12H3zM8 21h8M12 17v4"/></svg>Transmitir
             </button>
             <div class="live-chip" id="liveChip" hidden>
-              <span class="live-pill">Ao vivo</span>
-              <span id="liveText"></span>
-              <button class="btn icon small" id="selfViewBtn" type="button" aria-pressed="false"></button>
+              <!-- A miniatura do que você transmite é o "Me ver" (abre a sua tela no palco); ao lado, o que é e quem assiste -->
+              <button class="live-thumb" id="selfViewBtn" type="button" aria-pressed="false"><img id="liveThumb" alt=""><span class="live-pill">Ao vivo</span></button>
+              <span class="live-info"><strong id="liveSource"></strong><span id="liveText"></span></span>
               <button class="btn small" id="switchShareBtn" type="button" title="Trocar a tela ou janela transmitida, sem parar">Trocar</button>
               <button class="btn small danger" id="stopShareBtn" type="button">Parar</button>
             </div>
@@ -560,6 +560,8 @@
             </div>
             <!-- Sugestões de @nome enquanto escreve (renderer/chat.js) -->
             <div id="mentionPop" class="mention-pop" role="listbox" aria-label="Mencionar alguém" hidden></div>
+            <!-- Comandos do chat (renderer/chat.js): "/musica <link>" mostra a prévia do vídeo antes de tocar -->
+            <div id="chatCmd" class="chat-cmd" role="status" aria-live="polite" hidden></div>
             <!-- Arquivos esperando o Enviar: miniatura das imagens, nome dos outros, X para tirar -->
             <div id="chatStaged" class="chat-staged" aria-label="Arquivos para enviar" hidden></div>
             <form id="chatForm" class="chat-form">
