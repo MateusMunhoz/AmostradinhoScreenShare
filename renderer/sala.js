@@ -173,6 +173,7 @@ function enterRoom(welcome, owner, host, port, cloud = null) {
   state.sessao = welcome.sessao || null;
   state.subsalas = (welcome.features || []).includes('subsalas') && Array.isArray(welcome.subsalas) ? welcome.subsalas : null;
   state.subsalaMove = (welcome.features || []).includes('subsala-move');
+  state.musicaOn = (welcome.features || []).includes('musica');
   state.order = [...welcome.members.map((m) => m.id), welcome.id];
   lembrarDaSala();
   voice.reset(welcome);
@@ -208,6 +209,7 @@ function leaveRoom(reason, kind = 'info', endRoom = false) {
   }
   stopSharing();
   for (const id of [...state.in.keys()]) stopWatching(id, false);
+  clearMusicas();
   stopStats();
   closeStats();
   perfStop();
@@ -223,6 +225,7 @@ function leaveRoom(reason, kind = 'info', endRoom = false) {
   state.cloud = null;
   state.subsalas = null;
   state.subsalaMove = false;
+  state.musicaOn = false;
   RTC_CONFIG.iceServers = [];
   state.order = [];
   state.rewatch.clear();
@@ -304,7 +307,7 @@ async function becomeHost() {
   let res;
   for (let i = 0; i < 6; i++) {
     // O modo da rede vai junto: sala da Razze continua só para quem está na Razze depois que o host muda
-    res = await window.api.startServer(state.port, state.password, { chat: chat.log, nextId: Math.max(0, ...known) + 1, hostId: state.myId, sessao: state.sessao, subsalas: state.subsalas || [] }, selectedNetworkProvider());
+    res = await window.api.startServer(state.port, state.password, { chat: chat.log, nextId: Math.max(0, ...known) + 1, hostId: state.myId, sessao: state.sessao, subsalas: state.subsalas || [], musicas: musicSeed() }, selectedNetworkProvider());
     if (res.ok || !state.migrating) break;
     await new Promise((r) => setTimeout(r, 1000));
   }
@@ -340,7 +343,9 @@ async function rejoin(host, timeoutMs) {
   state.handoff = (welcome.features || []).includes('handoff');
   state.sessao = welcome.sessao || state.sessao;
   state.subsalaMove = (welcome.features || []).includes('subsala-move');
+  state.musicaOn = (welcome.features || []).includes('musica');
   setSubsalas((welcome.features || []).includes('subsalas') ? welcome.subsalas : null);
+  setMusicas(state.musicaOn ? welcome.musicas : [], welcome.now);
   if (!state.isOwner && !state.cloud) save('roomAddr', `${host}:${state.port}`);
   const present = new Set(welcome.members.map((m) => m.id));
   for (const m of state.members.values()) delete m.back;
@@ -431,6 +436,12 @@ function onRoomMessage(m) {
       break;
     case 'subsalas':
       setSubsalas(m.list);
+      break;
+    case 'musicas':
+      setMusicas(m.list, m.now);
+      break;
+    case 'musica-erro':
+      toast(m.text, 'error');
       break;
     case 'signal':
       handleSignal(m.from, m.data || {});

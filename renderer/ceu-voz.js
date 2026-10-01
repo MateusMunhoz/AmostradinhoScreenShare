@@ -81,7 +81,7 @@ function skySystems() {
     : { id: state.myId, name: `${getName()} (você)`, sharing: state.sharing, muted: voice.muted, deafened: voice.deafened, me: true });
   return (channels ? ['', ...state.subsalas.map((s) => s.id)] : ['']).map((ch) => ({
     ch, sub: channels && ch ? state.subsalas.find((s) => s.id === ch) : null, name: channels ? channelName(ch) : 'Voz',
-    here: !!voice.session && voice.channel === ch, people: voiceIdsIn(ch).map(person),
+    here: !!voice.session && voice.channel === ch, people: voiceIdsIn(ch).map(person), music: !!state.musicas?.get(ch),
   }));
 }
 
@@ -234,7 +234,7 @@ function setupSkyCamera() {
   }).observe(box);
 }
 
-function drawSkySystem(sky, { ch, name, here, people }, [sx, sy], { map, geo, labels, now, outer }) {
+function drawSkySystem(sky, { ch, name, here, people, music }, [sx, sy], { map, geo, labels, now, outer }) {
   // No mapa, a área em volta do sol inteira recebe o clique e o planeta arrastado
   if (map) {
     const hit = skyEl('circle', { class: 'sky-hit', cx: sx, cy: sy, r: Math.max(outer, 13) + 7 });
@@ -271,6 +271,12 @@ function drawSkySystem(sky, { ch, name, here, people }, [sx, sy], { map, geo, la
     sun.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openSkyPop({ kind: 'channel', ch }, sun); } };
   }
   sky.append(sun);
+  // Canal com música: uma notinha ao lado do sol (no mapa)
+  if (map && music) {
+    const note = skyEl('text', { class: 'sky-music', x: (sx + 8).toFixed(1), y: (sy - 6).toFixed(1) });
+    note.textContent = '♪';
+    sky.append(note);
+  }
   if (labels) {
     // No mapa, o nome do canal fica mais para baixo quando tem planeta (o nome da pessoa vai embaixo dela)
     const below = Math.max(outer, 13) + (map && people.length ? 15 : 9);
@@ -397,6 +403,8 @@ function renderSkyPop() {
     const head = channelHead(skyPop.ch, sub);
     if (!subsalasOn()) head.querySelector('strong').textContent = 'Voz';
     list.append(head);
+    const music = musicRow(skyPop.ch);
+    if (music) list.append(music);
     const ids = voiceIdsIn(skyPop.ch);
     for (const id of ids) list.append(voiceRow(id));
     if (!ids.length) {

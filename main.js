@@ -73,6 +73,10 @@ app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 // Quem assiste enquanto joga ficava com o som picotando e respondendo atrasado a quem transmite,
 // que então baixava a qualidade achando que a internet estava ruim.
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
+// Com a janela escondida, o Chromium pausa sozinho os vídeos sem som. A música junto (player do YouTube) silenciada
+// enquanto você joga pararia e sairia do ponto da sala. As telas assistidas não mudam: com o app escondido, quem
+// transmite já para de mandar o vídeo (syncIncomingVideo em assistir.js).
+app.commandLine.appendSwitch('disable-background-media-suspend');
 
 let selectedSourceId = null;
 let captureSystemAudio = true;
@@ -277,6 +281,12 @@ if (hasSingleInstance) app.whenReady().then(() => {
     const sources = await desktopCapturer.getSources({ types: ['screen', 'window'] });
     const source = sources.find((s) => s.id === selectedSourceId) || sources[0];
     callback(captureSystemAudio ? { video: source, audio: 'loopback' } : { video: source });
+  });
+  // Música junto (renderer/musica.js): o player oficial do YouTube embutido. A página é um arquivo local, sem
+  // endereço; o YouTube pede que um app embutindo o player se identifique pelo Referer (sem isso, erro 153)
+  session.defaultSession.webRequest.onBeforeSendHeaders({ urls: ['https://www.youtube-nocookie.com/embed/*'] }, (details, callback) => {
+    details.requestHeaders.Referer = 'https://com.telap2p.app/';
+    callback({ requestHeaders: details.requestHeaders });
   });
 
   ipcMain.handle('get-sources', async () => {

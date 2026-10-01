@@ -402,6 +402,7 @@ document.addEventListener('keydown', (e) => {
   else if (!$('voiceMapPop').hidden) closeSkyPop();
   else if (!$('dmPanel').hidden) { setDmPanel(false); $('dmBarLabel').focus(); }
   else if (!$('dmMoreMenu').hidden) { setDmMore(false); $('dmMore').focus(); }
+  else if (!$('musicPop').hidden) closeMusicPop();
   else if (!$('peoplePop').hidden) { setPeopleOpen(false); $('peopleBtn').focus(); }
   else if (!$('statsDialog').hidden) closeStats();
   else if (!$('closeDialog').hidden) closeCloseDialog();

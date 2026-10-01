@@ -81,6 +81,27 @@ function createSubsalas(seed) {
   };
 }
 
+// Música (YouTube) por canal: no máximo uma em cada um (Voz geral ou subsala). O servidor guarda só o que tocar e
+// de onde: o vídeo, se está tocando, e a posição num instante (pos, em segundos, no momento at do relógio do
+// servidor). Cada pessoa toca no próprio player oficial do YouTube; a sala só sincroniza os comandos (nenhum áudio
+// passa por aqui).
+const MUSICA_MAX_POS = 24 * 3600;
+function cleanVideoId(v) { return /^[\w-]{11}$/.test(String(v || '')) ? String(v) : ''; }
+function cleanTitle(t) { return typeof t === 'string' ? t.replace(/[\x00-\x1f]/g, ' ').trim().slice(0, 200) : ''; }
+function cleanPos(p) { return Math.max(0, Math.min(MUSICA_MAX_POS, Number(p) || 0)); }
+function createMusicas(seed, now = Date.now) {
+  const map = new Map();
+  for (const m of Array.isArray(seed) ? seed : []) {
+    const ch = cleanChannel(m?.ch), videoId = cleanVideoId(m?.videoId);
+    if (!videoId || map.has(ch)) continue;
+    map.set(ch, { ch, videoId, title: cleanTitle(m.title), by: /^\d{1,6}$/.test(String(m.by || '')) ? String(m.by) : '', playing: m.playing !== false, pos: cleanPos(m.pos), at: now() });
+  }
+  return { map, now, msg: () => ({ type: 'musicas', list: [...map.values()], now: now() }) };
+}
+// O canal de alguém: o da voz; fora da voz, a Voz geral
+const channelOf = (m) => (m.voiceSession ? m.voiceChannel || '' : '');
+const channelLabel = (ch) => (ch ? `Subsala_${ch}` : 'Voz geral');
+
 // Uma pessoa nova na sala, a partir do "hello". resume: voltando para a mesma sala (mesmo número)
 function newMember(ws, msg, resume, subsalas = null) {
   const shareInfo = resume && msg.sharing ? cleanShareInfo(msg.shareInfo) : null;
@@ -119,7 +140,7 @@ const voiceStateOf = (id, m) => ({ type: 'voice-state', id, session: m.voiceSess
 
 // Mensagem de quem já está na sala. members: Map id -> pessoa; broadcast(msg, exceptId).
 // subsalas (opcional): sem ele, a sala não tem subsalas e todo mundo fica na Voz geral.
-function handleMemberMessage({ members, broadcast, chat, subsalas = null }, id, me, msg) {
+function handleMemberMessage({ members, broadcast, chat, subsalas = null, musicas = null }, id, me, msg) {
   if (msg.type === 'voice-state') {
     if (typeof msg.session !== 'string' || !/^[\w-]{0,64}$/.test(msg.session)) return;
     me.voiceSession = msg.session;
@@ -138,6 +159,7 @@ function handleMemberMessage({ members, broadcast, chat, subsalas = null }, id, 
       m.voiceChannel = '';
       broadcast(voiceStateOf(mid, m));
     }
+    if (musicas?.map.delete(sub)) broadcast(musicas.msg()); // a música da subsala apagada para
     broadcast({ type: 'subsalas', list: subsalas.list });
   } else if (msg.type === 'subsala-move' && subsalas) {
     // Arrastar alguém para outro canal no painel de voz: só quem está na voz, para a Voz geral ou uma subsala que
@@ -147,6 +169,36 @@ function handleMemberMessage({ members, broadcast, chat, subsalas = null }, id, 
     if (!target?.voiceSession || (ch && !subsalas.has(ch)) || (target.voiceChannel || '') === ch) return;
     target.voiceChannel = ch;
     broadcast(voiceStateOf(String(msg.id), target));
+  } else if (msg.type === 'musica-set' && musicas) {
+    // Pôr uma música: vai para o canal de quem pôs. Só uma por canal (para trocar, use "trocar")
+    const videoId = cleanVideoId(msg.videoId), ch = channelOf(me);
+    if (!videoId) return;
+    if (musicas.map.has(ch)) return send(me.ws, { type: 'musica-erro', text: `Já tem uma música em ${channelLabel(ch)}. Troque ou pare a que está tocando.` });
+    musicas.map.set(ch, { ch, videoId, title: cleanTitle(msg.title), by: id, playing: true, pos: 0, at: musicas.now() });
+    broadcast(musicas.msg());
+  } else if (msg.type === 'musica-ctl' && musicas) {
+    const ch = cleanChannel(msg.ch), m = musicas.map.get(ch);
+    if (!m) return;
+    // O título vem do player de quem ouve (o servidor não fala com o YouTube); vale o primeiro que chegar
+    if (msg.action === 'titulo') {
+      const title = cleanTitle(msg.title);
+      if (!m.title && title) { m.title = title; broadcast(musicas.msg()); }
+      return;
+    }
+    // Controla quem está no canal da música, ou quem pôs ela
+    if (channelOf(me) !== ch && m.by !== id) return send(me.ws, { type: 'musica-erro', text: `Só quem está em ${channelLabel(ch)} controla a música de lá.` });
+    const t = musicas.now();
+    if (msg.action === 'stop') musicas.map.delete(ch);
+    else if (msg.action === 'play' || msg.action === 'pause' || msg.action === 'seek') {
+      m.pos = cleanPos(msg.pos);
+      m.at = t;
+      if (msg.action !== 'seek') m.playing = msg.action === 'play';
+    } else if (msg.action === 'trocar') {
+      const videoId = cleanVideoId(msg.videoId);
+      if (!videoId) return;
+      Object.assign(m, { videoId, title: cleanTitle(msg.title), by: id, playing: true, pos: 0, at: t });
+    } else return;
+    broadcast(musicas.msg());
   } else if (msg.type === 'avatar') {
     // Foto de perfil: só o hash passa por aqui; a foto vai direto de quem tem para quem pede
     me.avatar = cleanHash(msg.hash);
@@ -178,5 +230,5 @@ function handleMemberMessage({ members, broadcast, chat, subsalas = null }, id, 
 
 module.exports = {
   MAX_MEMBERS, CHAT_KEEP, SUBSALAS_MAX, send, cleanShareInfo, cleanHash, cleanNameFont, cleanAddrs, cleanSessao, cleanClient,
-  cleanChannel, createSubsalas, newMember, memberInfo, createChat, handleMemberMessage,
+  cleanChannel, createSubsalas, cleanVideoId, createMusicas, newMember, memberInfo, createChat, handleMemberMessage,
 };

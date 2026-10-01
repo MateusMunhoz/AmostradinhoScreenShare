@@ -102,6 +102,7 @@ function updateDuck() {
 function applyScreenVolume(id) {
   const link = state.in.get(id);
   const t = link?.tile;
+  if (link?.music) return t.applyVolume(); // música junto: o volume é o do player do YouTube (renderer/musica.js)
   if (!t || link.self) return; // a sua própria tela fica sempre sem som
   const v = volOf(id);
   t.video.volume = (v.screen / 100) * duck.factor;
@@ -231,6 +232,7 @@ function syncMuteSound() {
   voiceWasDeafened = deafened;
 }
 function renderVoice() {
+  if (typeof renderMusicTiles === 'function') renderMusicTiles(); // os controles da música dependem do seu canal (musica.js)
   const active = !!voice.session;
   const join = $('voiceJoin');
   join.disabled = !voice.supported;

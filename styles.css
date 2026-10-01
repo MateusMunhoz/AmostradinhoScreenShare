@@ -1626,3 +1626,44 @@ html[data-tips="off"] .tip { display: none !important; }
 }
 #tipBubble[hidden] { display: none; }
 .tip-sample { display: inline-grid; place-items: center; width: 14px; height: 14px; border: 1.5px solid currentColor; border-radius: 50%; font: 700 9px/1 var(--font-body); vertical-align: 1px; color: var(--muted); }
+
+/* Música junto (renderer/musica.js). A tela da música: o player do YouTube (visível, como pede o YouTube) e, embaixo,
+   os controles que valem para todos: tocar/pausar, o ponto da música, trocar e parar */
+.music-tile .music-note { flex: none; display: inline-flex; color: var(--accent); }
+.music-tile .music-note svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.music-tile .music-where { flex: none; }
+.music-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+.music-controls { flex: none; display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-top: 1px solid var(--line); background: var(--panel); }
+.music-controls .btn.icon { width: 30px; height: 30px; padding: 0; display: grid; place-items: center; }
+.music-controls svg { width: 15px; height: 15px; fill: currentColor; stroke: none; }
+.music-time { flex: none; min-width: 84px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.music-seek { flex: 1; min-width: 60px; accent-color: var(--accent); }
+.music-controls .btn.small { flex: none; }
+.music-controls :disabled { opacity: .45; cursor: not-allowed; }
+.tile.small .music-controls { display: none; }
+@container (max-width: 420px) { .music-controls .btn.small, .music-time { display: none; } }
+.tile:fullscreen .music-controls { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; background: var(--theme-glass); opacity: 0; transition: opacity .2s; }
+.tile:fullscreen:hover .music-controls, .tile:fullscreen .music-controls:focus-within { opacity: 1; }
+/* No painel de voz: a música do canal, embaixo do cabeçalho dele, com Ouvir */
+.voice-music { display: flex; align-items: center; gap: 8px; margin: 4px 0 2px; padding: 6px 8px; border: 1px dashed var(--line-strong); border-radius: 6px; font-size: 12.5px; }
+.voice-music-icon { flex: none; display: inline-flex; color: var(--accent); }
+.voice-music-icon svg, .voice-channel-music svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.voice-music-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.voice-music-info strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.voice-music-info span { color: var(--muted); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.voice-channel-music { width: 26px; height: 26px; padding: 0; display: grid; place-items: center; background: transparent; border-color: transparent; color: var(--muted); }
+.voice-channel-music:hover { color: var(--accent); }
+.voice-channel:not(:has(.voice-channel-join)) .voice-channel-music { margin-left: auto; }
+.voice-channel:not(:has(.voice-channel-join)) .voice-channel-music + .voice-channel-delete { margin-left: 0; }
+.voice-sky .sky-music { fill: var(--accent); font-size: 8px; pointer-events: none; }
+/* Balão de colar o link */
+.music-pop { position: fixed; z-index: 40; width: 320px; max-width: calc(100vw - 16px); padding: 12px; background: var(--panel); color: var(--text);
+  border: 1px solid var(--line-strong); border-radius: 10px; box-shadow: 0 10px 30px rgba(0, 0, 0, .4); }
+.music-pop[hidden] { display: none; }
+.music-pop form { display: flex; flex-direction: column; gap: 8px; }
+.music-pop strong { font-size: 13px; }
+.music-pop input { width: 100%; box-sizing: border-box; padding: 8px 10px; font-size: 13px; }
+.music-pop .hint { margin: 0; font-size: 12px; }
+.music-pop-error { margin: 0; font-size: 12px; color: var(--warn); }
+.music-pop-error:empty { display: none; }
+.music-pop-actions { display: flex; justify-content: flex-end; gap: 6px; }

@@ -75,6 +75,9 @@ const ICON = {
   eye: svg('M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z'),
   lock: svg('M6 11h12v10H6zM8 11V7a4 4 0 0 1 8 0v4'),
   sliders: svg('M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6'), // controles: voz e atalhos
+  music: svg('M9 18V5l12-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM21 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z'), // nota: música junto
+  play: svg('M7 4v16l13-8z'),
+  pause: svg('M7 4h4v16H7zM13 4h4v16h-4z'),
 };
 
 // Botão só com ícone: a dica (title) e o nome lido pelo leitor de tela são o mesmo texto

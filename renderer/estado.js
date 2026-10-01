@@ -36,6 +36,8 @@ const state = {
   hostId: null,
   subsalas: null,          // subsalas de voz da sala [{ id, name }]; null: o servidor da sala não tem subsalas
   subsalaMove: false,      // o servidor da sala sabe mover os outros de canal (arrastar no painel de voz)
+  musicas: new Map(),      // música de cada canal: ch -> { videoId, title, by, playing, pos, at } (renderer/musica.js)
+  musicaOn: false,         // o servidor da sala sabe guardar a música dos canais
   handoff: false,          // o servidor da sala sabe passar a sala adiante
   order: [],               // ids na ordem em que entraram, inclusive o meu
   password: '',

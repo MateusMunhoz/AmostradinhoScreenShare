@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; img-src 'self' data: blob:; style-src 'self'; connect-src ws: wss:; media-src 'self' blob: mediastream:">
+        content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; img-src 'self' data: blob:; style-src 'self'; connect-src ws: wss:; media-src 'self' blob: mediastream:; frame-src https://www.youtube-nocookie.com">
   <title>Tela P2P</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="styles-estelar.css">
@@ -189,6 +189,16 @@
       </section>
     </div>
   </aside>
+  <!-- Música junto: colar o link do YouTube para pôr (ou trocar) a música de um canal (renderer/musica.js) -->
+  <div id="musicPop" class="music-pop" role="dialog" aria-labelledby="musicPopTitle" hidden>
+    <form id="musicPopForm">
+      <strong id="musicPopTitle">Música</strong>
+      <input id="musicUrl" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="Cole o link do YouTube" aria-label="Link do vídeo do YouTube">
+      <p id="musicPopError" class="music-pop-error" role="status"></p>
+      <p class="hint">Quem clicar em Ouvir escuta junto, no mesmo ponto. Cada um toca no próprio player do YouTube.</p>
+      <div class="music-pop-actions"><button id="musicPopCancel" type="button" class="btn small">Cancelar</button><button id="musicPopGo" type="submit" class="btn small primary">Tocar</button></div>
+    </form>
+  </div>
   <!-- Barra de conversas: embaixo; o "Mensagens" abre a lista para cima, e um chip por conversa aberta, que também abre para cima (renderer/mensagens.js) -->
   <footer id="dmBar" class="dm-bar" aria-label="Conversas" hidden>
     <button id="dmBarLabel" type="button" class="dm-bar-label" title="Mensagens: abrir a lista de conversas" aria-expanded="false" aria-controls="dmPanel">Mensagens <span id="dmBarBadge" class="hub-badge" hidden></span></button>
@@ -869,6 +879,7 @@
   <script src="renderer/subsalas.js"></script>
   <script src="renderer/membros.js"></script>
   <script src="renderer/ceu-voz.js"></script>
+  <script src="renderer/musica.js"></script>
   <script src="renderer/assistir.js"></script>
   <script src="renderer/palco.js"></script>
   <script src="renderer/pip.js"></script>

@@ -69,6 +69,8 @@ function channelHead(ch, sub) {
     join.onclick = () => voice.setChannel(ch);
     li.append(join);
   }
+  const music = typeof musicHeadButton === 'function' && musicHeadButton(ch); // pôr uma música (renderer/musica.js)
+  if (music) li.append(music);
   if (sub) {
     const del = document.createElement('button');
     del.type = 'button';
@@ -88,6 +90,8 @@ function voiceRow(id) { return id ? memberRow(id, nameOf(id), !!state.members.ge
 function renderVoiceChannels(list) {
   for (const [ch, sub] of [['', null], ...state.subsalas.map((s) => [s.id, s])]) {
     list.append(channelHead(ch, sub));
+    const music = musicRow(ch); // a música do canal, com Ouvir (renderer/musica.js)
+    if (music) list.append(music);
     for (const id of voiceIdsIn(ch)) { const li = voiceRow(id); li.classList.add('in-channel'); makeVoiceDraggable(li, id, ch); list.append(li); }
   }
   setupVoiceDrop(list);

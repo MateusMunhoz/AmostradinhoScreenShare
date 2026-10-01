@@ -9,7 +9,7 @@ let room = null;
 let roomChanged = () => {};
 
 const {
-  MAX_MEMBERS, send, cleanSessao, newMember, memberInfo, createChat, createSubsalas, handleMemberMessage,
+  MAX_MEMBERS, send, cleanSessao, newMember, memberInfo, createChat, createSubsalas, createMusicas, handleMemberMessage,
 } = require('./sala-protocolo');
 
 const LOCAL = ['127.0.0.1', '::1', '::ffff:127.0.0.1'];
@@ -49,6 +49,7 @@ function startServer(port, password = '', seed = {}) {
     let nextId = Math.max(1, Math.floor(Number(seed.nextId)) || 1);
     const chat = createChat(seed.chat);
     const subsalas = createSubsalas(seed.subsalas); // as subsalas de voz continuam depois da troca de host
+    const musicas = createMusicas(seed.musicas); // e as músicas de cada canal, de onde estavam
     // Quem roda este servidor: numa sala nova, a primeira conexão do próprio PC; depois de uma troca,
     // já vem definido (os outros podem chegar antes do próprio novo host)
     let hostId = /^\d{1,6}$/.test(String(seed.hostId || '')) ? String(seed.hostId) : null;
@@ -149,9 +150,11 @@ function startServer(port, password = '', seed = {}) {
             id,
             hostId,
             members: [...members].map(([mid, m]) => memberInfo(mid, m)),
-            features: ['chat', 'voice', 'handoff', 'sessoes', 'subsalas', 'subsala-move'],
+            features: ['chat', 'voice', 'handoff', 'sessoes', 'subsalas', 'subsala-move', 'musica'],
             chat: chat.log,
             subsalas: subsalas.list,
+            musicas: [...musicas.map.values()],
+            now: Date.now(),
             sessao,
           });
           members.set(id, me);
@@ -160,7 +163,7 @@ function startServer(port, password = '', seed = {}) {
           return;
         }
 
-        handleMemberMessage({ members, broadcast, chat, subsalas }, id, me, msg);
+        handleMemberMessage({ members, broadcast, chat, subsalas, musicas }, id, me, msg);
       });
 
       ws.on('close', () => {
