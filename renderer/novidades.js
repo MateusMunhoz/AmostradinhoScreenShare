@@ -3,6 +3,13 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.12.11",
+    "date": "2026-10-01",
+    "items": [
+      "Voz: opção em Aparência para esconder o céu em cima da lista"
+    ]
+  },
+  {
     "version": "1.12.10",
     "date": "2026-10-01",
     "items": [
@@ -72,13 +79,6 @@ const NOVIDADES = [
     "date": "2026-09-30",
     "items": [
       "Barra da voz: até 3 do seu canal, com foto, quem fala entra; estrela colorida sem foto; ícones no cartão"
-    ]
-  },
-  {
-    "version": "1.12.1",
-    "date": "2026-09-30",
-    "items": [
-      "Correções e melhorias"
     ]
   }
 ];
