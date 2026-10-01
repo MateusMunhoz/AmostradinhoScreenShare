@@ -31,9 +31,7 @@ jobs:
         run: node .github/scripts/conferir-pacote.js
 
   windows-smoke:
-    name: Windows smoke (manual)
-    # Só pelo botão "Run workflow" enquanto não estiver estável; não trava PR
-    if: github.event_name == 'workflow_dispatch'
+    name: Windows smoke
     runs-on: windows-latest
     timeout-minutes: 20
     steps:

@@ -48,11 +48,10 @@ Antes de abrir o PR: `npm test` passando e, se mexeu em voz, janelas ou atalhos,
 ```
 PR aberto
    ↓
-CI no GitHub (npm test + conferência do pacote, Linux, ~1 min)
+CI no GitHub: testes no Linux (~1 min) + Windows smoke (~2 min)
    ├─ falhou → corrige no mesmo ramo
    └─ passou → alguém da equipe dá uma olhada → merge na main
                                                   ↓
-                       (opcional) botão "Windows smoke" no GitHub Actions
                                                   ↓
                 quem tem a chave, no próprio PC: git pull → npm test → npm run publicar
                   (sobe a versão, assina, gera o .exe, commit + push na main, tag e Release)
@@ -70,10 +69,10 @@ CI no GitHub (npm test + conferência do pacote, Linux, ~1 min)
 
 - **Testes unitários (automático):** roda em todo PR e em todo push na `main`, num Linux do GitHub. Testa a lógica
   sem abrir janelas, e confere que todo arquivo que o `index.html` carrega está no pacote de atualização e no `.exe`.
-- **Windows smoke (manual):** um botão em Actions → CI → *Run workflow*. Liga um Windows na nuvem, instala o
-  projeto e abre o app de verdade com janelas invisíveis: o app abre sem erro, as configurações salvam, e a voz
-  WebRTC funciona entre duas janelas. Não trava PR; serve para conferir antes de publicar. Quando estiver estável,
-  pode virar automático.
+- **Windows smoke (automático):** também roda em todo PR e na `main`, num Windows do GitHub. Abre o app de verdade
+  com janelas invisíveis: o app abre sem erro, as configurações salvam, e a voz WebRTC funciona entre duas janelas.
+  Dá para rodar na hora pelo botão Actions → CI → *Run workflow*. Se ele falhar sem motivo (o código está certo e
+  falha de novo ao rodar outra vez sem mudar nada), avise a equipe e anote em [pendências](pendencias-setup.md).
 - **Fora do CI:** `npm run test:e2e` (abre janelas, ~10 min), o roteiro numa call real e o `publicar`.
 
 O que ainda falta no setup: [pendências](pendencias-setup.md).

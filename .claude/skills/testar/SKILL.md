@@ -25,7 +25,7 @@ Nomes válidos para `npm run test:e2e -- <nome>`: lista `TESTS` em `tests/e2e/ro
 
 ## 2. Onde cada um roda
 - **Sem janela, qualquer SO (CI Linux):** `npm test`, `npm run test:razze-api`.
-- **Electron com janelas invisíveis:** `carga.cjs`, `test:settings`, `test:rtc`. No CI, só no job manual Windows.
+- **Electron com janelas invisíveis:** `carga.cjs`, `test:settings`, `test:rtc`. No CI, no job Windows smoke (todo PR).
 - **Só Windows, abre janelas e tira o foco (~10 min):** `npm run test:e2e`. Não comece com jogo em tela cheia
   (`TELA_E2E_FORCE=1` pula a trava). `ctrl-enter.js` digita de verdade: só com o humano olhando.
 - **Gente de verdade:** eco, ruído, apertar para falar com tecla real, troca de host entre PCs → `docs/roteiro-de-teste.md`.
