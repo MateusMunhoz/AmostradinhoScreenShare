@@ -3,10 +3,10 @@
 O que falta para fechar a fundação descrita em [Fluxo com IA](fluxo-com-ia.md). Riscar (ou apagar a linha) quando feito.
 
 ## Agora
-- [ ] Estabilizar o **Windows smoke** (Actions → CI → *Run workflow*). 1ª execução (01/10/2026): carga ✅, áudio
-      WebRTC ✅, configurações ❌ em "Lista de fontes no tema, com vidro e cada fonte na própria letra"
-      (`tests/settings-smoke.cjs`). Passa no PC de casa; no Windows do GitHub, não. Investigar antes de mexer no teste.
-      Quando passar de forma estável, decidir se vira automático nos PRs.
+- [ ] Estabilizar o **Windows smoke** (Actions → CI → *Run workflow*). Carga e áudio WebRTC passam. O teste de
+      configurações falhava por um bug real em `renderer/lista.js`: qualquer rolagem na página (até de um painel
+      escondido, como a Rede se atualizando) fechava a lista de opções aberta. Corrigido; falta ver o smoke verde
+      algumas vezes seguidas e decidir se vira automático nos PRs.
 - [ ] Primeiro PR usando o template e as regras novas, para ver o fluxo de ponta a ponta.
 
 ## Depois
