@@ -141,6 +141,7 @@ async function startVideoCap(sender, opts) {
     ...(await captureTarget(o.sourceId)),
     '--width', String(num(o.w, 16, 7680, 1920)), '--height', String(num(o.h, 16, 4320, 1080)),
     '--fps', String(num(o.fps, 1, 240, 60)), '--bitrate', String(num(o.bitrate, 100000, 100000000, 7000000)),
+    '--cursor', o.cursor === false ? '0' : '1', // sem o mouse: em jogo ele fica parado no meio da imagem
   ];
   return new Promise((resolve) => {
     let proc;

@@ -11,6 +11,7 @@
 //   videocap.exe --window HWND [opções]           uma janela
 //   opções: --width 1920 --height 1080 --fps 60 --bitrate 7000000 (tamanho máximo; a proporção da imagem é mantida)
 //           --dda 1   usa a Duplicação da Área de Trabalho também no Windows 11 (para testes)
+//           --cursor 0  sem o mouse na imagem (padrão: com)
 //
 // Saída (stdout): um quadro por vez, [tamanho u32][chave u8][timestamp f64 em µs][H.264 Annex B].
 // Mensagens (stderr): READY <largura> <altura> | ERROR <texto> | ENDED (a janela fechou) |
@@ -212,6 +213,7 @@ struct Options {
   bool monitor = false;
   bool dda = false;
   bool border = false;  // --border 1: deixa a borda amarela (testes)
+  bool cursor = true;   // --cursor 0: sem o mouse (em jogo, o Windows deixa o cursor parado no meio da imagem)
   UINT maxW = 1920, maxH = 1080, fps = 60, bitrate = 7000000;
 };
 
@@ -313,7 +315,7 @@ static int run(const Options &o) {
     item.Closed([&](auto &&, auto &&) { ended = true; });
     pool = Direct3D11CaptureFramePool::CreateFreeThreaded(device, DirectXPixelFormat::B8G8R8A8UIntNormalized, 2, size);
     session = pool.CreateCaptureSession(item);
-    try { session.IsCursorCaptureEnabled(true); } catch (...) {}
+    try { session.IsCursorCaptureEnabled(o.cursor); } catch (...) {}
     // Sem a borda amarela (Windows 11): pede a permissão e desliga a borda
     if (!o.border) {
       try { GraphicsCaptureAccess::RequestAccessAsync(GraphicsCaptureAccessKind::Borderless).get(); } catch (...) {}
@@ -420,7 +422,7 @@ static int run(const Options &o) {
 
   // A Duplicação não traz o cursor: desenha o do Windows por cima, na posição dele na tela
   auto drawCursor = [&](const CURSORINFO &ci) {
-    if (!(ci.flags & CURSOR_SHOWING) || !PtInRect(&dda.rect, ci.ptScreenPos)) return;
+    if (!o.cursor || !(ci.flags & CURSOR_SHOWING) || !PtInRect(&dda.rect, ci.ptScreenPos)) return;
     ICONINFO ii;
     if (!GetIconInfo(ci.hCursor, &ii)) return;
     if (ii.hbmMask) DeleteObject(ii.hbmMask);
@@ -642,6 +644,7 @@ int main() {
     else if (wcscmp(k, L"--bitrate") == 0) o.bitrate = wcstoul(v, nullptr, 10);
     else if (wcscmp(k, L"--dda") == 0) o.dda = wcstoul(v, nullptr, 10) != 0;
     else if (wcscmp(k, L"--border") == 0) o.border = wcstoul(v, nullptr, 10) != 0;
+    else if (wcscmp(k, L"--cursor") == 0) o.cursor = wcstoul(v, nullptr, 10) != 0;
   }
   if ((!o.window && !o.monitor) || o.fps < 1 || o.fps > 240 || o.maxW < 16 || o.maxH < 16 || o.bitrate < 100000) {
     logLine("uso: videocap.exe --probe | (--monitor X,Y | --window HWND) [--width W --height H --fps F --bitrate B]");

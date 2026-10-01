@@ -129,7 +129,7 @@ async function startNvenc(sourceId) {
   window.api.onVideoCap(onNvencChunk, onNvencStats, onNvencEnded);
   let res;
   try {
-    res = await window.api.videoCapStart({ sourceId, w: q.w, h: q.h, fps: q.fps, bitrate: q.bitrate });
+    res = await window.api.videoCapStart({ sourceId, w: q.w, h: q.h, fps: q.fps, bitrate: q.bitrate, cursor: $('cursorOn').checked });
   } catch (e) {
     res = { ok: false, error: e.message };
   }

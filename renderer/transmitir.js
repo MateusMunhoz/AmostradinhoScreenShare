@@ -43,6 +43,7 @@ async function checkEncodeOnce() {
   $('encodeOnceLabel').textContent = encodeOnceSupport?.engine === 'nvenc' ? 'Uma vez só (NVENC direto)' : 'Uma vez só';
   if (!encodeOnceSupport) { once.checked = false; setRadio('encodeMode', 'per'); }
   syncEncodeNote();
+  syncCursor();
   renderShareSummary();
 }
 
@@ -55,6 +56,20 @@ function syncEncodeNote() {
     : radioValue('encodeMode') === 'once'
       ? `Codifica o vídeo uma vez só${encodeOnceSupport.engine === 'nvenc' ? ', direto no NVENC da placa NVIDIA (a imagem nem passa pelo processador)' : encodeOnceSupport.hardware ? ', pela placa de vídeo' : ', pelo processador'}, e manda o mesmo para todos: o peso não aumenta quando mais gente assiste. Quem tem versão antiga do app recebe no modo normal.`
       : 'O processador codifica o vídeo uma vez para cada pessoa que assiste. Com vários amigos assistindo, experimente "Uma vez só".';
+}
+
+// Mouse na transmissão. Em jogo o Windows deixa o cursor parado no meio da imagem, mesmo com o jogo escondendo ele.
+// A captura do Chromium sempre desenha o mouse; só o NVENC direto (videocap) consegue tirar. Por isso, desligar o
+// mouse passa a codificação para "Uma vez só" (inicio.js), e sem placa NVIDIA a chave fica travada no ligado.
+function syncCursor() {
+  const box = $('cursorOn');
+  const nvenc = encodeOnceSupport?.engine === 'nvenc';
+  box.disabled = encodeOnceSupport !== null && !nvenc;
+  if (box.disabled) box.checked = true;
+  $('cursorNote').textContent = encodeOnceSupport === null ? ''
+    : !nvenc ? 'Para tirar o mouse da transmissão precisa de placa NVIDIA. Sem ela, o mouse sempre aparece.'
+    : box.checked ? 'Em jogo, desligue: o Windows deixa o cursor parado no meio da imagem, mesmo com o jogo escondendo ele.'
+    : 'O mouse não aparece para quem assiste. Para isso, a transmissão usa "Uma vez só (NVENC direto)", em Avançado.';
 }
 
 function encodeText() {

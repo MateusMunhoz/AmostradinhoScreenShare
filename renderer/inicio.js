@@ -151,6 +151,7 @@ setRadio('quality', savedQuality === '720p30' ? '720p60' : savedQuality);
 if (!radioValue('quality')) setRadio('quality', '1080p30');
 $('soundOn').checked = load('audioMode', 'all') !== 'none'; // "exclude" da versão antiga conta como com som
 setRadio('encodeMode', load('encodeMode', 'per') === 'once' ? 'once' : 'per');
+$('cursorOn').checked = load('mostrarMouse', '1') !== '0';
 // Prioridade vale para o app inteiro e já na abertura, não só durante a transmissão
 setRadio('priority', load('priority', 'above'));
 if (!radioValue('priority')) setRadio('priority', 'above');
@@ -163,7 +164,14 @@ $('shareDialog').addEventListener('change', (e) => {
     save('priority', t.value);
     window.api.setPriority(t.value);
   } else if (t.name === 'encodeMode') {
+    // Sem o mouse só dá no NVENC direto: voltar para "Uma por pessoa" traz o mouse de volta
+    if (t.value === 'per' && !$('cursorOn').checked) { $('cursorOn').checked = true; save('mostrarMouse', '1'); }
     syncEncodeNote();
+    syncCursor();
+  } else if (t.id === 'cursorOn') {
+    save('mostrarMouse', t.checked ? '1' : '0');
+    if (!t.checked && encodeOnceSupport?.engine === 'nvenc') { setRadio('encodeMode', 'once'); syncEncodeNote(); }
+    syncCursor();
   } else if (t.id === 'soundOn') {
     syncAudioMode();
   }

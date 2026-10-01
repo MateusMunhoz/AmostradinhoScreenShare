@@ -410,6 +410,18 @@
                       </div>
                     </div>
 
+                    <!-- Mouse: em jogo o Windows deixa o cursor parado no meio da imagem. Só o NVENC direto consegue tirar -->
+                    <div class="group" id="cursorGroup">
+                      <div class="group-head">
+                        <span class="group-title" id="cursorLabel">Mostrar o mouse</span>
+                        <label class="switch">
+                          <input type="checkbox" id="cursorOn" role="switch" aria-labelledby="cursorLabel" aria-describedby="cursorNote">
+                          <span class="track" aria-hidden="true"></span>
+                        </label>
+                      </div>
+                      <p id="cursorNote" class="hint"></p>
+                    </div>
+
                     <div class="group advanced">
                       <button type="button" class="adv-toggle" id="advToggle" aria-expanded="false" aria-controls="advPanel">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
