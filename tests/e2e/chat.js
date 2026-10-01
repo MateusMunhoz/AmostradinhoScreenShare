@@ -48,6 +48,18 @@ run('Chat', 170000, async () => {
   await B.waitFor(`[...$('chatList').querySelectorAll('.file-card img')].some((i) => i.naturalWidth === 320)`, 15000);
   check('Imagem pequena aparece sozinha', true);
   check('Ana vê a própria imagem', await A.eval(`$('chatList').querySelectorAll('.file-card img').length === 1`));
+  // Imagem sem o cartão: nada de ícone, nome e tamanho; o selo "Só nesta sala" só aparece com o foco ou o mouse
+  const imageOnly = `(() => { const c = $('chatList').querySelector('.file-card.image-only'); const b = c && c.querySelector('.chat-image-badge');
+    return { row: c && getComputedStyle(c.querySelector('.file-row')).display, badge: b && b.textContent, op: b && getComputedStyle(b).opacity,
+      described: b && c.querySelector('img').getAttribute('aria-describedby') === b.id }; })()`;
+  for (const [who, X] of [['Ana', A], ['Bia', B]]) {
+    const s = await X.eval(imageOnly);
+    check(`${who}: imagem só com a imagem (sem nome e tamanho) e o selo escondido`, s.row === 'none' && s.badge === 'Só nesta sala' && s.op === '0' && s.described, JSON.stringify(s));
+  }
+  await A.eval(`$('chatList').querySelector('.file-card.image-only img').focus()`);
+  await sleep(300);
+  check('Com o foco na imagem, o selo "Só nesta sala" aparece', (await A.eval(imageOnly)).op === '1');
+  check('Arquivo que não é imagem continua com o cartão e o nome', await B.eval(`[...$('chatList').querySelectorAll('.file-card:not(.image-only) .file-name')].some((n) => n.textContent === 'partida.osr')`));
 
   // Foto de celular: JPEG com EXIF de GPS e "deitada" (rotação 6). Chega sem o GPS e ainda em pé.
   await A.eval(`(async () => {

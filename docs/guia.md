@@ -143,6 +143,7 @@ Para ver uma transmissão enquanto joga.
 - **Arquivos:** use o clipe, arraste para o chat ou cole com **Ctrl+V** (um print da tela ou um arquivo copiado), até 200 MB. O print colado ganha um nome com a hora, tipo `imagem-colada-21-07-45.png`.
   - **Baixar:** quem clica em **Baixar** recebe direto de quem mandou, vê a barra de progresso (dá para cancelar) e depois clica em **Salvar**.
   - **Imagens pequenas** aparecem sozinhas.
+  - **Imagens** aparecem só como a imagem, sem o nome e o tamanho do arquivo. Com o mouse em cima (ou com o foco pelo Tab), aparece o selo **Só nesta sala**. Para salvar uma imagem, clique nela e use **Salvar** na imagem grande.
   - **Disponibilidade:** o arquivo fica disponível enquanto quem mandou estiver na sala.
 - **Histórico:** quem entra depois vê as últimas 100 mensagens.
 
