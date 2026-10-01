@@ -958,6 +958,11 @@ main { padding-top: var(--workspace-top); }
 .pane-voice-actions .btn.icon svg, .pane-voice-actions .pane-leave svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .pane-voice-actions .pane-leave { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; }
 .voice-in-call #voicePaneMembers { margin-bottom: 0; }
+/* Só a lista rola: o título em cima e a faixa de controles (microfone, fone, Sair) embaixo ficam sempre à vista,
+   mesmo com muitas subsalas */
+#voicePane { display: flex; flex-direction: column; overflow: hidden; }
+#voicePane > * { flex-shrink: 0; }
+#voicePane > #voicePaneMembers { flex: 0 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 /* Chat e voz abertos juntos: a voz ocupa só o que precisa (até metade), o chat fica com o resto */
 .workspace-in-room.has-workspace-pane:not(.workspace-wide) #chatTab:not([hidden]) ~ #voicePane { flex: 0 1 auto; max-height: 50%; }
 .profile-summary { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; overflow-wrap: anywhere; }
@@ -1387,7 +1392,7 @@ main { margin-left: var(--hub-w); }
 .hub-pane { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
 .hub-section { margin: 6px 0 0; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .hub-current, .hub-room { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); }
-.hub-current { margin-top: 6px; border-color: var(--accent); background: var(--accent-soft, var(--panel-2)); }
+.hub-current { margin-top: 6px; border-color: var(--accent); background: var(--accent-soft); }
 .hub-live { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px var(--panel); }
 .hub-room-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .hub-room-info strong { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1460,6 +1465,13 @@ main { margin-left: var(--hub-w); }
 .voice-channel-delete:hover { color: var(--warn); }
 .member.in-channel { padding-left: 14px; }
 .voice-channel-add { margin-top: 8px; }
+/* Arrastar alguém para outro canal: a linha arrastada fica apagada e o canal de destino (cabeçalho e quem está nele)
+   ganha o contorno do tema */
+.voice-draggable { cursor: grab; }
+.voice-draggable.dragging { opacity: .45; }
+.voice-dragging .voice-channel { outline: 1px dashed var(--line-strong); outline-offset: -1px; }
+.voice-dragging .drop-target.voice-channel { outline: 2px solid var(--accent); background: var(--accent-soft); }
+.voice-dragging .drop-target.member { box-shadow: inset 2px 0 0 var(--accent); }
 .voice-channel-add .btn { display: inline-flex; align-items: center; gap: 6px; }
 
 /* Mensagens diretas (renderer/mensagens.js). Barra de conversas: uma faixa fina embaixo, como o HUB na esquerda.

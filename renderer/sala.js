@@ -172,6 +172,7 @@ function enterRoom(welcome, owner, host, port, cloud = null) {
   state.handoff = (welcome.features || []).includes('handoff');
   state.sessao = welcome.sessao || null;
   state.subsalas = (welcome.features || []).includes('subsalas') && Array.isArray(welcome.subsalas) ? welcome.subsalas : null;
+  state.subsalaMove = (welcome.features || []).includes('subsala-move');
   state.order = [...welcome.members.map((m) => m.id), welcome.id];
   lembrarDaSala();
   voice.reset(welcome);
@@ -221,6 +222,7 @@ function leaveRoom(reason, kind = 'info', endRoom = false) {
   state.hostId = null;
   state.cloud = null;
   state.subsalas = null;
+  state.subsalaMove = false;
   RTC_CONFIG.iceServers = [];
   state.order = [];
   state.rewatch.clear();
@@ -337,6 +339,7 @@ async function rejoin(host, timeoutMs) {
   state.hostId = welcome.hostId || null;
   state.handoff = (welcome.features || []).includes('handoff');
   state.sessao = welcome.sessao || state.sessao;
+  state.subsalaMove = (welcome.features || []).includes('subsala-move');
   setSubsalas((welcome.features || []).includes('subsalas') ? welcome.subsalas : null);
   if (!state.isOwner && !state.cloud) save('roomAddr', `${host}:${state.port}`);
   const present = new Set(welcome.members.map((m) => m.id));

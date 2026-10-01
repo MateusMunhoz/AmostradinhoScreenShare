@@ -323,6 +323,7 @@ function renderVoiceSky(people) {
 }
 function renderVoicePane() {
   if (!workspaceReady || $('voicePane').hidden) return; // escondido, não precisa redesenhar a cada mudança da voz
+  if (voiceDrag) { voiceDragPending = true; return; } // arrastando alguém para outro canal: redesenha ao soltar
   const active = !!voice.session;
   const ids = [...voice.members].filter(([id,m]) => m.session && state.members.has(id)).map(([id]) => id);
   const people = (n) => (n === 1 ? '1 pessoa' : `${n} pessoas`);

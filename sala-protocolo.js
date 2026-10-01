@@ -139,6 +139,14 @@ function handleMemberMessage({ members, broadcast, chat, subsalas = null }, id, 
       broadcast(voiceStateOf(mid, m));
     }
     broadcast({ type: 'subsalas', list: subsalas.list });
+  } else if (msg.type === 'subsala-move' && subsalas) {
+    // Arrastar alguém para outro canal no painel de voz: só quem está na voz, para a Voz geral ou uma subsala que
+    // existe. Todo mundo fica sabendo, inclusive a pessoa movida (o app dela troca de canal sozinho)
+    const target = members.get(String(msg.id));
+    const ch = cleanChannel(msg.channel);
+    if (!target?.voiceSession || (ch && !subsalas.has(ch)) || (target.voiceChannel || '') === ch) return;
+    target.voiceChannel = ch;
+    broadcast(voiceStateOf(String(msg.id), target));
   } else if (msg.type === 'avatar') {
     // Foto de perfil: só o hash passa por aqui; a foto vai direto de quem tem para quem pede
     me.avatar = cleanHash(msg.hash);
