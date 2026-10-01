@@ -5,8 +5,8 @@
 
 ## Premissas
 
-- **Equipe:** 2 pessoas em meio período (Mateus e Cristian) + agente de código. As estimativas estão em
-  **semanas de uma pessoa** e são aproximadas; o que está em "Depois" é direção, não compromisso.
+- **Equipe:** 3 pessoas em meio período (Mateus, Cristian e Andrick) + agente de código. As estimativas foram feitas
+  quando a equipe tinha 2 pessoas; estão em **semanas de uma pessoa** e são aproximadas; o que está em "Depois" é direção, não compromisso.
 - **Cadência:** versões pequenas e frequentes (o app se atualiza pela sala), cada item atrás de testes de ponta a ponta.
 - **Divisão do tempo:** ~70% roadmap, ~20% saúde do código e testes, ~10% bugs e pedidos dos amigos.
 - **O que não muda:** sem servidor central obrigatório, sem conta, sem coleta de dados. Toda peça nova precisa caber
@@ -53,7 +53,7 @@ seria um passo atrás).
 
 | Item | Status | Esforço | Depende de |
 |---|---|---|---|
-| P1. Entrar pela internet sem VPN (3 fases) | Não começado | 4–6 sem | A1 |
+| P1. Entrar pela internet sem VPN (3 fases) | Em andamento: já existe o modo Internet por VPS ([servidor-internet](../servidor-internet/README.md)). **Prioridade:** a fase 2 (Hyperswarm) continua no plano | 4–6 sem | A1 |
 | P2. Histórico e "desde a sua última visita" | Não começado | 2 sem | nada |
 | P3. Espectadores repassando o vídeo | Não começado | 3–4 sem | melhor depois de P1 |
 | P4. Clipe dos últimos 30 s | Não começado | 1–2 sem | nada |
@@ -64,7 +64,7 @@ seria um passo atrás).
 |---|---|---|---|
 | D1. Jogar junto (teclado, mouse e controle) | Não começado | 4–6 sem | A2 (medir atraso), P1 ajuda |
 | D2. Assistir pelo celular (navegador) | Não começado | 3–4 sem | P1 para fora de casa |
-| D3. Linux | Não começado | 6+ sem | nada, mas é grande |
+| D3. Linux | Em andamento: AppImage para X11 já sai nas Releases ([README](../README.md#linux)) | 6+ sem | nada, mas é grande |
 
 ## Fora do plano (de propósito)
 
@@ -158,7 +158,7 @@ VPN ou da rede local.
   pesada) e descobrir o IP público. "Convidar" passa a copiar o endereço público quando der certo.
 - Resolve casas com roteador comum; **não resolve CGNAT** (comum em fibra e 4G no Brasil). Por isso a fase 2.
 
-**Fase 2 (2–3 semanas): código de convite sem servidor nosso.**
+**Fase 2 (2–3 semanas): código de convite sem servidor nosso.** *Prioridade da equipe; não descartar por causa do modo VPS.*
 - Usar o **Hyperswarm** (DHT pública da Holepunch, com furo de NAT por UDP e canal criptografado Noise). O host entra num
   "tópico" = hash do código de convite; o convidado entra no mesmo tópico e os dois se acham, sem servidor do projeto.
 - **Túnel da sinalização:** no PC do convidado, `main/` abre uma porta local (`127.0.0.1:porta`) e liga cada conexão

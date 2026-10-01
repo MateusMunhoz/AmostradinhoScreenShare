@@ -53,6 +53,7 @@ O que muda em relação ao Windows:
 | Usar tudo (sala, transmitir, janelas flutuantes, chat, voz, atalhos, estatísticas) | [docs/guia.md](docs/guia.md) |
 | Jogar e transmitir sem pesar (qualidade, NVENC, tela cheia, Windows 10) | [docs/desempenho.md](docs/desempenho.md) |
 | Mexer no código, testar e publicar | [docs/desenvolvimento.md](docs/desenvolvimento.md) |
+| Trabalhar em equipe com o Claude Code (issue, spec, PR, CI, versão nova) | [docs/fluxo-com-ia.md](docs/fluxo-com-ia.md) |
 | Testar numa call com gente de verdade | [docs/roteiro-de-teste.md](docs/roteiro-de-teste.md) |
 | RazzeAPI, VPN WireGuard e implantação numa VPS | [docs/razze-api.md](docs/razze-api.md) |
 | Modo Internet (sem VPN: salas por código + senha, STUN e TURN numa VPS) | [servidor-internet/README.md](servidor-internet/README.md) |

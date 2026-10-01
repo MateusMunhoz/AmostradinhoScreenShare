@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "deny": [
+      "Bash(npm run publicar*)",
+      "Bash(node publicar.js*)",
+      "Bash(git push*)",
+      "Bash(git tag*)",
+      "Bash(gh release*)",
+      "Read(./razze-api/.env)",
+      "Read(./razze-api/data/**)",
+      "Read(~/.tela-p2p/**)",
+      "Read(**/*.pem)"
+    ],
+    "ask": [
+      "Edit(./boot.js)"
+    ],
+    "allow": [
+      "Bash(npm test)",
+      "Bash(npm run test:settings)",
+      "Bash(npm run test:rtc)",
+      "Bash(npm run test:razze-api)",
+      "Bash(npx electron tests/e2e/carga.cjs)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)"
+    ]
+  }
+}

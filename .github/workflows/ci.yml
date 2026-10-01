@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit:
+    name: Testes unitários (Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      # Os testes unitários não abrem o Electron: pula o download do binário dele
+      ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: npm test
+        run: npm test
+      - name: Arquivos do index.html no pacote e no .exe
+        run: node .github/scripts/conferir-pacote.js
+
+  windows-smoke:
+    name: Windows smoke (manual)
+    # Só pelo botão "Run workflow" enquanto não estiver estável; não trava PR
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Carga do app (janela invisível)
+        run: npx electron tests/e2e/carga.cjs
+      - name: Configurações
+        if: success() || failure()
+        run: npm run test:settings
+      - name: Áudio WebRTC entre duas janelas
+        if: success() || failure()
+        run: npm run test:rtc
