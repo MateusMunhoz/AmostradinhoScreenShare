@@ -150,9 +150,9 @@ function updateStage() {
   $('emptyStage').hidden = state.in.size > 0;
   $('tiles').hidden = state.in.size === 0;
   $('emptyText').textContent = othersSharing
-    ? 'Clique em Assistir na frente do nome de quem está transmitindo (no painel Voz ou em Pessoas na sala). A tela só começa a ser baixada depois disso.'
+    ? 'Clique em Assistir ao lado de quem está transmitindo.'
     : state.sharing
-      ? 'Você está transmitindo. Quando outra pessoa começar, aparece um botão Assistir ao lado do nome dela.'
-      : 'Ninguém está transmitindo agora. Quando alguém começar, aparece um botão Assistir ao lado do nome.';
+      ? 'Você está transmitindo.'
+      : 'Ninguém está transmitindo agora.';
   if (!state.in.size) $('downloadInfo').textContent = '';
 }

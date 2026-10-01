@@ -152,6 +152,9 @@ if (!radioValue('quality')) setRadio('quality', '1080p30');
 $('soundOn').checked = load('audioMode', 'all') !== 'none'; // "exclude" da versão antiga conta como com som
 setRadio('encodeMode', load('encodeMode', 'per') === 'once' ? 'once' : 'per');
 $('cursorOn').checked = load('mostrarMouse', '1') !== '0';
+// Dicas (o "i"): liga e desliga todas de uma vez (renderer/util.js)
+$('tipsOn').checked = document.documentElement.dataset.tips !== 'off';
+$('tipsOn').onchange = () => { save('dicas', $('tipsOn').checked ? '1' : '0'); document.documentElement.dataset.tips = $('tipsOn').checked ? 'on' : 'off'; };
 // Prioridade vale para o app inteiro e já na abertura, não só durante a transmissão
 setRadio('priority', load('priority', 'above'));
 if (!radioValue('priority')) setRadio('priority', 'above');

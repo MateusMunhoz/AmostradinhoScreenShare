@@ -108,7 +108,7 @@ function syncWorkspace() {
   paintAvatar($('homeAvatar'));
   paintAvatar($('navProfileAvatar'));
   $('navProfile').title = $('navProfile').ariaLabel = 'Perfil de ' + getName();
-  $('profileHint').textContent = state.myId ? 'Este é o nome usado nesta sala. Para alterá-lo, saia da sala primeiro.' : 'Seu nome fica salvo neste dispositivo e é usado ao entrar em uma sala.';
+  $('profileHint').textContent = state.myId ? 'Para trocar o nome, saia da sala.' : '';
   renderVoicePane();
   renderHomeCall();
   renderHub();
@@ -329,7 +329,7 @@ function renderVoicePane() {
   const channels = subsalasOn(); // com subsalas, a lista vem por canal (renderer/subsalas.js)
   $('voicePaneStatus').textContent = !voice.supported ? 'Voz indisponível nesta sala.' : voice.pending ? 'Aguardando o microfone…'
     : active ? (channels && voice.channel ? `Você está em ${channelName(voice.channel)} · ${people(ids.length + 1)} na voz` : `Você está na voz · ${people(ids.length + 1)}`)
-    : `${people(ids.length)} na voz. Abrir este painel não liga o microfone.`;
+    : `${people(ids.length)} na voz.`;
   layoutVoicePane(active);
   // Quem está transmitindo tem o botão Assistir na frente do nome; quem transmite fora da voz aparece embaixo
   const list = $('voicePaneMembers'); list.replaceChildren();

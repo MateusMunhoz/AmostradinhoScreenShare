@@ -326,22 +326,22 @@ function renderVoiceDialog() {
   document.querySelectorAll('input[name="talkMode"]').forEach((r) => { r.checked = r.value === voiceCfg.mode; });
   $('echoOn').checked = voiceCfg.echo;
   $('nsHint').textContent = {
-    ia: 'Uma IA no seu PC tira teclado, ventilador, barulho da rua e respiração, e deixa só a voz. Usa um pouco de processador.',
-    chrome: 'Tira chiado constante (ventilador, ar-condicionado). Barulhos como teclado e mouse passam.',
-    off: 'Sua voz vai sem filtro de ruído. Bom para microfones de estúdio em lugar silencioso.',
+    ia: 'Tira teclado, ventilador e barulho de fundo. Usa um pouco de processador.',
+    chrome: 'Tira só chiado constante. Teclado e mouse passam.',
+    off: 'Sem filtro de ruído.',
   }[voiceCfg.ns];
   $('pttRow').hidden = voiceCfg.mode !== 'ptt';
   $('pttKey').textContent = voiceCfg.pttVk ? voiceCfg.pttLabel : 'Nenhuma';
   $('modeHint').textContent = voiceCfg.mode === 'ptt'
-    ? 'Seu microfone só manda som enquanto você segura a tecla, até de dentro do jogo. Vale tecla do teclado ou botão lateral do mouse.'
-    : 'Seu microfone fica aberto enquanto você está na voz; a supressão de ruído corta o que não é voz.';
+    ? 'Só manda som enquanto você segura a tecla (ou o botão do mouse).'
+    : 'Microfone aberto enquanto você está na voz.';
   $('micMeterBox').hidden = !voice.session && !micTest.own;
   $('gateAuto').checked = voiceCfg.gateAuto;
   $('gateDb').disabled = voiceCfg.gateAuto;
   if (!voiceCfg.gateAuto) { $('gateDb').value = String(voiceCfg.gateDb); $('gateMark').style.left = `${dbToPct(voiceCfg.gateDb)}%`; $('gateValue').textContent = `${voiceCfg.gateDb} dB`; }
   $('gateHint').textContent = voice.session || micTest.own
-    ? 'Fale normalmente: a barra fica verde quando o microfone abre. Barulho abaixo da marca não passa.'
-    : 'Entre na voz ou clique em "Ouvir minha voz" para ver o medidor do seu microfone.';
+    ? 'Barulho abaixo da marca não passa.'
+    : 'O medidor aparece na voz ou no teste.';
   $('duckAmount').value = String(voiceCfg.duck);
   $('duckValue').textContent = voiceCfg.duck ? `${voiceCfg.duck}%` : 'Desligada';
   $('duckSelf').checked = voiceCfg.duckSelf;

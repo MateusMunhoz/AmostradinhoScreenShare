@@ -273,6 +273,12 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 .person-card .pc-val { color: var(--muted); font-variant-numeric: tabular-nums; }
 .person-card input[type="range"] { accent-color: var(--person); }
 .person-card .pc-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+/* Adicionar amigo: no canto do cabeçalho; já amigos ou pedido enviado, só informa. O "i" fica no fim da linha */
+.person-card .pc-friend { margin-left: auto; align-self: flex-start; }
+.person-card .pc-friend.done { color: var(--ok); cursor: default; }
+.person-card .pc-friend.accent { border-color: var(--accent); color: var(--accent); }
+.person-card .pc-info { margin-left: auto; color: var(--muted); cursor: help; }
+.person-card .pc-info:hover { color: var(--text); }
 .person-card .warn-on { border-color: var(--warn); color: var(--warn); background: rgba(224, 185, 106, .12); }
 .person-card .hint { margin: 0; font-size: 12px; line-height: 1.45; }
 .dock-share { display: inline-flex; align-items: center; gap: 8px; height: 40px; }
@@ -1507,3 +1513,23 @@ main { margin-left: var(--hub-w); }
 .hub-list > li { flex-shrink: 0; }
 .hub-messages .hub-friends-body { flex: 1; min-height: 0; }
 .dm-slot { min-width: 160px; }
+
+/* Dicas: o "i" ao lado do que explica; o texto aparece no balão (renderer/util.js). Desligadas em Aparência. */
+.tip {
+  display: inline-grid; place-items: center; flex: none; width: 18px; height: 18px; padding: 0; margin: 0 0 0 6px; border: 0; border-radius: 50%;
+  background: transparent; color: var(--muted); cursor: help; vertical-align: -3px; opacity: .8;
+}
+.tip::before {
+  content: ""; width: 15px; height: 15px; background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'><circle cx='12' cy='12' r='9.5'/><path d='M12 16.5v-5M12 7.8v.01'/></svg>") center / contain no-repeat;
+  mask: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'><circle cx='12' cy='12' r='9.5'/><path d='M12 16.5v-5M12 7.8v.01'/></svg>") center / contain no-repeat;
+}
+.tip:hover, .tip:focus-visible { color: var(--text); opacity: 1; }
+html[data-tips="off"] .tip { display: none !important; }
+#tipBubble {
+  position: fixed; z-index: 1000; max-width: 280px; box-sizing: border-box; padding: 8px 10px; border-radius: 8px;
+  background: var(--panel-2); border: 1px solid var(--line-strong); box-shadow: var(--shadow-2); color: var(--text);
+  font: 12px/1.45 var(--font-body); pointer-events: none;
+}
+#tipBubble[hidden] { display: none; }
+.tip-sample { display: inline-grid; place-items: center; width: 14px; height: 14px; border: 1.5px solid currentColor; border-radius: 50%; font: 700 9px/1 var(--font-body); vertical-align: 1px; color: var(--muted); }

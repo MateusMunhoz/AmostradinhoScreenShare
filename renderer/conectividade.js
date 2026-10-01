@@ -75,8 +75,8 @@ function renderHomeForNetwork() {
   $('roomPasswordLabel').textContent = internet ? 'Senha (obrigatória)' : 'Senha (opcional)';
   $('roomPassword').placeholder = internet ? 'Mínimo 4 caracteres; use uma forte' : 'Vazio = sem senha';
   $('createHint').textContent = internet
-    ? 'A sala fica no servidor e continua aberta enquanto tiver alguém nela. Mande o código e a senha para os amigos.'
-    : 'A sala fica aberta enquanto você estiver nela. Quando você sair, ela é encerrada para todos.';
+    ? 'Mande o código e a senha para os amigos.'
+    : 'A sala fecha quando todos saírem.';
 }
 
 function inviteTokenFromValue(value) {
