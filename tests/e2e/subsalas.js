@@ -51,15 +51,19 @@ async function dragTo(app, from, to) {
   await mouse(app, 'mouseReleased', to);
   return marked;
 }
+// Roda do mouse direto na página (pelo DevTools, a roda espera a janela desenhar, e ela pode estar atrás da outra)
+const wheel = (app, [x, y], deltaY, times) => app.eval(`(() => { for (let i = 0; i < ${times}; i++) $('voiceSky').dispatchEvent(new WheelEvent('wheel', { deltaY: ${deltaY}, clientX: ${x}, clientY: ${y}, bubbles: true, cancelable: true })); })()`);
 // Posição dos sóis no desenho (centro, em coordenadas do SVG)
+const SPAN = 2 * (42 + 26); // SKY_SPAN: um sistema com 3 anéis, mais os nomes
 const SUNS = `[...document.querySelectorAll('#voiceSky .sky-sun')].map((g) => { const m = g.transform.baseVal.consolidate().matrix; return [m.e, m.f]; })`;
 
-run('Subsalas: arrastar pessoas e controles da voz fixos', 120000, async () => {
+run('Subsalas: arrastar pessoas e controles da voz fixos', 200000, async () => {
   const A = await openApp('subA', 9491, { fake: true });
   await createRoom(A, { name: 'Ana', port: 18811 });
   const B = await openApp('subB', 9492, { fake: true });
   await joinRoom(B, { name: 'Bia', addr: '127.0.0.1:18811' });
   const [anaId, biaId] = [await A.eval('state.myId'), await B.eval('state.myId')];
+  await A.eval(`setVoiceView('lista')`); // o perfil de teste pode ter ficado no Mapa
   check('O servidor sabe mover os outros', await A.eval('state.subsalaMove') && await B.eval('state.subsalaMove'));
   await A.eval(`(() => { workspaceViews.voice = true; saveWorkspaceViews(); syncWorkspace(); })()`);
   await A.eval(TONE); await B.eval(TONE);
@@ -110,8 +114,8 @@ run('Subsalas: arrastar pessoas e controles da voz fixos', 120000, async () => {
     const [a, b, c] = ${SUNS};
     const d = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1]);
     const area = Math.abs((b[0] - a[0]) * (c[1] - a[1]) - (c[0] - a[0]) * (b[1] - a[1])) / 2;
-    return [d(a, b), d(b, c), d(a, c)].every((x) => x >= 63 && x <= 110) && area > 1500;
-  })()`));
+    return [d(a, b), d(b, c), d(a, c)].every((x) => x >= 63 && x <= 110) && area > 1500 || JSON.stringify([a, b, c, area]);
+  })()`) === true, await A.eval(`JSON.stringify(${SUNS})`));
 
   // Visão Mapa: o céu grande no lugar da lista, com tudo que a lista faz
   await A.eval(`$('voiceViewMap').click()`);
@@ -145,6 +149,30 @@ run('Subsalas: arrastar pessoas e controles da voz fixos', 120000, async () => {
   await A.waitFor(`document.querySelectorAll('#voiceSky .sky-sun[data-channel="2"].here').length === 1 && document.querySelectorAll('#voiceSky .sky-star').length === 2`, 5000);
   check('Mapa: depois de soltar, nenhum planeta fica apagado', await A.eval(`!document.querySelector('#voiceSky .dragging') && !document.querySelector('.sky-ghost')`));
   await skyShot(A, 'subsalas-mapa.png');
+
+  // Zoom: a roda aproxima até caber um sistema só; afasta até ver todos; arrastar o fundo anda; Ver tudo volta
+  const cam = () => A.eval(`(() => { const v = $('voiceSky').viewBox.baseVal, r = $('voiceSky').getBoundingClientRect(); return { w: v.width, h: v.height, x: v.x, y: v.y, u: skyCam.u, uIn: skyCam.uIn, uFit: skyCam.uFit, pw: r.width, ph: r.height, zoom: !$('skyZoom').hidden }; })()`);
+  const fit = await cam();
+  check('Mapa: preenche o painel (o desenho tem o formato do mapa)', Math.abs(fit.w / fit.h - fit.pw / fit.ph) < .02 && fit.zoom, JSON.stringify(fit));
+  const mid = await centerOf(A, '#voiceSky');
+  await wheel(A, mid, -400, 6);
+  const zin = await cam();
+  check('Zoom: a roda aproxima, até o limite de um sistema', zin.u < fit.u && Math.abs(zin.u - zin.uIn) < 1e-6 && Math.abs(Math.min(zin.w, zin.h) - SPAN) < 1, JSON.stringify(zin));
+  const at = await centerOf(A, '#voiceSky');
+  const p0 = [at[0] - 60, at[1] - 60];
+  await mouse(A, 'mouseMoved', p0); await sleep(60);
+  await mouse(A, 'mousePressed', p0, true);
+  for (let i = 1; i <= 6; i++) { await mouse(A, 'mouseMoved', [p0[0] + i * 20, p0[1] + i * 20], true); await sleep(30); }
+  await mouse(A, 'mouseReleased', [p0[0] + 120, p0[1] + 120]);
+  await sleep(150);
+  const panned = await cam();
+  check('Arrastar o fundo anda pelo mapa (e não abre balão)', (panned.x !== zin.x || panned.y !== zin.y) && await A.eval(`$('voiceMapPop').hidden`), JSON.stringify(panned));
+  await wheel(A, mid, 400, 12);
+  const zout = await cam();
+  check('Zoom: afastar para no limite de ver todas as salas', Math.abs(zout.u - zout.uFit) < 1e-6 && zout.w === fit.w && zout.x === fit.x, JSON.stringify(zout));
+  await A.eval(`$('skyZoomIn').click(); $('skyZoomIn').click()`);
+  await A.eval(`$('skyZoomFit').click()`);
+  check('Ver tudo volta a mostrar todas as salas', (await cam()).x === fit.x && await A.eval(`$('skyZoomFit').disabled && skyCam.auto`));
   await A.eval(`$('voiceViewList').click()`);
   await sleep(200);
   check('Lista de volta', await A.eval(`!$('voiceSky').classList.contains('map') && !!document.querySelector('#voicePaneMembers .voice-channel') && localStorage.getItem('vozVisao') === 'lista'`));
@@ -173,6 +201,16 @@ run('Subsalas: arrastar pessoas e controles da voz fixos', 120000, async () => {
   await A.eval(`$('voiceViewMap').click()`);
   await sleep(300);
   await skyShot(A, 'subsalas-mapa-muitas.png');
+  // Foto com mais gente (pessoas de mentira, só no desenho): 4 numa subsala, 3 na outra
+  await A.eval(`(() => {
+    const fake = [['91', 'Xeipoto', '1'], ['92', 'Maumau', '1'], ['93', 'Naitsi', '1'], ['94', 'PGE_lover69', '1'], ['95', 'Far Dog', ''], ['96', 'DMN', ''], ['97', 'Calopsita', '']];
+    for (const [id, name, ch] of fake) { state.members.set(id, { name, sharing: id === '94', addrs: [] }); voice.members.set(id, { session: 's' + id, channel: ch, muted: id === '93', deafened: id === '93' }); }
+    renderVoicePane();
+  })()`);
+  await sleep(300);
+  await skyShot(A, 'subsalas-mapa-cheio.png');
+  await wheel(A, mid, -400, 6);
+  await skyShot(A, 'subsalas-mapa-zoom.png');
   await A.eval(`$('voiceViewList').click()`);
   check('Microfone e fone na barra', await A.eval(`!$('paneVoiceMute').hidden && !$('paneVoiceDeafen').hidden`));
 });

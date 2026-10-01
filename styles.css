@@ -968,7 +968,15 @@ main { padding-top: var(--workspace-top); }
 .voice-view button[aria-pressed=true] { background: var(--panel-2); color: var(--text); }
 .voice-view button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 /* Mapa: o céu ocupa o lugar da lista; embaixo ficam só Nova subsala e quem transmite fora da voz */
-#voicePane.voice-map > #voiceSky { flex: 1 1 0; min-height: 170px; max-height: none; }
+#voicePane.voice-map > .voice-sky-box { flex: 1 1 0; min-height: 170px; display: flex; margin-bottom: 10px; }
+.voice-sky-box { position: relative; }
+/* No mapa, o céu preenche o espaço todo, liso (sem a carta com anéis da faixa da lista); dá para arrastar o fundo */
+#voiceSky.map { flex: 1 1 auto; width: 100%; height: 100%; max-height: none; margin: 0; background: var(--sunken); user-select: none; touch-action: none; cursor: grab; }
+.voice-sky-box.panning, .voice-sky-box.panning #voiceSky.map { cursor: grabbing; }
+.sky-zoom { position: absolute; top: 8px; right: 8px; display: flex; flex-direction: column; gap: 4px; }
+.sky-zoom .btn.icon { width: 28px; height: 28px; padding: 0; display: grid; place-items: center; font-size: 16px; line-height: 1; background: color-mix(in srgb, var(--panel) 85%, transparent); }
+.sky-zoom .btn.icon:disabled { opacity: .4; }
+.sky-zoom svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .voice-map-pop { position: absolute; z-index: 5; width: min(320px, calc(100% - 16px)); max-height: 60%; overflow: auto; padding: 8px;
   background: var(--panel); border: 1px solid var(--line-strong); border-radius: 10px; box-shadow: 0 10px 30px rgba(0, 0, 0, .4); }
 .voice-map-pop .members { margin: 0; }
@@ -979,6 +987,8 @@ main { padding-top: var(--workspace-top); }
 #voicePane > #voicePaneMembers { flex: 0 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 /* Chat e voz abertos juntos: a voz ocupa só o que precisa (até metade), o chat fica com o resto */
 .workspace-in-room.has-workspace-pane:not(.workspace-wide) #chatTab:not([hidden]) ~ #voicePane { flex: 0 1 auto; max-height: 50%; }
+/* No Mapa, a voz divide o espaço com o chat meio a meio (o mapa cresce para preencher) */
+.workspace-in-room.has-workspace-pane:not(.workspace-wide) #chatTab:not([hidden]) ~ #voicePane.voice-map { flex: 1 1 0; max-height: none; }
 .profile-summary { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; overflow-wrap: anywhere; }
 .profile-summary .avatar { width: 40px; height: 40px; flex: none; background: var(--primary); color: var(--primary-ink); }
 #workspacePanes .chat { display: flex; flex-direction: column; min-height: 0; }

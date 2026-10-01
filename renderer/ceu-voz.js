@@ -9,12 +9,23 @@
 //  - Mapa: o céu grande no lugar da lista, fazendo tudo que a lista faz. Clicar num sol abre o canal (Entrar, apagar a
 //    subsala e quem está nele, com volume, Assistir e perfil); clicar num planeta abre a pessoa; arrastar um planeta
 //    até outro sol leva a pessoa para lá. Nova subsala e quem transmite fora da voz continuam embaixo do mapa.
+//    O mapa ocupa o painel todo (os sóis se espalham conforme o formato dele), e dá para aproximar e afastar (roda do
+//    mouse ou + e −) e andar arrastando o fundo: no mais perto cabe um sistema inteiro; no mais longe, todos.
 // O planeta tem data-person, então voz.js acende quem fala junto com a lista.
 // Script clássico: divide o escopo global com os outros (ordem no index.html). Usa de: util, estado, voz, membros, subsalas.
 
 const SKY_NS = 'http://www.w3.org/2000/svg';
-const SKY_D = 74, SKY_MIN = 64; // distância entre um sol e o vizinho, e a menor permitida entre dois sóis
-const SKY_RINGS = [[13], [12, 20], [11, 18.5, 26]]; // raios das órbitas com 1, 2 ou 3 anéis
+// D: distância entre um sol e o vizinho; MIN: a menor permitida entre dois sóis; rings: raios das órbitas com 1, 2 ou
+// 3 anéis. No mapa tudo é mais espaçado, para o nome de cada planeta caber sem cair em cima do sol.
+const SKY_GEO = {
+  lista: { D: 74, MIN: 64, rings: [[13], [12, 20], [11, 18.5, 26]] },
+  mapa: { D: 112, MIN: 100, rings: [[18], [17, 30], [16, 29, 42]] },
+};
+const skyRadii = (n, geo) => (n ? geo.rings[n <= 3 ? 0 : n <= 8 ? 1 : 2] : []);
+// Zoom do mapa: o mais perto mostra um sistema inteiro (a maior órbita, os nomes e uma folga); o mais longe, todos
+const SKY_SPAN = 2 * (SKY_GEO.mapa.rings[2][2] + 26);
+// A câmera do mapa: centro (x, y) e u = unidades do desenho por pixel. auto: mostrando tudo (acompanha quando muda)
+const skyCam = { x: 0, y: 0, u: 0, auto: true, box: null, uIn: 0, uFit: 0 };
 
 let voiceView = load('vozVisao', 'lista') === 'mapa' ? 'mapa' : 'lista';
 const voiceMapOn = () => voiceView === 'mapa';
@@ -37,7 +48,9 @@ function skyEl(tag, attrs = {}) {
 // Onde fica cada sol. Para cada sol novo: candidatos em volta de cada sol que já existe (a uma distância de vizinho),
 // sem encostar em nenhum; fica o mais perto do meio do grupo, com um pouco de acaso (o hash do canal) para não virar
 // uma grade. Com 3 canais isso dá um triângulo; depois o grupo cresce para os lados, sem padrão.
-function skyLayout(chs) {
+// aspect: largura/altura do espaço; num espaço alto, o grupo cresce mais para cima e para baixo (e vice-versa).
+function skyLayout(chs, { D, MIN }, aspect = 1) {
+  const stretch = Math.min(2.5, Math.max(.4, aspect)) ** .3;
   const pts = [];
   for (const ch of chs) {
     if (!pts.length) { pts.push([0, 0]); continue; }
@@ -47,14 +60,15 @@ function skyLayout(chs) {
       for (let k = 0; k < 24; k++) {
         const h = skyHash(`${ch}:${j}:${k}`, 11);
         const a = (k + (h % 1000) / 1000) / 24 * 2 * Math.PI;
-        const d = SKY_D * (.96 + ((h >>> 10) % 100) / 100 * .14);
+        const d = D * (.96 + ((h >>> 10) % 100) / 100 * .14);
         const x = px + d * Math.cos(a), y = py + d * Math.sin(a);
-        if (pts.some(([qx, qy]) => Math.hypot(qx - x, qy - y) < SKY_MIN)) continue;
-        const score = Math.hypot(x - mx, y - my) + ((h >>> 20) % 100) / 100 * 16;
+        if (pts.some(([qx, qy]) => Math.hypot(qx - x, qy - y) < MIN)) continue;
+        const st = pts.length === 2 ? 1 : stretch; // o terceiro sempre fecha o triângulo, em qualquer formato
+        const score = Math.hypot((x - mx) / st, (y - my) * st) + ((h >>> 20) % 100) / 100 * 16;
         if (!best || score < best[2]) best = [x, y, score];
       }
     });
-    pts.push(best ? [best[0], best[1]] : [mx + SKY_D * pts.length, my]);
+    pts.push(best ? [best[0], best[1]] : [mx + D * pts.length, my]);
   }
   return pts;
 }
@@ -71,33 +85,43 @@ function skySystems() {
 }
 
 function renderVoiceSky() {
-  const sky = $('voiceSky'), map = voiceMapOn();
+  const sky = $('voiceSky'), box = $('voiceSkyBox'), map = voiceMapOn(), geo = SKY_GEO[map ? 'mapa' : 'lista'];
   if (voiceDrag) return; // arrastando um planeta: o céu fica parado até soltar
   const systems = skySystems();
   sky.replaceChildren();
   sky.classList.toggle('map', map);
   if (map) sky.removeAttribute('aria-hidden'); else sky.setAttribute('aria-hidden', 'true');
-  if (map) { sky.setAttribute('role', 'group'); sky.setAttribute('aria-label', 'Mapa da voz: canais como sóis e quem está neles como planetas'); }
+  if (map) { sky.setAttribute('role', 'group'); sky.setAttribute('aria-label', 'Mapa da voz: canais como sóis e quem está neles como planetas. A roda do mouse aproxima e afasta; arrastar o fundo anda pelo mapa'); }
   else { sky.removeAttribute('role'); sky.removeAttribute('aria-label'); }
   const show = map || systems.some((s) => s.people.length);
-  sky.toggleAttribute('hidden', !show); // SVG não tem a propriedade hidden
+  box.hidden = !show;
+  $('skyZoom').hidden = true;
   if (!show) return renderSkyPop();
   const labels = systems.length > 1 || map;
-  const outer = (n) => (n ? SKY_RINGS[n <= 3 ? 0 : n <= 8 ? 1 : 2].at(-1) : 9);
-  const pts = skyLayout(systems.map((s) => s.ch));
-  // Caixa em volta de tudo (órbitas e nomes); na lista, o céu é uma faixa larga e baixa
+  const outer = (n) => skyRadii(n, geo).at(-1) || 9;
+  // No mapa, o espaço é o painel inteiro: a disposição acompanha o formato dele
+  const rect = map ? sky.getBoundingClientRect() : null;
+  const aspect = map && rect.width && rect.height ? rect.width / rect.height : 1;
+  const pts = skyLayout(systems.map((s) => s.ch), geo, aspect);
+  // Caixa em volta de tudo (órbitas e nomes)
   let [x0, y0, x1, y1] = [Infinity, Infinity, -Infinity, -Infinity];
   systems.forEach((s, i) => {
-    const [x, y] = pts[i], r = Math.max(outer(s.people.length), 13) + (map ? 9 : 6);
+    const [x, y] = pts[i], r = Math.max(outer(s.people.length), 13) + (map ? 12 : 6);
     x0 = Math.min(x0, x - r - (labels ? 14 : 0)); x1 = Math.max(x1, x + r + (labels ? 14 : 0));
     y0 = Math.min(y0, y - r); y1 = Math.max(y1, y + r + (labels ? 10 : 0) + (map && s.people.length ? 6 : 0));
   });
   let w = x1 - x0, h = y1 - y0;
-  const wide = map ? 1.1 : 3.4; // largura mínima em relação à altura
-  if (w < h * wide) { x0 -= (h * wide - w) / 2; w = h * wide; }
-  sky.setAttribute('viewBox', `${x0.toFixed(1)} ${y0.toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}`);
+  if (map) {
+    skyCam.box = [x0, y0, x1, y1];
+    // A poeira cobre o que aparece com tudo à vista (a câmera não sai disso)
+    const u = rect.width && rect.height ? Math.max(w / rect.width, h / rect.height) : 0;
+    if (u) { x0 -= (rect.width * u - w) / 2; y0 -= (rect.height * u - h) / 2; w = rect.width * u; h = rect.height * u; }
+  } else {
+    if (w < h * 3.4) { x0 -= (h * 3.4 - w) / 2; w = h * 3.4; } // na lista, o céu é uma faixa larga e baixa
+    sky.setAttribute('viewBox', `${x0.toFixed(1)} ${y0.toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}`);
+  }
   // Poeira de fundo: sempre as mesmas estrelinhas, para o céu não mudar a cada redesenho
-  const dust = Math.round(Math.min(90, w * h / 900));
+  const dust = Math.round(Math.min(map ? 160 : 90, w * h / 900));
   for (let i = 0; i < dust; i++) {
     const hh = skyHash('ceu' + i, 7);
     sky.append(skyEl('circle', { class: 'sky-dust', cx: (x0 + 3 + hh % Math.max(1, w - 6)).toFixed(1), cy: (y0 + 3 + (hh >>> 9) % Math.max(1, h - 6)).toFixed(1), r: (hh >>> 17) % 3 ? .5 : .9 }));
@@ -111,11 +135,98 @@ function renderVoiceSky() {
     sky.append(skyEl('line', { class: 'sky-link sky-bridge', x1: x1b + ux * gap, y1: y1b + uy * gap, x2: x2 - ux * gap, y2: y2 - uy * gap }));
   }
   const now = performance.now() / 1000; // a órbita continua de onde estava quando o céu é redesenhado
-  systems.forEach((s, i) => drawSkySystem(sky, s, pts[i], { map, labels, now, outer: outer(s.people.length) }));
+  systems.forEach((s, i) => drawSkySystem(sky, s, pts[i], { map, geo, labels, now, outer: outer(s.people.length) }));
+  if (map) applySkyCam();
   renderSkyPop();
 }
 
-function drawSkySystem(sky, { ch, name, here, people }, [sx, sy], { map, labels, now, outer }) {
+// ---------- Zoom e andar pelo mapa ----------
+// Põe a câmera no desenho: dentro dos limites de zoom, e sem sair da caixa com todos os sóis
+function applySkyCam() {
+  const sky = $('voiceSky');
+  if (!voiceMapOn() || !skyCam.box || $('voiceSkyBox').hidden) return;
+  const { width: pw, height: ph } = sky.getBoundingClientRect();
+  if (!pw || !ph) return;
+  const [x0, y0, x1, y1] = skyCam.box;
+  skyCam.uFit = Math.max((x1 - x0) / pw, (y1 - y0) / ph);
+  skyCam.uIn = Math.min(skyCam.uFit, SKY_SPAN / Math.min(pw, ph));
+  if (skyCam.auto || !skyCam.u) { skyCam.u = skyCam.uFit; skyCam.x = (x0 + x1) / 2; skyCam.y = (y0 + y1) / 2; }
+  skyCam.u = Math.min(skyCam.uFit, Math.max(skyCam.uIn, skyCam.u));
+  const vw = pw * skyCam.u, vh = ph * skyCam.u;
+  const keep = (c, a, b, v) => (v >= b - a ? (a + b) / 2 : Math.min(b - v / 2, Math.max(a + v / 2, c)));
+  skyCam.x = keep(skyCam.x, x0, x1, vw);
+  skyCam.y = keep(skyCam.y, y0, y1, vh);
+  sky.setAttribute('viewBox', `${(skyCam.x - vw / 2).toFixed(1)} ${(skyCam.y - vh / 2).toFixed(1)} ${vw.toFixed(1)} ${vh.toFixed(1)}`);
+  $('skyZoom').hidden = skyCam.uIn >= skyCam.uFit * .98; // tudo já cabe de perto: sem zoom
+  $('skyZoomIn').disabled = skyCam.u <= skyCam.uIn * 1.001;
+  $('skyZoomOut').disabled = $('skyZoomFit').disabled = skyCam.u >= skyCam.uFit * .999;
+}
+// Aproxima (factor < 1) ou afasta (> 1), mantendo parado o ponto (px, py) em pixels do mapa (sem ponto: o meio)
+function zoomSky(factor, px, py) {
+  const r = $('voiceSky').getBoundingClientRect();
+  if (!skyCam.uFit || !r.width) return;
+  const dx = (px ?? r.width / 2) - r.width / 2, dy = (py ?? r.height / 2) - r.height / 2;
+  const u2 = Math.min(skyCam.uFit, Math.max(skyCam.uIn, skyCam.u * factor));
+  skyCam.x += dx * (skyCam.u - u2);
+  skyCam.y += dy * (skyCam.u - u2);
+  skyCam.u = u2;
+  skyCam.auto = u2 >= skyCam.uFit * .999; // afastou até o fim: mostra tudo, e acompanha quando os canais mudam
+  applySkyCam();
+}
+function fitSky() { skyCam.auto = true; applySkyCam(); }
+
+function setupSkyCamera() {
+  const box = $('voiceSkyBox');
+  box.addEventListener('wheel', (e) => {
+    if (!voiceMapOn() || $('skyZoom').hidden) return;
+    e.preventDefault();
+    const r = $('voiceSky').getBoundingClientRect();
+    const delta = e.deltaY * (e.deltaMode === 1 ? 33 : e.deltaMode === 2 ? 400 : 1);
+    zoomSky(Math.exp(delta * (e.ctrlKey ? .01 : .0015)), e.clientX - r.left, e.clientY - r.top); // ctrlKey: pinça do touchpad
+  }, { passive: false });
+  // Arrastar o fundo (ou um sol) anda pelo mapa; o planeta tem o arrastar dele (mudar de canal)
+  box.addEventListener('pointerdown', (e) => {
+    if (!voiceMapOn() || e.button !== 0 || e.target.closest('.sky-star, .sky-zoom')) return;
+    const start = [e.clientX, e.clientY], from = [skyCam.x, skyCam.y];
+    let moved = false;
+    const move = (ev) => {
+      const dx = ev.clientX - start[0], dy = ev.clientY - start[1];
+      if (!moved && Math.hypot(dx, dy) < 5) return;
+      if (!moved) { moved = true; box.classList.add('panning'); try { box.setPointerCapture(e.pointerId); } catch {} }
+      skyCam.auto = false;
+      skyCam.x = from[0] - dx * skyCam.u;
+      skyCam.y = from[1] - dy * skyCam.u;
+      applySkyCam();
+    };
+    const up = () => {
+      box.removeEventListener('pointermove', move);
+      box.removeEventListener('pointerup', up);
+      box.removeEventListener('pointercancel', up);
+      if (!moved) return;
+      box.classList.remove('panning');
+      if (skyCam.u >= skyCam.uFit * .999) skyCam.auto = true; // com tudo à vista, andar não muda nada
+      // Soltar depois de andar não é um clique no sol embaixo do ponteiro
+      const eat = (ev) => { ev.stopPropagation(); ev.preventDefault(); };
+      box.addEventListener('click', eat, { capture: true, once: true });
+      setTimeout(() => box.removeEventListener('click', eat, { capture: true }), 0);
+    };
+    box.addEventListener('pointermove', move);
+    box.addEventListener('pointerup', up);
+    box.addEventListener('pointercancel', up);
+  });
+  $('skyZoomIn').onclick = () => zoomSky(1 / 1.5);
+  $('skyZoomOut').onclick = () => zoomSky(1.5);
+  $('skyZoomFit').onclick = fitSky;
+  // O painel mudou de tamanho: a disposição acompanha o formato novo (uma vez por quadro)
+  let pending = false;
+  new ResizeObserver(() => {
+    if (pending || !voiceMapOn() || box.hidden) return;
+    pending = true;
+    requestAnimationFrame(() => { pending = false; if (!voiceDrag) renderVoiceSky(); });
+  }).observe(box);
+}
+
+function drawSkySystem(sky, { ch, name, here, people }, [sx, sy], { map, geo, labels, now, outer }) {
   // No mapa, a área em volta do sol inteira recebe o clique e o planeta arrastado
   if (map) {
     const hit = skyEl('circle', { class: 'sky-hit', cx: sx, cy: sy, r: Math.max(outer, 13) + 7 });
@@ -123,7 +234,7 @@ function drawSkySystem(sky, { ch, name, here, people }, [sx, sy], { map, labels,
     hit.onclick = (e) => openSkyPop({ kind: 'channel', ch }, e);
     sky.append(hit);
   }
-  const radii = people.length ? SKY_RINGS[people.length <= 3 ? 0 : people.length <= 8 ? 1 : 2] : [];
+  const radii = skyRadii(people.length, geo);
   radii.forEach((radius, r) => {
     const onRing = people.filter((_, j) => j % radii.length === r);
     if (!onRing.length) return;
@@ -269,7 +380,7 @@ function placeSkyPop(x, y) {
 // Redesenha o balão aberto (a voz mudou); fecha se o que ele mostra não existe mais
 function renderSkyPop() {
   const pop = $('voiceMapPop');
-  if (!skyPop || !voiceMapOn() || $('voiceSky').hasAttribute('hidden')) return closeSkyPop();
+  if (!skyPop || !voiceMapOn() || $('voiceSkyBox').hidden) return closeSkyPop();
   const list = pop.querySelector('.members');
   list.replaceChildren();
   if (skyPop.kind === 'channel') {
@@ -311,6 +422,7 @@ function syncVoiceViewButtons() {
   $('voiceViewMap').setAttribute('aria-pressed', String(voiceMapOn()));
 }
 
+setupSkyCamera();
 $('voiceViewList').onclick = () => setVoiceView('lista');
 $('voiceViewMap').onclick = () => setVoiceView('mapa');
 syncVoiceViewButtons();

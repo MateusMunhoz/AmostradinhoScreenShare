@@ -62,7 +62,11 @@
       <div class="pane-head"><h2 id="voicePaneTitle">Chat de voz</h2><div class="voice-view" role="group" aria-label="Como ver a voz"><button id="voiceViewList" type="button" title="Canais e pessoas em lista">Lista</button><button id="voiceViewMap" type="button" title="Canais como sóis e pessoas como planetas">Mapa</button></div><button id="paneVoiceSettings" class="btn small" type="button">Voz e atalhos</button></div>
       <p id="voicePaneStatus" class="hint"></p>
       <!-- Céu da voz: cada canal é um sol e quem está nele orbita como planeta. Na visão Mapa, fica grande no lugar da lista (renderer/ceu-voz.js) -->
-      <svg id="voiceSky" class="voice-sky" viewBox="0 0 300 70" preserveAspectRatio="xMidYMid meet" aria-hidden="true" hidden></svg>
+      <div id="voiceSkyBox" class="voice-sky-box" hidden>
+        <svg id="voiceSky" class="voice-sky" viewBox="0 0 300 70" preserveAspectRatio="xMidYMid meet" aria-hidden="true"></svg>
+        <!-- Mapa: aproximar, afastar e ver tudo (também pela roda do mouse; arrastar o fundo anda) -->
+        <div id="skyZoom" class="sky-zoom" hidden><button id="skyZoomIn" class="btn small icon" type="button" title="Aproximar" aria-label="Aproximar">+</button><button id="skyZoomOut" class="btn small icon" type="button" title="Afastar" aria-label="Afastar">−</button><button id="skyZoomFit" class="btn small icon" type="button" title="Ver todas as salas" aria-label="Ver todas as salas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button></div>
+      </div>
       <ul id="voicePaneMembers" class="members"></ul>
       <!-- Mapa: o balão do sol (canal) ou do planeta (pessoa) clicado, com os controles da lista (renderer/ceu-voz.js) -->
       <div id="voiceMapPop" class="voice-map-pop" hidden><ul class="members"></ul></div>
