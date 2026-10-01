@@ -67,15 +67,31 @@ function keepPhoto(hash, data) {
   save('fotosGuardadas', JSON.stringify(list));
 }
 
-// Pinta uma bolinha de pessoa: a foto (se houver) ou a inicial que já está nela. Sem a foto aqui, pede ao dono.
+// Sem foto, a bolinha é uma estrela. Cada pessoa sem foto tem uma cor, na ordem em que entrou na sala (só contam
+// as sem foto): a primeira verde, a segunda vermelha, e assim por diante. Fora da sala, a sua é a verde.
+const STAR_COLORS = ['#39D98A', '#FF5A5F', '#5DA9FF', '#FFC93C', '#B07CFF', '#FF8A3D', '#FF6FB5', '#3DD6D0'];
+function starColorOf(owner) {
+  const me = state.myId || 'me';
+  const ids = [me, ...state.members.keys()].sort((a, b) => (Number(a) || 0) - (Number(b) || 0));
+  const noPhoto = ids.filter((x) => !photoHashOf(x === me ? 'me' : x));
+  const i = noPhoto.indexOf(owner === 'me' ? me : owner);
+  return STAR_COLORS[Math.max(0, i) % STAR_COLORS.length];
+}
+// Pinta uma bolinha de pessoa: a foto (se houver) ou a estrela na cor da pessoa. Sem a foto aqui, pede ao dono.
 function paintAvatar(el, id) {
   const owner = !id || id === state.myId ? 'me' : id;
   el.dataset.owner = owner;
   const hash = photoHashOf(owner);
   const url = photoUrl(hash);
   el.classList.toggle('photo', !!url);
+  el.classList.toggle('star', !url);
   el.style.backgroundImage = url ? `url("${url}")` : '';
+  if (url) el.style.removeProperty('--star'); else el.style.setProperty('--star', starColorOf(owner));
   if (hash && !url) requestPhoto(hash, owner);
+}
+// Alguém entrou, saiu ou trocou de foto: a ordem das estrelas pode mudar, então repinta todas as bolinhas
+function repaintAllAvatars() {
+  document.querySelectorAll('.avatar[data-owner], #navProfileAvatar[data-owner]').forEach((el) => paintAvatar(el, el.dataset.owner));
 }
 function repaintAvatars(id) {
   const owner = !id || id === state.myId ? 'me' : id;
@@ -130,7 +146,7 @@ function onAvatarState(id, hash, full) {
   if (!mem) return;
   mem.avatar = /^[0-9a-f]{64}$/.test(hash || '') ? hash : '';
   mem.avatarFull = /^[0-9a-f]{64}$/.test(full || '') ? full : '';
-  repaintAvatars(id);
+  repaintAllAvatars();
   renderVoiceAvatars();
 }
 
@@ -228,7 +244,7 @@ function removeMyPhoto() {
   renderMyPhoto();
 }
 function renderMyPhoto() {
-  repaintAvatars('me');
+  repaintAllAvatars();
   $('profilePhotoRemove').hidden = !fotos.mine;
   $('profilePhotoPick').textContent = fotos.mine ? 'Trocar foto' : 'Escolher foto';
   $('profilePhotoFit').hidden = !fotos.mine || !fotos.mineFull;

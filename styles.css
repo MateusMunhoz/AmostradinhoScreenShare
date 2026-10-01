@@ -219,7 +219,11 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
   border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); color: var(--text); box-shadow: var(--lift);
 }
 .voice-avatar .va-name { max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.voice-avatar .eq { margin-left: 0; }
+/* Barrinhas de quem fala: o espaço fica sempre reservado (só aparecem quando a pessoa fala). Se elas entrassem e
+   saíssem, o nome cresceria a cada fala e empurraria o Sair para fora da barra, que só mede de novo quando muda de tamanho */
+.voice-avatar .eq { margin-left: 0; display: inline-flex; visibility: hidden; }
+.voice-avatar.speaking .eq { visibility: visible; }
+.voice-avatar:not(.speaking) .eq > span { animation: none; }
 .voice-avatar.speaking { border-color: var(--ok); color: var(--ok); }
 .voice-avatar.mic-off { color: var(--muted); border-style: dashed; }
 .voice-avatar .va-deaf { display: inline-grid; place-items: center; color: var(--warn); }
@@ -441,6 +445,13 @@ kbd { font-family: Consolas, monospace; font-size: 11px; color: var(--muted); bo
 /* Foto de perfil no lugar da inicial (renderer/fotos.js) */
 .avatar.photo, #navProfileAvatar.photo { background-size: cover !important; background-position: center !important; background-repeat: no-repeat; color: transparent !important; }
 .msg-line .avatar { display: inline-block; width: 18px; height: 18px; margin-right: 6px; vertical-align: -4px; }
+/* Sem foto: uma estrela de quatro pontas sobre fundo escuro, na cor da pessoa (--star, renderer/fotos.js) */
+.avatar.star, #navProfileAvatar.star { position: relative; overflow: hidden; background-color: var(--sunken) !important; background-image: none !important; color: transparent !important; box-sizing: border-box; border: 1px solid var(--line); }
+.avatar.star::before, #navProfileAvatar.star::before {
+  content: ""; position: absolute; inset: 16%; background: var(--star);
+  -webkit-mask: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 1C12 8 16 12 23 12C16 12 12 16 12 23C12 16 8 12 1 12C8 12 12 8 12 1Z'/></svg>") center / contain no-repeat;
+  mask: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 1C12 8 16 12 23 12C16 12 12 16 12 23C12 16 8 12 1 12C8 12 12 8 12 1Z'/></svg>") center / contain no-repeat;
+}
 .msg.grouped .msg-line .avatar { display: none; }
 .voice-avatar .avatar { width: 20px; height: 20px; margin-left: -4px; }
 .profile-photo { display: flex; flex-wrap: wrap; gap: 8px; margin: -6px 0 16px; }
@@ -540,7 +551,7 @@ html .chat-form #chatSend:disabled { opacity: 1; background: transparent; border
 .members { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .member { display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: 14px; }
 .member .avatar { width: 8px; height: 8px; border-radius: 2px; font-size: 0; }
-.member .avatar.photo { width: 22px; height: 22px; border-radius: 50%; }
+.member .avatar:is(.photo, .star) { width: 22px; height: 22px; border-radius: 50%; }
 .members-sub { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); }
 .member .info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .member .mname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

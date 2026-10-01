@@ -205,6 +205,7 @@ function tickSpeak() {
 
 // Marca quem fala em todo lugar que mostra a pessoa: lista, barra, quadro de vídeo e janelas flutuantes
 function renderSpeaking() {
+  renderVoiceAvatars(true); // quem começou a falar entra na barra de baixo (se não estava à vista)
   for (const el of document.querySelectorAll('[data-person]')) el.classList.toggle('speaking', speaking.has(el.dataset.person));
   $('peopleSpeak').hidden = ![...speaking].some((id) => id !== state.myId);
   for (const [id, link] of state.in) link.tile.el.classList.toggle('speaking', speaking.has(id));
@@ -263,13 +264,36 @@ function renderVoice() {
   if (typeof renderHomeCall === 'function') renderHomeCall(); // a faixa do início mostra a sua voz
 }
 
-// Painel recolhido: quem está na voz fica na barra; clicar abre o volume da pessoa
-function renderVoiceAvatars() {
+// Painel recolhido: quem está na voz fica na barra; clicar abre o volume da pessoa.
+// Só quem está no mesmo canal que você (na Voz geral ou na mesma subsala; fora da voz, todo mundo) e no máximo
+// 3 pessoas, sempre com a foto (ou a estrela). Quem começa a falar entra na hora, no lugar de alguém calado, e quem
+// já está à vista não muda de lugar (a barra não fica pulando); o resto vira "+N", que abre o painel da voz.
+const DOCK_VOICE_MAX = 3;
+let dockVoiceShown = [];
+function dockVoicePick() {
+  const mine = voice.session ? (voice.channel || '') : null;
+  const all = [...voice.members].filter(([id, m]) => m.session && state.members.has(id)
+    && (mine === null || typeof subsalasOn !== 'function' || !subsalasOn() || voiceChannelOf(id) === mine)).map(([id]) => id);
+  const shown = dockVoiceShown.filter((id) => all.includes(id)).slice(0, DOCK_VOICE_MAX);
+  for (const id of all) if (shown.length < DOCK_VOICE_MAX && !shown.includes(id)) shown.push(id);
+  for (const id of all) {
+    if (!speaking.has(id) || shown.includes(id)) continue;
+    const quiet = shown.map((x, i) => [x, i]).reverse().find(([x]) => !speaking.has(x));
+    if (quiet) shown[quiet[1]] = id;
+  }
+  return { all, shown, rest: all.filter((id) => !shown.includes(id)) };
+}
+let dockVoiceKey = '';
+function renderVoiceAvatars(onlyIfChanged = false) {
+  const { all, shown, rest } = dockVoicePick();
+  const key = shown.join(',') + '|' + rest.length;
+  if (onlyIfChanged && key === dockVoiceKey) return;
+  dockVoiceKey = key;
+  dockVoiceShown = shown;
   const box = $('voiceAvatars');
   box.replaceChildren();
-  const ids = [...voice.members].filter(([id, m]) => m.session && state.members.has(id)).map(([id]) => id);
-  box.hidden = chat.open || !ids.length;
-  for (const id of ids) {
+  box.hidden = chat.open || !all.length;
+  for (const id of shown) {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'voice-avatar';
@@ -280,8 +304,7 @@ function renderVoiceAvatars() {
     nm.className = 'va-name';
     nm.textContent = nameOf(id);
     paintName(nm, id);
-    if (photoHashOf(id)) b.append(avatar(nameOf(id), id)); // com foto, ela vem antes do nome
-    b.append(nm, speakBars());
+    b.append(avatar(nameOf(id), id), nm, speakBars()); // a foto (ou a estrela) antes do nome
     const m = voice.members.get(id);
     // Fone silenciado: o ícone do fone cortado ao lado do nome
     if (m.deafened) { const d = document.createElement('span'); d.className = 'va-deaf'; d.innerHTML = ICON.headphonesOff; b.append(d); }
@@ -293,6 +316,17 @@ function renderVoiceAvatars() {
     b.onclick = (e) => openPersonCard(id, b, e.detail === 0);
     onWheelVolume(b, id, 'voice');
     box.append(b);
+  }
+  if (rest.length) {
+    const more = document.createElement('button');
+    more.type = 'button';
+    more.className = 'voice-avatar voice-more-people';
+    more.textContent = `+${rest.length}`;
+    const names = rest.map(nameOf).join(', ');
+    more.title = `Também na voz: ${names}`;
+    more.setAttribute('aria-label', `Mais ${rest.length} na voz: ${names}. Abrir o painel da voz`);
+    more.onclick = () => { workspaceViews.voice = true; saveWorkspaceViews(); setPanelOpen(true); syncWorkspace(); };
+    box.append(more);
   }
 }
 
@@ -425,15 +459,15 @@ function renderPersonCard() {
   actions.className = 'pc-actions';
   const mute = document.createElement('button');
   mute.type = 'button';
-  mute.className = 'btn small' + (v.muted ? ' warn-on' : '');
-  mute.textContent = v.muted ? `Ouvir ${name} de novo` : 'Silenciar para mim';
+  // Só ícones: o nome de cada um aparece ao passar o mouse (e é o que o leitor de tela lê)
+  mute.className = 'btn small icon' + (v.muted ? ' warn-on' : '');
+  setIcon(mute, 'muted', v.muted ? `Ouvir ${name} de novo` : `Silenciar ${name} para mim`);
   mute.setAttribute('aria-pressed', String(v.muted));
   mute.onclick = () => { setVol(id, { muted: !v.muted }); renderPersonCard(); card.querySelector('.pc-actions .btn')?.focus(); };
   const reset = document.createElement('button');
   reset.type = 'button';
-  reset.className = 'btn small ghost';
-  reset.textContent = 'Voltar ao padrão';
-  reset.title = `Voz em ${DEFAULT_VOICE}% e a transmissão sem som (${DEFAULT_SCREEN}%)`;
+  reset.className = 'btn small icon';
+  setIcon(reset, 'reset', `Voltar ao padrão: voz em ${DEFAULT_VOICE}% e a transmissão sem som`);
   reset.onclick = () => { setVol(id, { voice: DEFAULT_VOICE, screen: DEFAULT_SCREEN, muted: false }); renderPersonCard(); };
   actions.append(mute, reset);
   const note = document.createElement('p');

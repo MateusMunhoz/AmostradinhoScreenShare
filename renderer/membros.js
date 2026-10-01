@@ -142,6 +142,7 @@ function renderMembers() {
   for (const [id, m] of others) list.append(memberRow(id, m.name, m.sharing));
   renderVoicePane();
   if (typeof renderHomeCall === 'function') renderHomeCall(); // quem está na sala, na faixa do início
+  repaintAllAvatars(); // entrou ou saiu alguém: a cor da estrela de quem não tem foto segue a ordem da sala
 }
 
 function updateStage() {
