@@ -916,13 +916,10 @@ fieldset.group > legend { margin-bottom: 10px; }
 .settings-color-input input.is-auto { color: var(--muted); }
 .settings-colors-sub { grid-column: 1 / -1; margin: 8px 0 0; padding-top: 12px; border-top: 1px solid var(--line); display: grid; gap: 3px; font-size: 13px; }
 .settings-colors-sub small { color: var(--muted); font-size: 12px; }
-.settings-sound { display: grid; grid-template-columns: 130px minmax(0,1fr) auto; align-items: center; gap: 10px; }
-.settings-sound select, .settings-sound .select-btn { width: 100%; min-width: 0; }
 .general-settings input[type=range] { accent-color: var(--accent); }
-.settings-sound label { font-size: 13px; }
 #resetColors { justify-self: start; }
 #generalSettingsDialog { z-index: 30; }
-@media (max-width: 580px) { .settings-colors { grid-template-columns: 1fr; } .settings-sound { grid-template-columns: minmax(0,1fr) auto; } .settings-sound label { grid-column: 1 / -1; } }
+@media (max-width: 580px) { .settings-colors { grid-template-columns: 1fr; } }
 
 /* Barra global: a posição e largura não dependem de estar dentro da sala. */
 :root { --workspace-width: clamp(360px, 32vw, 480px); --workspace-top: 76px; }
@@ -991,13 +988,38 @@ main { padding-top: var(--workspace-top); }
 .settings-pane .settings-color-input { gap: 5px; }
 .settings-pane .settings-color-input input[type=color] { width: 32px; flex-basis: 32px; }
 .settings-pane .settings-color-input input[type=text] { padding: 6px; font-size: 13px; }
-.settings-pane .settings-sound { grid-template-columns: minmax(0,1fr) auto; gap: 6px; }
-.settings-pane .settings-sound label { grid-column: 1 / -1; font-weight: 600; }
-.settings-pane .settings-sound select, .settings-pane .settings-sound .select-btn { font-size: 13px; }
-.sound-event { display: grid; gap: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
-.event-volume { display: flex; align-items: center; gap: 8px; font-size: 12px; }
-.event-volume input { flex: 1; min-width: 0; }
-.event-volume output { width: 38px; text-align: right; }
+/* Aba Sons: volume geral no topo e uma linha compacta por aviso, agrupada por assunto */
+.sounds-panel { display: grid; gap: 4px; }
+.sound-master { display: flex; align-items: center; gap: 12px; padding: 10px 14px; margin-bottom: 8px; background: color-mix(in srgb, var(--panel-2) 45%, transparent); border: 1px solid var(--line); border-radius: var(--radius-lg); }
+.sound-master-icon { flex: none; width: 18px; height: 18px; fill: none; stroke: var(--muted); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.sound-master > label[for] { font-size: 13px; font-weight: 700; white-space: nowrap; }
+.sound-master input[type=range] { flex: 1; min-width: 60px; }
+.sound-master output { width: 38px; text-align: right; font-size: 12px; color: var(--muted); }
+.sound-master-sep { flex: none; width: 1px; align-self: stretch; background: var(--line); }
+.sound-master .vd-check { white-space: nowrap; }
+.sound-group { display: grid; gap: 4px; }
+.sound-group + .sound-group { margin-top: 10px; }
+.sound-group-title { margin: 0 0 2px; padding: 0 4px; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.sound-row { display: grid; grid-template-columns: 32px minmax(0,1fr) minmax(0,210px) minmax(60px,104px) 38px; align-items: center; gap: 10px; padding: 6px 10px; background: color-mix(in srgb, var(--panel-2) 35%, transparent); border-radius: var(--radius); }
+.sound-row label { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.general-settings .sound-row select, .general-settings .sound-row .select-btn { width: 100%; min-width: 0; padding-top: 6px; padding-bottom: 6px; font-size: 13px; }
+.sound-row input[type=range] { width: 100%; min-width: 0; }
+.sound-row output { font-size: 12px; color: var(--muted); text-align: right; }
+.btn.icon.sound-play { border-radius: 50%; }
+.btn.icon.sound-play svg { width: 12px; height: 12px; fill: currentColor; stroke: none; }
+/* Pouca largura (painel lateral): nome em cima, som e volume embaixo */
+.settings-pane .sound-row { grid-template-columns: 32px minmax(0,1fr) 38px; row-gap: 6px; }
+.settings-pane .sound-row label, .settings-pane .sound-row .select-btn { grid-column: 2 / -1; }
+.settings-pane .sound-row input[type=range] { grid-column: 2; }
+.settings-pane .sound-master { flex-wrap: wrap; }
+.settings-pane .sound-master-sep { display: none; }
+@media (max-width: 580px) {
+  .sound-row { grid-template-columns: 32px minmax(0,1fr) 38px; row-gap: 6px; }
+  .sound-row label, .sound-row .select-btn { grid-column: 2 / -1; }
+  .sound-row input[type=range] { grid-column: 2; }
+  .sound-master { flex-wrap: wrap; }
+  .sound-master-sep { display: none; }
+}
 .has-workspace-pane:not(.workspace-wide) main { padding-right: calc(var(--workspace-width) + 12px); }
 #room .room-grid { grid-template-columns: minmax(0,1fr); grid-template-rows: minmax(0,1fr); }
 .stream-pane-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
