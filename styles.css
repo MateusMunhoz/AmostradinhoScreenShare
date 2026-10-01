@@ -954,7 +954,21 @@ main { padding-top: var(--workspace-top); }
 .voice-in-call #voicePaneMembers { margin-bottom: 0; }
 /* Só a lista rola: o título em cima e a faixa de controles (microfone, fone, Sair) embaixo ficam sempre à vista,
    mesmo com muitas subsalas */
-#voicePane { display: flex; flex-direction: column; overflow: hidden; }
+#voicePane { position: relative; display: flex; flex-direction: column; overflow: hidden; }
+/* Lista | Mapa, ao lado do título */
+.voice-view { display: inline-flex; gap: 2px; margin-right: auto; padding: 2px; border: 1px solid var(--line); border-radius: 8px; }
+.voice-view button { font: inherit; font-size: 12px; padding: 3px 9px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); cursor: pointer; }
+.voice-view button:hover { color: var(--text); }
+.voice-view button[aria-pressed=true] { background: var(--panel-2); color: var(--text); }
+.voice-view button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+/* Mapa: o céu ocupa o lugar da lista; embaixo ficam só Nova subsala e quem transmite fora da voz */
+#voicePane.voice-map > #voiceSky { flex: 1 1 0; min-height: 170px; max-height: none; }
+.voice-map-pop { position: absolute; z-index: 5; width: min(320px, calc(100% - 16px)); max-height: 60%; overflow: auto; padding: 8px;
+  background: var(--panel); border: 1px solid var(--line-strong); border-radius: 10px; box-shadow: 0 10px 30px rgba(0, 0, 0, .4); }
+.voice-map-pop .members { margin: 0; }
+.voice-map-pop .hint { margin: 4px 4px 0; font-size: 12px; }
+.sky-ghost { position: fixed; z-index: 60; pointer-events: none; translate: 12px 10px; padding: 3px 9px; border: 1px solid var(--accent); border-radius: 6px;
+  background: var(--panel); color: var(--text); font-size: 12px; white-space: nowrap; box-shadow: 0 6px 18px rgba(0, 0, 0, .35); }
 #voicePane > * { flex-shrink: 0; }
 #voicePane > #voicePaneMembers { flex: 0 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 /* Chat e voz abertos juntos: a voz ocupa só o que precisa (até metade), o chat fica com o resto */

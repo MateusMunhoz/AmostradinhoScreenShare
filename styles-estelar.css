@@ -72,12 +72,14 @@
 }
 @keyframes st-orbit { to { transform: rotate(1turn); } }
 
-/* O céu da voz: as pessoas como estrelas ligadas, sobre uma carta com anéis. Vale em todos os temas: as cores vêm
+/* O céu da voz: cada canal (Voz geral, cada subsala) é um sol, e quem está nele orbita como planeta; os sóis ficam
+   ligados por uma linha fraca. Sobre uma carta com anéis. Vale em todos os temas: as cores vêm
    das variáveis do tema (cada tema pode mudar o fundo e as linhas, como o Arasaka em styles-arasaka.css). */
 .voice-sky {
   --sky-grid: var(--st-grid, color-mix(in srgb, var(--line-strong) 55%, transparent));
   --sky-dust: var(--st-star-dim, color-mix(in srgb, var(--text) 20%, transparent));
-  display: block; width: 100%; height: auto; max-height: 96px; margin: 0 0 10px; border: 1px solid var(--line); border-radius: var(--radius);
+  --sky-sun: var(--warn);
+  display: block; width: 100%; height: auto; max-height: 150px; margin: 0 0 10px; border: 1px solid var(--line); border-radius: var(--radius);
   background:
     radial-gradient(circle at 50% 50%, transparent 0 34px, var(--sky-grid) 34px 35px, transparent 35px 70px, var(--sky-grid) 70px 71px, transparent 71px),
     linear-gradient(var(--sky-grid), var(--sky-grid)) center / 100% 1px no-repeat,
@@ -95,6 +97,31 @@
   fill: none; stroke: var(--live); stroke-width: .8; stroke-dasharray: 2 2.5;
   transform-box: fill-box; transform-origin: center; animation: st-orbit 14s linear infinite;
 }
+
+/* Os sóis: o seu canal com o contorno da cor de destaque; canal vazio, apagado */
+.voice-sky .sky-bridge { stroke-width: .5; stroke-dasharray: 1.5 2.5; opacity: .55; }
+.voice-sky .sky-path { fill: none; stroke: var(--sky-grid); stroke-width: .5; }
+.voice-sky .sky-ring { animation: st-orbit linear infinite; }
+.voice-sky .sky-sun { filter: drop-shadow(0 0 3px color-mix(in srgb, var(--sky-sun) 75%, transparent)); }
+.voice-sky .sky-corona { fill: color-mix(in srgb, var(--sky-sun) 25%, transparent); }
+.voice-sky .sky-sun-core { fill: var(--sky-sun); }
+.voice-sky .sky-sun.here .sky-corona { stroke: var(--accent); stroke-width: .8; }
+.voice-sky .sky-sun.empty { opacity: .4; filter: none; }
+.voice-sky .sky-label { fill: var(--muted); font: 6px var(--st-mono, Consolas, monospace); letter-spacing: .04em; text-anchor: middle; }
+.voice-sky .sky-label.here { fill: var(--accent); }
+/* O nome do planeta (no mapa) gira para o outro lado junto com o anel, e fica sempre de pé */
+.voice-sky .sky-upright { transform-box: view-box; transform-origin: 0 0; animation: st-orbit linear infinite reverse; }
+.voice-sky .sky-pname { fill: var(--text-2, var(--text)); font: 5px var(--st-mono, Consolas, monospace); text-anchor: middle; opacity: .85; pointer-events: none; }
+.voice-sky .sky-star.muted .sky-core { opacity: .45; }
+.voice-sky .sky-deaf { fill: none; stroke: var(--warn); stroke-width: .6; stroke-dasharray: 1 1.2; }
+/* Mapa: sol e planeta são clicáveis; parado com o mouse em cima (e arrastando), para acertar o clique */
+.voice-sky.map .sky-hit, .voice-sky.map .sky-phit { fill: transparent; }
+.voice-sky.map :is(.sky-hit, .sky-sun, .sky-star) { cursor: pointer; outline: none; }
+.voice-sky.map:hover :is(.sky-ring, .sky-upright), .voice-sky.dragging :is(.sky-ring, .sky-upright) { animation-play-state: paused; }
+.voice-sky.map .sky-sun:is(:hover, :focus-visible) .sky-corona { stroke: var(--accent); stroke-width: .8; }
+.voice-sky.map .sky-star:is(:hover, :focus-visible) .sky-halo { opacity: 1; stroke: var(--accent); }
+.voice-sky .sky-star.dragging { opacity: .3; }
+.voice-sky .sky-sun.drop-target .sky-corona { stroke: var(--accent); stroke-width: 1.4; fill: color-mix(in srgb, var(--accent) 35%, transparent); }
 
 /* ---------- Sem transmissão na tela: uma carta celeste, com o logo em pontos e a legenda embaixo ---------- */
 :root:not([data-skin]) .empty-stage {
@@ -133,5 +160,5 @@
 
 @media (prefers-reduced-motion: reduce) {
   :root:not([data-skin]) body::before, :root:not([data-skin]) body::after,
-  :root:not([data-skin]) .member.live > .avatar::after, .voice-sky .sky-orbit { animation: none; }
+  :root:not([data-skin]) .member.live > .avatar::after, .voice-sky .sky-orbit, .voice-sky .sky-ring, .voice-sky .sky-upright { animation: none; }
 }

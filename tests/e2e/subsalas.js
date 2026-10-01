@@ -1,6 +1,27 @@
 // Subsalas: arrastar pessoas de um canal para outro no painel de voz, e a faixa de controles (microfone, fone, Sair)
 // sempre à vista embaixo, mesmo com tantas subsalas que a lista precisa rolar.
-const { openApp, createRoom, joinRoom, check, sleep, run } = require('./ajuda');
+const fs = require('fs');
+const path = require('path');
+const { openApp, createRoom, joinRoom, check, sleep, run, FOTOS } = require('./ajuda');
+
+// Foto só do céu da voz: copia o SVG com as cores calculadas pelo CSS e desenha num canvas, 4x maior
+// (a captura da janela inteira trava com a outra cópia do app por cima)
+async function skyShot(app, name) {
+  const url = await app.eval(`(async () => {
+    const sky = $('voiceSky'), copy = sky.cloneNode(true), box = sky.getBoundingClientRect();
+    const all = [sky, ...sky.querySelectorAll('*')], copies = [copy, ...copy.querySelectorAll('*')];
+    all.forEach((el, i) => { const cs = getComputedStyle(el); for (const p of ['fill', 'stroke', 'stroke-width', 'stroke-dasharray', 'opacity', 'font', 'text-anchor', 'filter', 'transform', 'transform-origin']) copies[i].style.setProperty(p, cs.getPropertyValue(p)); });
+    copy.setAttribute('width', box.width * 4); copy.setAttribute('height', box.height * 4);
+    const img = new Image();
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(copy));
+    await img.decode();
+    const c = document.createElement('canvas'); c.width = box.width * 4; c.height = box.height * 4;
+    const ctx = c.getContext('2d'); ctx.fillStyle = getComputedStyle(document.body).backgroundColor; ctx.fillRect(0, 0, c.width, c.height);
+    ctx.drawImage(img, 0, 0);
+    return c.toDataURL('image/png');
+  })()`);
+  fs.writeFileSync(path.join(FOTOS, name), Buffer.from(url.split(',')[1], 'base64'));
+}
 
 const TONE = `(() => { window.tctx = new AudioContext(); const o = tctx.createOscillator(); const dst = tctx.createMediaStreamDestination(); o.connect(dst); o.start(); voice.media = { getUserMedia: async () => dst.stream }; })()`;
 // Arrasta a linha de quem (id; null é você) e solta em cima do cabeçalho do canal ch
@@ -17,6 +38,21 @@ const drag = (who, ch) => `(() => {
   row.dispatchEvent(new DragEvent('dragend', { bubbles: true, dataTransfer: dt }));
   return marked;
 })()`;
+
+// Mouse de verdade (pelo DevTools), no ponto do meio de um elemento
+const centerOf = (app, sel) => app.eval(`(() => { const el = document.querySelector(${JSON.stringify(sel)}); if (!el) return null; const r = el.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })()`);
+const mouse = (app, type, [x, y], down = false) => app.send('Input.dispatchMouseEvent', { type, x, y, button: type === 'mouseMoved' && !down ? 'none' : 'left', buttons: down ? 1 : 0, clickCount: 1 });
+async function clickAt(app, p) { await mouse(app, 'mouseMoved', p); await sleep(80); await mouse(app, 'mousePressed', p, true); await mouse(app, 'mouseReleased', p); await sleep(150); }
+async function dragTo(app, from, to) {
+  await mouse(app, 'mouseMoved', from); await sleep(120);
+  await mouse(app, 'mousePressed', from, true);
+  for (let i = 1; i <= 8; i++) { await mouse(app, 'mouseMoved', [from[0] + (to[0] - from[0]) * i / 8, from[1] + (to[1] - from[1]) * i / 8], true); await sleep(30); }
+  const marked = await app.eval(`!!document.querySelector('#voiceSky .sky-sun.drop-target')`);
+  await mouse(app, 'mouseReleased', to);
+  return marked;
+}
+// Posição dos sóis no desenho (centro, em coordenadas do SVG)
+const SUNS = `[...document.querySelectorAll('#voiceSky .sky-sun')].map((g) => { const m = g.transform.baseVal.consolidate().matrix; return [m.e, m.f]; })`;
 
 run('Subsalas: arrastar pessoas e controles da voz fixos', 120000, async () => {
   const A = await openApp('subA', 9491, { fake: true });
@@ -54,6 +90,65 @@ run('Subsalas: arrastar pessoas e controles da voz fixos', 120000, async () => {
   check('Bia arrastada de volta para a Voz geral', true);
   check('Soltar no próprio canal não marca nada', !(await A.eval(drag(anaId, '1'))));
 
+  // Céu da voz: um sol por canal (o seu com destaque, o vazio apagado), cada pessoa orbitando o sol do canal dela
+  await sleep(300);
+  check('Céu: três sóis (Voz geral, Subsala_1 e a Subsala_2 vazia)', await A.eval(`(() => {
+    const suns = [...document.querySelectorAll('#voiceSky .sky-sun')];
+    return suns.length === 3 && suns[1].classList.contains('here') && suns[2].classList.contains('empty') && document.querySelectorAll('#voiceSky .sky-bridge').length === 2;
+  })()`));
+  check('Céu: Ana e Bia são planetas, cada uma no seu sistema', await A.eval(`(() => {
+    const planet = (id) => document.querySelector('#voiceSky .sky-star[data-person="' + id + '"]');
+    const sun = (i) => document.querySelectorAll('#voiceSky .sky-sun')[i].getBoundingClientRect();
+    const near = (el, s) => { const r = el.getBoundingClientRect(); return Math.hypot(r.x + r.width / 2 - s.x - s.width / 2, r.y + r.height / 2 - s.y - s.height / 2); };
+    const a = planet('${anaId}'), b = planet('${biaId}');
+    return !!a && !!b && near(a, sun(1)) < near(a, sun(0)) && near(b, sun(0)) < near(b, sun(1));
+  })()`));
+  await skyShot(A, 'subsalas-ceu.png');
+
+  // Três sóis: um triângulo (não ficam em linha), vizinhos perto, sem encostar
+  check('Disposição: três sóis em triângulo', await A.eval(`(() => {
+    const [a, b, c] = ${SUNS};
+    const d = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1]);
+    const area = Math.abs((b[0] - a[0]) * (c[1] - a[1]) - (c[0] - a[0]) * (b[1] - a[1])) / 2;
+    return [d(a, b), d(b, c), d(a, c)].every((x) => x >= 63 && x <= 110) && area > 1500;
+  })()`));
+
+  // Visão Mapa: o céu grande no lugar da lista, com tudo que a lista faz
+  await A.eval(`$('voiceViewMap').click()`);
+  await sleep(300);
+  check('Mapa: o céu fica grande e a lista só tem Nova subsala', await A.eval(`$('voiceSky').classList.contains('map') && $('voiceSky').getBoundingClientRect().height > 160
+    && !document.querySelector('#voicePaneMembers .voice-channel, #voicePaneMembers .member') && !!document.querySelector('#voicePaneMembers .voice-channel-add')
+    && $('voiceViewMap').getAttribute('aria-pressed') === 'true' && localStorage.getItem('vozVisao') === 'mapa'`));
+  check('Mapa: nome de cada pessoa embaixo do planeta', await A.eval(`[...document.querySelectorAll('#voiceSky .sky-pname')].map((t) => t.textContent).sort().join() === 'Ana,Bia'`));
+  // Clicar no sol da Subsala_2 (vazia): o balão do canal, com Entrar
+  await clickAt(A, await centerOf(A, '#voiceSky .sky-sun[data-channel="2"]'));
+  check('Mapa: clicar no sol abre o canal (Entrar e apagar)', await A.eval(`!$('voiceMapPop').hidden && $('voiceMapPop').textContent.includes('Subsala_2') && !!$('voiceMapPop').querySelector('.voice-channel-join') && !!$('voiceMapPop').querySelector('.voice-channel-delete')`));
+  await clickAt(A, await centerOf(A, '#voiceMapPop .voice-channel-join'));
+  await A.waitFor(`voice.channel === '2'`, 5000);
+  check('Mapa: Entrar pelo balão leva você para a Subsala_2', true);
+  // Clicar num planeta: o balão da pessoa, com o volume (como na lista)
+  await sleep(300);
+  await clickAt(A, await centerOf(A, `#voiceSky .sky-star[data-person="${biaId}"]`));
+  check('Mapa: clicar na Bia abre o balão dela, com o volume', await A.eval(`!$('voiceMapPop').hidden && $('voiceMapPop').textContent.includes('Bia') && !!$('voiceMapPop').querySelector('.vol-btn')`));
+  await A.eval(`$('voiceMapPop').querySelector('.vol-btn').click()`);
+  await sleep(200);
+  check('Mapa: o volume abre o cartão da Bia, e o balão continua', await A.eval(`!$('personCard').hidden && !$('voiceMapPop').hidden`));
+  await A.eval(`closePersonCard()`);
+  await A.eval(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))`);
+  check('Mapa: Esc fecha o balão', await A.eval(`$('voiceMapPop').hidden`));
+  // Arrastar o planeta da Bia até o sol da Subsala_2
+  await sleep(200);
+  const marked = await dragTo(A, await centerOf(A, `#voiceSky .sky-star[data-person="${biaId}"]`), await centerOf(A, '#voiceSky .sky-sun[data-channel="2"]'));
+  check('Mapa: arrastar o planeta marca o sol de destino', marked);
+  await B.waitFor(`voice.channel === '2'`, 5000);
+  check('Mapa: Bia arrastada até a Subsala_2', true);
+  await A.waitFor(`document.querySelectorAll('#voiceSky .sky-sun[data-channel="2"].here').length === 1 && document.querySelectorAll('#voiceSky .sky-star').length === 2`, 5000);
+  check('Mapa: depois de soltar, nenhum planeta fica apagado', await A.eval(`!document.querySelector('#voiceSky .dragging') && !document.querySelector('.sky-ghost')`));
+  await skyShot(A, 'subsalas-mapa.png');
+  await A.eval(`$('voiceViewList').click()`);
+  await sleep(200);
+  check('Lista de volta', await A.eval(`!$('voiceSky').classList.contains('map') && !!document.querySelector('#voicePaneMembers .voice-channel') && localStorage.getItem('vozVisao') === 'lista'`));
+
   // Muitas subsalas: só a lista rola, a faixa de controles continua embaixo, à vista
   await A.eval(`for (let i = 0; i < 14; i++) createSubsala()`);
   await A.waitFor(`state.subsalas.length === 16`, 5000);
@@ -68,5 +163,16 @@ run('Subsalas: arrastar pessoas e controles da voz fixos', 120000, async () => {
   await sleep(100);
   const after = await A.eval(geo);
   check('Rolando até o fim, a barra não sai do lugar', after.bar[0] === before.bar[0] && after.barra, JSON.stringify(after));
+  await skyShot(A, 'subsalas-ceu-muitas.png');
+  // Com 17 sóis: nenhum encosta no outro, e cada um tem um vizinho perto (o grupo não se espalha)
+  check('Disposição: 17 sóis juntos, sem encostar', await A.eval(`(() => {
+    const p = ${SUNS};
+    const near = p.map((a, i) => Math.min(...p.filter((_, j) => j !== i).map((b) => Math.hypot(a[0] - b[0], a[1] - b[1]))));
+    return p.length === 17 && near.every((d) => d >= 63 && d <= 90);
+  })()`));
+  await A.eval(`$('voiceViewMap').click()`);
+  await sleep(300);
+  await skyShot(A, 'subsalas-mapa-muitas.png');
+  await A.eval(`$('voiceViewList').click()`);
   check('Microfone e fone na barra', await A.eval(`!$('paneVoiceMute').hidden && !$('paneVoiceDeafen').hidden`));
 });

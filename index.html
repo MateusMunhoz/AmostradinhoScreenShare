@@ -60,11 +60,13 @@
       </div>
     </section>
     <section id="voicePane" class="workspace-pane" aria-labelledby="voicePaneTitle" hidden>
-      <div class="pane-head"><h2 id="voicePaneTitle">Chat de voz</h2><button id="paneVoiceSettings" class="btn small" type="button">Voz e atalhos</button></div>
+      <div class="pane-head"><h2 id="voicePaneTitle">Chat de voz</h2><div class="voice-view" role="group" aria-label="Como ver a voz"><button id="voiceViewList" type="button" title="Canais e pessoas em lista">Lista</button><button id="voiceViewMap" type="button" title="Canais como sóis e pessoas como planetas">Mapa</button></div><button id="paneVoiceSettings" class="btn small" type="button">Voz e atalhos</button></div>
       <p id="voicePaneStatus" class="hint"></p>
-      <!-- Céu da voz: quem está na voz como estrelas de uma constelação (só no tema Padrão, styles-estelar.css) -->
+      <!-- Céu da voz: cada canal é um sol e quem está nele orbita como planeta. Na visão Mapa, fica grande no lugar da lista (renderer/ceu-voz.js) -->
       <svg id="voiceSky" class="voice-sky" viewBox="0 0 300 70" preserveAspectRatio="xMidYMid meet" aria-hidden="true" hidden></svg>
       <ul id="voicePaneMembers" class="members"></ul>
+      <!-- Mapa: o balão do sol (canal) ou do planeta (pessoa) clicado, com os controles da lista (renderer/ceu-voz.js) -->
+      <div id="voiceMapPop" class="voice-map-pop" hidden><ul class="members"></ul></div>
       <!-- Fora da voz: Entrar. Na voz: faixa de controles embaixo da lista (microfone, fone, Voz e atalhos | Sair da voz) -->
       <div class="pane-voice-actions"><button id="paneVoiceMute" class="btn small icon pane-toggle" type="button" hidden></button><button id="paneVoiceDeafen" class="btn small icon pane-toggle" type="button" hidden></button><button id="paneVoiceJoin" class="btn primary small" type="button">Entrar na voz</button></div>
     </section>
@@ -865,6 +867,7 @@
   <script src="renderer/microfone.js"></script>
   <script src="renderer/subsalas.js"></script>
   <script src="renderer/membros.js"></script>
+  <script src="renderer/ceu-voz.js"></script>
   <script src="renderer/assistir.js"></script>
   <script src="renderer/palco.js"></script>
   <script src="renderer/pip.js"></script>

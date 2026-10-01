@@ -82,13 +82,20 @@ function channelHead(ch, sub) {
 }
 
 // Os canais no painel de voz, cada um com quem está nele
+// A linha de alguém na voz (null é você): nome, volume, Assistir… (memberRow em membros.js)
+function voiceRow(id) { return id ? memberRow(id, nameOf(id), !!state.members.get(id)?.sharing) : memberRow(null, `${getName()} (você)`, state.sharing); }
+
 function renderVoiceChannels(list) {
-  const row = (id) => (id ? memberRow(id, nameOf(id), !!state.members.get(id)?.sharing) : memberRow(null, `${getName()} (você)`, state.sharing));
   for (const [ch, sub] of [['', null], ...state.subsalas.map((s) => [s.id, s])]) {
     list.append(channelHead(ch, sub));
-    for (const id of voiceIdsIn(ch)) { const li = row(id); li.classList.add('in-channel'); makeVoiceDraggable(li, id, ch); list.append(li); }
+    for (const id of voiceIdsIn(ch)) { const li = voiceRow(id); li.classList.add('in-channel'); makeVoiceDraggable(li, id, ch); list.append(li); }
   }
   setupVoiceDrop(list);
+  list.append(voiceAddChannel());
+}
+
+// O botão Nova subsala (embaixo da lista e embaixo do mapa)
+function voiceAddChannel() {
   const add = document.createElement('li');
   add.className = 'voice-channel-add';
   const btn = document.createElement('button');
@@ -99,7 +106,7 @@ function renderVoiceChannels(list) {
   btn.title = 'Criar uma subsala de voz (Subsala_1, Subsala_2…)';
   btn.onclick = createSubsala;
   add.append(btn);
-  list.append(add);
+  return add;
 }
 
 // ---------- Arrastar pessoas entre canais ----------

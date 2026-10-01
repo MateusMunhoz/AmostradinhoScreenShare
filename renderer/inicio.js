@@ -396,6 +396,7 @@ document.addEventListener('keydown', (e) => {
   if (!$('generalSettingsDialog').hidden) closeGeneralSettings();
   else if (!$('voiceDialog').hidden) { if (!capturing) closeVoiceDialog(); }
   else if (!$('personCard').hidden) closePersonCard();
+  else if (!$('voiceMapPop').hidden) closeSkyPop();
   else if (!$('peoplePop').hidden) { setPeopleOpen(false); $('peopleBtn').focus(); }
   else if (!$('statsDialog').hidden) closeStats();
   else if (!$('closeDialog').hidden) closeCloseDialog();
