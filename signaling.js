@@ -149,7 +149,7 @@ function startServer(port, password = '', seed = {}) {
             id,
             hostId,
             members: [...members].map(([mid, m]) => memberInfo(mid, m)),
-            features: ['chat', 'voice', 'handoff', 'sessoes', 'subsalas'],
+            features: ['chat', 'voice', 'handoff', 'sessoes', 'subsalas', 'subsala-move'],
             chat: chat.log,
             subsalas: subsalas.list,
             sessao,

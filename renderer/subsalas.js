@@ -2,7 +2,8 @@
 // Subsalas de voz: canais dentro da sala (só voz). A Voz geral é o canal ''; cada subsala tem um número e o nome
 // Subsala_N (o servidor da sala escolhe o número: o maior que existe + 1). Qualquer pessoa cria e apaga; quem estava
 // numa subsala apagada volta para a Voz geral. Só quem está no mesmo canal se conecta e se ouve (voice.js).
-// O painel de voz (renderVoicePane em navegacao.js) mostra os canais com quem está em cada um.
+// O painel de voz (renderVoicePane em navegacao.js) mostra os canais com quem está em cada um. Arrastar alguém que está
+// na voz (ou você) para outro canal leva a pessoa para lá.
 // Script clássico: divide o escopo global com os outros (ordem no index.html). Usa de: util, estado, voz.
 
 const subsalasOn = () => Array.isArray(state.subsalas);
@@ -85,8 +86,9 @@ function renderVoiceChannels(list) {
   const row = (id) => (id ? memberRow(id, nameOf(id), !!state.members.get(id)?.sharing) : memberRow(null, `${getName()} (você)`, state.sharing));
   for (const [ch, sub] of [['', null], ...state.subsalas.map((s) => [s.id, s])]) {
     list.append(channelHead(ch, sub));
-    for (const id of voiceIdsIn(ch)) { const li = row(id); li.classList.add('in-channel'); list.append(li); }
+    for (const id of voiceIdsIn(ch)) { const li = row(id); li.classList.add('in-channel'); makeVoiceDraggable(li, id, ch); list.append(li); }
   }
+  setupVoiceDrop(list);
   const add = document.createElement('li');
   add.className = 'voice-channel-add';
   const btn = document.createElement('button');
@@ -98,4 +100,73 @@ function renderVoiceChannels(list) {
   btn.onclick = createSubsala;
   add.append(btn);
   list.append(add);
+}
+
+// ---------- Arrastar pessoas entre canais ----------
+// Você troca de canal como no Entrar; os outros, quem move é o servidor da sala (subsala-move), se ele souber fazer
+// isso (servidor antigo: só dá para arrastar a si mesmo). Enquanto alguém está sendo arrastado, o painel não é
+// redesenhado (a linha arrastada sumiria e o arraste acabaria): redesenha quando soltar.
+const VOICE_DRAG_TYPE = 'application/x-tela-p2p-voz';
+let voiceDrag = null;          // { id, from } enquanto alguém está sendo arrastado; id null é você
+let voiceDragPending = false;  // a voz mudou durante o arraste
+
+const canDragVoice = (id) => voice.supported && (id ? state.subsalaMove && inVoice(id) : !!voice.session);
+
+function makeVoiceDraggable(li, id, ch) {
+  li.dataset.channel = ch; // soltar em cima de alguém leva para o canal dessa pessoa
+  if (!canDragVoice(id)) return;
+  li.draggable = true;
+  li.classList.add('voice-draggable');
+  li.ondragstart = (e) => {
+    voiceDrag = { id, from: ch };
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData(VOICE_DRAG_TYPE, id || state.myId);
+    li.classList.add('dragging');
+    $('voicePaneMembers').classList.add('voice-dragging');
+  };
+  li.ondragend = endVoiceDrag;
+}
+
+function markVoiceDrop(ch) {
+  for (const el of $('voicePaneMembers').querySelectorAll('[data-channel]')) el.classList.toggle('drop-target', el.dataset.channel === ch);
+}
+
+function endVoiceDrag() {
+  if (!voiceDrag) return;
+  voiceDrag = null;
+  $('voicePaneMembers').classList.remove('voice-dragging');
+  markVoiceDrop(null);
+  for (const el of $('voicePaneMembers').querySelectorAll('.dragging')) el.classList.remove('dragging');
+  if (voiceDragPending) { voiceDragPending = false; renderVoicePane(); }
+}
+
+// O canal debaixo do ponteiro (cabeçalho do canal ou alguém nele), ou null fora deles
+function voiceDropChannel(e) {
+  const el = voiceDrag && e.target.closest?.('[data-channel]');
+  return el && $('voicePaneMembers').contains(el) ? el.dataset.channel : null;
+}
+
+function setupVoiceDrop(list) {
+  list.ondragover = (e) => {
+    const ch = voiceDropChannel(e);
+    if (ch === null) return markVoiceDrop(null);
+    e.preventDefault();
+    e.dataTransfer.dropEffect = ch === voiceDrag.from ? 'none' : 'move';
+    markVoiceDrop(ch === voiceDrag.from ? null : ch);
+  };
+  list.ondragleave = (e) => { if (voiceDrag && !list.contains(e.relatedTarget)) markVoiceDrop(null); };
+  list.ondrop = (e) => {
+    const ch = voiceDropChannel(e), drag = voiceDrag;
+    if (ch === null) return;
+    e.preventDefault();
+    endVoiceDrag();
+    if (ch !== drag.from) moveVoiceTo(drag.id, ch);
+  };
+}
+
+function moveVoiceTo(id, ch) {
+  if (!id) return voice.setChannel(ch);
+  if (!inVoice(id) || (ch && !state.subsalas?.some((s) => s.id === ch))) return;
+  send({ type: 'subsala-move', id, channel: ch });
+  toast(`${nameOf(id)} foi para ${channelName(ch)}`);
 }

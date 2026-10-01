@@ -137,3 +137,30 @@ test('VoiceChat só conecta com quem está no mesmo canal e troca de canal fecha
   v.leave();
   assert.equal(v.channel, '');
 });
+
+test('arrastar: qualquer um move quem está na voz para outra subsala ou para a Voz geral', async t => {
+  const port = await freePort();
+  assert.equal((await startServer(port)).ok, true);
+  t.after(stopServer);
+  const a = await client(port); t.after(() => a.ws.terminate());
+  const b = await client(port); t.after(() => b.ws.terminate());
+  assert.ok(a.welcome.features.includes('subsala-move'));
+  a.send({ type: 'subsala-create' });
+  await b.wait(m => m.type === 'subsalas');
+  b.send({ type: 'voice-state', session: 'sb', channel: '' });
+  await a.wait(m => m.type === 'voice-state' && m.id === b.welcome.id);
+  await b.wait(m => m.type === 'voice-state' && m.id === b.welcome.id); // o próprio anúncio de b
+  // a move b para a Subsala_1: os dois ficam sabendo (b troca de canal sozinho)
+  a.send({ type: 'subsala-move', id: b.welcome.id, channel: '1' });
+  const moved = await b.wait(m => m.type === 'voice-state' && m.id === b.welcome.id);
+  assert.deepEqual([moved.channel, moved.session], ['1', 'sb']);
+  assert.equal((await a.wait(m => m.type === 'voice-state' && m.id === b.welcome.id)).channel, '1');
+  // Subsala que não existe, quem está fora da voz ou o mesmo canal: nada acontece
+  a.send({ type: 'subsala-move', id: b.welcome.id, channel: '9' });
+  a.send({ type: 'subsala-move', id: a.welcome.id, channel: '1' });
+  a.send({ type: 'subsala-move', id: b.welcome.id, channel: '1' });
+  a.send({ type: 'subsala-move', id: b.welcome.id, channel: '' });
+  const back = await b.wait(m => m.type === 'voice-state' && m.id === b.welcome.id);
+  assert.equal(back.channel, '', 'só o último (de volta para a Voz geral) vale');
+  assert.equal(b.messages.some(m => m.type === 'voice-state'), false);
+});

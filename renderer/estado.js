@@ -35,6 +35,7 @@ const state = {
   // Troca de host: quem roda o servidor, a ordem de chegada (o mais antigo assume) e a senha para voltar
   hostId: null,
   subsalas: null,          // subsalas de voz da sala [{ id, name }]; null: o servidor da sala não tem subsalas
+  subsalaMove: false,      // o servidor da sala sabe mover os outros de canal (arrastar no painel de voz)
   handoff: false,          // o servidor da sala sabe passar a sala adiante
   order: [],               // ids na ordem em que entraram, inclusive o meu
   password: '',

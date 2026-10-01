@@ -235,7 +235,7 @@ function createInternetServer(options = {}) {
         hostId: room.hostId,
         sala: room.code,
         members: [...room.members].filter(([mid]) => mid !== id).map(([mid, m]) => memberInfo(mid, m)),
-        features: ['chat', 'voice', 'internet', 'resume', 'subsalas'],
+        features: ['chat', 'voice', 'internet', 'resume', 'subsalas', 'subsala-move'],
         chat: room.chat.log,
         subsalas: room.subsalas.list,
         sessao: room.sessao,
