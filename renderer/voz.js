@@ -364,26 +364,16 @@ function renderPersonCard() {
   av.dataset.person = id;
   av.classList.add('pc-photo');
   av.classList.toggle('speaking', speaking.has(id));
-  // Com a foto inteira: ela aparece no topo, sem o corte; clicar abre em tamanho grande. Quem só tem a bolinha
-  // (foto de uma versão antiga) fica com ela no tamanho dela, sem esticar.
-  if (photoHashOf(id) && state.members.get(id)?.avatarFull) {
+  // Com foto: a bolinha (encaixada, sem esticar); clicar nela abre a foto em tela cheia (a inteira, quando houver)
+  if (photoHashOf(id)) {
     const photoBtn = document.createElement('button');
     photoBtn.type = 'button';
     photoBtn.className = 'pc-photo-btn';
-    photoBtn.classList.toggle('speaking', speaking.has(id));
-    photoBtn.setAttribute('aria-label', `Ver a foto de ${name} em tamanho grande`);
-    photoBtn.title = 'Ver em tamanho grande';
-    const img = document.createElement('img');
-    img.className = 'pc-photo-full';
-    img.alt = '';
-    const hash = state.members.get(id)?.avatarFull;
-    img.src = (hash && fotos.fullUrls.get(hash)) || photoUrl(photoHashOf(id));
-    // A inteira chega depois (a pequena é quadrada, cortada): troca quando vier
-    if (!hash || !fotos.fullUrls.has(hash)) fullPhotoOf(id).then((url) => { if (url && img.isConnected) img.src = url; });
-    photoBtn.append(img);
+    photoBtn.setAttribute('aria-label', `Ver a foto de ${name} em tela cheia`);
+    photoBtn.title = 'Ver em tela cheia';
+    photoBtn.append(av);
     photoBtn.onclick = () => openPhotoViewer(id, name, photoBtn);
-    card.append(photoBtn);
-    head.append(who);
+    head.append(photoBtn, who);
   } else head.append(av, who);
   card.append(head);
   const slider = (label, key, max, show) => {

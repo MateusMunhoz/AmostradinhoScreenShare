@@ -279,7 +279,7 @@ function openImageViewer(img) {
 }
 // A foto de perfil de alguém, inteira: abre na hora com a pequena e troca quando a inteira chegar
 function openPhotoViewer(id, name, anchor) {
-  const entry = { src: photoUrl(photoHashOf(id)), alt: `Foto de ${name}`, file: `foto-${name}.webp` };
+  const entry = { src: photoUrl(photoHashOf(id)), alt: `Foto de ${name}`, file: `foto-${name}.webp`, photo: true };
   viewer.list = [entry];
   viewer.index = 0;
   viewer.returnTo = anchor;
@@ -305,6 +305,7 @@ function showViewerImage() {
   $('ivImg').src = src.src;
   $('ivImg').alt = name;
   $('ivStage').classList.remove('actual');
+  $('ivStage').classList.toggle('photo', !!src.photo); // foto de perfil: grande mesmo quando é pequena
   $('ivName').textContent = name;
   $('ivCount').textContent = viewer.list.length > 1 ? `${viewer.index + 1} de ${viewer.list.length}` : '';
   $('ivSave').href = src.src;

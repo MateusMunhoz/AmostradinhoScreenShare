@@ -241,7 +241,16 @@ window.api.getVersion().then((v) => {
 $('checkUpdates').onclick = () => checkGithub(true);
 $('ubGo').onclick = runUpdate;
 $('ubLater').onclick = () => { update.dismissed = updateMode()?.version || ''; renderUpdateBanner(); };
-setInterval(() => checkGithub(), 30 * 60 * 1000); // quem deixa o app aberto também fica sabendo
+// Quem deixa o app aberto também fica sabendo: procura de novo a cada 15 min, e também ao voltar para a janela se
+// a última procura foi há mais de 15 min
+let lastGithubCheck = Date.now();
+const checkGithubSoon = () => {
+  if (Date.now() - lastGithubCheck < 15 * 60 * 1000) return;
+  lastGithubCheck = Date.now();
+  checkGithub();
+};
+setInterval(checkGithubSoon, 60 * 1000);
+window.addEventListener('focus', checkGithubSoon);
 
 $('goCreate').onclick = () => show('create-room');
 $('goJoin').onclick = () => setJoinOpen(true);

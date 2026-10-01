@@ -227,3 +227,15 @@
 }
 @keyframes ak-cursor { 50% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { :root[data-skin="arasaka"] .dm-list::after { animation: none; } }
+
+/* Céu da voz no Arasaka: tela preta com linhas de monitor, anéis e mira no vermelho do tema, cantos retos */
+:root[data-skin="arasaka"] .voice-sky {
+  --sky-grid: rgba(255, 31, 79, .35);
+  border-radius: 0; border-color: var(--line);
+  background:
+    repeating-linear-gradient(to bottom, rgba(255, 255, 255, .025) 0 1px, transparent 1px 3px),
+    radial-gradient(circle at 50% 50%, transparent 0 34px, var(--sky-grid) 34px 35px, transparent 35px 70px, var(--sky-grid) 70px 71px, transparent 71px),
+    linear-gradient(var(--sky-grid), var(--sky-grid)) center / 100% 1px no-repeat,
+    var(--bracket), #030304;
+}
+:root[data-skin="arasaka"] .voice-sky .sky-link { stroke: rgba(255, 31, 79, .55); stroke-dasharray: 3 2; }

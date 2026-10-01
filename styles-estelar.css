@@ -2,7 +2,6 @@
    As cores vêm do tema (padrão: Grafite e aço); aqui fica o desenho: céu discreto atrás de tudo, marcas de
    retícula (+) nos cantos dos painéis, a tela vazia como carta celeste com o logo em pontos, e a voz como uma
    constelação (renderer/navegacao.js › renderVoiceSky). Tudo fosco; só quem fala (--ok) acende. */
-.voice-sky { display: none; }
 :root:not([data-skin]) {
   --st-mono: "Cascadia Mono", Consolas, "Lucida Console", monospace;
   --st-star: color-mix(in srgb, var(--text) 42%, transparent);
@@ -73,16 +72,19 @@
 }
 @keyframes st-orbit { to { transform: rotate(1turn); } }
 
-/* O céu da voz: as pessoas como estrelas ligadas, sobre uma carta com anéis */
-:root:not([data-skin]) .voice-sky {
+/* O céu da voz: as pessoas como estrelas ligadas, sobre uma carta com anéis. Vale em todos os temas: as cores vêm
+   das variáveis do tema (cada tema pode mudar o fundo e as linhas, como o Arasaka em styles-arasaka.css). */
+.voice-sky {
+  --sky-grid: var(--st-grid, color-mix(in srgb, var(--line-strong) 55%, transparent));
+  --sky-dust: var(--st-star-dim, color-mix(in srgb, var(--text) 20%, transparent));
   display: block; width: 100%; height: auto; max-height: 96px; margin: 0 0 10px; border: 1px solid var(--line); border-radius: var(--radius);
   background:
-    radial-gradient(circle at 50% 50%, transparent 0 34px, var(--st-grid) 34px 35px, transparent 35px 70px, var(--st-grid) 70px 71px, transparent 71px),
-    linear-gradient(var(--st-grid), var(--st-grid)) center / 100% 1px no-repeat,
+    radial-gradient(circle at 50% 50%, transparent 0 34px, var(--sky-grid) 34px 35px, transparent 35px 70px, var(--sky-grid) 70px 71px, transparent 71px),
+    linear-gradient(var(--sky-grid), var(--sky-grid)) center / 100% 1px no-repeat,
     var(--sunken);
 }
-:root:not([data-skin]) .voice-sky[hidden] { display: none; }
-.voice-sky .sky-dust { fill: var(--st-star-dim); }
+.voice-sky[hidden] { display: none; }
+.voice-sky .sky-dust { fill: var(--sky-dust); }
 .voice-sky .sky-link { stroke: color-mix(in srgb, var(--muted) 45%, transparent); stroke-width: .7; }
 .voice-sky .sky-core { fill: var(--text); transition: fill .15s ease-out; }
 .voice-sky .sky-halo { fill: none; stroke: var(--ok); stroke-width: 1; opacity: 0; transition: opacity .15s ease-out; }
