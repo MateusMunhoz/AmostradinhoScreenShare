@@ -82,9 +82,11 @@ test('Sons Suave: gerados na hora, sem arquivo, padrão da voz e do microfone', 
 });
 
 test('Aparência: modos de vidro, transparência e dados inválidos', () => {
-  assert.deepEqual(P.normalize(null).appearance, { glass: 'opaque', level: 70, border: 'solid', ambient: true });
+  assert.deepEqual(P.normalize(null).appearance, { glass: 'opaque', level: 70, border: 'solid', ambient: true, voiceSky: true });
   assert.equal(P.normalize({ appearance: { ambient: false } }).appearance.ambient, false);
   assert.equal(P.normalize({ appearance: { ambient: 'sim' } }).appearance.ambient, true);
+  assert.equal(P.normalize({ appearance: { voiceSky: false } }).appearance.voiceSky, false);
+  assert.equal(P.normalize({ appearance: { voiceSky: 0 } }).appearance.voiceSky, true);
   assert.equal(P.glass(P.defaults.colors, { glass: 'opaque' }), null);
   assert.equal(P.normalize({ appearance: { glass: 'metal', level: 999 } }).appearance.glass, 'opaque');
   assert.equal(P.normalize({ appearance: { glass: 'liquid', level: 999 } }).appearance.level, 100);
@@ -145,7 +147,7 @@ test('Temas prontos: aplicam cores e material, zeram detalhes e são reconhecido
 });
 test('Sem imagem de fundo; material e bordas livres dentro do tema', () => {
   const old = P.normalize({ appearance: { wallpaper: 'custom', blur: 12, dim: 55 } }).appearance;
-  assert.deepEqual(Object.keys(old).sort(), ['ambient', 'border', 'glass', 'level'], 'preferência antiga de imagem é descartada');
+  assert.deepEqual(Object.keys(old).sort(), ['ambient', 'border', 'glass', 'level', 'voiceSky'], 'preferência antiga de imagem é descartada');
   const neon = P.applyTheme(null, 'neon');
   assert.equal(P.currentTheme({ ...neon, appearance: { ...neon.appearance, glass: 'liquid', border: 'solid' } }), 'neon');
 });test('Tema E.V.A (aba Tema): um só, com as cores do EVA-01 e sem imagem de fundo', () => {
@@ -153,10 +155,11 @@ test('Sem imagem de fundo; material e bordas livres dentro do tema', () => {
   const eva = P.skins.find(k => k.id === 'eva');
   assert.equal(eva.label, 'E.V.A by Asock');
   assert.equal(P.cleanSkin('eva'), 'eva');
-  const p = P.applyTheme(P.normalize({ nameFont: 'impact', sounds: { volume: 12 }, appearance: { ambient: false } }), 'eva');
+  const p = P.applyTheme(P.normalize({ nameFont: 'impact', sounds: { volume: 12 }, appearance: { ambient: false, voiceSky: false } }), 'eva');
   assert.equal(p.colors.detail1, '#FF8A1F', 'laranja no destaque');
   assert.equal(p.colors.secondary, '#170C29', 'roxo nos painéis');
   assert.equal(p.appearance.ambient, false, 'o tema não mexe na luz ambiente');
+  assert.equal(p.appearance.voiceSky, false, 'nem no céu da voz');
   assert.equal(p.nameFont, 'impact');
   assert.equal(p.sounds.volume, 12);
   const pal = P.palette(p.colors);

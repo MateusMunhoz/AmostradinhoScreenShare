@@ -94,7 +94,7 @@ function renderVoiceSky() {
   if (map) sky.removeAttribute('aria-hidden'); else sky.setAttribute('aria-hidden', 'true');
   if (map) { sky.setAttribute('role', 'group'); sky.setAttribute('aria-label', 'Mapa da voz: canais como sóis e quem está neles como planetas. A roda do mouse aproxima e afasta; arrastar o fundo anda pelo mapa'); }
   else { sky.removeAttribute('role'); sky.removeAttribute('aria-label'); }
-  const show = map || systems.some((s) => s.people.length);
+  const show = map || (appPreferences.appearance.voiceSky && systems.some((s) => s.people.length));
   box.hidden = !show;
   $('skyZoom').hidden = true;
   if (!show) return renderSkyPop();

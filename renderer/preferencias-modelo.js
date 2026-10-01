@@ -102,7 +102,7 @@ const AppPreferences = (() => {
     return { body, display, console: font?.chat && family ? body : 'Tahoma, Verdana, sans-serif' };
   }
   const defaults = { colors: { main: '#0B0D10', secondary: '#13161B', detail1: '#7FA3C7', detail2: '#39FF9F', text: '#D7DCE3', live: '', speaking: '', warn: '#D9A66C', line: '#232932' },
-    appearance: { glass: 'opaque', level: glassLevel.clear, border: 'solid', ambient: true },
+    appearance: { glass: 'opaque', level: glassLevel.clear, border: 'solid', ambient: true, voiceSky: true },
     font: { family: 'system', custom: '', chat: false }, nameFont: '',
     sounds: { join: 'notification035', leave: 'whoosh', chat: 'wood', voiceJoin: 'suaveEntrou', voiceLeave: 'suaveSaiu',
       mute: 'suaveMutou', unmute: 'suaveDesmutou', deafen: 'suaveFoneDesligou', undeafen: 'suaveFoneLigou',
@@ -139,7 +139,7 @@ const AppPreferences = (() => {
     if (!t) return normalize(prefs);
     const colors = { ...defaults.colors, text: '', live: '', speaking: '', warn: '', line: '', ...t.colors };
     const before = normalize(prefs).appearance;
-    const appearance = { ...defaults.appearance, level: glassLevel[t.appearance.glass] ?? defaults.appearance.level, ambient: before.ambient, ...t.appearance };
+    const appearance = { ...defaults.appearance, level: glassLevel[t.appearance.glass] ?? defaults.appearance.level, ambient: before.ambient, voiceSky: before.voiceSky, ...t.appearance };
     return normalize({ ...prefs, colors, appearance });
   }
   // Qual tema pronto bate com as preferências atuais ('' = personalizado). Desfoque, escurecer e fonte não contam.
@@ -169,6 +169,7 @@ const AppPreferences = (() => {
     const level = raw?.appearance?.level;
     if (typeof level === 'number' && Number.isFinite(level)) result.appearance.level = Math.max(0, Math.min(100, Math.round(level)));
     if (typeof raw?.appearance?.ambient === 'boolean') result.appearance.ambient = raw.appearance.ambient;
+    if (typeof raw?.appearance?.voiceSky === 'boolean') result.appearance.voiceSky = raw.appearance.voiceSky;
     const custom = fontName(raw?.font?.custom);
     if (raw?.font?.family === 'custom' ? !!custom : fonts.some(f => f.id === raw?.font?.family)) result.font.family = raw.font.family;
     result.font.custom = custom;

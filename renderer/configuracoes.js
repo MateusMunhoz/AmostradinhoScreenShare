@@ -292,6 +292,14 @@ function setupAmbient() {
     appPreferences.appearance = { ...appPreferences.appearance, ambient: $('ambientLight').checked };
     saveAppPreferences();
   };
+  $('voiceSkyOn').onchange = () => setVoiceSkyOn($('voiceSkyOn').checked);
+}
+// Céu da voz na visão Lista (o Mapa não depende disso), em Aparência
+function setVoiceSkyOn(on) {
+  appPreferences.appearance = { ...appPreferences.appearance, voiceSky: !!on };
+  saveAppPreferences();
+  $('voiceSkyOn').checked = !!on;
+  if (typeof renderVoiceSky === 'function') renderVoiceSky();
 }
 function renderAppearance() {
   renderSkins();
@@ -304,6 +312,7 @@ function renderAppearance() {
   for (const input of document.querySelectorAll('input[name=border]')) input.checked = input.value === a.border;
   renderGlassHint();
   $('ambientLight').checked = appPreferences.appearance.ambient;
+  $('voiceSkyOn').checked = appPreferences.appearance.voiceSky;
   if (!$('fontFamily').options.length) renderFontOptions();
   renderFontPreview();
 }
