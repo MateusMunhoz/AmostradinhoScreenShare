@@ -14,7 +14,6 @@
     linear-gradient(var(--st-mark), var(--st-mark)) right 5px bottom 9px / 9px 1px no-repeat,
     linear-gradient(var(--st-mark), var(--st-mark)) right 9px bottom 5px / 1px 9px no-repeat;
   /* Constelação do saguão, como máscara (a cor vem do tema) */
-  --st-constellation: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'><g fill='none' stroke='black'><circle cx='100' cy='100' r='96' stroke-width='.5' stroke-dasharray='2 5'/><circle cx='100' cy='100' r='62' stroke-width='.4'/><path d='M100 2v196M2 100h196' stroke-width='.35'/><path d='M30 44 70 30 104 62 150 50 174 98 132 130 88 152 52 120 30 44M104 62 132 130' stroke-width='.9'/></g><g fill='black'><circle cx='30' cy='44' r='2.4'/><circle cx='70' cy='30' r='3'/><circle cx='104' cy='62' r='3.8'/><circle cx='150' cy='50' r='2.2'/><circle cx='174' cy='98' r='3.2'/><circle cx='132' cy='130' r='2.6'/><circle cx='88' cy='152' r='3.4'/><circle cx='52' cy='120' r='2'/></g></svg>");
   /* O logo (as duas telas que se cruzam) cheio, para recortar os pontos do halftone */
   --st-logo: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><g fill='black'><rect x='6' y='8' width='34' height='30' rx='6'/><rect x='24' y='26' width='34' height='30' rx='6'/></g></svg>");
 }
@@ -50,7 +49,7 @@
 }
 /* Barra de título: a legenda da carta, discreta, à direita */
 :root:not([data-skin]) .titlebar::after {
-  content: "星座  ·  CARTA ESTELAR"; position: absolute; right: 160px; font: 400 11px/1 var(--st-mono);
+  content: "CARTA ESTELAR"; position: absolute; right: 160px; font: 400 11px/1 var(--st-mono);
   letter-spacing: .22em; color: var(--muted); opacity: .7;
 }
 @media (max-width: 900px) { :root:not([data-skin]) .titlebar::after { display: none; } }
@@ -142,21 +141,21 @@
   mask: var(--st-logo) center / contain no-repeat intersect, radial-gradient(circle, #000 35%, rgba(0, 0, 0, .25) 75%);
 }
 :root:not([data-skin]) .empty-stage::after {
-  content: "TELA P2P  ✦  星座  ·  REDE ESTELAR  ·  AGUARDANDO SINAL";
+  content: "TELA P2P  ✦  REDE ESTELAR  ·  AGUARDANDO SINAL";
   position: absolute; left: 22px; right: 22px; bottom: 16px; pointer-events: none; text-align: left;
   font: 400 11px/1 var(--st-mono); letter-spacing: .2em; color: var(--muted); opacity: .8;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 :root:not([data-skin]) .empty-stage p { position: relative; z-index: 1; }
 
-/* ---------- Saguão: uma constelação grande e apagada ao lado ---------- */
-:root:not([data-skin]) .home-screen::before {
-  content: ""; position: absolute; right: 3%; top: 10%; width: min(34vw, 440px); aspect-ratio: 1; z-index: 0; pointer-events: none;
-  background: color-mix(in srgb, var(--accent) 30%, transparent);
-  -webkit-mask: var(--st-constellation) center / contain no-repeat; mask: var(--st-constellation) center / contain no-repeat;
+/* ---------- Saguão: ao lado, um exemplo de sala com subsalas (sóis e gente em órbita, sem nomes), apagado ---------- */
+.home-sky { display: none; }
+:root:not([data-skin]) .home-sky {
+  display: block; position: absolute; right: 3%; top: 10%; width: min(34vw, 440px); height: auto; aspect-ratio: 1; max-height: none;
+  margin: 0; border: 0; border-radius: 0; background: none; z-index: 0; pointer-events: none; opacity: .75;
 }
 :root:not([data-skin]) .home-main, :root:not([data-skin]) .home-top { position: relative; z-index: 1; }
-@media (max-width: 1050px) { :root:not([data-skin]) .home-screen::before { display: none; } }
+@media (max-width: 1050px) { :root:not([data-skin]) .home-sky { display: none; } }
 
 @media (prefers-reduced-motion: reduce) {
   :root:not([data-skin]) body::before, :root:not([data-skin]) body::after,

@@ -1,8 +1,9 @@
 'use strict';
 // Mensagens diretas entre amigos (contas Razze), fora da sala: vão pela RazzeAPI (POST/GET /v1/messages) e o
 // histórico completo fica num arquivo por amigo neste PC (main/mensagens.js). O servidor guarda só 30 dias.
-// - HUB, aba Mensagens: as conversas (amigos e quem já conversou com você), com a última mensagem e as não lidas.
-// - Barra de conversas, embaixo: um chip por conversa aberta. Clicar abre a janela (o mesmo desenho do chat da
+// - Barra de conversas, embaixo: o "Mensagens" abre para cima a lista das conversas (amigos e quem já conversou com
+//   você, com a última mensagem e as não lidas); um chip por conversa aberta. Arrastar um chip (ou Alt+←/→) muda a
+//   ordem; as que não cabem na largura vão para o "+N" no fim da barra, que lista e traz de volta. Clicar abre a janela (o mesmo desenho do chat da
 //   sala); o "—" minimiza de volta para o chip; o X tira da barra (o histórico continua no arquivo).
 // Mensagem nova de alguém fora da barra: a conversa entra na barra, minimizada, com o número de não lidas.
 // Script clássico: divide o escopo global com os outros (ordem no index.html). Usa de: util, tema, chat, conectividade, hub.
@@ -148,9 +149,11 @@ async function openDm(id) {
   const c = dmConv(id);
   await dmLoadConv(c);
   dmPutInBar(id, true);
+  dmBringIntoView(id);
   c.unread = 0;
   dmSaveBar();
   if (typeof hub === 'object' && hub.open) setHubOpen(false);
+  setDmPanel(false);
   renderDm();
   c.el?.input.focus();
   dmScrollEnd(c, true);
@@ -162,7 +165,7 @@ function minimizeDm(id) {
   renderDm();
 }
 async function toggleDm(id) { if (dmIsOpen(id)) minimizeDm(id); else await openDm(id); }
-// Tira da barra: o histórico continua no arquivo e volta quando abrir de novo (HUB, aba Mensagens)
+// Tira da barra: o histórico continua no arquivo e volta quando abrir de novo (pela lista do "Mensagens")
 function closeDm(id) {
   dm.bar = dm.bar.filter((b) => b.id !== id);
   const c = dm.convs.get(id);
@@ -222,7 +225,11 @@ function dmElements(c) {
   chip.tabIndex = 0;
   chip.setAttribute('role', 'button');
   chip.onclick = () => void toggleDm(c.id);
-  chip.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); void toggleDm(c.id); } };
+  chip.onkeydown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); void toggleDm(c.id); }
+    if (e.altKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { e.preventDefault(); dmMoveBy(c.id, e.key === 'ArrowLeft' ? -1 : 1); chip.focus(); }
+  };
+  dmDraggable(slot, chip, c.id);
   const dot = document.createElement('span');
   dot.className = 'dm-dot';
   const name = document.createElement('span');
@@ -311,18 +318,117 @@ function renderDmBar() {
     if (slots.children[i] !== c.el.slot) slots.insertBefore(c.el.slot, slots.children[i] || null);
   });
   $('dmBarHint').hidden = dm.bar.length > 0;
+  fitDmBar();
 }
 
-// ---------- HUB, aba Mensagens ----------
-function renderDmList() {
-  const box = $('dmConvList');
-  if (!box) return;
-  const on = !!dm.account;
-  $('dmSignedOut').hidden = on;
-  $('dmBody').hidden = !on;
-  if (!on) return;
-  $('dmUnsupported').hidden = !dm.unsupported;
-  $('dmError').textContent = !dm.unsupported && dm.error ? dm.error : '';
+// ---------- Largura: o que não cabe vai para o "+N" ----------
+// Aberta, uma conversa ocupa 340px; minimizada, pelo menos 160px (as larguras do CSS de .dm-slot)
+const DM_W_OPEN = 340, DM_W_CHIP = 160, DM_GAP = 6, DM_W_MORE = 56;
+function dmVisibleCount() {
+  const avail = $('dmBar').clientWidth - $('dmBarLabel').offsetWidth - 10 - DM_GAP;
+  const widths = dm.bar.map((b) => (b.open ? DM_W_OPEN : DM_W_CHIP) + DM_GAP);
+  if (widths.reduce((a, w) => a + w, 0) <= avail) return dm.bar.length;
+  let used = DM_W_MORE + DM_GAP, n = 0;
+  while (n < widths.length && used + widths[n] <= avail) used += widths[n++];
+  return Math.max(1, n);
+}
+function fitDmBar() {
+  const shown = dmVisibleCount();
+  dm.bar.forEach((b, i) => { const el = dm.convs.get(b.id)?.el; if (el) el.slot.hidden = i >= shown; });
+  const hidden = dm.bar.slice(shown);
+  const more = $('dmMore');
+  more.hidden = !hidden.length;
+  if (!hidden.length) return setDmMore(false);
+  const unread = hidden.reduce((n, b) => n + (dm.convs.get(b.id)?.unread || 0), 0);
+  more.textContent = '+' + hidden.length;
+  more.classList.toggle('has-unread', unread > 0);
+  more.title = 'Mais ' + hidden.length + (hidden.length === 1 ? ' conversa' : ' conversas') + (unread ? ' (' + unread + (unread === 1 ? ' não lida)' : ' não lidas)') : '');
+  if (!$('dmMoreMenu').hidden) renderDmMore(hidden);
+}
+// Abrir uma conversa que está no "+N": ela entra no lugar da última que aparece (que vai para o "+N")
+function dmBringIntoView(id) {
+  const b = dm.bar.find((x) => x.id === id);
+  if (!b) return;
+  for (let at = dm.bar.indexOf(b); at > 0 && at >= dmVisibleCount(); at--) { dm.bar.splice(at, 1); dm.bar.splice(at - 1, 0, b); }
+}
+function setDmMore(open) {
+  const menu = $('dmMoreMenu');
+  open = open && !$('dmMore').hidden;
+  menu.hidden = !open;
+  $('dmMore').setAttribute('aria-expanded', String(open));
+  if (open) { renderDmMore(dm.bar.slice(dmVisibleCount())); menu.querySelector('button')?.focus(); }
+}
+function renderDmMore(hidden) {
+  $('dmMoreMenu').replaceChildren(...hidden.map((b) => {
+    const c = dmConv(b.id);
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'dm-more-item' + (c.unread ? ' has-unread' : '');
+    item.setAttribute('role', 'menuitem');
+    item.title = 'Trazer a conversa com ' + friendName(b.id) + ' para a barra';
+    const dot = document.createElement('span');
+    dot.className = 'dm-dot' + (friendOnline(b.id) ? ' on' : '');
+    const name = document.createElement('span');
+    name.className = 'dm-name';
+    name.textContent = friendName(b.id);
+    item.append(dot, name);
+    if (c.unread) { const n = document.createElement('span'); n.className = 'hub-badge'; n.textContent = c.unread > 99 ? '99+' : String(c.unread); item.append(n); }
+    item.onclick = () => { setDmMore(false); void openDm(b.id); };
+    return item;
+  }));
+}
+
+// ---------- Ordem: arrastar um chip entre os outros (ou Alt+←/→) ----------
+function dmMoveTo(id, index) {
+  const from = dm.bar.findIndex((b) => b.id === id);
+  if (from < 0) return;
+  const [b] = dm.bar.splice(from, 1);
+  dm.bar.splice(Math.max(0, Math.min(dm.bar.length, index)), 0, b);
+  dmSaveBar();
+  renderDm();
+}
+function dmMoveBy(id, step) {
+  const i = dm.bar.findIndex((b) => b.id === id);
+  if (i >= 0 && i + step >= 0 && i + step < dmVisibleCount()) dmMoveTo(id, i + step);
+}
+let dmDragId = null;
+function dmClearDrop() { for (const el of $('dmSlots').querySelectorAll('.drop-before, .drop-after, .dragging')) el.classList.remove('drop-before', 'drop-after', 'dragging'); }
+function dmDraggable(slot, chip, id) {
+  chip.draggable = true;
+  chip.ondragstart = (e) => {
+    dmDragId = id;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('application/x-tela-p2p-conversa', id);
+    slot.classList.add('dragging');
+  };
+  chip.ondragend = () => { dmDragId = null; dmClearDrop(); };
+  // Soltar em cima de outro chip: antes dele (metade esquerda) ou depois (metade direita)
+  const side = (e) => { const r = chip.getBoundingClientRect(); return e.clientX < r.left + r.width / 2 ? 'before' : 'after'; };
+  chip.ondragover = (e) => {
+    if (!dmDragId || dmDragId === id) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    const s = side(e);
+    slot.classList.toggle('drop-before', s === 'before');
+    slot.classList.toggle('drop-after', s === 'after');
+  };
+  chip.ondragleave = () => slot.classList.remove('drop-before', 'drop-after');
+  chip.ondrop = (e) => {
+    if (!dmDragId || dmDragId === id) return;
+    e.preventDefault();
+    const moving = dmDragId, s = side(e);
+    dmDragId = null;
+    dmClearDrop();
+    const rest = dm.bar.filter((b) => b.id !== moving);
+    dmMoveTo(moving, rest.findIndex((b) => b.id === id) + (s === 'after' ? 1 : 0));
+  };
+}
+
+// ---------- Lista das conversas (no painel da barra) ----------
+function fillDmList(prefix = 'dmPanel') {
+  const box = $(prefix + 'ConvList');
+  $(prefix + 'Unsupported').hidden = !dm.unsupported;
+  $(prefix + 'Error').textContent = !dm.unsupported && dm.error ? dm.error : '';
   const ids = new Set([...friendsData.friends.map((f) => f.id), ...[...dm.convs.values()].filter((c) => c.last).map((c) => c.id)]);
   const needle = semAcento(dm.filter.trim());
   const rows = [...ids].map((id) => ({ id, c: dm.convs.get(id), name: friendName(id) }))
@@ -349,19 +455,41 @@ function renderDmList() {
     if (c?.unread) { const n = document.createElement('span'); n.className = 'hub-badge'; n.textContent = String(c.unread); li.append(n); }
     return li;
   }));
-  $('dmConvEmpty').hidden = rows.length > 0;
-  $('dmConvEmpty').textContent = needle ? `Ninguém com “${dm.filter.trim()}”.` : 'Adicione amigos na aba Amigos para conversar com eles.';
+  $(prefix + 'ConvEmpty').hidden = rows.length > 0;
+  $(prefix + 'ConvEmpty').textContent = needle ? `Ninguém com “${dm.filter.trim()}”.` : 'Adicione amigos na aba Amigos para conversar com eles.';
 }
+
+// ---------- Painel da barra: o "Mensagens" abre a lista para cima, em cima da barra ----------
+function setDmPanel(open) {
+  open = open && !!dm.account;
+  const was = !$('dmPanel').hidden;
+  $('dmPanel').hidden = !open;
+  $('dmBarLabel').setAttribute('aria-expanded', String(open));
+  $('dmBarLabel').classList.toggle('open', open);
+  if (!open) return;
+  renderDmPanel();
+  if (!was) { $('dmPanelFilter').value = dm.filter; $('dmPanelFilter').focus(); }
+}
+function renderDmPanel() { if (!$('dmPanel').hidden) fillDmList('dmPanel'); }
 
 function renderDm() {
   renderDmBar();
-  if (typeof renderHub === 'function') renderHub(); // o número de não lidas no HUB e a lista da aba
+  if (!dm.account) setDmPanel(false);
+  renderDmPanel();
+  if (typeof renderHub === 'function') renderHub();
 }
 
 function setupDm() {
-  $('dmBarLabel').onclick = () => setHubOpen(true, 'messages');
-  $('dmFilter').oninput = () => { dm.filter = $('dmFilter').value; renderDmList(); };
-  $('dmOpenLogin').onclick = openRazzeLogin;
+  $('dmBarLabel').onclick = () => setDmPanel($('dmPanel').hidden);
+  $('dmPanelClose').onclick = () => { setDmPanel(false); $('dmBarLabel').focus(); };
+  $('dmPanelFilter').oninput = () => { dm.filter = $('dmPanelFilter').value; renderDmPanel(); };
+  $('dmMore').onclick = () => setDmMore($('dmMoreMenu').hidden);
+  new ResizeObserver(() => { if (dm.account) fitDmBar(); }).observe($('dmBar'));
+  // Clicar fora do painel (e fora do botão que abre) fecha
+  document.addEventListener('pointerdown', (e) => {
+    if (!$('dmPanel').hidden && !e.target.closest?.('#dmPanel, #dmBarLabel')) setDmPanel(false);
+    if (!$('dmMoreMenu').hidden && !e.target.closest?.('#dmMoreMenu, #dmMore')) setDmMore(false);
+  });
   // Voltando para o app: busca na hora (sem esperar os 4 s)
   window.addEventListener('focus', () => void dmPoll());
 }

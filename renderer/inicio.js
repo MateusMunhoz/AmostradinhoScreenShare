@@ -400,6 +400,8 @@ document.addEventListener('keydown', (e) => {
   else if (!$('voiceDialog').hidden) { if (!capturing) closeVoiceDialog(); }
   else if (!$('personCard').hidden) closePersonCard();
   else if (!$('voiceMapPop').hidden) closeSkyPop();
+  else if (!$('dmPanel').hidden) { setDmPanel(false); $('dmBarLabel').focus(); }
+  else if (!$('dmMoreMenu').hidden) { setDmMore(false); $('dmMore').focus(); }
   else if (!$('peoplePop').hidden) { setPeopleOpen(false); $('peopleBtn').focus(); }
   else if (!$('statsDialog').hidden) closeStats();
   else if (!$('closeDialog').hidden) closeCloseDialog();

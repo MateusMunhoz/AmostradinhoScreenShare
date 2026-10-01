@@ -82,7 +82,6 @@
       <div class="seg hub-tabs" role="tablist" aria-label="O que ver no HUB">
         <button id="hubTabRooms" type="button" role="tab" aria-selected="true" aria-controls="hubRooms">Salas</button>
         <button id="hubTabFriends" type="button" role="tab" aria-selected="false" aria-controls="friendsDialog">Amigos <span id="hubFriendsBadge" class="hub-badge" hidden></span></button>
-        <button id="hubTabMessages" type="button" role="tab" aria-selected="false" aria-controls="hubMessages" title="Mensagens diretas">Mensagens <span id="hubMessagesBadge" class="hub-badge" hidden></span></button>
         <button id="hubTabNetwork" type="button" role="tab" aria-selected="false" aria-controls="networkDialog">Rede</button>
       </div>
       <section id="hubRooms" class="hub-pane" role="tabpanel" aria-labelledby="hubTabRooms">
@@ -119,20 +118,6 @@
           <p id="razzeFriendsStatus" class="razze-status" role="status" aria-live="polite"></p>
           <div id="razzeFriends" class="hub-friend-list"></div>
           <p id="friendsEmpty" class="hint" hidden></p>
-        </div>
-      </section>
-      <!-- Mensagens diretas: a lista das conversas; cada uma abre na barra de conversas (renderer/mensagens.js) -->
-      <section id="hubMessages" class="hub-pane hub-messages" role="tabpanel" aria-labelledby="hubTabMessages" hidden>
-        <div id="dmSignedOut" class="hub-signed-out">
-          <p class="hint">Entre na conta Razze para conversar com os seus amigos.</p>
-          <button id="dmOpenLogin" class="btn small primary" type="button">Entrar na conta</button>
-        </div>
-        <div id="dmBody" class="hub-friends-body" hidden>
-          <input id="dmFilter" class="hub-filter" type="search" placeholder="Buscar conversa" aria-label="Buscar conversa pelo nome" autocomplete="off">
-          <p id="dmUnsupported" class="warn" hidden>O servidor Razze ainda não tem mensagens diretas. Quem cuida do servidor precisa atualizar a RazzeAPI.</p>
-          <p id="dmError" class="razze-status" role="status"></p>
-          <ul id="dmConvList" class="hub-list hub-friend-list"></ul>
-          <p id="dmConvEmpty" class="hint" hidden></p>
         </div>
       </section>
       <!-- Rede e conta: como os PCs se conectam, servidores, redes Razze e o login (lógica em renderer/conectividade.js) -->
@@ -204,17 +189,31 @@
       </section>
     </div>
   </aside>
-  <!-- Barra de conversas: embaixo, com um chip por conversa aberta; cada uma abre para cima (renderer/mensagens.js) -->
+  <!-- Barra de conversas: embaixo; o "Mensagens" abre a lista para cima, e um chip por conversa aberta, que também abre para cima (renderer/mensagens.js) -->
   <footer id="dmBar" class="dm-bar" aria-label="Conversas" hidden>
-    <button id="dmBarLabel" type="button" class="dm-bar-label" title="Mensagens: abrir a lista de conversas no HUB">Mensagens <span id="dmBarBadge" class="hub-badge" hidden></span></button>
+    <button id="dmBarLabel" type="button" class="dm-bar-label" title="Mensagens: abrir a lista de conversas" aria-expanded="false" aria-controls="dmPanel">Mensagens <span id="dmBarBadge" class="hub-badge" hidden></span></button>
+    <!-- O "Mensagens" abre para cima a lista das conversas -->
+    <div id="dmPanel" class="dm-panel" role="dialog" aria-label="Conversas" hidden>
+      <div class="dm-panel-head"><strong>Mensagens</strong><button id="dmPanelClose" type="button" class="dm-chip-btn" title="Fechar" aria-label="Fechar a lista de conversas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+      <input id="dmPanelFilter" class="hub-filter" type="search" placeholder="Buscar conversa" aria-label="Buscar conversa pelo nome" autocomplete="off">
+      <p id="dmPanelUnsupported" class="warn" hidden>O servidor Razze ainda não tem mensagens diretas. Quem cuida do servidor precisa atualizar a RazzeAPI.</p>
+      <p id="dmPanelError" class="razze-status" role="status"></p>
+      <ul id="dmPanelConvList" class="hub-list"></ul>
+      <p id="dmPanelConvEmpty" class="hint" hidden></p>
+    </div>
     <div id="dmSlots" class="dm-slots"></div>
-    <span id="dmBarHint" class="dm-bar-hint">Abra uma conversa no HUB, aba Mensagens</span>
+    <span id="dmBarHint" class="dm-bar-hint">Clique em Mensagens para abrir uma conversa</span>
+    <!-- As conversas que não cabem na largura: o "+N" lista e traz de volta para a barra -->
+    <button id="dmMore" type="button" class="dm-more" aria-haspopup="menu" aria-expanded="false" aria-controls="dmMoreMenu" hidden></button>
+    <div id="dmMoreMenu" class="dm-more-menu" role="menu" aria-label="Outras conversas" hidden></div>
   </footer>
   <main>
     <!-- Início -->
     <!-- Início: um saguão. Você (foto e nome), as sessões abertas na rede como peça principal, criar ou entrar com
          endereço, a última sala; embaixo, a conexão e a versão -->
     <section id="home" class="screen home-screen">
+      <!-- Fundo (só no tema Padrão): um exemplo de sala com subsalas, sem nomes, com gente falando e transmitindo (renderHomeSky em renderer/ceu-voz.js) -->
+      <svg id="homeSky" class="voice-sky home-sky" aria-hidden="true"></svg>
       <div class="home-top">
         <div class="brand-mark">
           <!-- Duas telas que se cruzam: a sua (Detalhe 1), a do amigo (Detalhe 2) e o encontro na cor do texto -->

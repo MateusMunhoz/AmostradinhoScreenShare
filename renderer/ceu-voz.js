@@ -41,7 +41,8 @@ function skyHash(text, salt) {
 }
 function skyEl(tag, attrs = {}) {
   const el = document.createElementNS(SKY_NS, tag);
-  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+  // style pelo CSSOM: o atributo style escrito como texto é barrado pela CSP do app (style-src 'self')
+  for (const [k, v] of Object.entries(attrs)) { if (k === 'style') el.style.cssText = v; else el.setAttribute(k, v); }
   return el;
 }
 
@@ -120,13 +121,24 @@ function renderVoiceSky() {
     if (w < h * 3.4) { x0 -= (h * 3.4 - w) / 2; w = h * 3.4; } // na lista, o céu é uma faixa larga e baixa
     sky.setAttribute('viewBox', `${x0.toFixed(1)} ${y0.toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}`);
   }
-  // Poeira de fundo: sempre as mesmas estrelinhas, para o céu não mudar a cada redesenho
-  const dust = Math.round(Math.min(map ? 160 : 90, w * h / 900));
+  drawSkyDust(sky, x0, y0, w, h, map ? 160 : 90);
+  drawSkyBridges(sky, pts);
+  const now = performance.now() / 1000; // a órbita continua de onde estava quando o céu é redesenhado
+  systems.forEach((s, i) => drawSkySystem(sky, s, pts[i], { map, geo, labels, now, outer: outer(s.people.length) }));
+  if (map) applySkyCam();
+  renderSkyPop();
+}
+
+// Poeira de fundo: sempre as mesmas estrelinhas, para o céu não mudar a cada redesenho
+function drawSkyDust(sky, x0, y0, w, h, max) {
+  const dust = Math.round(Math.min(max, w * h / 900));
   for (let i = 0; i < dust; i++) {
     const hh = skyHash('ceu' + i, 7);
     sky.append(skyEl('circle', { class: 'sky-dust', cx: (x0 + 3 + hh % Math.max(1, w - 6)).toFixed(1), cy: (y0 + 3 + (hh >>> 9) % Math.max(1, h - 6)).toFixed(1), r: (hh >>> 17) % 3 ? .5 : .9 }));
   }
-  // Linha fraca de cada sol até o vizinho mais perto entre os que vieram antes, de borda a borda
+}
+// Linha fraca de cada sol até o vizinho mais perto entre os que vieram antes, de borda a borda
+function drawSkyBridges(sky, pts) {
   for (let i = 1; i < pts.length; i++) {
     const [x2, y2] = pts[i];
     const [x1b, y1b] = pts.slice(0, i).reduce((a, b) => (Math.hypot(b[0] - x2, b[1] - y2) < Math.hypot(a[0] - x2, a[1] - y2) ? b : a));
@@ -134,10 +146,6 @@ function renderVoiceSky() {
     const [ux, uy] = [(x2 - x1b) / d, (y2 - y1b) / d];
     sky.append(skyEl('line', { class: 'sky-link sky-bridge', x1: x1b + ux * gap, y1: y1b + uy * gap, x2: x2 - ux * gap, y2: y2 - uy * gap }));
   }
-  const now = performance.now() / 1000; // a órbita continua de onde estava quando o céu é redesenhado
-  systems.forEach((s, i) => drawSkySystem(sky, s, pts[i], { map, geo, labels, now, outer: outer(s.people.length) }));
-  if (map) applySkyCam();
-  renderSkyPop();
 }
 
 // ---------- Zoom e andar pelo mapa ----------
@@ -433,3 +441,58 @@ document.addEventListener('pointerdown', (e) => {
   if ($('voiceMapPop').hidden || t.closest?.('#voiceMapPop, #personCard, #profilePane, #voiceSky [data-channel], #voiceSky .sky-star')) return;
   closeSkyPop();
 });
+
+// ---------- Céu da tela inicial (só no tema Padrão; o CSS esconde nos outros) ----------
+// Um exemplo de sala com subsalas, sem nomes: sóis com gente em órbita. De vez em quando alguém fala (acende, às
+// vezes respondendo outra pessoa do mesmo canal) e alguém começa ou para de transmitir (o anel tracejado).
+const HOME_SKY = [3, 2, 4, 1, 0, 2]; // quantas pessoas em cada canal do exemplo
+function renderHomeSky() {
+  const sky = $('homeSky'), geo = SKY_GEO.lista;
+  const systems = HOME_SKY.map((n, i) => ({ ch: 'exemplo' + i, name: '', here: false, people: Array.from({ length: n }, (_, j) => ({ id: `ex${i}-${j}`, name: '' })) }));
+  const pts = skyLayout(systems.map((s) => s.ch), geo);
+  const outer = (n) => skyRadii(n, geo).at(-1) || 9;
+  let [x0, y0, x1, y1] = [Infinity, Infinity, -Infinity, -Infinity];
+  systems.forEach((s, i) => {
+    const r = Math.max(outer(s.people.length), 13) + 8;
+    x0 = Math.min(x0, pts[i][0] - r); x1 = Math.max(x1, pts[i][0] + r); y0 = Math.min(y0, pts[i][1] - r); y1 = Math.max(y1, pts[i][1] + r);
+  });
+  const side = Math.max(x1 - x0, y1 - y0); // quadrado, com o grupo no meio
+  x0 -= (side - (x1 - x0)) / 2; y0 -= (side - (y1 - y0)) / 2;
+  sky.setAttribute('viewBox', `${x0.toFixed(1)} ${y0.toFixed(1)} ${side.toFixed(1)} ${side.toFixed(1)}`);
+  sky.replaceChildren();
+  drawSkyDust(sky, x0, y0, side, side, 60);
+  drawSkyBridges(sky, pts);
+  const now = performance.now() / 1000;
+  systems.forEach((s, i) => drawSkySystem(sky, s, pts[i], { map: false, geo, labels: false, now, outer: outer(s.people.length) }));
+  // Sem nomes (nem na dica) e fora do "quem fala" de verdade (voz.js acende quem tem data-person)
+  for (const t of sky.querySelectorAll('title')) t.remove();
+  for (const g of sky.querySelectorAll('[data-person]')) delete g.dataset.person;
+}
+function homeSkyTick() {
+  const sky = $('homeSky');
+  if (document.hidden || $('home').hidden || getComputedStyle(sky).display === 'none' || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const rings = [...sky.querySelectorAll('.sky-ring')].map((r) => [...r.querySelectorAll('.sky-star')]).filter((list) => list.length);
+  const stars = [...sky.querySelectorAll('.sky-star')];
+  if (!stars.length) return;
+  const pick = (list) => list[Math.floor(Math.random() * list.length)];
+  // Alguém fala um pouco; às vezes outra pessoa do mesmo anel responde logo depois
+  const ring = pick(rings), first = pick(ring);
+  const talk = (star, delay) => setTimeout(() => {
+    star.classList.add('speaking');
+    setTimeout(() => star.classList.remove('speaking'), 600 + Math.random() * 1600);
+  }, delay);
+  talk(first, 0);
+  if (ring.length > 1 && Math.random() < .5) talk(pick(ring.filter((s) => s !== first)), 900 + Math.random() * 900);
+  // De vez em quando alguém começa ou para de transmitir (no máximo duas telas ao mesmo tempo)
+  if (Math.random() < .12) {
+    const live = stars.filter((s) => s.classList.contains('live'));
+    const star = live.length >= 2 || (live.length && Math.random() < .5) ? pick(live) : pick(stars.filter((s) => !s.classList.contains('live')));
+    const on = !star.classList.contains('live');
+    star.classList.toggle('live', on);
+    const up = star.querySelector('.sky-upright');
+    if (on) up.prepend(skyEl('circle', { class: 'sky-orbit', r: 5.5 }));
+    else up.querySelector('.sky-orbit')?.remove();
+  }
+}
+renderHomeSky();
+setInterval(homeSkyTick, 1400);

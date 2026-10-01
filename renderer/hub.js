@@ -4,13 +4,12 @@
 // - Salas: a sala em que você está (em destaque), as outras salas abertas na rede e o botão do menu inicial.
 // - Amigos: adicionar pelo nickname, filtrar (texto + Todos/Online/Pedidos), convidar para a sua sala, aceitar e
 //   cancelar pedidos. Os dados vêm da RazzeAPI (refreshRazzeLists e a presença em conectividade.js).
-// - Mensagens: conversas diretas com os amigos (renderer/mensagens.js), que abrem na barra de conversas, embaixo.
 // - Rede: como os PCs se conectam (Radmin, Razze, Internet), servidores, redes Razze e a conta (entrar, criar, sair).
 // As abas Amigos e Rede têm os ids friendsDialog e networkDialog: quem pergunta "estão à vista?" continua usando .hidden.
 // Aberto, procura sessões mesmo fora da tela inicial (sessionWatchWanted em sessoes.js).
 // Script clássico: divide o escopo global com os outros (ordem no index.html). Usa de: util, estado, sessoes, navegacao.
 
-const HUB_TABS = ['rooms', 'friends', 'messages', 'network'];
+const HUB_TABS = ['rooms', 'friends', 'network']; // as mensagens diretas ficam só na barra de baixo (mensagens.js)
 const hub = { open: false, tab: HUB_TABS.includes(load('hubTab', 'rooms')) ? load('hubTab', 'rooms') : 'rooms' };
 const friendsData = { friends: [], incoming: [], outgoing: [], error: '' };
 const friendsFilter = { text: '', view: 'all' }; // view: all | online | requests
@@ -26,7 +25,6 @@ function setHubOpen(on, tab) {
   renderHub();
   if (typeof syncWorkspace === 'function') syncWorkspace();
   if (hub.open && hub.tab === 'friends' && !$('razzeStepFriends').hidden) $('razzeFriendNickname').focus();
-  else if (hub.open && hub.tab === 'messages') $('dmFilter').focus();
   else if (hub.open && hub.tab !== 'network') $('hubToggle').focus();
 }
 function setHubTab(tab) { setHubOpen(true, tab); }
@@ -61,25 +59,19 @@ function renderHub() {
   if (!rail) return;
   const inRoom = !!state.myId;
   const pending = friendsData.incoming.length;
-  const unread = typeof dmUnreadTotal === 'function' ? dmUnreadTotal() : 0;
-  $('hubRailBadge').hidden = !(pending + unread);
-  $('hubRailBadge').textContent = pending + unread > 9 ? '9+' : String(pending + unread);
-  $('hubRailBadge').title = [pending && `${pending} ${pending === 1 ? 'pedido' : 'pedidos'} de amizade`, unread && `${unread} ${unread === 1 ? 'mensagem nova' : 'mensagens novas'}`].filter(Boolean).join(' · ');
-  $('hubMessagesBadge').hidden = !unread;
-  $('hubMessagesBadge').textContent = unread > 99 ? '99+' : String(unread);
+  $('hubRailBadge').hidden = !pending; // mensagens novas aparecem no "Mensagens" da barra de baixo
+  $('hubRailBadge').textContent = pending > 9 ? '9+' : String(pending);
+  $('hubRailBadge').title = `${pending} ${pending === 1 ? 'pedido' : 'pedidos'} de amizade`;
   $('hubFriendsBadge').hidden = !pending;
   $('hubFriendsBadge').textContent = String(pending);
   $('hubTabRooms').setAttribute('aria-selected', String(hub.tab === 'rooms'));
   $('hubTabFriends').setAttribute('aria-selected', String(hub.tab === 'friends'));
   $('hubTabNetwork').setAttribute('aria-selected', String(hub.tab === 'network'));
-  $('hubTabMessages').setAttribute('aria-selected', String(hub.tab === 'messages'));
-  $('hubMessages').hidden = !hub.open || hub.tab !== 'messages';
   $('networkDialog').hidden = !hub.open || hub.tab !== 'network';
   $('hubRooms').hidden = !hub.open || hub.tab !== 'rooms';
   $('friendsDialog').hidden = !hub.open || hub.tab !== 'friends';
   if (!hub.open) return;
   if (hub.tab === 'friends') { renderFriends(); return; }
-  if (hub.tab === 'messages') { renderDmList(); return; }
   // A sala em que você está
   $('hubCurrentBox').hidden = !inRoom;
   $('hubHome').hidden = !inRoom || !$('home').hidden;
@@ -278,7 +270,6 @@ function setupHub() {
   $('hubTabRooms').onclick = () => setHubTab('rooms');
   $('hubTabFriends').onclick = () => setHubTab('friends');
   $('hubTabNetwork').onclick = () => { renderConnectivitySettings(); setHubTab('network'); };
-  $('hubTabMessages').onclick = () => setHubTab('messages');
   $('friendsFilter').oninput = () => { friendsFilter.text = $('friendsFilter').value; renderFriends(); };
   for (const b of $('friendsViews').querySelectorAll('button')) b.onclick = () => { friendsFilter.view = b.dataset.view; renderFriends(); };
   $('hubRail').addEventListener('keydown', (e) => { if (e.key === 'Escape' && hub.open) { e.stopPropagation(); setHubOpen(false); } });
