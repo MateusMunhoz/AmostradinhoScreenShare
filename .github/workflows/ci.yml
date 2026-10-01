@@ -18,9 +18,6 @@ jobs:
     name: Testes unitários (Linux)
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    env:
-      # Os testes unitários não abrem o Electron: pula o download do binário dele
-      ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
