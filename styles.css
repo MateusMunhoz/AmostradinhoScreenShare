@@ -504,6 +504,14 @@ kbd { font-family: Consolas, monospace; font-size: 11px; color: var(--muted); bo
 .file-card img.chat-image { cursor: zoom-in; }
 .file-card img.chat-image:hover { filter: brightness(1.08); }
 .file-card img.chat-image:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* Imagem: só ela, sem o cartão; o selo "Só nesta sala" aparece com o mouse em cima ou com o foco */
+.file-card.image-only { width: auto; padding: 0; border: 0; background: none; box-shadow: none; }
+.file-card.image-only > .file-row, .file-card.image-only > .file-bar { display: none; }
+.chat-image-wrap { position: relative; align-self: flex-start; max-width: 100%; line-height: 0; }
+.file-card.image-only img { display: block; max-width: min(100%, 260px); }
+.chat-image-badge { position: absolute; top: 8px; left: 8px; display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 999px; background: var(--scrim); color: #fff; font-family: var(--font-body); font-size: 11px; font-weight: 600; line-height: 1.4; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .12s; }
+.chat-image-badge svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.chat-image-wrap:hover .chat-image-badge, .chat-image-wrap:focus-within .chat-image-badge { opacity: 1; }
 
 /* Bandeja: arquivos esperando o Enviar, em cima do campo de mensagem */
 .chat-staged { flex: none; display: flex; flex-wrap: wrap; gap: 8px; padding: 8px; border: 1px dashed var(--line-strong); border-radius: 8px; background: var(--sunken); max-height: 180px; overflow-y: auto; }

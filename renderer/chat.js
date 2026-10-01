@@ -250,6 +250,9 @@ function setCardGone(parts, text) {
   parts.meta.textContent = text;
 }
 
+// Imagem no chat: só a imagem, sem o ícone, o nome e o tamanho do cartão de arquivo. O selo "Só nesta sala"
+// aparece com o mouse em cima (ou com o foco): a imagem só existe enquanto quem mandou está na sala.
+let chatImageSeq = 0;
 function showImage(parts, url) {
   if (!chat.urls.includes(url)) chat.urls.push(url);
   const img = document.createElement('img');
@@ -262,7 +265,17 @@ function showImage(parts, url) {
   img.title = 'Clique para ampliar';
   img.onclick = () => openImageViewer(img);
   img.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openImageViewer(img); } };
-  parts.card.insertBefore(img, parts.card.firstChild);
+  const badge = document.createElement('span');
+  badge.className = 'chat-image-badge';
+  badge.id = `chatImageBadge${++chatImageSeq}`;
+  badge.innerHTML = ICON.leave;
+  badge.append('Só nesta sala');
+  img.setAttribute('aria-describedby', badge.id);
+  const wrap = document.createElement('div');
+  wrap.className = 'chat-image-wrap';
+  wrap.append(img, badge);
+  parts.card.classList.add('image-only');
+  parts.card.insertBefore(wrap, parts.card.firstChild);
 }
 
 // ---------- Imagem grande ----------
