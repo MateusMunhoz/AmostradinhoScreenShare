@@ -68,7 +68,7 @@ app.whenReady().then(async()=>{
       await check('Mutar e desmutar o seu microfone tocam',`testPlayed.length===9 && testPlayed[7]==='synth:659' && testPlayed[8]==='synth:523'`);
       await run(`$('volume-voiceJoin').value=35;$('volume-voiceJoin').dispatchEvent(new Event('input'));$('sound-voiceLeave').value='wood';$('sound-voiceLeave').dispatchEvent(new Event('change'));`);
       await run(`$('hex-main').value='#GGGGGG';$('hex-main').dispatchEvent(new Event('input'));`);
-      await check('Hexadecimal inválido não é salvo',`$('hex-main').getAttribute('aria-invalid')==='true' && AppPreferences.read(localStorage).colors.main==='#22271E'`);
+      await check('Hexadecimal inválido não é salvo',`$('hex-main').getAttribute('aria-invalid')==='true' && AppPreferences.read(localStorage).colors.main===AppPreferences.defaults.colors.main`);
       await run(`document.querySelector('input[name=glass][value=liquid]').click();`);
       await check('Vidro líquido aplicado na hora',`document.documentElement.dataset.glass==='liquid' && getComputedStyle($('workspaceNav')).backdropFilter.includes('liquidLens') && !$('glassLevelRow').hidden`);
       await check('Abas: uma seção por vez',`(() => {$('settingsTab-colors').click();return !$('settingsPanel-colors').hidden && $('settingsPanel-sounds').hidden && $('settingsPanel-appearance').hidden && !$('settingsTab-network') && $('settingsTab-colors').getAttribute('aria-selected')==='true';})()`);
