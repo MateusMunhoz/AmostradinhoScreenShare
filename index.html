@@ -299,6 +299,18 @@
             <button class="btn" id="rejoinBtn" type="button">Entrar de novo</button>
           </div>
         </div>
+        <!-- Novidades: aparece sozinho depois de atualizar; "Novidades" no rodapé abre de novo (renderNews em renderer/atualizacao.js) -->
+        <section id="homeNews" class="home-news" aria-labelledby="homeNewsTitle" hidden>
+          <div class="home-news-head">
+            <span class="home-news-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3c.4 4.6 2.4 6.6 7 7-4.6.4-6.6 2.4-7 7-.4-4.6-2.4-6.6-7-7 4.6-.4 6.6-2.4 7-7zM19 15c.2 2 1 2.8 3 3-2 .2-2.8 1-3 3-.2-2-1-2.8-3-3 2-.2 2.8-1 3-3z"/></svg></span>
+            <div class="home-news-heading">
+              <h2 id="homeNewsTitle" class="home-news-title"></h2>
+              <span id="homeNewsSub" class="home-news-sub"></span>
+            </div>
+            <button class="btn icon small ghost" id="homeNewsClose" type="button" title="Fechar" aria-label="Fechar as novidades"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+          </div>
+          <div id="homeNewsList" class="home-news-list"></div>
+        </section>
       </div>
 
       <div class="home-status">
@@ -311,6 +323,8 @@
           <span id="appVersion"></span>
           <span aria-hidden="true">·</span>
           <button class="link-btn" id="checkUpdates" type="button">Procurar atualização</button>
+          <span aria-hidden="true">·</span>
+          <button class="link-btn" id="showNews" type="button" aria-expanded="false" aria-controls="homeNews">Novidades</button>
         </p>
       </div>
     </section>
@@ -897,6 +911,7 @@
   <script src="renderer/metadados.js"></script>
   <script src="renderer/chat.js"></script>
   <script src="renderer/estatisticas.js"></script>
+  <script src="renderer/novidades.js"></script>
   <script src="renderer/atualizacao.js"></script>
   <script src="renderer/sessoes.js"></script>
   <script src="renderer/transmitir.js"></script>

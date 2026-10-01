@@ -247,8 +247,11 @@ window.addEventListener('focus', () => { if (!$('home').hidden) renderRadmin(); 
 window.api.getVersion().then((v) => {
   update.myVersion = v;
   $('appVersion').textContent = `Versão ${v}`;
+  showNewsIfNew();
   checkGithub();
 });
+$('showNews').onclick = () => setNewsOpen($('homeNews').hidden);
+$('homeNewsClose').onclick = () => { setNewsOpen(false); $('showNews').focus(); };
 $('checkUpdates').onclick = () => checkGithub(true);
 $('ubGo').onclick = runUpdate;
 $('ubLater').onclick = () => { update.dismissed = updateMode()?.version || ''; renderUpdateBanner(); };

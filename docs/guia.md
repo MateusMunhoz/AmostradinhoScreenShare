@@ -14,6 +14,7 @@ Tudo o que dá para fazer no Tela P2P, com os detalhes. Para começar do zero, v
 - [Voz e atalhos](#voz-e-atalhos)
 - [Estatísticas](#estatísticas)
 - [Tema](#tema)
+- [Atualizações](#atualizações)
 
 ## Sala
 
@@ -308,3 +309,9 @@ Mensagens enviadas e recebidas fazem som quando chegam confirmadas pelo servidor
 Todas essas escolhas são salvas automaticamente no perfil local do app e continuam ao fechá-lo e abri-lo de novo. Cada pessoa pode usar suas próprias cores e sons.
 
 Fontes do próprio Windows: Segoe UI Variable no app e Tahoma no chat.
+
+## Atualizações
+
+- **Sozinho:** o app procura versão nova no GitHub e com quem está na sala. Quando acha, um aviso no canto oferece **Atualizar agora**.
+- **Na mão:** **Procurar atualização**, no rodapé do Início.
+- **Novidades:** depois de atualizar, o Início mostra uma vez o que mudou na versão. Para ver de novo, ou ver as versões anteriores, clique em **Novidades** no rodapé.

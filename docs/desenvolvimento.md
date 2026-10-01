@@ -75,7 +75,7 @@ isso (chamam `watch`, `state`, `speaking`... direto na página).
 | 22 | `metadados.js` | Tira localização, autor, datas e outros metadados dos arquivos (fotos, vídeos, PDF, Office) antes de irem para o chat |
 | 23 | `chat.js` | Mensagens, arquivos, não lidas |
 | 24 | `estatisticas.js` | Desempenho, aba Transmissão, codificador em uso |
-| 25 | `atualizacao.js` | Atualização pela sala, pelo GitHub e o aviso |
+| 25 | `novidades.js`, `atualizacao.js` | `NOVIDADES` (gerada pelo `publicar.js` com os commits); atualização pela sala, pelo GitHub, o aviso e o cartão Novidades do Início |
 | 26 | `sessoes.js` | Sessões abertas na rede (a lista da tela inicial) |
 | 27 | `transmitir.js` | Escolher a fonte, som, iniciar, trocar e parar, quem assiste |
 | 28 | `mapa-conexoes.js` | A janela Mapa de conexões |
@@ -185,6 +185,7 @@ Isso:
 Opções:
 
 - **Escolher o número:** `npm run publicar -- 1.9.0`
+- **Novidades no app:** o `publicar.js` gera `renderer/novidades.js` com as mensagens dos commits de cada versão (as 10 últimas, sem merge e sem `CI:`). O Início mostra para quem atualizar. Escreva a mensagem do commit pensando em quem usa o app; `Área: a; b` vira a etiqueta "Área" com uma linha para cada parte.
 - **Texto da Release:** `npm run publicar -- --notas "o que mudou"`. Sem isso, o GitHub lista os commits.
 - **Sem GitHub:** `npm run publicar -- --sem-github`
 

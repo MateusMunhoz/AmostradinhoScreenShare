@@ -2,6 +2,96 @@
 // Atualizações: pela sala, pelo GitHub e o aviso na tela.
 // Script clássico: divide o escopo global com os outros (ordem no index.html). Usa de: util, estado, sala.
 
+// ---------- Novidades ----------
+// O cartão do Início com as mensagens dos commits de cada versão (lista NOVIDADES, de renderer/novidades.js,
+// que o publicar.js gera). "Chat: a; b" vira a etiqueta "Chat" com uma linha para "a" e outra para "b".
+function newsParts(msg) {
+  const m = /^([^:;]{2,24}):\s+(.+)$/.exec(msg);
+  const lines = (m ? m[2] : msg).split(/;\s+/).filter(Boolean).map((t) => t[0].toUpperCase() + t.slice(1));
+  return { tag: m ? m[1] : '', lines };
+}
+
+function newsDate(iso) {
+  const [y, m, d] = String(iso || '').split('-').map(Number);
+  return y && m && d ? new Date(y, m - 1, d).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }) : '';
+}
+
+function newsItems(n) {
+  const ul = document.createElement('ul');
+  ul.className = 'news-items';
+  for (const msg of n.items) {
+    const { tag, lines } = newsParts(msg);
+    const li = document.createElement('li');
+    const chip = document.createElement('span');
+    chip.className = tag ? 'news-tag' : 'news-tag empty';
+    chip.textContent = tag;
+    const text = document.createElement('div');
+    text.className = 'news-lines';
+    for (const t of lines) {
+      const p = document.createElement('p');
+      p.textContent = t;
+      text.append(p);
+    }
+    li.append(chip, text);
+    ul.append(li);
+  }
+  return ul;
+}
+
+// A versão atual aberta em cima; as anteriores numa linha do tempo, cada uma abre ao clicar
+function renderNews() {
+  const mine = update.myVersion;
+  const list = (typeof NOVIDADES === 'undefined' ? [] : NOVIDADES).filter((n) => !newerVersion(n.version, mine));
+  const current = list[0]?.version === mine ? list[0] : null;
+  $('homeNewsTitle').textContent = current ? 'Novidades desta versão' : 'Novidades';
+  $('homeNewsSub').textContent = current ? [`Versão ${mine}`, newsDate(current.date)].filter(Boolean).join(' · ') : `Você está na versão ${mine}`;
+  const box = $('homeNewsList');
+  box.textContent = '';
+  if (current) box.append(newsItems(current));
+  const older = list.filter((n) => n !== current);
+  if (!older.length) return;
+  const h = document.createElement('h3');
+  h.className = 'news-older-title';
+  h.textContent = 'Versões anteriores';
+  const ol = document.createElement('ol');
+  ol.className = 'news-timeline';
+  for (const n of older) {
+    const li = document.createElement('li');
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'news-version';
+    btn.setAttribute('aria-expanded', 'false');
+    const v = document.createElement('strong');
+    v.textContent = n.version;
+    const meta = document.createElement('span');
+    meta.textContent = [newsDate(n.date), `${n.items.length} ${n.items.length === 1 ? 'mudança' : 'mudanças'}`].filter(Boolean).join(' · ');
+    btn.innerHTML = ICON.chevron;
+    btn.prepend(v, meta);
+    const items = newsItems(n);
+    items.hidden = true;
+    btn.onclick = () => {
+      items.hidden = !items.hidden;
+      btn.setAttribute('aria-expanded', String(!items.hidden));
+    };
+    li.append(btn, items);
+    ol.append(li);
+  }
+  box.append(h, ol);
+}
+
+function setNewsOpen(open) {
+  if (open) renderNews();
+  $('homeNews').hidden = !open;
+  $('showNews').setAttribute('aria-expanded', String(open));
+  if (!open && update.myVersion) save('novidadesVistas', update.myVersion);
+}
+
+// Depois de atualizar, o cartão aparece uma vez sozinho (até fechar)
+function showNewsIfNew() {
+  const v = update.myVersion;
+  if (typeof NOVIDADES !== 'undefined' && NOVIDADES.some((n) => n.version === v) && load('novidadesVistas') !== v) setNewsOpen(true);
+}
+
 // ---------- Atualizações pela sala ----------
 // true se a versão a for mais nova que b ("1.2.10" > "1.2.9")
 function newerVersion(a, b) {

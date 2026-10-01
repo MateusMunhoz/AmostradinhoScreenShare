@@ -367,7 +367,7 @@ function musicHeadButton(ch) {
   b.type = 'button';
   b.className = 'btn small icon voice-channel-music';
   setIcon(b, 'music', `Pôr uma música do YouTube em ${channelName(ch)} (todos ouvem junto)`);
-  b.onclick = (ev) => { ev.stopPropagation(); openMusicPop(ch, b, 'por'); };
+  b.onclick = (ev) => { ev.stopPropagation(); musicPopFor?.ch === ch ? closeMusicPop() : openMusicPop(ch, b, 'por'); };
   return b;
 }
 

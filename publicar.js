@@ -20,7 +20,7 @@ const ROOT = __dirname;
 const KEY_FILE = path.join(os.homedir(), '.tela-p2p', 'chave-de-atualizacao.pem');
 const BOOT = path.join(ROOT, 'boot.js');
 // O que viaja pela sala. boot.js fica de fora: ele confere as assinaturas e só muda com um .exe novo.
-const PACK_FILES = ['renderer/navegacao.js', 'renderer/preferencias-modelo.js', 'renderer/configuracoes.js', 'renderer/conectividade.js', ...require('./renderer/preferencias-modelo').sounds.filter(s => s.file).map(s => 'assets/audio/' + s.file), 'main.js', 'main/razze-api-client.js', 'main/razze-service.js', 'main/razze-presence.js', 'main/razze-wireguard.js', 'main/nativos.js', 'main/contexto.js', 'main/janela-flutuante.js', 'main/chat-jogo.js', 'main/atalhos.js', 'main/sessoes.js', 'main/fontes.js', 'main/linux.js', 'assets/icone/tela-p2p.ico', ...require('./renderer/preferencias-modelo').fonts.flatMap(f => f.files || []), 'assets/icone/tela-p2p.png', 'preload.js', 'signaling.js', 'sala-protocolo.js', 'github.js', 'index.html', 'styles.css', 'styles-estelar.css', 'styles-arasaka.css', 'styles-eva.css', 'assets/fontes/shippori-mincho-b1-800.woff2', 'renderer/util.js', 'renderer/estado.js', 'renderer/rtc.js', 'renderer/tema.js', 'renderer/fotos.js', 'renderer/icone-app.js', 'renderer/sala.js', 'renderer/voz.js',  'renderer/ceu-voz.js', 'renderer/musica.js', 'renderer/microfone.js', 'renderer/membros.js', 'renderer/assistir.js', 'renderer/pip.js', 'renderer/overlay.js', 'renderer/metadados.js', 'renderer/chat.js', 'renderer/estatisticas.js', 'renderer/atualizacao.js', 'renderer/sessoes.js', 'renderer/lista.js', 'renderer/palco.js', 'renderer/transmitir.js', 'renderer/mapa-conexoes.js', 'renderer/hub.js', 'renderer/mensagens.js', 'main/mensagens.js', 'renderer/subsalas.js', 'renderer/inicio.js', 'voice.js', 'encode-once.js', 'pcm-worklet.js', 'bin/audiocap.exe', 'bin/videocap.exe', 'bin/teclas.exe', 'bin/selfvpn/wireguard.exe', 'bin/selfvpn/wg.exe', 'bin/selfvpn/COPYING', 'bin/selfvpn/NOTICE.md', 'main/razze-elevacao.js', 'main/razze-privilegiado.js', 'main/razze-ajudante.js',
+const PACK_FILES = ['renderer/navegacao.js', 'renderer/preferencias-modelo.js', 'renderer/configuracoes.js', 'renderer/conectividade.js', ...require('./renderer/preferencias-modelo').sounds.filter(s => s.file).map(s => 'assets/audio/' + s.file), 'main.js', 'main/razze-api-client.js', 'main/razze-service.js', 'main/razze-presence.js', 'main/razze-wireguard.js', 'main/nativos.js', 'main/contexto.js', 'main/janela-flutuante.js', 'main/chat-jogo.js', 'main/atalhos.js', 'main/sessoes.js', 'main/fontes.js', 'main/linux.js', 'assets/icone/tela-p2p.ico', ...require('./renderer/preferencias-modelo').fonts.flatMap(f => f.files || []), 'assets/icone/tela-p2p.png', 'preload.js', 'signaling.js', 'sala-protocolo.js', 'github.js', 'index.html', 'styles.css', 'styles-estelar.css', 'styles-arasaka.css', 'styles-eva.css', 'assets/fontes/shippori-mincho-b1-800.woff2', 'renderer/util.js', 'renderer/estado.js', 'renderer/rtc.js', 'renderer/tema.js', 'renderer/fotos.js', 'renderer/icone-app.js', 'renderer/sala.js', 'renderer/voz.js',  'renderer/ceu-voz.js', 'renderer/musica.js', 'renderer/microfone.js', 'renderer/membros.js', 'renderer/assistir.js', 'renderer/pip.js', 'renderer/overlay.js', 'renderer/metadados.js', 'renderer/chat.js', 'renderer/estatisticas.js', 'renderer/novidades.js', 'renderer/atualizacao.js', 'renderer/sessoes.js', 'renderer/lista.js', 'renderer/palco.js', 'renderer/transmitir.js', 'renderer/mapa-conexoes.js', 'renderer/hub.js', 'renderer/mensagens.js', 'main/mensagens.js', 'renderer/subsalas.js', 'renderer/inicio.js', 'voice.js', 'encode-once.js', 'pcm-worklet.js', 'bin/audiocap.exe', 'bin/videocap.exe', 'bin/teclas.exe', 'bin/selfvpn/wireguard.exe', 'bin/selfvpn/wg.exe', 'bin/selfvpn/COPYING', 'bin/selfvpn/NOTICE.md', 'main/razze-elevacao.js', 'main/razze-privilegiado.js', 'main/razze-ajudante.js',
   'vendor/noise/rnnoiseWorklet.js', 'vendor/noise/rnnoise.wasm', 'vendor/noise/rnnoise_simd.wasm', 'vendor/noise/LICENSE', 'vendor/noise/NOTICE.md'];
 
 function fail(msg) {
@@ -112,8 +112,45 @@ function buildLinux() {
   if (r.status !== 0 || !fs.existsSync(appImage)) console.log('\nO AppImage não foi gerado: a versão sai só com o .exe.');
 }
 
+// Novidades do Início (renderer/novidades.js): as mensagens dos commits de cada versão, sem merge e sem CI.
+// linhas: `AAAA-MM-DD|mensagem` do git log (mais novo primeiro). Os commits de uma versão ficam antes do seu
+// "Versão X"; os que ainda não têm "Versão" vão para a versão nova que está sendo publicada.
+function novidadesDoLog(linhas, novaVersao, hoje, max = 10) {
+  const lista = [];
+  let atual = novaVersao ? { version: novaVersao, date: hoje, items: [] } : null;
+  if (atual) lista.push(atual);
+  for (const linha of linhas) {
+    const i = linha.indexOf('|');
+    const date = linha.slice(0, i);
+    const msg = linha.slice(i + 1).trim();
+    const v = /^Versão (\d+\.\d+\.\d+)$/.exec(msg);
+    if (v) {
+      if (lista.length >= max) break;
+      atual = { version: v[1], date, items: [] };
+      lista.push(atual);
+    } else if (atual && msg && !/^(Merge\b|CI:)/i.test(msg)) {
+      atual.items.push(msg.slice(0, 300));
+    }
+  }
+  for (const n of lista) if (!n.items.length) n.items.push('Correções e melhorias');
+  return lista;
+}
+
+function gravarNovidades(novaVersao) {
+  const r = spawnSync('git', ['log', '--no-merges', '--format=%ad|%s', '--date=short', '-500'], { cwd: ROOT, encoding: 'utf8' });
+  if (r.status !== 0) return console.log('Novidades: sem o git, o app mostra a lista anterior.');
+  const hoje = new Date().toLocaleDateString('sv-SE'); // AAAA-MM-DD no fuso deste PC
+  const lista = novidadesDoLog(r.stdout.split(/\r?\n/).filter(Boolean), novaVersao, hoje);
+  fs.writeFileSync(path.join(ROOT, 'renderer', 'novidades.js'), `'use strict';
+// Gerado pelo publicar.js a cada versão: as mensagens dos commits (sem merge e sem CI), mais nova em cima.
+// Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
+const NOVIDADES = ${JSON.stringify(lista, null, 2)};
+`);
+}
+
 // Todo arquivo que a página carrega (index.html) tem que ir no pacote: senão, quem atualiza pelo botão ou pela
 // sala recebe uma página que chama um arquivo que não veio, e o app abre quebrado
+
 function checkPackFiles() {
   const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
   const used = [...html.matchAll(/<(?:script|link)[^>]+(?:src|href)="([^":]+)"/g)].map((m) => m[1]);
@@ -146,6 +183,7 @@ function publish(requested, { notes = '', github = true } = {}) {
   pkg.version = version;
   fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
 
+  gravarNovidades(version);
   const pack = buildPack(version);
   const sig = sign(pack, privateKey);
   for (const dir of [path.join(ROOT, 'pack'), path.join(process.env.APPDATA, pkg.build.productName, 'atualizacoes', version)]) {
@@ -168,7 +206,7 @@ function publish(requested, { notes = '', github = true } = {}) {
   console.log(`\nPronto. Os amigos recebem a ${version} ${onGithub ? 'pelo botão "Baixar atualização" do app ou ' : ''}pela sala, entrando numa sala com você.`);
 }
 
-module.exports = { buildPack, sign, newer, KEY_FILE, PACK_FILES };
+module.exports = { buildPack, sign, newer, novidadesDoLog, gravarNovidades, KEY_FILE, PACK_FILES };
 
 if (require.main === module) {
   const args = process.argv.slice(2);
