@@ -6,6 +6,7 @@
         content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; img-src 'self' data: blob:; style-src 'self'; connect-src ws: wss:; media-src 'self' blob: mediastream:">
   <title>Tela P2P</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles-estelar.css">
   <link rel="stylesheet" href="styles-arasaka.css">
   <link rel="stylesheet" href="styles-eva.css">
 </head>
@@ -61,6 +62,8 @@
     <section id="voicePane" class="workspace-pane" aria-labelledby="voicePaneTitle" hidden>
       <div class="pane-head"><h2 id="voicePaneTitle">Chat de voz</h2><button id="paneVoiceSettings" class="btn small" type="button">Voz e atalhos</button></div>
       <p id="voicePaneStatus" class="hint"></p>
+      <!-- Céu da voz: quem está na voz como estrelas de uma constelação (só no tema Padrão, styles-estelar.css) -->
+      <svg id="voiceSky" class="voice-sky" viewBox="0 0 300 70" preserveAspectRatio="xMidYMid meet" aria-hidden="true" hidden></svg>
       <ul id="voicePaneMembers" class="members"></ul>
       <!-- Fora da voz: Entrar. Na voz: faixa de controles embaixo da lista (microfone, fone, Voz e atalhos | Sair da voz) -->
       <div class="pane-voice-actions"><button id="paneVoiceMute" class="btn small icon pane-toggle" type="button" hidden></button><button id="paneVoiceDeafen" class="btn small icon pane-toggle" type="button" hidden></button><button id="paneVoiceJoin" class="btn primary small" type="button">Entrar na voz</button></div>

@@ -1,0 +1,135 @@
+/* Tema Padrão: carta estelar. Só vale sem tema escolhido na aba Tema (html sem data-skin), com qualquer cor.
+   As cores vêm do tema (padrão: Grafite e aço); aqui fica o desenho: céu discreto atrás de tudo, marcas de
+   retícula (+) nos cantos dos painéis, a tela vazia como carta celeste com o logo em pontos, e a voz como uma
+   constelação (renderer/navegacao.js › renderVoiceSky). Tudo fosco; só quem fala (--ok) acende. */
+.voice-sky { display: none; }
+:root:not([data-skin]) {
+  --st-mono: "Cascadia Mono", Consolas, "Lucida Console", monospace;
+  --st-star: color-mix(in srgb, var(--text) 42%, transparent);
+  --st-star-dim: color-mix(in srgb, var(--text) 20%, transparent);
+  --st-grid: color-mix(in srgb, var(--line-strong) 55%, transparent);
+  --st-mark: color-mix(in srgb, var(--accent) 45%, transparent);
+  --st-plus:
+    linear-gradient(var(--st-mark), var(--st-mark)) 5px 9px / 9px 1px no-repeat,
+    linear-gradient(var(--st-mark), var(--st-mark)) 9px 5px / 1px 9px no-repeat,
+    linear-gradient(var(--st-mark), var(--st-mark)) right 5px bottom 9px / 9px 1px no-repeat,
+    linear-gradient(var(--st-mark), var(--st-mark)) right 9px bottom 5px / 1px 9px no-repeat;
+  /* Constelação do saguão, como máscara (a cor vem do tema) */
+  --st-constellation: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'><g fill='none' stroke='black'><circle cx='100' cy='100' r='96' stroke-width='.5' stroke-dasharray='2 5'/><circle cx='100' cy='100' r='62' stroke-width='.4'/><path d='M100 2v196M2 100h196' stroke-width='.35'/><path d='M30 44 70 30 104 62 150 50 174 98 132 130 88 152 52 120 30 44M104 62 132 130' stroke-width='.9'/></g><g fill='black'><circle cx='30' cy='44' r='2.4'/><circle cx='70' cy='30' r='3'/><circle cx='104' cy='62' r='3.8'/><circle cx='150' cy='50' r='2.2'/><circle cx='174' cy='98' r='3.2'/><circle cx='132' cy='130' r='2.6'/><circle cx='88' cy='152' r='3.4'/><circle cx='52' cy='120' r='2'/></g></svg>");
+  /* O logo (as duas telas que se cruzam) cheio, para recortar os pontos do halftone */
+  --st-logo: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><g fill='black'><rect x='6' y='8' width='34' height='30' rx='6'/><rect x='24' y='26' width='34' height='30' rx='6'/></g></svg>");
+}
+:root:not([data-skin])[data-glass=opaque] { --radius: 6px; --radius-lg: 8px; }
+
+/* ---------- Céu ao fundo: duas camadas de estrelas que cintilam devagar, fora de fase ---------- */
+:root:not([data-skin]) body::before, :root:not([data-skin]) body::after {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+}
+:root:not([data-skin]) body::before {
+  background:
+    radial-gradient(circle, var(--st-star) 0 .7px, transparent 1.3px) 0 0 / 97px 83px,
+    radial-gradient(circle, var(--st-star-dim) 0 .6px, transparent 1.2px) 31px 47px / 61px 71px,
+    radial-gradient(circle, color-mix(in srgb, var(--accent) 55%, transparent) 0 .9px, transparent 1.6px) 150px 60px / 233px 197px;
+  animation: st-twinkle 9s ease-in-out infinite alternate;
+}
+:root:not([data-skin]) body::after {
+  background:
+    radial-gradient(circle, var(--st-star-dim) 0 .5px, transparent 1px) 13px 19px / 43px 37px,
+    radial-gradient(circle, var(--st-star) 0 .8px, transparent 1.4px) 70px 20px / 151px 127px;
+  animation: st-twinkle 13s ease-in-out -6s infinite alternate;
+}
+@keyframes st-twinkle { from { opacity: .45; } to { opacity: 1; } }
+
+/* ---------- Painéis: marcas de retícula (+) nos cantos, só com material Opaco (o vidro tem o próprio brilho) ---------- */
+:root:not([data-skin])[data-glass=opaque] :is(.workspace-pane, .dock, .panel, .home-card, .dialog) { background-image: var(--st-plus); }
+:root:not([data-skin]) .btn:not(.primary):not(.live):not(.danger) { transition: border-color .15s, background-color .15s; }
+:root:not([data-skin]) .btn:not(.primary):not(.live):not(.danger):hover:not(:disabled) { border-color: var(--st-mark); }
+
+/* Títulos dos painéis: uma estrela de quatro pontas na cor de destaque */
+:root:not([data-skin]) :is(.pane-head h2, .chat-title, .stream-pane-head h2)::before {
+  content: "✦"; margin-right: 8px; font-size: 11px; vertical-align: 2px; color: var(--accent);
+}
+/* Barra de título: a legenda da carta, discreta, à direita */
+:root:not([data-skin]) .titlebar::after {
+  content: "星座  ·  CARTA ESTELAR"; position: absolute; right: 160px; font: 400 11px/1 var(--st-mono);
+  letter-spacing: .22em; color: var(--muted); opacity: .7;
+}
+@media (max-width: 900px) { :root:not([data-skin]) .titlebar::after { display: none; } }
+
+/* Chat: horário em fonte fixa, como um registro */
+:root:not([data-skin]) .msg-time { font-family: var(--st-mono); letter-spacing: 0; }
+
+/* ---------- Voz: quem fala acende; quem transmite ganha uma órbita ---------- */
+:root:not([data-skin]) :is(.speaking > .avatar, .avatar.speaking, .voice-avatar.speaking .avatar) {
+  box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--ok), 0 0 12px 2px color-mix(in srgb, var(--ok) 45%, transparent);
+}
+:root:not([data-skin]) .avatar { transition: box-shadow .15s ease-out; }
+:root:not([data-skin]) .member.speaking .mname { color: var(--ok); }
+:root:not([data-skin]) .member .mname { transition: color .15s ease-out; }
+:root:not([data-skin]) .member.live > .avatar { position: relative; }
+:root:not([data-skin]) .member.live > .avatar::after {
+  content: ""; position: absolute; inset: -5px; border: 1px dashed var(--live); border-radius: 50%; opacity: .8;
+  animation: st-orbit 14s linear infinite;
+}
+@keyframes st-orbit { to { transform: rotate(1turn); } }
+
+/* O céu da voz: as pessoas como estrelas ligadas, sobre uma carta com anéis */
+:root:not([data-skin]) .voice-sky {
+  display: block; width: 100%; height: auto; max-height: 96px; margin: 0 0 10px; border: 1px solid var(--line); border-radius: var(--radius);
+  background:
+    radial-gradient(circle at 50% 50%, transparent 0 34px, var(--st-grid) 34px 35px, transparent 35px 70px, var(--st-grid) 70px 71px, transparent 71px),
+    linear-gradient(var(--st-grid), var(--st-grid)) center / 100% 1px no-repeat,
+    var(--sunken);
+}
+:root:not([data-skin]) .voice-sky[hidden] { display: none; }
+.voice-sky .sky-dust { fill: var(--st-star-dim); }
+.voice-sky .sky-link { stroke: color-mix(in srgb, var(--muted) 45%, transparent); stroke-width: .7; }
+.voice-sky .sky-core { fill: var(--text); transition: fill .15s ease-out; }
+.voice-sky .sky-halo { fill: none; stroke: var(--ok); stroke-width: 1; opacity: 0; transition: opacity .15s ease-out; }
+.voice-sky .sky-star.speaking .sky-core { fill: var(--ok); }
+.voice-sky .sky-star.speaking .sky-halo { opacity: .75; }
+.voice-sky .sky-star.speaking { filter: drop-shadow(0 0 3px var(--ok)); }
+.voice-sky .sky-orbit {
+  fill: none; stroke: var(--live); stroke-width: .8; stroke-dasharray: 2 2.5;
+  transform-box: fill-box; transform-origin: center; animation: st-orbit 14s linear infinite;
+}
+
+/* ---------- Sem transmissão na tela: uma carta celeste, com o logo em pontos e a legenda embaixo ---------- */
+:root:not([data-skin]) .empty-stage {
+  position: relative; overflow: hidden; align-content: end; padding-bottom: 58px; border-style: solid; border-color: var(--line);
+  background:
+    radial-gradient(circle at 50% 38%, transparent 0 99px, var(--st-grid) 99px 100px, transparent 100px 169px,
+      var(--st-grid) 169px 170px, transparent 170px 259px, var(--st-grid) 259px 260px, transparent 260px),
+    linear-gradient(var(--st-grid), var(--st-grid)) 50% 0 / 1px 100% no-repeat,
+    linear-gradient(var(--st-grid), var(--st-grid)) 0 38% / 100% 1px no-repeat;
+}
+/* O logo em halftone: grade de pontos na cor de destaque, recortada no desenho e sumindo nas bordas */
+:root:not([data-skin]) .empty-stage::before {
+  content: ""; position: absolute; left: 50%; top: 38%; width: clamp(120px, 22vh, 200px); aspect-ratio: 1; translate: -50% -50%;
+  pointer-events: none; opacity: .7;
+  background: radial-gradient(circle, var(--accent) 0 1.6px, transparent 2px) 0 0 / 7px 7px;
+  -webkit-mask: var(--st-logo) center / contain no-repeat, radial-gradient(circle, #000 35%, rgba(0, 0, 0, .25) 75%);
+  -webkit-mask-composite: source-in;
+  mask: var(--st-logo) center / contain no-repeat intersect, radial-gradient(circle, #000 35%, rgba(0, 0, 0, .25) 75%);
+}
+:root:not([data-skin]) .empty-stage::after {
+  content: "TELA P2P  ✦  星座  ·  REDE ESTELAR  ·  AGUARDANDO SINAL";
+  position: absolute; left: 22px; right: 22px; bottom: 16px; pointer-events: none; text-align: left;
+  font: 400 11px/1 var(--st-mono); letter-spacing: .2em; color: var(--muted); opacity: .8;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+:root:not([data-skin]) .empty-stage p { position: relative; z-index: 1; }
+
+/* ---------- Saguão: uma constelação grande e apagada ao lado ---------- */
+:root:not([data-skin]) .home-screen::before {
+  content: ""; position: absolute; right: 3%; top: 10%; width: min(34vw, 440px); aspect-ratio: 1; z-index: 0; pointer-events: none;
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+  -webkit-mask: var(--st-constellation) center / contain no-repeat; mask: var(--st-constellation) center / contain no-repeat;
+}
+:root:not([data-skin]) .home-main, :root:not([data-skin]) .home-top { position: relative; z-index: 1; }
+@media (max-width: 1050px) { :root:not([data-skin]) .home-screen::before { display: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-skin]) body::before, :root:not([data-skin]) body::after,
+  :root:not([data-skin]) .member.live > .avatar::after, .voice-sky .sky-orbit { animation: none; }
+}

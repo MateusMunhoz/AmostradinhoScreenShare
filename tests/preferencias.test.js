@@ -140,7 +140,7 @@ test('Temas prontos: aplicam cores e material, zeram detalhes e são reconhecido
   assert.equal(neon.font.family, 'georgia');
   assert.equal(neon.nameFont, 'impact');
   assert.equal(P.currentTheme(neon), 'neon');
-  assert.equal(P.currentTheme(P.normalize(null)), 'lanhouse');
+  assert.equal(P.currentTheme(P.normalize(null)), 'grafiteaco');
   for (const t of P.themes) assert.equal(P.currentTheme(P.applyTheme(null, t.id)), t.id);
 });
 test('Sem imagem de fundo; material e bordas livres dentro do tema', () => {

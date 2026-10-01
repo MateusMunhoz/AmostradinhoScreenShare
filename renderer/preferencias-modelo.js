@@ -101,7 +101,7 @@ const AppPreferences = (() => {
     const display = family ? body : fonts[0].display;
     return { body, display, console: font?.chat && family ? body : 'Tahoma, Verdana, sans-serif' };
   }
-  const defaults = { colors: { main: '#22271E', secondary: '#2D3327', detail1: '#D6C45C', detail2: '#A6D089', text: '', live: '', speaking: '', warn: '', line: '' },
+  const defaults = { colors: { main: '#0B0D10', secondary: '#13161B', detail1: '#7FA3C7', detail2: '#39FF9F', text: '#D7DCE3', live: '', speaking: '', warn: '#D9A66C', line: '#232932' },
     appearance: { glass: 'opaque', level: glassLevel.clear, border: 'solid', ambient: true },
     font: { family: 'system', custom: '', chat: false }, nameFont: '',
     sounds: { join: 'notification035', leave: 'whoosh', chat: 'wood', voiceJoin: 'suaveEntrou', voiceLeave: 'suaveSaiu',
@@ -111,6 +111,8 @@ const AppPreferences = (() => {
   // Temas prontos (Aparência > Temas): cores e material de uma vez. As cores de detalhe que não aparecem aqui
   // voltam ao automático. Mantêm a leitura do app: destaque = você/ao vivo, detalhe 2 = quem fala.
   const themes = [
+    // Grafite e aço (o padrão): tudo sóbrio e dessaturado; só o verde de quem fala acende
+    { id: 'grafiteaco', label: 'Grafite e aço', colors: { main: '#0B0D10', secondary: '#13161B', detail1: '#7FA3C7', detail2: '#39FF9F', text: '#D7DCE3', warn: '#D9A66C', line: '#232932' }, appearance: { glass: 'opaque', border: 'solid' } },
     { id: 'lanhouse', label: 'Lan house', colors: { main: '#22271E', secondary: '#2D3327', detail1: '#D6C45C', detail2: '#A6D089' }, appearance: { glass: 'opaque', border: 'solid' } },
     { id: 'meianoite', label: 'Meia-noite', colors: { main: '#0E1220', secondary: '#1A2036', detail1: '#7AA2F7', detail2: '#9ECE6A' }, appearance: { glass: 'liquid', level: 55, border: 'liquid' } },
     { id: 'neon', label: 'Neon', colors: { main: '#0B0A14', secondary: '#1A1730', detail1: '#FF4FB3', detail2: '#3EF0C8' }, appearance: { glass: 'clear', level: 70, border: 'clear' } },
@@ -122,7 +124,7 @@ const AppPreferences = (() => {
   // (dá para ajustar depois na aba Cores sem perder o desenho). '' = o visual padrão. O desenho do Arasaka
   // (Cyberpunk 2077) fica em styles-arasaka.css, sob html[data-skin=arasaka].
   const skins = [
-    { id: '', label: 'Padrão', note: 'O visual normal do app, com as cores que você escolher.' },
+    { id: '', label: 'Padrão', note: 'Carta estelar: céu de fundo discreto, a voz como uma constelação e as cores que você escolher.' },
     { id: 'arasaka', label: 'Arasaka', note: 'Cyberpunk 2077: preto, vermelho em listras de monitor, cantos retos e o emblema da corporação.',
       colors: { main: '#000000', secondary: '#080B0C', detail1: '#FF1F4F', detail2: '#5DE4C7', text: '#CFD6D4', line: '#233031' }, appearance: { glass: 'opaque', border: 'solid' } },
     // E.V.A by Asock: dentro do Entry Plug do EVA-01. Roxo da armadura nos painéis, laranja do HUD no destaque
@@ -158,7 +160,9 @@ const AppPreferences = (() => {
     return /^[\da-f]{6}$/i.test(s) ? '#' + s.toUpperCase() : null;
   }
   function normalize(raw) {
-    const result = { colors: { ...defaults.colors }, appearance: { ...defaults.appearance }, font: { ...defaults.font },
+    // Sem cores salvas: o tema padrão inteiro. Com cores, a opcional que faltar fica no automático ('').
+    const base = raw?.colors ? { ...defaults.colors, ...Object.fromEntries(optionalColors.map(k => [k, ''])) } : defaults.colors;
+    const result = { colors: { ...base }, appearance: { ...defaults.appearance }, font: { ...defaults.font },
       nameFont: cleanNameFont(raw?.nameFont), sounds: { ...defaults.sounds, levels: { ...defaults.sounds.levels } } };
     if (borderModes.includes(raw?.appearance?.border)) result.appearance.border = raw.appearance.border;
     if (glassModes.includes(raw?.appearance?.glass)) result.appearance.glass = raw.appearance.glass;

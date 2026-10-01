@@ -1,33 +1,33 @@
 :root {
-  /* Lan house moderna: o verde-oliva e o amarelo do Steam e do CS 1.6 de 2004, com fonte, espaço e
-     cantos de hoje. Amarelo = você, ao vivo e a ação principal. Verde claro só para "falando"/conectado,
-     laranja só para cuidado. Sem vermelho. */
-  --bg: #22271E;                      /* fundo da janela */
-  --sunken: #1B1F17;                  /* campos e miniaturas */
-  --panel: #2D3327;                   /* painéis e cartões */
-  --panel-2: #3A4232;                 /* elevado: botões, listas, menus */
-  --panel-3: #445037;                 /* botão com o mouse em cima */
-  --line: #434C3A;
-  --line-strong: #56614A;
-  --text: #E4E9DD;                    /* 11:1 sobre o painel */
-  --text-2: #C3CBB8;
-  --muted: #A9B29C;                   /* 4,7:1 sobre --panel-2 */
-  --primary: #D6C45C;                 /* botão principal: amarelo com texto escuro */
-  --primary-hover: #E2D16A;
-  --primary-ink: #221E06;
-  --accent: #D6C45C;                  /* seleção, foco, links, "você" e "transmitindo" */
-  --accent-ink: #221E06;
-  --accent-soft: rgba(214, 196, 92, .14);
-  --live: #D6C45C;
-  --live-fill: #D6C45C;
-  --live-ink: #221E06;
-  --ok: #A6D089;                      /* conectado e "falando" */
-  --ok-soft: rgba(166, 208, 137, .1);
-  --warn: #E8A15C;                    /* cuidado: parar, encerrar, erro, microfone desligado */
-  --field-line: #6B7560;              /* contorno de campos e opções */
+  /* Grafite e aço (o padrão): grafite quase preto, azul-aço fosco no destaque (você, ao vivo, ação principal) e
+     um único verde vivo, só para "falando"/conectado. Âmbar fosco só para cuidado. Os valores de verdade vêm de
+     preferencias-modelo.js (palette); estes são o que aparece antes do script rodar. */
+  --bg: #0B0D10;                      /* fundo da janela */
+  --sunken: #101317;                  /* campos e miniaturas */
+  --panel: #13161B;                   /* painéis e cartões */
+  --panel-2: #212429;                 /* elevado: botões, listas, menus */
+  --panel-3: #2C3035;                 /* botão com o mouse em cima */
+  --line: #232932;
+  --line-strong: #3E444D;
+  --text: #D7DCE3;
+  --text-2: #B8BDC3;
+  --muted: #9A9EA4;
+  --primary: #7FA3C7;                 /* botão principal: azul-aço */
+  --primary-hover: #8EAECE;
+  --primary-ink: #FFFFFF;
+  --accent: #7FA3C7;                  /* seleção, foco, links, "você" e "transmitindo" */
+  --accent-ink: #FFFFFF;
+  --accent-soft: rgba(127, 163, 199, .14);
+  --live: #7FA3C7;
+  --live-fill: #7FA3C7;
+  --live-ink: #FFFFFF;
+  --ok: #39FF9F;                      /* conectado e "falando": a única cor viva */
+  --ok-soft: rgba(57, 255, 159, .1);
+  --warn: #D9A66C;                    /* cuidado: parar, encerrar, erro, microfone desligado */
+  --field-line: #595F67;              /* contorno de campos e opções */
   --on-video: #d6dccf;
-  --thumb: #1B1F17;
-  --scrim: rgba(12, 14, 10, .65);
+  --thumb: #101317;
+  --scrim: rgba(0, 0, 0, .65);
   --radius: 8px;
   --radius-lg: 10px;
   --shadow-2: 0 10px 28px rgba(0, 0, 0, .4);
@@ -1283,10 +1283,10 @@ html[data-glass=liquid] .theme-swatches { border-radius: 10px; }
 .skin-card strong { font-size: 14px; }
 .skin-card small { color: var(--surface-muted); line-height: 1.4; }
 .skin-preview { position: relative; display: block; height: 96px; border-radius: 6px; overflow: hidden; border: 1px solid var(--line); }
-/* Padrão: o saguão da lan house em miniatura */
-.skin-preview[data-preview=padrao] { background: #22271E; }
-.skin-preview[data-preview=padrao]::before { content: ""; position: absolute; left: 14%; right: 14%; top: 24px; height: 44px; border-radius: 6px; background: #2D3327; border: 1px solid #434C3A; }
-.skin-preview[data-preview=padrao]::after { content: ""; position: absolute; left: calc(14% + 10px); top: 36px; width: 38%; height: 20px; border-radius: 4px; background: #D6C45C; }
+/* Padrão: a carta estelar em miniatura (Grafite e aço, com estrelas ao fundo) */
+.skin-preview[data-preview=padrao] { background: radial-gradient(circle, #D7DCE3 0 .8px, transparent 1.2px) 6px 9px / 37px 29px, radial-gradient(circle, #7FA3C7 0 .7px, transparent 1.1px) 20px 3px / 53px 41px, #0B0D10; }
+.skin-preview[data-preview=padrao]::before { content: ""; position: absolute; left: 14%; right: 14%; top: 24px; height: 44px; border-radius: 4px; background: #13161B; border: 1px solid #232932; }
+.skin-preview[data-preview=padrao]::after { content: ""; position: absolute; left: calc(14% + 10px); top: 36px; width: 38%; height: 20px; border-radius: 3px; background: #7FA3C7; }
 /* Arasaka: o emblema e o nome na fonte do logo, com listras */
 .skin-preview[data-preview=arasaka] { background: #000; border-color: #3a0d18; }
 .skin-preview[data-preview=arasaka]::before {

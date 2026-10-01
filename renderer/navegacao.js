@@ -273,6 +273,54 @@ function setupHomeCall() {
   $('homeCallDeafen').onclick = () => $('voiceDeafen').click();
 }
 
+// Céu da voz (tema Padrão, styles-estelar.css): cada pessoa na voz é uma estrela, ligadas numa constelação.
+// A estrela tem data-person, então voz.js acende quem fala junto com a lista. Nos outros temas, o CSS esconde.
+const SKY_NS = 'http://www.w3.org/2000/svg';
+function skyHash(text, salt) {
+  let h = salt;
+  for (const c of String(text)) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  // Mistura final: ids que só mudam no último caractere caíam todos na mesma altura
+  h = Math.imul(h ^ (h >>> 16), 0x7feb352d);
+  h = Math.imul(h ^ (h >>> 15), 0x846ca68b);
+  return (h ^ (h >>> 16)) >>> 0;
+}
+function skyEl(tag, attrs) {
+  const el = document.createElementNS(SKY_NS, tag);
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+  return el;
+}
+function renderVoiceSky(people) {
+  const sky = $('voiceSky');
+  sky.replaceChildren();
+  sky.toggleAttribute('hidden', !people.length); // SVG não tem a propriedade hidden
+  if (!people.length) return;
+  // Poeira de fundo: sempre as mesmas estrelinhas, para o céu não mudar a cada redesenho
+  for (let i = 0; i < 22; i++) {
+    const h = skyHash('ceu' + i, 7);
+    sky.append(skyEl('circle', { class: 'sky-dust', cx: 4 + h % 292, cy: 4 + (h >>> 9) % 62, r: (h >>> 17) % 3 ? .5 : .9 }));
+  }
+  const W = 300, n = people.length;
+  const points = people.map(({ id }, i) => {
+    const h = skyHash(id, 17);
+    return [Math.round(W * (i + .5) / n + ((h % 21) - 10) * (n > 1 ? 1 : 0)), 14 + (h >>> 8) % 42];
+  });
+  for (let i = 1; i < n; i++) {
+    const [[x1, y1], [x2, y2]] = [points[i - 1], points[i]];
+    sky.append(skyEl('line', { class: 'sky-link', x1, y1, x2, y2 }));
+  }
+  people.forEach(({ id, name, sharing }, i) => {
+    const [cx, cy] = points[i];
+    const g = skyEl('g', { class: 'sky-star' + (sharing ? ' live' : ''), transform: `translate(${cx} ${cy})` });
+    g.dataset.person = id;
+    g.classList.toggle('speaking', speaking.has(id));
+    if (sharing) g.append(skyEl('circle', { class: 'sky-orbit', r: 7.5 }));
+    g.append(skyEl('circle', { class: 'sky-halo', r: 6 }), skyEl('circle', { class: 'sky-core', r: id === state.myId ? 2.6 : 2.1 }));
+    const title = skyEl('title', {});
+    title.textContent = name;
+    g.append(title);
+    sky.append(g);
+  });
+}
 function renderVoicePane() {
   if (!workspaceReady || $('voicePane').hidden) return; // escondido, não precisa redesenhar a cada mudança da voz
   const active = !!voice.session;
@@ -291,6 +339,8 @@ function renderVoicePane() {
     if (active) list.append(memberRow(null, `${getName()} (você)`, state.sharing));
     for (const id of ids) list.append(memberRow(id, nameOf(id), sharing(id)));
   }
+  renderVoiceSky([...(active ? [{ id: state.myId, name: `${getName()} (você)`, sharing: state.sharing }] : []),
+    ...ids.map((id) => ({ id, name: nameOf(id), sharing: sharing(id) }))]);
   const outside = [...state.members.keys()].filter((id) => sharing(id) && !ids.includes(id));
   if (!active && state.sharing) outside.unshift(null);
   if (outside.length) {

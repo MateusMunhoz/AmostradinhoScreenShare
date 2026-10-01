@@ -51,6 +51,7 @@
       "github.js",
       "index.html",
       "styles.css",
+      "styles-estelar.css",
       "styles-arasaka.css",
       "styles-eva.css",
       "renderer/**",

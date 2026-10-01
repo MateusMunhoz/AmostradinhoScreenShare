@@ -222,7 +222,7 @@ function chooseSkin(id) {
   else {
     let before = null;
     try { before = JSON.parse(load('temaCoresAntes', 'null')); } catch {}
-    appPreferences = before ? AppPreferences.normalize({ ...appPreferences, ...before }) : AppPreferences.applyTheme(appPreferences, 'lanhouse');
+    appPreferences = before ? AppPreferences.normalize({ ...appPreferences, ...before }) : AppPreferences.applyTheme(appPreferences, 'grafiteaco');
   }
   appSkin = id;
   save('tema', id);
