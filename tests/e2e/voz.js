@@ -45,10 +45,10 @@ run('Voz, volume e chat por cima do jogo', 150000, async () => {
   await sleep(200);
   check('Voz da Ana em 150%: ganho 1,5 e salvo pelo nome', await B.eval(`Math.abs(mixer.nodes.get('${anaId}').gain.gain.value - 1.5) < 0.01 && JSON.parse(localStorage.getItem('volumes')).Ana.voice === 150`));
   check('Botão mostra 150%', await B.eval(`${row}.querySelector('.vol-btn').textContent.includes('150%')`));
-  await B.eval(`[...$('personCard').querySelectorAll('button')].find((b) => b.textContent === 'Silenciar para mim').click()`);
+  await B.eval(`[...$('personCard').querySelectorAll('button')].find((b) => /^Silenciar .* para mim$/.test(b.getAttribute('aria-label') || '')).click()`);
   await sleep(200);
   check('Silenciar para mim: ganho 0 e "mudo"', await B.eval(`mixer.nodes.get('${anaId}').gain.gain.value === 0 && ${row}.querySelector('.vol-btn').textContent.includes('mudo')`));
-  await B.eval(`[...$('personCard').querySelectorAll('button')].find((b) => b.textContent === 'Voltar ao padrão').click()`);
+  await B.eval(`[...$('personCard').querySelectorAll('button')].find((b) => (b.getAttribute('aria-label') || '').startsWith('Voltar ao padrão')).click()`);
   await sleep(200);
   check('Voltar ao padrão (voz em 100%)', await B.eval(`mixer.nodes.get('${anaId}').gain.gain.value === 1 && !localStorage.getItem('volumes').includes('Ana')`));
   await B.eval(`closePersonCard(); setPeopleOpen(false)`);

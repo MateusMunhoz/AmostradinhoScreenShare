@@ -49,6 +49,7 @@ const ICON = {
   prev: svg('M15 18l-6-6 6-6'),
   next: svg('M9 18l6-6-6-6'),
   refresh: svg('M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6'),
+  reset: svg('M3 12a9 9 0 1 0 2.64-6.36M3 3v6h6'), // seta voltando: voltar ao padrão
   leave: svg('M9 21H5V3h4M16 17l5-5-5-5M21 12H9'),
   chat: svg('M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'),
   chevron: svg('M9 6l6 6-6 6'),
