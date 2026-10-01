@@ -209,8 +209,11 @@ function closeList(focusButton) {
 document.addEventListener('pointerdown', (e) => {
   if (openList && !openList.pop.contains(e.target) && !openList.button.contains(e.target)) closeList(false);
 }, true);
-// Rolar a página ou mudar o tamanho da janela fecha a lista (rolar dentro dela, não)
-document.addEventListener('scroll', (e) => { if (openList && e.target !== openList.pop) closeList(false); }, true);
+// Rolar a página (ou a área onde está o campo) ou mudar o tamanho da janela fecha a lista. Rolar dentro dela ou
+// num painel sem relação (o chat com mensagem nova, a Rede se atualizando) não: a lista continua no lugar certo.
+document.addEventListener('scroll', (e) => {
+  if (openList && e.target !== openList.pop && (e.target === document || e.target.contains(openList.button))) closeList(false);
+}, true);
 window.addEventListener('resize', () => closeList(false));
 window.addEventListener('blur', () => closeList(false));
 
