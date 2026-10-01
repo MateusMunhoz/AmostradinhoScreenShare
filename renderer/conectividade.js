@@ -156,7 +156,17 @@ function renderConnectivitySettings() {
   refreshRazzeState();
 }
 
-async function refreshRazzeState() {
+// Uma carga por vez: quem pede durante uma carga espera ela e mais uma rodada (o login pode ter mudado no meio)
+let razzeStateRun = null, razzeStateAgain = false;
+function refreshRazzeState() {
+  if (razzeStateRun) { razzeStateAgain = true; return razzeStateRun; }
+  razzeStateRun = (async () => {
+    do { razzeStateAgain = false; await loadRazzeState(); } while (razzeStateAgain);
+  })().finally(() => { razzeStateRun = null; });
+  return razzeStateRun;
+}
+
+async function loadRazzeState() {
   const state = await window.api.razzeState();
   const account = (on) => {
     $('razzeAuth').hidden = on;
@@ -610,5 +620,7 @@ function setupConnectivitySettings() {
   // Abriu o app com o túnel da rede ligado: volta a buscar quem entrou na rede (sem clicar em Atualizar)
   const prefs = networkPreferences();
   if (prefs.provider === 'razze' && prefs.activeNetworkId) window.api.razzeWireGuardResume(prefs.activeNetworkId).catch(() => {});
+  // Abriu o app já com conta: carrega amigos, mensagens diretas e redes sem esperar a aba Rede ou Amigos
+  window.api.razzeState().then((s) => { if (s.configured && s.authenticated) return refreshRazzeState(); }).catch(() => {});
   window.api.razzePendingInvite().then((token) => { if (token) void acceptInviteLink(token); }).catch(() => {});
 }
