@@ -50,6 +50,9 @@ const ICON = {
   next: svg('M9 18l6-6-6-6'),
   refresh: svg('M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6'),
   reset: svg('M3 12a9 9 0 1 0 2.64-6.36M3 3v6h6'), // seta voltando: voltar ao padrão
+  info: svg('M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 16v-5M12 8h.01'),
+  userPlus: svg('M15 20a6 6 0 0 0-12 0M9 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M16 11h6'),
+  userCheck: svg('M15 20a6 6 0 0 0-12 0M9 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM16 11l2 2 4-4'),
   leave: svg('M9 21H5V3h4M16 17l5-5-5-5M21 12H9'),
   chat: svg('M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'),
   chevron: svg('M9 6l6 6-6 6'),
@@ -140,3 +143,48 @@ function appConfirm(text, { ok = 'Confirmar', cancel = 'Cancelar', danger = fals
     yes.focus();
   });
 }
+
+// ---------- Dicas (o "i") ----------
+// Explicações que não precisam ficar escritas na tela: um "i" ao lado do que explica, e o texto aparece num
+// balão ao passar o mouse (ou com o foco do teclado). Configurações › Aparência liga e desliga todas (html[data-tips]).
+// No HTML: <button type="button" class="tip" data-tip="texto" aria-label="texto"></button>; por código, tipButton().
+function tipButton(text) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'tip';
+  setTip(b, text);
+  return b;
+}
+function setTip(b, text) {
+  b.dataset.tip = text;
+  b.setAttribute('aria-label', text);
+}
+document.documentElement.dataset.tips = load('dicas', '1') === '0' ? 'off' : 'on';
+(() => {
+  // O balão fica no <html> (fora do body, que desce pela barra de título e conta o "fixed" a partir dele)
+  const bubble = document.createElement('div');
+  bubble.id = 'tipBubble';
+  bubble.setAttribute('role', 'tooltip');
+  bubble.hidden = true;
+  document.documentElement.append(bubble);
+  let current = null;
+  const show = (el) => {
+    current = el;
+    bubble.textContent = el.dataset.tip;
+    bubble.hidden = false;
+    const r = el.getBoundingClientRect(), b = bubble.getBoundingClientRect();
+    const left = Math.min(Math.max(8, r.left + r.width / 2 - b.width / 2), innerWidth - b.width - 8);
+    const top = r.top - b.height - 8 >= 8 ? r.top - b.height - 8 : r.bottom + 8;
+    bubble.style.left = `${left}px`;
+    bubble.style.top = `${top}px`;
+  };
+  const hide = () => { current = null; bubble.hidden = true; };
+  document.addEventListener('pointerover', (e) => { const t = e.target.closest?.('.tip[data-tip]'); if (t && t !== current) show(t); });
+  document.addEventListener('pointerout', (e) => { if (current && !current.contains(e.relatedTarget)) hide(); });
+  document.addEventListener('focusin', (e) => { if (e.target.matches?.('.tip[data-tip]')) show(e.target); });
+  document.addEventListener('focusout', hide);
+  document.addEventListener('scroll', hide, true);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && current) hide(); });
+  // Clicar no "i" não faz nada além de mostrar (não envia formulário, não fecha menu)
+  document.addEventListener('click', (e) => { const t = e.target.closest?.('.tip[data-tip]'); if (t) { e.preventDefault(); e.stopPropagation(); show(t); } }, true);
+})();

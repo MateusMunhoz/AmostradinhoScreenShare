@@ -225,7 +225,7 @@ function renderStats() {
     drawSpark($(`${c.id}Chart`), c.key, c.max, c.label, c.fmt);
   }
   if (!s) {
-    $('stNote').textContent = 'Medindo… As medidas começam quando você entra numa sala.';
+    $('stNote').textContent = 'As medidas começam quando você entra numa sala.';
     return;
   }
 
@@ -244,8 +244,8 @@ function renderStats() {
   }
   const secs = perf.samples.length;
   $('stNote').textContent = secs < PERF_AVG
-    ? `Coletando há ${secs} s, desde que você entrou na sala. As médias usam os últimos 30 s.`
-    : `Médias dos últimos 30 s (a faixa no fim de cada gráfico); gráficos dos últimos ${Math.min(10, Math.round(secs / 60)) || 1} min. Processador em % do PC inteiro (${s.cores} núcleos); "PC inteiro" inclui o jogo e outros programas.`;
+    ? `Coletando há ${secs} s.`
+    : `Médias dos últimos 30 s. Processador em % do PC inteiro (${s.cores} núcleos).`;
 }
 
 // Qual codificador/decodificador o WebRTC está usando de verdade agora

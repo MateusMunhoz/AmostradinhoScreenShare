@@ -376,6 +376,42 @@ function closePersonCard() {
   card.hidden = true;
   delete card.dataset.for;
 }
+// Amizade (conta Razze): o nome na sala é o nickname. Já amigos ou pedido enviado: o botão só informa;
+// pedido recebido: aceita; senão, manda o pedido (sem conta, abre a aba Amigos do HUB para entrar)
+function friendButton(id, name) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'btn small icon pc-friend';
+  const key = name.trim().toLowerCase();
+  const find = (list) => list.find((x) => String(x.displayName || '').trim().toLowerCase() === key);
+  const friend = find(friendsData.friends), sent = find(friendsData.outgoing), got = find(friendsData.incoming);
+  if (friend || sent) {
+    setIcon(b, friend ? 'userCheck' : 'userPlus', friend ? `Você e ${name} já são amigos` : `Pedido de amizade enviado para ${name}`);
+    b.setAttribute('aria-disabled', 'true');
+    b.classList.add('done');
+    return b;
+  }
+  setIcon(b, 'userPlus', got ? `Aceitar o pedido de amizade de ${name}` : `Adicionar ${name} como amigo`);
+  if (got) b.classList.add('accent');
+  b.onclick = async () => {
+    if (got) { await acceptFriend(got); toast(`Agora você e ${name} são amigos.`); return renderPersonCard(); }
+    const account = await window.api.razzeState().catch(() => null);
+    if (!account?.authenticated) {
+      toast('Entre na sua conta Razze para adicionar amigos (HUB, aba Amigos).');
+      return openFriendsDialog();
+    }
+    b.disabled = true;
+    try {
+      const result = await window.api.razzeRequestFriend(name.trim());
+      toast(result.status === 'accepted' ? `Agora você e ${name} são amigos.` : `Pedido de amizade enviado para ${name}.`);
+      await refreshRazzeLists();
+    } catch (error) {
+      toast(`Não deu para adicionar ${name}: ${error.message}`, 'error');
+    }
+    renderPersonCard();
+  };
+  return b;
+}
 function renderPersonCard() {
   const card = $('personCard');
   const id = card.dataset.for;
@@ -409,7 +445,11 @@ function renderPersonCard() {
     photoBtn.onclick = () => openPhotoViewer(id, name, photoBtn);
     head.append(photoBtn, who);
   } else head.append(av, who);
+  head.append(friendButton(id, name));
   card.append(head);
+  // O "i" de que só muda para você fica ao lado do primeiro controle que aparece
+  let tipDone = false;
+  const tipText = `Volume e silenciar só mudam o que você ouve. ${name} e o resto da sala não percebem.`;
   const slider = (label, key, max, show) => {
     if (!show) return;
     const row = document.createElement('label');
@@ -417,6 +457,7 @@ function renderPersonCard() {
     const top = document.createElement('span');
     const text = document.createElement('span');
     text.textContent = label;
+    if (!tipDone) { text.append(tipButton(tipText)); tipDone = true; }
     const val = document.createElement('span');
     val.className = 'pc-val';
     val.textContent = v.muted ? 'mudo' : `${v[key]}%`;
@@ -452,7 +493,8 @@ function renderPersonCard() {
   if (!inVoice(id) && !watching) {
     const p = document.createElement('p');
     p.className = 'hint';
-    p.textContent = `${name} não está na voz e você não está assistindo a tela. O volume vale quando entrar.`;
+    p.textContent = 'O volume vale quando entrar na voz ou na tela.';
+    p.append(tipButton(tipText));
     card.append(p);
   }
   const actions = document.createElement('div');
@@ -470,9 +512,6 @@ function renderPersonCard() {
   setIcon(reset, 'reset', `Voltar ao padrão: voz em ${DEFAULT_VOICE}% e a transmissão sem som`);
   reset.onclick = () => { setVol(id, { voice: DEFAULT_VOICE, screen: DEFAULT_SCREEN, muted: false }); renderPersonCard(); };
   actions.append(mute, reset);
-  const note = document.createElement('p');
-  note.className = 'hint';
-  note.textContent = `Só muda o que você ouve. ${name} e o resto da sala não percebem.`;
-  card.append(actions, note);
+  card.append(actions);
   if (focused) card.querySelector(`[aria-label="${CSS.escape(focused)}"]`)?.focus();
 }

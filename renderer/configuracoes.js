@@ -157,9 +157,9 @@ function refreshAutoColors() {
 const localFonts = []; // nomes vindos de "Fontes deste PC" (só nesta sessão)
 function renderGlassHint() {
   const mode = appPreferences.appearance.glass;
-  $('glassHint').textContent = mode === 'opaque' ? 'Cores sólidas. É o mais leve para jogar e transmitir ao mesmo tempo.'
-    : mode === 'clear' ? 'Vidro limpo: painéis bem transparentes e pouco desfoque.'
-    : 'Vidro grosso: mais desfoque, cores mais vivas e brilho nas bordas. Usa mais a placa de vídeo; se o jogo perder FPS, volte para Opaco.';
+  $('glassHint').textContent = mode === 'opaque' ? 'O mais leve para jogar e transmitir.'
+    : mode === 'clear' ? 'Painéis transparentes, pouco desfoque.'
+    : 'Mais desfoque e brilho. Pesa mais na placa de vídeo.';
 }
 function fontInstalled(name) {
   // Mede o mesmo texto com a fonte e sem ela: se nada muda nas duas bases, ela não está no PC
@@ -285,8 +285,7 @@ function renderThemes() {
   }
   const current = AppPreferences.currentTheme(appPreferences);
   for (const b of list.children) b.setAttribute('aria-checked', String(b.dataset.theme === current));
-  $('themeHint').textContent = current ? 'Muda cores, material e bordas. Fonte e sons continuam como estão.'
-    : 'Personalizado. Escolha um tema para começar dele; depois dá para mudar qualquer cor na aba Cores.';
+  $('themeHint').textContent = current ? '' : 'Personalizado.';
 }
 function setupAmbient() {
   $('ambientLight').onchange = () => {

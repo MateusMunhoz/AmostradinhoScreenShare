@@ -51,12 +51,11 @@
           <button type="button" role="radio" data-fit="inteira" title="A foto toda, sem zoom">Inteira</button>
           <button type="button" role="radio" data-fit="preencher" title="Corta o meio da foto para preencher a bolinha">Preencher</button>
         </div>
-        <p id="profilePhotoOld" class="hint photo-old" hidden>Esta foto é de uma versão antiga: os outros só veem ela cortada. Escolha a foto de novo para eles verem ela inteira.</p>
+        <p id="profilePhotoOld" class="hint photo-old" hidden>Foto de versão antiga: os outros a veem cortada. Escolha de novo.</p>
       </div>
       <label class="field">Nome de exibição<input id="profileName" maxlength="32" autocomplete="off"></label>
       <p id="profileHint" class="hint"></p>
-      <label class="field">Fonte do nome<select id="profileNameFont"></select></label>
-      <p class="hint">Todos na sala veem o seu nome nesta fonte. Sem escolha, fica a fonte padrão do app.</p>
+      <label class="field"><span>Fonte do nome<button type="button" class="tip" data-tip="Todos na sala veem o seu nome nesta fonte." aria-label="Todos na sala veem o seu nome nesta fonte."></button></span><select id="profileNameFont"></select></label>
       </div>
     </section>
     <section id="voicePane" class="workspace-pane" aria-labelledby="voicePaneTitle" hidden>
@@ -121,7 +120,7 @@
       <!-- Mensagens diretas: a lista das conversas; cada uma abre na barra de conversas (renderer/mensagens.js) -->
       <section id="hubMessages" class="hub-pane hub-messages" role="tabpanel" aria-labelledby="hubTabMessages" hidden>
         <div id="dmSignedOut" class="hub-signed-out">
-          <p class="hint">As mensagens diretas usam a conta Razze: entre na conta para conversar com os seus amigos, mesmo fora da sala.</p>
+          <p class="hint">Entre na conta Razze para conversar com os seus amigos.</p>
           <button id="dmOpenLogin" class="btn small primary" type="button">Entrar na conta</button>
         </div>
         <div id="dmBody" class="hub-friends-body" hidden>
@@ -313,10 +312,10 @@
         </label>
         <label class="check-line" id="roomVisibleLine">
           <input type="checkbox" id="roomVisible" checked>
-          <span>Mostrar esta sessão para quem está na rede<small class="hint">Aparece na tela inicial dos outros, com o seu nome e quantas pessoas estão nela. A senha continua sendo pedida.</small></span>
+          <span>Mostrar esta sessão para quem está na rede<button type="button" class="tip" data-tip="Aparece na tela inicial dos outros. A senha continua sendo pedida." aria-label="Aparece na tela inicial dos outros. A senha continua sendo pedida."></button></span>
         </label>
         <button class="btn primary" id="createBtn">Criar sala</button>
-        <p class="hint" id="createHint">A sala fica aberta enquanto você estiver nela. Quando você sair, ela é encerrada para todos.</p>
+        <p class="hint" id="createHint">A sala fecha quando todos saírem.</p>
       </div>
     </section>
 
@@ -390,13 +389,13 @@
                       <label class="q-card">
                         <input type="radio" name="quality" value="2160p30">
                         <span class="q-dot" aria-hidden="true"></span>
-                        <span class="q-text"><strong>4K <span class="spec">· 2160p 30 fps</span></strong><span class="hint">Tela 4K e internet boa: uns 20 Mbps para cada pessoa assistindo</span></span>
+                        <span class="q-text"><strong>4K <span class="spec">· 2160p 30 fps</span></strong><span class="hint">Uns 20 Mbps por pessoa assistindo</span></span>
                       </label>
                     </fieldset>
 
                     <div class="group" id="soundGroup">
                       <div class="group-head">
-                        <span class="group-title" id="soundLabel">Som do PC</span>
+                        <span class="group-title" id="soundLabel">Som do PC<button type="button" class="tip" data-tip="O som das telas que você assiste nunca vai para a sua transmissão." aria-label="O som das telas que você assiste nunca vai para a sua transmissão."></button></span>
                         <label class="switch">
                           <input type="checkbox" id="soundOn" role="switch" aria-labelledby="soundLabel">
                           <span class="track" aria-hidden="true"></span>
@@ -408,7 +407,6 @@
                           <button class="link-btn" id="refreshApps" type="button">Atualizar lista</button>
                         </div>
                         <div id="excludeApps" class="app-list" role="group" aria-labelledby="excludeLabel"></div>
-                        <p id="audioNote" class="hint">O som das telas que você está assistindo nunca vai para a sua transmissão, então ninguém se ouve de volta.</p>
                       </div>
                     </div>
 
@@ -537,7 +535,7 @@
               </button>
             </div>
             <p id="chatOff" class="warn" hidden>O chat está desligado nesta sala: quem criou precisa da versão 1.7.0 ou mais nova.</p>
-            <p id="chatEmpty" class="hint">Nenhuma mensagem ainda. Mande um oi ou arraste um arquivo para cá. Quem entrar depois vê as últimas 100 mensagens.</p>
+            <p id="chatEmpty" class="hint">Nenhuma mensagem ainda.</p>
             <ul id="chatList" class="chat-list" aria-live="polite"></ul>
             <button class="jump-new" id="chatJump" type="button" hidden>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7"/></svg>Ir para as mensagens novas
@@ -653,7 +651,6 @@
       <div id="statsStream" class="stats-panel" role="tabpanel" aria-labelledby="statsTabStream" hidden>
         <div id="streamRows" class="stream-list"></div>
         <p id="streamEmpty" class="hint">Ninguém está transmitindo agora.</p>
-        <p class="hint">Qualidade, codificação e som vêm de quem transmite. Resolução, quadros, taxa e perda são medidos aqui, a cada segundo, só nas telas que você está assistindo.</p>
       </div>
     </div>
   </div>
@@ -670,10 +667,9 @@
         <h3><label for="micSelect">Microfone</label></h3>
         <select id="micSelect" class="vd-select"></select>
         <div class="vd-row">
-          <span id="micTestLabel">Testar o microfone</span>
+          <span id="micTestLabel">Testar o microfone<button type="button" class="tip" id="micTestHint" data-tip="Você se ouve como a sala ouve. Use fone: com caixa de som, apita." aria-label="Você se ouve como a sala ouve. Use fone: com caixa de som, apita."></button></span>
           <button class="btn small" id="micTestBtn" type="button" aria-pressed="false" aria-labelledby="micTestLabel micTestBtn" aria-describedby="micTestHint">Ouvir minha voz</button>
         </div>
-        <p class="hint" id="micTestHint">Você se ouve como a sala ouve: depois da supressão de ruído e da sensibilidade. Use fone de ouvido: com caixa de som, o microfone pega o próprio som e apita. Na voz, desligue o microfone para testar sem os outros ouvirem.</p>
       </section>
 
       <section class="vd-section">
@@ -685,13 +681,12 @@
         </div>
         <p class="hint" id="nsHint"></p>
         <div class="vd-row">
-          <span id="echoLabel">Cancelamento de eco</span>
+          <span id="echoLabel">Cancelamento de eco<button type="button" class="tip" data-tip="Tira da sua voz o som das suas caixas. Com fone, pode desligar." aria-label="Tira da sua voz o som das suas caixas. Com fone, pode desligar."></button></span>
           <label class="switch">
             <input type="checkbox" id="echoOn" role="switch" aria-labelledby="echoLabel">
             <span class="track" aria-hidden="true"></span>
           </label>
         </div>
-        <p class="hint">Tira da sua voz o som que sai das suas caixas (as vozes dos outros e o som das telas). Com fone, pode desligar.</p>
       </section>
 
       <section class="vd-section">
@@ -710,8 +705,7 @@
       </section>
 
       <section class="vd-section">
-        <h3 id="duckLabel">Atenuação</h3>
-        <p class="hint">Abaixa o som das transmissões (o jogo que os outros estão mostrando) enquanto alguém fala na voz.</p>
+        <h3 id="duckLabel">Atenuação<button type="button" class="tip" data-tip="Abaixa o som das telas enquanto alguém fala na voz." aria-label="Abaixa o som das telas enquanto alguém fala na voz."></button></h3>
         <div class="vd-slider">
           <input type="range" id="duckAmount" min="0" max="100" step="5" aria-labelledby="duckLabel">
           <span id="duckValue" class="vd-value"></span>
@@ -736,8 +730,7 @@
       </section>
 
       <section class="vd-section">
-        <h3>Atalhos</h3>
-        <p class="hint">Funcionam de dentro do jogo. Precisam de Ctrl ou Alt junto (ou ser uma tecla F1 a F24), para não atrapalhar quando você digita.</p>
+        <h3>Atalhos<button type="button" class="tip" data-tip="Funcionam dentro do jogo. Use Ctrl ou Alt junto, ou F1 a F24." aria-label="Funcionam dentro do jogo. Use Ctrl ou Alt junto, ou F1 a F24."></button></h3>
         <div id="shortcutRows" class="vd-shortcuts"></div>
         <button class="btn small ghost" id="shortcutReset" type="button">Voltar aos atalhos padrão</button>
       </section>
@@ -771,14 +764,14 @@
         <button id="settingsTab-sounds" type="button" role="tab" data-tab="sounds" aria-controls="settingsPanel-sounds">Sons</button>
       </div>
       <section id="settingsPanel-skin" class="settings-section" role="tabpanel" aria-labelledby="settingsTab-skin" hidden>
-        <h3 id="skinTitle">Tema</h3>
-        <p class="hint">Muda o desenho do app inteiro: formas, letras e enfeites, não só as cores. As cores do tema vêm junto e dá para ajustar na aba Cores. Voltar ao Padrão devolve as cores que você tinha.</p>
+        <h3 id="skinTitle">Tema<button type="button" class="tip" data-tip="Muda o desenho do app inteiro, não só as cores. Voltar ao Padrão devolve as suas cores." aria-label="Muda o desenho do app inteiro, não só as cores. Voltar ao Padrão devolve as suas cores."></button></h3>
         <div id="skinList" class="skin-list" role="radiogroup" aria-labelledby="skinTitle"></div>
       </section>
       <section id="settingsPanel-appearance" class="settings-section" role="tabpanel" aria-labelledby="settingsTab-appearance" hidden>
         <h3 id="appearanceTitle">Aparência</h3>
+        <label class="vd-check"><input type="checkbox" id="tipsOn"> Mostrar as dicas (o ícone <span class="tip-sample" aria-hidden="true">i</span> que explica ao passar o mouse)</label>
         <div class="settings-row"><span id="themesLabel" class="settings-label">Temas prontos</span><div id="themeList" class="theme-list" role="radiogroup" aria-labelledby="themesLabel"></div><small id="themeHint" class="hint"></small></div>
-        <p class="hint" id="glassLabel">Material das janelas e painéis, no estilo do vidro do iOS.</p>
+        <p class="hint" id="glassLabel">Material das janelas</p>
         <div class="seg glass-seg" role="radiogroup" aria-labelledby="glassLabel">
           <label><input type="radio" name="glass" value="opaque"><span class="glass-swatch" data-glass-swatch="opaque" aria-hidden="true"></span><span>Opaco</span></label>
           <label><input type="radio" name="glass" value="clear"><span class="glass-swatch" data-glass-swatch="clear" aria-hidden="true"></span><span>Transparente</span></label>
@@ -797,17 +790,17 @@
         <div class="settings-row"><label for="fontFamily">Fonte</label>
           <div class="font-pick"><select id="fontFamily"></select><button id="loadLocalFonts" class="btn small" type="button">Fontes deste PC</button></div>
         </div>
-        <div id="fontCustomRow" class="settings-row" hidden><label for="fontCustom">Nome da fonte instalada</label><input type="text" id="fontCustom" maxlength="64" spellcheck="false" autocomplete="off" placeholder="Ex.: Noto Sans, Roboto, Fira Sans" aria-describedby="fontCustomHint"><small id="fontCustomHint" class="hint">Use o nome exato, como aparece em Configurações do Windows › Fontes.</small></div>
+        <div id="fontCustomRow" class="settings-row" hidden><label for="fontCustom">Nome da fonte instalada</label><input type="text" id="fontCustom" maxlength="64" spellcheck="false" autocomplete="off" placeholder="Ex.: Noto Sans, Roboto, Fira Sans" aria-describedby="fontCustomHint"><small id="fontCustomHint" class="hint">O nome exato, como em Configurações › Fontes.</small></div>
         <p id="fontPreview" class="font-preview" aria-live="polite"><strong>Tela P2P · Transmitindo ao vivo</strong><span>Ação, coração, pão e ânimo · 0123456789</span><span id="fontPreviewScript" hidden></span></p>
         <label class="vd-check"><input type="checkbox" id="fontChat"> Usar também no chat (o padrão é a letra de console, Tahoma)</label>
         <p class="hint" id="fontStatus" role="status"></p>
       </section>
       <section id="settingsPanel-colors" class="settings-section" role="tabpanel" aria-labelledby="settingsTab-colors" hidden>
-        <h3 id="colorsTitle">Cores do layout</h3><p class="hint">Use um hexadecimal, como #3366FF, ou escolha pela amostra. A prévia é imediata.</p>
+        <h3 id="colorsTitle">Cores do layout<button type="button" class="tip" data-tip="Um código como #3366FF ou a amostra. Muda na hora." aria-label="Um código como #3366FF ou a amostra. Muda na hora."></button></h3>
         <div class="settings-colors"><div class="settings-color"><label for="hex-main">Principal<small>Fundo do aplicativo</small></label><div class="settings-color-input"><input type="color" id="color-main" aria-label="Escolher cor: Principal"><input type="text" id="hex-main" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-main"></div><small id="error-main" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-secondary">Secundária<small>Painéis e cartões</small></label><div class="settings-color-input"><input type="color" id="color-secondary" aria-label="Escolher cor: Secundária"><input type="text" id="hex-secondary" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-secondary"></div><small id="error-secondary" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-detail1">Detalhes 1<small>Botões e destaques</small></label><div class="settings-color-input"><input type="color" id="color-detail1" aria-label="Escolher cor: Detalhes 1"><input type="text" id="hex-detail1" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-detail1"></div><small id="error-detail1" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-detail2">Detalhes 2<small>Indicadores e avisos</small></label><div class="settings-color-input"><input type="color" id="color-detail2" aria-label="Escolher cor: Detalhes 2"><input type="text" id="hex-detail2" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-detail2"></div><small id="error-detail2" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><p class="settings-colors-sub"><strong>Cores de detalhe</strong><small>Em cinza: calculada a partir das cores principais. Escolha uma cor para usar a sua; apague o código para voltar ao automático.</small></p><div class="settings-color"><label for="hex-text">Texto<small>Letras do app</small></label><div class="settings-color-input"><input type="color" id="color-text" aria-label="Escolher cor: Texto"><input type="text" id="hex-text" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-text"></div><small id="error-text" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-live">Ao vivo<small>Quem transmite e o botão Transmitir</small></label><div class="settings-color-input"><input type="color" id="color-live" aria-label="Escolher cor: Ao vivo"><input type="text" id="hex-live" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-live"></div><small id="error-live" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-speaking">Quem fala<small>Borda e barrinhas de quem fala</small></label><div class="settings-color-input"><input type="color" id="color-speaking" aria-label="Escolher cor: Quem fala"><input type="text" id="hex-speaking" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-speaking"></div><small id="error-speaking" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-warn">Avisos<small>Erros e alertas</small></label><div class="settings-color-input"><input type="color" id="color-warn" aria-label="Escolher cor: Avisos"><input type="text" id="hex-warn" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-warn"></div><small id="error-warn" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-line">Bordas<small>Linhas dos painéis e campos</small></label><div class="settings-color-input"><input type="color" id="color-line" aria-label="Escolher cor: Bordas"><input type="text" id="hex-line" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-line"></div><small id="error-line" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div></div>
         <button id="resetColors" class="btn small" type="button">Restaurar cores padrão</button>
       </section>
-      <section id="settingsPanel-sounds" class="settings-section" role="tabpanel" aria-labelledby="settingsTab-sounds" hidden><h3 id="soundsTitle">Sons de notificação</h3><p class="hint">Escolha entre os sons incluídos no app. “Sem som” desativa só aquele aviso. Os da voz tocam quando você está na voz.</p>
+      <section id="settingsPanel-sounds" class="settings-section" role="tabpanel" aria-labelledby="settingsTab-sounds" hidden><h3 id="soundsTitle">Sons de notificação<button type="button" class="tip" data-tip="“Sem som” desliga só aquele aviso. Os da voz tocam quando você está na voz." aria-label="“Sem som” desliga só aquele aviso. Os da voz tocam quando você está na voz."></button></h3>
         <div class="sound-event"><div class="settings-sound"><label for="sound-join">Entrada na sala</label><select id="sound-join"></select><button class="btn small" id="preview-join" type="button" aria-label="Ouvir prévia: Entrada na sala">Ouvir</button></div><div class="event-volume"><label for="volume-join">Volume</label><input id="volume-join" type="range" min="0" max="100" step="1" aria-label="Volume: Entrada na sala"><output id="value-join" for="volume-join">100%</output></div></div>
         <div class="sound-event"><div class="settings-sound"><label for="sound-leave">Saída da sala</label><select id="sound-leave"></select><button class="btn small" id="preview-leave" type="button" aria-label="Ouvir prévia: Saída da sala">Ouvir</button></div><div class="event-volume"><label for="volume-leave">Volume</label><input id="volume-leave" type="range" min="0" max="100" step="1" aria-label="Volume: Saída da sala"><output id="value-leave" for="volume-leave">100%</output></div></div>
         <div class="sound-event"><div class="settings-sound"><label for="sound-chat">Mensagem no chat</label><select id="sound-chat"></select><button class="btn small" id="preview-chat" type="button" aria-label="Ouvir prévia: Mensagem no chat">Ouvir</button></div><div class="event-volume"><label for="volume-chat">Volume</label><input id="volume-chat" type="range" min="0" max="100" step="1" aria-label="Volume: Mensagem no chat"><output id="value-chat" for="volume-chat">100%</output></div></div>
@@ -821,8 +814,7 @@
         <div class="sound-event"><div class="settings-sound"><label for="sound-shareStart">Começar a transmitir</label><select id="sound-shareStart"></select><button class="btn small" id="preview-shareStart" type="button" aria-label="Ouvir prévia: Começar a transmitir">Ouvir</button></div><div class="event-volume"><label for="volume-shareStart">Volume</label><input id="volume-shareStart" type="range" min="0" max="100" step="1" aria-label="Volume: Começar a transmitir"><output id="value-shareStart" for="volume-shareStart">100%</output></div></div>
         <div class="sound-event"><div class="settings-sound"><label for="sound-shareStop">Parar de transmitir</label><select id="sound-shareStop"></select><button class="btn small" id="preview-shareStop" type="button" aria-label="Ouvir prévia: Parar de transmitir">Ouvir</button></div><div class="event-volume"><label for="volume-shareStop">Volume</label><input id="volume-shareStop" type="range" min="0" max="100" step="1" aria-label="Volume: Parar de transmitir"><output id="value-shareStop" for="volume-shareStop">100%</output></div></div>
         <label class="vd-check"><input type="checkbox" id="muteChatSound"> Silenciar som do chat</label>
-        <p class="hint">O chat avisa sobre novas mensagens enviadas e recebidas. O histórico é silencioso.</p>
-        <label for="notificationVolume">Volume geral dos avisos</label><div class="vd-slider"><input type="range" id="notificationVolume" min="0" max="100" step="1"><output id="notificationVolumeValue" for="notificationVolume"></output></div><p class="hint">O volume geral multiplica os volumes individuais. Em 0%, todos os avisos ficam silenciosos.</p>
+        <label for="notificationVolume">Volume geral dos avisos<button type="button" class="tip" data-tip="Multiplica os volumes de cada aviso. Em 0%, todos ficam em silêncio." aria-label="Multiplica os volumes de cada aviso. Em 0%, todos ficam em silêncio."></button></label><div class="vd-slider"><input type="range" id="notificationVolume" min="0" max="100" step="1"><output id="notificationVolumeValue" for="notificationVolume"></output></div>
       </section>
       <footer class="settings-version"><span>Tela P2P</span><span id="settingsVersion"></span></footer>
     </div>
@@ -837,7 +829,6 @@
       <p id="connectionMapEmpty" class="hint">Nenhuma conexão local ou sala ativa foi encontrada.</p>
       <ul id="connectionMapDetails" class="connection-map-details"></ul>
       <div class="net-row"><p id="connectionMapStatus" class="hint" role="status" aria-live="polite"></p><button id="refreshConnectionMap" class="btn small" type="button">Atualizar</button></div>
-      <p class="hint">O mapa mostra túneis, interfaces locais e a sala atual. O servidor é verificado separadamente.</p>
     </div>
   </div>
   <div id="toast" class="toast" role="status"></div>

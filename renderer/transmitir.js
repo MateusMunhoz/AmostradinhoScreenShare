@@ -52,10 +52,10 @@ function syncEncodeNote() {
   if (encodeOnceSupport === null) return;
   note.hidden = false;
   note.textContent = !encodeOnceSupport
-    ? 'Este PC não consegue codificar uma vez só para todos, então cada pessoa recebe a própria codificação.'
+    ? 'Este PC não codifica uma vez só: cada pessoa recebe a própria codificação.'
     : radioValue('encodeMode') === 'once'
-      ? `Codifica o vídeo uma vez só${encodeOnceSupport.engine === 'nvenc' ? ', direto no NVENC da placa NVIDIA (a imagem nem passa pelo processador)' : encodeOnceSupport.hardware ? ', pela placa de vídeo' : ', pelo processador'}, e manda o mesmo para todos: o peso não aumenta quando mais gente assiste. Quem tem versão antiga do app recebe no modo normal.`
-      : 'O processador codifica o vídeo uma vez para cada pessoa que assiste. Com vários amigos assistindo, experimente "Uma vez só".';
+      ? `Codifica uma vez${encodeOnceSupport.engine === 'nvenc' ? ' no NVENC' : encodeOnceSupport.hardware ? ' pela placa de vídeo' : ' pelo processador'} e manda o mesmo para todos.`
+      : 'Uma codificação para cada pessoa. Com vários assistindo, use "Uma vez só".';
 }
 
 // Mouse na transmissão. Em jogo o Windows deixa o cursor parado no meio da imagem, mesmo com o jogo escondendo ele.
@@ -67,9 +67,9 @@ function syncCursor() {
   box.disabled = encodeOnceSupport !== null && !nvenc;
   if (box.disabled) box.checked = true;
   $('cursorNote').textContent = encodeOnceSupport === null ? ''
-    : !nvenc ? 'Para tirar o mouse da transmissão precisa de placa NVIDIA. Sem ela, o mouse sempre aparece.'
-    : box.checked ? 'Em jogo, desligue: o Windows deixa o cursor parado no meio da imagem, mesmo com o jogo escondendo ele.'
-    : 'O mouse não aparece para quem assiste. Para isso, a transmissão usa "Uma vez só (NVENC direto)", em Avançado.';
+    : !nvenc ? 'Tirar o mouse precisa de placa NVIDIA.'
+    : box.checked ? 'Em jogo, desligue: senão o cursor fica parado no meio da imagem.'
+    : 'Sem mouse: usa "Uma vez só (NVENC)".';
 }
 
 function encodeText() {
