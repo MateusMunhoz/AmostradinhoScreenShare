@@ -3,6 +3,13 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.12.10",
+    "date": "2026-10-01",
+    "items": [
+      "Início: novidades de cada versão, com o que mudou e as versões anteriores"
+    ]
+  },
+  {
     "version": "1.12.9",
     "date": "2026-10-01",
     "items": [
@@ -72,13 +79,6 @@ const NOVIDADES = [
     "date": "2026-09-30",
     "items": [
       "Correções e melhorias"
-    ]
-  },
-  {
-    "version": "1.11.29",
-    "date": "2026-09-30",
-    "items": [
-      "Transmitir: chave Mostrar o mouse (sem o cursor parado no meio da imagem em jogo)"
     ]
   }
 ];
