@@ -24,8 +24,17 @@ razze-api/data/
 # Anotações locais
 Explicacao.txt
 
-# Configuração local do app do Claude
-.claude/
+# Claude Code: só o que é da equipe vai para o Git (docs/fluxo-com-ia.md).
+# O resto da pasta (settings.local.json, skills pessoais) fica só no seu PC.
+.claude/*
+!.claude/settings.json
+!.claude/rules/
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/revisar-ui/
+!.claude/skills/testar/
+!.claude/skills/sala-webrtc/
+CLAUDE.local.md
 
 # Protótipos de design: ficam só neste PC, nunca vão para o GitHub
 prototipo-ui/

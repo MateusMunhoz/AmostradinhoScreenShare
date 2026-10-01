@@ -4,7 +4,7 @@ Para quem vai mexer no código, testar ou publicar uma versão.
 
 ## Rodar pelo código
 
-Instale o [Node.js](https://nodejs.org) (versão LTS) e, na pasta do projeto:
+Instale o [Node.js](https://nodejs.org) 24 ou mais novo (os testes da RazzeAPI usam o `node:sqlite`) e, na pasta do projeto:
 
 ```
 npm install
@@ -54,27 +54,35 @@ isso (chamam `watch`, `state`, `speaking`... direto na página).
 | 1 | `encode-once.js` | Modo "uma vez só" (fica na raiz) |
 | 2 | `voice.js` | Classe `VoiceChat` (fica na raiz) |
 | 3 | `util.js` | `$`, telas, aviso, preferências, `send`, ícones, formatação, `closeOnBackdrop` |
-| 4 | `estado.js` | `state`, `update` e as qualidades de transmissão |
-| 5 | `rtc.js` | Ajustes do WebRTC: Opus, H.264 primeiro, codec, bitrate |
-| 6 | `tema.js` | Cores das janelas montadas por código, cor de cada pessoa, barrinhas de quem fala |
-| 7 | `fotos.js` | Foto de perfil sem servidor: a sua, pedir a dos outros pelo hash, pintar as bolinhas |
-| 8 | `sala.js` | Criar, entrar e sair, mensagens do servidor, sinalização, troca de host |
-| 9 | `voz.js` | Volume por pessoa, mixer, quem fala, atenuação, barra da voz, cartão da pessoa (cria o `voice`) |
-| 10 | `microfone.js` | Microfone escolhido, RNNoise, eco, sensibilidade, ouvir a própria voz, apertar para falar, janela "Voz e atalhos" |
-| 10b | `subsalas.js` | Subsalas de voz: criar e apagar (Subsala_1, Subsala_2…), entrar numa subsala e a lista por canal no painel de voz |
-| 10c | `mensagens.js` | Mensagens diretas entre amigos: aba Mensagens do HUB, barra de conversas embaixo, busca na RazzeAPI a cada 4 s e histórico local |
-| 11 | `membros.js` | Painel da sala: endereço e lista de pessoas |
-| 12 | `assistir.js` | Quadros de vídeo, ver a própria transmissão, destaque, tela cheia |
-| 13 | `pip.js` | Janelas flutuantes |
-| 14 | `overlay.js` | Chat por cima do jogo |
-| 15 | `metadados.js` | Tira localização, autor, datas e outros metadados dos arquivos (fotos, vídeos, PDF, Office) antes de irem para o chat |
-| 16 | `chat.js` | Mensagens, arquivos, não lidas |
-| 17 | `estatisticas.js` | Desempenho, aba Transmissão, codificador em uso |
-| 18 | `atualizacao.js` | Atualização pela sala, pelo GitHub e o aviso |
-| 19 | `sessoes.js` | Sessões abertas na rede (a lista da tela inicial) |
-| 20 | `transmitir.js` | Escolher a fonte, som, iniciar, trocar e parar, quem assiste |
-| 20b | `hub.js` | HUB: a barra fininha da esquerda, com as abas Salas (salas abertas, a atual e o menu inicial) , Amigos (adicionar, filtrar, convidar, pedidos) e Rede (conexão, servidores, redes Razze e login) |
-| 21 | `inicio.js` | Tela inicial e a partida: liga os botões e listeners, carrega as preferências |
+| 4 | `lista.js` | Listas de opções (`<select>`) desenhadas no tema do app; o `<select>` continua sendo a fonte da verdade |
+| 5 | `estado.js` | `state`, `update` e as qualidades de transmissão |
+| 6 | `rtc.js` | Ajustes do WebRTC: Opus, H.264 primeiro, codec, bitrate |
+| 7 | `preferencias-modelo.js` | Modelo das preferências, sem interface: validação (`normalize`), paleta, catálogo de sons e fontes (usado também pelos testes) |
+| 8 | `tema.js` | Cores das janelas montadas por código, cor de cada pessoa, barrinhas de quem fala |
+| 9 | `fotos.js` | Foto de perfil sem servidor: a sua, pedir a dos outros pelo hash, pintar as bolinhas |
+| 10 | `icone-app.js` | O ícone do app desenhado num canvas, na cor do tema (também usado pelo `gerar-icone.js`) |
+| 11 | `configuracoes.js` | Configurações gerais: interface e preferências deste PC (`appPreferences.v1`) |
+| 12 | `conectividade.js` | Rede: Radmin ou rede local, VPN Razze (WireGuard) ou modo Internet (VPS) |
+| 13 | `sala.js` | Criar, entrar e sair, mensagens do servidor, sinalização, troca de host |
+| 14 | `voz.js` | Volume por pessoa, mixer, quem fala, atenuação, barra da voz, cartão da pessoa (cria o `voice`) |
+| 15 | `microfone.js` | Microfone escolhido, RNNoise, eco, sensibilidade, ouvir a própria voz, apertar para falar, janela "Voz e atalhos" |
+| 16 | `subsalas.js` | Subsalas de voz: criar e apagar (Subsala_1, Subsala_2…), entrar numa subsala e a lista por canal no painel de voz |
+| 17 | `membros.js` | Painel da sala: endereço e lista de pessoas |
+| 18 | `assistir.js` | Quadros de vídeo, ver a própria transmissão, destaque, tela cheia |
+| 19 | `palco.js` | Como as telas assistidas se arrumam no palco |
+| 20 | `pip.js` | Janelas flutuantes |
+| 21 | `overlay.js` | Chat por cima do jogo |
+| 22 | `metadados.js` | Tira localização, autor, datas e outros metadados dos arquivos (fotos, vídeos, PDF, Office) antes de irem para o chat |
+| 23 | `chat.js` | Mensagens, arquivos, não lidas |
+| 24 | `estatisticas.js` | Desempenho, aba Transmissão, codificador em uso |
+| 25 | `atualizacao.js` | Atualização pela sala, pelo GitHub e o aviso |
+| 26 | `sessoes.js` | Sessões abertas na rede (a lista da tela inicial) |
+| 27 | `transmitir.js` | Escolher a fonte, som, iniciar, trocar e parar, quem assiste |
+| 28 | `mapa-conexoes.js` | A janela Mapa de conexões |
+| 29 | `hub.js` | HUB: a barra fininha da esquerda, com as abas Salas (salas abertas, a atual e o menu inicial) , Amigos (adicionar, filtrar, convidar, pedidos) e Rede (conexão, servidores, redes Razze e login) |
+| 30 | `mensagens.js` | Mensagens diretas entre amigos: aba Mensagens do HUB, barra de conversas embaixo, busca na RazzeAPI a cada 4 s e histórico local |
+| 31 | `navegacao.js` | Barra fixa e painéis simultâneos da sala (`workspaceViews.v1`), painel de voz com os canais |
+| 32 | `inicio.js` | Tela inicial e a partida: liga os botões e listeners, carrega as preferências |
 
 **A regra que evita erro na carga:** só o `inicio.js` roda código quando a página abre (listeners,
 `onclick`, preferências). Os outros só declaram funções e variáveis. Um arquivo que rodasse algo na
@@ -82,7 +90,7 @@ carga usando uma função de um arquivo que vem depois quebraria com "não defin
 `voz.js`, que cria o `voice` na carga: por isso ele vem depois do `util.js` (que tem o `send`).
 
 Arquivo novo na página: entra no `index.html` (na posição certa), em `PACK_FILES` e no `build.files`
-(veja [Contribuir](#contribuir-pr-e-merge)). Para conferir rápido que nada quebrou na carga:
+(veja [Contribuir](#contribuir-pr-e-merge); o CI confere isso em todo PR). Para conferir rápido que nada quebrou na carga:
 `npx electron tests/e2e/carga.cjs` (uns 5 segundos, sem abrir janelas).
 
 ### O processo principal (`main/`)
@@ -104,7 +112,9 @@ Arquivo novo na página: entra no `index.html` (na posição certa), em `PACK_FI
 
 | Comando | O que testa | Abre janelas? |
 |---------|-------------|---------------|
-| `npm test` | Voz e servidor da sala, rápido | Não |
+| `npm test` | Lógica sem janelas: voz, servidor da sala, subsalas, modo Internet, RazzeAPI, preferências, metadados, mensagens e fontes (uns 3 s) | Não |
+| `npm run test:settings` | Configurações em janelas invisíveis e a persistência entre dois processos | Não |
+| `npm run test:razze-api` | Só os testes `razze-*` (já incluídos no `npm test`) | Não |
 | `npm run test:rtc` | Áudio WebRTC de verdade entre duas janelas ocultas, sem o seu microfone | Não |
 | `npm run test:e2e` | Tudo de ponta a ponta (uns 10 minutos) | Sim |
 | `npx electron tests/e2e/carga.cjs` | Se o app abre sem erro e os nomes globais existem (5 s) | Não |
@@ -184,7 +194,7 @@ A chave foi criada uma vez com `node publicar.js --gerar-chave`, que grava a par
 
 ## Contribuir (PR e merge)
 
-- **Faça num ramo próprio** e abra um Pull Request no GitHub.
+- **Faça num ramo próprio** e abra um Pull Request no GitHub. O passo a passo com o Claude Code está em [Fluxo com IA](fluxo-com-ia.md).
 - **Antes de pedir o merge:**
   - rode `npm test` e `npm run test:e2e`;
   - se mexeu em voz, janelas ou atalhos, passe o [roteiro de teste](roteiro-de-teste.md) numa call.
