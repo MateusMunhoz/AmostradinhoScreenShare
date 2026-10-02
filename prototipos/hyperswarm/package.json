@@ -1,0 +1,8 @@
+{
+  "name": "prototipo-hyperswarm",
+  "private": true,
+  "description": "Protótipo da ponte da sala pela HyperDHT. Fora do pacote do app.",
+  "dependencies": {
+    "hyperdht": "^6.21.0"
+  }
+}
