@@ -351,7 +351,11 @@ for (const id of ['statsTabPerf', 'statsTabStream']) {
 // Chat
 $('chatToggle').insertAdjacentHTML('afterbegin', ICON.chat);
 $('chatToggle').onclick = () => setPanelOpen(!chat.open);
-$('peopleBtn').onclick = () => setPeopleOpen($('peoplePop').hidden);
+// A lista abre por cima do chat e da voz: com os dois fechados, o chat abre junto
+$('peopleBtn').onclick = () => {
+  if ($('workspacePanes').hidden) setPanelOpen(true);
+  setPeopleOpen($('peoplePop').hidden);
+};
 // Clicar fora da lista fecha (o cartão de volume, que abre de dentro dela, conta como dentro)
 document.addEventListener('mousedown', (e) => {
   if ($('peoplePop').hidden) return;

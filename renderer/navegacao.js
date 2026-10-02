@@ -82,7 +82,7 @@ function syncWorkspace() {
   if (inRoom) syncIncomingVideo(); // telas escondidas não baixam vídeo (o som continua)
   if (mapFocus.on && !mapFocusFits()) setMapFocus(false); // o mapa em foco só existe com chat e voz na barra
   $('workspaceContext').textContent = inRoom ? 'Na sala' : 'Início';
-  $('dockHome').hidden = $('leaveBtn').hidden = !inRoom; // Início e Sair: no pé da barrinha, só na sala
+  $('dockHome').hidden = $('leaveBtn').hidden = $('peopleBtn').hidden = !inRoom; // Início, Sair e as pessoas: só na sala
   for (const [id, view] of [['navChat','chat'],['navVoice','voice'],['navStreams','streams']]) {
     $(id).hidden = !inRoom;
     $(id).setAttribute('aria-pressed', String(workspaceViews[view]));
@@ -249,6 +249,12 @@ function markChatSeenIfVisible() { if (chat.open && chatAtBottom() && !mapFocus.
 function renderHomeCall() {
   const inCall = !!state.myId;
   $('homeCall').hidden = !inCall;
+  // Barrinha da direita: no menu, com a sala aberta, o botão de voltar fica no pé (com as mensagens novas)
+  const back = inCall && $('room').hidden, unread = chat.unread;
+  $('navBackToRoom').hidden = !back;
+  $('navBackUnread').hidden = !back || !unread;
+  $('navBackUnread').textContent = unread > 99 ? '99+' : String(unread);
+  $('navBackToRoom').title = $('navBackToRoom').ariaLabel = unread ? `Voltar para a sala · ${unread} ${unread === 1 ? 'mensagem nova' : 'mensagens novas'}` : 'Voltar para a sala';
   // Numa sala: criar ou entrar em outra fica bloqueado (sairia desta sem querer)
   for (const id of ['goCreate', 'goJoin', 'rejoinBtn']) $(id).disabled = inCall;
   $('goCreate').title = $('goJoin').title = inCall ? 'Você já está numa sala: volte para ela e saia antes' : '';
@@ -270,7 +276,7 @@ function renderHomeCall() {
 }
 function setupHomeCall() {
   $('dockHome').onclick = goHomeKeepCall;
-  $('homeCallBack').onclick = backToRoom;
+  $('homeCallBack').onclick = $('navBackToRoom').onclick = backToRoom;
   $('homeCallMute').onclick = () => $('voiceMute').click();
   $('homeCallDeafen').onclick = () => $('voiceDeafen').click();
 }

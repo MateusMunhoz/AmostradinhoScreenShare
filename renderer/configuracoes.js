@@ -31,7 +31,7 @@ function applyTitleBar() {
   titleBarKey = key;
   window.api.setTitleBar(color, text).catch(() => {});
 }
-// Ícone da janela na barra de tarefas: o mesmo desenho da barra de título, na cor Detalhe 1 do tema
+// Ícone da janela na barra de tarefas: a logo (nas cores dela); os temas E.V.A e Arasaka têm o próprio
 let appIconColor = '';
 function applyAppIcon() {
   // Tema E.V.A: o rosto do EVA-01; tema Arasaka: o emblema da corporação; senão, as duas telas

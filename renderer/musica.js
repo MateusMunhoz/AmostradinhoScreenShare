@@ -56,6 +56,7 @@ function setMusicas(list, serverNow, quiet = false) {
   }
   for (const ch of before.keys()) if (!next.has(ch) && state.in.has(musicKey(ch))) stopWatching(musicKey(ch), false);
   renderVoice();
+  renderNavMusic(); // tocando ou pausada: o botão e o menu da barrinha acompanham
 }
 // Para a troca de host: o servidor novo continua com as músicas, do ponto em que estão agora
 function musicSeed() {
@@ -77,6 +78,7 @@ function listenMusic(ch) {
   const tile = createMusicTile(ch, e);
   // Entra no palco como "você se vendo" (assistir.js): sem conexão, sem sinal para ninguém
   state.in.set(key, { self: true, music: tile.music, pc: SELF_PC, tile, videoOn: true, tracks: [], once: null, lastBytes: 0, lastTs: 0 });
+  renderNavMusic();
   renderFocus();
   renderMembers();
   updateStage();
@@ -372,6 +374,65 @@ function musicHeadButton(ch) {
   return b;
 }
 
+// ---------- Na barrinha da direita: a música que você está ouvindo ----------
+// Aparece enquanto você ouve uma música (a tela dela está no palco). Clicar abre um menu com Pausar ou Continuar (para
+// todos, como no player; só quem pode controlar) e Sair (para de ouvir; a música continua para os outros).
+function listenedMusic() {
+  for (const [key, link] of state.in) if (link.music) { const ch = key.slice('musica:'.length); return { key, ch, e: state.musicas.get(ch), link }; }
+  return null;
+}
+function renderNavMusic() {
+  const m = listenedMusic(), btn = $('navMusic');
+  $('navMusicWrap').hidden = !m?.e;
+  if (!m?.e) { closeNavMusic(); return; }
+  setIcon(btn, 'music', `${m.link.tile.name || musicTitle(m.e)} · ${m.e.playing ? 'tocando' : 'pausada'}`);
+  btn.dataset.playing = String(!!m.e.playing);
+  if (!$('navMusicMenu').hidden) buildNavMusic();
+}
+function buildNavMusic() {
+  const m = listenedMusic(), menu = $('navMusicMenu');
+  if (!m?.e) return;
+  const can = canControlMusic(m.e);
+  const head = document.createElement('div');
+  head.className = 'rail-music-head';
+  const title = document.createElement('strong');
+  title.textContent = m.link.tile.name || musicTitle(m.e);
+  const where = document.createElement('span');
+  where.textContent = `${m.e.playing ? 'Tocando' : 'Pausada'} em ${channelName(m.ch)}`;
+  head.append(title, where);
+  const item = (icon, text, tip, onclick, disabled = false) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'dock-more-item';
+    b.setAttribute('role', 'menuitem');
+    b.innerHTML = ICON[icon];
+    const label = document.createElement('span');
+    label.textContent = text;
+    b.append(label);
+    b.title = tip;
+    b.disabled = disabled;
+    b.onclick = onclick;
+    return b;
+  };
+  const why = can ? '' : `Só quem está em ${channelName(m.ch)} controla`;
+  menu.replaceChildren(head,
+    item(m.e.playing ? 'pause' : 'play', m.e.playing ? 'Pausar' : 'Continuar', why || (m.e.playing ? 'Pausar para todos' : 'Continuar para todos'),
+      () => { const e = state.musicas.get(m.ch); if (e && canControlMusic(e)) musicCtl(e, e.playing ? 'pause' : 'play', { pos: musicPos(e) }); }, !can),
+    item('leave', 'Sair da música', 'Para de ouvir (a música continua para os outros)', () => { closeNavMusic(); stopWatching(m.key, false); }));
+}
+function openNavMusic() {
+  buildNavMusic();
+  $('navMusicMenu').hidden = false;
+  $('navMusic').setAttribute('aria-expanded', 'true');
+  $('navMusicMenu').querySelector('button:not(:disabled)')?.focus();
+}
+function closeNavMusic(focusButton = false) {
+  if ($('navMusicMenu').hidden) return;
+  $('navMusicMenu').hidden = true;
+  $('navMusic').setAttribute('aria-expanded', 'false');
+  if (focusButton) $('navMusic').focus();
+}
+
 // ---------- Balão de colar o link ----------
 let musicPopFor = null; // { ch, mode: 'por' | 'trocar' }
 function openMusicPop(ch, anchor, mode) {
@@ -413,6 +474,9 @@ function submitMusicPop() {
 }
 
 function setupMusica() {
+  $('navMusic').onclick = () => ($('navMusicMenu').hidden ? openNavMusic() : closeNavMusic(true));
+  $('navMusicMenu').addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeNavMusic(true); } });
+  document.addEventListener('pointerdown', (e) => { if (!e.target.closest?.('#navMusicWrap')) closeNavMusic(); });
   $('musicPopForm').onsubmit = (e) => { e.preventDefault(); submitMusicPop(); };
   $('musicPopCancel').onclick = closeMusicPop;
   document.addEventListener('pointerdown', (e) => {

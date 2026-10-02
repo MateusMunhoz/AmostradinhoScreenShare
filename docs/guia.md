@@ -22,7 +22,7 @@ Tudo o que dá para fazer no Tela P2P, com os detalhes. Para começar do zero, v
 - **Entrar:** clique em **Entrar numa sala**, cole o endereço e clique em **Entrar**.
 - **Tamanho:** até 12 pessoas.
 - **Senha:** é opcional, mas recomendada se a rede da Radmin tiver mais gente.
-- **Painel à direita:** só o chat. O **botão de pessoas** no topo mostra o total e acende uma bolinha verde quando alguém fala. Ele abre a lista por cima do chat, com:
+- **Painel à direita:** só o chat. O **botão de pessoas**, na barrinha da direita, mostra o total e acende uma bolinha verde quando alguém fala. Ele abre a lista por cima do chat, com:
   - quem está na sala, com **Assistir** e o volume de cada pessoa;
   - os detalhes da sua transmissão;
   - o endereço da sala, com **Copiar**.
@@ -35,7 +35,7 @@ Tudo o que dá para fazer no Tela P2P, com os detalhes. Para começar do zero, v
   - as janelas flutuantes abertas;
   - **Estatísticas**;
   - o balão do chat.
-- **Barrinha da direita:** em cima, o perfil e a engrenagem; logo abaixo, separados por uma linha, **Chat**, **Voz** e **Transmissão**; no pé, **Início** (vai para o saguão sem sair da sala) e **Sair**.
+- **Barrinha da direita:** em cima, o perfil; logo abaixo, separados por uma linha, o **botão de pessoas** (o total e uma bolinha verde quando alguém fala; abre a lista de quem está na sala), **Chat**, **Voz** e **Transmissão**. Ouvindo uma música, aparece também o botão de **música**: clicar mostra **Pausar** ou **Continuar** (para todos, se você pode controlar) e **Sair da música** (a música continua para os outros). No pé, **Início** (vai para o saguão sem sair da sala), **Sair** e, depois de uma linha, a engrenagem. No saguão, com a sala aberta, o pé mostra **Voltar para a sala**, com o número de mensagens novas.
 - **Recolher o painel:** o balão do chat recolhe o painel, e os vídeos ocupam a largura toda. Recolhido, ele mostra quantas mensagens chegaram, e o endereço da sala passa para a barra.
 
 ### VPN Tela P2P
@@ -295,9 +295,9 @@ A configuração de outra pessoa só aparece se ela e o host estiverem na versã
 
 ## Tema
 
-Abra **Configurações gerais** pela engrenagem no alto da barrinha da direita. A barrinha fica na borda direita da janela, no início e dentro de uma sala.
+Abra **Configurações gerais** pela engrenagem no pé da barrinha da direita. A barrinha fica na borda direita da janela, no início e dentro de uma sala.
 
-O botão **Perfil** (no alto, junto da engrenagem) mostra seu nome salvo neste dispositivo; ele pode ser editado fora da sala. Dentro da sala, **Chat**, **Voz** e **Transmissão** ficam logo abaixo deles, num grupo separado, só com o ícone (o nome aparece ao parar o mouse em cima), e são alternadores independentes: clique para exibir ou ocultar cada painel. Chat e voz abrem se desdobrando ao lado da barrinha. Os selecionados permanecem visíveis juntos, dividindo o espaço. Perfil e configurações também podem ficar abertos ao mesmo tempo. Cada painel tem sua própria rolagem quando necessário. A seleção dos três painéis da sala é lembrada ao reabrir o app.
+O botão **Perfil** (no alto da barrinha) mostra seu nome salvo neste dispositivo; ele pode ser editado fora da sala. Dentro da sala, **Chat**, **Voz** e **Transmissão** ficam logo abaixo deles, num grupo separado, só com o ícone (o nome aparece ao parar o mouse em cima), e são alternadores independentes: clique para exibir ou ocultar cada painel. Chat e voz abrem se desdobrando ao lado da barrinha. Os selecionados permanecem visíveis juntos, dividindo o espaço. Perfil e configurações também podem ficar abertos ao mesmo tempo. Cada painel tem sua própria rolagem quando necessário. A seleção dos três painéis da sala é lembrada ao reabrir o app.
 
 O painel **Voz** mostra os participantes, seus controles de volume e botões para entrar, sair, mutar e silenciar as vozes. Mostrar ou ocultar esse painel não liga nem desliga o microfone. Da mesma forma, ocultar **Transmissão** não encerra uma transmissão em andamento; use o botão **Parar** para encerrá-la.
 
