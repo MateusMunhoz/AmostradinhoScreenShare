@@ -30,7 +30,7 @@ do P1 fase 2 (entrar pela internet sem Radmin e sem servidor do projeto). **Fora
 | Tempo até entrar | 1,4–2,4 s (inclui achar o host na DHT) |
 | Código errado | Recusado (não acha ninguém) |
 | Tamanho no Windows | ~3,5 MB (0,8 MB de JS + 2,7 MB de `.node` win32-x64); a pasta toda tem 32 MB por causa dos binários de outras plataformas |
-| **Entre redes diferentes (casa ↔ 4G/CGNAT)** | **Falta testar.** No mesmo PC o túnel passou pelo IP da Radmin; isso não prova o furo de NAT |
+| **Entre redes diferentes (casa ↔ 4G/CGNAT)** | **Sim** (1 rodada): PC na fibra de casa ↔ MacBook no 4G Vivo, entrou em 7,7 s, chat 47 ms. Ver a tabela abaixo |
 
 ## Como chegaria aos amigos (decisão da equipe)
 A atualização pela sala só leva os arquivos de `PACK_FILES`; o `node_modules` vai só no `.exe`.
@@ -42,7 +42,7 @@ A atualização pela sala só leva os arquivos de `PACK_FILES`; o `node_modules`
 
 Recomendação: **opção 2**, para não depender de todo mundo trocar o `.exe`; validar num próximo passo.
 
-## Teste entre dois PCs (o que falta)
+## Teste entre dois PCs
 Nos dois PCs: o repositório atualizado, `npm ci` na raiz e `npm ci` em `prototipos/hyperswarm`. **Radmin desligada.**
 
 ```sh
@@ -57,8 +57,13 @@ Anotar para cada par: entrou (sim/não), tempo até entrar, mediana do chat e o 
 | Host | Convidado | Entrou? | Tempo | Chat (mediana) |
 |---|---|---|---|---|
 | casa (fibra) | casa de outra pessoa | | | |
-| casa (fibra) | 4G (CGNAT) | | | |
+| casa (fibra), Windows | 4G Vivo (AS26599), MacBook | **Sim** | 7,7 s | 47 ms (melhor 37, pior 69) |
 | 4G | 4G | | | |
+
+Casa ↔ 4G (02/10/2026): o host viu o convidado vindo de `179.247.234.1` (Vivo), sem Radmin nem VPN. Uma rodada
+anterior com o WARP (Cloudflare) ligado no Mac entrou em 4,6 s com 83 ms, mas não conta: o tráfego saiu pela
+Cloudflare (`104.28.x`), não pelo 4G. **Com VPN ligada no convidado, o teste não prova o furo de NAT**: confira o IP
+em "conexão de" no host.
 
 Se o 4G ↔ 4G não entrar, é o caso que pede o TURN da VPS como reserva (P1 fase 3).
 
