@@ -78,7 +78,7 @@ isso (chamam `watch`, `state`, `speaking`... direto na página).
 | 25 | `novidades.js`, `atualizacao.js` | `NOVIDADES` (gerada pelo `publicar.js` com os commits); atualização pela sala, pelo GitHub, o aviso e o cartão Novidades do Início |
 | 26 | `sessoes.js` | Sessões abertas na rede (a lista da tela inicial) |
 | 27 | `transmitir.js` | Escolher a fonte, som, iniciar, trocar e parar, quem assiste |
-| 28 | `mapa-conexoes.js` | A janela Mapa de conexões |
+| 28 | `mapa-conexoes.js` | O Mapa de conexões (na aba Rede do HUB) |
 | 29 | `hub.js` | HUB: a barra fininha da esquerda, com as abas Salas (salas abertas, a atual e o menu inicial) , Amigos (adicionar, filtrar, convidar, pedidos) e Rede (conexão, servidores, redes Razze e login) |
 | 30 | `mensagens.js` | Mensagens diretas entre amigos: aba Mensagens do HUB, barra de conversas embaixo, busca na RazzeAPI a cada 4 s e histórico local |
 | 31 | `navegacao.js` | Barra fixa e painéis simultâneos da sala (`workspaceViews.v1`), painel de voz com os canais |

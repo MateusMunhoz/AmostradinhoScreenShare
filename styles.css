@@ -145,10 +145,10 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 .link-btn:disabled { color: var(--muted); cursor: default; text-decoration: none; }
 .link-btn:hover:not(:disabled) { color: var(--text); }
 
-/* Aviso de atualização: cartão no canto de cima, por cima de qualquer tela, mas logo abaixo da barra de cima
-   (perfil, rede, engrenagem e a setinha continuam clicáveis) */
+/* Aviso de atualização: cartão no canto de cima, por cima de qualquer tela, ao lado da barrinha da direita
+   (perfil e engrenagem continuam clicáveis) */
 .update-banner {
-  position: fixed; top: 72px; right: 16px; z-index: 40; width: 380px; max-width: calc(100vw - 32px); box-sizing: border-box;
+  position: fixed; top: 16px; right: calc(16px + var(--rail-w, 0px)); z-index: 40; width: 380px; max-width: calc(100vw - 32px); box-sizing: border-box;
   display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px 12px; padding: 14px;
   border: 1px solid var(--accent); border-radius: 12px; background: var(--panel-2); box-shadow: 0 12px 32px rgba(0, 0, 0, .5);
   animation: ub-in .25s ease-out;
@@ -326,11 +326,6 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 .dock-share { display: inline-flex; align-items: center; gap: 8px; height: 40px; }
 .dock-invite { display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 12px; font-size: 13px; }
 .dock-invite svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-/* Início: volta para o saguão sem sair da sala */
-.dock-home { display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 12px; font-size: 13px; }
-.dock-home svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.dock.tight-2 .dock-home .dock-label { display: none; }
-.dock.tight-2 .dock-home { padding: 0; width: 36px; justify-content: center; }
 
 /* Faixa da chamada no saguão (você saiu da tela da sala pelo Início, mas continua nela) */
 .home-call { display: flex; align-items: center; gap: 12px; padding: 12px 12px 12px 16px; border: 1px solid var(--accent); border-radius: 12px; background: var(--accent-soft); }
@@ -345,10 +340,6 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 .home-call .btn.icon[aria-pressed="true"] { border-color: var(--warn); color: var(--warn); background: var(--warn-soft); }
 .home-call #homeCallBack { flex: none; }
 .home-cta .btn:disabled { cursor: not-allowed; }
-/* Sair da sala: separado do resto por uma divisória, com cor de perigo ao passar o mouse */
-.dock .dock-leave { margin-left: 6px; position: relative; }
-.dock .dock-leave::before { content: ""; position: absolute; left: -9px; top: 6px; bottom: 6px; width: 1px; background: var(--line); }
-.dock .dock-leave:hover:not(:disabled) { color: var(--warn); border-color: var(--warn); }
 .dock-share svg, .pip-chip svg, .jump-new svg, .chat-drop svg {
   fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none;
 }
@@ -981,12 +972,23 @@ fieldset.group > legend { margin-bottom: 10px; }
 @media (max-width: 580px) { .settings-colors { grid-template-columns: 1fr; } }
 
 /* Barra global: a posição e largura não dependem de estar dentro da sala. */
-:root { --workspace-width: clamp(360px, 32vw, 480px); --workspace-top: 76px; }
+:root { --workspace-width: clamp(360px, 32vw, 480px); --workspace-top: 16px; }
 main { padding-top: var(--workspace-top); }
 .workspace-header { position: fixed; inset: 0 0 auto; height: var(--workspace-top); z-index: 10; background: var(--bg); }
 .workspace-brand { position: absolute; left: 24px; top: 28px; font-size: 15px; font-weight: 650; }
 #workspaceContext { margin-left: 12px; color: var(--muted); font-weight: 400; font-size: 12px; }
-#workspaceNav { position: absolute; top: 16px; right: 16px; width: var(--workspace-width); height: 48px; display: flex; align-items: stretch; gap: 3px; padding: 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+/* Barrinha fixa na borda direita, espelho do HUB da esquerda: Chat, Voz e Transmissão em cima, perfil e engrenagem
+   embaixo, só com os ícones (o nome fica na dica). Chat e voz abrem à esquerda dela. */
+:root { --rail-w: 48px; }
+main { margin-right: var(--rail-w); }
+#workspaceNav { position: fixed; top: 0; right: 0; bottom: 0; z-index: 13; width: var(--rail-w); box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 4px; border: 0; border-left: 1px solid var(--line); border-radius: 0; background: var(--panel); }
+#workspaceNav .workspace-tab { flex: none; width: 38px; height: 38px; padding: 0; }
+#workspaceNav .room-tab > span:not(.nav-icon):not(.unread) { display: none; }
+/* Perfil e engrenagem formam um grupo em cima, separado por uma linha; Início e Sair vão para o pé */
+.nav-sep { flex: none; width: 24px; height: 1px; margin: 4px 0; background: var(--line); }
+body:not(.workspace-in-room) .nav-sep { display: none; }
+#workspaceNav .rail-home { margin-top: auto; }
+#workspaceNav .rail-leave:hover:not(:disabled) { color: var(--warn); border-color: var(--warn); }
 .workspace-tab { display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 0 8px; border-radius: 6px; border: 1px solid transparent; background: transparent; color: var(--surface-text); font: inherit; font-size: 12px; cursor: pointer; white-space: nowrap; position: relative; }
 .workspace-tab:hover { background: var(--panel-2); }
 /* Chat, Voz e Transmissão ligados é o normal: tingido e discreto, sem competir com as ações (desligado fica
@@ -996,9 +998,8 @@ main { padding-top: var(--workspace-top); }
 .workspace-tab .nav-icon { display: inline-flex; }
 .workspace-tab svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .workspace-tab .unread { position: absolute; top: -8px; right: -4px; }
-.profile-tab { margin-left: auto; }
 .settings-tab { min-width: 36px; }
-#workspacePanes { position: fixed; top: var(--workspace-top); right: 16px; bottom: 16px; width: var(--workspace-width); display: flex; flex-direction: column; gap: 10px; z-index: 4; }
+#workspacePanes { position: fixed; top: var(--workspace-top); right: calc(16px + var(--rail-w)); bottom: 16px; width: var(--workspace-width); display: flex; flex-direction: column; gap: 10px; z-index: 4; }
 .workspace-pane { --text: var(--surface-text); --text-2: var(--surface-text-2); --muted: var(--surface-muted); color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; flex: 1 1 0; min-width: 0; min-height: 0; overflow: auto; }
 .pane-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
 .pane-head h2, .stream-pane-head h2 { font-size: 15px; }
@@ -1043,7 +1044,7 @@ main { padding-top: var(--workspace-top); }
 .workspace-in-room.has-workspace-pane:not(.workspace-wide) .map-chat-strip {
   display: flex; align-items: center; gap: 8px; flex: none; max-height: 0; overflow: hidden; visibility: hidden; padding: 0 14px;
   font: inherit; font-size: 12px; text-align: left; color: var(--muted); cursor: pointer;
-  background: var(--panel); border: 1px solid var(--line); border-top: 0; border-bottom-width: 0;
+  background: var(--panel); border: 1px solid var(--line); border-top-width: 0; border-bottom-width: 0;
   transition: max-height .28s cubic-bezier(.2, .8, .2, 1), visibility 0s linear .28s; }
 #workspacePanes.map-focus .map-chat-strip { max-height: 36px; height: 36px; visibility: visible; border-bottom-width: 1px; transition-delay: 0s; }
 .map-chat-strip:hover { color: var(--text); }
@@ -1268,33 +1269,21 @@ button.sky-card-info:hover:not(:disabled) .sky-card-go { color: var(--accent); }
 .dock-more-item:disabled { opacity: .45; cursor: default; }
 #workspaceEmpty { flex: 1; }
 .workspace-in-room #openGeneralSettingsRoom { display: none; }
-body:not(.workspace-in-room) #workspaceNav { background: transparent; border-color: transparent; } /* na tela inicial só tem o perfil e a engrenagem: sem a caixa vazia, e no mesmo lugar para não pular ao entrar na sala */
 /* Na sala, sem painel aberto: as telas começam embaixo da barra de cima (na altura dos painéis), e a barra
    não fica solta por cima do vídeo */
 .workspace-in-room:not(.has-workspace-pane) #room { padding-top: var(--workspace-top); }
-/* Barra de cima + chat + voz: um bloco só, dividido por linhas (sem espaço entre eles) */
-.workspace-in-room.has-workspace-pane:not(.workspace-wide) #workspaceNav { border-radius: 10px 10px 0 0; }
-.workspace-in-room.has-workspace-pane:not(.workspace-wide) #workspacePanes { top: 63px; gap: 0; }
-.workspace-in-room.has-workspace-pane:not(.workspace-wide) .workspace-pane { border-radius: 0; border-top: 0; }
-.workspace-in-room.has-workspace-pane:not(.workspace-wide) .workspace-pane.pane-last { border-radius: 0 0 10px 10px; }
-/* Sem chat nem voz: a barra recolhe numa aba na borda direita, e as telas ocupam a altura toda */
-/* A setinha › é o último item da barra; recolhida, a ‹ fica exatamente no mesmo lugar, numa caixinha com a
-   mesma borda (38 px = 1 de borda + 4 de folga + 28 do botão + 4 + 1) */
-.nav-collapse { flex: none; width: 28px; padding: 0; margin-left: 2px; }
-.nav-collapse:hover { color: var(--accent); }
-.nav-collapse svg, .nav-expand svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.nav-collapsed #workspaceNav { display: none; }
-/* Sem painéis, a barra cresce o que precisar; com painéis, Chat, Voz e Transmissão ficam só no ícone se
-   faltar espaço (fitNav): a engrenagem e a setinha nunca ficam para fora da caixa */
-.workspace-in-room:not(.has-workspace-pane) #workspaceNav { width: auto; min-width: var(--workspace-width); box-sizing: border-box; }
-#workspaceNav > * { flex-shrink: 0; }
-#workspaceNav.nav-tight .room-tab > span:not(.nav-icon):not(.unread) { display: none; }
-#workspaceNav.nav-tight .room-tab { padding: 0 9px; }
-.workspace-in-room.nav-collapsed #room { padding-top: 16px; padding-right: 62px; }
-.nav-expand { position: fixed; top: 16px; right: 16px; z-index: 12; width: 38px; height: 48px; box-sizing: border-box; display: grid; place-items: center; padding: 4px; cursor: pointer;
-  border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--surface-text); }
-.nav-expand:hover { color: var(--accent); }
-.nav-expand[hidden] { display: none; }
+/* Chat + voz: um bloco só, dividido por linhas (sem espaço entre eles). O primeiro à vista fecha o bloco com os
+   cantos de cima; o último (pane-last), com os de baixo */
+.workspace-in-room.has-workspace-pane:not(.workspace-wide) #workspacePanes { gap: 0; }
+.workspace-in-room.has-workspace-pane:not(.workspace-wide) .workspace-pane { border-radius: 0; border-top-width: 0; }
+.workspace-in-room.has-workspace-pane:not(.workspace-wide) :is(#chatTab, #chatTab[hidden] + #voicePane, #workspacePanes.map-focus > .map-chat-strip) {
+  border-top-width: 1px; border-top-left-radius: 10px; border-top-right-radius: 10px; }
+.workspace-in-room.has-workspace-pane:not(.workspace-wide) #workspacePanes.map-focus > #chatTab { border-top-width: 0; border-radius: 0; }
+.workspace-in-room.has-workspace-pane:not(.workspace-wide) .workspace-pane.pane-last { border-bottom-left-radius: 10px; border-bottom-right-radius: 10px; }
+/* Clicar no ícone da barrinha: o painel abre se desdobrando a partir dela (só ao abrir; fechar é na hora) */
+@keyframes pane-expand { from { opacity: .3; clip-path: inset(0 0 0 100% round 10px); transform: translateX(10px); } }
+#workspacePanes > .workspace-pane:not([hidden]) { animation: pane-expand .22s cubic-bezier(.2, .8, .2, 1); }
+@media (prefers-reduced-motion: reduce) { #workspacePanes > .workspace-pane:not([hidden]) { animation: none; } }
 .toast { top: calc(var(--workspace-top) + 8px); }
 @media (max-width: 900px) {
   .workspace-tab { padding: 0 6px; font-size: 11px; }
@@ -1317,7 +1306,7 @@ body:not(.workspace-in-room) #workspaceNav { background: transparent; border-col
    direita: por cima da coluna do chat e da voz ou, sem elas, do canto da faixa do nome da tela. */
 .workspace-brand, .stream-pane-head { display: none; }
 .workspace-header { background: transparent; pointer-events: none; }
-#workspaceNav, .nav-expand { pointer-events: auto; } /* o cabeçalho deixa o clique passar; a barra e a aba recebem */
+#workspaceNav { pointer-events: auto; } /* o cabeçalho deixa o clique passar; a barra recebe */
 main { padding-top: 0; }
 
 /* Transmissão sem som: aviso na faixa do nome da tela, e o volume some (não tem o que mudar) */
@@ -1362,7 +1351,7 @@ html[data-glass=clear], html[data-glass=liquid] {
     radial-gradient(50% 45% at 22% 92%, color-mix(in srgb, var(--primary) 20%, transparent), transparent 72%),
     var(--glass-base);
 }
-:is(html[data-glass=clear], html[data-glass=liquid]) :is(.home-card, .dock, .panel, .workspace-pane, #workspaceNav, .nav-expand, .dialog, .person-card, .people-pop, .update-banner, .toast, .stat-card, .stream-card, .join-panel, .session) {
+:is(html[data-glass=clear], html[data-glass=liquid]) :is(.home-card, .dock, .panel, .workspace-pane, #workspaceNav, .dialog, .person-card, .people-pop, .update-banner, .toast, .stat-card, .stream-card, .join-panel, .session) {
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   border-color: var(--glass-edge);
@@ -1381,10 +1370,10 @@ html[data-glass=clear] :is(.home-card, .dock, .panel, .workspace-pane, #workspac
 :is(html[data-glass=clear], html[data-glass=liquid]) .tile { background: var(--panel); border-color: var(--glass-edge); }
 /* Bordas Líquido: a quina de cima pega luz, como a borda de um vidro. As cores translúcidas vêm de
    preferencias-modelo.js › borders (--line, --line-strong, --field-line). */
-:is(html[data-border=clear], html[data-border=liquid]) :is(.home-card, .dock, .panel, .workspace-pane, #workspaceNav, .nav-expand, .dialog, .person-card, .people-pop, .update-banner, .toast, .stat-card, .stream-card, .join-panel, .session) {
+:is(html[data-border=clear], html[data-border=liquid]) :is(.home-card, .dock, .panel, .workspace-pane, #workspaceNav, .dialog, .person-card, .people-pop, .update-banner, .toast, .stat-card, .stream-card, .join-panel, .session) {
   border-color: var(--line-strong);
 }
-html[data-border=liquid] :is(.home-card, .dock, .panel, .workspace-pane, #workspaceNav, .nav-expand, .dialog, .person-card, .people-pop, .update-banner, .toast, .stat-card, .stream-card, .join-panel, .session, .btn:not(.primary):not(.live):not(.danger), input, select, textarea) {
+html[data-border=liquid] :is(.home-card, .dock, .panel, .workspace-pane, #workspaceNav, .dialog, .person-card, .people-pop, .update-banner, .toast, .stat-card, .stream-card, .join-panel, .session, .btn:not(.primary):not(.live):not(.danger), input, select, textarea) {
   border-top-color: var(--edge-sheen);
 }
 /* Vídeo nunca fica transparente */
@@ -1393,17 +1382,16 @@ html[data-border=liquid] :is(.home-card, .dock, .panel, .workspace-pane, #worksp
 /* Líquido: vidro grosso. Brilho de luz no alto das bordas (especular), lente que entorta de leve o fundo nas
    barras e botões, cantos em cápsula e um "aperto" com mola ao clicar. */
 html[data-glass=liquid] { --radius: 12px; --radius-lg: 18px; --lift: inset 0 1px 0 var(--glass-sheen); }
-html[data-glass=liquid] :is(.home-card, .dock, .panel, .workspace-pane, #workspaceNav, .nav-expand, .dialog, .person-card, .people-pop, .update-banner, .toast, .stat-card, .stream-card, .join-panel, .session) {
+html[data-glass=liquid] :is(.home-card, .dock, .panel, .workspace-pane, #workspaceNav, .dialog, .person-card, .people-pop, .update-banner, .toast, .stat-card, .stream-card, .join-panel, .session) {
   background-image: linear-gradient(165deg, rgba(255, 255, 255, .13), rgba(255, 255, 255, 0) 34%, rgba(255, 255, 255, 0) 72%, rgba(255, 255, 255, .05));
   box-shadow: inset 0 1px 0 var(--glass-sheen), inset 1px 0 0 rgba(255, 255, 255, .06), inset 0 -1px 0 rgba(0, 0, 0, .18), 0 10px 30px rgba(0, 0, 0, .22);
 }
-html[data-glass=liquid] :is(#workspaceNav, .dock, .nav-expand, .toast, .seg) {
+html[data-glass=liquid] :is(#workspaceNav, .dock, .toast, .seg) {
   -webkit-backdrop-filter: url(#liquidLens) blur(calc(var(--glass-blur) * .6)) saturate(var(--glass-saturate)) brightness(1.06);
   backdrop-filter: url(#liquidLens) blur(calc(var(--glass-blur) * .6)) saturate(var(--glass-saturate)) brightness(1.06);
 }
 html[data-glass=liquid] .home-card { border-radius: 28px; }
 html[data-glass=liquid] .dialog { border-radius: 24px; }
-html[data-glass=liquid] #workspaceNav { border-radius: 24px; }
 html[data-glass=liquid] :is(.btn, .workspace-tab, .seg, .seg button, .seg label) { border-radius: 999px; }
 html[data-glass=liquid] :is(.btn, .workspace-tab, .seg label, .seg button) { transition: transform .35s cubic-bezier(.34, 1.56, .64, 1), background-color .2s, box-shadow .2s; }
 html[data-glass=liquid] :is(.btn, .workspace-tab, .seg label, .seg button):active:not(:disabled) { transform: scale(.95); }
@@ -1548,14 +1536,12 @@ html[data-glass=liquid] .theme-swatches { border-radius: 10px; }
 }
 
 /* Mapa de conexões: as cores de estado são independentes do tema escolhido. */
-.connection-map-dialog { width: min(850px, 100%); }
 .connection-legend { display: flex; flex-wrap: wrap; gap: 18px; font-size: 13px; }
 .connection-legend .online { color: #15803d; }
 .connection-legend .offline { color: #dc2626; }
 .connection-legend .unknown { color: var(--surface-muted); }
-.connection-graph-scroll { overflow: auto; max-height: 52vh; border: 1px solid var(--line); border-radius: 14px; background: var(--panel-2); }
-#connectionGraph { width: 100%; min-width: 580px; display: block; }
-.connection-edge { fill: none; stroke-width: 3; }
+#connectionGraph { width: 100%; display: block; }
+.connection-edge { fill: none; stroke-width: 2.5; }
 .connection-edge.online { stroke: #22c55e; }
 .connection-edge.offline { stroke: #ef4444; stroke-dasharray: 8 6; }
 .connection-edge.unknown { stroke: #94a3b8; stroke-dasharray: 3 6; }
@@ -1737,7 +1723,7 @@ main { margin-left: var(--hub-w); }
 .has-dm-bar #workspacePanes { bottom: calc(16px + var(--dm-h)); }
 .has-dm-bar.workspace-wide #workspacePanes { bottom: calc(116px + var(--dm-h)); }
 .has-dm-bar.voice-side #voiceDialog { bottom: calc(16px + var(--dm-h)); }
-.dm-bar { --text: var(--surface-text); --muted: var(--surface-muted); position: fixed; left: var(--hub-w); right: 0; bottom: 0; z-index: 12; height: var(--dm-h);
+.dm-bar { --text: var(--surface-text); --muted: var(--surface-muted); position: fixed; left: var(--hub-w); right: var(--rail-w); bottom: 0; z-index: 12; height: var(--dm-h);
   display: flex; align-items: stretch; gap: 6px; padding: 0 10px 0 0; background: var(--panel); border-top: 1px solid var(--line); color: var(--text); }
 .dm-bar-label { flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 0 14px; border: 0; border-right: 1px solid var(--line); background: transparent;
   color: var(--muted); font: inherit; font-size: 11px; font-weight: 700; letter-spacing: .24em; text-transform: uppercase; cursor: pointer; }

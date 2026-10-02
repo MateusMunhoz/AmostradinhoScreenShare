@@ -1,5 +1,6 @@
 'use strict';
-// Uma barra fixa; os botões da sala são alternadores independentes, não abas exclusivas.
+// Uma barrinha fixa na borda direita (só ícones); os botões da sala são alternadores independentes, não abas
+// exclusivas. Chat e voz abrem à esquerda dela, no mesmo lugar de sempre.
 const workspaceViews = (() => {
   let saved; try { saved = JSON.parse(load('workspaceViews.v1', '{}')); } catch {}
   return { chat: typeof saved?.chat === 'boolean' ? saved.chat : load('panelOpen', '1') !== '0',
@@ -12,7 +13,6 @@ function setUtilityBackground(inert) {
   for (const el of [document.querySelector('main'), document.querySelector('.workspace-header'), $('workspacePanes')]) el.inert = inert;
 }
 function openProfilePopup() {
-  if (!$('connectionMapDialog').hidden) closeConnectionMap();
   if (!$('friendsDialog').hidden) closeFriendsDialog();
   renderConnectivitySettings();
   if (!$('generalSettingsDialog').hidden) closeGeneralSettings();
@@ -79,22 +79,15 @@ function syncWorkspace() {
   // Barra e painéis formam um bloco só: o último painel aberto fecha o bloco com os cantos de baixo
   $('chatTab').classList.toggle('pane-last', !workspaceViews.voice);
   $('voicePane').classList.toggle('pane-last', workspaceViews.voice);
-  // A setinha › é sempre o último item da barra, na sala: com chat ou voz abertos esconde tudo da direita;
-  // sem eles, recolhe só a barra (escolha salva). A ‹ que traz de volta aparece no mesmo lugar.
-  const bare = inRoom && !any;
-  $('navCollapse').hidden = !inRoom;
-  $('navCollapse').title = $('navCollapse').ariaLabel = any ? 'Esconder o chat, a voz e esta barra' : 'Recolher a barra';
-  $('navExpand').hidden = !(bare && navCollapsed);
-  document.body.classList.toggle('nav-collapsed', bare && navCollapsed);
   if (inRoom) syncIncomingVideo(); // telas escondidas não baixam vídeo (o som continua)
   if (mapFocus.on && !mapFocusFits()) setMapFocus(false); // o mapa em foco só existe com chat e voz na barra
   $('workspaceContext').textContent = inRoom ? 'Na sala' : 'Início';
+  $('dockHome').hidden = $('leaveBtn').hidden = !inRoom; // Início e Sair: no pé da barrinha, só na sala
   for (const [id, view] of [['navChat','chat'],['navVoice','voice'],['navStreams','streams']]) {
     $(id).hidden = !inRoom;
     $(id).setAttribute('aria-pressed', String(workspaceViews[view]));
   }
   $('navSettings').setAttribute('aria-expanded', String(settings));
-  $('navConnectionMap').setAttribute('aria-expanded', String(!$('connectionMapDialog').hidden));
   $('navProfile').setAttribute('aria-expanded', String(profile));
   if (!inRoom) setPeopleOpen(false);
   fitNav();
@@ -121,7 +114,7 @@ const DOCK_STEPS = ['tight-1', 'tight-2', 'tight-3', 'tight-4'];
 // 5) ainda sem espaço: os botões saem da barra para o menu da setinha ^, nesta ordem (os mais usados por último).
 // stageLayout é o grupo Grade/Destaque: no menu vira os dois itens.
 const DOCK_OVERFLOW = ['openStatsRoom', 'overlayToggle', 'stageLayout', 'dockAddr', 'voiceSettingsBtn', 'chatToggle',
-  'voiceDeafen', 'selfViewBtn', 'switchShareBtn', 'dockHome', 'voiceMute', 'voiceJoin', 'leaveBtn'];
+  'voiceDeafen', 'selfViewBtn', 'switchShareBtn', 'voiceMute', 'voiceJoin'];
 function fitDock() {
   const dock = document.querySelector('.dock');
   if (!dock || !dock.offsetParent) return;
@@ -211,7 +204,8 @@ function watchDock() {
   new MutationObserver(again).observe(document.documentElement, { attributes: true, attributeFilter: ['style', 'data-skin'] });
   document.fonts?.addEventListener('loadingdone', again);
 }
-// Barra de cima sem espaço (janela estreita, fonte larga): Chat, Voz e Transmissão ficam só com o ícone
+// Barra sem espaço (janela estreita, fonte larga): Chat, Voz e Transmissão ficam só com o ícone. Na barrinha da
+// direita eles já são só ícone; continua aqui para quem mede a barra.
 function fitNav() {
   const nav = $('workspaceNav');
   nav.classList.remove('nav-tight');
@@ -314,30 +308,6 @@ function renderVoicePane() {
     for (const id of outside) list.append(id ? memberRow(id, nameOf(id), true) : memberRow(null, `${getName()} (você)`, true));
   }
 }
-let navCollapsed = load('barraRecolhida', '1') === '1';
-let navRestore = null; // painéis que estavam abertos quando o › do chat recolheu tudo; a setinha abre de volta
-function setNavCollapsed(on) {
-  navCollapsed = on;
-  save('barraRecolhida', on ? '1' : '0');
-  if (!on && navRestore) {
-    workspaceViews.voice = navRestore.voice;
-    saveWorkspaceViews();
-    const chatWas = navRestore.chat;
-    navRestore = null;
-    if (chatWas) { setPanelOpen(true); $('navChat').focus(); return; }
-  }
-  syncWorkspace();
-  (on ? $('navExpand') : $('navCollapse')).focus();
-}
-// O › do painel da sala: esconde tudo da direita (chat, voz e a barra) e a tela cobre a janela toda
-function collapseRoomSide() {
-  navRestore = { chat: workspaceViews.chat, voice: workspaceViews.voice };
-  workspaceViews.voice = false;
-  navCollapsed = true;
-  save('barraRecolhida', '1');
-  setPanelOpen(false); // fecha o chat, salva e redesenha
-  $('navExpand').focus();
-}
 function setupWorkspace() {
   setupConnectionMap();
   const host = $('workspacePanes');
@@ -350,7 +320,6 @@ function setupWorkspace() {
   const icons = {navSettings: '<svg viewBox="0 0 24 24"><path d="m9 3 1-2h4l1 2 2 1 2 0 2 3-1 2v3l1 2-2 3h-2l-2 1-1 3h-4l-1-3-2-1H5l-2-3 1-2V9L3 7l2-3h2z"/><circle cx="12" cy="11" r="3"/></svg>',
     navChat: ICON.chat, navVoice: ICON.mic, navStreams: '<svg viewBox="0 0 24 24"><path d="M3 4h18v13H3zM8 21h8M12 17v4"/></svg>'};
   for (const [id, icon] of Object.entries(icons)) $(id).querySelector('.nav-icon').innerHTML = icon;
-  $('navCollapse').onclick = () => (document.body.classList.contains('has-workspace-pane') ? collapseRoomSide() : setNavCollapsed(true));
   // Só com o ícone (barra apertada), o nome da aba continua na dica e no leitor de tela
   for (const id of ['navChat', 'navVoice', 'navStreams']) {
     const name = $(id).querySelector('.nav-icon + span').textContent;
@@ -358,7 +327,6 @@ function setupWorkspace() {
     $(id).setAttribute('aria-label', name);
   }
   new ResizeObserver(() => fitNav()).observe($('workspaceNav'));
-  $('navExpand').onclick = () => setNavCollapsed(false);
   $('navProfile').onclick = openProfilePopup;
   $('closeProfile').onclick = closeProfilePopup;
   setupUtilityPopup('profilePane', closeProfilePopup);

@@ -26,16 +26,17 @@
   <header class="workspace-header">
     <span class="workspace-brand">Tela P2P <span id="workspaceContext">Início</span></span>
     <nav id="workspaceNav" aria-label="Painéis do aplicativo">
+      <!-- Em cima: perfil e engrenagem; separados por uma linha, Chat, Voz e Transmissão; embaixo, Início e Sair -->
+      <button id="navProfile" type="button" class="workspace-tab profile-tab" aria-label="Seu perfil" title="Seu perfil" aria-haspopup="dialog" aria-expanded="false" aria-controls="profilePane"><span id="navProfileAvatar" aria-hidden="true"></span></button>
+      <button id="navSettings" type="button" class="workspace-tab settings-tab" aria-label="Configurações gerais" title="Configurações gerais" aria-haspopup="dialog" aria-expanded="false" aria-controls="generalSettingsDialog"><span class="nav-icon" aria-hidden="true"></span></button>
+      <span class="nav-sep" aria-hidden="true"></span>
       <button id="navChat" type="button" class="workspace-tab room-tab" aria-pressed="true" aria-controls="chatTab" hidden><span class="nav-icon" aria-hidden="true"></span><span>Chat</span><span id="navUnread" class="unread" hidden></span></button>
       <button id="navVoice" type="button" class="workspace-tab room-tab" aria-pressed="true" aria-controls="voicePane" hidden><span class="nav-icon" aria-hidden="true"></span><span>Voz</span></button>
       <button id="navStreams" type="button" class="workspace-tab room-tab" aria-pressed="true" aria-controls="streamArea" hidden><span class="nav-icon" aria-hidden="true"></span><span>Transmissão</span></button>
-      <button id="navConnectionMap" type="button" class="workspace-tab settings-tab" aria-label="Mapa de conexões" title="Mapa de conexões" aria-haspopup="dialog" aria-expanded="false" aria-controls="connectionMapDialog"><span class="nav-icon" aria-hidden="true"></span></button>
-      <button id="navProfile" type="button" class="workspace-tab profile-tab" aria-label="Seu perfil" title="Seu perfil" aria-haspopup="dialog" aria-expanded="false" aria-controls="profilePane"><span id="navProfileAvatar" aria-hidden="true"></span></button>
-      <button id="navSettings" type="button" class="workspace-tab settings-tab" aria-label="Configurações gerais" title="Configurações gerais" aria-haspopup="dialog" aria-expanded="false" aria-controls="generalSettingsDialog"><span class="nav-icon" aria-hidden="true"></span></button>
-      <!-- Na sala sem chat nem voz abertos: recolhe a barra numa aba na borda direita -->
-      <button id="navCollapse" type="button" class="workspace-tab nav-collapse" aria-label="Recolher a barra" title="Recolher a barra" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
+      <!-- Início: volta para o saguão sem sair da sala (voz, chat e telas continuam) -->
+      <button id="dockHome" type="button" class="workspace-tab rail-home" title="Ir para o início sem sair da sala" aria-label="Início" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/></svg></button>
+      <button id="leaveBtn" type="button" class="workspace-tab rail-leave" hidden></button>
     </nav>
-    <button id="navExpand" type="button" class="nav-expand" aria-label="Mostrar a barra: Chat, Voz, Transmissão, mapa de conexões, perfil, rede e configurações" title="Mostrar a barra" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></button>
   </header>
   <aside id="workspacePanes" aria-label="Painéis selecionados" hidden>
     <section id="profilePane" class="modal global utility-popup" hidden>
@@ -175,6 +176,16 @@
           </section>
 
         </div>
+        <!-- Mapa de conexões (renderer/mapa-conexoes.js): atualiza sozinho enquanto esta aba está à vista -->
+        <section id="connectionMap" class="settings-section connection-map" aria-labelledby="connectionMapTitle">
+          <h3 id="connectionMapTitle">Mapa de conexões</h3>
+          <p class="hint" id="connectionMapServer"></p>
+          <div class="connection-legend"><span class="online">● Conectado</span><span class="offline">● Sem conexão</span><span class="unknown">● Indisponível</span></div>
+          <svg id="connectionGraph" role="img" aria-label="Grafo de conexões do PC, servidor e redes"></svg>
+          <p id="connectionMapEmpty" class="hint">Nenhuma conexão local ou sala ativa foi encontrada.</p>
+          <ul id="connectionMapDetails" class="connection-map-details"></ul>
+          <div class="net-row"><p id="connectionMapStatus" class="hint" role="status" aria-live="polite"></p><button id="refreshConnectionMap" class="btn small" type="button">Atualizar</button></div>
+        </section>
         <div id="profileAccount">
           <p id="razzeAccountStatus" class="razze-status" role="status" aria-live="polite"></p>
           <p id="profileAccountHint" class="hint"></p>
@@ -550,16 +561,11 @@
             <button class="btn icon chat-toggle" id="chatToggle" type="button" aria-pressed="true">
               <span id="chatUnread" class="unread" hidden></span>
             </button>
-            <!-- Início: volta para o saguão sem sair da sala (voz, chat e telas continuam) -->
-            <button class="btn dock-home" id="dockHome" type="button" title="Ir para o início sem sair da sala">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/></svg><span class="dock-label">Início</span>
-            </button>
             <!-- Janela estreita: o que não cabe na barra vai para este menu (fitDock em renderer/navegacao.js) -->
             <div class="dock-more" id="dockMoreWrap" hidden>
               <button class="btn icon" id="dockMore" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="dockMoreMenu"></button>
               <div class="dock-more-menu" id="dockMoreMenu" role="menu" aria-label="Mais controles da sala" hidden></div>
             </div>
-            <button class="btn icon dock-leave" id="leaveBtn" type="button"></button>
           </div>
         </div>
 
@@ -871,17 +877,6 @@
     </div>
   </div>
 
-  <div id="connectionMapDialog" class="modal global utility-popup" hidden>
-    <div class="dialog general-settings connection-map-dialog" role="dialog" aria-modal="true" aria-labelledby="connectionMapTitle">
-      <div class="dialog-head"><h2 id="connectionMapTitle">Mapa de conexões</h2><button id="closeConnectionMap" class="btn icon" type="button"></button></div>
-      <p class="hint" id="connectionMapServer"></p>
-      <div class="connection-legend"><span class="online">● Conectado</span><span class="offline">● Sem conexão</span><span class="unknown">● Indisponível</span></div>
-      <div class="connection-graph-scroll"><svg id="connectionGraph" role="img" aria-label="Grafo de conexões do PC, servidor e redes"></svg></div>
-      <p id="connectionMapEmpty" class="hint">Nenhuma conexão local ou sala ativa foi encontrada.</p>
-      <ul id="connectionMapDetails" class="connection-map-details"></ul>
-      <div class="net-row"><p id="connectionMapStatus" class="hint" role="status" aria-live="polite"></p><button id="refreshConnectionMap" class="btn small" type="button">Atualizar</button></div>
-    </div>
-  </div>
   <div id="toast" class="toast" role="status"></div>
   <!-- Lente do modo Líquido: o fundo atrás das barras e botões ondula de leve, como vidro grosso -->
   <svg class="glass-defs" width="0" height="0" aria-hidden="true" focusable="false">

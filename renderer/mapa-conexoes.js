@@ -38,28 +38,15 @@ function connectionMapLocalNodes(tunnels, interfaces, selectedStatus) {
   return [...nodes.values()];
 }
 
-function openConnectionMap() {
-  for (const [id, close] of [['profilePane', closeProfilePopup], ['networkDialog', closeNetworkDialog], ['friendsDialog', closeFriendsDialog], ['generalSettingsDialog', closeGeneralSettings]]) {
-    if (!$(id).hidden) close();
-  }
-  connectionMapFocus = document.activeElement;
-  $('connectionMapDialog').hidden = false;
-  syncWorkspace();
-  setUtilityBackground(true);
+// O mapa mora na aba Rede do HUB: enquanto ela está à vista, atualiza a cada 5 segundos
+function connectionMapVisible() { return !$('networkDialog').hidden; }
+function syncConnectionMap() {
+  const on = connectionMapVisible();
+  if (on === !!connectionMapTimer) return;
+  clearInterval(connectionMapTimer);
+  connectionMapTimer = on ? setInterval(refreshConnectionMap, 5000) : null;
   syncCaptureExclude(); // transmitindo: o mapa (endereços e redes) não vai para quem assiste
-  $('closeConnectionMap').focus();
-  void refreshConnectionMap();
-  clearInterval(connectionMapTimer);
-  connectionMapTimer = setInterval(refreshConnectionMap, 5000);
-}
-function closeConnectionMap() {
-  clearInterval(connectionMapTimer);
-  connectionMapTimer = null;
-  $('connectionMapDialog').hidden = true;
-  syncCaptureExclude();
-  setUtilityBackground(false);
-  syncWorkspace();
-  (connectionMapFocus || $('navConnectionMap')).focus();
+  if (on) void refreshConnectionMap();
 }
 function graphElement(tag, attributes, text) {
   const node = document.createElementNS('http://www.w3.org/2000/svg', tag);
@@ -67,42 +54,43 @@ function graphElement(tag, attributes, text) {
   if (text !== undefined) node.textContent = text;
   return node;
 }
+// Em pé, na largura do HUB: este PC em cima e, embaixo, o servidor e cada rede, presos a um tronco à esquerda
 function renderConnectionGraph(server, networks) {
   const svg = $('connectionGraph');
   svg.replaceChildren();
-  const height = Math.max(300, 100 + networks.length * 100);
-  svg.setAttribute('viewBox', `0 0 760 ${height}`);
+  const items = [{ name: 'Servidor Razze', ...server }, ...networks];
+  const top = 32, step = 64, first = 104;
+  const height = first + (items.length - 1) * step + 34;
+  svg.setAttribute('viewBox', `0 0 280 ${height}`);
   svg.append(graphElement('title', {}, 'Conexões deste PC com o servidor Razze e os túneis de rede'));
-  const center = height / 2;
-  const link = (x, y, status) => svg.append(graphElement('path', {
-    d: `M 176 ${center} C 290 ${center}, ${x - 140} ${y}, ${x} ${y}`,
-    class: 'connection-edge ' + status,
-  }));
-  const node = (x, y, title, detail, status, width = 238) => {
+  const cut = (text, max) => (text.length > max ? text.slice(0, max - 1) + '…' : text);
+  const node = (x, y, title, detail, status, width) => {
     const group = graphElement('g', { class: 'connection-node ' + status });
     group.append(graphElement('title', {}, title + ': ' + detail));
-    group.append(graphElement('rect', { x, y: y - 34, width, height: 68, rx: 14 }));
-    group.append(graphElement('circle', { cx: x + 19, cy: y, r: 6 }));
-    const label = graphElement('text', { x: x + 36, y: y - 5, class: 'connection-name' }, title.length > 24 ? title.slice(0, 23) + '…' : title);
-    group.append(label, graphElement('text', { x: x + 36, y: y + 16, class: 'connection-detail' }, detail));
+    group.append(graphElement('rect', { x, y: y - 26, width, height: 52, rx: 12 }));
+    group.append(graphElement('circle', { cx: x + 16, cy: y, r: 5 }));
+    group.append(graphElement('text', { x: x + 30, y: y - 4, class: 'connection-name' }, cut(title, 24)));
+    group.append(graphElement('text', { x: x + 30, y: y + 14, class: 'connection-detail' }, cut(detail, 30)));
     svg.append(group);
   };
-  link(350, 52, server.status);
-  networks.forEach((network, i) => link(490, 150 + i * 100, network.status));
-  node(16, center, 'Este PC', 'Suas conexões', 'local', 160);
-  node(350, 52, 'Servidor Razze', server.detail, server.status);
-  networks.forEach((network, i) => node(490, 150 + i * 100, network.name, network.detail, network.status));
+  // Do último para o primeiro: cada trecho do tronco fica com a cor do nó logo abaixo dele
+  [...items.keys()].reverse().forEach((i) => {
+    const y = first + i * step, item = items[i];
+    svg.append(graphElement('path', { d: `M 18 ${top + 26} V ${y - 12} Q 18 ${y} 30 ${y} H 40`, class: 'connection-edge ' + item.status }));
+  });
+  node(2, top, 'Este PC', 'Suas conexões', 'local', 276);
+  items.forEach((item, i) => node(40, first + i * step, item.name, item.detail, item.status, 238));
   $('connectionMapEmpty').hidden = networks.length > 0;
   const list = $('connectionMapDetails');
   list.replaceChildren();
-  for (const item of [{ name: 'Servidor Razze', ...server }, ...networks]) {
+  for (const item of items) {
     const row = document.createElement('li');
     row.textContent = item.name + ' — ' + item.detail;
     list.append(row);
   }
 }
 async function refreshConnectionMap() {
-  if (connectionMapBusy || $('connectionMapDialog').hidden) return;
+  if (connectionMapBusy || !connectionMapVisible()) return;
   connectionMapBusy = true;
   $('refreshConnectionMap').disabled = true;
   $('connectionMapStatus').textContent = 'Verificando conexões…';
@@ -119,7 +107,7 @@ async function refreshConnectionMap() {
       try { await window.api.razzeHealth(); server = { status: 'online', detail: 'Conectado' }; }
       catch { server = { status: 'offline', detail: 'Sem conexão' }; }
     }
-    $('connectionMapServer').textContent = account?.baseUrl || 'Configure o servidor na aba Rede do HUB.';
+    $('connectionMapServer').textContent = account?.baseUrl || 'Servidor Razze ainda não configurado.';
     if (account?.authenticated && server.status === 'online') {
       try {
         const result = await window.api.razzeListNetworks();
@@ -134,7 +122,7 @@ async function refreshConnectionMap() {
       tunnelsResult.status === 'fulfilled' ? tunnelsResult.value : [],
       interfacesResult.status === 'fulfilled' ? interfacesResult.value : [], selectedStatus,
     );
-    if (!$('connectionMapDialog').hidden) {
+    if (connectionMapVisible()) {
       renderConnectionGraph(server, networks);
       $('connectionMapStatus').textContent = tunnelsResult.status === 'rejected'
         ? 'Não foi possível verificar os túneis locais. Tente atualizar.'
@@ -148,10 +136,5 @@ async function refreshConnectionMap() {
   }
 }
 function setupConnectionMap() {
-  $('navConnectionMap').querySelector('.nav-icon').innerHTML = '<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="3"/><circle cx="19" cy="5" r="3"/><circle cx="19" cy="19" r="3"/><path d="m8 11 8-5M8 13l8 5"/></svg>';
-  $('navConnectionMap').onclick = openConnectionMap;
-  $('closeConnectionMap').onclick = closeConnectionMap;
   $('refreshConnectionMap').onclick = refreshConnectionMap;
-  setIcon($('closeConnectionMap'), 'close', 'Fechar');
-  setupUtilityPopup('connectionMapDialog', closeConnectionMap);
 }

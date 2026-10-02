@@ -33,7 +33,6 @@ function setHubTab(tab) { setHubOpen(true, tab); }
 
 // Os amigos agora moram no HUB: abrir e fechar "a janela de amigos" é abrir o HUB na aba Amigos
 function openFriendsDialog() {
-  if (!$('connectionMapDialog').hidden) closeConnectionMap();
   if (!$('profilePane').hidden) closeProfilePopup();
   if (!$('networkDialog').hidden) closeNetworkDialog();
   if (!$('generalSettingsDialog').hidden) closeGeneralSettings();
@@ -42,7 +41,6 @@ function openFriendsDialog() {
 }
 function closeFriendsDialog() { if (hub.open) setHubOpen(false); }
 function openNetworkDialog() {
-  if (!$('connectionMapDialog').hidden) closeConnectionMap();
   if (!$('profilePane').hidden) closeProfilePopup();
   if (!$('generalSettingsDialog').hidden) closeGeneralSettings();
   renderConnectivitySettings();
@@ -72,6 +70,7 @@ function renderHub() {
   $('networkDialog').hidden = !hub.open || hub.tab !== 'network';
   $('hubRooms').hidden = !hub.open || hub.tab !== 'rooms';
   $('friendsDialog').hidden = !hub.open || hub.tab !== 'friends';
+  syncConnectionMap(); // o mapa de conexões fica na aba Rede e só atualiza com ela à vista
   if (!hub.open) return;
   if (hub.tab === 'friends') { renderFriends(); return; }
   // A sala em que você está

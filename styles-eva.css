@@ -68,7 +68,7 @@
 :root[data-skin="eva"] .btn:not(.primary):not(.live):not(.danger) { border-color: var(--line); box-shadow: none; }
 :root[data-skin="eva"] .btn:not(.primary):not(.live):not(.danger):hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
 /* Sair, encerrar e parar: a faixa de perigo embaixo */
-:root[data-skin="eva"] :is(.btn.danger, .dock .dock-leave) {
+:root[data-skin="eva"] :is(.btn.danger, #workspaceNav .rail-leave) {
   border-image: repeating-linear-gradient(-45deg, var(--warn) 0 6px, #000 6px 12px) 0 0 3 0 / 0 0 3px 0;
 }
 :root[data-skin="eva"] .workspace-tab[aria-pressed=true], :root[data-skin="eva"] .workspace-tab[aria-expanded=true] {
