@@ -303,6 +303,8 @@ O painel **Voz** mostra os participantes, seus controles de volume e botões par
 
 Digite um hexadecimal de três ou seis dígitos, com ou sem `#`, ou use a amostra de cor. A mudança aparece imediatamente, inclusive nas janelas flutuantes abertas. Textos e tons de apoio se adaptam às cores escolhidas. Valores inválidos não substituem a última cor válida. **Restaurar cores padrão** recupera o tema oliva e amarelo, sem alterar os sons.
 
+No tema Padrão, a tela inicial tem um céu ao fundo; de vez em quando (a cada 20 a 90 segundos, ao acaso) uma estrela cadente cruza esse céu. Ela só aparece com a janela do app em foco e não aparece se o Windows estiver com os efeitos de animação desligados.
+
 Na mesma tela, escolha o som de **entrada na sala**, **saída da sala**, **mensagem no chat**, **entrada no chat de voz**, **saída do chat de voz**, **mutar o microfone** e **desmutar o microfone**. Há os oito MP3 incluídos no app e quatro sons **Suave**, gerados na hora pelo próprio app (os padrões da voz e do microfone). Os da voz dos outros só tocam enquanto você está na voz. Os arquivos já vêm dentro do app; não é preciso manter a pasta original ao lado do executável. **Ouvir** toca uma prévia. **Sem som** desativa um evento específico, e **Silenciar som do chat** mantém os outros avisos ativos. A prévia continua disponível com o chat silenciado.
 
 Cada evento tem seu próprio volume de 0 a 100%. O **volume geral dos avisos** multiplica esses valores: geral em 50% e um evento em 40% resultam em 20% para aquele evento. Geral em 0% silencia todos sem apagar os ajustes individuais. Os volumes dos avisos são independentes do volume da voz e das transmissões.
