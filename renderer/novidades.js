@@ -3,6 +3,13 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.12.12",
+    "date": "2026-10-02",
+    "items": [
+      "Mapa: cartão do canal no sol; música aparece para quem entra na sala; mapa continua girando fora de foco"
+    ]
+  },
+  {
     "version": "1.12.11",
     "date": "2026-10-01",
     "items": [
@@ -72,13 +79,6 @@ const NOVIDADES = [
     "items": [
       "Tirei as tooltips",
       "add mover pessoas entre subsala"
-    ]
-  },
-  {
-    "version": "1.12.2",
-    "date": "2026-09-30",
-    "items": [
-      "Barra da voz: até 3 do seu canal, com foto, quem fala entra; estrela colorida sem foto; ícones no cartão"
     ]
   }
 ];
