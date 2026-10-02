@@ -12,7 +12,9 @@ O que falta para fechar a fundação descrita em [Fluxo com IA](fluxo-com-ia.md)
       `main/razze-service.js` faz `require('electron')`. Corrigido; conferir a próxima execução.
 - [ ] `docs/desenvolvimento.md`: a tabela do processo principal (`main/`) não lista `fontes.js`, `linux.js` e os `razze-*`.
 - [ ] Roadmap P1: reescrever com a ideia atual da equipe, mantendo a fase 2 (Hyperswarm) como prioridade.
-- [ ] RazzeAPI: provavelmente será descartada. Até a decisão, não mexer nos testes `razze-*` nem em `razze-api/`.
+- [ ] RazzeAPI: **não remover ainda** (decisão de 01/10/2026). Destino no [roadmap](roadmap.md#razze-e-wireguard): só
+      sai depois que amigos, lobby e túnel sem servidor estiverem provados, com importação dos amigos. Até lá, não
+      mexer nos testes `razze-*` nem em `razze-api/`.
 - [ ] CODEOWNERS: quando a equipe dividir áreas (hoje todos mexem em tudo).
 - [ ] Proteção da `main` (PR obrigatório, CI obrigatório): só depois do CI estável e combinando com o `publicar.js`,
       que faz push direto na `main`.

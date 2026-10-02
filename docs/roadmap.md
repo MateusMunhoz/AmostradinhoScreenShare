@@ -41,6 +41,53 @@ A ordem abaixo não segue só o ICE: **P1 vem antes dos outros "Próximos"** por
 espectadores de fora, convidar amigo novo), e **A1 tem que vir antes de P1** (abrir a sala para a internet sem criptografia
 seria um passo atrás).
 
+## B0. Briefing para 50+ pessoas
+
+**Prioridade máxima. É a meta que puxa todo o resto.** Uma pessoa passa o briefing de missão do DCS (mapa, kneeboard,
+slides) e fala; 50+ assistem, sem Radmin e sem servidor obrigatório (a VPS só como último recurso). Plano, camadas,
+números e teste de carga (primeiro forjado com robôs, depois com gente) em [spec/briefing-50.md](spec/briefing-50.md).
+
+## Ordem combinada em 01/10/2026 (rumo ao B0)
+
+Entrar de forma fluida, sem Hamachi/Radmin: adicionar amigo, ver no lobby a sala dele, entrar com um clique.
+
+| # | Item | Depende de | Observação |
+|---|---|---|---|
+| 0 | **Protótipo Hyperswarm no Electron (2 dias)** + medir o bitrate de um briefing real | nada | Tira o maior risco cedo; a medição já orienta o B0 |
+| 1 | **A1. Cripto da sala** | nada | Pré-requisito para abrir a sala para a internet |
+| 2 | **Identidade e amigos sem servidor** | 0 | Cada PC gera um par de chaves (sem conta); "Adicionar amigo" por código curto; presença pela DHT (tópico = hash da chave). Conta Razze vira opcional |
+| 3 | **Lobby: salas dos amigos** | 2 | Na tela inicial, a sala aberta de um amigo adicionado aparece com "Entrar"; amigo entra sem código e senha (a chave já prova quem é) |
+| 4 | **Túnel invisível (P1 fase 2)** | 0, 1 | A ponte Hyperswarm faz o papel do Hamachi sem instalar nada, sem adaptador de rede e sem pedir administrador |
+| 5 | **Constelação de amigos + estrela cadente** | 2 (constelação); nada (estrela) | A estrela cadente pode sair já. Ver "Tela inicial" abaixo |
+| 6 | **Enquete de próximos temas** | 2 | Só votar nas opções da lista, sem sugerir tema |
+| 7 | **Razze: decidir o destino** | 2, 3, 4 provados | **Não remover antes.** Ver "Razze e WireGuard" abaixo |
+| 8 | **B0: Modo Briefing, voz palco, corrente (P3), teste forjado → teste real** | 1–4 | Ver a spec |
+
+### Tela inicial
+- **Constelação = amigos online.** Hoje o fundo (`renderHomeSky` em `renderer/ceu-voz.js`) desenha uma sala de exemplo.
+  Passa a mostrar só os amigos adicionados que estão online: cada um é uma estrela com a foto/nome no balão; quem está
+  numa sala aparece ligado ao "sol" da sala, que se clica para entrar. Sem amigos online, o céu fica vazio e calmo, com
+  um convite discreto para "Adicionar amigo".
+- **Estrela cadente:** uma de vez em quando, em intervalo aleatório (ex.: 20–90 s), traço curto e fino nas cores do
+  tema atual. Respeitar "reduzir movimento" do sistema e a opção de esconder o céu. Sem animação contínua: só CSS ou um
+  frame por vez enquanto a estrela cai.
+- **Enquete:** cartão abaixo de "Criar sala"/"Entrar com código", no mesmo estilo do cartão de Novidades. As opções vêm
+  junto com a versão do app (lista fixa); 1 voto por pessoa (assinado pela chave do item 2), que pode trocar enquanto
+  a enquete estiver aberta; os votos se espalham entre os PCs pela DHT e cada um soma localmente. Sem campo de texto.
+- **Ordem visual sugerida:** Criar sala → Salas dos amigos (quando houver) → Entrar com código (vira secundário,
+  recolhido) → Enquete → Novidades.
+
+### Razze e WireGuard
+- Hoje a Razze faz **contas, amigos, presença, salas dos amigos, mensagens diretas e a VPN WireGuard**
+  (`main/razze-*.js`, `razze-api/`). Tirar a Razze sem substituto apaga amigos e mensagens.
+- **WireGuard como está não compensa** (Radmin/Hamachi já resolvem e ele pede administrador e um adaptador de rede).
+  Só vale se ficar **invisível**: túnel no próprio app, sem adaptador e sem elevação. É o que a ponte Hyperswarm (item
+  4) faz, então o mais provável é o túnel substituir o WireGuard.
+- Caminho sugerido: (1) amigos e presença sem servidor funcionando lado a lado com a Razze; (2) "Importar meus amigos
+  da Razze" (pareia as chaves novas por quem já é amigo lá), para ninguém refazer a lista; (3) quando o túnel provar
+  casa↔4G, desligar o WireGuard; (4) decidir se a RazzeAPI some ou fica como reserva opcional (mensagens para quem
+  está offline, por exemplo).
+
 ## Agora (próximas 4 semanas): Confiança e prova
 
 | Item | Status | Esforço | Depende de |
@@ -203,8 +250,8 @@ divisor "3 mensagens desde a sua última visita"; arquivo baixado pela Carla con
 
 ## P3. Espectadores repassando o vídeo
 
-**Objetivo:** 10–20 pessoas assistindo sem estourar o upload de quem transmite (hoje o limite da sala é 12,
-`MAX_MEMBERS` em `signaling.js`).
+**Objetivo:** 50+ pessoas assistindo sem estourar o upload de quem transmite (hoje o limite da sala é 50,
+`MAX_MEMBERS` em `sala-protocolo.js`). É uma das camadas do [B0](spec/briefing-50.md).
 
 **Por que o "uma vez só" ajuda:** nesse modo (`encode-once.js`) o vídeo já vai **codificado** pelo DataChannel. Quem
 recebe pode repassar os mesmos pedaços para outros **sem codificar de novo**: o custo é só upload.
