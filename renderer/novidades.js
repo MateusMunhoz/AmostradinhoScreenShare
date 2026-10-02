@@ -3,10 +3,21 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.12.13",
+    "date": "2026-10-02",
+    "items": [
+      "add ajuste de interface",
+      "Protótipo: ponte da sala pela HyperDHT, sem servidor do projeto (#17)",
+      "Estrela cadente de vez em quando no céu da tela inicial (#16)",
+      "Docs: meta do briefing para 50+ e nova ordem do roadmap (#15)"
+    ]
+  },
+  {
     "version": "1.12.12",
     "date": "2026-10-02",
     "items": [
-      "Mapa: cartão do canal no sol; música aparece para quem entra na sala; mapa continua girando fora de foco"
+      "Mapa: cartão do canal no sol; música aparece para quem entra na sala; mapa continua girando fora de foco",
+      "Build do .dmg para Mac automático a cada Release"
     ]
   },
   {
@@ -71,14 +82,6 @@ const NOVIDADES = [
     "items": [
       "Aba Sons compacta: avisos agrupados em Sala, Chat, Voz e Transmissão",
       "add stellar map"
-    ]
-  },
-  {
-    "version": "1.12.3",
-    "date": "2026-10-01",
-    "items": [
-      "Tirei as tooltips",
-      "add mover pessoas entre subsala"
     ]
   }
 ];
