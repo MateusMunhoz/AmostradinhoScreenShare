@@ -912,5 +912,26 @@ function homeSkyTick() {
     else up.querySelector('.sky-orbit')?.remove();
   }
 }
+// Estrela cadente: uma de cada vez, em intervalo aleatório (20 a 90 s). Só com a tela inicial à vista, a janela em
+// foco (com o jogo na frente, nada anima) e sem "reduzir movimento"; o desenho e o tema Padrão ficam no CSS
+function homeMeteor() {
+  setTimeout(homeMeteor, 20000 + Math.random() * 70000);
+  const el = $('homeMeteor');
+  if (document.hidden || !document.hasFocus() || $('home').hidden || document.documentElement.dataset.skin
+    || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  // Cai em diagonal, para a direita ou para a esquerda, a partir da parte de cima da janela
+  const tilt = 18 + Math.random() * 22, deg = Math.random() < .5 ? tilt : 180 - tilt;
+  const dist = 220 + Math.random() * 140, rad = deg * Math.PI / 180;
+  el.style.setProperty('--mx', `${10 + Math.random() * 75}vw`);
+  el.style.setProperty('--my', `${4 + Math.random() * 36}vh`);
+  el.style.setProperty('--ma', `${deg.toFixed(1)}deg`);
+  el.style.setProperty('--mdx', `${(Math.cos(rad) * dist).toFixed(0)}px`);
+  el.style.setProperty('--mdy', `${(Math.sin(rad) * dist).toFixed(0)}px`);
+  el.classList.remove('falling');
+  void el.offsetWidth; // recomeça a animação mesmo se a anterior não tiver terminado
+  el.classList.add('falling');
+}
+$('homeMeteor').addEventListener('animationend', (e) => e.currentTarget.classList.remove('falling'));
 renderHomeSky();
 setInterval(homeSkyTick, 1400);
+setTimeout(homeMeteor, 8000 + Math.random() * 17000);

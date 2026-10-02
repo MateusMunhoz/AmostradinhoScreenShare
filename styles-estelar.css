@@ -161,7 +161,27 @@
 :root:not([data-skin]) .home-main, :root:not([data-skin]) .home-top { position: relative; z-index: 1; }
 @media (max-width: 1050px) { :root:not([data-skin]) .home-sky { display: none; } }
 
+/* Estrela cadente: um traço fino que cruza o céu e some (menos de 1 s), de tempos em tempos. A posição, o ângulo e o
+   caminho vêm do homeMeteor (renderer/ceu-voz.js); a cabeça fica na ponta direita e o rastro esmaece para trás */
+.home-meteor { display: none; }
+:root:not([data-skin]) .home-meteor.falling {
+  display: block; position: fixed; left: var(--mx); top: var(--my); z-index: 0; pointer-events: none;
+  width: 130px; height: 1px; border-radius: 1px; transform-origin: right center; rotate: var(--ma); opacity: 0;
+  background: linear-gradient(90deg, transparent, var(--st-star) 65%, color-mix(in srgb, var(--text) 90%, transparent));
+  animation: st-meteor .95s cubic-bezier(.3, .6, .4, 1) forwards;
+}
+:root:not([data-skin]) .home-meteor.falling::after {
+  content: ""; position: absolute; right: -1px; top: -1px; width: 3px; height: 3px; border-radius: 50%;
+  background: var(--text); box-shadow: 0 0 6px 1px color-mix(in srgb, var(--accent) 70%, transparent);
+}
+@keyframes st-meteor {
+  0% { opacity: 0; translate: 0 0; }
+  15% { opacity: .9; }
+  100% { opacity: 0; translate: var(--mdx) var(--mdy); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   :root:not([data-skin]) body::before, :root:not([data-skin]) body::after,
   :root:not([data-skin]) .member.live > .avatar::after, .voice-sky .sky-orbit, .voice-sky .sky-ring, .voice-sky .sky-upright { animation: none; }
+  :root:not([data-skin]) .home-meteor.falling { display: none; }
 }
