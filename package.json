@@ -17,6 +17,7 @@
     "razze-api": "node razze-api/server.js",
     "test:razze-api": "node --test tests/razze-*.test.js",
     "dist:linux": "electron-builder --linux AppImage",
+    "dist:mac": "electron-builder --mac dmg",
     "icone": "electron gerar-icone.js",
     "test:razze-admin": "node tests/e2e/razze-admin.js"
   },
@@ -92,6 +93,15 @@
       "artifactName": "Tela-P2P.${ext}",
       "synopsis": "Transmita a tela e converse por voz com os amigos, de PC para PC",
       "executableName": "tela-p2p"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.social-networking",
+      "icon": "assets/icone/tela-p2p.icns",
+      "artifactName": "Tela-P2P-mac-${arch}.${ext}",
+      "identity": null
     }
   },
   "author": "MateusMunhoz",

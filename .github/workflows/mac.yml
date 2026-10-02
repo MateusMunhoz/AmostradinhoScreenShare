@@ -1,0 +1,41 @@
+name: Mac .dmg
+
+# Toda Release publicada (npm run publicar) ganha o .dmg da mesma versão.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag da Release (ex.: v1.12.11)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  dmg:
+    name: Gerar .dmg (Apple Silicon)
+    runs-on: macos-14
+    timeout-minutes: 30
+    env:
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ env.TAG }}
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Pacote assinado da Release (para o app repassar na sala)
+        run: |
+          mkdir -p pack
+          gh release download "$TAG" -p pack.json -p pack.sig -D pack --clobber
+      - name: Versão do package.json igual à tag
+        run: test "v$(node -p "require('./package.json').version")" = "$TAG"
+      - run: npx electron-builder --mac dmg --arm64 --publish never
+      - name: Anexar na Release
+        run: gh release upload "$TAG" dist/Tela-P2P-mac-arm64.dmg --clobber
