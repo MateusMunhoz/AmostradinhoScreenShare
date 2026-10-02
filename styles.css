@@ -1013,6 +1013,10 @@ main { padding-top: var(--workspace-top); }
 .pane-voice-actions .btn.icon { width: 32px; padding: 0; justify-content: center; }
 .pane-voice-actions .btn.icon svg, .pane-voice-actions .pane-leave svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .pane-voice-actions .pane-leave { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; }
+/* Fora da voz: Entrar largo e Nova subsala do lado. Na voz: + Subsala na faixa, separado do microfone e do fone */
+.pane-voice-actions .pane-join.primary { flex: 1; }
+.pane-voice-actions .pane-subsala { display: inline-flex; align-items: center; gap: 6px; }
+.voice-in-call .pane-voice-actions .pane-subsala { margin-left: 6px; }
 .voice-in-call #voicePaneMembers { margin-bottom: 0; }
 /* Só a lista rola: o título em cima e a faixa de controles (microfone, fone, Sair) embaixo ficam sempre à vista,
    mesmo com muitas subsalas */
@@ -1023,6 +1027,79 @@ main { padding-top: var(--workspace-top); }
 .voice-view button:hover { color: var(--text); }
 .voice-view button[aria-pressed=true] { background: var(--panel-2); color: var(--text); }
 .voice-view button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.voice-view button { display: grid; place-items: center; padding: 3px 7px; }
+/* Fixar o mapa: logo depois de Lista | Mapa (o espaço que empurra Voz e atalhos para a direita passa para ele) */
+.voice-view:has(+ .map-pin:not([hidden])) { margin-right: 0; }
+.map-pin { margin-right: auto; width: 28px; height: 28px; }
+.map-pin svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.map-pin[aria-pressed=true] { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+.map-pin[aria-pressed=true] svg { fill: currentColor; }
+/* Fora de foco (no jogo, outra janela): o céu em cima da lista não é desenhado; na visão Mapa ele continua */
+.app-blurred #voiceSky:not(.map) { visibility: hidden; }
+.voice-view svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+/* Mapa em foco: com o mouse no mapa, o chat encolhe (280 ms) e o mapa ocupa a barra da direita; do chat fica só a
+   faixa #mapChatStrip, com as mensagens novas. Só na barra (fora do modo largo) */
+.map-chat-strip { display: none; }
+.workspace-in-room.has-workspace-pane:not(.workspace-wide) .map-chat-strip {
+  display: flex; align-items: center; gap: 8px; flex: none; max-height: 0; overflow: hidden; visibility: hidden; padding: 0 14px;
+  font: inherit; font-size: 12px; text-align: left; color: var(--muted); cursor: pointer;
+  background: var(--panel); border: 1px solid var(--line); border-top: 0; border-bottom-width: 0;
+  transition: max-height .28s cubic-bezier(.2, .8, .2, 1), visibility 0s linear .28s; }
+#workspacePanes.map-focus .map-chat-strip { max-height: 36px; height: 36px; visibility: visible; border-bottom-width: 1px; transition-delay: 0s; }
+.map-chat-strip:hover { color: var(--text); }
+.map-chat-strip span:first-of-type { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.map-chat-strip svg { width: 14px; height: 14px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.map-chat-unread { flex: none; padding: 1px 7px; border-radius: 10px; background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+#workspacePanes > #chatTab { transition: flex-grow .28s cubic-bezier(.2, .8, .2, 1), padding .28s cubic-bezier(.2, .8, .2, 1), opacity .17s ease-out; }
+#workspacePanes.map-focus > #chatTab { flex-grow: 0; padding-top: 0; padding-bottom: 0; border-bottom-width: 0; opacity: 0; overflow: hidden; pointer-events: none; }
+/* Perfil no mapa: a pessoa grande no meio, numa órbita com as ações em volta; o resto do mapa apaga */
+.sky-focus { position: absolute; inset: 0; z-index: 6; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  padding: 44px 16px 14px; overflow: hidden; border-radius: var(--radius); background: var(--sunken);
+  animation: sky-focus-in .2s ease-out; }
+@keyframes sky-focus-in { from { opacity: 0; } }
+.sky-focus .sky-orbit { animation: sky-orbit-in .2s cubic-bezier(.2, .8, .2, 1); }
+@keyframes sky-orbit-in { from { transform: scale(.85); } }
+.sky-focus.closing { animation: sky-focus-out .18s ease-in forwards; pointer-events: none; }
+.sky-focus.closing .sky-orbit { animation: sky-orbit-out .18s ease-in forwards; }
+@keyframes sky-focus-out { to { opacity: 0; } }
+@keyframes sky-orbit-out { to { transform: scale(.85); } }
+.sky-focus-back { position: absolute; top: 8px; left: 8px; }
+.sky-focus-back svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.sky-act svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.sky-orbit { position: relative; flex: none; width: 170px; height: 170px; scale: var(--orbit, 1); margin: calc((var(--orbit, 1) - 1) * 85px) 0; }
+.sky-orbit > svg { position: absolute; inset: 0; width: 100%; height: 100%; fill: none; stroke: var(--line-strong); }
+.sky-orbit .avatar { position: absolute; left: 59px; top: 59px; width: 52px; height: 52px; font-size: 21px; }
+.sky-act { position: absolute; width: 38px; height: 38px; padding: 0; display: grid; place-items: center; border-radius: 50%;
+  border: 1px solid var(--line-strong); background: var(--panel-2); color: var(--text); cursor: pointer; }
+.sky-act:hover:not(:disabled) { border-color: var(--accent); }
+.sky-act:disabled { opacity: .4; cursor: default; }
+.sky-act[aria-pressed=true] { border-color: var(--warn); color: var(--warn); background: var(--warn-soft); }
+.sky-act.a1 { left: 13px; top: 13px; }
+.sky-act.a2 { left: 119px; top: 13px; }
+.sky-act.a3 { left: 136px; top: 92px; }
+.sky-act.a4 { left: -4px; top: 92px; }
+.sky-act.t { left: 66px; top: -9px; }
+.sky-act.r { left: 131px; top: 104px; }
+.sky-act.l { left: 1px; top: 104px; }
+.sky-focus-name { margin: 0; font-size: 15px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sky-orbit .avatar.live { box-shadow: 0 0 0 2px var(--sunken), 0 0 0 4px var(--live); }
+.sky-orbit .avatar.speaking { box-shadow: 0 0 0 2px var(--sunken), 0 0 0 4px var(--ok); }
+.sky-live { position: absolute; left: 85px; top: 116px; translate: -50% 0; padding: 1px 6px; border-radius: 6px; background: var(--live); color: var(--sunken);
+  font-size: 9px; font-weight: 700; letter-spacing: .5px; line-height: 1.4; white-space: nowrap; }
+.sky-seal { position: absolute; width: 20px; height: 20px; box-sizing: border-box; display: grid; place-items: center; border-radius: 50%;
+  background: var(--sunken); border: 1.5px solid var(--warn); color: var(--warn); }
+.sky-seal svg { width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.sky-seal.mic { left: 97px; top: 95px; }
+.sky-seal.fone { left: 53px; top: 95px; }
+.sky-seal.mudo { left: 97px; top: 55px; border-color: var(--muted); color: var(--muted); }
+.sky-focus-where { margin-top: 2px; font: 11px var(--st-mono, Consolas, monospace); letter-spacing: .5px; text-transform: uppercase; color: var(--accent); }
+.sky-focus-vol { width: min(100%, 300px); display: flex; align-items: center; gap: 10px; margin-top: 6px; font-size: 12px; color: var(--muted); }
+.sky-focus-vol input { flex: 1; min-width: 0; }
+.sky-focus-vol output { width: 38px; text-align: right; color: var(--text); }
+.sky-move-menu { position: absolute; z-index: 2; display: flex; flex-direction: column; gap: 2px; min-width: 160px; padding: 6px;
+  background: var(--panel); border: 1px solid var(--line-strong); border-radius: 10px; box-shadow: 0 10px 30px rgba(0, 0, 0, .4); }
+.sky-move-menu button { padding: 7px 10px; border: 0; border-radius: 6px; background: none; color: var(--text); font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+.sky-move-menu button:hover, .sky-move-menu button:focus-visible { background: var(--panel-2); }
 /* Mapa: o céu ocupa o lugar da lista; embaixo ficam só Nova subsala e quem transmite fora da voz */
 #voicePane.voice-map > .voice-sky-box { flex: 1 1 0; min-height: 170px; display: flex; margin-bottom: 10px; }
 .voice-sky-box { position: relative; }
@@ -1036,6 +1113,53 @@ main { padding-top: var(--workspace-top); }
 .voice-map-pop { position: absolute; z-index: 5; width: min(320px, calc(100% - 16px)); max-height: 60%; overflow: auto; padding: 8px;
   background: var(--panel); border: 1px solid var(--line-strong); border-radius: 10px; box-shadow: 0 10px 30px rgba(0, 0, 0, .4); }
 .voice-map-pop .members { margin: 0; }
+/* Cartão do canal (skyCard, ceu-voz.js): preso ao sol clicado pela setinha (--arrow-x, placeSkyPop) */
+.voice-map-pop:has(.sky-card) { padding: 0; overflow: visible; display: flex; flex-direction: column; border-radius: 12px; max-height: calc(100% - 16px); }
+.voice-map-pop:has(.sky-card) > .members:empty { display: none; }
+.voice-map-pop:has(.sky-card)::before { content: ""; position: absolute; left: var(--arrow-x, 50%); top: -7px; width: 12px; height: 12px; margin-left: -6px;
+  background: var(--panel); border: 1px solid var(--line-strong); border-width: 1px 0 0 1px; rotate: 45deg; }
+.voice-map-pop.above:has(.sky-card)::before { top: auto; bottom: -7px; border-width: 0 1px 1px 0; }
+.sky-card { display: flex; flex-direction: column; min-height: 0; }
+.sky-card-head { display: flex; align-items: center; gap: 4px; padding: 6px 8px 6px 6px; border-bottom: 1px solid var(--line); }
+.sky-card-sun { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--sky-sun, var(--warn)); }
+/* O nome do canal é o botão de entrar: no hover ganha fundo, o nome fica na cor de destaque e a seta aparece */
+.sky-card-info { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 6px 8px; border: 1px solid transparent; border-radius: 8px;
+  background: none; color: var(--text); font: inherit; text-align: left; }
+button.sky-card-info { cursor: pointer; }
+button.sky-card-info:hover:not(:disabled) { background: var(--panel-2); border-color: var(--line-strong); }
+button.sky-card-info:hover:not(:disabled) strong { color: var(--accent); }
+button.sky-card-info:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; }
+button.sky-card-info:disabled { opacity: .5; cursor: default; }
+.sky-card-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.sky-card-go { flex: none; display: inline-flex; color: var(--muted); }
+.sky-card-go svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+button.sky-card-info:hover:not(:disabled) .sky-card-go { color: var(--accent); }
+.sky-card-info strong { font: 500 13px var(--st-mono, inherit); letter-spacing: .06em; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sky-card-info span { font-size: 12px; color: var(--muted); }
+.sky-card-music { margin: 0; padding: 4px 8px 0; }
+.sky-card-nomusic { width: 100%; margin: 0; background: none; color: var(--muted); font: inherit; font-size: 12px; text-align: left; cursor: pointer; }
+.sky-card-nomusic:hover { border-color: var(--accent); }
+.sky-card-nomusic:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.sky-card-nomusic-text { flex: 1; }
+.sky-card-nomusic-go { color: var(--accent); }
+.sky-card-rows { display: flex; flex-direction: column; padding: 6px; overflow: auto; min-height: 50px; } /* mapa baixo: a lista rola, mas uma pessoa sempre aparece */
+.sky-card-row { display: flex; align-items: center; gap: 8px; min-height: 38px; padding: 0 6px 0 2px; border-radius: 8px; }
+.sky-card-row:hover { background: var(--panel-2); }
+.sky-card-person { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 4px 6px; border: 0; border-radius: 6px; background: none;
+  color: var(--text); font: inherit; font-size: 13px; font-weight: 500; text-align: left; cursor: pointer; }
+.sky-card-person:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; }
+.sky-card-person .avatar { flex: none; width: 26px; height: 26px; font-size: 12px; }
+.sky-card-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sky-card-mic { flex: none; display: inline-flex; color: var(--warn); }
+.sky-card-mic svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.sky-card-live { flex: none; font: 500 10px var(--st-mono, inherit); letter-spacing: .08em; color: var(--live); }
+.sky-card-tag { flex: none; font-size: 11px; color: var(--muted); }
+.sky-card-watch { flex: none; width: 30px; height: 30px; padding: 0; display: grid; place-items: center; border: 1px solid var(--live); border-radius: 8px;
+  background: transparent; color: var(--live); cursor: pointer; }
+.sky-card-watch:hover { background: color-mix(in srgb, var(--live) 15%, transparent); }
+.sky-card-watch[aria-pressed=true] { background: var(--live); color: var(--panel); }
+.sky-card-watch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sky-card-watch svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .voice-map-pop .hint { margin: 4px 4px 0; font-size: 12px; }
 .sky-ghost { position: fixed; z-index: 60; pointer-events: none; translate: 12px 10px; padding: 3px 9px; border: 1px solid var(--accent); border-radius: 6px;
   background: var(--panel); color: var(--text); font-size: 12px; white-space: nowrap; box-shadow: 0 6px 18px rgba(0, 0, 0, .35); }
@@ -1591,14 +1715,13 @@ main { margin-left: var(--hub-w); }
 .voice-channel.here { box-shadow: inset 3px 0 0 var(--accent); }
 .voice-channel.here strong { color: var(--accent); }
 .voice-channel-icon { display: inline-flex; color: var(--muted); }
-.voice-channel-icon svg, .voice-channel-add svg, .voice-channel-delete svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.voice-channel-icon svg, .pane-subsala svg, .voice-channel-delete svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .voice-channel-count { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
 .voice-channel-join { margin-left: auto; padding: 4px 10px; font-size: 12px; }
 .voice-channel.here .voice-channel-delete, .voice-channel:not(:has(.voice-channel-join)) .voice-channel-delete { margin-left: auto; }
 .voice-channel-delete { width: 26px; height: 26px; padding: 0; display: grid; place-items: center; background: transparent; border-color: transparent; color: var(--muted); }
 .voice-channel-delete:hover { color: var(--warn); }
 .member.in-channel { padding-left: 14px; }
-.voice-channel-add { margin-top: 8px; }
 /* Arrastar alguém para outro canal: a linha arrastada fica apagada e o canal de destino (cabeçalho e quem está nele)
    ganha o contorno do tema */
 .voice-draggable { cursor: grab; }
@@ -1606,7 +1729,6 @@ main { margin-left: var(--hub-w); }
 .voice-dragging .voice-channel { outline: 1px dashed var(--line-strong); outline-offset: -1px; }
 .voice-dragging .drop-target.voice-channel { outline: 2px solid var(--accent); background: var(--accent-soft); }
 .voice-dragging .drop-target.member { box-shadow: inset 2px 0 0 var(--accent); }
-.voice-channel-add .btn { display: inline-flex; align-items: center; gap: 6px; }
 
 /* Mensagens diretas (renderer/mensagens.js). Barra de conversas: uma faixa fina embaixo, como o HUB na esquerda.
    Cada conversa é um chip; aberta, o chip vira o rodapé de uma janela que sobe por cima do conteúdo */

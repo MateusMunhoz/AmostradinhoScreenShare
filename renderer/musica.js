@@ -38,7 +38,8 @@ function parseYouTube(text) {
 }
 
 // ---------- Estado vindo da sala ----------
-function setMusicas(list, serverNow) {
+// quiet: ao entrar na sala, as músicas que já tocavam não viram aviso de "pôs uma música"
+function setMusicas(list, serverNow, quiet = false) {
   if (typeof serverNow === 'number') musica.offset = serverNow - Date.now();
   const next = new Map();
   for (const e of Array.isArray(list) ? list : []) if (e && /^[\w-]{11}$/.test(String(e.videoId))) next.set(String(e.ch || ''), { ...e, ch: String(e.ch || '') });
@@ -47,7 +48,7 @@ function setMusicas(list, serverNow) {
   for (const [ch, e] of next) {
     const old = before.get(ch);
     // Alguém pôs (ou trocou) a música do seu canal: avisa, para você poder ouvir junto
-    if (e.by !== state.myId && ch === myVoiceChannel() && (!old || old.videoId !== e.videoId) && !state.in.has(musicKey(ch))) {
+    if (!quiet && e.by !== state.myId && ch === myVoiceChannel() && (!old || old.videoId !== e.videoId) && !state.in.has(musicKey(ch))) {
       toast(`${nameOf(e.by)} ${old ? 'trocou' : 'pôs'} uma música em ${channelName(ch)}. Clique em Ouvir no painel de voz para ouvir junto.`);
     }
     state.in.get(musicKey(ch))?.music.sync(e);
@@ -415,7 +416,7 @@ function setupMusica() {
   $('musicPopForm').onsubmit = (e) => { e.preventDefault(); submitMusicPop(); };
   $('musicPopCancel').onclick = closeMusicPop;
   document.addEventListener('pointerdown', (e) => {
-    if (!$('musicPop').hidden && !e.target.closest?.('#musicPop, .voice-channel-music, .music-controls')) closeMusicPop();
+    if (!$('musicPop').hidden && !e.target.closest?.('#musicPop, .voice-channel-music, .sky-card-nomusic, .music-controls')) closeMusicPop();
   });
 }
 setupMusica();

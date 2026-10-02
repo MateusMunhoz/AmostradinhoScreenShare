@@ -69,6 +69,8 @@ function renderUnread() {
   $('navUnread').textContent = n > 99 ? '99+' : String(n);
   $('chatUnread').hidden = !n;
   $('chatUnread').textContent = n > 99 ? '99+' : String(n);
+  $('mapChatUnread').hidden = !n;
+  $('mapChatUnread').textContent = n === 1 ? '1 nova' : `${n > 99 ? '99+' : n} novas`;
   const label = chat.open ? 'Recolher o painel da sala'
     : n ? `Abrir o chat (${n} ${n === 1 ? 'mensagem nova' : 'mensagens novas'})` : 'Abrir o painel da sala e o chat';
   $('chatToggle').title = label;
@@ -112,7 +114,7 @@ function onChatMessage(m) {
   noteChatOverlayMessage(entry);
   renderChatOverlay();
   const wasBottom = chatAtBottom();
-  const away = $('room').hidden; // no início, sem sair da sala: o chat não está à vista
+  const away = $('room').hidden || mapFocus.on; // no início, ou com o mapa em foco: o chat não está à vista
   const unseen = m.from !== state.myId && (!chat.open || away || document.hidden || !wasBottom);
   if (unseen && !chat.unread) {
     // Começa um lote de novas: a linha "mensagens novas" vai antes desta

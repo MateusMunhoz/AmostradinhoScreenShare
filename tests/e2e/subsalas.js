@@ -121,25 +121,28 @@ run('Subsalas: arrastar pessoas e controles da voz fixos', 200000, async () => {
   await A.eval(`$('voiceViewMap').click()`);
   await sleep(300);
   check('Mapa: o céu fica grande e a lista só tem Nova subsala', await A.eval(`$('voiceSky').classList.contains('map') && $('voiceSky').getBoundingClientRect().height > 160
-    && !document.querySelector('#voicePaneMembers .voice-channel, #voicePaneMembers .member') && !!document.querySelector('#voicePaneMembers .voice-channel-add')
+    && !document.querySelector('#voicePaneMembers .voice-channel, #voicePaneMembers .member') && !$('paneVoiceSubsala').hidden
     && $('voiceViewMap').getAttribute('aria-pressed') === 'true' && localStorage.getItem('vozVisao') === 'mapa'`));
   check('Mapa: nome de cada pessoa embaixo do planeta', await A.eval(`[...document.querySelectorAll('#voiceSky .sky-pname')].map((t) => t.textContent).sort().join() === 'Ana,Bia'`));
   // Clicar no sol da Subsala_2 (vazia): o balão do canal, com Entrar
   await clickAt(A, await centerOf(A, '#voiceSky .sky-sun[data-channel="2"]'));
-  check('Mapa: clicar no sol abre o canal (Entrar e apagar)', await A.eval(`!$('voiceMapPop').hidden && $('voiceMapPop').textContent.includes('Subsala_2') && !!$('voiceMapPop').querySelector('.voice-channel-join') && !!$('voiceMapPop').querySelector('.voice-channel-delete')`));
-  await clickAt(A, await centerOf(A, '#voiceMapPop .voice-channel-join'));
+  check('Mapa: clicar no sol abre o canal (o nome entra; apagar)', await A.eval(`!$('voiceMapPop').hidden && $('voiceMapPop').textContent.includes('Subsala_2') && !!$('voiceMapPop').querySelector('button.sky-card-info') && !!$('voiceMapPop').querySelector('.voice-channel-delete')`));
+  await clickAt(A, await centerOf(A, '#voiceMapPop button.sky-card-info')); // o nome do canal é o Entrar
   await A.waitFor(`voice.channel === '2'`, 5000);
   check('Mapa: Entrar pelo balão leva você para a Subsala_2', true);
-  // Clicar num planeta: o balão da pessoa, com o volume (como na lista)
+  // Clicar num planeta: o perfil na órbita (Assistir, Perfil, Silenciar para mim, Mudar de canal) e o volume
   await sleep(300);
-  await clickAt(A, await centerOf(A, `#voiceSky .sky-star[data-person="${biaId}"]`));
-  check('Mapa: clicar na Bia abre o balão dela, com o volume', await A.eval(`!$('voiceMapPop').hidden && $('voiceMapPop').textContent.includes('Bia') && !!$('voiceMapPop').querySelector('.vol-btn')`));
-  await A.eval(`$('voiceMapPop').querySelector('.vol-btn').click()`);
+  // Com o mouse no mapa os planetas param de girar (como quem vai clicar); o balão do canal aberto segura o foco
+  { const b = await A.eval(`(() => { const r = $('voiceSkyBox').getBoundingClientRect(); return [r.left + 6, r.top + 6]; })()`); await mouse(A, 'mouseMoved', b); await sleep(100); }
+  const biaAt = await centerOf(A, `#voiceSky .sky-star[data-person="${biaId}"]`);
+  await clickAt(A, biaAt);
+  check('Mapa: clicar na Bia abre o perfil dela na órbita, com o volume', await A.eval(`!$('skyFocus').hidden && $('skyFocusName').textContent === 'Bia' && document.querySelectorAll('#skyFocus .sky-act').length === 4 && !!$('skyFocus').querySelector('input[type=range]') && $('voiceMapPop').hidden`));
+  await A.eval(`document.querySelector('#skyFocus .sky-act.a2').click()`);
   await sleep(200);
-  check('Mapa: o volume abre o cartão da Bia, e o balão continua', await A.eval(`!$('personCard').hidden && !$('voiceMapPop').hidden`));
+  check('Mapa: Perfil abre o cartão da Bia, e o perfil continua', await A.eval(`!$('personCard').hidden && !$('skyFocus').hidden`));
   await A.eval(`closePersonCard()`);
   await A.eval(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))`);
-  check('Mapa: Esc fecha o balão', await A.eval(`$('voiceMapPop').hidden`));
+  check('Mapa: Esc fecha o perfil', await A.eval(`$('skyFocus').hidden`));
   // Arrastar o planeta da Bia até o sol da Subsala_2
   await sleep(200);
   const marked = await dragTo(A, await centerOf(A, `#voiceSky .sky-star[data-person="${biaId}"]`), await centerOf(A, '#voiceSky .sky-sun[data-channel="2"]'));

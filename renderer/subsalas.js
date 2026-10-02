@@ -18,11 +18,18 @@ function setSubsalas(list) {
     : null;
   // Estava numa subsala que não existe mais (o servidor novo não tem subsalas): volta para a Voz geral
   if (voice.session && voice.channel && !(state.subsalas || []).some((s) => s.id === voice.channel)) voice.moveTo('');
+  const wait = subsalaJoinNext, made = wait && (state.subsalas || []).find((s) => !wait.known.has(s.id));
+  if (wait && (made || Date.now() - wait.at > 5000)) subsalaJoinNext = null;
+  if (made && Date.now() - wait.at <= 5000 && voice.supported) voice.setChannel(made.id);
   renderVoice();
 }
 
-function createSubsala() {
+// Nova subsala. join (o botão do painel): cria e já entra nela; quando a lista volta do servidor com uma subsala que
+// não existia, vai para lá (até 5 s depois; se nada chegar, só não entra)
+let subsalaJoinNext = null; // { known: ids de antes, at }
+function createSubsala(join = false) {
   if (!subsalasOn() || !state.myId) return;
+  if (join === true) subsalaJoinNext = { known: new Set(state.subsalas.map((s) => s.id)), at: Date.now() };
   send({ type: 'subsala-create' });
 }
 
@@ -95,22 +102,6 @@ function renderVoiceChannels(list) {
     for (const id of voiceIdsIn(ch)) { const li = voiceRow(id); li.classList.add('in-channel'); makeVoiceDraggable(li, id, ch); list.append(li); }
   }
   setupVoiceDrop(list);
-  list.append(voiceAddChannel());
-}
-
-// O botão Nova subsala (embaixo da lista e embaixo do mapa)
-function voiceAddChannel() {
-  const add = document.createElement('li');
-  add.className = 'voice-channel-add';
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = 'btn small';
-  btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
-  btn.append('Nova subsala');
-  btn.title = 'Criar uma subsala de voz (Subsala_1, Subsala_2…)';
-  btn.onclick = createSubsala;
-  add.append(btn);
-  return add;
 }
 
 // ---------- Arrastar pessoas entre canais ----------

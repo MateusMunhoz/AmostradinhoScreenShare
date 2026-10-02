@@ -88,7 +88,8 @@
 .voice-sky .sky-dust { fill: var(--sky-dust); }
 .voice-sky .sky-link { stroke: color-mix(in srgb, var(--muted) 45%, transparent); stroke-width: .7; }
 .voice-sky .sky-core { fill: var(--text); transition: fill .15s ease-out; }
-.voice-sky .sky-halo { fill: none; stroke: var(--ok); stroke-width: 1; opacity: 0; transition: opacity .15s ease-out; }
+/* Ao tirar o mouse, a borda azul some ainda azul e só depois volta a ser verde (sem piscar verde) */
+.voice-sky .sky-halo { fill: none; stroke: var(--ok); stroke-width: 1; opacity: 0; transition: opacity .15s ease-out, stroke 0s linear .15s; }
 .voice-sky .sky-star.speaking .sky-core { fill: var(--ok); }
 .voice-sky .sky-star.speaking .sky-halo { opacity: .75; }
 .voice-sky .sky-star.speaking { filter: drop-shadow(0 0 3px var(--ok)); }
@@ -99,7 +100,7 @@
 
 /* Os sóis: o seu canal com o contorno da cor de destaque; canal vazio, apagado */
 .voice-sky .sky-bridge { stroke-width: .5; stroke-dasharray: 1.5 2.5; opacity: .55; }
-.voice-sky .sky-path { fill: none; stroke: var(--sky-grid); stroke-width: .5; }
+.voice-sky .sky-path { fill: none; stroke: var(--sky-grid); stroke-width: .5; pointer-events: none; } /* o anel não rouba o clique do planeta */
 .voice-sky .sky-ring { animation: st-orbit linear infinite; }
 .voice-sky .sky-sun { filter: drop-shadow(0 0 3px color-mix(in srgb, var(--sky-sun) 75%, transparent)); }
 .voice-sky .sky-corona { fill: color-mix(in srgb, var(--sky-sun) 25%, transparent); }
@@ -116,9 +117,12 @@
 /* Mapa: sol e planeta são clicáveis; parado com o mouse em cima (e arrastando), para acertar o clique */
 .voice-sky.map .sky-hit, .voice-sky.map .sky-phit { fill: transparent; }
 .voice-sky.map :is(.sky-hit, .sky-sun, .sky-star) { cursor: pointer; outline: none; }
-.voice-sky.map:hover :is(.sky-ring, .sky-upright), .voice-sky.dragging :is(.sky-ring, .sky-upright) { animation-play-state: paused; }
+.voice-sky.dragging :is(.sky-ring, .sky-upright) { animation-play-state: paused; } /* perto do mouse, a órbita desacelera: setOrbitSpeeds (ceu-voz.js) */
 .voice-sky.map .sky-sun:is(:hover, :focus-visible) .sky-corona { stroke: var(--accent); stroke-width: .8; }
-.voice-sky.map .sky-star:is(:hover, :focus-visible) .sky-halo { opacity: 1; stroke: var(--accent); }
+.voice-sky.map .sky-star:is(:hover, :focus-visible) .sky-halo { opacity: 1; stroke: var(--accent); transition: opacity .15s ease-out; }
+/* Com o mouse em cima, só a borda azul: sem o verde de quem fala (volta ao tirar o mouse) */
+.voice-sky.map .sky-star:is(:hover, :focus-visible) { filter: none; }
+.voice-sky.map .sky-star:is(:hover, :focus-visible) .sky-core { fill: var(--text); }
 .voice-sky .sky-star.dragging { opacity: .3; }
 .voice-sky .sky-sun.drop-target .sky-corona { stroke: var(--accent); stroke-width: 1.4; fill: color-mix(in srgb, var(--accent) 35%, transparent); }
 

@@ -79,6 +79,9 @@ const ICON = {
   sliders: svg('M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6'), // controles: voz e atalhos
   music: svg('M9 18V5l12-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM21 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z'), // nota: música junto
   play: svg('M7 4v16l13-8z'),
+  user: svg('M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10z'),      // pessoa: perfil
+  moveTo: svg('M5 12h14M13 6l6 6-6 6'),
+  pin: svg('M12 17v5M9 3h6l-1 6 4 4H6l4-4z'),                                         // alfinete: fixar                                            // seta: mudar de canal
   pause: svg('M7 4h4v16H7zM13 4h4v16h-4z'),
 };
 

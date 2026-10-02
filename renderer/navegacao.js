@@ -87,6 +87,7 @@ function syncWorkspace() {
   $('navExpand').hidden = !(bare && navCollapsed);
   document.body.classList.toggle('nav-collapsed', bare && navCollapsed);
   if (inRoom) syncIncomingVideo(); // telas escondidas não baixam vídeo (o som continua)
+  if (mapFocus.on && !mapFocusFits()) setMapFocus(false); // o mapa em foco só existe com chat e voz na barra
   $('workspaceContext').textContent = inRoom ? 'Na sala' : 'Início';
   for (const [id, view] of [['navChat','chat'],['navVoice','voice'],['navStreams','streams']]) {
     $(id).hidden = !inRoom;
@@ -227,8 +228,15 @@ function layoutVoicePane(active) {
   else { settings.textContent = 'Voz e atalhos'; settings.className = 'btn small'; settings.removeAttribute('title'); settings.removeAttribute('aria-label'); head.append(settings); }
   join.disabled = !voice.supported;
   if (active) { join.innerHTML = ICON.phoneOff; join.append('Sair da voz'); join.className = 'btn small danger pane-leave'; }
-  else { join.textContent = voice.pending ? 'Cancelar' : 'Entrar na voz'; join.className = 'btn small' + (voice.pending ? '' : ' primary'); }
+  else { join.textContent = voice.pending ? 'Cancelar' : subsalasOn() ? 'Entrar na Voz geral' : 'Entrar na voz'; join.className = 'btn small pane-join' + (voice.pending ? '' : ' primary'); }
   actions.append(join);
+  // Nova subsala: fora da voz, ao lado do Entrar; na voz, na faixa, antes do Sair (cria e já entra: createSubsala)
+  const sub = $('paneVoiceSubsala');
+  sub.hidden = !subsalasOn() || !state.myId;
+  sub.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+  sub.append(active ? 'Subsala' : 'Nova subsala');
+  sub.disabled = !voice.supported;
+  if (active) actions.insertBefore(sub, join); else actions.append(sub);
   $('paneVoiceMute').hidden = $('paneVoiceDeafen').hidden = !active;
   const toggle = (btn, on, iconOn, iconOff, textOn, textOff) => {
     setIcon(btn, on ? iconOn : iconOff, on ? textOn : textOff);
@@ -243,7 +251,7 @@ function layoutVoicePane(active) {
 // faixa mostra a sala, quem está nela, a sua voz e o Voltar (com as mensagens novas).
 function goHomeKeepCall() { if (state.myId) show('home'); }
 function backToRoom() { if (state.myId) { show('room'); markChatSeenIfVisible(); } }
-function markChatSeenIfVisible() { if (chat.open && chatAtBottom()) markRead(); }
+function markChatSeenIfVisible() { if (chat.open && chatAtBottom() && !mapFocus.on) markRead(); }
 function renderHomeCall() {
   const inCall = !!state.myId;
   $('homeCall').hidden = !inCall;
@@ -289,7 +297,7 @@ function renderVoicePane() {
   const sharing = (id) => !!state.members.get(id)?.sharing;
   const map = voiceMapOn();
   $('voicePane').classList.toggle('voice-map', map);
-  if (map) { if (channels) list.append(voiceAddChannel()); } // no mapa, os canais e as pessoas estão no céu
+  if (map) { /* no mapa, os canais e as pessoas estão no céu */ }
   else if (channels) renderVoiceChannels(list);
   else {
     if (active) list.append(memberRow(null, `${getName()} (você)`, state.sharing));

@@ -177,6 +177,7 @@ function enterRoom(welcome, owner, host, port, cloud = null) {
   state.order = [...welcome.members.map((m) => m.id), welcome.id];
   lembrarDaSala();
   voice.reset(welcome);
+  setMusicas(state.musicaOn ? welcome.musicas : [], welcome.now, true); // as músicas que já estavam tocando na sala
   window.api.roomKeys(true).catch(() => {});
   renderLeaveBtn();
   resetChat(welcome);

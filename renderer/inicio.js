@@ -15,6 +15,7 @@ $('voiceJoin').onclick = () => {
   voice.join();
 };
 $('voiceMute').onclick = () => voice.mute();
+$('paneVoiceSubsala').onclick = () => createSubsala(true);
 $('voiceDeafen').onclick = () => voice.deafen();
 // Captura antes de qualquer outro atalho da página
 window.addEventListener('keydown', async (e) => {
@@ -358,7 +359,7 @@ document.addEventListener('mousedown', (e) => {
   setPeopleOpen(false);
 });
 $('chatJump').onclick = () => { scrollChatToEnd(); markRead(); };
-$('chatList').addEventListener('scroll', () => { if (chatAtBottom() && chat.open && !document.hidden) markRead(); else renderUnread(); });
+$('chatList').addEventListener('scroll', () => { if (chatAtBottom() && chat.open && !document.hidden && !mapFocus.on) markRead(); else renderUnread(); });
 // A barra de rolagem fica escondida e aparece enquanto rola (e com o mouse em cima, pelo CSS)
 let chatScrollTimer = 0;
 $('chatList').addEventListener('scroll', () => {
