@@ -3,13 +3,6 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
-    "version": "1.14.0",
-    "date": "2026-10-02",
-    "items": [
-      "Salas dos amigos pela internet: entre com um clique na sala que um amigo do Razze abriu"
-    ]
-  },
-  {
     "version": "1.13.0",
     "date": "2026-10-02",
     "items": [
@@ -80,6 +73,15 @@ const NOVIDADES = [
     "date": "2026-10-01",
     "items": [
       "add menu inicial e mensagens privadas aprimorados"
+    ]
+  },
+  {
+    "version": "1.12.5",
+    "date": "2026-10-01",
+    "items": [
+      "publicar: inclui renderer ceu-voz.js na att",
+      "add stellar map pronto",
+      "Imagens no chat: só a imagem, com o selo \"Só nesta sala\" ao passar o mouse"
     ]
   }
 ];
