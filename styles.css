@@ -2004,3 +2004,14 @@ html[data-tips="off"] .tip { display: none !important; }
 :root[data-mirror="on"] .has-workspace-pane:not(.workspace-wide) main { padding-right: 0; padding-left: calc(var(--workspace-width) + 12px); }
 :root[data-mirror="on"] .voice-side main { padding-left: 0; padding-right: calc(var(--workspace-width) + 12px); }
 :root[data-mirror="on"] .voice-side.has-workspace-pane:not(.workspace-wide) main { padding-left: calc(var(--workspace-width) + 12px); }
+
+/* Alça da largura do chat e da voz (renderer/navegacao.js › setupPaneResize): na borda que dá para o vídeo, no vão entre
+   os dois. Some no modo largo (chat e voz ocupando a sala toda) */
+.pane-resize { position: absolute; top: 0; bottom: 0; left: -11px; z-index: 5; width: 8px; cursor: col-resize; touch-action: none; }
+.pane-resize::after { content: ""; position: absolute; top: 12px; bottom: 12px; left: 3px; width: 2px; border-radius: 2px; background: transparent; transition: background .12s; }
+.pane-resize:hover::after, .pane-resize:focus-visible::after, .pane-resizing .pane-resize::after { background: var(--accent); }
+.pane-resize:focus-visible { outline: none; }
+.workspace-wide .pane-resize { display: none; }
+:root[data-mirror="on"] .pane-resize { left: auto; right: -11px; }
+.pane-resizing { cursor: col-resize; user-select: none; }
+.pane-resizing :is(iframe, video, webview) { pointer-events: none; }

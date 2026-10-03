@@ -102,7 +102,7 @@ const AppPreferences = (() => {
     return { body, display, console: font?.chat && family ? body : 'Tahoma, Verdana, sans-serif' };
   }
   const defaults = { colors: { main: '#0B0D10', secondary: '#13161B', detail1: '#7FA3C7', detail2: '#39FF9F', text: '#D7DCE3', live: '', speaking: '', warn: '#D9A66C', line: '#232932' },
-    appearance: { glass: 'opaque', level: glassLevel.clear, border: 'solid', ambient: true, voiceSky: true, mirror: false },
+    appearance: { glass: 'opaque', level: glassLevel.clear, border: 'solid', ambient: true, voiceSky: true, mirror: false, paneWidth: 0 },
     font: { family: 'system', custom: '', chat: false }, nameFont: '',
     sounds: { join: 'notification035', leave: 'whoosh', chat: 'wood', voiceJoin: 'suaveEntrou', voiceLeave: 'suaveSaiu',
       mute: 'suaveMutou', unmute: 'suaveDesmutou', deafen: 'suaveFoneDesligou', undeafen: 'suaveFoneLigou',
@@ -148,7 +148,7 @@ const AppPreferences = (() => {
     if (!t) return normalize(prefs);
     const colors = { ...defaults.colors, text: '', live: '', speaking: '', warn: '', line: '', ...t.colors };
     const before = normalize(prefs).appearance;
-    const appearance = { ...defaults.appearance, level: glassLevel[t.appearance.glass] ?? defaults.appearance.level, ambient: before.ambient, voiceSky: before.voiceSky, mirror: before.mirror, ...t.appearance };
+    const appearance = { ...defaults.appearance, level: glassLevel[t.appearance.glass] ?? defaults.appearance.level, ambient: before.ambient, voiceSky: before.voiceSky, mirror: before.mirror, paneWidth: before.paneWidth, ...t.appearance };
     return normalize({ ...prefs, colors, appearance });
   }
   // Qual tema pronto bate com as preferências atuais ('' = personalizado). Desfoque, escurecer e fonte não contam.
@@ -168,6 +168,11 @@ const AppPreferences = (() => {
     if (/^[\da-f]{3}$/i.test(s)) return '#' + [...s].map(c => c + c).join('').toUpperCase();
     return /^[\da-f]{6}$/i.test(s) ? '#' + s.toUpperCase() : null;
   }
+  // Largura do chat e da voz arrastada pela alça (renderer/navegacao.js). 0 = automática (a do styles.css)
+  const paneLimits = { min: 300, max: 900 };
+  function paneWidth(v) {
+    return typeof v === 'number' && Number.isFinite(v) && v > 0 ? Math.max(paneLimits.min, Math.min(paneLimits.max, Math.round(v))) : 0;
+  }
   function normalize(raw) {
     // Sem cores salvas: o tema padrão inteiro. Com cores, a opcional que faltar fica no automático ('').
     const base = raw?.colors ? { ...defaults.colors, ...Object.fromEntries(optionalColors.map(k => [k, ''])) } : defaults.colors;
@@ -180,6 +185,7 @@ const AppPreferences = (() => {
     if (typeof raw?.appearance?.ambient === 'boolean') result.appearance.ambient = raw.appearance.ambient;
     if (typeof raw?.appearance?.voiceSky === 'boolean') result.appearance.voiceSky = raw.appearance.voiceSky;
     if (typeof raw?.appearance?.mirror === 'boolean') result.appearance.mirror = raw.appearance.mirror;
+    result.appearance.paneWidth = paneWidth(raw?.appearance?.paneWidth);
     const custom = fontName(raw?.font?.custom);
     if (raw?.font?.family === 'custom' ? !!custom : fonts.some(f => f.id === raw?.font?.family)) result.font.family = raw.font.family;
     result.font.custom = custom;
@@ -325,6 +331,6 @@ const AppPreferences = (() => {
     stopAll() { for (const event of [...this.players.keys()]) this.stop(event); }
   }
   return { key, sounds, events, defaults, optionalColors, glassModes, glassLevel, borderModes, fonts,
-    fontName, fontStacks, cleanNameFont, nameFontStack, borders, themes, skins, cleanSkin, applyTheme, currentTheme, hex, normalize, read, write, palette, glass, SoundPlayer };
+    fontName, fontStacks, cleanNameFont, nameFontStack, borders, paneLimits, paneWidth, themes, skins, cleanSkin, applyTheme, currentTheme, hex, normalize, read, write, palette, glass, SoundPlayer };
 })();
 if (typeof module !== 'undefined') module.exports = AppPreferences;
