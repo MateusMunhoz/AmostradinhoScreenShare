@@ -3,6 +3,13 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.15.1",
+    "date": "2026-10-03",
+    "items": [
+      "Mapa da voz: galáxia, nebulas, eventos e hover"
+    ]
+  },
+  {
     "version": "1.15.0",
     "date": "2026-10-03",
     "items": [
@@ -71,16 +78,6 @@ const NOVIDADES = [
     "items": [
       "Chat: /musica com prévia do vídeo; players do YouTube isolados (sandbox); Ao vivo com miniatura e quem assiste",
       "Lista de opções não fecha mais quando um painel sem relação rola (#13)"
-    ]
-  },
-  {
-    "version": "1.12.7",
-    "date": "2026-10-01",
-    "items": [
-      "Update guia.md",
-      "add yt music player",
-      "Fundação para trabalhar em equipe com o Claude Code",
-      "Remove backup-antes-dos-popups"
     ]
   }
 ];
