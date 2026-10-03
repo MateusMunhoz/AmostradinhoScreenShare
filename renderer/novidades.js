@@ -3,6 +3,13 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.15.2",
+    "date": "2026-10-03",
+    "items": [
+      "Modo Internet já vem com o servidor da equipe; Hyperswarm deixado de lado (#19)"
+    ]
+  },
+  {
     "version": "1.15.1",
     "date": "2026-10-03",
     "items": [
@@ -70,14 +77,6 @@ const NOVIDADES = [
     "items": [
       "Razze: carregar conta, amigos e mensagens ao abrir o app, sem precisar abrir a aba Rede",
       "Amigos: busca única com Adicionar, chips de filtro, menu ⋯ com remoção confirmada na linha; ícones centrados nos botões"
-    ]
-  },
-  {
-    "version": "1.12.8",
-    "date": "2026-10-01",
-    "items": [
-      "Chat: /musica com prévia do vídeo; players do YouTube isolados (sandbox); Ao vivo com miniatura e quem assiste",
-      "Lista de opções não fecha mais quando um painel sem relação rola (#13)"
     ]
   }
 ];
