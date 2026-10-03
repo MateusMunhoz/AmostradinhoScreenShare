@@ -3,6 +3,13 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.15.3",
+    "date": "2026-10-03",
+    "items": [
+      "Ícone na bandeja: abrir, procurar atualização, mutar, reiniciar e sair (#20)"
+    ]
+  },
+  {
     "version": "1.15.2",
     "date": "2026-10-03",
     "items": [
@@ -69,14 +76,6 @@ const NOVIDADES = [
     "date": "2026-10-01",
     "items": [
       "Início: novidades de cada versão, com o que mudou e as versões anteriores"
-    ]
-  },
-  {
-    "version": "1.12.9",
-    "date": "2026-10-01",
-    "items": [
-      "Razze: carregar conta, amigos e mensagens ao abrir o app, sem precisar abrir a aba Rede",
-      "Amigos: busca única com Adicionar, chips de filtro, menu ⋯ com remoção confirmada na linha; ícones centrados nos botões"
     ]
   }
 ];
