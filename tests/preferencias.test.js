@@ -82,7 +82,7 @@ test('Sons Suave: gerados na hora, sem arquivo, padrão da voz e do microfone', 
 });
 
 test('Aparência: modos de vidro, transparência e dados inválidos', () => {
-  assert.deepEqual(P.normalize(null).appearance, { glass: 'opaque', level: 70, border: 'solid', ambient: true, voiceSky: true, mirror: false });
+  assert.deepEqual(P.normalize(null).appearance, { glass: 'opaque', level: 70, border: 'solid', ambient: true, voiceSky: true, mirror: false, paneWidth: 0 });
   assert.equal(P.normalize({ appearance: { ambient: false } }).appearance.ambient, false);
   assert.equal(P.normalize({ appearance: { ambient: 'sim' } }).appearance.ambient, true);
   assert.equal(P.normalize({ appearance: { voiceSky: false } }).appearance.voiceSky, false);
@@ -147,7 +147,7 @@ test('Temas prontos: aplicam cores e material, zeram detalhes e são reconhecido
 });
 test('Sem imagem de fundo; material e bordas livres dentro do tema', () => {
   const old = P.normalize({ appearance: { wallpaper: 'custom', blur: 12, dim: 55 } }).appearance;
-  assert.deepEqual(Object.keys(old).sort(), ['ambient', 'border', 'glass', 'level', 'mirror', 'voiceSky'], 'preferência antiga de imagem é descartada');
+  assert.deepEqual(Object.keys(old).sort(), ['ambient', 'border', 'glass', 'level', 'mirror', 'paneWidth', 'voiceSky'], 'preferência antiga de imagem é descartada');
   const neon = P.applyTheme(null, 'neon');
   assert.equal(P.currentTheme({ ...neon, appearance: { ...neon.appearance, glass: 'liquid', border: 'solid' } }), 'neon');
 });test('Tema E.V.A (aba Tema): um só, com as cores do EVA-01 e sem imagem de fundo', () => {
@@ -176,4 +176,13 @@ test('interface espelhada: só booleano, e trocar de tema não desfaz', () => {
   assert.equal(P.normalize({ appearance: { mirror: true } }).appearance.mirror, true);
   assert.equal(P.normalize({ appearance: { mirror: 'sim' } }).appearance.mirror, false);
   assert.equal(P.applyTheme({ appearance: { mirror: true } }, 'neon').appearance.mirror, true);
+});
+test('largura do chat e da voz: automática, limitada e mantida ao trocar de tema', () => {
+  assert.equal(P.normalize({}).appearance.paneWidth, 0);
+  assert.equal(P.normalize({ appearance: { paneWidth: 520.4 } }).appearance.paneWidth, 520);
+  assert.equal(P.normalize({ appearance: { paneWidth: 50 } }).appearance.paneWidth, 300);
+  assert.equal(P.normalize({ appearance: { paneWidth: 5000 } }).appearance.paneWidth, 900);
+  assert.equal(P.normalize({ appearance: { paneWidth: '600' } }).appearance.paneWidth, 0);
+  assert.equal(P.normalize({ appearance: { paneWidth: -1 } }).appearance.paneWidth, 0);
+  assert.equal(P.applyTheme({ appearance: { paneWidth: 600 } }, 'neon').appearance.paneWidth, 600);
 });
