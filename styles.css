@@ -1985,3 +1985,22 @@ html[data-tips="off"] .tip { display: none !important; }
 .phone-qr-side { flex: 1; min-width: 200px; display: grid; gap: 8px; align-content: start; }
 .phone-qr-side p { margin: 0; }
 .phone-url { display: block; padding: 8px 10px; border-radius: 6px; background: var(--sunken); font-size: 12px; overflow-wrap: anywhere; user-select: all; }
+
+/* Interface espelhada (Aparência › Espelhar a interface; renderer/configuracoes.js põe data-mirror): o HUB vai para a
+   direita e a barrinha, o chat e a voz para a esquerda. Só troca os lados; tamanhos e ordem continuam os mesmos */
+:root[data-mirror="on"] main { margin-left: var(--rail-w); margin-right: var(--hub-w); }
+:root[data-mirror="on"] #workspaceNav { right: auto; left: 0; border-left: 0; border-right: 1px solid var(--line); }
+:root[data-mirror="on"] #workspacePanes { right: auto; left: calc(16px + var(--rail-w)); }
+:root[data-mirror="on"] .workspace-wide #workspacePanes { left: calc(16px + var(--rail-w)); right: calc(16px + var(--hub-w)); }
+:root[data-mirror="on"] .voice-side #voiceDialog { left: auto; right: calc(16px + var(--hub-w)); }
+:root[data-mirror="on"] .voice-side.workspace-wide #workspacePanes { left: calc(16px + var(--rail-w)); right: calc(var(--workspace-width) + 28px + var(--hub-w)); }
+:root[data-mirror="on"] .workspace-brand { left: calc(24px + var(--rail-w)); }
+:root[data-mirror="on"] .update-banner { right: calc(16px + var(--hub-w)); }
+:root[data-mirror="on"] .hub-rail { left: auto; right: 0; border-right: 0; border-left: 1px solid var(--line); }
+:root[data-mirror="on"] .hub-rail.open { box-shadow: -12px 0 40px rgba(0, 0, 0, .5); }
+:root[data-mirror="on"] .dm-bar { left: var(--rail-w); right: var(--hub-w); }
+:root[data-mirror="on"] .has-dm-bar .dm-bar { left: var(--rail-w); right: 0; }
+:root[data-mirror="on"] .theme-decor { left: var(--rail-w); }
+:root[data-mirror="on"] .has-workspace-pane:not(.workspace-wide) main { padding-right: 0; padding-left: calc(var(--workspace-width) + 12px); }
+:root[data-mirror="on"] .voice-side main { padding-left: 0; padding-right: calc(var(--workspace-width) + 12px); }
+:root[data-mirror="on"] .voice-side.has-workspace-pane:not(.workspace-wide) main { padding-left: calc(var(--workspace-width) + 12px); }

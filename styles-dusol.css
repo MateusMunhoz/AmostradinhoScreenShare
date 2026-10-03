@@ -115,3 +115,11 @@
   content: "Du'Sol"; position: absolute; right: 16px; top: 50%; translate: 0 -50%; font: 800 34px/1 Bahnschrift, "Segoe UI", sans-serif; font-stretch: condensed;
   background: linear-gradient(135deg, #FFD23F, #FF7A1A 55%, #C8400C); -webkit-background-clip: text; background-clip: text; color: transparent;
 }
+
+/* ---------- Interface espelhada (Aparência › Espelhar a interface): o Sol vai para a direita, longe do chat e da voz ---------- */
+:root[data-skin="dusol"][data-mirror="on"] body::before { transform: scaleX(-1); }
+:root[data-skin="dusol"][data-mirror="on"] body::after { background: linear-gradient(270deg, transparent 18%, rgba(0, 0, 0, .25) 45%, rgba(0, 0, 0, .1) 100%); }
+@media (min-width: 1301px) {
+  :root[data-skin="dusol"][data-mirror="on"] .home-screen::before { left: auto; right: calc(var(--ds-edge) + 4vh); }
+  :root[data-skin="dusol"][data-mirror="on"] .home-screen { padding-left: 40px; padding-right: calc(var(--ds-edge) + 4vh + var(--ds-name) * .85 + 40px); }
+}

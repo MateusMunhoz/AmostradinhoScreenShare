@@ -349,6 +349,8 @@ A configuração de outra pessoa só aparece se ela e o host estiverem na versã
 
 Abra **Configurações gerais** pela engrenagem no pé da barrinha da direita. A barrinha fica na borda direita da janela, no início e dentro de uma sala.
 
+Prefere tudo do outro lado? **Configurações › Aparência › Espelhar a interface** troca os lados: a barrinha, o chat e a voz vão para a esquerda e o HUB para a direita. O resto continua igual, e a escolha fica salva (trocar de tema não desfaz).
+
 O botão **Perfil** (no alto da barrinha) mostra seu nome salvo neste dispositivo; ele pode ser editado fora da sala. Nele também fica o **Fundo do perfil**: uma imagem (recortada em quadrado) ou um GIF de até 1 MB, que aparece atrás do seu perfil para quem clicar em você na voz; **Tirar fundo** volta ao normal. O GIF só se mexe com o perfil aberto. Dentro da sala, **Chat**, **Voz** e **Transmissão** ficam logo abaixo deles, num grupo separado, só com o ícone (o nome aparece ao parar o mouse em cima), e são alternadores independentes: clique para exibir ou ocultar cada painel. Chat e voz abrem se desdobrando ao lado da barrinha. Os selecionados permanecem visíveis juntos, dividindo o espaço. Perfil e configurações também podem ficar abertos ao mesmo tempo. Cada painel tem sua própria rolagem quando necessário. A seleção dos três painéis da sala é lembrada ao reabrir o app.
 
 O painel **Voz** mostra os participantes, seus controles de volume e botões para entrar, sair, mutar e silenciar as vozes. Mostrar ou ocultar esse painel não liga nem desliga o microfone. Da mesma forma, ocultar **Transmissão** não encerra uma transmissão em andamento; use o botão **Parar** para encerrá-la.
