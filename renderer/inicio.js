@@ -126,6 +126,7 @@ window.api.onPip((m) => {
   if (m.type === 'ptt') onPttKey(!!m.down);
   if (m.type === 'mute-key' && voice.session) voice.mute();
   if (m.type === 'deafen-key' && voice.session) voice.deafen();
+  if (m.type === 'tray-update') checkGithub(true);
   if (m.type === 'compose') {
     overlay.compose = !!m.on;
     renderChatOverlay();

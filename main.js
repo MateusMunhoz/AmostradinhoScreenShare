@@ -23,6 +23,7 @@ let dmStore = null; // criado quando o app fica pronto (precisa da pasta do usu�
 const { createDmE2E } = require('./main/mensagens-cripto');
 let dmE2E = null; // mensagens criptografadas de ponta a ponta (criado junto com o dmStore)
 const { createPresence, cleanInternetRoom } = require('./main/razze-presence');
+const bandeja = require('./main/bandeja');
 let activeRazzeNetwork = '', roomRazzeNetwork = '';
 let internetRoom = null; // sala do modo Internet em que estou, para os amigos (renderer/salas-amigos.js)
 const razzePresence = createPresence({
@@ -172,6 +173,7 @@ function setWindowIcon(png) {
   const img = nativeImage.createFromDataURL(png);
   if (img.isEmpty()) return false;
   win.setIcon(img);
+  bandeja.setTrayIcon(img);
   return true;
 }
 // Luz ambiente da música (renderer/musica.js): o player do YouTube é de outro site e a página não lê os pixels dele.
@@ -295,6 +297,7 @@ function createWindow() {
     setupPip(child, id, slot);
     protectFromCapture(child);
   });
+  bandeja.hideOnClose(win);
   win.on('closed', () => {
     for (const p of pips.values()) if (!p.win.isDestroyed()) p.win.close();
     if (janelas.chat && !janelas.chat.isDestroyed()) janelas.chat.close();
@@ -457,7 +460,7 @@ if (hasSingleInstance) app.whenReady().then(() => {
   ipcMain.handle('pip-size', (_e, id, key) => setPipSize(id, key));
   ipcMain.handle('pip-opacity', (_e, id, v) => setPipOpacity(id, v));
   ipcMain.handle('pip-group', (_e, id, patch) => setPipGroup(id, patch));
-  ipcMain.handle('room-keys', (_e, on) => setRoomKeys(!!on));
+  ipcMain.handle('room-keys', (_e, on) => { bandeja.setCall(!!on); return setRoomKeys(!!on); });
   ipcMain.handle('get-shortcuts', () => ({ ...keys() }));
   ipcMain.handle('set-shortcut', (_e, action, accel) => setShortcut(String(action), accel));
   ipcMain.handle('ptt', (_e, vk) => setPtt(vk));
@@ -469,14 +472,7 @@ if (hasSingleInstance) app.whenReady().then(() => {
   ipcMain.handle('open-link', (_e, url) => {
     if (typeof url === 'string' && /^https?:\/\/[^\s]+$/i.test(url)) shell.openExternal(url);
   });
-  ipcMain.handle('restart-app', () => {
-    endSession(false);
-    stopServer();
-    stopAppAudio();
-    stopVideoCap();
-    stopPriority();
-    relaunch();
-  });
+  ipcMain.handle('restart-app', restartApp);
 
   // A sala aberta aparece na lista de sessões de quem está na rede (menos se foi criada oculta)
   ipcMain.handle('start-server', async (_e, port, password, seed, provider = 'radmin') => {
@@ -499,10 +495,21 @@ if (hasSingleInstance) app.whenReady().then(() => {
 
   razzePresence.start();
   createWindow();
+  bandeja.createTray({ restart: restartApp });
 });
+
+function restartApp() {
+  endSession(false);
+  stopServer();
+  stopAppAudio();
+  stopVideoCap();
+  stopPriority();
+  relaunch();
+}
 
 let presenceQuit = false;
 app.on('before-quit', (event) => {
+  bandeja.setQuitting(); // saindo de verdade: o X da janela fecha em vez de esconder na bandeja
   if (presenceQuit) return;
   event.preventDefault(); presenceQuit = true;
   Promise.race([razzePresence.stop().catch(() => {}), new Promise(resolve => setTimeout(resolve, 1500))]).finally(() => app.quit());

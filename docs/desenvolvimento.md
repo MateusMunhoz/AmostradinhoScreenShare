@@ -107,6 +107,7 @@ Arquivo novo na página: entra no `index.html` (na posição certa), em `PACK_FI
 | `janela-flutuante.js` | Vagas, fila, transparência e modo de ajuste das janelas flutuantes |
 | `chat-jogo.js` | A janela do chat por cima do jogo e o modo de escrever (Ctrl+Enter) |
 | `atalhos.js` | Atalhos globais e o apertar para falar (`teclas.exe`) |
+| `bandeja.js` | Ícone na bandeja e o menu dele; o X da janela esconde nela (sair de verdade marca `setQuitting`). Mute e ensurdecer mandam as mesmas mensagens dos atalhos; "Procurar atualização" manda `tray-update` |
 | `sessoes.js` | Anúncio e busca das sessões abertas (UDP na rede da Radmin) |
 | `mensagens.js` | Histórico local das mensagens diretas: um arquivo por amigo em `%APPDATA%\Tela P2P\mensagens\<conta>`, cifrado com o safeStorage |
 | `mensagens-cripto.js` | Mensagens diretas criptografadas de ponta a ponta (X25519 + AES-256-GCM): a chave privada só aqui; cifra no envio e decifra na busca, entre o IPC e a RazzeAPI ([spec](spec/mensagens-criptografadas.md)) |
