@@ -3,6 +3,13 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.15.5",
+    "date": "2026-10-03",
+    "items": [
+      "Chat e voz: arrastar a borda para mudar a largura do painel"
+    ]
+  },
+  {
     "version": "1.15.4",
     "date": "2026-10-03",
     "items": [
@@ -69,13 +76,6 @@ const NOVIDADES = [
     "items": [
       "Mapa: cartão do canal no sol; música aparece para quem entra na sala; mapa continua girando fora de foco",
       "Build do .dmg para Mac automático a cada Release"
-    ]
-  },
-  {
-    "version": "1.12.11",
-    "date": "2026-10-01",
-    "items": [
-      "Voz: opção em Aparência para esconder o céu em cima da lista"
     ]
   }
 ];
