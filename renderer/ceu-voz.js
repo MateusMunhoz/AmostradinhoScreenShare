@@ -608,7 +608,7 @@ function skyPlanet(p, ch, x, y, { map, period, delay, trail }) {
     fx.append(skyEl('line', { class: 'sky-tether', x1: (-Math.cos(a) * 3.5).toFixed(1), y1: (-Math.sin(a) * 3.5).toFixed(1), x2: (-Math.cos(a) * radius * k).toFixed(1), y2: (-Math.sin(a) * radius * k).toFixed(1) }));
   }
   const up = skyEl('g', { class: 'sky-upright', style: `animation-duration: ${period}s; animation-delay: ${delay}` });
-  if (map) up.append(skyEl('circle', { class: 'sky-phit', r: 7 }));
+  if (map) up.append(skyEl('circle', { class: 'sky-phit', r: 12 })); // área do clique bem maior que o planeta (uns 30 px no zoom normal)
   // No mapa, ondas saindo do planeta: verdes enquanto a pessoa fala (o CSS só mostra com .speaking), azuis enquanto transmite
   if (map) up.append(skyEl('circle', { class: 'sky-wave', r: 3 }), skyEl('circle', { class: 'sky-wave', r: 3, style: 'animation-delay: -1.2s' }));
   if (map && p.sharing) for (const d of [0, 1, 2]) up.append(skyEl('circle', { class: 'sky-bwave', r: 3.5, style: `animation-delay: -${d}s` }));
