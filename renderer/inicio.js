@@ -71,6 +71,8 @@ $('profilePhotoFile').onchange = async () => {
 $('profilePhotoRemove').onclick = removeMyPhoto;
 for (const b of $('profilePhotoFit').querySelectorAll('[data-fit]')) b.onclick = () => setPhotoFit(b.dataset.fit);
 renderMyPhoto();
+setupProfileBg(); // fundo do perfil (renderer/fundo-perfil.js)
+setupGamerMode(); // o botão do controle na barrinha (renderer/modo-gamer.js); depois da prioridade salva
 $('micSelect').onchange = () => {
   const id = $('micSelect').value;
   if (id === voiceCfg.micId) return;
@@ -166,7 +168,7 @@ $('shareDialog').addEventListener('change', (e) => {
   const t = e.target;
   if (t.name === 'priority') {
     save('priority', t.value);
-    window.api.setPriority(t.value);
+    window.api.setPriority(gamerOn() ? 'normal' : t.value); // no modo gamer fica normal até desligar (modo-gamer.js)
   } else if (t.name === 'encodeMode') {
     // Sem o mouse só dá no NVENC direto: voltar para "Uma por pessoa" traz o mouse de volta
     if (t.value === 'per' && !$('cursorOn').checked) { $('cursorOn').checked = true; save('mostrarMouse', '1'); }
@@ -351,7 +353,11 @@ for (const id of ['statsTabPerf', 'statsTabStream']) {
 // Chat
 $('chatToggle').insertAdjacentHTML('afterbegin', ICON.chat);
 $('chatToggle').onclick = () => setPanelOpen(!chat.open);
-$('peopleBtn').onclick = () => setPeopleOpen($('peoplePop').hidden);
+// A lista abre por cima do chat e da voz: com os dois fechados, o chat abre junto
+$('peopleBtn').onclick = () => {
+  if ($('workspacePanes').hidden) setPanelOpen(true);
+  setPeopleOpen($('peoplePop').hidden);
+};
 // Clicar fora da lista fecha (o cartão de volume, que abre de dentro dela, conta como dentro)
 document.addEventListener('mousedown', (e) => {
   if ($('voiceStackPop') && !e.target.closest('#voiceStackPop, #voiceAvatars, #personCard')) closeVoiceStackPop();
@@ -430,4 +436,5 @@ setupDm();
 setupWorkspace();
 watchDock();
 setupGeneralSettings();
+setupPhone();
 show('home');

@@ -1,0 +1,120 @@
+/* Tema Di'Luna: só vale com o tema escolhido na aba Tema (html[data-skin="diluna"]). Irmão do Du'Sol (styles-dusol.css).
+   A Lua cheia: um pedaço grande dela na esquerda da janela e o espaço no resto, com véus roxos e faíscas de luz
+   (assets/temas/diluna-lua.webp, gerado por assets/temas/gerar-lua.py), em branco, ciano, azul e roxo. O clima é o
+   de uma rainha da lua cheia num salão de magia: letreiros com serifa, brilho frio e ciano. Tudo desenhado aqui, sem
+   nada de jogo nenhum. O nome "Di'Luna" fica como no Du'Sol: em pé do lado de fora da Lua no saguão, grande atrás
+   do palco vazio, na barra de título e ao lado do símbolo da Lua no saguão.
+   As cores vêm do tema (preferencias-modelo.js › skins); aqui fica só o desenho. Nada anima sozinho. */
+:root[data-skin="diluna"] {
+  --dl-font: "Palatino Linotype", "Book Antiqua", Cambria, Georgia, serif;   /* os letreiros, com serifa */
+  --dl-white: #EAF6FF;
+  --dl-cyan: #6FE3FF;
+  --dl-blue: #4D7CFF;
+  --dl-purple: #A57BFF;
+  --dl-glow: linear-gradient(135deg, var(--dl-white), var(--dl-cyan) 35%, var(--dl-blue) 68%, var(--dl-purple));
+  /* O símbolo da Lua (máscara: a cor vem de quem usa): um crescente e uma estrelinha */
+  --dl-moon: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path fill='black' d='M62 8A44 44 0 1 0 92 70A36 36 0 1 1 62 8Z'/><path fill='black' d='M74 22C75 29 77 31 84 32C77 33 75 35 74 42C73 35 71 33 64 32C71 31 73 29 74 22Z'/></svg>");
+  --radius: 10px;
+  --radius-lg: 14px;
+}
+:root[data-skin="diluna"] ::selection { background: var(--dl-cyan); color: #000; }
+
+/* ---------- O fundo: a Lua na esquerda e o espaço; por cima, uma sombra leve do meio para a direita (leitura) ---------- */
+:root[data-skin="diluna"] body::before, :root[data-skin="diluna"] body::after {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+}
+:root[data-skin="diluna"] body::before { background: #04050C url(assets/temas/diluna-lua.webp) left center / cover no-repeat; }
+:root[data-skin="diluna"] body::after { background: linear-gradient(90deg, transparent 18%, rgba(2, 3, 12, .25) 45%, rgba(2, 3, 12, .1) 100%); }
+
+/* ---------- Painéis: um fio de luar em cima ---------- */
+:root[data-skin="diluna"] :is(.workspace-pane, .dock, .panel, .home-card, .dialog, .hub-rail, .sky-focus.sky-pop, .rail-music-menu) {
+  box-shadow: inset 0 1px 0 rgba(111, 227, 255, .26), 0 10px 30px rgba(0, 0, 0, .35);
+}
+:root[data-skin="diluna"] :is(.pane-head h2, .chat-title, .stream-pane-head h2, .dialog h2, .settings-section h3) {
+  font-family: var(--dl-font); font-weight: 700; letter-spacing: .08em; font-variant: small-caps;
+  background: var(--dl-glow); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+:root[data-skin="diluna"] :is(.btn.primary, .btn.live) {
+  background: var(--dl-glow); border-color: transparent; color: #060818; font-weight: 700;
+  box-shadow: 0 0 0 1px rgba(111, 227, 255, .35), 0 4px 18px rgba(77, 124, 255, .3);
+}
+:root[data-skin="diluna"] .btn.primary:hover:not(:disabled) { filter: brightness(1.08); }
+:root[data-skin="diluna"] .workspace-tab[aria-pressed=true], :root[data-skin="diluna"] .workspace-tab[aria-expanded=true] {
+  color: var(--dl-cyan); background: rgba(111, 227, 255, .12); box-shadow: inset 2px 0 0 var(--dl-purple);
+}
+:root[data-skin="diluna"] .hub-section { color: var(--dl-cyan); letter-spacing: .2em; }
+:root[data-skin="diluna"] .toast::before { content: "☾  "; color: var(--dl-cyan); font-weight: 700; }
+:root[data-skin="diluna"] ::-webkit-scrollbar-thumb { background-color: rgba(165, 123, 255, .45) !important; }
+
+/* ---------- O nome, como no Du'Sol ---------- */
+/* Barra de título: o símbolo da Lua no lugar da logo, "// DI'LUNA" depois do nome e a linha da Lua à direita */
+:root[data-skin="diluna"] .titlebar svg, :root[data-skin="diluna"] .brand-mark svg { display: none; }
+:root[data-skin="diluna"] .titlebar::before, :root[data-skin="diluna"] .brand-mark::before {
+  content: ""; flex: none; width: 16px; height: 16px; background: var(--dl-glow);
+  -webkit-mask: var(--dl-moon) center / contain no-repeat; mask: var(--dl-moon) center / contain no-repeat;
+}
+:root[data-skin="diluna"] .brand-mark::before { width: 32px; height: 32px; }
+:root[data-skin="diluna"] .brand-mark { text-shadow: 0 0 10px #000, 0 0 3px #000; }
+:root[data-skin="diluna"] .brand-mark::before { filter: drop-shadow(0 0 4px #000) drop-shadow(0 0 1px #000); }
+:root[data-skin="diluna"] .titlebar span { text-transform: uppercase; letter-spacing: .3em; font-size: 11px; color: var(--dl-white); }
+:root[data-skin="diluna"] .titlebar span::after { content: " // DI'LUNA"; color: var(--dl-cyan); }
+:root[data-skin="diluna"] .titlebar::after {
+  content: "☾  LUA CHEIA  ·  384.400 KM  ·  MARÉ ALTA"; position: absolute; right: 160px; font: 400 11px/1 var(--font-console);
+  letter-spacing: .25em; color: var(--dl-purple); opacity: .85;
+}
+:root[data-skin="diluna"] .brand-mark::after {
+  content: "// DI'LUNA"; margin-left: 6px; font: 700 13px/1 var(--dl-font); letter-spacing: .25em; color: var(--dl-cyan);
+}
+/* Saguão: o nome em pé, grande, com o brilho do luar, do outro lado da Lua (no espaço, logo depois da borda dela).
+   A Lua tem a mesma geometria do Sol do Du'Sol: a borda fica em max(20,5vw, 36,44vh) */
+:root[data-skin="diluna"] {
+  --dl-edge: max(20.5vw, 36.44vh);
+  --dl-name: clamp(84px, 15vh, 150px);
+}
+:root[data-skin="diluna"] .home-screen::before {
+  content: "Di'Luna"; position: fixed; left: calc(var(--dl-edge) + 4vh); top: 90px; bottom: 40px; z-index: 0; pointer-events: none;
+  writing-mode: vertical-rl; transform: rotate(180deg); text-align: center;
+  font: 700 var(--dl-name)/.9 var(--dl-font); letter-spacing: .02em;
+  background: linear-gradient(180deg, var(--dl-purple), var(--dl-blue) 35%, var(--dl-cyan) 70%, var(--dl-white));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 0 18px rgba(111, 227, 255, .35));
+}
+:root[data-skin="diluna"] .home-screen { padding-left: calc(var(--dl-edge) + 4vh + var(--dl-name) * .95 + 40px); }
+:root[data-skin="diluna"] .home-main { position: relative; z-index: 1; }
+:root[data-skin="diluna"] .home-title { font-family: var(--dl-font); letter-spacing: .02em; }
+@media (max-width: 1300px) {
+  :root[data-skin="diluna"] .home-screen::before { display: none; }
+  :root[data-skin="diluna"] .home-screen { padding-left: 40px; }
+}
+/* Sem transmissão na tela: a Lua do fundo aparece, "Di'Luna" grande com o brilho do luar e a linha de sistema embaixo */
+:root[data-skin="diluna"] .empty-stage {
+  position: relative; overflow: hidden; align-content: end; padding-bottom: 58px; border-style: solid; border-color: var(--line);
+  background: transparent;
+}
+:root[data-skin="diluna"] .empty-stage::before {
+  content: "Di'Luna"; position: absolute; left: 0; right: 0; top: 50%; translate: 0 -50%; z-index: 0; pointer-events: none; opacity: .55;
+  text-align: center; white-space: nowrap; font: 700 clamp(90px, 14vw, 220px)/1 var(--dl-font); letter-spacing: .02em;
+  background: var(--dl-glow); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+:root[data-skin="diluna"] .empty-stage::after {
+  content: "DI'LUNA  ☾  LUA CHEIA  //  AGUARDANDO SINAL";
+  position: absolute; left: 22px; right: 22px; bottom: 16px; pointer-events: none; text-align: left;
+  font: 400 11px/1 var(--font-console); letter-spacing: .2em; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  text-shadow: 0 0 6px #000, 0 0 2px #000;
+}
+:root[data-skin="diluna"] .empty-stage p { position: relative; z-index: 1; color: var(--text); text-shadow: 0 0 6px #000, 0 0 2px #000; }
+
+/* Céu da voz: o mesmo desenho, sobre um fundo de noite azul */
+:root[data-skin="diluna"] .voice-sky { background: radial-gradient(ellipse 70% 120% at 0% 50%, rgba(111, 227, 255, .14), transparent 70%), #04050C; }
+
+/* ---------- Prévia na aba Tema (vale sempre, com as cores fixas do tema) ---------- */
+.skin-preview[data-preview=diluna] {
+  background: radial-gradient(circle at -40% 50%, #F2F7FF 0 46%, #CFE0F2 55%, #EAF6FF 59.2%, rgba(111, 227, 255, .55) 60.3%, rgba(77, 124, 255, .25) 64%, transparent 74%),
+    radial-gradient(circle, rgba(200, 230, 255, .8) 0 .7px, transparent 1.1px) 30px 8px / 41px 31px,
+    radial-gradient(ellipse at 80% 20%, rgba(165, 123, 255, .3), transparent 60%), #04050C;
+  border-color: #23264A;
+}
+.skin-preview[data-preview=diluna]::after {
+  content: "Di'Luna"; position: absolute; right: 16px; top: 50%; translate: 0 -50%; font: 700 32px/1 "Palatino Linotype", "Book Antiqua", Cambria, Georgia, serif;
+  background: linear-gradient(135deg, #EAF6FF, #6FE3FF 35%, #4D7CFF 68%, #A57BFF); -webkit-background-clip: text; background-clip: text; color: transparent;
+}

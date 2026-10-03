@@ -63,9 +63,10 @@ Todas as respostas usam JSON. Erros seguem `{ "error": { "code": "...", "message
 | `POST /v1/auth/logout`, `GET /v1/me` | Encerrar sessão e consultar conta |
 | `GET /v1/admin/users`, `GET /v1/admin/networks` | Listagens administrativas com `RAZZE_ADMIN_TOKEN` |
 | `POST /v1/admin/users/:id/approve` | Aprovar conta pendente com `RAZZE_ADMIN_TOKEN` |
-| `GET /v1/friends`, `GET /v1/friends/requests` | Listar amizades e solicitações |
+| `GET /v1/friends`, `GET /v1/friends/requests` | Listar amizades e solicitações; cada amigo vem com `dmKey` (a chave pública das mensagens criptografadas, ou `null`) |
+| `PUT /v1/me/dm-key` (`{ publicKey }`) | Publicar a chave pública X25519 (32 bytes em base64) das mensagens criptografadas desta conta; vale a do último PC que publicou |
 | `POST /v1/friends/requests`, `POST /v1/friends/requests/:id/accept`, `DELETE /v1/friends/:userId` | Gerenciar amizades |
-| `POST /v1/messages` (`{ to, text }`) | Mandar mensagem direta para um amigo (até 2000 caracteres; 30 mensagens a cada 10 s por conta) |
+| `POST /v1/messages` (`{ to, text }`) | Mandar mensagem direta para um amigo (até 2000 caracteres, ou até 9000 se for cifrada, `e2e1:<base64url>`; 30 mensagens a cada 10 s por conta). O app só manda cifrada ([spec](spec/mensagens-criptografadas.md)) |
 | `GET /v1/messages?after=<seq>` | Mensagens diretas (enviadas e recebidas) depois do número de sequência `after`, 200 por vez (`more` diz se há mais) |
 | `GET /v1/networks`, `POST /v1/networks` | Listar redes visíveis e criar rede |
 | `GET/PATCH/DELETE /v1/networks/:id` | Consultar, editar ou excluir rede própria |
@@ -105,13 +106,15 @@ O módulo web separado fica em `razze-api/admin/` e abre em `https://SEU_DOMINIO
 
 O processo principal do TelaP2P envia uma batida a cada 20 segundos, inclusive minimizado. A presença expira após 70 segundos sem contato (ajustável de 45 a 300 no painel). Amigos mostram Online/Offline; a rede mostra pessoas conectadas e salas abertas; a tela inicial lista as salas da rede selecionada. A publicação respeita a opção de sala oculta. Ao sair, o cliente retira sua presença; se cair ou a conexão falhar, o prazo remove os anúncios. A presença é por sessão, então sair em um dispositivo não apaga a presença de outro.
 
+**Salas dos amigos (modo Internet):** quem cria uma sala no servidor do modo Internet (e deixou "Mostrar esta sala para meus amigos do Razze") manda `internetRoom` na batida: endereço do servidor (`ws://` ou `wss://`), código, número de pessoas e o passe de convite (43 caracteres base64url, ou `null` num servidor antigo). Não precisa de rede Razze nem de VPN. A API devolve essas salas em `internet` só para os amigos aceitos (nunca para o próprio usuário nem no painel de administração) e elas somem com a presença. Detalhes em [spec/salas-dos-amigos.md](spec/salas-dos-amigos.md).
+
 Online confirma contato recente com a API; não prova conectividade P2P. As salas incluem endereço VPN, porta, número de participantes e indicação de senha, sem publicar a senha. A API valida a associação do dispositivo à rede e restringe a consulta das salas aos membros, mesmo em redes públicas.
 
 | Rota | Uso |
 |---|---|
-| `POST /v1/presence/heartbeat` | `{connections:[{networkId,deviceId}], room:null ou {id,networkId,host,porta,pessoas,senha}}` |
+| `POST /v1/presence/heartbeat` | `{connections:[{networkId,deviceId}], room:null ou {id,networkId,host,porta,pessoas,senha}, internetRoom?:{servidor,codigo,pessoas,passe}}` |
 | `DELETE /v1/presence` | Retirar a presença da sessão atual |
-| `GET /v1/rooms?networkId=ID` | Salas visíveis das redes de que o usuário é membro |
+| `GET /v1/rooms?networkId=ID` | `rooms`: salas visíveis das redes de que o usuário é membro; `internet`: salas do modo Internet dos amigos aceitos |
 | `GET /v1/admin/me`, `GET /v1/admin/overview` | Identidade administrativa e resumo |
 | `GET/PATCH /v1/admin/settings` | `requireApproval`, `registrationOpen`, `presenceTimeoutSeconds` persistentes |
 | `PATCH /v1/admin/users/:id` | Papel `user/admin`, status `pending/active/disabled` e `banReason` |

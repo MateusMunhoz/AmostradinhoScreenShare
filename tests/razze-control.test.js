@@ -131,3 +131,47 @@ test('configurações persistem após reiniciar e presença exige nova confirma�
   assert.equal((await second.register('Pending')).status, 202);
   await second.server.close();
 });
+
+test('sala do modo Internet: só os amigos aceitos veem, sem rede nem VPN, e some ao fechar ou expirar', async t => {
+  const { req, register, advance } = await fixture(t);
+  const a = await register('Ana'), b = await register('Bia'), stranger = await register('Eve');
+  const friend = await req('friends/requests', 'POST', { email: b.user.email }, a.accessToken);
+  await req('friends/requests/' + friend.id + '/accept', 'POST', undefined, b.accessToken);
+  const passe = 'x'.repeat(43);
+  const internetRoom = { servidor: 'ws://203.0.113.5:8765', codigo: 'ABC234', pessoas: 2, passe };
+  assert.equal((await req('presence/heartbeat', 'POST', { internetRoom }, a.accessToken)).status, 200);
+  const seen = (await req('rooms', 'GET', undefined, b.accessToken)).internet;
+  assert.equal(seen.length, 1);
+  assert.equal(seen[0].host, 'Ana'); assert.equal(seen[0].codigo, 'ABC234'); assert.equal(seen[0].passe, passe);
+  assert.equal((await req('rooms', 'GET', undefined, stranger.accessToken)).internet.length, 0);
+  assert.equal((await req('rooms', 'GET', undefined, a.accessToken)).internet.length, 0); // a própria sala não aparece
+  for (const bad of [{ ...internetRoom, servidor: 'https://x.com' }, { ...internetRoom, codigo: 'abc' }, { ...internetRoom, passe: 'curto' }, { ...internetRoom, pessoas: 0 }]) {
+    assert.equal((await req('presence/heartbeat', 'POST', { internetRoom: bad }, a.accessToken)).status, 400);
+  }
+  await req('presence/heartbeat', 'POST', {}, a.accessToken);
+  assert.equal((await req('rooms', 'GET', undefined, b.accessToken)).internet.length, 0);
+  await req('presence/heartbeat', 'POST', { internetRoom }, a.accessToken);
+  advance(71000);
+  assert.equal((await req('rooms', 'GET', undefined, b.accessToken)).internet.length, 0);
+  // Admin não vê o passe pelo banco
+  const page = await req('admin/database/live_presence', 'GET', undefined, ROOT);
+  assert.doesNotMatch(JSON.stringify(page), new RegExp(passe));
+});
+
+test('mensagens criptografadas: chave pública por conta, entregue só aos amigos; texto cifrado longo aceito', async t => {
+  const { req, register } = await fixture(t);
+  const a = await register('Ana'), b = await register('Bia'), stranger = await register('Eve');
+  const friend = await req('friends/requests', 'POST', { email: b.user.email }, a.accessToken);
+  await req('friends/requests/' + friend.id + '/accept', 'POST', undefined, b.accessToken);
+  const key = Buffer.alloc(32, 7).toString('base64');
+  assert.equal((await req('me/dm-key', 'PUT', { publicKey: 'curta' }, a.accessToken)).status, 400);
+  assert.equal((await req('me/dm-key', 'PUT', { publicKey: key }, a.accessToken)).status, 200);
+  assert.equal((await req('friends', 'GET', undefined, b.accessToken)).friends[0].dmKey, key);
+  assert.equal((await req('friends', 'GET', undefined, a.accessToken)).friends[0].dmKey, null);
+  assert.equal((await req('friends', 'GET', undefined, stranger.accessToken)).friends.length, 0);
+  const longE2e = 'e2e1:' + 'A'.repeat(8000);
+  assert.equal((await req('messages', 'POST', { to: b.user.id, text: longE2e }, a.accessToken)).status, 201);
+  assert.equal((await req('messages', 'POST', { to: b.user.id, text: 'x'.repeat(2001) }, a.accessToken)).status, 400);
+  assert.equal((await req('messages', 'POST', { to: b.user.id, text: 'e2e1:' + 'A'.repeat(9001) }, a.accessToken)).status, 400);
+  assert.equal((await req('messages', 'GET', undefined, b.accessToken)).messages[0].text, longE2e);
+});

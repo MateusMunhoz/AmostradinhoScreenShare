@@ -33,7 +33,6 @@ function setHubTab(tab) { setHubOpen(true, tab); }
 
 // Os amigos agora moram no HUB: abrir e fechar "a janela de amigos" é abrir o HUB na aba Amigos
 function openFriendsDialog() {
-  if (!$('connectionMapDialog').hidden) closeConnectionMap();
   if (!$('profilePane').hidden) closeProfilePopup();
   if (!$('networkDialog').hidden) closeNetworkDialog();
   if (!$('generalSettingsDialog').hidden) closeGeneralSettings();
@@ -42,7 +41,6 @@ function openFriendsDialog() {
 }
 function closeFriendsDialog() { if (hub.open) setHubOpen(false); }
 function openNetworkDialog() {
-  if (!$('connectionMapDialog').hidden) closeConnectionMap();
   if (!$('profilePane').hidden) closeProfilePopup();
   if (!$('generalSettingsDialog').hidden) closeGeneralSettings();
   renderConnectivitySettings();
@@ -72,6 +70,7 @@ function renderHub() {
   $('networkDialog').hidden = !hub.open || hub.tab !== 'network';
   $('hubRooms').hidden = !hub.open || hub.tab !== 'rooms';
   $('friendsDialog').hidden = !hub.open || hub.tab !== 'friends';
+  syncConnectionMap(); // o mapa de conexões fica na aba Rede e só atualiza com ela à vista
   if (!hub.open) return;
   if (hub.tab === 'friends') { renderFriends(); return; }
   // A sala em que você está
@@ -86,12 +85,13 @@ function renderHub() {
   }
   // As outras salas abertas (a sua some da lista pelo id da sessão ou pelo endereço)
   const myId = state.sessao?.id;
-  const mine = (s) => inRoom && ((myId && s.id === myId) || (!state.cloud && s.endereco === state.host && s.porta === state.port));
+  const mine = (s) => inRoom && ((myId && s.id === myId) || (state.cloud ? s.codigo === state.cloud.code : s.endereco === state.host && s.porta === state.port));
   const others = sessoes.observando ? listaSessoes().filter((s) => !mine(s)) : [];
   $('hubList').replaceChildren(...others.map(hubRow));
   $('hubEmpty').hidden = others.length > 0;
   $('hubEmpty').textContent = sessoes.procurando ? 'Procurando salas abertas na rede…'
-    : state.cloud || selectedNetworkProvider() === 'internet' ? 'No modo Internet as salas não aparecem aqui: entre pelo código.'
+    : state.cloud || selectedNetworkProvider() === 'internet'
+      ? (razzeLive.updatedAt ? 'Nenhum amigo com outra sala aberta pela internet agora.' : 'Entre na sua conta Razze (aba Rede) para ver as salas dos amigos.')
     : inRoom ? 'Nenhuma outra sala aberta na rede agora.' : 'Nenhuma sala aberta na rede agora.';
 }
 
@@ -269,8 +269,8 @@ function friendRow(f, isOnline) {
   // Convidar só faz sentido para quem está online
   if (isOnline) {
     const inRoom = !!state.myId && !!state.roomAddr;
-    const invite = hubButton('Convidar', () => inviteFriend(f), 'btn small' + (inRoom ? ' primary' : ''),
-      inRoom ? `Copiar o ${state.cloud ? 'código' : 'endereço'} da sua sala para mandar para ${f.displayName}` : 'Entre numa sala para convidar');
+    const invite = hubButton('Convidar', () => convidarPorMensagem(f), 'btn small' + (inRoom ? ' primary' : ''),
+      inRoom ? `Mandar um convite para a sua sala nas mensagens de ${f.displayName}` : 'Entre numa sala para convidar');
     invite.disabled = !inRoom;
     li.append(invite);
   }
@@ -328,14 +328,6 @@ async function removeFriend(f) {
   friendsUi.confirm = null;
   try { await window.api.razzeRemoveFriend(f.id); friendsStatus(`${f.displayName} saiu da sua lista de amigos.`); await refreshRazzeLists(); }
   catch (error) { friendsStatus('Não foi possível remover: ' + error.message); }
-}
-async function inviteFriend(f) {
-  const address = state.roomAddr || (state.host ? `${state.host}:${state.port}` : '');
-  if (!address) { friendsStatus(`Entre numa sala primeiro para convidar ${f.displayName}.`); return; }
-  try {
-    await copiar(address);
-    friendsStatus(state.cloud ? `Código copiado: ${address}. Mande para ${f.displayName} junto com a senha.` : `Endereço copiado: ${address}. Mande para ${f.displayName}.`);
-  } catch { friendsStatus('Não foi possível copiar o endereço da sala.'); }
 }
 
 function setupHub() {

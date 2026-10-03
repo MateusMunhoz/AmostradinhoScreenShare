@@ -1,0 +1,117 @@
+/* Tema Du'Sol: só vale com o tema escolhido na aba Tema (html[data-skin="dusol"]).
+   O Sol: um pedaço grande dele na esquerda da janela e o espaço no resto (assets/temas/dusol-sol.webp, gerado por
+   assets/temas/gerar-sol.py), preto, amarelo e laranja. O nome "Du'Sol" fica como o do Arasaka: em pé no saguão,
+   grande atrás do palco vazio, na barra de título e ao lado do símbolo do Sol no saguão.
+   As cores vêm do tema (preferencias-modelo.js › skins); aqui fica só o desenho. Nada anima sozinho. */
+:root[data-skin="dusol"] {
+  --ds-font: Bahnschrift, "Segoe UI", sans-serif;     /* com font-stretch condensed, é o letreiro do tema */
+  --ds-yellow: #FFD23F;
+  --ds-orange: #FF7A1A;
+  --ds-ember: #C8400C;
+  --ds-fire: linear-gradient(135deg, var(--ds-yellow), var(--ds-orange) 55%, var(--ds-ember));
+  /* O símbolo do Sol (máscara: a cor vem de quem usa): o disco e oito raios */
+  --ds-sun: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='22' fill='black'/><g stroke='black' stroke-width='7' stroke-linecap='round'><path d='M50 6V18M50 82V94M6 50H18M82 50H94M18.9 18.9 27.4 27.4M72.6 72.6 81.1 81.1M18.9 81.1 27.4 72.6M72.6 27.4 81.1 18.9'/></g></svg>");
+  --radius: 10px;
+  --radius-lg: 14px;
+}
+:root[data-skin="dusol"] ::selection { background: var(--ds-orange); color: #000; }
+
+/* ---------- O fundo: o Sol na esquerda e o espaço; por cima, uma sombra leve do meio para a direita (leitura) ---------- */
+:root[data-skin="dusol"] body::before, :root[data-skin="dusol"] body::after {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+}
+:root[data-skin="dusol"] body::before { background: #050302 url(assets/temas/dusol-sol.webp) left center / cover no-repeat; }
+:root[data-skin="dusol"] body::after { background: linear-gradient(90deg, transparent 18%, rgba(0, 0, 0, .25) 45%, rgba(0, 0, 0, .1) 100%); }
+
+/* ---------- Painéis: um fio de luz quente em cima, como a borda do Sol ---------- */
+:root[data-skin="dusol"] :is(.workspace-pane, .dock, .panel, .home-card, .dialog, .hub-rail, .sky-focus.sky-pop, .rail-music-menu) {
+  box-shadow: inset 0 1px 0 rgba(255, 170, 60, .28), 0 10px 30px rgba(0, 0, 0, .35);
+}
+:root[data-skin="dusol"] :is(.pane-head h2, .chat-title, .stream-pane-head h2, .dialog h2, .settings-section h3) {
+  font-family: var(--ds-font); font-stretch: condensed; font-weight: 700; text-transform: uppercase; letter-spacing: .14em;
+  background: var(--ds-fire); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+:root[data-skin="dusol"] :is(.btn.primary, .btn.live) {
+  background: var(--ds-fire); border-color: transparent; color: #1A0A00; font-weight: 700;
+  box-shadow: 0 0 0 1px rgba(255, 122, 26, .35), 0 4px 18px rgba(255, 122, 26, .25);
+}
+:root[data-skin="dusol"] .btn.primary:hover:not(:disabled) { filter: brightness(1.08); }
+:root[data-skin="dusol"] .workspace-tab[aria-pressed=true], :root[data-skin="dusol"] .workspace-tab[aria-expanded=true] {
+  color: var(--ds-yellow); background: rgba(255, 122, 26, .14); box-shadow: inset 2px 0 0 var(--ds-orange);
+}
+:root[data-skin="dusol"] .hub-section { color: var(--ds-orange); letter-spacing: .2em; }
+:root[data-skin="dusol"] .toast::before { content: "☉  "; color: var(--ds-yellow); font-weight: 700; }
+:root[data-skin="dusol"] ::-webkit-scrollbar-thumb { background-color: rgba(255, 122, 26, .45) !important; }
+
+/* ---------- O nome, como no Arasaka ---------- */
+/* Barra de título: o símbolo do Sol no lugar da logo, "// DU'SOL" depois do nome e a linha do Sol à direita */
+:root[data-skin="dusol"] .titlebar svg, :root[data-skin="dusol"] .brand-mark svg { display: none; }
+:root[data-skin="dusol"] .titlebar::before, :root[data-skin="dusol"] .brand-mark::before {
+  content: ""; flex: none; width: 16px; height: 16px; background: var(--ds-fire);
+  -webkit-mask: var(--ds-sun) center / contain no-repeat; mask: var(--ds-sun) center / contain no-repeat;
+}
+:root[data-skin="dusol"] .brand-mark::before { width: 32px; height: 32px; }
+/* O logo do saguão fica em cima do Sol: uma sombra escura em volta para continuar legível */
+:root[data-skin="dusol"] .brand-mark { text-shadow: 0 0 10px #000, 0 0 3px #000; }
+:root[data-skin="dusol"] .brand-mark::before { filter: drop-shadow(0 0 4px #000) drop-shadow(0 0 1px #000); }
+:root[data-skin="dusol"] .titlebar span { text-transform: uppercase; letter-spacing: .3em; font-size: 11px; color: var(--ds-yellow); }
+:root[data-skin="dusol"] .titlebar span::after { content: " // DU'SOL"; color: var(--ds-orange); }
+:root[data-skin="dusol"] .titlebar::after {
+  content: "☉  FOTOSFERA  ·  5.778 K  ·  ATIVIDADE SOLAR"; position: absolute; right: 160px; font: 400 11px/1 var(--font-console);
+  letter-spacing: .25em; color: var(--ds-orange); opacity: .8;
+}
+:root[data-skin="dusol"] .brand-mark::after {
+  content: "// DU'SOL"; margin-left: 6px; font: 700 12px/1 var(--ds-font); font-stretch: condensed; letter-spacing: .3em; color: var(--ds-orange);
+}
+/* Saguão: o nome em pé, grande, em laranja, do outro lado do Sol (no espaço, logo depois da borda dele). A borda do
+   Sol fica a 20,5% da largura da imagem; com a imagem cobrindo a janela pela esquerda, isso dá max(20,5vw, 36,44vh)
+   (a imagem tem 2560 x 1440). O conteúdo do saguão vai um pouco para a direita para o nome caber antes dele */
+:root[data-skin="dusol"] {
+  --ds-edge: max(20.5vw, 36.44vh);
+  --ds-name: clamp(90px, 17vh, 170px);
+}
+:root[data-skin="dusol"] .home-screen::before {
+  content: "Du'Sol"; position: fixed; left: calc(var(--ds-edge) + 4vh); top: 90px; bottom: 40px; z-index: 0; pointer-events: none;
+  writing-mode: vertical-rl; transform: rotate(180deg); text-align: center;
+  font: 800 var(--ds-name)/.8 var(--ds-font); font-stretch: condensed; letter-spacing: .01em;
+  color: var(--ds-orange); text-shadow: 0 0 24px rgba(255, 122, 26, .45), 0 0 4px rgba(0, 0, 0, .8);
+}
+:root[data-skin="dusol"] .home-screen { padding-left: calc(var(--ds-edge) + 4vh + var(--ds-name) * .85 + 40px); }
+:root[data-skin="dusol"] .home-main { position: relative; z-index: 1; }
+:root[data-skin="dusol"] .home-title { text-transform: uppercase; letter-spacing: .04em; }
+/* Janela estreita: sem espaço para o nome entre o Sol e o conteúdo; o saguão volta ao normal */
+@media (max-width: 1300px) {
+  :root[data-skin="dusol"] .home-screen::before { display: none; }
+  :root[data-skin="dusol"] .home-screen { padding-left: 40px; }
+}
+/* Sem transmissão na tela: o Sol do fundo aparece, "Du'Sol" grande em fogo e a linha de sistema embaixo */
+:root[data-skin="dusol"] .empty-stage {
+  position: relative; overflow: hidden; align-content: end; padding-bottom: 58px; border-style: solid; border-color: var(--line);
+  background: transparent;
+}
+:root[data-skin="dusol"] .empty-stage::before {
+  content: "Du'Sol"; position: absolute; left: 0; right: 0; top: 50%; translate: 0 -50%; z-index: 0; pointer-events: none; opacity: .5;
+  text-align: center; white-space: nowrap; font: 800 clamp(96px, 16vw, 240px)/1 var(--ds-font); font-stretch: condensed; letter-spacing: .02em;
+  background: var(--ds-fire); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+:root[data-skin="dusol"] .empty-stage::after {
+  content: "DU'SOL  ☉  FOTOSFERA 5.778 K  //  AGUARDANDO SINAL";
+  position: absolute; left: 22px; right: 22px; bottom: 16px; pointer-events: none; text-align: left;
+  font: 400 11px/1 var(--font-console); letter-spacing: .2em; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  text-shadow: 0 0 6px #000, 0 0 2px #000;
+}
+:root[data-skin="dusol"] .empty-stage p { position: relative; z-index: 1; color: var(--text); text-shadow: 0 0 6px #000, 0 0 2px #000; }
+
+/* Céu da voz: o mesmo desenho, sobre um fundo quente */
+:root[data-skin="dusol"] .voice-sky { background: radial-gradient(ellipse 70% 120% at 0% 50%, rgba(255, 122, 26, .16), transparent 70%), #070402; }
+
+/* ---------- Prévia na aba Tema (vale sempre, com as cores fixas do tema) ---------- */
+.skin-preview[data-preview=dusol] {
+  background: radial-gradient(circle at -40% 50%, #FFF1B0 0 30%, #FFB52E 44%, #FF7A1A 54%, #C8400C 59.5%, rgba(255, 122, 26, .35) 60.5%, transparent 72%),
+    radial-gradient(circle, rgba(255, 255, 255, .7) 0 .7px, transparent 1.1px) 30px 8px / 41px 31px, #050302;
+  border-color: #3A2414;
+}
+.skin-preview[data-preview=dusol]::after {
+  content: "Du'Sol"; position: absolute; right: 16px; top: 50%; translate: 0 -50%; font: 800 34px/1 Bahnschrift, "Segoe UI", sans-serif; font-stretch: condensed;
+  background: linear-gradient(135deg, #FFD23F, #FF7A1A 55%, #C8400C); -webkit-background-clip: text; background-clip: text; color: transparent;
+}

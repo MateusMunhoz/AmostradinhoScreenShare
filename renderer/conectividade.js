@@ -12,16 +12,21 @@ let networkReturnFocus = null;
 let razzeLive = { friends: [], networks: [], rooms: [], updatedAt: null, error: '' };
 const VISIBILITY = { private: 'Privada', friends: 'Só amigos', public: 'Pública' };
 
+// O padrão é o modo Internet. Quem já usava o app antes (sem ter escolhido nada) continua na Radmin, como estava:
+// o clientId e o último endereço só existem depois de entrar numa sala.
 function networkPreferences() {
   try {
+    if (!localStorage.getItem(NETWORK_PREF_KEY) && (localStorage.getItem('clientId') || localStorage.getItem('roomAddr'))) {
+      localStorage.setItem(NETWORK_PREF_KEY, JSON.stringify({ provider: 'radmin' }));
+    }
     const p = JSON.parse(localStorage.getItem(NETWORK_PREF_KEY) || '{}');
     return {
-      provider: ['razze', 'internet'].includes(p.provider) ? p.provider : 'radmin',
+      provider: ['razze', 'radmin'].includes(p.provider) ? p.provider : 'internet',
       apiUrl: typeof p.apiUrl === 'string' ? p.apiUrl : '',
       activeNetworkId: typeof p.activeNetworkId === 'string' ? p.activeNetworkId : '',
       internetUrl: typeof p.internetUrl === 'string' ? p.internetUrl : '',
     };
-  } catch { return { provider: 'radmin', apiUrl: '', activeNetworkId: '', internetUrl: '' }; }
+  } catch { return { provider: 'internet', apiUrl: '', activeNetworkId: '', internetUrl: '' }; }
 }
 
 // Endereço do servidor do modo Internet, como o WebSocket precisa: "1.2.3.4:8765" vira ws://1.2.3.4:8765 e um
@@ -62,8 +67,8 @@ function testInternetServer(url, timeoutMs = 6000) {
 // Tela inicial e Criar sala mudam de texto no modo Internet (código em vez de endereço, senha obrigatória)
 function renderHomeForNetwork() {
   const internet = selectedNetworkProvider() === 'internet';
-  const sessions = document.querySelector('#homeCard .sessions');
-  if (sessions) sessions.hidden = internet; // não tem "sessões na sua rede" pela internet
+  // Pela internet, a lista é a das salas dos amigos do Razze (salas-amigos.js)
+  $('sessionsTitle').textContent = internet ? 'Salas dos seus amigos' : 'Sessões abertas na sua rede';
   $('goJoin').textContent = internet ? 'Entrar com código' : 'Entrar com endereço';
   $('joinPanelTitle').textContent = internet ? 'Entrar com código' : 'Entrar com endereço';
   $('roomAddrLabel').textContent = internet ? 'Código da sala' : 'Endereço de quem criou';
@@ -71,11 +76,16 @@ function renderHomeForNetwork() {
   $('joinPassword').placeholder = internet ? 'A senha que quem criou passou' : 'Só se a sala tiver uma';
   $('createBlockHint').textContent = internet ? 'Os amigos entram pelo código da sala' : 'Os amigos entram pelo seu endereço';
   $('roomPortField').hidden = internet;
-  $('roomVisibleLine').hidden = internet;
+  const visible = internet ? 'Mostrar esta sala para meus amigos do Razze' : 'Mostrar esta sessão para quem está na rede';
+  const tip = internet ? 'Aparece na tela inicial dos seus amigos do Razze, que entram com um clique enquanto você estiver na sala.'
+    : 'Aparece na tela inicial dos outros. A senha continua sendo pedida.';
+  $('roomVisibleText').textContent = visible;
+  $('roomVisibleTip').dataset.tip = tip;
+  $('roomVisibleTip').setAttribute('aria-label', tip);
   $('roomPasswordLabel').textContent = internet ? 'Senha (obrigatória)' : 'Senha (opcional)';
   $('roomPassword').placeholder = internet ? 'Mínimo 4 caracteres; use uma forte' : 'Vazio = sem senha';
   $('createHint').textContent = internet
-    ? 'Mande o código e a senha para os amigos.'
+    ? 'Mande o código e a senha, ou deixe a caixinha marcada: os amigos do Razze entram pela lista, com um clique.'
     : 'A sala fecha quando todos saírem.';
 }
 
@@ -177,7 +187,7 @@ async function loadRazzeState() {
     if (!on) { setFriendsData({}); dmStop(); }
   };
   account(state.authenticated);
-  $('profileAccountHint').textContent = state.configured ? 'Entre na sua conta para gerenciar redes e amigos.' : 'Para entrar, escolha Razze (WireGuard) acima e salve o endereço do servidor.';
+  $('profileAccountHint').textContent = state.configured ? 'Entre na sua conta para gerenciar redes e amigos.' : 'Para entrar, escolha Razze (WireGuard) em "Como os PCs se conectam", logo abaixo, e salve o endereço do servidor.';
   $('friendsHint').textContent = state.configured ? 'Entre na sua conta Razze para ver quem está online, adicionar amigos e convidar para a sua sala.' : 'Os amigos usam uma conta Razze: configure o servidor e entre na conta na aba Rede.';
   $('razzeLogin').disabled = $('razzeRegister').disabled = !state.configured;
   if (!state.configured) {
@@ -467,6 +477,7 @@ function receiveRazzePresence(value) {
     node.textContent = razzeLive.error ? 'Presença indisponível' : !network || network.onlineCount === null ? 'Entre na rede para ver a presença.' : network.onlineCount + ' online · ' + network.roomCount + ' salas abertas';
   });
   sessoes.razze = razzeLive.rooms || [];
+  receberSalasAmigos(razzeLive.internetRooms);
   renderSessoes();
   if (razzeLive.authenticated === false && selectedNetworkProvider() === 'razze') {
     razzeUser = null;

@@ -1,10 +1,13 @@
 'use strict';
 // Mensagens diretas entre amigos (contas Razze), fora da sala: vão pela RazzeAPI (POST/GET /v1/messages) e o
 // histórico completo fica num arquivo por amigo neste PC (main/mensagens.js). O servidor guarda só 30 dias.
+// Criptografadas de ponta a ponta no processo principal (main/mensagens-cripto.js): aqui chega texto normal, com
+// as marcas e2e, plain (de antes, sem criptografia), locked (não abre neste PC) e keyChanged (a chave do amigo mudou).
 // - Barra de conversas, embaixo: o "Mensagens" abre para cima a lista das conversas (amigos e quem já conversou com
 //   você, com a última mensagem e as não lidas); um chip por conversa aberta. Arrastar um chip (ou Alt+←/→) muda a
 //   ordem; as que não cabem na largura vão para o "+N" no fim da barra, que lista e traz de volta. Clicar abre a janela (o mesmo desenho do chat da
 //   sala); o "—" minimiza de volta para o chip; o X tira da barra (o histórico continua no arquivo).
+//   Clicar fora da janela minimiza; o alfinete trava a janela aberta (fica salvo com a barra).
 // Mensagem nova de alguém fora da barra: a conversa entra na barra, minimizada, com o número de não lidas.
 // Script clássico: divide o escopo global com os outros (ordem no index.html). Usa de: util, tema, chat, conectividade, hub.
 
@@ -16,7 +19,7 @@ const dm = {
 
 const dmKey = (k) => `${k}.${dm.account}`;
 function dmSaveBar() {
-  save(dmKey('dmBar'), JSON.stringify(dm.bar.map(({ id, open }) => ({ id, open }))));
+  save(dmKey('dmBar'), JSON.stringify(dm.bar.map(({ id, open, pinned }) => ({ id, open, ...(pinned ? { pinned: true } : {}) }))));
   save(dmKey('dmUnread'), JSON.stringify(Object.fromEntries([...dm.convs].filter(([, c]) => c.unread).map(([id, c]) => [id, c.unread]))));
 }
 function friendName(id) {
@@ -46,7 +49,8 @@ function dmSaveConv(c) {
 }
 function dmAdd(c, m) {
   if (c.messages.some((x) => x.id === m.id)) return false;
-  c.messages.push({ id: m.id, seq: m.seq || 0, from: m.from, text: m.text, createdAt: m.createdAt });
+  c.messages.push({ id: m.id, seq: m.seq || 0, from: m.from, text: m.text, createdAt: m.createdAt,
+    ...(m.e2e ? { e2e: true } : {}), ...(m.plain ? { plain: true } : {}), ...(m.locked ? { locked: true } : {}), ...(m.keyChanged ? { keyChanged: true } : {}) });
   c.messages.sort((a, b) => a.createdAt - b.createdAt || a.seq - b.seq);
   c.last = c.messages.at(-1);
   return true;
@@ -66,7 +70,7 @@ async function dmStart(account) {
     c.name = s.name; c.last = s.last;
   }
   for (const [id, n] of Object.entries(unread)) if (/^[a-f0-9]{32}$/.test(id)) dmConv(id).unread = Math.max(0, Number(n) || 0);
-  dm.bar = (Array.isArray(bar) ? bar : []).filter((b) => /^[a-f0-9]{32}$/.test(String(b?.id))).map((b) => ({ id: b.id, open: !!b.open }));
+  dm.bar = (Array.isArray(bar) ? bar : []).filter((b) => /^[a-f0-9]{32}$/.test(String(b?.id))).map((b) => ({ id: b.id, open: !!b.open, pinned: !!b.pinned }));
   for (const b of dm.bar) { const c = dmConv(b.id); if (b.open) await dmLoadConv(c); }
   renderDm();
   void dmPoll();
@@ -165,6 +169,29 @@ function minimizeDm(id) {
   renderDm();
 }
 async function toggleDm(id) { if (dmIsOpen(id)) minimizeDm(id); else await openDm(id); }
+function toggleDmPin(id) {
+  const b = dm.bar.find((x) => x.id === id);
+  if (!b) return;
+  b.pinned = !b.pinned;
+  dmSaveBar();
+  renderDm();
+}
+// Clique fora de uma janela aberta (e do chip dela) minimiza, menos as travadas. Diálogos, balões de dica e
+// avisos não contam como "fora" (podem ter sido abertos por algo dentro da janela, como o Entrar de um convite).
+function minimizeDmOutside(target) {
+  if (target.closest?.('dialog, .dialog, #tipBubble, .toast')) return;
+  let changed = false;
+  for (const b of dm.bar) {
+    if (!b.open || b.pinned) continue;
+    const slot = dm.convs.get(b.id)?.el?.slot;
+    if (slot && slot.contains(target)) continue;
+    b.open = false;
+    changed = true;
+  }
+  if (!changed) return;
+  dmSaveBar();
+  renderDm();
+}
 // Tira da barra: o histórico continua no arquivo e volta quando abrir de novo (pela lista do "Mensagens")
 function closeDm(id) {
   dm.bar = dm.bar.filter((b) => b.id !== id);
@@ -236,11 +263,12 @@ function dmElements(c) {
   name.className = 'dm-name';
   const badge = document.createElement('span');
   badge.className = 'hub-badge dm-badge';
+  const pin = dmIconButton('dm-chip-btn dm-pin', ICON.pin, 'Travar aberta', () => toggleDmPin(c.id));
   const min = dmIconButton('dm-chip-btn dm-min', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12"/></svg>', 'Minimizar', () => minimizeDm(c.id));
   const close = dmIconButton('dm-chip-btn', ICON.close, 'Fechar a conversa (o histórico fica salvo neste PC)', () => closeDm(c.id));
-  chip.append(dot, name, badge, min, close);
+  chip.append(dot, name, badge, pin, min, close);
   slot.append(win, chip);
-  c.el = { slot, win, list, empty, status, input, chip, dot, name, badge, min };
+  c.el = { slot, win, list, empty, status, input, chip, dot, name, badge, pin, min };
   return c.el;
 }
 
@@ -265,11 +293,30 @@ function dmMessageEl(c, m, prev) {
   sep.textContent = ' : ';
   const text = document.createElement('span');
   text.className = 'msg-text';
-  textWithLinks(text, m.text);
-  line.append(who, sep, text);
+  const convite = !m.locked && lerConvite(m.text); // convite para uma sala: vira um cartão com Entrar (salas-amigos.js)
+  if (m.locked) {
+    text.classList.add('dm-locked');
+    text.textContent = 'Mensagem criptografada para outro PC: não dá para abrir aqui.';
+    text.title = 'Ela foi cifrada para a chave de outro PC desta conta (ou de antes de trocar de PC).';
+  } else if (!convite) textWithLinks(text, m.text);
+  if (convite) line.append(who); else line.append(who, sep, text);
+  if (m.plain) {
+    const tag = document.createElement('span');
+    tag.className = 'dm-plain';
+    tag.textContent = 'sem criptografia';
+    tag.title = 'Mandada antes das mensagens criptografadas: o servidor pôde ler esta.';
+    line.append(tag);
+  }
   const body = document.createElement('div');
   body.className = 'msg-body';
+  if (m.keyChanged) {
+    const note = document.createElement('p');
+    note.className = 'dm-key-changed';
+    note.textContent = `A chave de segurança de ${friendName(c.id)} mudou. Acontece quando a pessoa troca de PC ou reinstala o app; se não foi isso, confirme com ela por outro meio.`;
+    body.append(note);
+  }
   body.append(line);
+  if (convite) body.append(cartaoConvite(convite, mine, friendName(c.id)));
   li.append(when, body);
   return li;
 }
@@ -286,6 +333,10 @@ function renderDmWindow(c, open) {
   el.name.textContent = friendName(c.id);
   el.badge.hidden = !c.unread;
   el.badge.textContent = c.unread > 99 ? '99+' : String(c.unread);
+  const pinned = !!dm.bar.find((b) => b.id === c.id)?.pinned;
+  el.pin.hidden = !open;
+  el.pin.setAttribute('aria-pressed', String(pinned));
+  el.pin.title = el.pin.ariaLabel = pinned ? 'Destravar: clicar fora volta a minimizar' : 'Travar aberta: clicar fora não minimiza';
   el.min.hidden = !open;
   el.win.hidden = !open;
   el.input.placeholder = `Mensagem para ${friendName(c.id)}`;
@@ -297,7 +348,7 @@ function renderDmWindow(c, open) {
     if (atEnd || !el.list.dataset.scrolled) { el.list.scrollTop = el.list.scrollHeight; el.list.dataset.scrolled = '1'; }
   }
   el.empty.hidden = c.messages.length > 0;
-  el.empty.textContent = `Comece a conversa com ${friendName(c.id)}. As mensagens chegam mesmo se a pessoa estiver offline (o servidor guarda por 30 dias) e ficam salvas neste PC.`;
+  el.empty.textContent = `Comece a conversa com ${friendName(c.id)}. As mensagens são criptografadas de ponta a ponta: só vocês dois leem. Chegam mesmo se a pessoa estiver offline (o servidor guarda por 30 dias) e ficam salvas, protegidas, neste PC.`;
 }
 
 function renderDmBar() {
@@ -442,7 +493,7 @@ function fillDmList(prefix = 'dmPanel') {
     li.onclick = () => void openDm(id);
     li.onkeydown = (e) => { if (e.key === 'Enter') void openDm(id); };
     const last = c?.last;
-    const preview = last ? `${last.from === dm.account ? 'você: ' : ''}${last.text.replace(/\s+/g, ' ')}` : friendsData.friends.some((f) => f.id === id) ? 'Nenhuma mensagem ainda' : '';
+    const preview = last ? `${last.from === dm.account ? 'você: ' : ''}${last.locked ? 'Mensagem criptografada' : lerConvite(last.text) ? 'Convite para a sala' : last.text.replace(/\s+/g, ' ')}` : friendsData.friends.some((f) => f.id === id) ? 'Nenhuma mensagem ainda' : '';
     const info = hubInfo(name, preview);
     li.append(hubAvatar(name, friendOnline(id)), info);
     if (last) {
@@ -487,6 +538,7 @@ function setupDm() {
   new ResizeObserver(() => { if (dm.account) fitDmBar(); }).observe($('dmBar'));
   // Clicar fora do painel (e fora do botão que abre) fecha
   document.addEventListener('pointerdown', (e) => {
+    minimizeDmOutside(e.target);
     if (!$('dmPanel').hidden && !e.target.closest?.('#dmPanel, #dmBarLabel')) setDmPanel(false);
     if (!$('dmMoreMenu').hidden && !e.target.closest?.('#dmMoreMenu, #dmMore')) setDmMore(false);
   });

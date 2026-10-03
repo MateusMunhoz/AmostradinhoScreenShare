@@ -1,5 +1,6 @@
 'use strict';
-// Uma barra fixa; os botões da sala são alternadores independentes, não abas exclusivas.
+// Uma barrinha fixa na borda direita (só ícones); os botões da sala são alternadores independentes, não abas
+// exclusivas. Chat e voz abrem à esquerda dela, no mesmo lugar de sempre.
 const workspaceViews = (() => {
   let saved; try { saved = JSON.parse(load('workspaceViews.v1', '{}')); } catch {}
   return { chat: typeof saved?.chat === 'boolean' ? saved.chat : load('panelOpen', '1') !== '0',
@@ -12,7 +13,6 @@ function setUtilityBackground(inert) {
   for (const el of [document.querySelector('main'), document.querySelector('.workspace-header'), $('workspacePanes')]) el.inert = inert;
 }
 function openProfilePopup() {
-  if (!$('connectionMapDialog').hidden) closeConnectionMap();
   if (!$('friendsDialog').hidden) closeFriendsDialog();
   renderConnectivitySettings();
   if (!$('generalSettingsDialog').hidden) closeGeneralSettings();
@@ -64,39 +64,35 @@ function setupUtilityPopup(id, close) {
 function saveWorkspaceViews() { save('workspaceViews.v1', JSON.stringify(workspaceViews)); }
 function syncWorkspace() {
   if (!workspaceReady) return;
-  const inRoom = !$('room').hidden && !!state.myId;
+  // inCall: numa sala, mesmo no menu inicial; inRoom: com a tela da sala à vista. No menu, a barrinha e os painéis de
+  // chat e voz continuam (dá para conversar e mexer na voz sem voltar); só as telas ficam na sala.
+  const inCall = !!state.myId, inRoom = !$('room').hidden && inCall;
   const settings = !$('generalSettingsDialog').hidden, profile = !$('profilePane').hidden;
-  const roomPanes = inRoom && (workspaceViews.chat || workspaceViews.voice);
+  const roomPanes = inCall && (workspaceViews.chat || workspaceViews.voice);
   const any = roomPanes;
   $('workspacePanes').hidden = !any;
-  $('chatTab').hidden = !inRoom || !workspaceViews.chat;
-  $('voicePane').hidden = !inRoom || !workspaceViews.voice;
+  $('chatTab').hidden = !inCall || !workspaceViews.chat;
+  $('voicePane').hidden = !inCall || !workspaceViews.voice;
   $('streamArea').hidden = inRoom && !workspaceViews.streams;
   $('workspaceEmpty').hidden = any || workspaceViews.streams;
   document.body.classList.toggle('has-workspace-pane', any);
-  document.body.classList.toggle('workspace-in-room', inRoom);
+  document.body.classList.toggle('workspace-in-room', inCall);
   document.body.classList.toggle('workspace-wide', inRoom && !workspaceViews.streams && any);
   // Barra e painéis formam um bloco só: o último painel aberto fecha o bloco com os cantos de baixo
   $('chatTab').classList.toggle('pane-last', !workspaceViews.voice);
   $('voicePane').classList.toggle('pane-last', workspaceViews.voice);
-  // A setinha › é sempre o último item da barra, na sala: com chat ou voz abertos esconde tudo da direita;
-  // sem eles, recolhe só a barra (escolha salva). A ‹ que traz de volta aparece no mesmo lugar.
-  const bare = inRoom && !any;
-  $('navCollapse').hidden = !inRoom;
-  $('navCollapse').title = $('navCollapse').ariaLabel = any ? 'Esconder o chat, a voz e esta barra' : 'Recolher a barra';
-  $('navExpand').hidden = !(bare && navCollapsed);
-  document.body.classList.toggle('nav-collapsed', bare && navCollapsed);
   if (inRoom) syncIncomingVideo(); // telas escondidas não baixam vídeo (o som continua)
   if (mapFocus.on && !mapFocusFits()) setMapFocus(false); // o mapa em foco só existe com chat e voz na barra
   $('workspaceContext').textContent = inRoom ? 'Na sala' : 'Início';
+  $('leaveBtn').hidden = $('peopleBtn').hidden = !inCall; // Sair e as pessoas: na sala e no menu
+  $('dockHome').hidden = !inRoom; // no menu, o Voltar para a sala fica no lugar do Início (renderHomeCall)
   for (const [id, view] of [['navChat','chat'],['navVoice','voice'],['navStreams','streams']]) {
-    $(id).hidden = !inRoom;
+    $(id).hidden = !inCall;
     $(id).setAttribute('aria-pressed', String(workspaceViews[view]));
   }
   $('navSettings').setAttribute('aria-expanded', String(settings));
-  $('navConnectionMap').setAttribute('aria-expanded', String(!$('connectionMapDialog').hidden));
   $('navProfile').setAttribute('aria-expanded', String(profile));
-  if (!inRoom) setPeopleOpen(false);
+  if (!inCall) setPeopleOpen(false);
   fitNav();
   $('profileName').disabled = !!state.myId;
   $('profileName').value = $('name').value;
@@ -121,7 +117,7 @@ const DOCK_STEPS = ['tight-1', 'tight-2', 'tight-3', 'tight-4'];
 // 5) ainda sem espaço: os botões saem da barra para o menu da setinha ^, nesta ordem (os mais usados por último).
 // stageLayout é o grupo Grade/Destaque: no menu vira os dois itens.
 const DOCK_OVERFLOW = ['openStatsRoom', 'overlayToggle', 'stageLayout', 'dockAddr', 'voiceSettingsBtn', 'chatToggle',
-  'voiceDeafen', 'selfViewBtn', 'switchShareBtn', 'dockHome', 'voiceMute', 'voiceJoin', 'leaveBtn'];
+  'voiceDeafen', 'selfViewBtn', 'switchShareBtn', 'voiceMute', 'voiceJoin'];
 function fitDock() {
   const dock = document.querySelector('.dock');
   if (!dock || !dock.offsetParent) return;
@@ -211,7 +207,8 @@ function watchDock() {
   new MutationObserver(again).observe(document.documentElement, { attributes: true, attributeFilter: ['style', 'data-skin'] });
   document.fonts?.addEventListener('loadingdone', again);
 }
-// Barra de cima sem espaço (janela estreita, fonte larga): Chat, Voz e Transmissão ficam só com o ícone
+// Barra sem espaço (janela estreita, fonte larga): Chat, Voz e Transmissão ficam só com o ícone. Na barrinha da
+// direita eles já são só ícone; continua aqui para quem mede a barra.
 function fitNav() {
   const nav = $('workspaceNav');
   nav.classList.remove('nav-tight');
@@ -255,6 +252,12 @@ function markChatSeenIfVisible() { if (chat.open && chatAtBottom() && !mapFocus.
 function renderHomeCall() {
   const inCall = !!state.myId;
   $('homeCall').hidden = !inCall;
+  // Barrinha da direita: no menu, com a sala aberta, o botão de voltar fica no pé (com as mensagens novas)
+  const back = inCall && $('room').hidden, unread = chat.unread;
+  $('navBackToRoom').hidden = !back;
+  $('navBackUnread').hidden = !back || !unread;
+  $('navBackUnread').textContent = unread > 99 ? '99+' : String(unread);
+  $('navBackToRoom').title = $('navBackToRoom').ariaLabel = unread ? `Voltar para a sala · ${unread} ${unread === 1 ? 'mensagem nova' : 'mensagens novas'}` : 'Voltar para a sala';
   // Numa sala: criar ou entrar em outra fica bloqueado (sairia desta sem querer)
   for (const id of ['goCreate', 'goJoin', 'rejoinBtn']) $(id).disabled = inCall;
   $('goCreate').title = $('goJoin').title = inCall ? 'Você já está numa sala: volte para ela e saia antes' : '';
@@ -276,7 +279,7 @@ function renderHomeCall() {
 }
 function setupHomeCall() {
   $('dockHome').onclick = goHomeKeepCall;
-  $('homeCallBack').onclick = backToRoom;
+  $('homeCallBack').onclick = $('navBackToRoom').onclick = backToRoom;
   $('homeCallMute').onclick = () => $('voiceMute').click();
   $('homeCallDeafen').onclick = () => $('voiceDeafen').click();
 }
@@ -314,30 +317,6 @@ function renderVoicePane() {
     for (const id of outside) list.append(id ? memberRow(id, nameOf(id), true) : memberRow(null, `${getName()} (você)`, true));
   }
 }
-let navCollapsed = load('barraRecolhida', '1') === '1';
-let navRestore = null; // painéis que estavam abertos quando o › do chat recolheu tudo; a setinha abre de volta
-function setNavCollapsed(on) {
-  navCollapsed = on;
-  save('barraRecolhida', on ? '1' : '0');
-  if (!on && navRestore) {
-    workspaceViews.voice = navRestore.voice;
-    saveWorkspaceViews();
-    const chatWas = navRestore.chat;
-    navRestore = null;
-    if (chatWas) { setPanelOpen(true); $('navChat').focus(); return; }
-  }
-  syncWorkspace();
-  (on ? $('navExpand') : $('navCollapse')).focus();
-}
-// O › do painel da sala: esconde tudo da direita (chat, voz e a barra) e a tela cobre a janela toda
-function collapseRoomSide() {
-  navRestore = { chat: workspaceViews.chat, voice: workspaceViews.voice };
-  workspaceViews.voice = false;
-  navCollapsed = true;
-  save('barraRecolhida', '1');
-  setPanelOpen(false); // fecha o chat, salva e redesenha
-  $('navExpand').focus();
-}
 function setupWorkspace() {
   setupConnectionMap();
   const host = $('workspacePanes');
@@ -350,7 +329,6 @@ function setupWorkspace() {
   const icons = {navSettings: '<svg viewBox="0 0 24 24"><path d="m9 3 1-2h4l1 2 2 1 2 0 2 3-1 2v3l1 2-2 3h-2l-2 1-1 3h-4l-1-3-2-1H5l-2-3 1-2V9L3 7l2-3h2z"/><circle cx="12" cy="11" r="3"/></svg>',
     navChat: ICON.chat, navVoice: ICON.mic, navStreams: '<svg viewBox="0 0 24 24"><path d="M3 4h18v13H3zM8 21h8M12 17v4"/></svg>'};
   for (const [id, icon] of Object.entries(icons)) $(id).querySelector('.nav-icon').innerHTML = icon;
-  $('navCollapse').onclick = () => (document.body.classList.contains('has-workspace-pane') ? collapseRoomSide() : setNavCollapsed(true));
   // Só com o ícone (barra apertada), o nome da aba continua na dica e no leitor de tela
   for (const id of ['navChat', 'navVoice', 'navStreams']) {
     const name = $(id).querySelector('.nav-icon + span').textContent;
@@ -358,14 +336,18 @@ function setupWorkspace() {
     $(id).setAttribute('aria-label', name);
   }
   new ResizeObserver(() => fitNav()).observe($('workspaceNav'));
-  $('navExpand').onclick = () => setNavCollapsed(false);
   $('navProfile').onclick = openProfilePopup;
   $('closeProfile').onclick = closeProfilePopup;
   setupUtilityPopup('profilePane', closeProfilePopup);
   setupUtilityPopup('generalSettingsDialog', closeGeneralSettings);
   $('navSettings').onclick = () => $('generalSettingsDialog').hidden ? openGeneralSettings() : closeGeneralSettings();
   $('navChat').onclick = () => setPanelOpen(!workspaceViews.chat);
-  for (const [id, view] of [['navVoice','voice'],['navStreams','streams']]) $(id).onclick = () => { workspaceViews[view] = !workspaceViews[view]; saveWorkspaceViews(); syncWorkspace(); };
+  $('navVoice').onclick = () => { workspaceViews.voice = !workspaceViews.voice; saveWorkspaceViews(); syncWorkspace(); };
+  // As telas só existem na sala: no menu, Transmissão volta para ela (com as telas à vista)
+  $('navStreams').onclick = () => {
+    if ($('room').hidden) { if (!workspaceViews.streams) { workspaceViews.streams = true; saveWorkspaceViews(); } backToRoom(); return; }
+    workspaceViews.streams = !workspaceViews.streams; saveWorkspaceViews(); syncWorkspace();
+  };
   $('profileName').oninput = () => { if (state.myId) return; $('name').value = $('profileName').value; save('name', $('name').value); $('profileDisplayName').textContent = getName(); $('profileAvatar').textContent = $('navProfileAvatar').textContent = [...getName()][0].toUpperCase(); $('navProfile').title = $('navProfile').ariaLabel = 'Perfil de ' + getName(); };
   $('name').addEventListener('input', syncWorkspace);
   setupNameFont();

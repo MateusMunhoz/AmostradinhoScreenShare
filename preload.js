@@ -36,8 +36,17 @@ contextBridge.exposeInMainWorld('api', {
   offVideoCap: () => { for (const ch of ['vchunk', 'vstats', 'vended']) ipcRenderer.removeAllListeners(ch); },
   offPcm: () => ipcRenderer.removeAllListeners('pcm'),
   getIps: (provider) => ipcRenderer.invoke('get-ips', provider),
+  // Configurações no celular (main/celular.js): servidor da rede local só enquanto o QR está aberto
+  celularEntregar: (texto) => ipcRenderer.invoke('celular-entregar', String(texto || '')),
+  celularReceber: () => ipcRenderer.invoke('celular-receber'),
+  celularFechar: () => ipcRenderer.invoke('celular-fechar'),
+  onCelular: (cb) => {
+    ipcRenderer.removeAllListeners('celular');
+    ipcRenderer.on('celular', (_e, msg) => cb(msg));
+  },
   copyText: (text) => ipcRenderer.invoke('copy-text', String(text || '')),
   razzePresence: () => ipcRenderer.invoke('razze-presence-state'),
+  razzeInternetRoom: (room) => ipcRenderer.invoke('razze-internet-room', room || null),
   onRazzePresence: (callback) => { ipcRenderer.removeAllListeners('razze-presence'); ipcRenderer.on('razze-presence', (_event, value) => callback(value)); },
   razzeState: () => ipcRenderer.invoke('razze-state'),
   razzePendingInvite: () => ipcRenderer.invoke('razze-pending-invite'),

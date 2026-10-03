@@ -114,7 +114,7 @@ function onChatMessage(m) {
   noteChatOverlayMessage(entry);
   renderChatOverlay();
   const wasBottom = chatAtBottom();
-  const away = $('room').hidden || mapFocus.on; // no início, ou com o mapa em foco: o chat não está à vista
+  const away = $('chatTab').hidden || mapFocus.on; // chat fechado (também no menu) ou com o mapa em foco: não está à vista
   const unseen = m.from !== state.myId && (!chat.open || away || document.hidden || !wasBottom);
   if (unseen && !chat.unread) {
     // Começa um lote de novas: a linha "mensagens novas" vai antes desta

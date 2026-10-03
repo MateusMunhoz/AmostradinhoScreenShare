@@ -1,6 +1,6 @@
 {
   "name": "tela-p2p",
-  "version": "1.12.12",
+  "version": "1.15.0",
   "description": "Configurações e Personalização de Layout",
   "main": "boot.js",
   "scripts": {
@@ -55,10 +55,13 @@
       "styles-estelar.css",
       "styles-arasaka.css",
       "styles-eva.css",
+      "styles-dusol.css",
+      "styles-diluna.css",
       "renderer/**",
       "assets/audio/**",
       "assets/icone/**",
       "assets/fontes/**",
+      "assets/temas/*.webp",
       "voice.js",
       "encode-once.js",
       "pcm-worklet.js",

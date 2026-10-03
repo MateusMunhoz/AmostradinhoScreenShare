@@ -18,7 +18,7 @@ Para gerar um `.exe` portátil sem publicar: `npm run dist`. O arquivo aparece e
 - **Sala:** quem cria a sala roda um servidor pequeno de sinalização (`signaling.js`, WebSocket) dentro do próprio app. Ele só apresenta as pessoas umas às outras e guarda as últimas 100 mensagens do chat.
 - **Vídeo, áudio, voz e arquivos:** vão direto de PC para PC, por WebRTC, pela rede da Radmin. Não passam por servidor.
 - **Troca de host:** cada um sabe a ordem de chegada e os endereços dos outros. Se o servidor some, o mais antigo abre outro na mesma porta, e todo mundo volta com o mesmo número. Por isso as conexões diretas (quem assiste quem) não caem.
-- **Rede usada pelo app:** em Configurações gerais, escolha Radmin/LAN (padrão) ou VPN Razze. A RazzeAPI independente gerencia contas, amizades, redes, convites e chaves públicas; o executável oficial `bin/selfvpn/wireguard.exe` cria um serviço de túnel por rede no Windows. Os peers são descobertos pelo API e por STUN UDP. O primeiro MVP usa conexão direta; não há relay para CGNAT restritivo. A descoberta automática de salas continua apenas em LAN/Radmin.
+- **Rede usada pelo app:** em Configurações gerais, escolha Internet (servidor, o padrão), Radmin/LAN ou VPN Razze; quem já usava o app sem ter escolhido continua na Radmin. A RazzeAPI independente gerencia contas, amizades, redes, convites e chaves públicas; o executável oficial `bin/selfvpn/wireguard.exe` cria um serviço de túnel por rede no Windows. Os peers são descobertos pelo API e por STUN UDP. O primeiro MVP usa conexão direta; não há relay para CGNAT restritivo. A descoberta automática de salas continua apenas em LAN/Radmin.
 - **Arquivos principais:**
 
   | Arquivo | O que faz |
@@ -41,7 +41,7 @@ Para gerar um `.exe` portátil sem publicar: `npm run dist`. O arquivo aparece e
 
 ### A página (`renderer/`)
 
-As preferências gerais ficam em `renderer/preferencias-modelo.js` (validação, paleta, catálogo e reprodutor de sons) e `renderer/configuracoes.js` (interface e armazenamento em `localStorage`, chave `appPreferences.v1`). O modelo carrega antes de `tema.js`; o controlador, logo depois. `renderer/navegacao.js`, carregado antes de `inicio.js`, controla a barra fixa e os painéis simultâneos, persistindo a seleção da sala em `workspaceViews.v1`. Os arquivos de áudio ficam em `assets/audio/` e são incluídos tanto no executável quanto no pacote de atualização de `publicar.js`.
+As preferências gerais ficam em `renderer/preferencias-modelo.js` (validação, paleta, catálogo e reprodutor de sons) e `renderer/configuracoes.js` (interface e armazenamento em `localStorage`, chave `appPreferences.v1`). O modelo carrega antes de `tema.js`; o controlador, logo depois. `renderer/navegacao.js`, carregado antes de `inicio.js`, controla a barrinha da direita (`#workspaceNav`: perfil, pessoas, Chat, Voz, Transmissão, música, Início ou Voltar para a sala, Sair e a engrenagem) e os painéis simultâneos, persistindo a seleção da sala em `workspaceViews.v1`. No menu inicial, com a sala aberta, a barrinha e os painéis de chat e voz continuam à vista. Os arquivos de áudio ficam em `assets/audio/` e são incluídos tanto no executável quanto no pacote de atualização de `publicar.js`.
 
 `npm run test:settings` verifica a interface em janelas invisíveis, os oito MP3, os eventos sonoros, as cores na janela flutuante, as oito combinações dos painéis da sala, a posição da barra e a persistência entre dois processos do Electron. Usa um perfil temporário isolado. `npm test` inclui os testes de validação, volumes, reprodução e transições de participação na voz, além dos testes existentes.
 
@@ -60,29 +60,34 @@ isso (chamam `watch`, `state`, `speaking`... direto na página).
 | 7 | `preferencias-modelo.js` | Modelo das preferências, sem interface: validação (`normalize`), paleta, catálogo de sons e fontes (usado também pelos testes) |
 | 8 | `tema.js` | Cores das janelas montadas por código, cor de cada pessoa, barrinhas de quem fala |
 | 9 | `fotos.js` | Foto de perfil sem servidor: a sua, pedir a dos outros pelo hash, pintar as bolinhas |
-| 10 | `icone-app.js` | O ícone do app desenhado num canvas, na cor do tema (também usado pelo `gerar-icone.js`) |
-| 11 | `configuracoes.js` | Configurações gerais: interface e preferências deste PC (`appPreferences.v1`) |
-| 12 | `conectividade.js` | Rede: Radmin ou rede local, VPN Razze (WireGuard) ou modo Internet (VPS) |
-| 13 | `sala.js` | Criar, entrar e sair, mensagens do servidor, sinalização, troca de host |
-| 14 | `voz.js` | Volume por pessoa, mixer, quem fala, atenuação, barra da voz, cartão da pessoa (cria o `voice`) |
-| 15 | `microfone.js` | Microfone escolhido, RNNoise, eco, sensibilidade, ouvir a própria voz, apertar para falar, janela "Voz e atalhos" |
-| 16 | `subsalas.js` | Subsalas de voz: criar e apagar (Subsala_1, Subsala_2…), entrar numa subsala e a lista por canal no painel de voz |
-| 17 | `membros.js` | Painel da sala: endereço e lista de pessoas |
-| 18 | `assistir.js` | Quadros de vídeo, ver a própria transmissão, destaque, tela cheia |
-| 19 | `palco.js` | Como as telas assistidas se arrumam no palco |
-| 20 | `pip.js` | Janelas flutuantes |
-| 21 | `overlay.js` | Chat por cima do jogo |
-| 22 | `metadados.js` | Tira localização, autor, datas e outros metadados dos arquivos (fotos, vídeos, PDF, Office) antes de irem para o chat |
-| 23 | `chat.js` | Mensagens, arquivos, não lidas |
-| 24 | `estatisticas.js` | Desempenho, aba Transmissão, codificador em uso |
-| 25 | `novidades.js`, `atualizacao.js` | `NOVIDADES` (gerada pelo `publicar.js` com os commits); atualização pela sala, pelo GitHub, o aviso e o cartão Novidades do Início |
-| 26 | `sessoes.js` | Sessões abertas na rede (a lista da tela inicial) |
-| 27 | `transmitir.js` | Escolher a fonte, som, iniciar, trocar e parar, quem assiste |
-| 28 | `mapa-conexoes.js` | A janela Mapa de conexões |
-| 29 | `hub.js` | HUB: a barra fininha da esquerda, com as abas Salas (salas abertas, a atual e o menu inicial) , Amigos (adicionar, filtrar, convidar, pedidos) e Rede (conexão, servidores, redes Razze e login) |
-| 30 | `mensagens.js` | Mensagens diretas entre amigos: aba Mensagens do HUB, barra de conversas embaixo, busca na RazzeAPI a cada 4 s e histórico local |
-| 31 | `navegacao.js` | Barra fixa e painéis simultâneos da sala (`workspaceViews.v1`), painel de voz com os canais |
-| 32 | `inicio.js` | Tela inicial e a partida: liga os botões e listeners, carrega as preferências |
+| 10 | `fundo-perfil.js` | Fundo do perfil (imagem ou GIF até 1 MB): o seu, e o dos outros por mensagens diretas em pedaços, conferido pelo hash ([spec](spec/fundo-do-perfil.md)) |
+| 11 | `icone-app.js` | O ícone do app desenhado num canvas: a logo (`LOGO_STARS`, `LOGO_DOTS`), nas cores dela; os temas E.V.A e Arasaka têm o próprio (também usado pelo `gerar-icone.js`) |
+| 12 | `configuracoes.js` | Configurações gerais: interface e preferências deste PC (`appPreferences.v1`) |
+| 13 | `modo-gamer.js` | Modo gamer (o controle na barrinha): prioridade normal, vidro opaco, sem animações, sem céu e sem luz ambiente, sem mudar as escolhas salvas |
+| 14 | `qr.js` | Gerador de QR code próprio (modo byte, correção M, versões 1 a 10), em SVG |
+| 15 | `celular-modelo.js` | Configurações no celular, sem interface: o que vai no arquivo, a validação ao trazer e a cifra (PBKDF2 + AES-GCM) |
+| 16 | `celular.js` | Configurações › Celular: guardar e trazer, com QR e senha ([spec](spec/config-no-celular.md)) |
+| 17 | `conectividade.js` | Rede: Radmin ou rede local, VPN Razze (WireGuard) ou modo Internet (VPS) |
+| 18 | `sala.js` | Criar, entrar e sair, mensagens do servidor, sinalização, troca de host |
+| 19 | `voz.js` | Volume por pessoa, mixer, quem fala, atenuação, barra da voz, cartão da pessoa (cria o `voice`) |
+| 20 | `microfone.js` | Microfone escolhido, RNNoise, eco, sensibilidade, ouvir a própria voz, apertar para falar, janela "Voz e atalhos" |
+| 21 | `subsalas.js` | Subsalas de voz: criar e apagar (Subsala_1, Subsala_2…), entrar numa subsala e a lista por canal no painel de voz |
+| 22 | `membros.js` | Painel da sala: endereço e lista de pessoas |
+| 23 | `assistir.js` | Quadros de vídeo, ver a própria transmissão, destaque, tela cheia |
+| 24 | `palco.js` | Como as telas assistidas se arrumam no palco |
+| 25 | `pip.js` | Janelas flutuantes |
+| 26 | `overlay.js` | Chat por cima do jogo |
+| 27 | `metadados.js` | Tira localização, autor, datas e outros metadados dos arquivos (fotos, vídeos, PDF, Office) antes de irem para o chat |
+| 28 | `chat.js` | Mensagens, arquivos, não lidas |
+| 29 | `estatisticas.js` | Desempenho, aba Transmissão, codificador em uso |
+| 28 | `novidades.js`, `atualizacao.js` | `NOVIDADES` (gerada pelo `publicar.js` com os commits); atualização pela sala, pelo GitHub, o aviso e o cartão Novidades do Início |
+| 30 | `sessoes.js`, `salas-amigos.js` | Sessões abertas na rede (a lista da tela inicial); no modo Internet, as salas dos amigos do Razze, com o passe de convite, e o convite para a sala pelas mensagens diretas ([spec](spec/salas-dos-amigos.md)) |
+| 31 | `transmitir.js` | Escolher a fonte, som, iniciar, trocar e parar, quem assiste |
+| 32 | `mapa-conexoes.js` | O Mapa de conexões, na aba Rede do HUB: grafo em pé, atualiza a cada 5 s só com a aba à vista |
+| 33 | `hub.js` | HUB: a barra fininha da esquerda, com as abas Salas (salas abertas, a atual e o menu inicial) , Amigos (adicionar, filtrar, convidar, pedidos) e Rede (a conta primeiro, depois conexão, servidores, redes Razze e o Mapa de conexões) |
+| 34 | `mensagens.js` | Mensagens diretas entre amigos: aba Mensagens do HUB, barra de conversas embaixo, busca na RazzeAPI a cada 4 s e histórico local |
+| 35 | `navegacao.js` | Barrinha da direita e painéis simultâneos da sala (`workspaceViews.v1`), painel de voz com os canais |
+| 36 | `inicio.js` | Tela inicial e a partida: liga os botões e listeners, carrega as preferências |
 
 **A regra que evita erro na carga:** só o `inicio.js` roda código quando a página abre (listeners,
 `onclick`, preferências). Os outros só declaram funções e variáveis. Um arquivo que rodasse algo na
@@ -103,7 +108,9 @@ Arquivo novo na página: entra no `index.html` (na posição certa), em `PACK_FI
 | `chat-jogo.js` | A janela do chat por cima do jogo e o modo de escrever (Ctrl+Enter) |
 | `atalhos.js` | Atalhos globais e o apertar para falar (`teclas.exe`) |
 | `sessoes.js` | Anúncio e busca das sessões abertas (UDP na rede da Radmin) |
-| `mensagens.js` | Histórico local das mensagens diretas: um arquivo por amigo em `%APPDATA%\Tela P2P\mensagens\<conta>` |
+| `mensagens.js` | Histórico local das mensagens diretas: um arquivo por amigo em `%APPDATA%\Tela P2P\mensagens\<conta>`, cifrado com o safeStorage |
+| `mensagens-cripto.js` | Mensagens diretas criptografadas de ponta a ponta (X25519 + AES-256-GCM): a chave privada só aqui; cifra no envio e decifra na busca, entre o IPC e a RazzeAPI ([spec](spec/mensagens-criptografadas.md)) |
+| `celular.js` | Configurações no celular: servidor HTTP na rede local só enquanto o QR está aberto (chave de uso único, 5 min, até 4 MB); serve a página do celular. Só módulos do Node (testado sem o Electron) |
 
 `janela-flutuante.js`, `chat-jogo.js` e `atalhos.js` usam uns aos outros. Cada um faz o
 `module.exports` antes dos `require` dos outros, senão o Node entrega um objeto vazio no ciclo.

@@ -8,6 +8,9 @@
 //   hello { create: true, password }   -> cria a sala; o welcome traz { sala: 'ABC234' }
 //   hello { room: 'ABC234', password } -> entra
 //   hello { room, resume: id, client }  -> volta depois de a conexão cair (dentro do tempo de espera)
+//   hello { room, passe }              -> entra com o passe de convite de alguém da sala, no lugar da senha
+//   passe { passe }                     -> quem entrou com a senha registra o próprio passe de convite (null tira);
+//                                          o app anuncia o passe só para os amigos, pela RazzeAPI
 //   info                                -> { type: 'info', app: 'tela-p2p-internet' } (teste da aba Rede)
 'use strict';
 const http = require('http');
@@ -42,6 +45,29 @@ function passwordCheck(password) {
   const digest = (p) => crypto.createHmac('sha256', key).update(String(p ?? '')).digest();
   const expected = digest(password);
   return (attempt) => crypto.timingSafeEqual(expected, digest(attempt));
+}
+
+// Passes de convite da sala: cada pessoa que entrou com a senha pode ter um (vale enquanto ela estiver na sala).
+// Guardados só como HMAC com uma chave da própria sala, como a senha.
+const PASSE_RE = /^[A-Za-z0-9_-]{43}$/;
+function createPasses() {
+  const key = crypto.randomBytes(32);
+  const digest = (p) => crypto.createHmac('sha256', key).update(String(p ?? '')).digest();
+  const byMember = new Map(); // id -> HMAC do passe
+  return {
+    digest,
+    set(id, passe) { if (passe) byMember.set(id, digest(passe)); else byMember.delete(id); },
+    remove(id) { byMember.delete(id); },
+    // Confere contra todos os passes (sem parar no primeiro, para levar sempre o mesmo tempo)
+    check(passe) {
+      if (typeof passe !== 'string' || !PASSE_RE.test(passe)) return false;
+      const d = digest(passe);
+      let ok = false;
+      for (const v of byMember.values()) ok = crypto.timingSafeEqual(v, d) || ok;
+      return ok;
+    },
+    size: () => byMember.size,
+  };
 }
 
 // Acesso temporário ao coturn (use-auth-secret / "TURN REST API"): usuário "validade:nome", senha HMAC-SHA1
@@ -115,7 +141,7 @@ function createInternetServer(options = {}) {
   function createRoomState(password) {
     const code = (() => { for (;;) { const c = makeCode(); if (!rooms.has(c)) return c; } })();
     const room = {
-      code, check: passwordCheck(password), members: new Map(), away: new Map(), hostId: null, nextId: 1,
+      code, check: passwordCheck(password), passes: createPasses(), members: new Map(), away: new Map(), hostId: null, nextId: 1,
       chat: createChat(), subsalas: createSubsalas(), musicas: createMusicas(null, cfg.now), sessao: cleanSessao({ oculta: true }), createdAt: cfg.now(),
     };
     room.broadcast = (msg, exceptId) => {
@@ -128,6 +154,7 @@ function createInternetServer(options = {}) {
   function removeMember(room, id) {
     clearTimeout(room.away.get(id));
     room.away.delete(id);
+    room.passes.remove(id);
     if (!room.members.delete(id)) return;
     room.broadcast({ type: 'member-left', id });
     if (room.members.size === 0) {
@@ -159,6 +186,7 @@ function createInternetServer(options = {}) {
     let id = null;
     let me = null;
     let busy = false; // o hello está sendo conferido (espera de senha errada)
+    let joinedViaPasse = false;
     ws.isAlive = true;
     ws.on('pong', () => { ws.isAlive = true; });
 
@@ -177,6 +205,11 @@ function createInternetServer(options = {}) {
         me.ws = null;
         removeMember(room, id);
         return ws.close(1000, 'left');
+      }
+      if (me && msg.type === 'passe') { // só quem entrou com a senha pode convidar com um passe
+        if (me.viaPasse) return;
+        if (msg.passe === null || (typeof msg.passe === 'string' && PASSE_RE.test(msg.passe))) room.passes.set(id, msg.passe);
+        return;
       }
       if (me) return handleMemberMessage({ members: room.members, broadcast: room.broadcast, chat: room.chat, subsalas: room.subsalas, musicas: room.musicas }, id, me, msg);
       if (busy) return;
@@ -199,11 +232,17 @@ function createInternetServer(options = {}) {
       } else {
         const code = cleanCode(msg.room);
         const found = code && rooms.get(code);
-        if (!found || !found.check(msg.password)) {
+        // Com passe: um passe ativo da sala, ou (voltando depois de a conexão cair) o mesmo passe com que entrou,
+        // mesmo que quem convidou já tenha saído
+        const back = found && /^\d{1,6}$/.test(String(msg.resume || '')) ? found.members.get(String(msg.resume)) : null;
+        const viaPasse = !!found && typeof msg.passe === 'string' && (found.passes.check(msg.passe) ||
+          !!(back?.passeDigest && PASSE_RE.test(msg.passe) && crypto.timingSafeEqual(back.passeDigest, found.passes.digest(msg.passe))));
+        if (!found || (!viaPasse && !found.check(msg.password))) {
           fails.hit(ip);
-          return deny('Sala não encontrada ou senha incorreta.');
+          return deny(typeof msg.passe === 'string' && !msg.password ? 'O convite não vale mais. Peça a senha da sala.' : 'Sala não encontrada ou senha incorreta.');
         }
         room = found;
+        joinedViaPasse = viaPasse;
       }
 
       // Voltando depois de a conexão cair: mesmo número, se for o mesmo PC e ainda estiver no tempo de espera
@@ -228,6 +267,7 @@ function createInternetServer(options = {}) {
       }
       me = newMember(ws, msg, resuming ? resume : '', room.subsalas);
       me.addrs = []; // pela internet não tem por que espalhar os IPs de casa de ninguém
+      if (joinedViaPasse) { me.viaPasse = true; me.passeDigest = room.passes.digest(msg.passe); room.passes.remove(id); }
       if (!room.hostId) room.hostId = id;
       send(ws, {
         type: 'welcome',
@@ -235,7 +275,7 @@ function createInternetServer(options = {}) {
         hostId: room.hostId,
         sala: room.code,
         members: [...room.members].filter(([mid]) => mid !== id).map(([mid, m]) => memberInfo(mid, m)),
-        features: ['chat', 'voice', 'internet', 'resume', 'subsalas', 'subsala-move', 'musica'],
+        features: ['chat', 'voice', 'internet', 'resume', 'subsalas', 'subsala-move', 'musica', 'passe'],
         chat: room.chat.log,
         subsalas: room.subsalas.list,
         musicas: [...room.musicas.map.values()],

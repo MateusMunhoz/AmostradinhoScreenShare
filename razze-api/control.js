@@ -5,7 +5,7 @@ const path = require('node:path');
 const { timingSafeEqual } = require('node:crypto');
 
 // Administração e presença compartilham a autenticação da API, sem depender do Electron.
-function createControl({ db, options, now, hash, requireUser, readBody, send, ApiError, isMember }) {
+function createControl({ db, options, now, hash, requireUser, readBody, send, ApiError, isMember, friendshipExists = () => false }) {
   const columns = db.prepare('PRAGMA table_info(users)').all().map(c => c.name);
   if (!columns.includes('role')) db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user' CHECK(role IN ('user', 'admin'))");
   if (!columns.includes('ban_reason')) db.exec("ALTER TABLE users ADD COLUMN ban_reason TEXT NOT NULL DEFAULT ''");
@@ -23,6 +23,8 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
       requests INTEGER NOT NULL DEFAULT 0, received INTEGER NOT NULL DEFAULT 0, sent INTEGER NOT NULL DEFAULT 0,
       started_at INTEGER NOT NULL, last_request INTEGER NOT NULL);
   `);
+  // Sala do modo Internet anunciada para os amigos (servidor, código e o passe de convite)
+  if (!db.prepare('PRAGMA table_info(live_presence)').all().some(c => c.name === 'internet_room')) db.exec('ALTER TABLE live_presence ADD COLUMN internet_room TEXT');
   // Após reiniciar, cada cliente precisa confirmar sua presença novamente.
   db.exec('DELETE FROM live_presence');
   // Mantém somente a sessão mais recente de cada conta.
@@ -62,7 +64,8 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
         const device = db.prepare('SELECT assigned_ip AS address FROM wireguard_devices WHERE network_id = ? AND device_id = ? AND user_id = ?').get(c.networkId, c.deviceId, r.user_id);
         return device ? { ...c, ...device } : null;
       }).filter(Boolean);
-      return { userId: r.user_id, displayName: r.displayName, lastSeen: r.last_seen, connections, room: r.room ? JSON.parse(r.room) : null };
+      return { userId: r.user_id, displayName: r.displayName, lastSeen: r.last_seen, connections, room: r.room ? JSON.parse(r.room) : null,
+        internetRoom: r.internet_room ? JSON.parse(r.internet_room) : null };
     });
   }
   function rooms(viewerId, networkId, snapshot = presence()) {
@@ -75,6 +78,19 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
       if (!connection || listed.has(key)) continue;
       const network = db.prepare('SELECT name FROM networks WHERE id=?').get(r.networkId);
       listed.set(key, { ...r, networkName: network?.name || '', userId: p.userId, endereco: connection.address, lastSeen: p.lastSeen });
+    }
+    return [...listed.values()];
+  }
+  // Salas do modo Internet dos amigos aceitos (não precisam de rede Razze nem de VPN). A sala do próprio
+  // usuário não aparece; a mesma sala anunciada por duas sessões aparece uma vez só.
+  function friendRooms(viewerId, snapshot = presence()) {
+    const listed = new Map();
+    for (const p of snapshot) {
+      const r = p.internetRoom;
+      if (!r || p.userId === viewerId || !friendshipExists(viewerId, p.userId)) continue;
+      const key = r.servidor + '#' + r.codigo;
+      if (listed.has(key)) continue;
+      listed.set(key, { ...r, host: p.displayName, userId: p.userId, lastSeen: p.lastSeen });
     }
     return [...listed.values()];
   }
@@ -111,12 +127,24 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
           !Number.isInteger(r.pessoas) || r.pessoas < 1 || r.pessoas > 1000) bad('Anúncio de sala inválido.');
       room = { id: r.id, networkId: r.networkId, host: r.host, porta: r.porta, pessoas: r.pessoas, senha: !!r.senha };
     }
+    let internetRoom = null;
+    if (body.internetRoom) {
+      const r = body.internetRoom;
+      let url = null;
+      try { url = new URL(String(r.servidor)); } catch {}
+      // ws:// também vale: é o endereço padrão da VPS (servidor-internet/README.md), sem TLS
+      if (typeof r.servidor !== 'string' || r.servidor.length > 200 || !url || !['ws:', 'wss:'].includes(url.protocol) || !url.hostname ||
+          url.username || url.password || url.search || url.hash ||
+          typeof r.codigo !== 'string' || !/^[A-HJ-NP-Z2-9]{6}$/.test(r.codigo) || !Number.isInteger(r.pessoas) || r.pessoas < 1 || r.pessoas > 1000 ||
+          (r.passe !== undefined && r.passe !== null && (typeof r.passe !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(r.passe)))) bad('Anúncio de sala inválido.');
+      internetRoom = { servidor: r.servidor, codigo: r.codigo, pessoas: r.pessoas, passe: r.passe || null };
+    }
     db.prepare('DELETE FROM sessions WHERE expires_at <= ?').run(now());
     db.prepare('UPDATE sessions SET client_name=? WHERE token_hash=?').run(clientName.trim(), tokenHash(req));
     db.prepare('DELETE FROM live_presence WHERE last_seen <= ?').run(now() - settings().presenceTimeoutSeconds * 1000);
-    db.prepare(`INSERT INTO live_presence(session_hash, user_id, last_seen, connections, room) VALUES(?, ?, ?, ?, ?)
-      ON CONFLICT(session_hash) DO UPDATE SET last_seen=excluded.last_seen, connections=excluded.connections, room=excluded.room`)
-      .run(tokenHash(req), userId, now(), JSON.stringify(cleaned), room ? JSON.stringify(room) : null);
+    db.prepare(`INSERT INTO live_presence(session_hash, user_id, last_seen, connections, room, internet_room) VALUES(?, ?, ?, ?, ?, ?)
+      ON CONFLICT(session_hash) DO UPDATE SET last_seen=excluded.last_seen, connections=excluded.connections, room=excluded.room, internet_room=excluded.internet_room`)
+      .run(tokenHash(req), userId, now(), JSON.stringify(cleaned), room ? JSON.stringify(room) : null, internetRoom ? JSON.stringify(internetRoom) : null);
     return { ok: true, heartbeatSeconds: 20, timeoutSeconds: settings().presenceTimeoutSeconds };
   }
   function offline(req) { db.prepare('DELETE FROM live_presence WHERE session_hash = ?').run(tokenHash(req)); }
@@ -279,7 +307,7 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
     res.end(fs.readFileSync(path.join(__dirname, 'admin', file)));
     return true;
   }
-  return { settings, heartbeat, offline, rooms, enrichUsers, enrichNetworks, handleAdmin, serveAdmin, measure };
+  return { settings, heartbeat, offline, rooms, friendRooms, enrichUsers, enrichNetworks, handleAdmin, serveAdmin, measure };
 }
 
 module.exports = { createControl };

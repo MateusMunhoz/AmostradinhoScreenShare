@@ -1,21 +1,23 @@
 'use strict';
-// O ícone do app: o mesmo desenho da barra de título (duas telas, uma atrás da outra, em traço), num canvas.
-// Usado pela janela aberta (barra de tarefas e Alt+Tab, na cor do tema) e pelo gerar-icone.js (o .ico do .exe).
-// Mesmo caminho do SVG da barra de título, em 24 x 24: "M3 5h13v10H3zM8 19h13V9".
-function drawAppIcon(ctx, size, color) {
-  const s = size / 24;
+// O ícone do app: a logo (três estrelas ligadas por pontilhados), o mesmo desenho da barra de título e do Início
+// (index.html, .app-logo), num canvas. Usado pela janela aberta (barra de tarefas e Alt+Tab) e pelo gerar-icone.js
+// (o .ico do .exe). Sempre nas cores da logo, em qualquer tema de cores (só os temas E.V.A e Arasaka têm o próprio).
+// Quadro de 0 a 100. Estrelas: [cor, caminho SVG]; pontos: [x, y, raio, cor]. Cor 12, 23: a mistura das duas.
+const LOGO_COLORS = { 1: '#FF6B61', 2: '#8B93FF', 3: '#22E5FA', 12: '#C57FB0', 23: '#56BCFC' };
+const LOGO_STARS = [
+  ['1', 'M46.17 3.83C47 10.79 50.21 14.01 57.17 14.83C50.21 15.65 47 18.87 46.17 25.83C45.34 18.87 42.13 15.65 35.17 14.83C42.13 14.01 45.34 10.79 46.17 3.83Z'],
+  ['2', 'M13.83 57.5C14.65 64.46 17.87 67.67 24.83 68.5C17.87 69.33 14.65 72.54 13.83 79.5C13.01 72.54 9.79 69.33 2.83 68.5C9.79 67.67 13.01 64.46 13.83 57.5Z'],
+  ['3', 'M77.83 55.5C79.31 67.95 85.05 73.69 97.5 75.17C85.05 76.65 79.31 82.39 77.83 94.84C76.35 82.39 70.61 76.65 58.16 75.17C70.61 73.69 76.35 67.95 77.83 55.5Z'],
+];
+const LOGO_DOTS = [[39.67, 19.83, 1, 1], [36.5, 22.67, 0.7, 1], [33.67, 25.33, 0.58, 1], [31.17, 28, 0.5, 12], [28.83, 30.67, 0.5, 12], [26.5, 33.67, 0.57, 2], [24.17, 37.33, 0.67, 2], [21.83, 41, 0.75, 2], [19.67, 45.17, 0.83, 2], [17.83, 49.5, 0.92, 2], [16.17, 54.33, 1, 2], [54, 20.33, 1.08, 1], [57.83, 23.83, 1, 1], [61.5, 27.67, 0.92, 1], [65, 31.83, 0.92, 1], [68.17, 36.33, 0.83, 1], [71, 41, 0.92, 3], [73.67, 46, 1, 3], [75.67, 51.33, 1.08, 3], [23, 73.17, 1, 2], [26.5, 74.83, 0.6, 2], [28.83, 75.67, 0.5, 2], [32, 76.67, 0.5, 2], [35.17, 77.5, 0.5, 23], [38.33, 78.33, 0.5, 23], [42, 79, 0.6, 3], [46.17, 79.5, 0.75, 3], [51, 79.67, 0.92, 3], [56.33, 79.67, 1, 3], [61.67, 79.33, 1.17, 3]];
+function drawAppIcon(ctx, size) {
   ctx.clearRect(0, 0, size, size);
-  ctx.strokeStyle = color;
-  // Nos tamanhos pequenos o traço fica um pouco mais grosso, senão some na barra de tarefas
-  ctx.lineWidth = (size <= 16 ? 2.6 : size <= 32 ? 2.4 : 2) * s;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  ctx.beginPath();
-  ctx.rect(3 * s, 5 * s, 13 * s, 10 * s);
-  ctx.moveTo(8 * s, 19 * s);
-  ctx.lineTo(21 * s, 19 * s);
-  ctx.lineTo(21 * s, 9 * s);
-  ctx.stroke();
+  ctx.save();
+  ctx.scale(size / 100, size / 100);
+  for (const [c, d] of LOGO_STARS) { ctx.fillStyle = LOGO_COLORS[c]; ctx.fill(new Path2D(d)); }
+  // Até 32 px os pontilhados viram borrão: ficam só as estrelas
+  if (size > 32) for (const [x, y, r, c] of LOGO_DOTS) { ctx.fillStyle = LOGO_COLORS[c]; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); }
+  ctx.restore();
 }
 // Tema E.V.A: o rosto do EVA-01 no lugar das duas telas. Desenho próprio em 64 x 64 ([cor, caminho SVG]), fundo
 // transparente; também vira o .ico do build E.V.A (gerar-icone.js > tela-p2p-eva.ico)

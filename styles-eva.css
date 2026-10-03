@@ -48,6 +48,16 @@
 }
 :root[data-skin="eva"] .dialog { background: var(--eva-marks), linear-gradient(180deg, rgba(107, 63, 160, .22), transparent 160px), var(--bg); }
 :root[data-skin="eva"] .home-card { clip-path: var(--eva-cut); }
+/* A caixinha do perfil (lista da voz) e o menu da música da barrinha: como as janelas de conversa (marcas de mira,
+   roxo em cima e a linha laranja) */
+:root[data-skin="eva"] :is(.sky-focus.sky-pop, .rail-music-menu) {
+  border-radius: 2px; background: var(--eva-marks), linear-gradient(180deg, rgba(107, 63, 160, .22), transparent 120px), var(--panel);
+  box-shadow: inset 0 2px 0 var(--accent), 0 14px 34px rgba(0, 0, 0, .5);
+}
+:root[data-skin="eva"] .sky-focus.sky-pop.has-bg { background: var(--eva-marks), linear-gradient(var(--scrim), var(--scrim)), var(--fundo) center / cover no-repeat, var(--panel); }
+:root[data-skin="eva"] .rail-music-menu button { border-radius: 2px; }
+:root[data-skin="eva"] .sky-focus-name { font-family: var(--eva-mincho); font-weight: 800; }
+:root[data-skin="eva"] :is(.profile-bg-preview, .phone-flow, .phone-qr-code) { border-radius: 2px; }
 
 /* ---------- Títulos: mincho grosso, como os letreiros pretos e brancos do anime; rótulos em fonte de terminal ---------- */
 :root[data-skin="eva"] :is(h1, .home-title, .dialog h2, .pane-head h2, .chat-title, .stream-pane-head h2) {
@@ -68,7 +78,7 @@
 :root[data-skin="eva"] .btn:not(.primary):not(.live):not(.danger) { border-color: var(--line); box-shadow: none; }
 :root[data-skin="eva"] .btn:not(.primary):not(.live):not(.danger):hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
 /* Sair, encerrar e parar: a faixa de perigo embaixo */
-:root[data-skin="eva"] :is(.btn.danger, .dock .dock-leave) {
+:root[data-skin="eva"] :is(.btn.danger, #workspaceNav .rail-leave) {
   border-image: repeating-linear-gradient(-45deg, var(--warn) 0 6px, #000 6px 12px) 0 0 3 0 / 0 0 3px 0;
 }
 :root[data-skin="eva"] .workspace-tab[aria-pressed=true], :root[data-skin="eva"] .workspace-tab[aria-expanded=true] {

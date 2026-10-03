@@ -1,5 +1,5 @@
-// Gera assets/icone/tela-p2p.ico (o ícone do .exe) com o mesmo desenho da barra de título, na cor padrão do
-// tema (Detalhe 1), e assets/icone/tela-p2p-eva.ico (o do build E.V.A, npm run dist:eva) com o rosto do EVA-01.
+// Gera assets/icone/tela-p2p.ico (o ícone do .exe) com a logo (o mesmo desenho da barra de título, nas cores
+// dela), e assets/icone/tela-p2p-eva.ico (o do build E.V.A, npm run dist:eva) com o rosto do EVA-01.
 // Roda pelo Electron para desenhar num canvas de verdade: npm run icone
 // O .ico leva PNGs de 16 a 256 px; o Windows escolhe o tamanho certo para cada lugar.
 const { app, BrowserWindow } = require('electron');

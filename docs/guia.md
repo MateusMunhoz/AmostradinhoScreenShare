@@ -22,7 +22,7 @@ Tudo o que dá para fazer no Tela P2P, com os detalhes. Para começar do zero, v
 - **Entrar:** clique em **Entrar numa sala**, cole o endereço e clique em **Entrar**.
 - **Tamanho:** até 12 pessoas.
 - **Senha:** é opcional, mas recomendada se a rede da Radmin tiver mais gente.
-- **Painel à direita:** só o chat. O **botão de pessoas** no topo mostra o total e acende uma bolinha verde quando alguém fala. Ele abre a lista por cima do chat, com:
+- **Painel à direita:** só o chat. O **botão de pessoas**, na barrinha da direita, mostra o total e acende uma bolinha verde quando alguém fala. Ele abre a lista por cima do chat, com:
   - quem está na sala, com **Assistir** e o volume de cada pessoa;
   - os detalhes da sua transmissão;
   - o endereço da sala, com **Copiar**.
@@ -34,9 +34,16 @@ Tudo o que dá para fazer no Tela P2P, com os detalhes. Para começar do zero, v
   - o chat por cima do jogo;
   - as janelas flutuantes abertas;
   - **Estatísticas**;
-  - o balão do chat;
-  - **Sair**.
+  - o balão do chat.
+- **Barrinha da direita:** em cima, o perfil; logo abaixo, separados por uma linha, o **botão de pessoas** (o total e uma bolinha verde quando alguém fala; abre a lista de quem está na sala), **Chat**, **Voz** e **Transmissão**. Ouvindo uma música, aparece também o botão de **música**: clicar mostra **Pausar** ou **Continuar** (para todos, se você pode controlar) e **Sair da música** (a música continua para os outros). No pé, **Início** (vai para o saguão sem sair da sala), **Sair** e, depois de uma linha, o **modo gamer** (o controle) e a engrenagem. No saguão, com a sala aberta, o pé mostra **Voltar para a sala**, com o número de mensagens novas.
 - **Recolher o painel:** o balão do chat recolhe o painel, e os vídeos ocupam a largura toda. Recolhido, ele mostra quantas mensagens chegaram, e o endereço da sala passa para a barra.
+
+### Como os PCs se conectam
+
+No HUB, aba **Rede**. O padrão é **Internet (servidor)**: sem VPN, a sala fica num servidor (VPS) e os amigos
+entram por código e senha, pela lista de salas dos amigos ou por um convite nas mensagens. Também dá para usar
+**Radmin ou rede local** e **Razze (WireGuard)**. Quem já usava o app antes do modo Internet virar o padrão, sem
+ter escolhido outro, continua na Radmin.
 
 ### VPN Tela P2P
 
@@ -54,6 +61,11 @@ hospeda a API, configura a aprovação de contas e fornece o endereço HTTPS do 
 O dono pode copiar um link `telap2p://invite/...` na configuração da rede. No PC que receber o link, abra
 o Tela P2P pelo link e entre na conta Razze para aceitar o convite. Também é possível colar o link no campo
 **Entrar por convite**.
+
+O **Mapa de conexões** fica na mesma aba **Rede** do HUB: este PC em cima e, embaixo, o servidor Razze e cada
+rede, em verde (conectado), vermelho (sem conexão) ou cinza (indisponível). Atualiza sozinho a cada 5 segundos
+enquanto a aba está aberta. Transmitindo, o app sai da sua transmissão enquanto a aba está aberta, para os
+endereços não aparecerem para quem assiste.
 
 A conexão P2P WireGuard depende dos NATs dos dois lados permitirem hole punching. Redes com CGNAT restritivo
   podem não conectar nesta versão; um relay WireGuard ainda não está incluído. Com o app aberto, a lista de peers
@@ -77,6 +89,22 @@ quem está com ela, quantas pessoas estão dentro e um cadeado se tiver senha.
   entre pelo endereço, como antes.
 - **O que os outros veem:** o seu nome, quantas pessoas estão na sala e se ela tem senha. A senha nunca vai
   no aviso, e continua sendo pedida para entrar.
+
+### Salas dos amigos (modo Internet)
+
+No modo Internet, a lista da tela inicial vira **Salas dos seus amigos**: as salas que os seus amigos do Razze
+abriram pela internet. Basta estar logado na conta Razze (aba Rede do HUB); a VPN Razze não precisa estar ligada.
+
+- **Entrar:** o botão **Entrar** entra direto, sem senha, por um **passe de convite** que o app de quem criou a
+  sala manda só para os amigos dele. Se o passe não valer mais (quem convidou saiu da sala) ou o servidor for
+  antigo, abre o **Entrar com código** com o código preenchido, e é só digitar a senha. O servidor usado é o da
+  sala do amigo, mesmo que o da sua aba Rede seja outro.
+- **A sua aparece para os seus amigos:** ao criar a sala, deixe marcado **Mostrar esta sala para meus amigos do
+  Razze**. Desmarcado, ela só funciona pelo código e senha.
+- **Quanto tempo fica:** enquanto você está na sala. Saiu (ou fechou o app), ela some da lista dos amigos na hora;
+  se o PC cair, em até 70 segundos. Se você sair e a sala continuar com os outros, o seu convite para de valer.
+- **Quem vê:** só os amigos aceitos no Razze. Nenhum IP vai junto, só o servidor, o código e quantas pessoas estão.
+- **Quem não tem conta Razze:** continua entrando pelo código e senha.
 
 ### Troca de host
 
@@ -186,13 +214,13 @@ Clique em **Entrar na voz**, na barra de baixo, para ligar o microfone padrão d
 No painel **Chat de voz**, a voz fica dividida em canais: a **Voz geral** e as subsalas.
 
 - **Criar:** fora da voz, clique em **+ Nova subsala**, ao lado de **Entrar na Voz geral**; na voz, em **+ Subsala**, na faixa de baixo do painel. A subsala é criada e você já entra nela. Os nomes são sempre `Subsala_1`, `Subsala_2`, e assim por diante: a nova recebe o número seguinte ao da maior que existe.
-- **Entrar:** clique em **Entrar** no canal. Fora da voz, isso liga o microfone já naquele canal; na voz, você muda de canal sem sair.
+- **Entrar:** clique na faixa com o nome do canal. Fora da voz, isso liga o microfone já naquele canal; na voz, você muda de canal sem sair.
 - **Quem ouve quem:** só quem está no mesmo canal se ouve. O chat de texto e as transmissões continuam valendo para a sala toda.
 - **Apagar:** o **X** ao lado da subsala. Quem estava nela volta para a Voz geral.
 - **Mudar alguém de canal:** arraste a pessoa (ou você) até outro canal. Qualquer um pode mover quem está na voz; o app da pessoa troca de canal sozinho. Precisa do host (ou do servidor da VPS) na versão nova; sem isso, só dá para arrastar você mesmo.
 - **Lista ou Mapa:** os dois ícones ao lado do título (três linhas para a Lista, um planeta para o Mapa) trocam a visão (fica salva neste PC). No **Mapa**, cada canal é um sol e quem está nele orbita como planeta. Cada canal com gente fica numa nebulosa de fumaça com a cor dele, e embaixo do nome aparece quantos estão nele. Quem fala solta ondas verdes, quem transmite solta ondas na cor de destaque e o canal com música solta notinhas. Ao fundo, uma galáxia em espiral gira bem devagar. Com o mouse em cima de um canal, os anéis e a nebulosa dele acendem e o sol cresce; em cima de uma pessoa, o planeta cresce e aparece uma linha até o sol. Quem entra chega como cometa, quem sai escapa da órbita, quem muda de canal faz um arco até o outro sol, quem começa a transmitir solta um anel, e a subsala nova acende com uma onda (a que é apagada se apaga). Com o Tela P2P fora de foco, só as órbitas continuam se mexendo. Clicar no sol abre um cartão preso a ele: o nome do canal, com quantos estão nele e quantos ao vivo (clicar no nome entra no canal), a música (no seu canal sem música, a linha tracejada **Sem música · Pôr uma**) e, numa subsala, o **X** de apagar. Embaixo, quem está no canal: quem transmite tem **AO VIVO** e o olho de **Assistir**; clicar na pessoa abre o perfil dela (volume e amizade). Esc ou um clique no mapa fecha; arrastar o planeta até outro sol muda a pessoa de canal. A roda do mouse (ou **+** e **−**) aproxima até caber uma subsala e afasta até ver todas; arrastar o fundo anda pelo mapa.
 - **Mapa grande:** com o chat e a voz na barra da direita, deixe o mouse parado no mapa: o chat encolhe e o mapa ocupa a barra toda. Do chat fica uma faixa em cima, com as mensagens novas; clicar nela traz o chat de volta. Tirando o mouse do painel de voz, o chat volta sozinho (menos enquanto você põe uma música, mexe no volume de alguém ou está no perfil de alguém). O **alfinete** ao lado de Lista e Mapa fixa o mapa aberto até você soltar. Com o mouse chegando perto de um sol, a órbita dele vai desacelerando até parar; as outras seguem girando; com o Tela P2P fora de foco, o céu em cima da Lista não é desenhado (o Mapa continua girando).
-- **Pessoa no mapa:** clicar num planeta aproxima até a pessoa. Em volta dela ficam, só com o ícone (o nome aparece ao parar o mouse em cima), **Assistir**, **Perfil** (volume e amizade), **Silenciar para mim** e **Mudar de canal**, e embaixo o volume da voz dela. No seu planeta: microfone, fone e **Mudar de canal**. A setinha **‹**, Esc ou um clique fora dos botões volta para o mapa.
+- **Pessoa no mapa:** clicar num planeta aproxima até a pessoa. Em volta dela ficam, só com o ícone (o nome aparece ao parar o mouse em cima), **Assistir**, **Perfil** (volume e amizade), **Silenciar para mim** e **Mudar de canal**, e embaixo o volume da voz dela. No seu planeta: microfone, fone e **Mudar de canal**. A setinha **‹**, Esc ou um clique fora dos botões volta para o mapa. Na **Lista**, clicar na linha de quem está na voz (foto, nome ou estado) abre esse mesmo perfil numa caixinha perto da linha (nela, no lugar de **Perfil**, fica **Voltar ao padrão**, que volta o volume da pessoa ao normal); o **X**, Esc, um clique fora ou de novo na linha fecha. Se a pessoa escolheu um **fundo do perfil**, ele aparece atrás.
 - **Céu na Lista:** na Lista, o céu pequeno em cima é só enfeite. Para escondê-lo ou mostrá-lo, use **Configurações › Aparência › Céu da voz em cima da lista**. O Mapa não muda.
 - **Troca de host:** as subsalas continuam, e cada um fica no canal em que estava.
 - **Modo Internet:** o servidor da VPS precisa estar atualizado para ter subsalas; sem isso, o painel mostra só a lista de sempre.
@@ -217,12 +245,37 @@ No HUB (a barra fina na borda esquerda), aba **Amigos**. Precisa de conta Razze.
 
 - **Buscar:** o campo do topo filtra a lista pelo nome. Os chips **Todos**, **Online** e **Pedidos** mudam o que aparece; o número no **Pedidos** conta os pedidos recebidos e enviados.
 - **Adicionar:** clique em **Adicionar**, digite o nickname exato e **Enviar pedido** (ou Enter). Se der errado, o motivo aparece embaixo do campo. Quando der certo, o pedido vai para **Pedidos enviados**.
-- **Convidar:** aparece só para quem está online; copia o endereço (ou o código) da sua sala.
+- **Convidar:** aparece só para quem está online, com você numa sala. Manda um **convite** nas mensagens diretas do
+  amigo, que aparece como um cartão com **Entrar** (veja abaixo).
 - **Remover:** no **⋯** da linha, **Remover [nome]**. A própria linha pergunta se é isso mesmo; **Não** ou Esc desiste.
 
 ## Mensagens diretas
 
 Conversa com um amigo (conta Razze), dentro ou fora da sala.
+
+- **Criptografadas de ponta a ponta:** só você e o amigo leem. O servidor Razze (e quem cuida dele) vê só texto
+  embaralhado. Cada PC tem a própria chave, guardada com a proteção da sua conta do Windows; o histórico neste PC
+  também fica protegido.
+  - **Amigo numa versão antiga:** a mensagem não sai. A janela avisa que ele precisa atualizar o Tela P2P, e o texto
+    volta para o campo.
+  - **Chave trocada:** quando o amigo troca de PC ou reinstala o app, a conversa avisa "A chave de segurança de
+    [nome] mudou". Se não foi isso, confirme com ele por outro meio.
+  - **"Não dá para abrir aqui":** a mensagem foi cifrada para outro PC da sua conta (ou para este PC antes de uma
+    reinstalação). Cada PC só lê o que chegou para a chave dele.
+  - **"sem criptografia":** marca as mensagens de antes, que o servidor ainda guarda por até 30 dias.
+- **Clicar fora** da janelinha minimiza a conversa. O **alfinete** no chip trava a janela aberta (clique de novo
+  para destravar). A escolha fica salva.
+
+- **Convite para a sala:** o **Convidar** da aba Amigos manda um cartão "Convite para a sala de [nome]", com
+  quantas pessoas estão, o modo e um **Entrar**. Só entra quando você clica, nunca sozinho.
+  - **Pela internet:** entra direto, sem senha (o convite leva um passe que só abre aquela sala enquanto quem
+    convidou está nela). Se o passe não valer mais, abre o **Entrar com código** já preenchido para a senha.
+  - **Radmin ou Razze:** preenche o endereço e entra; se a sala tiver senha, pede a senha (ela nunca vai no
+    convite). Na Razze, precisa estar com a mesma rede ligada.
+  - **Outro modo:** se você estiver em outro modo (por exemplo, na Radmin e o convite é pela internet), o cartão
+    avisa qual usar, em HUB › Rede. O app não troca o modo sozinho.
+  - **Já numa sala:** pergunta se quer sair dela e entrar na do amigo.
+  - **App antigo:** quem ainda não atualizou vê o convite como texto, com o código ou o endereço, e entra à mão.
 
 - **Abrir:** clique em **Mensagens**, na barra de baixo: a lista das conversas abre para cima, com busca, a última mensagem e as não lidas. Ou, no HUB, aba **Amigos**, no balão ao lado do nome.
 - **Barra de conversas:** fica embaixo da tela. Cada conversa aberta vira um chip. Clicar no chip abre a janela; o **—** minimiza de volta para o chip; o **X** tira da barra.
@@ -290,9 +343,9 @@ A configuração de outra pessoa só aparece se ela e o host estiverem na versã
 
 ## Tema
 
-Abra **Configurações gerais** pela engrenagem no topo direito. A barra fica na mesma posição no início e dentro de uma sala.
+Abra **Configurações gerais** pela engrenagem no pé da barrinha da direita. A barrinha fica na borda direita da janela, no início e dentro de uma sala.
 
-O botão **Perfil** mostra seu nome salvo neste dispositivo; ele pode ser editado fora da sala. Dentro da sala, **Chat**, **Voz** e **Transmissão** são alternadores independentes: clique para exibir ou ocultar cada painel. Os selecionados permanecem visíveis juntos, dividindo o espaço. Perfil e configurações também podem ficar abertos ao mesmo tempo. Cada painel tem sua própria rolagem quando necessário. A seleção dos três painéis da sala é lembrada ao reabrir o app.
+O botão **Perfil** (no alto da barrinha) mostra seu nome salvo neste dispositivo; ele pode ser editado fora da sala. Nele também fica o **Fundo do perfil**: uma imagem (recortada em quadrado) ou um GIF de até 1 MB, que aparece atrás do seu perfil para quem clicar em você na voz; **Tirar fundo** volta ao normal. O GIF só se mexe com o perfil aberto. Dentro da sala, **Chat**, **Voz** e **Transmissão** ficam logo abaixo deles, num grupo separado, só com o ícone (o nome aparece ao parar o mouse em cima), e são alternadores independentes: clique para exibir ou ocultar cada painel. Chat e voz abrem se desdobrando ao lado da barrinha. Os selecionados permanecem visíveis juntos, dividindo o espaço. Perfil e configurações também podem ficar abertos ao mesmo tempo. Cada painel tem sua própria rolagem quando necessário. A seleção dos três painéis da sala é lembrada ao reabrir o app.
 
 O painel **Voz** mostra os participantes, seus controles de volume e botões para entrar, sair, mutar e silenciar as vozes. Mostrar ou ocultar esse painel não liga nem desliga o microfone. Da mesma forma, ocultar **Transmissão** não encerra uma transmissão em andamento; use o botão **Parar** para encerrá-la.
 
@@ -303,6 +356,12 @@ O painel **Voz** mostra os participantes, seus controles de volume e botões par
 
 Digite um hexadecimal de três ou seis dígitos, com ou sem `#`, ou use a amostra de cor. A mudança aparece imediatamente, inclusive nas janelas flutuantes abertas. Textos e tons de apoio se adaptam às cores escolhidas. Valores inválidos não substituem a última cor válida. **Restaurar cores padrão** recupera o tema oliva e amarelo, sem alterar os sons.
 
+No tema **Du'Sol** (aba Tema), o fundo é o Sol: um pedaço gigante dele à esquerda, com manchas e a borda brilhando, e o espaço com estrelas no resto. As cores ficam entre o preto, o amarelo e o laranja, e o nome **Du'Sol** aparece como no Arasaka: em pé no saguão, grande no palco sem transmissão e na barra de título. O fundo é parado e some no modo gamer.
+
+O tema **Di'Luna** é o irmão do Du'Sol, com a Lua cheia: um pedaço gigante dela à esquerda, com crateras e a borda acesa em ciano, e a noite com véus roxos e faíscas de luz no resto. As cores ficam entre o branco, o ciano, o azul e o roxo, e os letreiros têm serifa. O nome **Di'Luna** aparece nos mesmos lugares do Du'Sol, em pé do lado de fora da Lua no saguão.
+
+No tema Padrão, a tela inicial tem um céu ao fundo; de vez em quando (a cada 20 a 90 segundos, ao acaso) uma estrela cadente cruza esse céu. Ela só aparece com a janela do app em foco e não aparece se o Windows estiver com os efeitos de animação desligados.
+
 Na mesma tela, escolha o som de **entrada na sala**, **saída da sala**, **mensagem no chat**, **entrada no chat de voz**, **saída do chat de voz**, **mutar o microfone** e **desmutar o microfone**. Há os oito MP3 incluídos no app e quatro sons **Suave**, gerados na hora pelo próprio app (os padrões da voz e do microfone). Os da voz dos outros só tocam enquanto você está na voz. Os arquivos já vêm dentro do app; não é preciso manter a pasta original ao lado do executável. **Ouvir** toca uma prévia. **Sem som** desativa um evento específico, e **Silenciar som do chat** mantém os outros avisos ativos. A prévia continua disponível com o chat silenciado.
 
 Cada evento tem seu próprio volume de 0 a 100%. O **volume geral dos avisos** multiplica esses valores: geral em 50% e um evento em 40% resultam em 20% para aquele evento. Geral em 0% silencia todos sem apagar os ajustes individuais. Os volumes dos avisos são independentes do volume da voz e das transmissões.
@@ -312,6 +371,38 @@ Mensagens enviadas e recebidas fazem som quando chegam confirmadas pelo servidor
 Todas essas escolhas são salvas automaticamente no perfil local do app e continuam ao fechá-lo e abri-lo de novo. Cada pessoa pode usar suas próprias cores e sons.
 
 Fontes do próprio Windows: Segoe UI Variable no app e Tahoma no chat.
+
+## Modo gamer
+
+O controle na barrinha da direita (logo acima da engrenagem) liga o **modo gamer**, para o jogo ter o máximo do PC
+enquanto o Tela P2P fica aberto. Ligado, o controle fica aceso e o app:
+
+- baixa a própria prioridade para **normal** (a escolhida em Transmissão volta ao desligar);
+- fica **opaco**, sem o vidro e o desfoque;
+- para todas as animações e esconde o céu estrelado do fundo, o céu em cima da lista da voz e a luz ambiente das
+  transmissões;
+- deixa parado o GIF do fundo do perfil das pessoas.
+
+Voz, chat, música, transmitir e assistir continuam funcionando. As suas escolhas de aparência não mudam: desligar
+devolve tudo como era. Fica salvo neste PC.
+
+## Configurações no celular
+
+Guarde suas configurações no celular e traga de volta em qualquer PC. Funciona com Android e iPhone, sem instalar nada
+no celular, e nada passa pela internet: o celular precisa estar no mesmo Wi-Fi do PC.
+
+- **Guardar:** Configurações gerais (a engrenagem) › **Celular** › **Guardar no celular**. Escolha uma senha (ela não
+  fica guardada em lugar nenhum), leia o QR code com a câmera do celular e toque em **Baixar arquivo**. O celular
+  guarda um arquivo `.tp2p` cifrado: sem a senha, ninguém abre.
+- **Trazer:** em outro PC, **Celular** › **Trazer do celular**, leia o QR e escolha o arquivo no celular. Digite a senha
+  no PC, confira o resumo e clique em **Aplicar**: as configurações deste PC são trocadas e a interface recarrega.
+  Fora de uma sala, porque a interface recarrega.
+- **O que vai:** tema e cores, nome, foto e fundo do perfil, microfone e voz, o volume de cada amigo, painéis, opções de transmissão e
+  os atalhos de teclado. **Não vai:** a conta Razze (entre nela de novo; os amigos voltam sozinhos), as mensagens
+  diretas e o endereço das salas.
+- O código vale por 5 minutos e serve uma vez. Sem câmera, digite no navegador do celular o endereço que aparece ao
+  lado do QR. Se a página não abrir, confira se o celular está no mesmo Wi-Fi e se o Windows deixa o Tela P2P
+  receber conexões na rede privada.
 
 ## Atualizações
 

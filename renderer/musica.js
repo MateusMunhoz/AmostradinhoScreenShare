@@ -57,6 +57,7 @@ function setMusicas(list, serverNow, quiet = false) {
   }
   for (const ch of before.keys()) if (!next.has(ch) && state.in.has(musicKey(ch))) stopWatching(musicKey(ch), false);
   renderVoice();
+  renderNavMusic(); // tocando ou pausada: o botão e o menu da barrinha acompanham
 }
 // Para a troca de host: o servidor novo continua com as músicas, do ponto em que estão agora
 function musicSeed() {
@@ -78,6 +79,7 @@ function listenMusic(ch) {
   const tile = createMusicTile(ch, e);
   // Entra no palco como "você se vendo" (assistir.js): sem conexão, sem sinal para ninguém
   state.in.set(key, { self: true, music: tile.music, pc: SELF_PC, tile, videoOn: true, tracks: [], once: null, lastBytes: 0, lastTs: 0 });
+  renderNavMusic();
   renderFocus();
   renderMembers();
   updateStage();
@@ -197,6 +199,8 @@ function createMusicTile(ch, entry) {
     syncMute();
   };
   vol.onchange = () => save('musicaVolume', String(musica.volume));
+  // Mexeu no volume da tela: o da barrinha da direita (menu da música) acompanha
+  vol.addEventListener('input', () => { const nav = $('navMusicVol'); if (nav && nav !== document.activeElement) { nav.value = vol.value; nav.nextElementSibling.textContent = `${vol.value}%`; } });
 
   // ---------- Conversa com o player ----------
   const mu = { ch, entry, videoId: '', ready: false, state: -1, time: 0, timeAt: 0, duration: 0, title: '', error: 0, endTimer: null, listen: null, seeking: false };
@@ -436,6 +440,80 @@ function musicHeadButton(ch) {
   return b;
 }
 
+// ---------- Na barrinha da direita: a música que você está ouvindo ----------
+// Aparece enquanto você ouve uma música (a tela dela está no palco). Clicar abre um menu com Pausar ou Continuar (para
+// todos, como no player; só quem pode controlar) e Sair (para de ouvir; a música continua para os outros).
+function listenedMusic() {
+  for (const [key, link] of state.in) if (link.music) { const ch = key.slice('musica:'.length); return { key, ch, e: state.musicas.get(ch), link }; }
+  return null;
+}
+function renderNavMusic() {
+  const m = listenedMusic(), btn = $('navMusic');
+  $('navMusicWrap').hidden = !m?.e;
+  if (!m?.e) { closeNavMusic(); return; }
+  setIcon(btn, 'music', `${m.link.tile.name || musicTitle(m.e)} · ${m.e.playing ? 'tocando' : 'pausada'}`);
+  btn.dataset.playing = String(!!m.e.playing);
+  // Menu aberto: redesenha com o estado novo, menos enquanto o volume está sendo arrastado
+  if (!$('navMusicMenu').hidden && document.activeElement?.id !== 'navMusicVol') buildNavMusic();
+}
+function buildNavMusic() {
+  const m = listenedMusic(), menu = $('navMusicMenu');
+  if (!m?.e) return;
+  const can = canControlMusic(m.e);
+  const head = document.createElement('div');
+  head.className = 'rail-music-head';
+  const title = document.createElement('strong');
+  title.textContent = m.link.tile.name || musicTitle(m.e);
+  const where = document.createElement('span');
+  where.textContent = `${m.e.playing ? 'Tocando' : 'Pausada'} em ${channelName(m.ch)}`;
+  head.append(title, where);
+  const item = (icon, text, tip, onclick, disabled = false) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'dock-more-item';
+    b.setAttribute('role', 'menuitem');
+    b.innerHTML = ICON[icon];
+    const label = document.createElement('span');
+    label.textContent = text;
+    b.append(label);
+    b.title = tip;
+    b.disabled = disabled;
+    b.onclick = onclick;
+    return b;
+  };
+  const why = can ? '' : `Só quem está em ${channelName(m.ch)} controla`;
+  // Volume só seu: o mesmo controle da tela da música (mexe nele, e ele faz o resto: player, mudo, salvar)
+  const volRow = document.createElement('label');
+  volRow.className = 'rail-music-vol';
+  volRow.title = 'Volume da música (só para você)';
+  const vol = document.createElement('input');
+  vol.type = 'range'; vol.min = '0'; vol.max = '100'; vol.step = '1'; vol.id = 'navMusicVol';
+  vol.value = m.link.tile.vol.value;
+  vol.setAttribute('aria-label', 'Volume da música (só para você)');
+  const out = document.createElement('output');
+  out.textContent = `${vol.value}%`;
+  vol.oninput = () => { m.link.tile.vol.value = vol.value; m.link.tile.vol.dispatchEvent(new Event('input')); out.textContent = `${vol.value}%`; };
+  vol.onchange = () => m.link.tile.vol.dispatchEvent(new Event('change'));
+  volRow.insertAdjacentHTML('afterbegin', ICON.volume);
+  volRow.append(vol, out);
+  menu.replaceChildren(head, volRow,
+    item(m.e.playing ? 'pause' : 'play', m.e.playing ? 'Pausar' : 'Continuar', why || (m.e.playing ? 'Pausar para todos' : 'Continuar para todos'),
+      () => { const e = state.musicas.get(m.ch); if (e && canControlMusic(e)) musicCtl(e, e.playing ? 'pause' : 'play', { pos: musicPos(e) }); }, !can),
+    item('leave', 'Sair da música', 'Para de ouvir (a música continua para os outros)', () => { closeNavMusic(); stopWatching(m.key, false); }));
+}
+function openNavMusic() {
+  buildNavMusic();
+  $('navMusicMenu').hidden = false;
+  $('navMusic').setAttribute('aria-expanded', 'true');
+  $('navMusicMenu').querySelector('button:not(:disabled)')?.focus();
+}
+function closeNavMusic(focusButton = false) {
+  if ($('navMusicMenu').hidden) return;
+  $('navMusicMenu').hidden = true;
+  $('navMusic').setAttribute('aria-expanded', 'false');
+  if (focusButton) $('navMusic').focus();
+}
+
 // ---------- Balão de colar o link ----------
 let musicPopFor = null; // { ch, mode: 'por' | 'trocar' }
 function openMusicPop(ch, anchor, mode) {
@@ -477,6 +555,9 @@ function submitMusicPop() {
 }
 
 function setupMusica() {
+  $('navMusic').onclick = () => ($('navMusicMenu').hidden ? openNavMusic() : closeNavMusic(true));
+  $('navMusicMenu').addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeNavMusic(true); } });
+  document.addEventListener('pointerdown', (e) => { if (!e.target.closest?.('#navMusicWrap')) closeNavMusic(); });
   $('musicPopForm').onsubmit = (e) => { e.preventDefault(); submitMusicPop(); };
   $('musicPopCancel').onclick = closeMusicPop;
   document.addEventListener('pointerdown', (e) => {

@@ -49,7 +49,8 @@ function voiceIdsIn(ch) {
   return ids;
 }
 
-// Cabeçalho de um canal no painel de voz: nome, quantas pessoas, Entrar (se você não está nele) e apagar (subsala)
+// Cabeçalho de um canal no painel de voz: nome, quantas pessoas, pôr música e apagar (subsala). Clicar no cabeçalho
+// (fora dos botões dele) entra no canal, se você não está nele
 function channelHead(ch, sub) {
   const li = document.createElement('li');
   const here = !!voice.session && voice.channel === ch;
@@ -66,15 +67,19 @@ function channelHead(ch, sub) {
   const n = voiceIdsIn(ch).length;
   count.textContent = n ? String(n) : '';
   li.append(icon, name, count);
-  if (!here) {
-    const join = document.createElement('button');
-    join.type = 'button';
-    join.className = 'btn small voice-channel-join';
-    join.textContent = 'Entrar';
-    join.disabled = !voice.supported || voice.pending;
-    join.title = voice.session ? `Ir para ${channelName(ch)}` : `Entrar na voz, em ${channelName(ch)}`;
-    join.onclick = () => voice.setChannel(ch);
-    li.append(join);
+  if (!here && voice.supported && !voice.pending) {
+    const label = voice.session ? `Ir para ${channelName(ch)}` : `Entrar na voz, em ${channelName(ch)}`;
+    li.classList.add('joinable');
+    li.tabIndex = 0;
+    li.title = label;
+    li.setAttribute('role', 'button');
+    li.setAttribute('aria-label', label);
+    li.onclick = (e) => { if (!e.target.closest('button')) voice.setChannel(ch); };
+    li.onkeydown = (e) => {
+      if (e.target !== li || (e.key !== 'Enter' && e.key !== ' ')) return;
+      e.preventDefault();
+      voice.setChannel(ch);
+    };
   }
   const music = typeof musicHeadButton === 'function' && musicHeadButton(ch); // pôr uma música (renderer/musica.js)
   if (music) li.append(music);
