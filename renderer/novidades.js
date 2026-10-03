@@ -3,6 +3,13 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.15.0",
+    "date": "2026-10-03",
+    "items": [
+      "Mensagens criptografadas de ponta a ponta, convite para a sala pelas mensagens, janelinha que minimiza ao clicar fora (com alfinete para travar) e modo Internet como padrão"
+    ]
+  },
+  {
     "version": "1.14.0",
     "date": "2026-10-02",
     "items": [
@@ -74,13 +81,6 @@ const NOVIDADES = [
       "add yt music player",
       "Fundação para trabalhar em equipe com o Claude Code",
       "Remove backup-antes-dos-popups"
-    ]
-  },
-  {
-    "version": "1.12.6",
-    "date": "2026-10-01",
-    "items": [
-      "add menu inicial e mensagens privadas aprimorados"
     ]
   }
 ];
