@@ -3,6 +3,14 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.13.0",
+    "date": "2026-10-02",
+    "items": [
+      "ajustes UI e temas novos",
+      "add logo"
+    ]
+  },
+  {
     "version": "1.12.13",
     "date": "2026-10-02",
     "items": [
@@ -74,14 +82,6 @@ const NOVIDADES = [
       "publicar: inclui renderer ceu-voz.js na att",
       "add stellar map pronto",
       "Imagens no chat: só a imagem, com o selo \"Só nesta sala\" ao passar o mouse"
-    ]
-  },
-  {
-    "version": "1.12.4",
-    "date": "2026-10-01",
-    "items": [
-      "Aba Sons compacta: avisos agrupados em Sala, Chat, Voz e Transmissão",
-      "add stellar map"
     ]
   }
 ];
