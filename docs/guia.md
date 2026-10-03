@@ -408,8 +408,16 @@ no celular, e nada passa pela internet: o celular precisa estar no mesmo Wi-Fi d
   lado do QR. Se a página não abrir, confira se o celular está no mesmo Wi-Fi e se o Windows deixa o Tela P2P
   receber conexões na rede privada.
 
+## Ícone na bandeja
+
+O Tela P2P fica com um ícone na bandeja do Windows (perto do relógio), na cor do tema.
+
+- **O X da janela esconde, não fecha:** a call, a transmissão e as janelas flutuantes continuam. Na primeira vez, um aviso lembra onde o app ficou.
+- **Clique no ícone:** abre a janela de novo.
+- **Botão direito no ícone:** **Abrir o Tela P2P**, **Procurar atualização…**, **Mutar / desmutar microfone** e **Ensurdecer / voltar a ouvir** (só na sala), **Reiniciar o Tela P2P** e **Sair do Tela P2P**, que fecha de vez.
+
 ## Atualizações
 
 - **Sozinho:** o app procura versão nova no GitHub e com quem está na sala. Quando acha, um aviso no canto oferece **Atualizar agora**.
-- **Na mão:** **Procurar atualização**, no rodapé do Início.
+- **Na mão:** **Procurar atualização**, no rodapé do Início ou no menu do ícone da bandeja.
 - **Novidades:** depois de atualizar, o Início mostra uma vez o que mudou na versão. Para ver de novo, ou ver as versões anteriores, clique em **Novidades** no rodapé.
