@@ -40,3 +40,20 @@ test('Electron service configura a API, persiste token protegido e expõe redes'
     fs.rmSync(profile, { recursive: true, force: true });
   }
 });
+
+test('Perfil novo já vem com a RazzeAPI da equipe; endereço salvo continua valendo', () => {
+  const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'razze-service-'));
+  const app = { getPath: () => profile };
+  const safeStorage = { isEncryptionAvailable: () => false };
+  try {
+    const novo = createRazzeService({ app, safeStorage, wireguard: {}, baseUrl: 'https://api.exemplo.com' });
+    assert.deepEqual(novo.state(), { configured: true, baseUrl: 'https://api.exemplo.com', authenticated: false });
+    novo.configure('http://127.0.0.1:9');
+    const depois = createRazzeService({ app, safeStorage, wireguard: {}, baseUrl: 'https://api.exemplo.com' });
+    assert.equal(depois.state().baseUrl, 'http://127.0.0.1:9');
+    const semPadrao = createRazzeService({ app: { getPath: () => path.join(profile, 'outro') }, safeStorage, wireguard: {}, baseUrl: '' });
+    assert.equal(semPadrao.state().configured, false);
+  } finally {
+    fs.rmSync(profile, { recursive: true, force: true });
+  }
+});

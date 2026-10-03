@@ -6,11 +6,16 @@ const { app, safeStorage } = require('electron');
 const { RazzeApiClient } = require('./razze-api-client');
 const { createWireGuardManager } = require('./razze-wireguard');
 
+// RazzeAPI da equipe (conta, amigos e salas dos amigos): quem instala agora já cria a conta sem configurar nada.
+// TELA_RAZZE_API troca o padrão; vazia, o app começa sem servidor (os testes de ponta a ponta usam assim).
+const API_PADRAO = process.env.TELA_RAZZE_API ?? 'https://srv2015370.hstgr.cloud';
+
 function createRazzeService(options = {}) {
   const electronApp = options.app || app;
   const storage = options.safeStorage || safeStorage;
   const file = path.join(electronApp.getPath('userData'), 'razze', 'session.json');
-  let baseUrl = '';
+  const padrao = options.baseUrl ?? API_PADRAO;
+  let baseUrl = padrao;
   let accessToken = '';
   let sealedToken = '';
   let client = null;
@@ -24,7 +29,7 @@ function createRazzeService(options = {}) {
   function load() {
     try {
       const saved = JSON.parse(fs.readFileSync(file, 'utf8'));
-      baseUrl = String(saved.baseUrl || '');
+      baseUrl = String(saved.baseUrl || padrao);
       sealedToken = String(saved.secret || '');
     } catch {}
     unlockSession();

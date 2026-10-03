@@ -7,6 +7,9 @@
 // reúne servidor e redes. A conta fica no Perfil e os amigos na aba Amigos.
 
 const NETWORK_PREF_KEY = 'connectivity.v1';
+// Servidor do modo Internet da equipe: quem instala agora já entra pela internet, sem configurar nada.
+// A RazzeAPI padrão (conta e amigos) fica no processo principal (main/razze-service.js).
+const INTERNET_URL_PADRAO = 'ws://2.25.253.140:8765';
 let razzeUser = null;
 let networkReturnFocus = null;
 let razzeLive = { friends: [], networks: [], rooms: [], updatedAt: null, error: '' };
@@ -24,9 +27,9 @@ function networkPreferences() {
       provider: ['razze', 'radmin'].includes(p.provider) ? p.provider : 'internet',
       apiUrl: typeof p.apiUrl === 'string' ? p.apiUrl : '',
       activeNetworkId: typeof p.activeNetworkId === 'string' ? p.activeNetworkId : '',
-      internetUrl: typeof p.internetUrl === 'string' ? p.internetUrl : '',
+      internetUrl: typeof p.internetUrl === 'string' && p.internetUrl.trim() ? p.internetUrl : INTERNET_URL_PADRAO,
     };
-  } catch { return { provider: 'internet', apiUrl: '', activeNetworkId: '', internetUrl: '' }; }
+  } catch { return { provider: 'internet', apiUrl: '', activeNetworkId: '', internetUrl: INTERNET_URL_PADRAO }; }
 }
 
 // Endereço do servidor do modo Internet, como o WebSocket precisa: "1.2.3.4:8765" vira ws://1.2.3.4:8765 e um
@@ -178,6 +181,7 @@ function refreshRazzeState() {
 
 async function loadRazzeState() {
   const state = await window.api.razzeState();
+  if (!$('razzeApiUrl').value) $('razzeApiUrl').value = state.baseUrl; // o servidor padrão, se ninguém trocou
   const account = (on) => {
     $('razzeAuth').hidden = on;
     $('razzeAccount').hidden = !on;
