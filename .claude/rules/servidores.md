@@ -15,5 +15,7 @@ paths:
   `sala-protocolo.js` e `razze-api/server.js` já fazem. Mantenha os limites de tentativa e de tamanho existentes.
 - `sala-protocolo.js` é a língua comum de `signaling.js` (PC do host) e `servidor-internet/server.js` (VPS):
   mudar uma mensagem muda os dois lados e quem ainda está numa versão antiga.
+- O passe de convite (`passe`, salas dos amigos) só existe em `servidor-internet/server.js`, fora do `sala-protocolo.js`:
+  o `signaling.js` do Radmin não tem nem precisa. Spec: `docs/spec/salas-dos-amigos.md`.
 - Rota nova ou mudada na RazzeAPI: atualize a tabela de `docs/razze-api.md` e os testes `tests/razze-*.test.js`.
 - Testes: `npm test` (inclui `razze-*` e `servidor-internet`) ou só `npm run test:razze-api`.

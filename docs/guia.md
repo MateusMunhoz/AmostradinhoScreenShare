@@ -83,6 +83,22 @@ quem está com ela, quantas pessoas estão dentro e um cadeado se tiver senha.
 - **O que os outros veem:** o seu nome, quantas pessoas estão na sala e se ela tem senha. A senha nunca vai
   no aviso, e continua sendo pedida para entrar.
 
+### Salas dos amigos (modo Internet)
+
+No modo Internet, a lista da tela inicial vira **Salas dos seus amigos**: as salas que os seus amigos do Razze
+abriram pela internet. Basta estar logado na conta Razze (aba Rede do HUB); a VPN Razze não precisa estar ligada.
+
+- **Entrar:** o botão **Entrar** entra direto, sem senha, por um **passe de convite** que o app de quem criou a
+  sala manda só para os amigos dele. Se o passe não valer mais (quem convidou saiu da sala) ou o servidor for
+  antigo, abre o **Entrar com código** com o código preenchido, e é só digitar a senha. O servidor usado é o da
+  sala do amigo, mesmo que o da sua aba Rede seja outro.
+- **A sua aparece para os seus amigos:** ao criar a sala, deixe marcado **Mostrar esta sala para meus amigos do
+  Razze**. Desmarcado, ela só funciona pelo código e senha.
+- **Quanto tempo fica:** enquanto você está na sala. Saiu (ou fechou o app), ela some da lista dos amigos na hora;
+  se o PC cair, em até 70 segundos. Se você sair e a sala continuar com os outros, o seu convite para de valer.
+- **Quem vê:** só os amigos aceitos no Razze. Nenhum IP vai junto, só o servidor, o código e quantas pessoas estão.
+- **Quem não tem conta Razze:** continua entrando pelo código e senha.
+
 ### Troca de host
 
 Se o host sai, ou se o app dele fecha ou trava, a sala não acaba.

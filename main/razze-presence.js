@@ -1,16 +1,28 @@
 'use strict';
 
+// Sala do modo Internet que o app anuncia aos amigos: confere o que vem da janela antes de mandar à RazzeAPI
+function cleanInternetRoom(v) {
+  if (!v || typeof v !== 'object') return null;
+  let url = null;
+  try { url = new URL(String(v.servidor)); } catch { return null; }
+  if (String(v.servidor).length > 200 || !['ws:', 'wss:'].includes(url.protocol) || !url.hostname || url.username || url.password || url.search || url.hash) return null;
+  if (typeof v.codigo !== 'string' || !/^[A-HJ-NP-Z2-9]{6}$/.test(v.codigo)) return null;
+  const pessoas = Number.isInteger(v.pessoas) ? Math.min(1000, Math.max(1, v.pessoas)) : 1;
+  const passe = typeof v.passe === 'string' && /^[A-Za-z0-9_-]{43}$/.test(v.passe) ? v.passe : null;
+  return { servidor: String(v.servidor), codigo: v.codigo, pessoas, passe };
+}
+
 // Heartbeat no processo principal: continua com a janela minimizada/oculta.
-function createPresence({ service, clientName = 'Tela P2P', getRoom = () => null, publish = () => {}, setInterval: schedule = setInterval, clearInterval: cancel = clearInterval }) {
+function createPresence({ service, clientName = 'Tela P2P', getRoom = () => null, getInternetRoom = () => null, publish = () => {}, setInterval: schedule = setInterval, clearInterval: cancel = clearInterval }) {
   const networks = new Set();
   let timer = null, running = null, queued = false, stopped = true;
-  let snapshot = { friends: [], networks: [], rooms: [], updatedAt: null, error: '' };
+  let snapshot = { friends: [], networks: [], rooms: [], internetRooms: [], updatedAt: null, error: '' };
   const emit = value => { snapshot = value; publish(value); };
   async function tick() {
     if (stopped) return;
     if (running) { queued = true; return running; }
     running = (async () => {
-      if (!service.state().authenticated) { emit({ friends: [], networks: [], rooms: [], updatedAt: null, error: snapshot.error, authenticated: false }); return; }
+      if (!service.state().authenticated) { emit({ friends: [], networks: [], rooms: [], internetRooms: [], updatedAt: null, error: snapshot.error, authenticated: false }); return; }
       try {
         const api = service.api();
         const connections = [];
@@ -30,16 +42,18 @@ function createPresence({ service, clientName = 'Tela P2P', getRoom = () => null
         }
         const advertised = getRoom();
         const room = advertised && connections.some(c => c.networkId === advertised.networkId) ? advertised : null;
-        await api.heartbeat({ clientName, connections, room });
+        // Sala do modo Internet: vai para os amigos, sem precisar de rede Razze nem de VPN
+        const internetRoom = getInternetRoom() || undefined;
+        await api.heartbeat({ clientName, connections, room, ...(internetRoom ? { internetRoom } : {}) });
         const [friends, listed, rooms] = await Promise.all([api.listFriends(), api.listNetworks(), api.listRooms()]);
-        if (!stopped) emit({ friends: friends.friends, networks: listed.networks, rooms: rooms.rooms, updatedAt: Date.now(), error: '' });
+        if (!stopped) emit({ friends: friends.friends, networks: listed.networks, rooms: rooms.rooms, internetRooms: Array.isArray(rooms.internet) ? rooms.internet : [], updatedAt: Date.now(), error: '' });
       } catch (e) {
         if (e.status === 401 || ['account_disabled', 'account_pending'].includes(e.code)) {
           networks.clear();
           await service.wireguard.disconnectAll().catch(() => {});
           await service.logout().catch(() => {});
         }
-        if (!stopped) emit({ friends: [], networks: [], rooms: [], updatedAt: null, error: e.message, authenticated: service.state().authenticated });
+        if (!stopped) emit({ friends: [], networks: [], rooms: [], internetRooms: [], updatedAt: null, error: e.message, authenticated: service.state().authenticated });
       }
     })();
     try { await running; }
@@ -51,7 +65,7 @@ function createPresence({ service, clientName = 'Tela P2P', getRoom = () => null
     if (running) await running;
     if (service.state().authenticated) await service.api().offline().catch(() => {});
     networks.clear();
-    emit({ friends: [], networks: [], rooms: [], updatedAt: null, error: '' });
+    emit({ friends: [], networks: [], rooms: [], internetRooms: [], updatedAt: null, error: '' });
     stopped = wasStopped;
   }
   return {
@@ -63,4 +77,4 @@ function createPresence({ service, clientName = 'Tela P2P', getRoom = () => null
     async stop() { stopped = true; queued = false; if (timer) cancel(timer); timer = null; await reset(); },
   };
 }
-module.exports = { createPresence };
+module.exports = { createPresence, cleanInternetRoom };

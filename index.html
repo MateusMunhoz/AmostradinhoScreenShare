@@ -393,7 +393,7 @@
         </label>
         <label class="check-line" id="roomVisibleLine">
           <input type="checkbox" id="roomVisible" checked>
-          <span>Mostrar esta sessão para quem está na rede<button type="button" class="tip" data-tip="Aparece na tela inicial dos outros. A senha continua sendo pedida." aria-label="Aparece na tela inicial dos outros. A senha continua sendo pedida."></button></span>
+          <span><span id="roomVisibleText">Mostrar esta sessão para quem está na rede</span><button type="button" class="tip" id="roomVisibleTip" data-tip="Aparece na tela inicial dos outros. A senha continua sendo pedida." aria-label="Aparece na tela inicial dos outros. A senha continua sendo pedida."></button></span>
         </label>
         <button class="btn primary" id="createBtn">Criar sala</button>
         <p class="hint" id="createHint">A sala fecha quando todos saírem.</p>
@@ -984,6 +984,7 @@
   <script src="renderer/novidades.js"></script>
   <script src="renderer/atualizacao.js"></script>
   <script src="renderer/sessoes.js"></script>
+  <script src="renderer/salas-amigos.js"></script>
   <script src="renderer/transmitir.js"></script>
   <script src="renderer/mapa-conexoes.js"></script>
   <script src="renderer/hub.js"></script>

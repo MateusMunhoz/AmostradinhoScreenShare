@@ -105,13 +105,15 @@ O módulo web separado fica em `razze-api/admin/` e abre em `https://SEU_DOMINIO
 
 O processo principal do TelaP2P envia uma batida a cada 20 segundos, inclusive minimizado. A presença expira após 70 segundos sem contato (ajustável de 45 a 300 no painel). Amigos mostram Online/Offline; a rede mostra pessoas conectadas e salas abertas; a tela inicial lista as salas da rede selecionada. A publicação respeita a opção de sala oculta. Ao sair, o cliente retira sua presença; se cair ou a conexão falhar, o prazo remove os anúncios. A presença é por sessão, então sair em um dispositivo não apaga a presença de outro.
 
+**Salas dos amigos (modo Internet):** quem cria uma sala no servidor do modo Internet (e deixou "Mostrar esta sala para meus amigos do Razze") manda `internetRoom` na batida: endereço do servidor (`ws://` ou `wss://`), código, número de pessoas e o passe de convite (43 caracteres base64url, ou `null` num servidor antigo). Não precisa de rede Razze nem de VPN. A API devolve essas salas em `internet` só para os amigos aceitos (nunca para o próprio usuário nem no painel de administração) e elas somem com a presença. Detalhes em [spec/salas-dos-amigos.md](spec/salas-dos-amigos.md).
+
 Online confirma contato recente com a API; não prova conectividade P2P. As salas incluem endereço VPN, porta, número de participantes e indicação de senha, sem publicar a senha. A API valida a associação do dispositivo à rede e restringe a consulta das salas aos membros, mesmo em redes públicas.
 
 | Rota | Uso |
 |---|---|
-| `POST /v1/presence/heartbeat` | `{connections:[{networkId,deviceId}], room:null ou {id,networkId,host,porta,pessoas,senha}}` |
+| `POST /v1/presence/heartbeat` | `{connections:[{networkId,deviceId}], room:null ou {id,networkId,host,porta,pessoas,senha}, internetRoom?:{servidor,codigo,pessoas,passe}}` |
 | `DELETE /v1/presence` | Retirar a presença da sessão atual |
-| `GET /v1/rooms?networkId=ID` | Salas visíveis das redes de que o usuário é membro |
+| `GET /v1/rooms?networkId=ID` | `rooms`: salas visíveis das redes de que o usuário é membro; `internet`: salas do modo Internet dos amigos aceitos |
 | `GET /v1/admin/me`, `GET /v1/admin/overview` | Identidade administrativa e resumo |
 | `GET/PATCH /v1/admin/settings` | `requireApproval`, `registrationOpen`, `presenceTimeoutSeconds` persistentes |
 | `PATCH /v1/admin/users/:id` | Papel `user/admin`, status `pending/active/disabled` e `banReason` |

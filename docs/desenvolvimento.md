@@ -81,7 +81,7 @@ isso (chamam `watch`, `state`, `speaking`... direto na página).
 | 28 | `chat.js` | Mensagens, arquivos, não lidas |
 | 29 | `estatisticas.js` | Desempenho, aba Transmissão, codificador em uso |
 | 28 | `novidades.js`, `atualizacao.js` | `NOVIDADES` (gerada pelo `publicar.js` com os commits); atualização pela sala, pelo GitHub, o aviso e o cartão Novidades do Início |
-| 30 | `sessoes.js` | Sessões abertas na rede (a lista da tela inicial) |
+| 30 | `sessoes.js`, `salas-amigos.js` | Sessões abertas na rede (a lista da tela inicial); no modo Internet, as salas dos amigos do Razze, com o passe de convite ([spec](spec/salas-dos-amigos.md)) |
 | 31 | `transmitir.js` | Escolher a fonte, som, iniciar, trocar e parar, quem assiste |
 | 32 | `mapa-conexoes.js` | O Mapa de conexões, na aba Rede do HUB: grafo em pé, atualiza a cada 5 s só com a aba à vista |
 | 33 | `hub.js` | HUB: a barra fininha da esquerda, com as abas Salas (salas abertas, a atual e o menu inicial) , Amigos (adicionar, filtrar, convidar, pedidos) e Rede (a conta primeiro, depois conexão, servidores, redes Razze e o Mapa de conexões) |

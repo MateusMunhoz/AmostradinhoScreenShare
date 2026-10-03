@@ -62,8 +62,8 @@ function testInternetServer(url, timeoutMs = 6000) {
 // Tela inicial e Criar sala mudam de texto no modo Internet (código em vez de endereço, senha obrigatória)
 function renderHomeForNetwork() {
   const internet = selectedNetworkProvider() === 'internet';
-  const sessions = document.querySelector('#homeCard .sessions');
-  if (sessions) sessions.hidden = internet; // não tem "sessões na sua rede" pela internet
+  // Pela internet, a lista é a das salas dos amigos do Razze (salas-amigos.js)
+  $('sessionsTitle').textContent = internet ? 'Salas dos seus amigos' : 'Sessões abertas na sua rede';
   $('goJoin').textContent = internet ? 'Entrar com código' : 'Entrar com endereço';
   $('joinPanelTitle').textContent = internet ? 'Entrar com código' : 'Entrar com endereço';
   $('roomAddrLabel').textContent = internet ? 'Código da sala' : 'Endereço de quem criou';
@@ -71,11 +71,16 @@ function renderHomeForNetwork() {
   $('joinPassword').placeholder = internet ? 'A senha que quem criou passou' : 'Só se a sala tiver uma';
   $('createBlockHint').textContent = internet ? 'Os amigos entram pelo código da sala' : 'Os amigos entram pelo seu endereço';
   $('roomPortField').hidden = internet;
-  $('roomVisibleLine').hidden = internet;
+  const visible = internet ? 'Mostrar esta sala para meus amigos do Razze' : 'Mostrar esta sessão para quem está na rede';
+  const tip = internet ? 'Aparece na tela inicial dos seus amigos do Razze, que entram com um clique enquanto você estiver na sala.'
+    : 'Aparece na tela inicial dos outros. A senha continua sendo pedida.';
+  $('roomVisibleText').textContent = visible;
+  $('roomVisibleTip').dataset.tip = tip;
+  $('roomVisibleTip').setAttribute('aria-label', tip);
   $('roomPasswordLabel').textContent = internet ? 'Senha (obrigatória)' : 'Senha (opcional)';
   $('roomPassword').placeholder = internet ? 'Mínimo 4 caracteres; use uma forte' : 'Vazio = sem senha';
   $('createHint').textContent = internet
-    ? 'Mande o código e a senha para os amigos.'
+    ? 'Mande o código e a senha, ou deixe a caixinha marcada: os amigos do Razze entram pela lista, com um clique.'
     : 'A sala fecha quando todos saírem.';
 }
 
@@ -467,6 +472,7 @@ function receiveRazzePresence(value) {
     node.textContent = razzeLive.error ? 'Presença indisponível' : !network || network.onlineCount === null ? 'Entre na rede para ver a presença.' : network.onlineCount + ' online · ' + network.roomCount + ' salas abertas';
   });
   sessoes.razze = razzeLive.rooms || [];
+  receberSalasAmigos(razzeLive.internetRooms);
   renderSessoes();
   if (razzeLive.authenticated === false && selectedNetworkProvider() === 'razze') {
     razzeUser = null;

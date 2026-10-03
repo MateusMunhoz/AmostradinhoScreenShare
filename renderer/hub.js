@@ -85,12 +85,13 @@ function renderHub() {
   }
   // As outras salas abertas (a sua some da lista pelo id da sessão ou pelo endereço)
   const myId = state.sessao?.id;
-  const mine = (s) => inRoom && ((myId && s.id === myId) || (!state.cloud && s.endereco === state.host && s.porta === state.port));
+  const mine = (s) => inRoom && ((myId && s.id === myId) || (state.cloud ? s.codigo === state.cloud.code : s.endereco === state.host && s.porta === state.port));
   const others = sessoes.observando ? listaSessoes().filter((s) => !mine(s)) : [];
   $('hubList').replaceChildren(...others.map(hubRow));
   $('hubEmpty').hidden = others.length > 0;
   $('hubEmpty').textContent = sessoes.procurando ? 'Procurando salas abertas na rede…'
-    : state.cloud || selectedNetworkProvider() === 'internet' ? 'No modo Internet as salas não aparecem aqui: entre pelo código.'
+    : state.cloud || selectedNetworkProvider() === 'internet'
+      ? (razzeLive.updatedAt ? 'Nenhum amigo com outra sala aberta pela internet agora.' : 'Entre na sua conta Razze (aba Rede) para ver as salas dos amigos.')
     : inRoom ? 'Nenhuma outra sala aberta na rede agora.' : 'Nenhuma sala aberta na rede agora.';
 }
 

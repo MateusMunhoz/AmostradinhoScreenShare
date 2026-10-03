@@ -89,6 +89,9 @@ cd /opt/tela-p2p && git pull && cd servidor-internet && npm ci --omit=dev && sys
 
 As salas abertas caem na reinicialização; os apps tentam voltar sozinhos por uns 18 s.
 
+Servidor de antes do **passe de convite** (salas dos amigos, app 1.13.0): continua funcionando, mas os amigos que
+clicam em Entrar na lista precisam digitar a senha. Atualize para eles entrarem com um clique.
+
 ## Configuração (`/etc/tela-p2p-internet.env`)
 
 | Variável | Padrão | O que é |
@@ -114,6 +117,7 @@ Quando o vídeo passa pelo TURN, a VPS recebe e manda de novo: uma transmissão 
 
 - Sala só com senha (mínimo 4, use uma forte); sala inexistente e senha errada respondem igual e no mesmo tempo; o IP é bloqueado depois de várias tentativas erradas.
 - A senha fica guardada só como HMAC, em memória. Nada é gravado em disco.
+- **Passe de convite** (salas dos amigos): quem entrou com a senha pode registrar um passe (32 bytes aleatórios), que o app entrega só aos amigos do Razze. O passe também fica só como HMAC, vale só enquanto quem convidou está na sala, conta como tentativa errada se não valer, e quem entrou por um passe não cria outro.
 - Pela internet, os IPs da casa de cada um não são repassados aos outros da sala.
 - O coturn recusa relay para redes internas (10.x, 192.168.x, 127.x, a VPN Razze…).
 - O WebSocket é `ws://` (sem TLS). A mídia continua criptografada, mas o nome, o chat e os arquivos do chat passam sem TLS até a VPS. Para fechar isso, publique atrás do Caddy com um domínio (`wss://sala.seudominio.com`) e `TRUST_PROXY=1`; o app já aceita `wss://`.

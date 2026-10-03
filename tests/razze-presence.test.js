@@ -46,3 +46,29 @@ test('remover dispositivo/rede encerra túnel e retira anúncio antes da próxim
   assert.equal(disconnected, true); assert.deepEqual(received, { clientName: 'Tela P2P', connections: [], room: null });
   await presence.stop();
 });
+
+test('sala do modo Internet vai na batida e as salas dos amigos voltam na presença', async () => {
+  const { cleanInternetRoom } = require('../main/razze-presence');
+  const passe = 'A'.repeat(43);
+  assert.deepEqual(cleanInternetRoom({ servidor: 'ws://1.2.3.4:8765', codigo: 'ABC234', pessoas: 2, passe }), { servidor: 'ws://1.2.3.4:8765', codigo: 'ABC234', pessoas: 2, passe });
+  assert.equal(cleanInternetRoom({ servidor: 'https://x.com', codigo: 'ABC234' }), null);
+  assert.equal(cleanInternetRoom({ servidor: 'wss://x.com/?a=1', codigo: 'ABC234' }), null);
+  assert.equal(cleanInternetRoom({ servidor: 'wss://x.com', codigo: 'ABC10O' }), null);
+  assert.equal(cleanInternetRoom({ servidor: 'wss://x.com', codigo: 'ABC234', passe: 'curto' }).passe, null);
+  const sent = [];
+  const api = {
+    heartbeat: async body => { sent.push(body); },
+    listFriends: async () => ({ friends: [] }), listNetworks: async () => ({ networks: [] }),
+    listRooms: async () => ({ rooms: [], internet: [{ servidor: 'wss://x.com', codigo: 'XYZ789', pessoas: 3, passe, host: 'Bia' }] }),
+    offline: async () => {},
+  };
+  const service = { state: () => ({ authenticated: true }), api: () => api, wireguard: { identity: () => ({ deviceId: 'd' }) } };
+  let internetRoom = { servidor: 'wss://x.com', codigo: 'ABC234', pessoas: 1, passe };
+  const presence = createPresence({ service, getInternetRoom: () => internetRoom, setInterval: () => ({ unref() {} }), clearInterval: () => {} });
+  presence.start(); await presence.tick();
+  assert.equal(sent.at(-1).internetRoom.codigo, 'ABC234');
+  assert.equal(presence.snapshot().internetRooms[0].host, 'Bia');
+  internetRoom = null; await presence.tick();
+  assert.equal('internetRoom' in sent.at(-1), false);
+  await presence.stop();
+});

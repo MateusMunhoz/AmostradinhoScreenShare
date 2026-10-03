@@ -89,7 +89,8 @@ async function createRoom() {
       const url = internetServerUrl();
       const welcome = await connectRoom(url, { name: getName(), password, create: true });
       state.password = password;
-      try { enterRoom(welcome, false, url, 0, { url, code: welcome.sala }); }
+      // criador + amigos: anuncia a sala aos amigos do Razze (salas-amigos.js), se a caixinha estiver marcada
+      try { enterRoom(welcome, false, url, 0, { url, code: welcome.sala, criador: true, amigos: $('roomVisible').checked }); }
       catch (err) { dropHalfJoin(); throw err; }
       return;
     }
@@ -144,8 +145,9 @@ async function joinInternetRoom() {
   const btn = $('joinBtn');
   setBusy(btn, true, 'Entrando…');
   try {
-    await requireSelectedNetwork();
-    const url = internetServerUrl();
+    // Sala de amigo que pediu a senha: o servidor é o dela, não precisa ser o da aba Rede
+    const url = servidorDoCodigo(code) || internetServerUrl();
+    if (!servidorDoCodigo(code)) await requireSelectedNetwork();
     const password = $('joinPassword').value;
     const welcome = await connectRoom(url, { name: getName(), password, room: code });
     state.password = password;
@@ -161,6 +163,8 @@ async function joinInternetRoom() {
 // cloud: modo Internet ({ url, code }); a lista de STUN/TURN vem do servidor, só para esta sala
 function enterRoom(welcome, owner, host, port, cloud = null) {
   state.cloud = cloud;
+  if (cloud) cloud.passeOn = (welcome.features || []).includes('passe'); // servidor antigo: os amigos entram com a senha
+  salasAmigos.alvo = null;
   RTC_CONFIG.iceServers = cloud && Array.isArray(welcome.iceServers) ? welcome.iceServers : [];
   state.myId = welcome.id;
   state.isOwner = owner;
@@ -192,6 +196,8 @@ function enterRoom(welcome, owner, host, port, cloud = null) {
   if (live) toast(live === 1 ? '1 pessoa está transmitindo. Clique em Assistir para ver.' : `${live} pessoas estão transmitindo. Escolha quem assistir.`);
   checkUpdates();
   void appSounds.play('join');
+  registrarPasseSala();
+  publicarSalaInternet();
 }
 
 // endRoom: o host encerra para todos; sem isso, ao sair ele passa a sala para quem está há mais tempo
@@ -216,6 +222,7 @@ function leaveRoom(reason, kind = 'info', endRoom = false) {
   closeStats();
   perfStop();
   if (state.isOwner) window.api.stopServer(endRoom);
+  retirarSalaInternet();
   closeChatOverlay();
   closePersonCard();
   window.api.roomKeys(false).catch(() => {});
@@ -326,7 +333,7 @@ async function rejoin(host, timeoutMs) {
   try {
     welcome = await connectRoom(state.cloud ? state.cloud.url : `ws://${host}:${state.port}`, {
       name: getName(), password: state.password, resume: myId, sharing: state.sharing, shareInfo: state.sharing ? state.shareInfo : undefined,
-      room: state.cloud ? state.cloud.code : undefined,
+      room: state.cloud ? state.cloud.code : undefined, passe: state.cloud?.passe || undefined,
       voiceSession: voice.session || '', voiceChannel: voice.channel, muted: voice.muted, deafened: voice.deafened,
     }, timeoutMs);
   } catch { return false; }
@@ -341,6 +348,7 @@ async function rejoin(host, timeoutMs) {
   state.isOwner = !state.cloud && host === '127.0.0.1';
   state.host = host;
   if (state.cloud && Array.isArray(welcome.iceServers)) RTC_CONFIG.iceServers = welcome.iceServers; // acesso ao TURN renovado
+  if (state.cloud) { state.cloud.passeOn = (welcome.features || []).includes('passe'); registrarPasseSala(); }
   state.hostId = welcome.hostId || null;
   state.handoff = (welcome.features || []).includes('handoff');
   state.sessao = welcome.sessao || state.sessao;
@@ -392,6 +400,7 @@ function onRoomMessage(m) {
       if (!back && !m.resumed) void appSounds.play('join');
       if (!back) toast(`${m.name} entrou na sala`);
       checkUpdates();
+      publicarSalaInternet();
       break;
     }
     case 'member-left': {
@@ -408,6 +417,7 @@ function onRoomMessage(m) {
       renderMembers();
       updateStage();
       toast(`${name} saiu da sala`);
+      publicarSalaInternet();
       break;
     }
     case 'share-state': {

@@ -12,6 +12,7 @@ const sessoes = {
   observando: false,
   provider: '',
   razze: [],
+  amigos: [],                  // modo Internet: as salas dos amigos do Razze (salas-amigos.js)
   rede: [],                    // do anúncio pela rede: { id, host, porta, pessoas, senha, versao, endereco }
   diretas: new Map(),          // da pergunta direta: id -> { ...o mesmo, visto }
   sondaTimer: null,
@@ -97,6 +98,7 @@ function sondar() {
 
 // As duas fontes juntas, pelo id (o anúncio pela rede vale mais: é o mais atual)
 function listaSessoes() {
+  if (selectedNetworkProvider() === 'internet') return [...sessoes.amigos].sort((a, b) => a.host.localeCompare(b.host, 'pt-BR'));
   if (selectedNetworkProvider() === 'razze') return sessoes.razze.filter(s => s.networkId === networkPreferences().activeNetworkId).sort((a,b) => a.host.localeCompare(b.host, 'pt-BR'));
   const agora = Date.now();
   for (const [id, s] of sessoes.diretas) if (agora - s.visto > SONDA_VALIDADE) sessoes.diretas.delete(id);
@@ -113,6 +115,8 @@ function renderSessoes() {
   $('sessionsEmpty').hidden = all.length > 0;
   $('sessionsEmpty').textContent = sessoes.procurando
     ? 'Procurando sessões abertas na rede…'
+    : selectedNetworkProvider() === 'internet'
+      ? (razzeLive.updatedAt ? 'Nenhum amigo com sala aberta pela internet agora.' : 'Entre na sua conta Razze (aba Rede do HUB) para ver as salas dos seus amigos aqui.')
     : selectedNetworkProvider() === 'razze'
       ? (razzeLive.error ? 'Não foi possível atualizar as salas: ' + razzeLive.error : networkPreferences().activeNetworkId ? 'Nenhuma sala aberta nesta rede agora.' : 'Conecte uma rede Razze para descobrir suas salas.')
       : 'Nenhuma sessão aberta na rede agora. Quando alguém criar uma, ela aparece aqui.';
@@ -130,17 +134,17 @@ function sessionRow(s) {
   const info = document.createElement('div');
   info.className = 'session-info';
   const name = document.createElement('strong');
-  name.textContent = `Sessão de ${s.host}`;
+  name.textContent = s.codigo ? `Sala de ${s.host}` : `Sessão de ${s.host}`;
   const meta = document.createElement('span');
   meta.className = 'session-meta';
-  meta.textContent = `${s.pessoas} ${s.pessoas === 1 ? 'pessoa' : 'pessoas'}${s.senha ? ', com senha' : ''}`;
+  meta.textContent = `${s.pessoas} ${s.pessoas === 1 ? 'pessoa' : 'pessoas'}${s.codigo ? ' · pela internet' : ''}${s.senha ? ', com senha' : ''}`;
   if (s.senha) meta.insertAdjacentHTML('afterbegin', ICON.lock);
   info.append(name, meta);
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'btn small primary';
   btn.textContent = 'Entrar';
-  btn.title = `Entrar na sessão de ${s.host} (${s.endereco}:${s.porta})`;
+  btn.title = s.codigo ? `Entrar na sala de ${s.host} (código ${s.codigo})` : `Entrar na sessão de ${s.host} (${s.endereco}:${s.porta})`;
   btn.onclick = () => enterSession(s);
   li.append(dot, info, btn);
   return li;
@@ -148,6 +152,7 @@ function sessionRow(s) {
 
 // Entrar: preenche o endereço; com senha, abre o "Entrar numa sala" para digitar
 function enterSession(s) {
+  if (s.codigo) return entrarSalaAmigo(s); // sala de amigo pela internet (salas-amigos.js)
   $('roomAddr').value = `${s.endereco}:${s.porta}`;
   save('roomAddr', $('roomAddr').value);
   if (s.senha) {

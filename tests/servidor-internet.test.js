@@ -137,3 +137,55 @@ test('credenciais do TURN no formato do coturn', () => {
   assert.equal(username, '1060:SALA-1');
   assert.equal(credential, crypto.createHmac('sha1', 'abc').update('1060:SALA-1').digest('base64'));
 });
+
+test('passe de convite: entra sem a senha, só quem entrou com a senha cria passe, e o passe sai junto com quem convidou', async (t) => {
+  const { url } = await start(t);
+  const passe = crypto.randomBytes(32).toString('base64url');
+  const a = await connect(url, { create: true, name: 'Ana', password: 'pizza-azul', client: client() });
+  assert.ok(a.first.features.includes('passe'));
+  a.send({ type: 'passe', passe });
+  await new Promise((r) => setTimeout(r, 50));
+
+  const cb = client();
+  const b = await connect(url, { room: a.first.sala, name: 'Beto', passe, client: cb });
+  t.after(() => b.ws.terminate());
+  assert.equal(b.first.type, 'welcome');
+
+  // Quem entrou pelo passe não consegue criar outro passe
+  const outro = crypto.randomBytes(32).toString('base64url');
+  b.send({ type: 'passe', passe: outro });
+  await new Promise((r) => setTimeout(r, 50));
+  const c = await connect(url, { room: a.first.sala, name: 'Caio', passe: outro, client: client() });
+  assert.equal(c.first.type, 'error');
+  assert.match(c.first.message, /convite não vale/);
+
+  // Passe errado não entra, e um passe com senha errada também não
+  const d = await connect(url, { room: a.first.sala, name: 'Duda', password: 'errada', client: client() });
+  assert.equal(d.first.type, 'error');
+
+  // A Ana sai: o passe dela deixa de valer para quem chega...
+  a.send({ type: 'leave' });
+  await b.wait((m) => m.type === 'member-left');
+  const e = await connect(url, { room: a.first.sala, name: 'Eva', passe, client: client() });
+  assert.equal(e.first.type, 'error');
+
+  // ...mas o Beto, que entrou com ele, ainda volta se a conexão cair
+  b.ws.terminate();
+  await new Promise((r) => setTimeout(r, 50));
+  const b2 = await connect(url, { room: a.first.sala, name: 'Beto', passe, client: cb, resume: b.first.id });
+  t.after(() => b2.ws.terminate());
+  assert.equal(b2.first.type, 'welcome');
+  assert.equal(b2.first.id, b.first.id);
+});
+
+test('passe tirado (null) para de valer', async (t) => {
+  const { url } = await start(t);
+  const passe = crypto.randomBytes(32).toString('base64url');
+  const a = await connect(url, { create: true, name: 'Ana', password: 'pizza-azul', client: client() });
+  t.after(() => a.ws.terminate());
+  a.send({ type: 'passe', passe });
+  a.send({ type: 'passe', passe: null });
+  await new Promise((r) => setTimeout(r, 50));
+  const b = await connect(url, { room: a.first.sala, name: 'Beto', passe, client: client() });
+  assert.equal(b.first.type, 'error');
+});

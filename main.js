@@ -20,12 +20,14 @@ const { createRazzeService } = require('./main/razze-service');
 const razze = createRazzeService();
 const { createDmStore } = require('./main/mensagens');
 let dmStore = null; // criado quando o app fica pronto (precisa da pasta do usuário)
-const { createPresence } = require('./main/razze-presence');
+const { createPresence, cleanInternetRoom } = require('./main/razze-presence');
 let activeRazzeNetwork = '', roomRazzeNetwork = '';
+let internetRoom = null; // sala do modo Internet em que estou, para os amigos (renderer/salas-amigos.js)
 const razzePresence = createPresence({
   service: razze,
   clientName: os.hostname().slice(0, 80),
   getRoom: () => { const info = roomInfo(); return roomRazzeNetwork && info ? { ...info, networkId: roomRazzeNetwork } : null; },
+  getInternetRoom: () => internetRoom,
   publish: (value) => { if (janelas.main && !janelas.main.isDestroyed()) janelas.main.webContents.send('razze-presence', value); },
 });
 
@@ -371,6 +373,13 @@ if (hasSingleInstance) app.whenReady().then(() => {
   ipcMain.handle('razze-login', async (_e, email, password) => { const result = await razze.login(String(email || ''), String(password || '')); void razzePresence.tick(); return result; });
   ipcMain.handle('razze-logout', async () => { await razzePresence.reset(); activeRazzeNetwork = ''; roomRazzeNetwork = ''; return razze.logout(); });
   ipcMain.handle('razze-presence-state', () => razzePresence.snapshot());
+  ipcMain.handle('razze-internet-room', (_e, value) => {
+    const next = cleanInternetRoom(value);
+    const changed = (next?.servidor + next?.codigo + next?.passe) !== (internetRoom?.servidor + internetRoom?.codigo + internetRoom?.passe);
+    internetRoom = next;
+    if (changed) void razzePresence.tick(); // abriu, fechou ou trocou o passe: avisa já; o número de pessoas vai na próxima batida
+    return !!next;
+  });
   ipcMain.handle('razze-list-networks', () => razze.listNetworks());
   ipcMain.handle('razze-create-network', (_e, network) => razze.createNetwork(network));
   ipcMain.handle('razze-update-network', (_e, id, patch) => razze.updateNetwork(String(id || ''), patch));

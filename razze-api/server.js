@@ -166,7 +166,7 @@ function createApiServer(options = {}) {
     if (network.ownerId !== userId) throw new ApiError(403, 'forbidden', 'Somente o dono pode alterar esta rede.');
   };
 
-  const control = createControl({ db, options, now, hash, requireUser, readBody, send, ApiError, isMember });
+  const control = createControl({ db, options, now, hash, requireUser, readBody, send, ApiError, isMember, friendshipExists });
   const handler = async (req, res) => {
     try {
       let pathname;
@@ -245,7 +245,7 @@ function createApiServer(options = {}) {
       if (method === 'DELETE' && pathname === '/v1/presence') { control.offline(req); return send(res, 200, { ok: true }); }
       if (method === 'GET' && pathname === '/v1/rooms') {
         const networkId = new URL(req.url, 'http://localhost').searchParams.get('networkId');
-        return send(res, 200, { rooms: control.rooms(userId, networkId) });
+        return send(res, 200, { rooms: control.rooms(userId, networkId), internet: control.friendRooms(userId) });
       }
       if (method === 'GET' && pathname === '/v1/me') return send(res, 200, { user: publicUser(userId) });
       if (method === 'POST' && pathname === '/v1/auth/logout') {

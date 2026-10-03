@@ -46,6 +46,7 @@ contextBridge.exposeInMainWorld('api', {
   },
   copyText: (text) => ipcRenderer.invoke('copy-text', String(text || '')),
   razzePresence: () => ipcRenderer.invoke('razze-presence-state'),
+  razzeInternetRoom: (room) => ipcRenderer.invoke('razze-internet-room', room || null),
   onRazzePresence: (callback) => { ipcRenderer.removeAllListeners('razze-presence'); ipcRenderer.on('razze-presence', (_event, value) => callback(value)); },
   razzeState: () => ipcRenderer.invoke('razze-state'),
   razzePendingInvite: () => ipcRenderer.invoke('razze-pending-invite'),
