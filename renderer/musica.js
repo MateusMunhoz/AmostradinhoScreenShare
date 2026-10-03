@@ -183,6 +183,8 @@ function createMusicTile(ch, entry) {
     syncMute();
   };
   vol.onchange = () => save('musicaVolume', String(musica.volume));
+  // Mexeu no volume da tela: o da barrinha da direita (menu da música) acompanha
+  vol.addEventListener('input', () => { const nav = $('navMusicVol'); if (nav && nav !== document.activeElement) { nav.value = vol.value; nav.nextElementSibling.textContent = `${vol.value}%`; } });
 
   // ---------- Conversa com o player ----------
   const mu = { ch, entry, videoId: '', ready: false, state: -1, time: 0, timeAt: 0, duration: 0, title: '', error: 0, endTimer: null, listen: null, seeking: false };
@@ -387,7 +389,8 @@ function renderNavMusic() {
   if (!m?.e) { closeNavMusic(); return; }
   setIcon(btn, 'music', `${m.link.tile.name || musicTitle(m.e)} · ${m.e.playing ? 'tocando' : 'pausada'}`);
   btn.dataset.playing = String(!!m.e.playing);
-  if (!$('navMusicMenu').hidden) buildNavMusic();
+  // Menu aberto: redesenha com o estado novo, menos enquanto o volume está sendo arrastado
+  if (!$('navMusicMenu').hidden && document.activeElement?.id !== 'navMusicVol') buildNavMusic();
 }
 function buildNavMusic() {
   const m = listenedMusic(), menu = $('navMusicMenu');
@@ -415,7 +418,21 @@ function buildNavMusic() {
     return b;
   };
   const why = can ? '' : `Só quem está em ${channelName(m.ch)} controla`;
-  menu.replaceChildren(head,
+  // Volume só seu: o mesmo controle da tela da música (mexe nele, e ele faz o resto: player, mudo, salvar)
+  const volRow = document.createElement('label');
+  volRow.className = 'rail-music-vol';
+  volRow.title = 'Volume da música (só para você)';
+  const vol = document.createElement('input');
+  vol.type = 'range'; vol.min = '0'; vol.max = '100'; vol.step = '1'; vol.id = 'navMusicVol';
+  vol.value = m.link.tile.vol.value;
+  vol.setAttribute('aria-label', 'Volume da música (só para você)');
+  const out = document.createElement('output');
+  out.textContent = `${vol.value}%`;
+  vol.oninput = () => { m.link.tile.vol.value = vol.value; m.link.tile.vol.dispatchEvent(new Event('input')); out.textContent = `${vol.value}%`; };
+  vol.onchange = () => m.link.tile.vol.dispatchEvent(new Event('change'));
+  volRow.insertAdjacentHTML('afterbegin', ICON.volume);
+  volRow.append(vol, out);
+  menu.replaceChildren(head, volRow,
     item(m.e.playing ? 'pause' : 'play', m.e.playing ? 'Pausar' : 'Continuar', why || (m.e.playing ? 'Pausar para todos' : 'Continuar para todos'),
       () => { const e = state.musicas.get(m.ch); if (e && canControlMusic(e)) musicCtl(e, e.playing ? 'pause' : 'play', { pos: musicPos(e) }); }, !can),
     item('leave', 'Sair da música', 'Para de ouvir (a música continua para os outros)', () => { closeNavMusic(); stopWatching(m.key, false); }));

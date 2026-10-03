@@ -108,8 +108,9 @@ app.whenReady().then(async()=>{
       win.setSize(1202,780); await new Promise(r=>setTimeout(r,150));win.setSize(1200,780);await new Promise(r=>setTimeout(r,200));
       fs.writeFileSync(path.join(root,'.test-profile','settings-light.png'),(await win.webContents.capturePage()).toPNG());
       win.setSize(820,560); await new Promise(r=>setTimeout(r,150));
-      // Quem rola é o cartão do diálogo (o fundo escuro só centraliza)
-      await check('Painel cabe em 820 × 560 e permite rolar',`(() => {showSettingsTab('sounds');const c=$('generalSettingsDialog').firstElementChild;const r=c.getBoundingClientRect();return r.top>=0&&r.left>=0&&r.right<=innerWidth&&r.bottom<=innerHeight&&c.scrollWidth<=c.clientWidth+1&&c.scrollHeight>c.clientHeight;})()`);
+      // O cartão tem altura fixa e fica no alto; quem rola é o conteúdo da aba (cabeçalho e abas ficam parados)
+      await check('Painel cabe em 820 × 560 e permite rolar',`(() => {showSettingsTab('sounds');const c=$('generalSettingsDialog').firstElementChild;const p=$('settingsPanel-sounds');const r=c.getBoundingClientRect();return r.top>=0&&r.left>=0&&r.right<=innerWidth&&r.bottom<=innerHeight&&c.scrollWidth<=c.clientWidth+1&&p.scrollHeight>p.clientHeight;})()`);
+      await check('Mesmo tamanho e posição em todas as abas',`(() => {const c=$('generalSettingsDialog').firstElementChild;const m=[];for(const t of ['skin','appearance','colors','sounds','phone']){showSettingsTab(t);const r=c.getBoundingClientRect();m.push(r.top+','+r.height);}showSettingsTab('sounds');return new Set(m).size===1;})()`);
       fs.writeFileSync(path.join(root,'.test-profile','settings-small.png'),(await win.webContents.capturePage()).toPNG());
       await run(`document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape'}))`);
       await check('Escape fecha configurações',`$('generalSettingsDialog').hidden`);

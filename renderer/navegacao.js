@@ -64,17 +64,19 @@ function setupUtilityPopup(id, close) {
 function saveWorkspaceViews() { save('workspaceViews.v1', JSON.stringify(workspaceViews)); }
 function syncWorkspace() {
   if (!workspaceReady) return;
-  const inRoom = !$('room').hidden && !!state.myId;
+  // inCall: numa sala, mesmo no menu inicial; inRoom: com a tela da sala à vista. No menu, a barrinha e os painéis de
+  // chat e voz continuam (dá para conversar e mexer na voz sem voltar); só as telas ficam na sala.
+  const inCall = !!state.myId, inRoom = !$('room').hidden && inCall;
   const settings = !$('generalSettingsDialog').hidden, profile = !$('profilePane').hidden;
-  const roomPanes = inRoom && (workspaceViews.chat || workspaceViews.voice);
+  const roomPanes = inCall && (workspaceViews.chat || workspaceViews.voice);
   const any = roomPanes;
   $('workspacePanes').hidden = !any;
-  $('chatTab').hidden = !inRoom || !workspaceViews.chat;
-  $('voicePane').hidden = !inRoom || !workspaceViews.voice;
+  $('chatTab').hidden = !inCall || !workspaceViews.chat;
+  $('voicePane').hidden = !inCall || !workspaceViews.voice;
   $('streamArea').hidden = inRoom && !workspaceViews.streams;
   $('workspaceEmpty').hidden = any || workspaceViews.streams;
   document.body.classList.toggle('has-workspace-pane', any);
-  document.body.classList.toggle('workspace-in-room', inRoom);
+  document.body.classList.toggle('workspace-in-room', inCall);
   document.body.classList.toggle('workspace-wide', inRoom && !workspaceViews.streams && any);
   // Barra e painéis formam um bloco só: o último painel aberto fecha o bloco com os cantos de baixo
   $('chatTab').classList.toggle('pane-last', !workspaceViews.voice);
@@ -82,14 +84,15 @@ function syncWorkspace() {
   if (inRoom) syncIncomingVideo(); // telas escondidas não baixam vídeo (o som continua)
   if (mapFocus.on && !mapFocusFits()) setMapFocus(false); // o mapa em foco só existe com chat e voz na barra
   $('workspaceContext').textContent = inRoom ? 'Na sala' : 'Início';
-  $('dockHome').hidden = $('leaveBtn').hidden = $('peopleBtn').hidden = !inRoom; // Início, Sair e as pessoas: só na sala
+  $('leaveBtn').hidden = $('peopleBtn').hidden = !inCall; // Sair e as pessoas: na sala e no menu
+  $('dockHome').hidden = !inRoom; // no menu, o Voltar para a sala fica no lugar do Início (renderHomeCall)
   for (const [id, view] of [['navChat','chat'],['navVoice','voice'],['navStreams','streams']]) {
-    $(id).hidden = !inRoom;
+    $(id).hidden = !inCall;
     $(id).setAttribute('aria-pressed', String(workspaceViews[view]));
   }
   $('navSettings').setAttribute('aria-expanded', String(settings));
   $('navProfile').setAttribute('aria-expanded', String(profile));
-  if (!inRoom) setPeopleOpen(false);
+  if (!inCall) setPeopleOpen(false);
   fitNav();
   $('profileName').disabled = !!state.myId;
   $('profileName').value = $('name').value;
@@ -339,7 +342,12 @@ function setupWorkspace() {
   setupUtilityPopup('generalSettingsDialog', closeGeneralSettings);
   $('navSettings').onclick = () => $('generalSettingsDialog').hidden ? openGeneralSettings() : closeGeneralSettings();
   $('navChat').onclick = () => setPanelOpen(!workspaceViews.chat);
-  for (const [id, view] of [['navVoice','voice'],['navStreams','streams']]) $(id).onclick = () => { workspaceViews[view] = !workspaceViews[view]; saveWorkspaceViews(); syncWorkspace(); };
+  $('navVoice').onclick = () => { workspaceViews.voice = !workspaceViews.voice; saveWorkspaceViews(); syncWorkspace(); };
+  // As telas só existem na sala: no menu, Transmissão volta para ela (com as telas à vista)
+  $('navStreams').onclick = () => {
+    if ($('room').hidden) { if (!workspaceViews.streams) { workspaceViews.streams = true; saveWorkspaceViews(); } backToRoom(); return; }
+    workspaceViews.streams = !workspaceViews.streams; saveWorkspaceViews(); syncWorkspace();
+  };
   $('profileName').oninput = () => { if (state.myId) return; $('name').value = $('profileName').value; save('name', $('name').value); $('profileDisplayName').textContent = getName(); $('profileAvatar').textContent = $('navProfileAvatar').textContent = [...getName()][0].toUpperCase(); $('navProfile').title = $('navProfile').ariaLabel = 'Perfil de ' + getName(); };
   $('name').addEventListener('input', syncWorkspace);
   setupNameFont();

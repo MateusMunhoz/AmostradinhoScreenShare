@@ -14,6 +14,7 @@ const { pips, livePip, freeSlot, pipBounds, setPipSize, setPipGroup, setPipOpaci
 const { chatBounds, setupChatOverlay, chatComposeRequest } = require('./main/chat-jogo');
 const { keys, setShortcut, setRoomKeys, setPtt } = require('./main/atalhos');
 const sessoes = require('./main/sessoes');
+const celular = require('./main/celular');
 const { dedupeWindows, thumbSignature } = require('./main/fontes');
 const { createRazzeService } = require('./main/razze-service');
 const razze = createRazzeService();
@@ -330,6 +331,12 @@ if (hasSingleInstance) app.whenReady().then(() => {
   });
   ipcMain.handle('stop-app-audio', () => stopAppAudio());
 
+  // Configurações no celular (main/celular.js, docs/spec/config-no-celular.md): avisos voltam pelo canal 'celular'
+  const avisarCelular = (sender) => (msg) => { if (!sender.isDestroyed()) sender.send('celular', msg); };
+  ipcMain.handle('celular-entregar', (e, texto) => celular.abrir('entregar', typeof texto === 'string' && texto.length <= celular.MAX ? texto : '', avisarCelular(e.sender)));
+  ipcMain.handle('celular-receber', (e) => celular.abrir('receber', '', avisarCelular(e.sender)));
+  ipcMain.handle('celular-fechar', () => { celular.fechar(); return true; });
+
   ipcMain.handle('get-ips', async (_e, provider = 'radmin') => {
     const list = [];
     for (const [name, addrs] of Object.entries(os.networkInterfaces())) {
@@ -464,6 +471,7 @@ app.on('before-quit', (event) => {
 app.on('will-quit', () => { globalShortcut.unregisterAll(); setPtt(0); });
 
 app.on('window-all-closed', () => {
+  celular.fechar();
   endSession(false);
   stopServer();
   stopAppAudio();

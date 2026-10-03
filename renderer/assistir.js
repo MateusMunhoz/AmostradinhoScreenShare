@@ -146,8 +146,9 @@ function createTile(id, name) {
     if (!el.isConnected) return clearInterval(ambientTimer);
     const vw = video.videoWidth, vh = video.videoHeight, bw = body.clientWidth, bh = body.clientHeight;
     const bars = vw && vh && bw && bh && Math.abs((vw / vh) / (bw / bh) - 1) > 0.02;
-    const on = appPreferences.appearance.ambient && bars && !video.paused && pipNote.hidden && !document.hidden;
-    if (!on) { ambient.hidden = !(appPreferences.appearance.ambient && bars && pipNote.hidden); return; }
+    const want = appPreferences.appearance.ambient && !gamerOn(); // o modo gamer desliga a luz ambiente (modo-gamer.js)
+    const on = want && bars && !video.paused && pipNote.hidden && !document.hidden;
+    if (!on) { ambient.hidden = !(want && bars && pipNote.hidden); return; }
     try { ambientCtx.drawImage(video, 0, 0, ambient.width, ambient.height); ambient.hidden = false; } catch { ambient.hidden = true; }
   }, 500);
   el.append(label, body);

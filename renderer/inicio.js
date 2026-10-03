@@ -71,6 +71,8 @@ $('profilePhotoFile').onchange = async () => {
 $('profilePhotoRemove').onclick = removeMyPhoto;
 for (const b of $('profilePhotoFit').querySelectorAll('[data-fit]')) b.onclick = () => setPhotoFit(b.dataset.fit);
 renderMyPhoto();
+setupProfileBg(); // fundo do perfil (renderer/fundo-perfil.js)
+setupGamerMode(); // o botão do controle na barrinha (renderer/modo-gamer.js); depois da prioridade salva
 $('micSelect').onchange = () => {
   const id = $('micSelect').value;
   if (id === voiceCfg.micId) return;
@@ -166,7 +168,7 @@ $('shareDialog').addEventListener('change', (e) => {
   const t = e.target;
   if (t.name === 'priority') {
     save('priority', t.value);
-    window.api.setPriority(t.value);
+    window.api.setPriority(gamerOn() ? 'normal' : t.value); // no modo gamer fica normal até desligar (modo-gamer.js)
   } else if (t.name === 'encodeMode') {
     // Sem o mouse só dá no NVENC direto: voltar para "Uma por pessoa" traz o mouse de volta
     if (t.value === 'per' && !$('cursorOn').checked) { $('cursorOn').checked = true; save('mostrarMouse', '1'); }
@@ -430,4 +432,5 @@ setupDm();
 setupWorkspace();
 watchDock();
 setupGeneralSettings();
+setupPhone();
 show('home');

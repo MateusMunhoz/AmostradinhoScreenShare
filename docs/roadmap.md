@@ -64,7 +64,7 @@ Entrar de forma fluida, sem Hamachi/Radmin: adicionar amigo, ver no lobby a sala
 | 8 | **B0: Modo Briefing, voz palco, corrente (P3), teste forjado → teste real** | 1–4 | Ver a spec |
 
 ### Tela inicial
-- **Constelação = amigos online.** Hoje o fundo (`renderHomeSky` em `renderer/ceu-voz.js`) desenha uma sala de exemplo.
+- **Constelação = amigos online.** Hoje o fundo é só o céu estrelado (`--st-sky` em `styles-estelar.css`); o antigo exemplo de sala saiu.
   Passa a mostrar só os amigos adicionados que estão online: cada um é uma estrela com a foto/nome no balão; quem está
   numa sala aparece ligado ao "sol" da sala, que se clica para entrar. Sem amigos online, o céu fica vazio e calmo, com
   um convite discreto para "Adicionar amigo".

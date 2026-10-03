@@ -115,6 +115,9 @@ const AppPreferences = (() => {
     { id: 'grafiteaco', label: 'Grafite e aço', colors: { main: '#0B0D10', secondary: '#13161B', detail1: '#7FA3C7', detail2: '#39FF9F', text: '#D7DCE3', warn: '#D9A66C', line: '#232932' }, appearance: { glass: 'opaque', border: 'solid' } },
     { id: 'lanhouse', label: 'Lan house', colors: { main: '#22271E', secondary: '#2D3327', detail1: '#D6C45C', detail2: '#A6D089' }, appearance: { glass: 'opaque', border: 'solid' } },
     { id: 'meianoite', label: 'Meia-noite', colors: { main: '#0E1220', secondary: '#1A2036', detail1: '#7AA2F7', detail2: '#9ECE6A' }, appearance: { glass: 'liquid', level: 55, border: 'liquid' } },
+    // Constelação: as cores da logo. Ciano no destaque (você/ao vivo), lilás em quem fala e o coral, puxado para o
+    // laranja, nos avisos; fundo quase preto como o da logo
+    { id: 'constelacao', label: 'Constelação', colors: { main: '#0B0C0E', secondary: '#14161B', detail1: '#22E5FA', detail2: '#8B93FF', text: '#E3E7EE', warn: '#FF8A6B', line: '#23262E' }, appearance: { glass: 'opaque', border: 'solid' } },
     { id: 'neon', label: 'Neon', colors: { main: '#0B0A14', secondary: '#1A1730', detail1: '#FF4FB3', detail2: '#3EF0C8' }, appearance: { glass: 'clear', level: 70, border: 'clear' } },
     { id: 'grafite', label: 'Grafite', colors: { main: '#1B1D22', secondary: '#2A2D35', detail1: '#E6A55A', detail2: '#7CC6A4' }, appearance: { glass: 'liquid', level: 45, border: 'solid' } },
     { id: 'claro', label: 'Claro', colors: { main: '#EEF2F8', secondary: '#FFFFFF', detail1: '#3455DB', detail2: '#147D55' }, appearance: { glass: 'opaque', border: 'solid' } },
@@ -131,6 +134,12 @@ const AppPreferences = (() => {
     // (você/ao vivo), verde de quem fala e amarelo de alerta. O desenho fica em styles-eva.css (html[data-skin=eva]).
     { id: 'eva', label: 'E.V.A by Asock', note: 'Evangelion: o cockpit do EVA-01. Roxo e laranja, HUD de sincronia, letreiros em japonês e o chat num terminal.',
       colors: { main: '#07040C', secondary: '#170C29', detail1: '#FF8A1F', detail2: '#A3F43C', warn: '#FFD23F', text: '#EFE6FF', line: '#3F2468' }, appearance: { glass: 'opaque', border: 'solid' } },
+    // Du'Sol: o Sol. Um pedaço grande dele na esquerda e o espaço no resto; preto, amarelo e laranja (styles-dusol.css)
+    { id: 'dusol', label: "Du'Sol", note: 'O Sol: um pedaço dele gigante à esquerda e o espaço no resto. Preto, amarelo e laranja, e o nome em pé no saguão.',
+      colors: { main: '#050302', secondary: '#120A05', detail1: '#FF7A1A', detail2: '#FFD23F', warn: '#FF4A2E', text: '#F5E9DA', line: '#3A2414' }, appearance: { glass: 'opaque', border: 'solid' } },
+    // Di'Luna: a Lua cheia, irmã do Du'Sol. Branco, ciano, azul e roxo, letreiros com serifa (styles-diluna.css)
+    { id: 'diluna', label: "Di'Luna", note: 'A Lua cheia: um pedaço dela gigante à esquerda e a noite com faíscas de luz. Branco, ciano, azul e roxo.',
+      colors: { main: '#04050C', secondary: '#0B0E1E', detail1: '#6FE3FF', detail2: '#A57BFF', warn: '#FF7AA8', text: '#E8EEFF', line: '#23264A' }, appearance: { glass: 'opaque', border: 'solid' } },
   ];
   const cleanSkin = (id) => skins.some((k) => k.id && k.id === id) ? id : '';
   // Preferências com o tema aplicado (o resto, como fontes e sons, fica como está)

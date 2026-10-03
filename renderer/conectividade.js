@@ -177,7 +177,7 @@ async function loadRazzeState() {
     if (!on) { setFriendsData({}); dmStop(); }
   };
   account(state.authenticated);
-  $('profileAccountHint').textContent = state.configured ? 'Entre na sua conta para gerenciar redes e amigos.' : 'Para entrar, escolha Razze (WireGuard) acima e salve o endereço do servidor.';
+  $('profileAccountHint').textContent = state.configured ? 'Entre na sua conta para gerenciar redes e amigos.' : 'Para entrar, escolha Razze (WireGuard) em "Como os PCs se conectam", logo abaixo, e salve o endereço do servidor.';
   $('friendsHint').textContent = state.configured ? 'Entre na sua conta Razze para ver quem está online, adicionar amigos e convidar para a sua sala.' : 'Os amigos usam uma conta Razze: configure o servidor e entre na conta na aba Rede.';
   $('razzeLogin').disabled = $('razzeRegister').disabled = !state.configured;
   if (!state.configured) {

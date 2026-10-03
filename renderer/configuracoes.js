@@ -5,10 +5,15 @@ let appSkin = AppPreferences.cleanSkin(load('tema', '')); // Configurações > T
 const appSounds = new AppPreferences.SoundPlayer({ settings: () => appPreferences });
 let settingsReturnFocus = null;
 
+// Modo gamer (renderer/modo-gamer.js): marcado já aqui, antes do primeiro applyAppTheme, para a janela não abrir
+// com o vidro e depois trocar. Com ele ligado, o vidro fica opaco sem mudar a escolha salva
+if (load('modoGamer', '') === '1') document.documentElement.dataset.gamer = 'on';
+const glassMode = () => (document.documentElement.dataset.gamer === 'on' ? 'opaque' : appPreferences.appearance.glass);
+
 // Material da janela (acrílico do Windows 11) só muda quando o modo muda; a resposta diz se o sistema tem
 let windowMaterial = { key: '', material: 'none', supported: false };
 function applyWindowMaterial() {
-  const mode = appPreferences.appearance.glass, key = mode === 'opaque' ? 'opaque|' + appPreferences.colors.main : mode;
+  const mode = glassMode(), key = mode === 'opaque' ? 'opaque|' + appPreferences.colors.main : mode;
   if (windowMaterial.key === key || !window.api?.windowMaterial) return;
   windowMaterial.key = key;
   window.api.windowMaterial(mode, appPreferences.colors.main).then((r) => {
@@ -24,8 +29,7 @@ let titleBarKey = '';
 function applyTitleBar() {
   if (!window.api?.setTitleBar) return;
   const c = appPreferences.colors, text = AppPreferences.palette(c)['--text'];
-  const a = appPreferences.appearance;
-  const color = a.glass === 'opaque' ? c.main : '#00000000';
+  const color = glassMode() === 'opaque' ? c.main : '#00000000';
   const key = color + text;
   if (key === titleBarKey) return;
   titleBarKey = key;
@@ -66,6 +70,8 @@ function applyAppTheme(d = document) {
     fonts.body = fonts.display = '"Chakra Petch", "Segoe UI", system-ui, sans-serif';
     fonts.console = '"Share Tech Mono", Consolas, monospace';
   }
+  // Com a fonte padrão, o Du'Sol usa a Bahnschrift (vem no Windows) nos títulos, como o letreiro dele
+  if (skin === 'dusol' && appPreferences.font.family === 'system') fonts.display = 'Bahnschrift, "Segoe UI", system-ui, sans-serif';
   // O letreiro na lateral (index.html › #themeDecor) é do E.V.A
   if (d === document) $('themeDecor').hidden = skin !== 'eva';
   root.style.setProperty('--font-body', fonts.body);
@@ -82,9 +88,9 @@ function applyAppTheme(d = document) {
     return;
   }
   // Vidro: só na janela principal; as flutuantes já são translúcidas por cima do jogo
-  const glass = AppPreferences.glass(appPreferences.colors, appPreferences.appearance);
+  const glass = AppPreferences.glass(appPreferences.colors, { ...appPreferences.appearance, glass: glassMode() });
   for (const [key, value] of Object.entries(glass || {})) root.style.setProperty(key, value);
-  root.dataset.glass = appPreferences.appearance.glass;
+  root.dataset.glass = glassMode();
   applyWindowMaterial();
   applyTitleBar();
   applyAppIcon();
@@ -137,6 +143,7 @@ function openGeneralSettings() {
 }
 function closeGeneralSettings() {
   $('generalSettingsDialog').hidden = true;
+  if (phone.modo) cancelPhone(); // o servidor da rede local do Celular não fica aberto com as configurações fechadas
   syncWorkspace();
   appSounds.stop('preview');
   setUtilityBackground(false);

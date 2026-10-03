@@ -35,7 +35,7 @@ Tudo o que dá para fazer no Tela P2P, com os detalhes. Para começar do zero, v
   - as janelas flutuantes abertas;
   - **Estatísticas**;
   - o balão do chat.
-- **Barrinha da direita:** em cima, o perfil; logo abaixo, separados por uma linha, o **botão de pessoas** (o total e uma bolinha verde quando alguém fala; abre a lista de quem está na sala), **Chat**, **Voz** e **Transmissão**. Ouvindo uma música, aparece também o botão de **música**: clicar mostra **Pausar** ou **Continuar** (para todos, se você pode controlar) e **Sair da música** (a música continua para os outros). No pé, **Início** (vai para o saguão sem sair da sala), **Sair** e, depois de uma linha, a engrenagem. No saguão, com a sala aberta, o pé mostra **Voltar para a sala**, com o número de mensagens novas.
+- **Barrinha da direita:** em cima, o perfil; logo abaixo, separados por uma linha, o **botão de pessoas** (o total e uma bolinha verde quando alguém fala; abre a lista de quem está na sala), **Chat**, **Voz** e **Transmissão**. Ouvindo uma música, aparece também o botão de **música**: clicar mostra **Pausar** ou **Continuar** (para todos, se você pode controlar) e **Sair da música** (a música continua para os outros). No pé, **Início** (vai para o saguão sem sair da sala), **Sair** e, depois de uma linha, o **modo gamer** (o controle) e a engrenagem. No saguão, com a sala aberta, o pé mostra **Voltar para a sala**, com o número de mensagens novas.
 - **Recolher o painel:** o balão do chat recolhe o painel, e os vídeos ocupam a largura toda. Recolhido, ele mostra quantas mensagens chegaram, e o endereço da sala passa para a barra.
 
 ### VPN Tela P2P
@@ -191,13 +191,13 @@ Clique em **Entrar na voz**, na barra de baixo, para ligar o microfone padrão d
 No painel **Chat de voz**, a voz fica dividida em canais: a **Voz geral** e as subsalas.
 
 - **Criar:** fora da voz, clique em **+ Nova subsala**, ao lado de **Entrar na Voz geral**; na voz, em **+ Subsala**, na faixa de baixo do painel. A subsala é criada e você já entra nela. Os nomes são sempre `Subsala_1`, `Subsala_2`, e assim por diante: a nova recebe o número seguinte ao da maior que existe.
-- **Entrar:** clique em **Entrar** no canal. Fora da voz, isso liga o microfone já naquele canal; na voz, você muda de canal sem sair.
+- **Entrar:** clique na faixa com o nome do canal. Fora da voz, isso liga o microfone já naquele canal; na voz, você muda de canal sem sair.
 - **Quem ouve quem:** só quem está no mesmo canal se ouve. O chat de texto e as transmissões continuam valendo para a sala toda.
 - **Apagar:** o **X** ao lado da subsala. Quem estava nela volta para a Voz geral.
 - **Mudar alguém de canal:** arraste a pessoa (ou você) até outro canal. Qualquer um pode mover quem está na voz; o app da pessoa troca de canal sozinho. Precisa do host (ou do servidor da VPS) na versão nova; sem isso, só dá para arrastar você mesmo.
 - **Lista ou Mapa:** os dois ícones ao lado do título (três linhas para a Lista, um planeta para o Mapa) trocam a visão (fica salva neste PC). No **Mapa**, cada canal é um sol e quem está nele orbita como planeta. Clicar no sol abre um cartão preso a ele: o nome do canal, com quantos estão nele e quantos ao vivo (clicar no nome entra no canal), a música (no seu canal sem música, a linha tracejada **Sem música · Pôr uma**) e, numa subsala, o **X** de apagar. Embaixo, quem está no canal: quem transmite tem **AO VIVO** e o olho de **Assistir**; clicar na pessoa abre o perfil dela (volume e amizade). Esc ou um clique no mapa fecha; arrastar o planeta até outro sol muda a pessoa de canal. A roda do mouse (ou **+** e **−**) aproxima até caber uma subsala e afasta até ver todas; arrastar o fundo anda pelo mapa.
 - **Mapa grande:** com o chat e a voz na barra da direita, deixe o mouse parado no mapa: o chat encolhe e o mapa ocupa a barra toda. Do chat fica uma faixa em cima, com as mensagens novas; clicar nela traz o chat de volta. Tirando o mouse do painel de voz, o chat volta sozinho (menos enquanto você põe uma música, mexe no volume de alguém ou está no perfil de alguém). O **alfinete** ao lado de Lista e Mapa fixa o mapa aberto até você soltar. Com o mouse chegando perto de um sol, a órbita dele vai desacelerando até parar; as outras seguem girando; com o Tela P2P fora de foco, o céu em cima da Lista não é desenhado (o Mapa continua girando).
-- **Pessoa no mapa:** clicar num planeta aproxima até a pessoa. Em volta dela ficam, só com o ícone (o nome aparece ao parar o mouse em cima), **Assistir**, **Perfil** (volume e amizade), **Silenciar para mim** e **Mudar de canal**, e embaixo o volume da voz dela. No seu planeta: microfone, fone e **Mudar de canal**. A setinha **‹**, Esc ou um clique fora dos botões volta para o mapa.
+- **Pessoa no mapa:** clicar num planeta aproxima até a pessoa. Em volta dela ficam, só com o ícone (o nome aparece ao parar o mouse em cima), **Assistir**, **Perfil** (volume e amizade), **Silenciar para mim** e **Mudar de canal**, e embaixo o volume da voz dela. No seu planeta: microfone, fone e **Mudar de canal**. A setinha **‹**, Esc ou um clique fora dos botões volta para o mapa. Na **Lista**, clicar na linha de quem está na voz (foto, nome ou estado) abre esse mesmo perfil numa caixinha perto da linha (nela, no lugar de **Perfil**, fica **Voltar ao padrão**, que volta o volume da pessoa ao normal); o **X**, Esc, um clique fora ou de novo na linha fecha. Se a pessoa escolheu um **fundo do perfil**, ele aparece atrás.
 - **Céu na Lista:** na Lista, o céu pequeno em cima é só enfeite. Para escondê-lo ou mostrá-lo, use **Configurações › Aparência › Céu da voz em cima da lista**. O Mapa não muda.
 - **Troca de host:** as subsalas continuam, e cada um fica no canal em que estava.
 - **Modo Internet:** o servidor da VPS precisa estar atualizado para ter subsalas; sem isso, o painel mostra só a lista de sempre.
@@ -297,7 +297,7 @@ A configuração de outra pessoa só aparece se ela e o host estiverem na versã
 
 Abra **Configurações gerais** pela engrenagem no pé da barrinha da direita. A barrinha fica na borda direita da janela, no início e dentro de uma sala.
 
-O botão **Perfil** (no alto da barrinha) mostra seu nome salvo neste dispositivo; ele pode ser editado fora da sala. Dentro da sala, **Chat**, **Voz** e **Transmissão** ficam logo abaixo deles, num grupo separado, só com o ícone (o nome aparece ao parar o mouse em cima), e são alternadores independentes: clique para exibir ou ocultar cada painel. Chat e voz abrem se desdobrando ao lado da barrinha. Os selecionados permanecem visíveis juntos, dividindo o espaço. Perfil e configurações também podem ficar abertos ao mesmo tempo. Cada painel tem sua própria rolagem quando necessário. A seleção dos três painéis da sala é lembrada ao reabrir o app.
+O botão **Perfil** (no alto da barrinha) mostra seu nome salvo neste dispositivo; ele pode ser editado fora da sala. Nele também fica o **Fundo do perfil**: uma imagem (recortada em quadrado) ou um GIF de até 1 MB, que aparece atrás do seu perfil para quem clicar em você na voz; **Tirar fundo** volta ao normal. O GIF só se mexe com o perfil aberto. Dentro da sala, **Chat**, **Voz** e **Transmissão** ficam logo abaixo deles, num grupo separado, só com o ícone (o nome aparece ao parar o mouse em cima), e são alternadores independentes: clique para exibir ou ocultar cada painel. Chat e voz abrem se desdobrando ao lado da barrinha. Os selecionados permanecem visíveis juntos, dividindo o espaço. Perfil e configurações também podem ficar abertos ao mesmo tempo. Cada painel tem sua própria rolagem quando necessário. A seleção dos três painéis da sala é lembrada ao reabrir o app.
 
 O painel **Voz** mostra os participantes, seus controles de volume e botões para entrar, sair, mutar e silenciar as vozes. Mostrar ou ocultar esse painel não liga nem desliga o microfone. Da mesma forma, ocultar **Transmissão** não encerra uma transmissão em andamento; use o botão **Parar** para encerrá-la.
 
@@ -307,6 +307,10 @@ O painel **Voz** mostra os participantes, seus controles de volume e botões par
 - **Detalhes 2:** indicadores de voz, conexão e avisos.
 
 Digite um hexadecimal de três ou seis dígitos, com ou sem `#`, ou use a amostra de cor. A mudança aparece imediatamente, inclusive nas janelas flutuantes abertas. Textos e tons de apoio se adaptam às cores escolhidas. Valores inválidos não substituem a última cor válida. **Restaurar cores padrão** recupera o tema oliva e amarelo, sem alterar os sons.
+
+No tema **Du'Sol** (aba Tema), o fundo é o Sol: um pedaço gigante dele à esquerda, com manchas e a borda brilhando, e o espaço com estrelas no resto. As cores ficam entre o preto, o amarelo e o laranja, e o nome **Du'Sol** aparece como no Arasaka: em pé no saguão, grande no palco sem transmissão e na barra de título. O fundo é parado e some no modo gamer.
+
+O tema **Di'Luna** é o irmão do Du'Sol, com a Lua cheia: um pedaço gigante dela à esquerda, com crateras e a borda acesa em ciano, e a noite com véus roxos e faíscas de luz no resto. As cores ficam entre o branco, o ciano, o azul e o roxo, e os letreiros têm serifa. O nome **Di'Luna** aparece nos mesmos lugares do Du'Sol, em pé do lado de fora da Lua no saguão.
 
 No tema Padrão, a tela inicial tem um céu ao fundo; de vez em quando (a cada 20 a 90 segundos, ao acaso) uma estrela cadente cruza esse céu. Ela só aparece com a janela do app em foco e não aparece se o Windows estiver com os efeitos de animação desligados.
 
@@ -319,6 +323,38 @@ Mensagens enviadas e recebidas fazem som quando chegam confirmadas pelo servidor
 Todas essas escolhas são salvas automaticamente no perfil local do app e continuam ao fechá-lo e abri-lo de novo. Cada pessoa pode usar suas próprias cores e sons.
 
 Fontes do próprio Windows: Segoe UI Variable no app e Tahoma no chat.
+
+## Modo gamer
+
+O controle na barrinha da direita (logo acima da engrenagem) liga o **modo gamer**, para o jogo ter o máximo do PC
+enquanto o Tela P2P fica aberto. Ligado, o controle fica aceso e o app:
+
+- baixa a própria prioridade para **normal** (a escolhida em Transmissão volta ao desligar);
+- fica **opaco**, sem o vidro e o desfoque;
+- para todas as animações e esconde o céu estrelado do fundo, o céu em cima da lista da voz e a luz ambiente das
+  transmissões;
+- deixa parado o GIF do fundo do perfil das pessoas.
+
+Voz, chat, música, transmitir e assistir continuam funcionando. As suas escolhas de aparência não mudam: desligar
+devolve tudo como era. Fica salvo neste PC.
+
+## Configurações no celular
+
+Guarde suas configurações no celular e traga de volta em qualquer PC. Funciona com Android e iPhone, sem instalar nada
+no celular, e nada passa pela internet: o celular precisa estar no mesmo Wi-Fi do PC.
+
+- **Guardar:** Configurações gerais (a engrenagem) › **Celular** › **Guardar no celular**. Escolha uma senha (ela não
+  fica guardada em lugar nenhum), leia o QR code com a câmera do celular e toque em **Baixar arquivo**. O celular
+  guarda um arquivo `.tp2p` cifrado: sem a senha, ninguém abre.
+- **Trazer:** em outro PC, **Celular** › **Trazer do celular**, leia o QR e escolha o arquivo no celular. Digite a senha
+  no PC, confira o resumo e clique em **Aplicar**: as configurações deste PC são trocadas e a interface recarrega.
+  Fora de uma sala, porque a interface recarrega.
+- **O que vai:** tema e cores, nome, foto e fundo do perfil, microfone e voz, o volume de cada amigo, painéis, opções de transmissão e
+  os atalhos de teclado. **Não vai:** a conta Razze (entre nela de novo; os amigos voltam sozinhos), as mensagens
+  diretas e o endereço das salas.
+- O código vale por 5 minutos e serve uma vez. Sem câmera, digite no navegador do celular o endereço que aparece ao
+  lado do QR. Se a página não abrir, confira se o celular está no mesmo Wi-Fi e se o Windows deixa o Tela P2P
+  receber conexões na rede privada.
 
 ## Atualizações
 

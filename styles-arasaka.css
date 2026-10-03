@@ -17,7 +17,14 @@
 :root[data-skin="arasaka"] :is(.btn, .dock, .tile, .dialog, .workspace-pane, .panel, .home-card, .theme-card, .person-card,
   .tile-chip, .toast, .workspace-tab, .dock-more-menu, .voice-more-menu, input, textarea, select, .seg, .seg label,
   .live-chip, .file-card, .chat-staged, .image-viewer button, .pc-photo-btn, .update-banner, .session, .theme-swatches,
-  .seg > *, .seg button, .members li, .mention-pop, .people-pop, .skin-card, .skin-preview) { border-radius: 0 !important; }
+  .seg > *, .seg button, .members li, .mention-pop, .people-pop, .skin-card, .skin-preview, .sky-focus, .sky-move-menu,
+  .rail-music-menu, .rail-music-menu button, .profile-bg-preview, .phone-flow, .phone-url, .phone-qr-code) { border-radius: 0 !important; }
+/* A caixinha do perfil (lista da voz) e o menu da música da barrinha: o colchete de mira, como os painéis */
+:root[data-skin="arasaka"] :is(.sky-focus.sky-pop, .rail-music-menu) { background: var(--bracket), var(--panel); border-color: var(--line-strong); }
+:root[data-skin="arasaka"] .sky-focus.sky-pop.has-bg { background: var(--bracket), linear-gradient(var(--scrim), var(--scrim)), var(--fundo) center / cover no-repeat, var(--panel); }
+:root[data-skin="arasaka"] .sky-focus-where { font-family: var(--font-console); color: var(--accent); }
+:root[data-skin="arasaka"] .sky-focus-name { text-transform: uppercase; letter-spacing: .2em; font-size: 13px; color: var(--accent); }
+:root[data-skin="arasaka"] .rail-music-head strong { text-transform: uppercase; letter-spacing: .14em; font-size: 12px; color: var(--accent); }
 
 /* Colchete vermelho no canto de cima dos painéis, como a mira da referência */
 :root[data-skin="arasaka"] :is(.dock, .workspace-pane, .panel, .home-card, .dialog) { background: var(--bracket), var(--panel); }

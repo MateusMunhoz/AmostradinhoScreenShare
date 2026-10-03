@@ -51,11 +51,12 @@ run('Barra de baixo numa linha', 90000, async () => {
   check('Barrinha na borda direita, só com os ícones, e os painéis ao lado dela num bloco', rail.direita === 0 && rail.largura <= 56 && rail.alto > rail.largura * 5
     && rail.folga >= 8 && rail.folga <= 24 && rail.gap === '0px' && rail.texto === 0, JSON.stringify(rail));
   const ordemRail = await A.eval(`[...$('workspaceNav').children].filter((e) => e.getClientRects().length).map((e) => e.id || e.className)`);
-  check('Barrinha: perfil em cima; pessoas, Chat, Voz e Transmissão separados; Início, Sair e a engrenagem no pé', ordemRail.join(' ') === 'navProfile nav-sep peopleBtn navChat navVoice navStreams nav-space dockHome leaveBtn nav-sep navSettings'
+  check('Barrinha: perfil em cima; pessoas, Chat, Voz e Transmissão separados; Início, Sair, o modo gamer e a engrenagem no pé', ordemRail.join(' ') === 'navProfile nav-sep peopleBtn navChat navVoice navStreams nav-space dockHome leaveBtn nav-sep navGamer navSettings'
     && await A.eval(`$('leaveBtn').getBoundingClientRect().bottom >= $('workspaceNav').getBoundingClientRect().bottom - 20`), ordemRail.join(' '));
+  const alturaInicio = await A.eval(`Math.round($('dockHome').getBoundingClientRect().top)`);
   await A.eval(`$('dockHome').click()`);
   await sleep(300);
-  check('No menu, com a sala aberta: só o Voltar para a sala no pé da barrinha, e ele volta', await A.eval(`!$('navBackToRoom').hidden && $('dockHome').hidden && $('leaveBtn').hidden`)
+  check('No menu, com a sala aberta: os botões da sala continuam, e o Voltar fica na altura do Início', await A.eval(`!$('navBackToRoom').hidden && $('dockHome').hidden && !$('leaveBtn').hidden && !$('navChat').hidden && !$('peopleBtn').hidden && !$('chatTab').hidden && Math.round($('navBackToRoom').getBoundingClientRect().top) === ${alturaInicio}`)
     && await A.eval(`(() => { $('navBackToRoom').click(); return !$('room').hidden && $('navBackToRoom').hidden && !$('dockHome').hidden; })()`));
   check('O mapa de conexões saiu da barra (mora na aba Rede do HUB)', await A.eval(`!$('navConnectionMap') && $('networkDialog').contains($('connectionMap'))`));
 

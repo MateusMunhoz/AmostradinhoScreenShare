@@ -70,6 +70,7 @@ function memberRow(id, name, sharing) {
   const paused = id && state.focus && state.focus !== id && state.in.has(id);
   const inPip = id && state.pips.has(id);
   const voiceOn = inVoice(who);
+  li.classList.toggle('in-voice', voiceOn); // no painel de voz, a linha abre o perfil do mapa (ceu-voz.js)
   const micOff = voiceOn && (id ? !!voice.members.get(id)?.muted : voice.muted);
   // Fone silenciado ("Silenciar vozes"): a pessoa não está ouvindo ninguém
   const deafOn = voiceOn && (id ? !!voice.members.get(id)?.deafened : voice.deafened);

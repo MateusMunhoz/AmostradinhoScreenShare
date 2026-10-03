@@ -24,3 +24,43 @@ paths:
 - A página só fala com o processo principal por `window.api` (`preload.js`). Precisa de algo novo do main? Veja a regra
   de `main.js`/`preload.js` e apresente o plano antes.
 - Textos da interface em pt-BR, curtos e no tom do resto do app.
+
+## Layout (não há mais barra de cima)
+- `#workspaceNav` é a **barrinha da direita** (em pé, `--rail-w`, espelho do HUB da esquerda), só com ícones. De cima
+  para baixo: perfil · linha · `peopleBtn` (pessoas), Chat, Voz, Transmissão, `navMusicWrap` (música que você ouve) ·
+  espaço · `dockHome` (Início) ou `navBackToRoom` (no menu), `leaveBtn` (Sair) · linha · `navGamer` (modo gamer) · engrenagem. Início e Sair
+  **não** estão mais na barra de baixo (`.dock`) nem em `DOCK_OVERFLOW`. Chat e voz abrem à esquerda dela
+  (`#workspacePanes`, `right: 16px + --rail-w`), com a animação `pane-expand` só ao abrir.
+- `syncWorkspace()` (`navegacao.js`) separa `inCall` (`state.myId`, mesmo no menu inicial) de `inRoom` (a tela da sala
+  à vista). No menu, com a sala aberta, a barrinha e os painéis de chat e voz continuam; só as telas ficam na sala
+  (Transmissão volta para ela). A classe `workspace-in-room` do body segue `inCall`.
+- O Mapa de conexões mora na aba **Rede** do HUB (`#connectionMap` dentro de `#networkDialog`); atualiza a cada 5 s só
+  com a aba à vista (`syncConnectionMap`, chamado por `renderHub`). Na aba Rede, a conta Razze (`#profileAccount`) vem
+  primeiro.
+
+- **Modo gamer** (`renderer/modo-gamer.js`, `:root[data-gamer="on"]`): prioridade normal, vidro opaco (`glassMode()` em
+  `configuracoes.js`; nunca grave isso em `appPreferences`), sem animação/transição/`backdrop-filter`, sem o céu do fundo,
+  o céu da voz e a luz ambiente; GIF do fundo do perfil parado. Recurso novo que pesa no PC (animação, desfoque, timer
+  de desenho)? Desligue também com `gamerOn()`.
+- O perfil da voz (`renderSkyProfile`, `ceu-voz.js`) serve ao mapa e à lista: na lista vira a caixinha `.sky-pop`, solta no
+  `body` e com a foto em cima da foto da linha (`placeSkyProfile`). O fundo do perfil (`renderer/fundo-perfil.js`) chega
+  por `{ side: 'fundo' }` em pedaços; valide tudo que chega como em `onPhotoSignal`.
+
+## Temas (aba Tema)
+- Cada tema é um `styles-<tema>.css` sob `:root[data-skin="<id>"]` (Arasaka, E.V.A, Du'Sol) + a entrada em `skins`
+  (`renderer/preferencias-modelo.js`) + `<link>` no `index.html` + `PACK_FILES` e `build.files`. A prévia do cartão é
+  `.skin-preview[data-preview=<id>]`, com cores fixas.
+- O Du'Sol (`styles-dusol.css`) usa uma imagem: `assets/temas/dusol-sol.webp`, gerada por `assets/temas/gerar-sol.py`
+  (numpy + OpenCV). Mudou o Sol? Rode o script de novo; a imagem entra no pacote por `PACK_FILES` e `assets/temas/*.webp`.
+- O Di'Luna (`styles-diluna.css`, `assets/temas/diluna-lua.webp` por `gerar-lua.py`) é o irmão dele, com a Lua. Os dois
+  usam a mesma geometria (borda do astro a 20,5% da imagem 2560x1440), e o CSS acha a borda com max(20.5vw, 36.44vh):
+  mudou o tamanho ou o lugar do astro num script? Mude essa conta no CSS do tema.
+- Inspiração em obra de terceiros (jogo, filme) fica só no clima: nada de nome, símbolo, brasão ou imagem dela.
+
+## Logo e céu (tema Padrão)
+- A logo (três estrelas ligadas por pontilhados, cores fixas `--logo-1/2/3`) existe em três lugares que andam
+  juntos: o SVG `.app-logo` no `index.html` (barra de título e Início), `LOGO_STARS`/`LOGO_DOTS` em
+  `renderer/icone-app.js` (ícone da janela e o `.ico` via `npm run icone`) e `--st-logo` em `styles-estelar.css`
+  (palco vazio). Mudou o desenho? Mude os três e rode `npm run icone` (o `.icns` do Mac não é gerado por ele).
+- O fundo do tema Padrão é um céu parado: estrelas em `--st-sky` (máscara SVG na cor do texto) e nebulosas nas cores
+  da logo, em `styles-estelar.css`. O antigo céu de exemplo da tela inicial (`renderHomeSky`) saiu.

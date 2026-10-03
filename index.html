@@ -9,6 +9,8 @@
   <link rel="stylesheet" href="styles-estelar.css">
   <link rel="stylesheet" href="styles-arasaka.css">
   <link rel="stylesheet" href="styles-eva.css">
+  <link rel="stylesheet" href="styles-dusol.css">
+  <link rel="stylesheet" href="styles-diluna.css">
 </head>
 <body>
   <div id="titlebar" class="titlebar"><svg class="app-logo" viewBox="0 0 100 100" aria-hidden="true"><path class="logo-c1" d="M46.17 3.83C47 10.79 50.21 14.01 57.17 14.83C50.21 15.65 47 18.87 46.17 25.83C45.34 18.87 42.13 15.65 35.17 14.83C42.13 14.01 45.34 10.79 46.17 3.83Z"/><path class="logo-c2" d="M13.83 57.5C14.65 64.46 17.87 67.67 24.83 68.5C17.87 69.33 14.65 72.54 13.83 79.5C13.01 72.54 9.79 69.33 2.83 68.5C9.79 67.67 13.01 64.46 13.83 57.5Z"/><path class="logo-c3" d="M77.83 55.5C79.31 67.95 85.05 73.69 97.5 75.17C85.05 76.65 79.31 82.39 77.83 94.84C76.35 82.39 70.61 76.65 58.16 75.17C70.61 73.69 76.35 67.95 77.83 55.5Z"/><g class="logo-dots"><circle class="logo-c1" cx="39.67" cy="19.83" r="1"/><circle class="logo-c1" cx="36.5" cy="22.67" r="0.7"/><circle class="logo-c1" cx="33.67" cy="25.33" r="0.58"/><circle class="logo-c12" cx="31.17" cy="28" r="0.5"/><circle class="logo-c12" cx="28.83" cy="30.67" r="0.5"/><circle class="logo-c2" cx="26.5" cy="33.67" r="0.57"/><circle class="logo-c2" cx="24.17" cy="37.33" r="0.67"/><circle class="logo-c2" cx="21.83" cy="41" r="0.75"/><circle class="logo-c2" cx="19.67" cy="45.17" r="0.83"/><circle class="logo-c2" cx="17.83" cy="49.5" r="0.92"/><circle class="logo-c2" cx="16.17" cy="54.33" r="1"/><circle class="logo-c1" cx="54" cy="20.33" r="1.08"/><circle class="logo-c1" cx="57.83" cy="23.83" r="1"/><circle class="logo-c1" cx="61.5" cy="27.67" r="0.92"/><circle class="logo-c1" cx="65" cy="31.83" r="0.92"/><circle class="logo-c1" cx="68.17" cy="36.33" r="0.83"/><circle class="logo-c3" cx="71" cy="41" r="0.92"/><circle class="logo-c3" cx="73.67" cy="46" r="1"/><circle class="logo-c3" cx="75.67" cy="51.33" r="1.08"/><circle class="logo-c2" cx="23" cy="73.17" r="1"/><circle class="logo-c2" cx="26.5" cy="74.83" r="0.6"/><circle class="logo-c2" cx="28.83" cy="75.67" r="0.5"/><circle class="logo-c2" cx="32" cy="76.67" r="0.5"/><circle class="logo-c23" cx="35.17" cy="77.5" r="0.5"/><circle class="logo-c23" cx="38.33" cy="78.33" r="0.5"/><circle class="logo-c3" cx="42" cy="79" r="0.6"/><circle class="logo-c3" cx="46.17" cy="79.5" r="0.75"/><circle class="logo-c3" cx="51" cy="79.67" r="0.92"/><circle class="logo-c3" cx="56.33" cy="79.67" r="1"/><circle class="logo-c3" cx="61.67" cy="79.33" r="1.17"/></g></svg><span>Tela P2P</span></div>
@@ -47,10 +49,12 @@
       <span class="nav-space" aria-hidden="true"></span>
       <!-- Início: volta para o saguão sem sair da sala (voz, chat e telas continuam) -->
       <button id="dockHome" type="button" class="workspace-tab rail-home" title="Ir para o início sem sair da sala" aria-label="Início" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/></svg></button>
-      <button id="leaveBtn" type="button" class="workspace-tab rail-leave" hidden></button>
       <!-- No menu inicial com a sala aberta: volta para ela (no lugar do Início), com as mensagens novas -->
       <button id="navBackToRoom" type="button" class="workspace-tab rail-home" title="Voltar para a sala" aria-label="Voltar para a sala" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg><span id="navBackUnread" class="unread" hidden></span></button>
+      <button id="leaveBtn" type="button" class="workspace-tab rail-leave" hidden></button>
       <span class="nav-sep" aria-hidden="true"></span>
+      <!-- Modo gamer (renderer/modo-gamer.js): desliga o que pesa no PC enquanto a pessoa joga -->
+      <button id="navGamer" type="button" class="workspace-tab rail-gamer" aria-label="Modo gamer" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 11h4M8 9v4M15 12h.01M18 10h.01M17.3 5H6.7a4 4 0 0 0-4 3.6l-.9 7.8A2.5 2.5 0 0 0 6.2 18l1.6-1.6a2 2 0 0 1 1.4-.4h5.6a2 2 0 0 1 1.4.4l1.6 1.6a2.5 2.5 0 0 0 4.4-1.6l-.9-7.8a4 4 0 0 0-4-3.6z"/></svg></button>
       <button id="navSettings" type="button" class="workspace-tab settings-tab" aria-label="Configurações gerais" title="Configurações gerais" aria-haspopup="dialog" aria-expanded="false" aria-controls="generalSettingsDialog"><span class="nav-icon" aria-hidden="true"></span></button>
     </nav>
   </header>
@@ -69,6 +73,16 @@
           <button type="button" role="radio" data-fit="preencher" title="Corta o meio da foto para preencher a bolinha">Preencher</button>
         </div>
         <p id="profilePhotoOld" class="hint photo-old" hidden>Foto de versão antiga: os outros a veem cortada. Escolha de novo.</p>
+      </div>
+      <!-- Fundo do perfil (renderer/fundo-perfil.js): aparece atrás do seu perfil para quem o abre na voz -->
+      <div class="profile-bg">
+        <span class="profile-bg-label">Fundo do perfil<button type="button" class="tip" data-tip="Imagem ou GIF (até 1 MB) atrás do seu perfil, para quem clicar em você na voz. O GIF só se mexe com o perfil aberto." aria-label="Imagem ou GIF (até 1 MB) atrás do seu perfil, para quem clicar em você na voz. O GIF só se mexe com o perfil aberto."></button></span>
+        <div id="profileBgPreview" class="profile-bg-preview" role="img" aria-label="Seu fundo do perfil" hidden></div>
+        <div class="profile-bg-buttons">
+          <button id="profileBgPick" class="btn small" type="button">Escolher imagem ou GIF</button>
+          <button id="profileBgRemove" class="btn small ghost" type="button" hidden>Tirar fundo</button>
+        </div>
+        <input id="profileBgFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
       </div>
       <label class="field">Nome de exibição<input id="profileName" maxlength="32" autocomplete="off"></label>
       <p id="profileHint" class="hint"></p>
@@ -151,6 +165,30 @@
       </section>
       <!-- Rede e conta: como os PCs se conectam, servidores, redes Razze e o login (lógica em renderer/conectividade.js) -->
       <section id="networkDialog" class="hub-pane hub-network network-settings" role="tabpanel" aria-labelledby="hubTabNetwork" hidden>
+        <!-- A conta Razze vem primeiro: entrar ou criar conta, ou quem está conectado -->
+        <div id="profileAccount">
+          <p id="razzeAccountStatus" class="razze-status" role="status" aria-live="polite"></p>
+          <p id="profileAccountHint" class="hint"></p>
+          <section class="net-step hub-account" aria-labelledby="razzeStepAccountTitle">
+            <div class="net-step-head"><h3 id="razzeStepAccountTitle">Conta Razze</h3></div>
+            <div id="razzeAuth" class="net-auth">
+              <div class="seg" role="tablist" aria-label="Entrar ou criar conta">
+                <button id="razzeTabLogin" type="button" role="tab" aria-selected="true">Entrar</button>
+                <button id="razzeTabRegister" type="button" role="tab" aria-selected="false">Criar conta</button>
+              </div>
+              <label class="field" id="razzeNameField" hidden><span>Seu nome na rede</span><input id="razzeDisplayName" type="text" maxlength="60" autocomplete="name"></label>
+              <label class="field"><span>E-mail</span><input id="razzeEmail" type="email" autocomplete="username"></label>
+              <label class="field"><span>Senha</span><input id="razzePassword" type="password" autocomplete="current-password"></label>
+              <button id="razzeLogin" class="btn primary" type="button">Entrar</button>
+              <button id="razzeRegister" class="btn primary" type="button" hidden>Criar conta</button>
+            </div>
+            <div id="razzeAccount" class="net-row net-account" hidden>
+              <span class="avatar" id="razzeAccountAvatar" aria-hidden="true"></span>
+              <span class="net-account-text"><strong id="razzeAccountName"></strong><span class="hint" id="razzeAccountEmail"></span></span>
+              <button id="razzeLogout" class="btn small" type="button">Sair da conta</button>
+            </div>
+          </section>
+        </div>
         <p class="net-summary" role="status"><span id="netSummaryDot" class="dot"></span><span id="netSummaryText"></span></p>
         <section class="settings-section" aria-labelledby="networkTitle">
           <h3 id="networkTitle">Como os PCs se conectam</h3>
@@ -202,29 +240,6 @@
           <ul id="connectionMapDetails" class="connection-map-details"></ul>
           <div class="net-row"><p id="connectionMapStatus" class="hint" role="status" aria-live="polite"></p><button id="refreshConnectionMap" class="btn small" type="button">Atualizar</button></div>
         </section>
-        <div id="profileAccount">
-          <p id="razzeAccountStatus" class="razze-status" role="status" aria-live="polite"></p>
-          <p id="profileAccountHint" class="hint"></p>
-          <section class="net-step hub-account" aria-labelledby="razzeStepAccountTitle">
-            <div class="net-step-head"><h3 id="razzeStepAccountTitle">Conta Razze</h3></div>
-            <div id="razzeAuth" class="net-auth">
-              <div class="seg" role="tablist" aria-label="Entrar ou criar conta">
-                <button id="razzeTabLogin" type="button" role="tab" aria-selected="true">Entrar</button>
-                <button id="razzeTabRegister" type="button" role="tab" aria-selected="false">Criar conta</button>
-              </div>
-              <label class="field" id="razzeNameField" hidden><span>Seu nome na rede</span><input id="razzeDisplayName" type="text" maxlength="60" autocomplete="name"></label>
-              <label class="field"><span>E-mail</span><input id="razzeEmail" type="email" autocomplete="username"></label>
-              <label class="field"><span>Senha</span><input id="razzePassword" type="password" autocomplete="current-password"></label>
-              <button id="razzeLogin" class="btn primary" type="button">Entrar</button>
-              <button id="razzeRegister" class="btn primary" type="button" hidden>Criar conta</button>
-            </div>
-            <div id="razzeAccount" class="net-row net-account" hidden>
-              <span class="avatar" id="razzeAccountAvatar" aria-hidden="true"></span>
-              <span class="net-account-text"><strong id="razzeAccountName"></strong><span class="hint" id="razzeAccountEmail"></span></span>
-              <button id="razzeLogout" class="btn small" type="button">Sair da conta</button>
-            </div>
-          </section>
-        </div>
       </section>
     </div>
   </aside>
@@ -261,8 +276,6 @@
     <!-- Início: um saguão. Você (foto e nome), as sessões abertas na rede como peça principal, criar ou entrar com
          endereço, a última sala; embaixo, a conexão e a versão -->
     <section id="home" class="screen home-screen">
-      <!-- Fundo (só no tema Padrão): um exemplo de sala com subsalas, sem nomes, com gente falando e transmitindo (renderHomeSky em renderer/ceu-voz.js) -->
-      <svg id="homeSky" class="voice-sky home-sky" aria-hidden="true"></svg>
       <!-- Estrela cadente de vez em quando, em intervalo aleatório (só no tema Padrão; homeMeteor em renderer/ceu-voz.js) -->
       <span id="homeMeteor" class="home-meteor" aria-hidden="true"></span>
       <div class="home-top">
@@ -533,7 +546,7 @@
             </div>
           </div>
 
-          <div id="workspaceEmpty" class="empty-stage" hidden><p>Escolha os painéis na barra superior: Chat, Voz ou Transmissão.</p></div>
+          <div id="workspaceEmpty" class="empty-stage" hidden><p>Escolha os painéis na barrinha da direita: Chat, Voz ou Transmissão.</p></div>
           <!-- Barra da sala: transmitir, janela flutuante e o resto, embaixo dos vídeos -->
           <div class="dock" role="toolbar" aria-label="Controles da sala">
             <!-- Uma linha só: transmitir | voz | espaço | convidar, estatísticas, chat | sair -->
@@ -822,6 +835,7 @@
         <button id="settingsTab-appearance" type="button" role="tab" data-tab="appearance" aria-controls="settingsPanel-appearance">Aparência</button>
         <button id="settingsTab-colors" type="button" role="tab" data-tab="colors" aria-controls="settingsPanel-colors">Cores</button>
         <button id="settingsTab-sounds" type="button" role="tab" data-tab="sounds" aria-controls="settingsPanel-sounds">Sons</button>
+        <button id="settingsTab-phone" type="button" role="tab" data-tab="phone" aria-controls="settingsPanel-phone">Celular</button>
       </div>
       <section id="settingsPanel-skin" class="settings-section" role="tabpanel" aria-labelledby="settingsTab-skin" hidden>
         <h3 id="skinTitle">Tema<button type="button" class="tip" data-tip="Muda o desenho do app inteiro, não só as cores. Voltar ao Padrão devolve as suas cores." aria-label="Muda o desenho do app inteiro, não só as cores. Voltar ao Padrão devolve as suas cores."></button></h3>
@@ -884,6 +898,44 @@
           <div class="sound-row"><button class="btn icon sound-play" id="preview-shareStop" type="button" title="Ouvir prévia" aria-label="Ouvir prévia: Parou de transmitir"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><label for="sound-shareStop">Parou de transmitir</label><select id="sound-shareStop"></select><input id="volume-shareStop" type="range" min="0" max="100" step="1" aria-label="Volume: Parou de transmitir"><output id="value-shareStop" for="volume-shareStop">100%</output></div>
         </div>
       </section>
+      <!-- Celular (renderer/celular.js): guardar as configurações num arquivo cifrado no celular e trazer de volta em
+           qualquer PC, pelo Wi-Fi, com QR code e senha (docs/spec/config-no-celular.md) -->
+      <section id="settingsPanel-phone" class="settings-section phone-panel" role="tabpanel" aria-labelledby="settingsTab-phone" hidden>
+        <h3>Configurações no celular</h3>
+        <p class="hint">Guarde tema, nome, foto, voz, volumes e atalhos num arquivo no seu celular e traga de volta em qualquer PC. O celular precisa estar no mesmo Wi-Fi do PC; nada passa pela internet. A conta Razze não vai junto: entre nela de novo.</p>
+        <div id="phoneActions" class="phone-actions">
+          <button id="phoneSave" class="btn primary" type="button">Guardar no celular</button>
+          <button id="phoneLoad" class="btn" type="button">Trazer do celular</button>
+        </div>
+        <div id="phoneFlow" class="phone-flow" hidden>
+          <form id="phonePassForm" class="phone-pass" hidden>
+            <strong id="phonePassTitle"></strong>
+            <p id="phonePassHint" class="hint"></p>
+            <label class="field">Senha<input id="phonePass" type="password" maxlength="200" autocomplete="new-password"></label>
+            <label class="field" id="phonePass2Field">Repita a senha<input id="phonePass2" type="password" maxlength="200" autocomplete="new-password"></label>
+            <p id="phonePassError" class="hint phone-error" role="status" aria-live="polite"></p>
+            <div class="phone-buttons"><button id="phonePassCancel" class="btn small" type="button">Cancelar</button><button id="phonePassGo" class="btn small primary" type="submit">Continuar</button></div>
+          </form>
+          <div id="phoneQrBox" class="phone-qr" hidden>
+            <div id="phoneQr" class="phone-qr-code"></div>
+            <div class="phone-qr-side">
+              <p id="phoneQrHint"></p>
+              <p class="hint">Sem câmera? Digite no navegador do celular:</p>
+              <code id="phoneUrl" class="phone-url"></code>
+              <label class="field" id="phoneIpLabel" hidden>Rede<select id="phoneIp"></select></label>
+              <div class="phone-buttons"><button id="phoneQrCancel" class="btn small" type="button">Cancelar</button></div>
+            </div>
+          </div>
+          <div id="phoneSummary" class="phone-summary" hidden>
+            <strong>O arquivo traz</strong>
+            <ul id="phoneSummaryList"></ul>
+            <p id="phoneSummaryNote" class="hint"></p>
+            <p class="hint">Aplicar troca as configurações deste PC por essas e recarrega a interface.</p>
+            <div class="phone-buttons"><button id="phoneSummaryCancel" class="btn small" type="button">Cancelar</button><button id="phoneApply" class="btn small primary" type="button">Aplicar</button></div>
+          </div>
+          <p id="phoneStatus" class="hint phone-status" role="status" aria-live="polite"></p>
+        </div>
+      </section>
       <footer class="settings-version"><span>Tela P2P</span><span id="settingsVersion"></span></footer>
     </div>
   </div>
@@ -907,8 +959,13 @@
   <script src="renderer/preferencias-modelo.js"></script>
   <script src="renderer/tema.js"></script>
   <script src="renderer/fotos.js"></script>
+  <script src="renderer/fundo-perfil.js"></script>
   <script src="renderer/icone-app.js"></script>
   <script src="renderer/configuracoes.js"></script>
+  <script src="renderer/modo-gamer.js"></script>
+  <script src="renderer/qr.js"></script>
+  <script src="renderer/celular-modelo.js"></script>
+  <script src="renderer/celular.js"></script>
   <script src="renderer/conectividade.js"></script>
   <script src="renderer/sala.js"></script>
   <script src="renderer/voz.js"></script>
