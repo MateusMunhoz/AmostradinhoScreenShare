@@ -95,6 +95,10 @@ quem está com ela, quantas pessoas estão dentro e um cadeado se tiver senha.
 No modo Internet, a lista da tela inicial vira **Salas dos seus amigos**: as salas que os seus amigos do Razze
 abriram pela internet. Basta estar logado na conta Razze (aba Rede do HUB); a VPN Razze não precisa estar ligada.
 
+- **Quem instala agora:** o app já começa no modo Internet, com o servidor da equipe e a conta Razze prontos. É só criar
+  a conta na aba Rede, adicionar os amigos e criar ou entrar nas salas. Quem já usava o app continua na Radmin; para
+  mudar, escolha **Internet (servidor)** em **Como os PCs se conectam**.
+
 - **Entrar:** o botão **Entrar** entra direto, sem senha, por um **passe de convite** que o app de quem criou a
   sala manda só para os amigos dele. Se o passe não valer mais (quem convidou saiu da sala) ou o servidor for
   antigo, abre o **Entrar com código** com o código preenchido, e é só digitar a senha. O servidor usado é o da

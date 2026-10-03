@@ -57,7 +57,7 @@ Entrar de forma fluida, sem Hamachi/Radmin: adicionar amigo, ver no lobby a sala
 | 1 | **A1. Cripto da sala** | nada | Pré-requisito para abrir a sala para a internet |
 | 2 | **Identidade e amigos sem servidor** | 0 | Cada PC gera um par de chaves (sem conta); "Adicionar amigo" por código curto; presença pela DHT (tópico = hash da chave). Conta Razze vira opcional |
 | 3 | **Lobby: salas dos amigos** | 2 | Na tela inicial, a sala aberta de um amigo adicionado aparece com "Entrar"; amigo entra sem código e senha (a chave já prova quem é) |
-| 4 | **Túnel invisível (P1 fase 2)** | 0, 1 | A ponte Hyperswarm faz o papel do Hamachi sem instalar nada, sem adaptador de rede e sem pedir administrador |
+| 4 | **Túnel invisível (P1 fase 2)** | 0, 1 | Deixado de lado em 03/10/2026 (ver P1). A ponte Hyperswarm faria o papel do Hamachi sem instalar nada |
 | 5 | **Constelação de amigos + estrela cadente** | 2 (constelação); nada (estrela) | A estrela cadente pode sair já. Ver "Tela inicial" abaixo |
 | 6 | **Enquete de próximos temas** | 2 | Só votar nas opções da lista, sem sugerir tema |
 | 7 | **Razze: decidir o destino** | 2, 3, 4 provados | **Não remover antes.** Ver "Razze e WireGuard" abaixo |
@@ -100,7 +100,7 @@ Entrar de forma fluida, sem Hamachi/Radmin: adicionar amigo, ver no lobby a sala
 
 | Item | Status | Esforço | Depende de |
 |---|---|---|---|
-| P1. Entrar pela internet sem VPN (3 fases) | Em andamento: já existe o modo Internet por VPS ([servidor-internet](../servidor-internet/README.md)). **Prioridade:** a fase 2 (Hyperswarm) continua no plano | 4–6 sem | A1 |
+| P1. Entrar pela internet sem VPN (3 fases) | Em andamento: o modo Internet por VPS ([servidor-internet](../servidor-internet/README.md)) é o padrão para quem instala desde 03/10/2026. A fase 2 (Hyperswarm) foi deixada de lado | 4–6 sem | A1 |
 | P2. Histórico e "desde a sua última visita" | Não começado | 2 sem | nada |
 | P3. Espectadores repassando o vídeo | Não começado | 3–4 sem | melhor depois de P1 |
 | P4. Clipe dos últimos 30 s | Não começado | 1–2 sem | nada |
@@ -205,7 +205,8 @@ VPN ou da rede local.
   pesada) e descobrir o IP público. "Convidar" passa a copiar o endereço público quando der certo.
 - Resolve casas com roteador comum; **não resolve CGNAT** (comum em fibra e 4G no Brasil). Por isso a fase 2.
 
-**Fase 2 (2–3 semanas): código de convite sem servidor nosso.** *Prioridade da equipe; não descartar por causa do modo VPS.*
+**Fase 2 (2–3 semanas): código de convite sem servidor nosso.** *Deixada de lado em 03/10/2026: o caminho é o modo Internet
+(VPS + TURN) com as salas dos amigos da Razze. O protótipo (PR #17) entrou casa ↔ 4G em 7,7 s e foi removido; está no histórico do Git.*
 - Usar o **Hyperswarm** (DHT pública da Holepunch, com furo de NAT por UDP e canal criptografado Noise). O host entra num
   "tópico" = hash do código de convite; o convidado entra no mesmo tópico e os dois se acham, sem servidor do projeto.
 - **Túnel da sinalização:** no PC do convidado, `main/` abre uma porta local (`127.0.0.1:porta`) e liga cada conexão

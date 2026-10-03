@@ -81,7 +81,8 @@ const profileDir = (tag) => path.join(TMP, `perfil-${tag}`);
 async function openApp(tag, port, { fake = false, size = true } = {}) {
   const dir = profileDir(tag);
   fs.rmSync(dir, { recursive: true, force: true });
-  spawn(ELECTRON, ['.', `--user-data-dir=${dir}`, `--remote-debugging-port=${port}`, ...MUTE, ...(fake ? FAKE : [])], { cwd: APP, stdio: 'ignore' });
+  // Sem a RazzeAPI da equipe: o teste não fala com o servidor de verdade
+  spawn(ELECTRON, ['.', `--user-data-dir=${dir}`, `--remote-debugging-port=${port}`, ...MUTE, ...(fake ? FAKE : [])], { cwd: APP, stdio: 'ignore', env: { ...process.env, TELA_RAZZE_API: '' } });
   const X = await attach(port);
   if (size) await X.send('Emulation.setDeviceMetricsOverride', { width: 1200, height: 780, deviceScaleFactor: 1, mobile: false });
   // A página inteira (todos os scripts), não só o primeiro: senão o teste chamava funções que ainda não existiam
