@@ -22,6 +22,9 @@ paths:
 - RazzeAPI no cliente: token e identidade WireGuard protegidos com `safeStorage`; cliente HTTP exige HTTPS fora de
   localhost. O ajudante elevado (`main/razze-ajudante.js`, `main/razze-privilegiado.js`) aceita poucos pedidos
   fixos sobre túneis `Razze…`: não amplie o que ele aceita sem plano aprovado.
+- Mensagens diretas: `main/mensagens-cripto.js` cifra e decifra entre o IPC e a RazzeAPI; a chave privada (selada
+  com `safeStorage`) nunca vai para a janela nem para o servidor. Nada de mandar mensagem em texto ou expor a chave por
+  IPC. O histórico (`main/mensagens.js`) é gravado cifrado. Spec: `docs/spec/mensagens-criptografadas.md`.
 - `main/celular.js` (configurações no celular) abre um servidor HTTP em `0.0.0.0` só enquanto o QR está aberto: chave de
   uso único no caminho, 5 minutos, um download ou um envio de até 4 MB, e fecha. Não deixe ele servir nada além da
   página e do arquivo, nem ficar aberto sem a janela do QR. A cifra é feita no renderer; a página do celular não tem cripto.

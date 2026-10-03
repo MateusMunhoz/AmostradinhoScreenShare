@@ -61,6 +61,7 @@ class RazzeApiClient {
   cancelFriendRequest(id) { return this.request('DELETE', '/v1/friends/requests/' + encodeURIComponent(id)); }
   removeFriend(id) { return this.request('DELETE', '/v1/friends/' + encodeURIComponent(id)); }
   sendMessage(to, text) { return this.request('POST', '/v1/messages', { to, text }); }
+  setDmKey(publicKey) { return this.request('PUT', '/v1/me/dm-key', { publicKey }); }
   messages(after = 0) { return this.request('GET', '/v1/messages?after=' + Math.max(0, Math.floor(Number(after) || 0))); }
   listNetworks() { return this.request('GET', '/v1/networks'); }
   getNetwork(id) { return this.request('GET', '/v1/networks/' + encodeURIComponent(id)); }

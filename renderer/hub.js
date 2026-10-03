@@ -269,8 +269,8 @@ function friendRow(f, isOnline) {
   // Convidar só faz sentido para quem está online
   if (isOnline) {
     const inRoom = !!state.myId && !!state.roomAddr;
-    const invite = hubButton('Convidar', () => inviteFriend(f), 'btn small' + (inRoom ? ' primary' : ''),
-      inRoom ? `Copiar o ${state.cloud ? 'código' : 'endereço'} da sua sala para mandar para ${f.displayName}` : 'Entre numa sala para convidar');
+    const invite = hubButton('Convidar', () => convidarPorMensagem(f), 'btn small' + (inRoom ? ' primary' : ''),
+      inRoom ? `Mandar um convite para a sua sala nas mensagens de ${f.displayName}` : 'Entre numa sala para convidar');
     invite.disabled = !inRoom;
     li.append(invite);
   }
@@ -328,14 +328,6 @@ async function removeFriend(f) {
   friendsUi.confirm = null;
   try { await window.api.razzeRemoveFriend(f.id); friendsStatus(`${f.displayName} saiu da sua lista de amigos.`); await refreshRazzeLists(); }
   catch (error) { friendsStatus('Não foi possível remover: ' + error.message); }
-}
-async function inviteFriend(f) {
-  const address = state.roomAddr || (state.host ? `${state.host}:${state.port}` : '');
-  if (!address) { friendsStatus(`Entre numa sala primeiro para convidar ${f.displayName}.`); return; }
-  try {
-    await copiar(address);
-    friendsStatus(state.cloud ? `Código copiado: ${address}. Mande para ${f.displayName} junto com a senha.` : `Endereço copiado: ${address}. Mande para ${f.displayName}.`);
-  } catch { friendsStatus('Não foi possível copiar o endereço da sala.'); }
 }
 
 function setupHub() {

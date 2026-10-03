@@ -12,16 +12,21 @@ let networkReturnFocus = null;
 let razzeLive = { friends: [], networks: [], rooms: [], updatedAt: null, error: '' };
 const VISIBILITY = { private: 'Privada', friends: 'Só amigos', public: 'Pública' };
 
+// O padrão é o modo Internet. Quem já usava o app antes (sem ter escolhido nada) continua na Radmin, como estava:
+// o clientId e o último endereço só existem depois de entrar numa sala.
 function networkPreferences() {
   try {
+    if (!localStorage.getItem(NETWORK_PREF_KEY) && (localStorage.getItem('clientId') || localStorage.getItem('roomAddr'))) {
+      localStorage.setItem(NETWORK_PREF_KEY, JSON.stringify({ provider: 'radmin' }));
+    }
     const p = JSON.parse(localStorage.getItem(NETWORK_PREF_KEY) || '{}');
     return {
-      provider: ['razze', 'internet'].includes(p.provider) ? p.provider : 'radmin',
+      provider: ['razze', 'radmin'].includes(p.provider) ? p.provider : 'internet',
       apiUrl: typeof p.apiUrl === 'string' ? p.apiUrl : '',
       activeNetworkId: typeof p.activeNetworkId === 'string' ? p.activeNetworkId : '',
       internetUrl: typeof p.internetUrl === 'string' ? p.internetUrl : '',
     };
-  } catch { return { provider: 'radmin', apiUrl: '', activeNetworkId: '', internetUrl: '' }; }
+  } catch { return { provider: 'internet', apiUrl: '', activeNetworkId: '', internetUrl: '' }; }
 }
 
 // Endereço do servidor do modo Internet, como o WebSocket precisa: "1.2.3.4:8765" vira ws://1.2.3.4:8765 e um

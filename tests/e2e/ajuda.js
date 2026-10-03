@@ -89,6 +89,8 @@ async function openApp(tag, port, { fake = false, size = true } = {}) {
     Object.defineProperty(document, 'hidden', { get: () => false });
     document.addEventListener('visibilitychange', (e) => e.stopImmediatePropagation(), true);
   })()`);
+  // O padrão do app é o modo Internet; os testes de sala usam a Radmin/rede local (internet.js troca depois)
+  await X.eval(`(() => { saveNetworkPreferences({ provider: 'radmin' }); renderConnectivitySettings(); setSessionWatch(sessionWatchWanted()); })()`);
   return X;
 }
 

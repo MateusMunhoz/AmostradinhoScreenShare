@@ -38,6 +38,13 @@ Tudo o que dá para fazer no Tela P2P, com os detalhes. Para começar do zero, v
 - **Barrinha da direita:** em cima, o perfil; logo abaixo, separados por uma linha, o **botão de pessoas** (o total e uma bolinha verde quando alguém fala; abre a lista de quem está na sala), **Chat**, **Voz** e **Transmissão**. Ouvindo uma música, aparece também o botão de **música**: clicar mostra **Pausar** ou **Continuar** (para todos, se você pode controlar) e **Sair da música** (a música continua para os outros). No pé, **Início** (vai para o saguão sem sair da sala), **Sair** e, depois de uma linha, o **modo gamer** (o controle) e a engrenagem. No saguão, com a sala aberta, o pé mostra **Voltar para a sala**, com o número de mensagens novas.
 - **Recolher o painel:** o balão do chat recolhe o painel, e os vídeos ocupam a largura toda. Recolhido, ele mostra quantas mensagens chegaram, e o endereço da sala passa para a barra.
 
+### Como os PCs se conectam
+
+No HUB, aba **Rede**. O padrão é **Internet (servidor)**: sem VPN, a sala fica num servidor (VPS) e os amigos
+entram por código e senha, pela lista de salas dos amigos ou por um convite nas mensagens. Também dá para usar
+**Radmin ou rede local** e **Razze (WireGuard)**. Quem já usava o app antes do modo Internet virar o padrão, sem
+ter escolhido outro, continua na Radmin.
+
 ### VPN Tela P2P
 
 Para usar uma rede virtual sem Radmin, todos precisam usar a mesma instalação da RazzeAPI. O administrador
@@ -238,12 +245,37 @@ No HUB (a barra fina na borda esquerda), aba **Amigos**. Precisa de conta Razze.
 
 - **Buscar:** o campo do topo filtra a lista pelo nome. Os chips **Todos**, **Online** e **Pedidos** mudam o que aparece; o número no **Pedidos** conta os pedidos recebidos e enviados.
 - **Adicionar:** clique em **Adicionar**, digite o nickname exato e **Enviar pedido** (ou Enter). Se der errado, o motivo aparece embaixo do campo. Quando der certo, o pedido vai para **Pedidos enviados**.
-- **Convidar:** aparece só para quem está online; copia o endereço (ou o código) da sua sala.
+- **Convidar:** aparece só para quem está online, com você numa sala. Manda um **convite** nas mensagens diretas do
+  amigo, que aparece como um cartão com **Entrar** (veja abaixo).
 - **Remover:** no **⋯** da linha, **Remover [nome]**. A própria linha pergunta se é isso mesmo; **Não** ou Esc desiste.
 
 ## Mensagens diretas
 
 Conversa com um amigo (conta Razze), dentro ou fora da sala.
+
+- **Criptografadas de ponta a ponta:** só você e o amigo leem. O servidor Razze (e quem cuida dele) vê só texto
+  embaralhado. Cada PC tem a própria chave, guardada com a proteção da sua conta do Windows; o histórico neste PC
+  também fica protegido.
+  - **Amigo numa versão antiga:** a mensagem não sai. A janela avisa que ele precisa atualizar o Tela P2P, e o texto
+    volta para o campo.
+  - **Chave trocada:** quando o amigo troca de PC ou reinstala o app, a conversa avisa "A chave de segurança de
+    [nome] mudou". Se não foi isso, confirme com ele por outro meio.
+  - **"Não dá para abrir aqui":** a mensagem foi cifrada para outro PC da sua conta (ou para este PC antes de uma
+    reinstalação). Cada PC só lê o que chegou para a chave dele.
+  - **"sem criptografia":** marca as mensagens de antes, que o servidor ainda guarda por até 30 dias.
+- **Clicar fora** da janelinha minimiza a conversa. O **alfinete** no chip trava a janela aberta (clique de novo
+  para destravar). A escolha fica salva.
+
+- **Convite para a sala:** o **Convidar** da aba Amigos manda um cartão "Convite para a sala de [nome]", com
+  quantas pessoas estão, o modo e um **Entrar**. Só entra quando você clica, nunca sozinho.
+  - **Pela internet:** entra direto, sem senha (o convite leva um passe que só abre aquela sala enquanto quem
+    convidou está nela). Se o passe não valer mais, abre o **Entrar com código** já preenchido para a senha.
+  - **Radmin ou Razze:** preenche o endereço e entra; se a sala tiver senha, pede a senha (ela nunca vai no
+    convite). Na Razze, precisa estar com a mesma rede ligada.
+  - **Outro modo:** se você estiver em outro modo (por exemplo, na Radmin e o convite é pela internet), o cartão
+    avisa qual usar, em HUB › Rede. O app não troca o modo sozinho.
+  - **Já numa sala:** pergunta se quer sair dela e entrar na do amigo.
+  - **App antigo:** quem ainda não atualizou vê o convite como texto, com o código ou o endereço, e entra à mão.
 
 - **Abrir:** clique em **Mensagens**, na barra de baixo: a lista das conversas abre para cima, com busca, a última mensagem e as não lidas. Ou, no HUB, aba **Amigos**, no balão ao lado do nome.
 - **Barra de conversas:** fica embaixo da tela. Cada conversa aberta vira um chip. Clicar no chip abre a janela; o **—** minimiza de volta para o chip; o **X** tira da barra.

@@ -157,3 +157,21 @@ test('sala do modo Internet: só os amigos aceitos veem, sem rede nem VPN, e som
   const page = await req('admin/database/live_presence', 'GET', undefined, ROOT);
   assert.doesNotMatch(JSON.stringify(page), new RegExp(passe));
 });
+
+test('mensagens criptografadas: chave pública por conta, entregue só aos amigos; texto cifrado longo aceito', async t => {
+  const { req, register } = await fixture(t);
+  const a = await register('Ana'), b = await register('Bia'), stranger = await register('Eve');
+  const friend = await req('friends/requests', 'POST', { email: b.user.email }, a.accessToken);
+  await req('friends/requests/' + friend.id + '/accept', 'POST', undefined, b.accessToken);
+  const key = Buffer.alloc(32, 7).toString('base64');
+  assert.equal((await req('me/dm-key', 'PUT', { publicKey: 'curta' }, a.accessToken)).status, 400);
+  assert.equal((await req('me/dm-key', 'PUT', { publicKey: key }, a.accessToken)).status, 200);
+  assert.equal((await req('friends', 'GET', undefined, b.accessToken)).friends[0].dmKey, key);
+  assert.equal((await req('friends', 'GET', undefined, a.accessToken)).friends[0].dmKey, null);
+  assert.equal((await req('friends', 'GET', undefined, stranger.accessToken)).friends.length, 0);
+  const longE2e = 'e2e1:' + 'A'.repeat(8000);
+  assert.equal((await req('messages', 'POST', { to: b.user.id, text: longE2e }, a.accessToken)).status, 201);
+  assert.equal((await req('messages', 'POST', { to: b.user.id, text: 'x'.repeat(2001) }, a.accessToken)).status, 400);
+  assert.equal((await req('messages', 'POST', { to: b.user.id, text: 'e2e1:' + 'A'.repeat(9001) }, a.accessToken)).status, 400);
+  assert.equal((await req('messages', 'GET', undefined, b.accessToken)).messages[0].text, longE2e);
+});

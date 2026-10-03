@@ -63,9 +63,10 @@ Todas as respostas usam JSON. Erros seguem `{ "error": { "code": "...", "message
 | `POST /v1/auth/logout`, `GET /v1/me` | Encerrar sessão e consultar conta |
 | `GET /v1/admin/users`, `GET /v1/admin/networks` | Listagens administrativas com `RAZZE_ADMIN_TOKEN` |
 | `POST /v1/admin/users/:id/approve` | Aprovar conta pendente com `RAZZE_ADMIN_TOKEN` |
-| `GET /v1/friends`, `GET /v1/friends/requests` | Listar amizades e solicitações |
+| `GET /v1/friends`, `GET /v1/friends/requests` | Listar amizades e solicitações; cada amigo vem com `dmKey` (a chave pública das mensagens criptografadas, ou `null`) |
+| `PUT /v1/me/dm-key` (`{ publicKey }`) | Publicar a chave pública X25519 (32 bytes em base64) das mensagens criptografadas desta conta; vale a do último PC que publicou |
 | `POST /v1/friends/requests`, `POST /v1/friends/requests/:id/accept`, `DELETE /v1/friends/:userId` | Gerenciar amizades |
-| `POST /v1/messages` (`{ to, text }`) | Mandar mensagem direta para um amigo (até 2000 caracteres; 30 mensagens a cada 10 s por conta) |
+| `POST /v1/messages` (`{ to, text }`) | Mandar mensagem direta para um amigo (até 2000 caracteres, ou até 9000 se for cifrada, `e2e1:<base64url>`; 30 mensagens a cada 10 s por conta). O app só manda cifrada ([spec](spec/mensagens-criptografadas.md)) |
 | `GET /v1/messages?after=<seq>` | Mensagens diretas (enviadas e recebidas) depois do número de sequência `after`, 200 por vez (`more` diz se há mais) |
 | `GET /v1/networks`, `POST /v1/networks` | Listar redes visíveis e criar rede |
 | `GET/PATCH/DELETE /v1/networks/:id` | Consultar, editar ou excluir rede própria |

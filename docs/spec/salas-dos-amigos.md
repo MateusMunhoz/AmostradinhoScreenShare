@@ -50,6 +50,15 @@ salas uns dos outros na tela inicial e entram com um clique, sem precisar da VPN
 - RazzeAPI antiga: não devolve `internet`; a lista fica vazia.
 - App antigo: ignora `internet` na resposta.
 
+## Convite pelas mensagens diretas (1.14.0)
+O **Convidar** do HUB › Amigos manda uma mensagem direta com um texto legível (para app antigo) e uma última linha
+`telap2p://sala?d=<base64url de JSON>`: `{ v: 1, modo: 'internet', servidor, codigo, passe?, pessoas }` ou
+`{ v: 1, modo: 'radmin' | 'razze', endereco, senha, pessoas, rede? }`. A senha nunca vai. Quem convida pelo modo
+Internet registra um passe na hora (`garantirPasse`), mesmo sem ter criado a sala ou com a caixinha desmarcada;
+quem entrou por um passe não tem como convidar com passe (o convite vai sem, e o amigo digita a senha).
+O app de quem recebe (`lerConvite`, `salas-amigos.js`) confere tudo e mostra um cartão com Entrar na conversa
+(`mensagens.js`); entra só com o clique, só no mesmo modo, e pergunta antes de sair de outra sala.
+
 ## Testes
 - Automáticos: `tests/servidor-internet.test.js` (passe: entra, só quem entrou com senha cria, sai com quem
   convidou, volta com o mesmo passe, `null` tira), `tests/razze-control.test.js` (só amigos veem, validação,

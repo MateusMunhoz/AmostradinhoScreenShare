@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, desktopCapturer, session, globalShortcut, shell, clipboard, nativeImage } = require('electron');
+const { app, BrowserWindow, ipcMain, desktopCapturer, session, globalShortcut, shell, clipboard, nativeImage, safeStorage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -20,6 +20,8 @@ const { createRazzeService } = require('./main/razze-service');
 const razze = createRazzeService();
 const { createDmStore } = require('./main/mensagens');
 let dmStore = null; // criado quando o app fica pronto (precisa da pasta do usuário)
+const { createDmE2E } = require('./main/mensagens-cripto');
+let dmE2E = null; // mensagens criptografadas de ponta a ponta (criado junto com o dmStore)
 const { createPresence, cleanInternetRoom } = require('./main/razze-presence');
 let activeRazzeNetwork = '', roomRazzeNetwork = '';
 let internetRoom = null; // sala do modo Internet em que estou, para os amigos (renderer/salas-amigos.js)
@@ -364,14 +366,15 @@ if (hasSingleInstance) app.whenReady().then(() => {
       await razzePresence.reset(); activeRazzeNetwork = ''; roomRazzeNetwork = '';
     }
     const result = razze.configure(normalized);
+    dmE2E?.reset();
     void razzePresence.tick();
     return result;
   });
   ipcMain.handle('razze-health', () => razze.health());
   ipcMain.handle('razze-me', () => razze.me());
-  ipcMain.handle('razze-register', (_e, email, password, name) => razze.register(String(email || ''), String(password || ''), String(name || '')));
-  ipcMain.handle('razze-login', async (_e, email, password) => { const result = await razze.login(String(email || ''), String(password || '')); void razzePresence.tick(); return result; });
-  ipcMain.handle('razze-logout', async () => { await razzePresence.reset(); activeRazzeNetwork = ''; roomRazzeNetwork = ''; return razze.logout(); });
+  ipcMain.handle('razze-register', async (_e, email, password, name) => { const result = await razze.register(String(email || ''), String(password || ''), String(name || '')); dmE2E?.reset(); return result; });
+  ipcMain.handle('razze-login', async (_e, email, password) => { const result = await razze.login(String(email || ''), String(password || '')); dmE2E?.reset(); void razzePresence.tick(); return result; });
+  ipcMain.handle('razze-logout', async () => { await razzePresence.reset(); activeRazzeNetwork = ''; roomRazzeNetwork = ''; dmE2E?.reset(); return razze.logout(); });
   ipcMain.handle('razze-presence-state', () => razzePresence.snapshot());
   ipcMain.handle('razze-internet-room', (_e, value) => {
     const next = cleanInternetRoom(value);
@@ -395,9 +398,11 @@ if (hasSingleInstance) app.whenReady().then(() => {
   ipcMain.handle('razze-cancel-friend-request', (_e, id) => razze.cancelFriendRequest(String(id || '')));
   ipcMain.handle('razze-remove-friend', (_e, id) => razze.removeFriend(String(id || '')));
   // Mensagens diretas: pela RazzeAPI; o histórico fica em arquivos locais (main/mensagens.js)
-  ipcMain.handle('razze-send-message', (_e, to, text) => razze.sendMessage(String(to || ''), String(text || '')));
-  ipcMain.handle('razze-messages', (_e, after) => razze.messages(Number(after) || 0));
-  dmStore = createDmStore(path.join(app.getPath('userData'), 'mensagens'));
+  // Mensagens diretas: cifradas aqui antes de ir para a RazzeAPI e decifradas ao chegar (main/mensagens-cripto.js)
+  ipcMain.handle('razze-send-message', (_e, to, text) => dmE2E.send(String(to || ''), String(text || '')));
+  ipcMain.handle('razze-messages', (_e, after) => dmE2E.messages(Number(after) || 0));
+  dmStore = createDmStore(path.join(app.getPath('userData'), 'mensagens'), { storage: safeStorage });
+  dmE2E = createDmE2E({ baseDir: path.join(app.getPath('userData'), 'mensagens'), storage: safeStorage, service: razze });
   ipcMain.handle('dm-list', (_e, account) => dmStore.list(String(account || '')));
   ipcMain.handle('dm-load', (_e, account, friend) => dmStore.load(String(account || ''), String(friend || '')));
   ipcMain.handle('dm-save', (_e, account, friend, data) => dmStore.save(String(account || ''), String(friend || ''), data));

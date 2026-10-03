@@ -65,7 +65,9 @@ run('Barra de mensagens abre para cima', 90000, async () => {
   check('O "+N" avisa que tem mensagem não lida escondida', b1.unread);
   await clickAt(A, await centerOf(A, '#dmMore'));
   const listed = await A.eval(`[...$('dmMoreMenu').querySelectorAll('.dm-more-item')].map((i) => i.textContent)`);
-  check('Clicar no "+N" lista as escondidas, para cima', listed.length === b1.order.length - b1.shown && await A.eval(`$('dmMoreMenu').getBoundingClientRect().bottom <= $('dmBar').getBoundingClientRect().top + 1`), JSON.stringify(listed));
+  // O clique fora minimiza a conversa aberta: a barra ganha espaço e o "+N" esconde menos (conta de novo)
+  const b1b = await A.eval(bar);
+  check('Clicar no "+N" lista as escondidas, para cima', listed.length >= 1 && listed.length === b1b.order.length - b1b.shown && await A.eval(`$('dmMoreMenu').getBoundingClientRect().bottom <= $('dmBar').getBoundingClientRect().top + 1`), JSON.stringify(listed));
   await clickAt(A, await centerOf(A, '#dmMoreMenu .dm-more-item:last-child'));
   await A.waitFor(`dm.bar.find((b) => b.id === '${'h'.repeat(32)}').open && !dm.convs.get('${'h'.repeat(32)}').el.slot.hidden`, 5000);
   const b2 = await A.eval(bar);

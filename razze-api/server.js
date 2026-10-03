@@ -18,6 +18,10 @@ const MAX_BODY_BYTES = 32 * 1024;
 // mesma conta); o histórico completo fica no PC de cada um
 const DM_KEEP_MS = 30 * 24 * 60 * 60 * 1000;
 const DM_MAX_TEXT = 2000;
+// Mensagem criptografada de ponta a ponta (e2e1:<base64url>): 2000 caracteres viram até ~8200 depois de cifrados
+const DM_MAX_E2E = 9000;
+const DM_E2E_RE = /^e2e1:[A-Za-z0-9_-]+$/;
+const DM_KEY_RE = /^[A-Za-z0-9+/]{43}=$/; // chave pública X25519 (32 bytes, base64)
 const DM_PAGE = 200;
 
 class ApiError extends Error {
@@ -51,7 +55,9 @@ function createApiServer(options = {}) {
     "CREATE TABLE IF NOT EXISTS direct_messages (seq INTEGER PRIMARY KEY AUTOINCREMENT, id TEXT NOT NULL UNIQUE, sender_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, receiver_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, body TEXT NOT NULL, created_at INTEGER NOT NULL)",
     "CREATE INDEX IF NOT EXISTS idx_dm_receiver ON direct_messages(receiver_id, seq)",
     "CREATE INDEX IF NOT EXISTS idx_dm_sender ON direct_messages(sender_id, seq)",
-    "CREATE INDEX IF NOT EXISTS idx_dm_created ON direct_messages(created_at)"
+    "CREATE INDEX IF NOT EXISTS idx_dm_created ON direct_messages(created_at)",
+    // Chave pública das mensagens criptografadas: uma por conta (a do PC que publicou por último)
+    "CREATE TABLE IF NOT EXISTS dm_keys (user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE, public_key TEXT NOT NULL, updated_at INTEGER NOT NULL)"
   ].join(';\n') + ';');
   const userColumns = db.prepare('PRAGMA table_info(users)').all().map((column) => column.name);
   if (!userColumns.includes('status')) db.exec("ALTER TABLE users ADD COLUMN status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('pending', 'active', 'disabled'))");
@@ -256,9 +262,17 @@ function createApiServer(options = {}) {
 
       if (method === 'GET' && pathname === '/v1/friends') {
         const rows = db.prepare(
-          "SELECT DISTINCT u.id, u.email, u.display_name AS displayName FROM friend_requests f JOIN users u ON (u.id = f.sender_id AND f.receiver_id = ?) OR (u.id = f.receiver_id AND f.sender_id = ?) WHERE f.status = 'accepted' ORDER BY u.display_name COLLATE NOCASE"
+          "SELECT DISTINCT u.id, u.email, u.display_name AS displayName, k.public_key AS dmKey FROM friend_requests f JOIN users u ON (u.id = f.sender_id AND f.receiver_id = ?) OR (u.id = f.receiver_id AND f.sender_id = ?) LEFT JOIN dm_keys k ON k.user_id = u.id WHERE f.status = 'accepted' ORDER BY u.display_name COLLATE NOCASE"
         ).all(userId, userId);
-        return send(res, 200, { friends: control.enrichUsers(rows) });
+        return send(res, 200, { friends: control.enrichUsers(rows.map((r) => ({ ...r, dmKey: r.dmKey || null }))) });
+      }
+      // Chave pública das mensagens criptografadas (a privada nunca sai do PC); os amigos recebem em /v1/friends
+      if (method === 'PUT' && pathname === '/v1/me/dm-key') {
+        const body = await readBody(req);
+        const key = String(body.publicKey || '');
+        if (!DM_KEY_RE.test(key) || Buffer.from(key, 'base64').length !== 32) throw new ApiError(400, 'invalid_input', 'Chave pública inválida.');
+        db.prepare('INSERT INTO dm_keys(user_id, public_key, updated_at) VALUES(?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET public_key = excluded.public_key, updated_at = excluded.updated_at').run(userId, key, now());
+        return send(res, 200, { ok: true });
       }
       if (method === 'GET' && pathname === '/v1/friends/requests') {
         const incoming = db.prepare(
@@ -320,7 +334,8 @@ function createApiServer(options = {}) {
         const to = String(body.to || '');
         if (!/^[a-f0-9]{32}$/.test(to)) throw new ApiError(400, 'invalid_input', 'Destinatário inválido.');
         if (to === userId || !friendshipExists(userId, to)) throw new ApiError(403, 'not_friends', 'Só dá para mandar mensagem para amigos.');
-        const text = assertText(body.text, 'Mensagem', 1, DM_MAX_TEXT);
+        const e2e = typeof body.text === 'string' && DM_E2E_RE.test(body.text);
+        const text = assertText(body.text, 'Mensagem', 1, e2e ? DM_MAX_E2E : DM_MAX_TEXT);
         const timestamp = now();
         let rate = dmRate.get(userId);
         if (!rate || rate.resetAt <= timestamp) rate = { count: 0, resetAt: timestamp + 10_000 };

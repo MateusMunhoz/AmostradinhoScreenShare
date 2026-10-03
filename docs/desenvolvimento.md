@@ -18,7 +18,7 @@ Para gerar um `.exe` portátil sem publicar: `npm run dist`. O arquivo aparece e
 - **Sala:** quem cria a sala roda um servidor pequeno de sinalização (`signaling.js`, WebSocket) dentro do próprio app. Ele só apresenta as pessoas umas às outras e guarda as últimas 100 mensagens do chat.
 - **Vídeo, áudio, voz e arquivos:** vão direto de PC para PC, por WebRTC, pela rede da Radmin. Não passam por servidor.
 - **Troca de host:** cada um sabe a ordem de chegada e os endereços dos outros. Se o servidor some, o mais antigo abre outro na mesma porta, e todo mundo volta com o mesmo número. Por isso as conexões diretas (quem assiste quem) não caem.
-- **Rede usada pelo app:** em Configurações gerais, escolha Radmin/LAN (padrão) ou VPN Razze. A RazzeAPI independente gerencia contas, amizades, redes, convites e chaves públicas; o executável oficial `bin/selfvpn/wireguard.exe` cria um serviço de túnel por rede no Windows. Os peers são descobertos pelo API e por STUN UDP. O primeiro MVP usa conexão direta; não há relay para CGNAT restritivo. A descoberta automática de salas continua apenas em LAN/Radmin.
+- **Rede usada pelo app:** em Configurações gerais, escolha Internet (servidor, o padrão), Radmin/LAN ou VPN Razze; quem já usava o app sem ter escolhido continua na Radmin. A RazzeAPI independente gerencia contas, amizades, redes, convites e chaves públicas; o executável oficial `bin/selfvpn/wireguard.exe` cria um serviço de túnel por rede no Windows. Os peers são descobertos pelo API e por STUN UDP. O primeiro MVP usa conexão direta; não há relay para CGNAT restritivo. A descoberta automática de salas continua apenas em LAN/Radmin.
 - **Arquivos principais:**
 
   | Arquivo | O que faz |
@@ -81,7 +81,7 @@ isso (chamam `watch`, `state`, `speaking`... direto na página).
 | 28 | `chat.js` | Mensagens, arquivos, não lidas |
 | 29 | `estatisticas.js` | Desempenho, aba Transmissão, codificador em uso |
 | 28 | `novidades.js`, `atualizacao.js` | `NOVIDADES` (gerada pelo `publicar.js` com os commits); atualização pela sala, pelo GitHub, o aviso e o cartão Novidades do Início |
-| 30 | `sessoes.js`, `salas-amigos.js` | Sessões abertas na rede (a lista da tela inicial); no modo Internet, as salas dos amigos do Razze, com o passe de convite ([spec](spec/salas-dos-amigos.md)) |
+| 30 | `sessoes.js`, `salas-amigos.js` | Sessões abertas na rede (a lista da tela inicial); no modo Internet, as salas dos amigos do Razze, com o passe de convite, e o convite para a sala pelas mensagens diretas ([spec](spec/salas-dos-amigos.md)) |
 | 31 | `transmitir.js` | Escolher a fonte, som, iniciar, trocar e parar, quem assiste |
 | 32 | `mapa-conexoes.js` | O Mapa de conexões, na aba Rede do HUB: grafo em pé, atualiza a cada 5 s só com a aba à vista |
 | 33 | `hub.js` | HUB: a barra fininha da esquerda, com as abas Salas (salas abertas, a atual e o menu inicial) , Amigos (adicionar, filtrar, convidar, pedidos) e Rede (a conta primeiro, depois conexão, servidores, redes Razze e o Mapa de conexões) |
@@ -108,7 +108,8 @@ Arquivo novo na página: entra no `index.html` (na posição certa), em `PACK_FI
 | `chat-jogo.js` | A janela do chat por cima do jogo e o modo de escrever (Ctrl+Enter) |
 | `atalhos.js` | Atalhos globais e o apertar para falar (`teclas.exe`) |
 | `sessoes.js` | Anúncio e busca das sessões abertas (UDP na rede da Radmin) |
-| `mensagens.js` | Histórico local das mensagens diretas: um arquivo por amigo em `%APPDATA%\Tela P2P\mensagens\<conta>` |
+| `mensagens.js` | Histórico local das mensagens diretas: um arquivo por amigo em `%APPDATA%\Tela P2P\mensagens\<conta>`, cifrado com o safeStorage |
+| `mensagens-cripto.js` | Mensagens diretas criptografadas de ponta a ponta (X25519 + AES-256-GCM): a chave privada só aqui; cifra no envio e decifra na busca, entre o IPC e a RazzeAPI ([spec](spec/mensagens-criptografadas.md)) |
 | `celular.js` | Configurações no celular: servidor HTTP na rede local só enquanto o QR está aberto (chave de uso único, 5 min, até 4 MB); serve a página do celular. Só módulos do Node (testado sem o Electron) |
 
 `janela-flutuante.js`, `chat-jogo.js` e `atalhos.js` usam uns aos outros. Cada um faz o
