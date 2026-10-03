@@ -91,6 +91,8 @@ function applyAppTheme(d = document) {
   const glass = AppPreferences.glass(appPreferences.colors, { ...appPreferences.appearance, glass: glassMode() });
   for (const [key, value] of Object.entries(glass || {})) root.style.setProperty(key, value);
   root.dataset.glass = glassMode();
+  // Interface espelhada: HUB na direita, barrinha e painéis de chat e voz na esquerda (styles.css)
+  root.dataset.mirror = appPreferences.appearance.mirror ? 'on' : 'off';
   applyWindowMaterial();
   applyTitleBar();
   applyAppIcon();
@@ -299,6 +301,10 @@ function setupAmbient() {
     saveAppPreferences();
   };
   $('voiceSkyOn').onchange = () => setVoiceSkyOn($('voiceSkyOn').checked);
+  $('mirrorOn').onchange = () => {
+    appPreferences.appearance = { ...appPreferences.appearance, mirror: $('mirrorOn').checked };
+    saveAppPreferences();
+  };
 }
 // Céu da voz na visão Lista (o Mapa não depende disso), em Aparência
 function setVoiceSkyOn(on) {
@@ -319,6 +325,7 @@ function renderAppearance() {
   renderGlassHint();
   $('ambientLight').checked = appPreferences.appearance.ambient;
   $('voiceSkyOn').checked = appPreferences.appearance.voiceSky;
+  $('mirrorOn').checked = appPreferences.appearance.mirror;
   if (!$('fontFamily').options.length) renderFontOptions();
   renderFontPreview();
 }

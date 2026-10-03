@@ -82,7 +82,7 @@ test('Sons Suave: gerados na hora, sem arquivo, padrão da voz e do microfone', 
 });
 
 test('Aparência: modos de vidro, transparência e dados inválidos', () => {
-  assert.deepEqual(P.normalize(null).appearance, { glass: 'opaque', level: 70, border: 'solid', ambient: true, voiceSky: true });
+  assert.deepEqual(P.normalize(null).appearance, { glass: 'opaque', level: 70, border: 'solid', ambient: true, voiceSky: true, mirror: false });
   assert.equal(P.normalize({ appearance: { ambient: false } }).appearance.ambient, false);
   assert.equal(P.normalize({ appearance: { ambient: 'sim' } }).appearance.ambient, true);
   assert.equal(P.normalize({ appearance: { voiceSky: false } }).appearance.voiceSky, false);
@@ -147,7 +147,7 @@ test('Temas prontos: aplicam cores e material, zeram detalhes e são reconhecido
 });
 test('Sem imagem de fundo; material e bordas livres dentro do tema', () => {
   const old = P.normalize({ appearance: { wallpaper: 'custom', blur: 12, dim: 55 } }).appearance;
-  assert.deepEqual(Object.keys(old).sort(), ['ambient', 'border', 'glass', 'level', 'voiceSky'], 'preferência antiga de imagem é descartada');
+  assert.deepEqual(Object.keys(old).sort(), ['ambient', 'border', 'glass', 'level', 'mirror', 'voiceSky'], 'preferência antiga de imagem é descartada');
   const neon = P.applyTheme(null, 'neon');
   assert.equal(P.currentTheme({ ...neon, appearance: { ...neon.appearance, glass: 'liquid', border: 'solid' } }), 'neon');
 });test('Tema E.V.A (aba Tema): um só, com as cores do EVA-01 e sem imagem de fundo', () => {
@@ -170,4 +170,10 @@ test('Fontes incluídas no app: arquivos locais que existem', () => {
   const bundled = P.fonts.filter(f => f.files);
   for (const id of ['chakra', 'shareTech', 'loveLetter']) assert.ok(bundled.some(f => f.id === id), id);
   for (const f of bundled) for (const file of f.files) assert.ok(fs.existsSync(path.join(__dirname, '..', file)), file);
+});
+
+test('interface espelhada: só booleano, e trocar de tema não desfaz', () => {
+  assert.equal(P.normalize({ appearance: { mirror: true } }).appearance.mirror, true);
+  assert.equal(P.normalize({ appearance: { mirror: 'sim' } }).appearance.mirror, false);
+  assert.equal(P.applyTheme({ appearance: { mirror: true } }, 'neon').appearance.mirror, true);
 });
