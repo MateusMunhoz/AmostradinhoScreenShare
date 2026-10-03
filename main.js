@@ -169,6 +169,31 @@ function setWindowIcon(png) {
   win.setIcon(img);
   return true;
 }
+// Luz ambiente da música (renderer/musica.js): o player do YouTube é de outro site e a página não lê os pixels dele.
+// A página pede um retângulo da própria janela principal e recebe só um PNG de 32 x 18 (as cores, sem detalhe: não
+// serve de print). Um pedido por vez; janela escondida ou minimizada não tira foto.
+const AMBIENT_SIZE = { width: 32, height: 18 };
+let capturing = false;
+async function captureRegion(x, y, w, h) {
+  const win = janelas.main;
+  if (capturing || !win || win.isDestroyed() || !win.isVisible() || win.isMinimized()) return '';
+  // As medidas vêm em px do CSS; a foto é em px da janela (com o zoom da página)
+  const zoom = win.webContents.getZoomFactor() || 1;
+  const [cw, ch] = win.getContentSize();
+  const r = [x, y, w, h].map((v) => Math.round(Number(v) * zoom));
+  if (!r.every(Number.isFinite) || r[2] < 1 || r[3] < 1) return '';
+  const left = Math.max(0, Math.min(r[0], cw - 1)), top = Math.max(0, Math.min(r[1], ch - 1));
+  const rect = { x: left, y: top, width: Math.max(1, Math.min(r[2], cw - left)), height: Math.max(1, Math.min(r[3], ch - top)) };
+  capturing = true;
+  try {
+    const img = await win.webContents.capturePage(rect);
+    return img.isEmpty() ? '' : img.resize({ ...AMBIENT_SIZE, quality: 'good' }).toDataURL();
+  } catch {
+    return '';
+  } finally {
+    capturing = false;
+  }
+}
 function setWindowMaterial(_mode, color) {
   const win = janelas.main;
   if (!win || win.isDestroyed()) return { material: 'none', supported: false };
@@ -401,6 +426,7 @@ if (hasSingleInstance) app.whenReady().then(() => {
   ipcMain.handle('window-material', (_e, mode, color) => setWindowMaterial(mode, color));
   ipcMain.handle('window-titlebar', (_e, color, symbolColor) => setTitleBar(color, symbolColor));
   ipcMain.handle('window-icon', (_e, png) => setWindowIcon(png));
+  ipcMain.handle('capture-region', (_e, x, y, w, h) => captureRegion(Number(x) || 0, Number(y) || 0, Number(w) || 0, Number(h) || 0));
   ipcMain.handle('get-own-pack', () => updater.readCurrentPack());
   ipcMain.handle('install-update', (_e, pack, sig) => updater.install(pack, sig));
   ipcMain.handle('github-check', () => github.check());

@@ -14,6 +14,7 @@ const MUSIC_DRIFT = 1.5; // segundos de diferença para o ponto da sala antes de
 const musica = {
   offset: 0,     // relógio do servidor da sala menos o deste PC (para saber em que ponto a música está agora)
   volume: Math.max(0, Math.min(100, Number(load('musicaVolume', '60')))),
+  legenda: load('musicaLegenda', '0') === '1', // legendas do YouTube: desligadas até você ligar (vale para todas as músicas)
   wantOpen: null, // canal em que você acabou de pôr uma música: abre a tela quando a sala confirmar
 };
 const musicKey = (ch) => `musica:${ch}`;
@@ -125,7 +126,15 @@ function createMusicTile(ch, entry) {
   close.onclick = () => stopWatching(key, false);
   const pipBtn = document.createElement('button'); // o palco espera um; a música não vai para a janela flutuante
   pipBtn.hidden = true;
-  bar.append(barSpace, mute, vol, focusBtn, fs, close);
+  // Legendas (só para você): desligadas por padrão
+  const cc = document.createElement('button');
+  cc.className = 'btn icon';
+  cc.onclick = () => {
+    musica.legenda = !musica.legenda;
+    save('musicaLegenda', musica.legenda ? '1' : '0');
+    for (const link of state.in.values()) link.music?.captions();
+  };
+  bar.append(barSpace, mute, vol, cc, focusBtn, fs, close);
   label.append(note, labelText, where, bar);
   // O player (visível, como pede o YouTube) e, embaixo dele, os controles que valem para todos
   const body = document.createElement('div');
@@ -162,10 +171,17 @@ function createMusicTile(ch, entry) {
   controls.append(playBtn, time, seek, swap, stopAll);
   const pipNote = document.createElement('div'); // idem: o palco mexe nele, aqui fica sempre escondido
   pipNote.hidden = true;
-  body.append(iframe, overlay, pipNote);
+  // Luz ambiente (Aparência), como nas transmissões: o player fica do tamanho do vídeo (16:9) e as barras em volta
+  // pegam as cores dele (ambientTick)
+  const ambient = document.createElement('canvas');
+  ambient.className = 'tile-ambient';
+  ambient.width = 32; ambient.height = 18;
+  ambient.hidden = true;
+  body.append(ambient, iframe, overlay, pipNote);
   el.append(label, body, controls);
   $('tiles').append(el);
   setupTileDrag(key, el);
+  setupTileIdle(el);
 
   // O "vídeo" do quadro, para o palco: mudo quando outra tela está em destaque (setTilePaused) e no alto-falante
   const video = { srcObject: null, volume: 1, mutedFlag: false, get muted() { return this.mutedFlag; }, set muted(v) { this.mutedFlag = !!v; applyVolume(); } };
@@ -192,6 +208,18 @@ function createMusicTile(ch, entry) {
     post('unMute');
     post('setVolume', [muted ? 0 : Math.round(musica.volume * duck.factor)]);
   }
+  // Legendas: o YouTube liga sozinho (até traduzida para o português). Desligar é escolher nenhuma faixa (descarregar
+  // o módulo não segura: ele carrega de novo). Ligar de novo: o player guardou "nenhuma" e a API não diz quais faixas
+  // há, então ele recarrega no ponto da sala, já com legenda, e escolhe a faixa que escolheria (1 a 2 s de pausa)
+  function applyCaptions() {
+    if (!mu.ready || musica.legenda) return;
+    for (const mod of ['captions', 'cc']) post('setOption', [mod, 'track', {}]);
+  }
+  function syncCaptions() {
+    setIcon(cc, 'captions', musica.legenda ? 'Desligar as legendas' : 'Ligar as legendas (só para você)');
+    cc.classList.toggle('on', musica.legenda);
+    cc.setAttribute('aria-pressed', String(musica.legenda));
+  }
   function loadVideo(videoId, at) {
     mu.videoId = videoId;
     mu.ready = false;
@@ -202,7 +230,7 @@ function createMusicTile(ch, entry) {
     overlay.hidden = false;
     overlay.textContent = 'Carregando o YouTube…';
     // controls=0: os controles são os nossos (valem para todos); fs=0: a tela cheia é a do quadro
-    iframe.src = `${YT_ORIGIN}/embed/${videoId}?enablejsapi=1&autoplay=1&controls=0&disablekb=1&fs=0&rel=0&iv_load_policy=3&playsinline=1&start=${Math.floor(at)}`;
+    iframe.src = `${YT_ORIGIN}/embed/${videoId}?enablejsapi=1&autoplay=1&controls=0&disablekb=1&fs=0&rel=0&iv_load_policy=3&playsinline=1&cc_load_policy=${musica.legenda ? 1 : 0}&start=${Math.floor(at)}`;
     // Até o player responder, pede para ele mandar os eventos (o "listening" do protocolo dele)
     clearInterval(mu.listen);
     let tries = 0;
@@ -232,7 +260,9 @@ function createMusicTile(ch, entry) {
       if (mu.ready) return;
       mu.ready = true;
       overlay.hidden = true;
+      post('addEventListener', ['onApiChange']); // o aviso de módulo carregado (legendas) só vem para quem pede
       applyVolume();
+      applyCaptions();
       correct();
     } else if (d.event === 'onError') {
       mu.error = Number(d.info) || 1;
@@ -242,7 +272,10 @@ function createMusicTile(ch, entry) {
         : 'O YouTube não conseguiu tocar este vídeo. Troque por outro.';
       // Quem pôs fica sabendo na hora (os outros veem o aviso no quadro)
       if (mu.entry?.by === state.myId) toast('Este vídeo não pode tocar fora do YouTube. Troque por outro.', 'error');
+    } else if (d.event === 'onApiChange') {
+      applyCaptions(); // o player carregou um módulo (as legendas vêm por aqui): vale a sua escolha
     } else if (d.event === 'onStateChange') {
+      if (Number(d.info) === 1) applyCaptions(); // começou a tocar: as legendas podem ter ligado sozinhas
       mu.state = Number(d.info);
     } else if (d.event === 'infoDelivery' && d.info) {
       const i = d.info;
@@ -275,6 +308,11 @@ function createMusicTile(ch, entry) {
     render();
   };
   mu.onMessage = onMessage;
+  mu.captions = () => {
+    syncCaptions();
+    if (musica.legenda && mu.videoId) loadVideo(mu.videoId, musicPos(mu.entry));
+    else applyCaptions();
+  };
   mu.render = () => render();
   mu.iframe = iframe;
 
@@ -307,6 +345,28 @@ function createMusicTile(ch, entry) {
     stopAll.title = can ? 'Parar a música para todo mundo' : why.trim();
     syncMute();
   }
+  // Luz ambiente: o player é de outro site e a página não lê os pixels dele; quem tira a foto (32 x 18) da área dele
+  // é o processo principal. Só com a opção ligada, barra sobrando, a tela grande, o vídeo carregado e o app em foco
+  // (no jogo, para). Pega o meio do vídeo, longe das faixas de cima e de baixo, que ficam por cima dele
+  const ambientCtx = ambient.getContext('2d', { alpha: false });
+  let ambientBusy = false;
+  async function ambientTick() {
+    const bw = body.clientWidth, bh = body.clientHeight;
+    const bars = bw && bh && Math.abs((16 / 9) / (bw / bh) - 1) > 0.02;
+    if (!appPreferences.appearance.ambient || !bars || el.classList.contains('small')) { ambient.hidden = true; return; }
+    if (ambientBusy || !mu.ready || mu.error || document.hidden || !document.hasFocus() || !window.api?.captureRegion) return;
+    ambientBusy = true;
+    try {
+      const r = iframe.getBoundingClientRect();
+      const url = await window.api.captureRegion(r.left, r.top + r.height * 0.15, r.width, r.height * 0.7);
+      if (!url || !el.isConnected) return;
+      const img = new Image();
+      img.src = url;
+      await img.decode();
+      ambientCtx.drawImage(img, 0, 0, ambient.width, ambient.height);
+      ambient.hidden = false;
+    } catch {} finally { ambientBusy = false; }
+  }
   // O relógio do quadro e a correção de tempos em tempos (o player pode atrasar ou adiantar um pouco)
   let ticks = 0;
   const timer = setInterval(() => {
@@ -317,11 +377,15 @@ function createMusicTile(ch, entry) {
       seek.value = String(Math.floor(Math.min(now, mu.duration || now)));
       time.textContent = mu.duration ? `${clock(now)} / ${clock(mu.duration)}` : clock(now);
     }
-    if (++ticks % 4 === 0) correct();
+    // A cada 2 s: o ponto da sala e, com as legendas desligadas, de novo nenhuma faixa (o YouTube liga sozinho quando
+    // carrega o módulo, e nem sempre avisa)
+    if (++ticks % 4 === 0) { correct(); if (!musica.legenda) applyCaptions(); }
+    ambientTick();
   }, 500);
 
   const tile = { el, video, vol, overlay, pipNote, fs, focusBtn, pipBtn, syncMute, name: musicTitle(entry), paused: false, mutedBefore: false, userMuted: false, music: mu, applyVolume };
   render();
+  syncCaptions();
   loadVideo(entry.videoId, musicPos(entry));
   return tile;
 }

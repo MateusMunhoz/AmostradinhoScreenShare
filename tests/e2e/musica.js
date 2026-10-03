@@ -1,7 +1,7 @@
 // Música junto: Ana põe um vídeo do YouTube na Subsala_1, Bia ouve junto no mesmo ponto; pausar, pular e trocar
 // valem para as duas; quem sai do canal não controla; parar fecha a tela das duas. Precisa de internet (YouTube).
 // O volume fica em 0 (mudo) nas duas: o teste não toca som alto no seu PC.
-const { openApp, createRoom, joinRoom, share, check, sleep, run } = require('./ajuda');
+const { openApp, createRoom, joinRoom, share, check, sleep, run, attach } = require('./ajuda');
 
 const VID = 'dQw4w9WgXcQ', VID2 = 'M7lc1UVf-VE';
 const TONE = `(() => { window.tctx = new AudioContext(); const o = tctx.createOscillator(); const dst = tctx.createMediaStreamDestination(); o.connect(dst); o.start(); voice.media = { getUserMedia: async () => dst.stream }; })()`;
@@ -42,6 +42,32 @@ run('Música junto (YouTube)', 180000, async () => {
   check('A música entra na Subsala_1 e a tela dela abre para quem pôs', true);
   await A.waitFor(`${MU('1')}?.ready && ${MU('1')}.state === 1`, 30000);
   check('O player do YouTube toca dentro do app (sem erro de player)', await A.eval(`!${MU('1')}.error`));
+  // Legendas: desligadas por padrão (o YouTube liga sozinho, até traduzida); o CC da faixa de cima liga e desliga
+  // (só para quem clicou) e fica salvo. Confere dentro do player, pelo DevTools do iframe do YouTube
+  const Y = await attach(9561, (t) => t.type === 'iframe' && t.url.includes('youtube'));
+  const track = () => Y.eval(`(() => { try { return JSON.stringify(document.querySelector('#movie_player').getOption('captions', 'track') || {}); } catch { return '?'; } })()`);
+  const ccBtn = `state.in.get('musica:1').tile.el.querySelector('.tile-bar [aria-pressed]:not(.tile-mute)')`;
+  await sleep(5000);
+  check('Legendas: começam desligadas (nenhuma faixa no player)', await A.eval(`musica.legenda === false && ${ccBtn}?.getAttribute('aria-pressed') === 'false'`) && await track() === '{}', await track());
+  await A.eval(`${ccBtn}.click()`);
+  await A.waitFor(`${MU('1')}?.ready && ${MU('1')}.state === 1`, 30000);
+  await sleep(3000);
+  check('Legendas: o CC liga (o player tem faixa) e fica salvo', await A.eval(`musica.legenda === true && ${ccBtn}.getAttribute('aria-pressed') === 'true' && localStorage.getItem('musicaLegenda') === '1'`) && (await track()).includes('languageCode'), await track());
+  await A.eval(`${ccBtn}.click()`);
+  await sleep(3000);
+  // Luz ambiente: o player fica 16:9 e as barras pegam as cores dele (o processo principal tira a foto de 32 x 18).
+  // Só com o app em foco: aqui o foco é fingido pelo DevTools, e depois tirado
+  await A.send('Emulation.setFocusEmulationEnabled', { enabled: true });
+  const AMB = `state.in.get('musica:1').tile.el.querySelector('.tile-ambient')`;
+  await A.waitFor(`!${AMB}.hidden`, 8000).catch(() => {});
+  const cor = await A.eval(`(() => { const d = ${AMB}.getContext('2d').getImageData(0, 0, 32, 18).data; let m = 0; for (let i = 0; i < d.length; i += 4) m = Math.max(m, d[i] + d[i + 1] + d[i + 2]); return m; })()`);
+  check('Luz ambiente: aparece com as cores do vídeo', await A.eval(`!${AMB}.hidden`) && cor > 60, `brilho máximo ${cor}`);
+  await A.eval(`appPreferences.appearance = { ...appPreferences.appearance, ambient: false }`);
+  await sleep(800);
+  check('Luz ambiente: com a opção desligada, some', await A.eval(`${AMB}.hidden`));
+  await A.eval(`appPreferences.appearance = { ...appPreferences.appearance, ambient: true }`);
+  await A.send('Emulation.setFocusEmulationEnabled', { enabled: false });
+  check('Legendas: desliga de novo e a música segue tocando', await A.eval(`musica.legenda === false && !${MU('1')}.error && ${MU('1')}.state === 1`) && await track() === '{}', await track());
   await A.waitFor(`${MU('1')}.volume === 0 && ${MU('1')}.muted === false`, 8000);
   check('O volume local chega ao player (0: silêncio, sem o mudo do player)', true);
   check('A tela da música fica no palco, como uma transmissão', await A.eval(`$('tiles').contains(state.in.get('musica:1').tile.el) && !$('tiles').hidden && !!state.in.get('musica:1').tile.el.querySelector('iframe.music-frame')`));

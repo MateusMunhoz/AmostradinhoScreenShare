@@ -165,6 +165,7 @@ function createTile(id, name) {
   });
   $('tiles').append(el);
   setupTileDrag(id, el);
+  setupTileIdle(el);
   el.dataset.person = id;
   const tile = { el, video, vol, overlay, pipNote, fs, focusBtn, pipBtn, syncMute, name, paused: false, mutedBefore: false, userMuted: false };
   return tile;

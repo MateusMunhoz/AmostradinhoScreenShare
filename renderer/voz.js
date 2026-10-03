@@ -286,50 +286,115 @@ function dockVoicePick() {
   return { all, shown, rest: all.filter((id) => !shown.includes(id)) };
 }
 let dockVoiceKey = '';
+// Quem está na voz, na barra (com o painel recolhido): até 3 fotos sobrepostas (quem fala entra nelas e acende) e
+// quantos são, num botão só, colado no Entrar. Clicar abre a lista que sobe (renderVoiceStackPop)
 function renderVoiceAvatars(onlyIfChanged = false) {
-  const { all, shown, rest } = dockVoicePick();
-  const key = shown.join(',') + '|' + rest.length;
+  const { all, shown } = dockVoicePick();
+  const key = shown.join(',') + '|' + all.length;
   if (onlyIfChanged && key === dockVoiceKey) return;
   dockVoiceKey = key;
   dockVoiceShown = shown;
   const box = $('voiceAvatars');
   box.replaceChildren();
   box.hidden = chat.open || !all.length;
+  if (box.hidden) return closeVoiceStackPop();
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'voice-stack';
+  b.setAttribute('aria-haspopup', 'dialog');
+  b.setAttribute('aria-expanded', String(!!$('voiceStackPop')));
+  const faces = document.createElement('span');
+  faces.className = 'vs-faces';
   for (const id of shown) {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'voice-avatar';
-    b.dataset.person = id;
-    b.dataset.initial = (nameOf(id).trim()[0] || '?').toUpperCase(); // barra apertada: sem o nome, fica a inicial
-    b.style.setProperty('--person', personColor(id));
-    const nm = document.createElement('span');
-    nm.className = 'va-name';
-    nm.textContent = nameOf(id);
-    paintName(nm, id);
-    b.append(avatar(nameOf(id), id), nm, speakBars()); // a foto (ou a estrela) antes do nome
+    const av = avatar(nameOf(id), id);
+    av.dataset.person = id;
+    av.classList.toggle('speaking', speaking.has(id));
+    faces.append(av);
+  }
+  const count = document.createElement('span');
+  count.className = 'vs-count';
+  count.textContent = String(all.length);
+  const label = document.createElement('span');
+  label.className = 'vs-label';
+  label.textContent = 'na voz';
+  b.append(faces, count, label);
+  const names = all.map(nameOf).join(', ');
+  b.title = `Na voz: ${names}`;
+  b.setAttribute('aria-label', `${all.length} na voz: ${names}. Abrir a lista`);
+  b.onclick = () => ($('voiceStackPop') ? closeVoiceStackPop() : openVoiceStackPop());
+  box.append(b);
+  renderVoiceStackPop();
+}
+
+// ---------- Lista que sobe do "N na voz" ----------
+// Quem está na voz (clicar abre o volume da pessoa; a roda do mouse em cima muda o volume), Entrar na voz (se você
+// está fora) e o painel da voz. Fecha com Esc ou clique fora (inicio.js)
+function openVoiceStackPop() {
+  const pop = document.createElement('div');
+  pop.id = 'voiceStackPop';
+  pop.className = 'voice-stack-pop';
+  pop.setAttribute('role', 'dialog');
+  pop.setAttribute('aria-label', 'Quem está na voz');
+  document.body.append(pop);
+  $('voiceAvatars').querySelector('.voice-stack')?.setAttribute('aria-expanded', 'true');
+  renderVoiceStackPop();
+}
+function closeVoiceStackPop() {
+  $('voiceStackPop')?.remove();
+  $('voiceAvatars').querySelector('.voice-stack')?.setAttribute('aria-expanded', 'false');
+}
+function renderVoiceStackPop() {
+  const pop = $('voiceStackPop');
+  if (!pop) return;
+  const { all } = dockVoicePick();
+  if ($('voiceAvatars').hidden || !all.length) return closeVoiceStackPop();
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text) e.textContent = text; return e; };
+  pop.replaceChildren();
+  const head = el('div', 'vsp-head');
+  head.append(el('strong', '', 'Na voz'), el('span', '', String(all.length)));
+  if (voice.session && subsalasOn()) head.append(el('span', 'vsp-where', `· ${channelName(voice.channel)}`));
+  const list = el('div', 'vsp-list');
+  for (const id of all) {
     const m = voice.members.get(id);
-    // Fone silenciado: o ícone do fone cortado ao lado do nome
-    if (m.deafened) { const d = document.createElement('span'); d.className = 'va-deaf'; d.innerHTML = ICON.headphonesOff; b.append(d); }
-    const label = `${nameOf(id)}${m.muted ? ', microfone desligado' : ''}${m.deafened ? ', fone silenciado' : ''}. Mudar o volume`;
-    b.title = label;
-    b.setAttribute('aria-label', label);
-    b.classList.toggle('mic-off', !!m.muted);
-    b.classList.toggle('speaking', speaking.has(id));
-    b.onclick = (e) => openPersonCard(id, b, e.detail === 0);
-    onWheelVolume(b, id, 'voice');
-    box.append(b);
+    const row = el('button', 'vs-row');
+    row.type = 'button';
+    const av = avatar(nameOf(id), id);
+    av.dataset.person = id;
+    av.classList.toggle('speaking', speaking.has(id));
+    row.append(av, paintName(el('span', 'vs-name', nameOf(id)), id));
+    if (!voice.session && subsalasOn()) row.append(el('span', 'vsp-where', channelName(voiceChannelOf(id))));
+    for (const [on, icon, label] of [[m?.muted, 'micOff', 'Microfone desligado'], [m?.deafened, 'headphonesOff', 'Fone silenciado']]) {
+      if (!on) continue;
+      const s = el('span', 'vs-state');
+      s.innerHTML = ICON[icon];
+      s.title = label;
+      s.setAttribute('role', 'img');
+      s.setAttribute('aria-label', label);
+      row.append(s);
+    }
+    row.title = `${nameOf(id)}: volume (a roda do mouse em cima também muda)`;
+    row.onclick = (e) => openPersonCard(id, row, e.detail === 0);
+    onWheelVolume(row, id, 'voice');
+    list.append(row);
   }
-  if (rest.length) {
-    const more = document.createElement('button');
-    more.type = 'button';
-    more.className = 'voice-avatar voice-more-people';
-    more.textContent = `+${rest.length}`;
-    const names = rest.map(nameOf).join(', ');
-    more.title = `Também na voz: ${names}`;
-    more.setAttribute('aria-label', `Mais ${rest.length} na voz: ${names}. Abrir o painel da voz`);
-    more.onclick = () => { workspaceViews.voice = true; saveWorkspaceViews(); setPanelOpen(true); syncWorkspace(); };
-    box.append(more);
+  const actions = el('div', 'vsp-actions');
+  if (!voice.session && !voice.pending) {
+    const join = el('button', 'btn primary');
+    join.type = 'button';
+    join.innerHTML = ICON.mic;
+    join.append('Entrar na voz');
+    join.onclick = () => { closeVoiceStackPop(); $('voiceJoin').click(); };
+    actions.append(join);
   }
+  const panel = el('button', 'btn ghost', 'Abrir o painel da voz');
+  panel.type = 'button';
+  panel.onclick = () => { closeVoiceStackPop(); workspaceViews.voice = true; saveWorkspaceViews(); setPanelOpen(true); syncWorkspace(); };
+  actions.append(panel);
+  pop.append(head, list, actions);
+  // Sobe a partir do botão, alinhado à esquerda dele (sem passar da janela)
+  const r = $('voiceAvatars').getBoundingClientRect();
+  pop.style.left = `${Math.max(8, Math.min(r.left, window.innerWidth - pop.offsetWidth - 8))}px`;
+  pop.style.bottom = `${window.innerHeight - r.top + 8}px`;
 }
 
 // ---------- Cartão da pessoa: volume da voz, da transmissão e silenciar para mim ----------

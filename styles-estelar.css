@@ -124,6 +124,90 @@
 .voice-sky.map .sky-star:is(:hover, :focus-visible) { filter: none; }
 .voice-sky.map .sky-star:is(:hover, :focus-visible) .sky-core { fill: var(--text); }
 .voice-sky .sky-star.dragging { opacity: .3; }
+
+/* ---------- Mapa: nebulosa viva ----------
+   Ao fundo, uma galáxia em espiral girando bem devagar (drawSkyGalaxy). Cada canal com gente fica numa nebulosa na cor dele (Voz geral: a de destaque; as subsalas, uma de quatro tiradas
+   das cores do tema), respirando devagar. Algumas estrelas cintilam; de vez em quando passa uma estrela cadente. As linhas entre os sóis fazem curva, com uma luz correndo; o planeta deixa rastro
+   na órbita; quem fala solta ondas verdes, quem transmite ondas na cor de destaque, e o canal com música solta notas.
+   Com o app fora de foco (no jogo), só as órbitas seguem; os enfeites param (renderer/ceu-voz.js › drawSkyGalaxy etc.).
+   A fumaça fica numa camada embaixo (#voiceSkyNeb) e respira inteira, pela opacidade, sem ser redesenhada. */
+.voice-sky, .voice-sky-box {
+  --sky-neb-0: var(--accent);
+  --sky-neb-1: var(--warn);
+  --sky-neb-2: color-mix(in oklch longer hue, var(--accent) 70%, var(--warn)); /* violeta */
+  --sky-neb-3: color-mix(in oklch longer hue, var(--accent) 30%, var(--warn)); /* rosa (sem verde: verde é quem fala) */
+  --sky-neb-4: color-mix(in oklch, var(--accent) 35%, var(--text));
+}
+:root:not([data-skin]) .voice-sky-neb {
+  background: radial-gradient(ellipse at 45% 40%, color-mix(in srgb, var(--accent) 6%, var(--sunken)), var(--bg));
+}
+.voice-sky-neb { animation: sky-smoke 16s ease-in-out infinite alternate; will-change: opacity; }
+@keyframes sky-smoke { from { opacity: .7; } to { opacity: 1; } }
+.voice-sky-neb .sky-neb { opacity: .8; transition: opacity .35s ease-out, transform .35s ease-out; }
+.voice-sky-neb .sky-neb.hot { opacity: 1; transform: scale(1.08); }
+.voice-sky .sky-dust.tint { fill: color-mix(in srgb, var(--accent) 55%, transparent); }
+.voice-sky .sky-galaxy { pointer-events: none; animation: st-orbit 420s linear infinite; }
+.voice-sky .sky-galaxy-core { fill: url(#skyCore); }
+.voice-sky .sky-cluster { pointer-events: none; }
+.voice-sky .sky-tw { animation: sky-twinkle ease-in-out infinite; }
+@keyframes sky-twinkle { 0%, 100% { opacity: .2; } 50% { opacity: 1; } }
+.voice-sky .sky-shoot { stroke: url(#skyTail); stroke-width: .6; stroke-linecap: round; opacity: 0; animation: sky-shoot ease-in infinite; }
+@keyframes sky-shoot { 0%, 90% { opacity: 0; transform: none; } 91% { opacity: 1; } 100% { opacity: 0; transform: var(--shoot); } }
+@keyframes sky-breathe { 0%, 100% { transform: scale(.93); opacity: .75; } 50% { transform: scale(1.07); opacity: 1; } }
+.voice-sky .sky-arc { fill: none; }
+.voice-sky .sky-lane { fill: none; stroke-width: .9; stroke-linecap: round; stroke-dasharray: 1 11; pointer-events: none; animation: sky-flow 3.2s linear infinite; }
+@keyframes sky-flow { to { stroke-dashoffset: -24; } }
+.voice-sky .sky-trail { fill: none; stroke: var(--text); stroke-width: 1.4; stroke-linecap: round; pointer-events: none; }
+.voice-sky .sky-star.speaking .sky-trail { stroke: var(--ok); }
+.voice-sky .sky-star.me .sky-core { fill: var(--accent); }
+.voice-sky .sky-star.speaking.me .sky-core { fill: var(--ok); }
+.voice-sky :is(.sky-wave, .sky-bwave) { fill: none; stroke-width: .6; pointer-events: none; transform-box: fill-box; transform-origin: center; }
+.voice-sky .sky-wave { display: none; stroke: var(--ok); animation: sky-wave 2.4s ease-out infinite; }
+.voice-sky .sky-star.speaking .sky-wave { display: inline; }
+.voice-sky .sky-bwave { stroke: var(--live); animation: sky-wave 3s ease-out infinite; }
+@keyframes sky-wave { from { transform: scale(1); opacity: .75; } to { transform: scale(3.4); opacity: 0; } }
+.voice-sky .sky-glow { fill: color-mix(in srgb, var(--sky-sun) 14%, transparent); transform-box: fill-box; transform-origin: center; animation: sky-breathe 4s ease-in-out infinite; }
+.voice-sky.map .sky-sun.empty { animation: sky-nap 6s ease-in-out infinite; }
+.voice-sky.map .sky-sun.empty .sky-corona { fill: none; stroke: var(--muted); stroke-width: .5; stroke-dasharray: .7 1.4; }
+.voice-sky.map .sky-sun.empty .sky-sun-core { fill: var(--muted); r: 2.2; }
+@keyframes sky-nap { 0%, 100% { opacity: .35; } 50% { opacity: .6; } }
+.voice-sky .sky-music { fill: var(--hue, var(--accent)); font: 6px var(--st-mono, Consolas, monospace); pointer-events: none; animation: sky-rise 3.6s ease-out infinite; }
+@keyframes sky-rise { 0% { opacity: 0; transform: none; } 20% { opacity: .9; } 100% { opacity: 0; transform: translate(3.5px, -15px); } }
+.voice-sky .sky-count { fill: var(--muted); font: 4.4px var(--st-mono, Consolas, monospace); letter-spacing: .08em; text-anchor: middle; opacity: .8; pointer-events: none; }
+.voice-sky.map .sky-label { fill: var(--text-2, var(--text)); }
+.voice-sky.map .sky-label.here { fill: var(--accent); }
+body.app-blurred :is(.voice-sky-neb, .voice-sky :is(.sky-galaxy, .sky-tw, .sky-shoot, .sky-lane, .sky-glow, .sky-music, .sky-sun.empty)) { animation-play-state: paused; }
+
+/* Mapa, com o mouse: no sistema, os anéis e o nome ganham a cor dele e a nebulosa acende (ceu-voz.js); no sol, ele
+   cresce; no planeta, ele cresce, o nome fica forte e aparece uma linha tracejada até o sol */
+.voice-sky.map .sky-path { stroke: color-mix(in srgb, var(--hue) 30%, transparent); transition: stroke .25s ease-out; }
+.voice-sky.map .sky-system:hover .sky-path { stroke: color-mix(in srgb, var(--hue) 65%, transparent); }
+.voice-sky.map .sky-system:hover .sky-label:not(.here) { fill: var(--text); }
+.voice-sky.map .sky-system:hover .sky-count { opacity: 1; }
+.voice-sky.map :is(.sky-label, .sky-count) { transition: fill .25s ease-out, opacity .25s ease-out; }
+.voice-sky :is(.sky-fx, .sky-sun-fx, .sky-ghost) { transform-box: view-box; transform-origin: 0 0; }
+.voice-sky .sky-sun-fx { transition: transform .25s cubic-bezier(.3, 1.4, .5, 1); }
+.voice-sky.map .sky-sun:is(:hover, :focus-visible) .sky-sun-fx, .voice-sky.map .sky-sun.drop-target .sky-sun-fx { transform: scale(1.25); }
+.voice-sky.map .sky-sun:is(:hover, :focus-visible) .sky-glow { fill: color-mix(in srgb, var(--sky-sun) 26%, transparent); }
+.voice-sky .sky-core { transform-box: fill-box; transform-origin: center; transition: fill .15s ease-out, transform .2s cubic-bezier(.3, 1.4, .5, 1); }
+.voice-sky.map .sky-star:is(:hover, :focus-visible) .sky-core { transform: scale(1.4); }
+.voice-sky.map .sky-pname { transition: opacity .2s ease-out; }
+.voice-sky.map .sky-star:is(:hover, :focus-visible) .sky-pname { opacity: 1; fill: var(--text); font-weight: 600; }
+.voice-sky .sky-tether { stroke: var(--accent); stroke-width: .5; stroke-dasharray: 1 1.5; opacity: 0; pointer-events: none; transition: opacity .2s ease-out; }
+.voice-sky.map .sky-star:is(:hover, :focus-visible) .sky-tether { opacity: .7; }
+.voice-sky.map .sky-star:is(:hover, :focus-visible) .sky-trail { stroke: var(--accent); }
+
+/* Mapa: as peças das animações de eventos (ceu-voz.js › playSkyEvents) */
+.voice-sky .sky-comet { stroke: var(--text); stroke-opacity: .5; stroke-width: 1; stroke-linecap: round; pointer-events: none; }
+.voice-sky :is(.sky-flash, .sky-burst, .sky-shock) { fill: none; pointer-events: none; transform-box: fill-box; transform-origin: center; opacity: 0; }
+.voice-sky .sky-flash { stroke: var(--text); stroke-width: .6; }
+.voice-sky .sky-burst { stroke: var(--live); stroke-width: .7; }
+.voice-sky .sky-shock { stroke: var(--sky-sun); stroke-width: .7; }
+.voice-sky .sky-ghost { pointer-events: none; }
+.voice-sky .sky-ghost-core { fill: var(--text); }
+.voice-sky .sky-ghost-ring { fill: none; stroke: var(--text); stroke-width: .5; stroke-dasharray: 1 1; }
+.voice-sky .sky-ghost-sun { fill: color-mix(in srgb, var(--sky-sun) 25%, transparent); }
+.voice-sky .sky-ghost-sun.core { fill: var(--sky-sun); }
 .voice-sky .sky-sun.drop-target .sky-corona { stroke: var(--accent); stroke-width: 1.4; fill: color-mix(in srgb, var(--accent) 35%, transparent); }
 
 /* ---------- Sem transmissão na tela: uma carta celeste, com o logo em pontos e a legenda embaixo ---------- */
@@ -163,5 +247,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   :root:not([data-skin]) body::before, :root:not([data-skin]) body::after,
-  :root:not([data-skin]) .member.live > .avatar::after, .voice-sky .sky-orbit, .voice-sky .sky-ring, .voice-sky .sky-upright { animation: none; }
+  :root:not([data-skin]) .member.live > .avatar::after, .voice-sky .sky-orbit, .voice-sky .sky-ring, .voice-sky .sky-upright,
+  .voice-sky-neb, .voice-sky :is(.sky-galaxy, .sky-tw, .sky-lane, .sky-glow, .sky-music, .sky-sun.empty, .sky-wave, .sky-bwave) { animation: none; }
+  .voice-sky-neb .sky-neb, .voice-sky :is(.sky-sun-fx, .sky-core) { transition: none; }
+  .voice-sky .sky-shoot { display: none; }
 }

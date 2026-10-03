@@ -13,6 +13,9 @@ const FOTOS = path.join(TMP, 'fotos');
 fs.mkdirSync(FOTOS, { recursive: true });
 const ELECTRON = path.join(APP, 'node_modules', 'electron', 'dist', process.platform === 'win32' ? 'electron.exe' : 'electron');
 const FAKE = ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream', '--autoplay-policy=no-user-gesture-required'];
+// Os apps de teste não tocam nada nas caixas de som: o som segue até a saída (o WebRTC mede o nível e quanto tocou),
+// só a saída fica muda
+const MUTE = ['--mute-audio'];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ---------- Placar ----------
@@ -78,7 +81,7 @@ const profileDir = (tag) => path.join(TMP, `perfil-${tag}`);
 async function openApp(tag, port, { fake = false, size = true } = {}) {
   const dir = profileDir(tag);
   fs.rmSync(dir, { recursive: true, force: true });
-  spawn(ELECTRON, ['.', `--user-data-dir=${dir}`, `--remote-debugging-port=${port}`, ...(fake ? FAKE : [])], { cwd: APP, stdio: 'ignore' });
+  spawn(ELECTRON, ['.', `--user-data-dir=${dir}`, `--remote-debugging-port=${port}`, ...MUTE, ...(fake ? FAKE : [])], { cwd: APP, stdio: 'ignore' });
   const X = await attach(port);
   if (size) await X.send('Emulation.setDeviceMetricsOverride', { width: 1200, height: 780, deviceScaleFactor: 1, mobile: false });
   // A página inteira (todos os scripts), não só o primeiro: senão o teste chamava funções que ainda não existiam

@@ -96,14 +96,20 @@ run('Voz, volume e chat por cima do jogo', 150000, async () => {
   // Painel recolhido: bolinhas de quem está na voz na barra
   await B.eval(`setPanelOpen(false)`);
   await sleep(200);
-  check('Painel recolhido: a Ana aparece na barra', await B.eval(`!$('voiceAvatars').hidden && $('voiceAvatars').querySelectorAll('.voice-avatar').length === 1`));
-  await B.eval(wheel(`$('voiceAvatars').querySelector('.voice-avatar')`, 100));
-  check('Roda para baixo no nome da barra: voz 95%', await B.eval(`volOf('${anaId}').voice === 95`));
-  await B.eval(`setVol('${anaId}', { voice: 100 })`);
-  await B.eval(`$('voiceAvatars').querySelector('.voice-avatar').click()`);
+  check('Painel recolhido: a Ana aparece na barra (foto e "1 na voz")', await B.eval(`!$('voiceAvatars').hidden && $('voiceAvatars').querySelectorAll('.voice-stack .avatar').length === 1 && $('voiceAvatars').textContent.includes('1na voz')`));
+  await B.eval(`$('voiceAvatars').querySelector('.voice-stack').click()`);
   await sleep(200);
-  check('Clicar na bolinha abre o volume', await B.eval(`!$('personCard').hidden && $('personCard').dataset.for === '${anaId}'`));
-  await B.eval(`closePersonCard(); setPanelOpen(true)`);
+  check('Clicar em "na voz" abre a lista para cima, com a Ana', await B.eval(`!!$('voiceStackPop') && $('voiceStackPop').querySelectorAll('.vs-row').length === 1`));
+  await B.eval(wheel(`$('voiceStackPop').querySelector('.vs-row')`, 100));
+  check('Roda para baixo na Ana da lista: voz 95%', await B.eval(`volOf('${anaId}').voice === 95`));
+  await B.eval(`setVol('${anaId}', { voice: 100 })`);
+  await B.eval(`$('voiceStackPop').querySelector('.vs-row').click()`);
+  await sleep(200);
+  check('Clicar na Ana da lista abre o volume', await B.eval(`!$('personCard').hidden && $('personCard').dataset.for === '${anaId}'`));
+  await B.eval(`closePersonCard(); [...$('voiceStackPop').querySelectorAll('button')].find((b) => b.textContent === 'Abrir o painel da voz').click()`);
+  await sleep(200);
+  check('"Abrir o painel da voz" abre o painel e fecha a lista', await B.eval(`chat.open && workspaceViews.voice && !$('voiceStackPop')`));
+  await B.eval(`setPanelOpen(true)`);
 
   // Chat por cima do jogo
   await B.eval(`$('overlayToggle').click()`);

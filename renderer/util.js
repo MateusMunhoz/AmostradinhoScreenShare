@@ -73,7 +73,8 @@ const ICON = {
   headphones: svg('M3 18v-6a9 9 0 0 1 18 0v6M21 19a2 2 0 0 1-2 2h-1v-6h3zM3 19a2 2 0 0 0 2 2h1v-6H3z'),
   headphonesOff: svg('M2 2l20 20M3 18v-6a9 9 0 0 1 14.5-7.1M20.4 8.4A9 9 0 0 1 21 12v6M21 19a2 2 0 0 1-2 2h-1v-6h3zM3 19a2 2 0 0 0 2 2h1v-6H3z'),
   phoneOff: svg('M3 11a15 15 0 0 1 18 0l-2 3-3-1v-2a10 10 0 0 0-8 0v2l-3 1z'),
-  overlay: svg('M3 4h18v14H3zM6 12h7M6 15h5'),        // tela com linhas de texto: chat por cima da tela
+  overlay: svg('M3 4h18v14H3zM6 12h7M6 15h5'),
+  captions: svg('M3 5h18v14H3zM10.5 10a2 2 0 0 0 0 4M16.5 10a2 2 0 0 0 0 4'), // CC: legendas        // tela com linhas de texto: chat por cima da tela
   eye: svg('M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z'),
   lock: svg('M6 11h12v10H6zM8 11V7a4 4 0 0 1 8 0v4'),
   sliders: svg('M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6'), // controles: voz e atalhos

@@ -24,7 +24,7 @@ Para gerar um `.exe` portátil sem publicar: `npm run dist`. O arquivo aparece e
   | Arquivo | O que faz |
   |---------|-----------|
   | `boot.js` | Início do app. Confere a assinatura das atualizações e escolhe qual versão rodar. Só muda com um `.exe` novo. |
-  | `main.js` | Processo principal: opções do Chromium, a janela do app, as janelas que a página abre e todo o IPC. |
+  | `main.js` | Processo principal: opções do Chromium, a janela do app, as janelas que a página abre e todo o IPC (inclui `capture-region`: as cores, em 32 x 18, de um pedaço da janela, para a luz ambiente da música do YouTube, que a página não consegue ler). |
   | `main/` | O resto do processo principal (veja abaixo). |
   | `preload.js` | A ponte segura entre a página e o processo principal (`window.api`). |
   | `renderer/` | A interface e a lógica da sala, em vários arquivos (veja abaixo). |
@@ -131,6 +131,7 @@ Sobre o `npm run test:e2e` (`tests/e2e/`):
   - trocar a tela no meio da transmissão (nos três modos);
   - o microfone com IA e os atalhos.
 - **Só um teste:** `npm run test:e2e -- chat` (o nome do arquivo, sem `.js`).
+- **Sem som nas caixas:** as cópias abrem com `--mute-audio` (`openApp`, em `ajuda.js`). O som segue até a saída, e os testes medem pelo WebRTC (nível e quanto tocou); só a saída fica muda.
 - **Jogo aberto:** os testes não começam se houver um jogo em tela cheia na frente, porque abrem janelas que tiram o foco. `set TELA_E2E_FORCE=1` pula essa trava.
 - **Perfis e fotos** ficam em `%TEMP%\tela-p2p-e2e`, nunca no seu perfil de verdade. A limpeza no fim fecha só as cópias de teste.
 - **O teste do Ctrl+Enter** digita de verdade, então fica de fora: `node tests/e2e/ctrl-enter.js`. Ele só manda teclas se a janela da frente for a janela de teste ou o chat.

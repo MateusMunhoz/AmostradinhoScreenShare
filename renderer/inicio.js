@@ -5,7 +5,7 @@
 voice.media = { getUserMedia: () => openMic() };
 document.addEventListener('mousedown', (e) => {
   const card = $('personCard');
-  if (!card.hidden && !card.contains(e.target) && !e.target.closest('.vol-btn, .voice-avatar, [data-profile], #imageViewer')) closePersonCard();
+  if (!card.hidden && !card.contains(e.target) && !e.target.closest('.vol-btn, .vs-row, [data-profile], #imageViewer')) closePersonCard();
 });
 
 $('voiceJoin').onclick = () => {
@@ -354,6 +354,9 @@ $('chatToggle').onclick = () => setPanelOpen(!chat.open);
 $('peopleBtn').onclick = () => setPeopleOpen($('peoplePop').hidden);
 // Clicar fora da lista fecha (o cartão de volume, que abre de dentro dela, conta como dentro)
 document.addEventListener('mousedown', (e) => {
+  if ($('voiceStackPop') && !e.target.closest('#voiceStackPop, #voiceAvatars, #personCard')) closeVoiceStackPop();
+});
+document.addEventListener('mousedown', (e) => {
   if ($('peoplePop').hidden) return;
   if (e.target.closest('#peoplePop, #peopleBtn, #personCard')) return;
   setPeopleOpen(false);
@@ -403,6 +406,7 @@ document.addEventListener('keydown', (e) => {
   if (!$('generalSettingsDialog').hidden) closeGeneralSettings();
   else if (!$('voiceDialog').hidden) { if (!capturing) closeVoiceDialog(); }
   else if (!$('personCard').hidden) closePersonCard();
+  else if ($('voiceStackPop')) { closeVoiceStackPop(); $('voiceAvatars').querySelector('.voice-stack')?.focus(); }
   else if (!$('voiceMapPop').hidden) closeSkyPop();
   else if (!$('dmPanel').hidden) { setDmPanel(false); $('dmBarLabel').focus(); }
   else if (!$('dmMoreMenu').hidden) { setDmMore(false); $('dmMore').focus(); }

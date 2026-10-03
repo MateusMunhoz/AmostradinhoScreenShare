@@ -234,6 +234,8 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 
 /* Voz na barra de baixo */
 .voice-dock { display: flex; align-items: center; gap: 6px; }
+/* Fora da voz: uma linha fina separa o grupo da voz do Transmitir (dentro, a caixa da voz já separa) */
+.dock > .voice-dock:not(.active) { padding-left: 10px; border-left: 1px solid var(--line); }
 .voice-dock.active { padding: 3px 3px 3px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
 .voice-dock .btn.icon { width: 36px; height: 36px; }
 .voice-dock #voiceJoin:not(.icon) { display: inline-flex; align-items: center; }
@@ -245,22 +247,40 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 #voiceMute[aria-pressed="true"], #voiceDeafen[aria-pressed="true"] { border-color: var(--warn); color: var(--warn); background: rgba(224, 185, 106, .1); }
 .voice-leave { border-color: var(--line) !important; color: var(--muted) !important; background: transparent !important; }
 .voice-leave:hover:not(:disabled) { border-color: var(--warn) !important; color: var(--warn) !important; }
-.voice-avatars { display: flex; align-items: center; gap: 2px; margin-right: 4px; }
-.voice-avatar {
-  height: 32px; display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; cursor: pointer; font: inherit; font-size: 13px;
-  border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); color: var(--text); box-shadow: var(--lift);
+.voice-avatars { display: flex; align-items: center; margin-right: 2px; }
+/* Quem está na voz: fotos sobrepostas e "N na voz" num botão só (renderVoiceAvatars, voz.js) */
+.voice-stack {
+  height: 36px; display: inline-flex; align-items: center; gap: 6px; padding: 0 12px 0 8px; cursor: pointer; font: inherit; font-size: 13px;
+  border: 1px solid transparent; border-radius: 999px; background: transparent; color: var(--muted);
 }
-.voice-avatar .va-name { max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* Barrinhas de quem fala: o espaço fica sempre reservado (só aparecem quando a pessoa fala). Se elas entrassem e
-   saíssem, o nome cresceria a cada fala e empurraria o Sair para fora da barra, que só mede de novo quando muda de tamanho */
-.voice-avatar .eq { margin-left: 0; display: inline-flex; visibility: hidden; }
-.voice-avatar.speaking .eq { visibility: visible; }
-.voice-avatar:not(.speaking) .eq > span { animation: none; }
-.voice-avatar.speaking { border-color: var(--ok); color: var(--ok); }
-.voice-avatar.mic-off { color: var(--muted); border-style: dashed; }
-.voice-avatar .va-deaf { display: inline-grid; place-items: center; color: var(--warn); }
-.voice-avatar .va-deaf svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.voice-avatar:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.voice-stack:hover { background: var(--panel-2); border-color: var(--line); color: var(--text); }
+.voice-stack:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.vs-faces { display: inline-flex; align-items: center; padding-left: 6px; }
+.vs-faces .avatar { width: 24px; height: 24px; font-size: 11px; margin-left: -6px; box-shadow: 0 0 0 2px var(--panel); }
+.vs-faces .avatar.speaking { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--ok); position: relative; }
+.vs-count { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+.voice-stack[aria-expanded=true] { background: var(--panel-2); border-color: var(--line-strong); color: var(--text); }
+/* A lista que sobe do "N na voz" (renderVoiceStackPop, voz.js) */
+/* z-index 29: embaixo do cartão de volume (30), que abre por cima dela */
+.voice-stack-pop { position: fixed; z-index: 29; width: 260px; max-height: min(60vh, 440px); display: flex; flex-direction: column;
+  background: var(--panel); color: var(--text); border: 1px solid var(--line-strong); border-radius: 12px; box-shadow: 0 -10px 30px rgba(0, 0, 0, .4);
+  animation: vsp-in .14s ease-out; }
+@keyframes vsp-in { from { opacity: 0; transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) { .voice-stack-pop { animation: none; } }
+.vsp-head { display: flex; align-items: baseline; gap: 6px; padding: 10px 14px 6px; font-size: 12px; color: var(--muted); }
+.vsp-head strong { font: 500 12px var(--st-mono, inherit); letter-spacing: .06em; text-transform: uppercase; color: var(--text); }
+.vsp-list { min-height: 0; overflow: auto; display: flex; flex-direction: column; padding: 0 6px 6px; }
+.vs-row { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 4px 8px; border: 0; border-radius: 8px; background: none;
+  color: var(--text); font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+.vs-row:hover { background: var(--panel-2); }
+.vs-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.vs-row .avatar { flex: none; width: 24px; height: 24px; font-size: 11px; }
+.vs-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vsp-where { flex: none; font-size: 11px; color: var(--muted); }
+.vs-state { flex: none; display: inline-flex; color: var(--warn); }
+.vs-state svg, .vsp-actions svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.vsp-actions { display: flex; flex-direction: column; gap: 4px; padding: 8px; border-top: 1px solid var(--line); }
+.vsp-actions .btn { width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
 
 /* Lista "Na sala": microfone desligado e botão de volume da pessoa */
 .mic-off-icon { display: grid; place-items: center; color: var(--warn); }
@@ -419,9 +439,13 @@ kbd { font-family: Consolas, monospace; font-size: 11px; color: var(--muted); bo
 .tile-body { position: relative; flex: 1; min-height: 0; background: #000; }
 .tile video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; display: block; }
 .tile:fullscreen { border: 0; border-radius: 0; }
-/* Tela cheia: a faixa do nome (com os controles) vira uma faixa por cima do vídeo, que aparece com o mouse */
-.tile:fullscreen .tile-name { position: absolute; top: 0; left: 0; right: 0; z-index: 3; border-bottom: 0; background: var(--theme-glass); opacity: 0; transition: opacity .2s; }
-.tile:fullscreen:hover .tile-name, .tile:fullscreen .tile-name:focus-within { opacity: 1; }
+/* Tela grande (e tela cheia): a faixa do nome, em cima, e os controles da música, embaixo, ficam por cima do vídeo e
+   somem com o mouse parado ou fora da tela (setupTileIdle, palco.js); o foco do teclado traz de volta */
+.tile:not(.small) .tile-name { position: absolute; top: 0; left: 0; right: 0; z-index: 3; border-bottom: 0; background: var(--theme-glass); transition: opacity .2s; }
+.tile:not(.small) .music-controls { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; border-top: 0; background: var(--theme-glass); transition: opacity .2s; }
+.tile.ui-idle:not(.small):not(:has(:focus-visible)) :is(.tile-name, .music-controls) { opacity: 0; pointer-events: none; }
+.tile.ui-idle:not(.small) .tile-body { cursor: none; }
+@media (prefers-reduced-motion: reduce) { .tile:not(.small) :is(.tile-name, .music-controls) { transition: none; } }
 .tile-overlay {
   position: absolute; inset: 0; display: grid; place-items: center; padding: 20px; text-align: center;
   background: rgba(10, 11, 13, .85); color: var(--muted); font-size: 14px;
@@ -510,7 +534,6 @@ kbd { font-family: Consolas, monospace; font-size: 11px; color: var(--muted); bo
   mask: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 1C12 8 16 12 23 12C16 12 12 16 12 23C12 16 8 12 1 12C8 12 12 8 12 1Z'/></svg>") center / contain no-repeat;
 }
 .msg.grouped .msg-line .avatar { display: none; }
-.voice-avatar .avatar { width: 20px; height: 20px; margin-left: -4px; }
 .profile-photo { display: flex; flex-wrap: wrap; gap: 8px; margin: -6px 0 16px; }
 /* Inteira ou Preencher: como a foto entra na bolinha */
 .photo-fit { flex-basis: 100%; display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); }
@@ -1104,7 +1127,11 @@ main { padding-top: var(--workspace-top); }
 #voicePane.voice-map > .voice-sky-box { flex: 1 1 0; min-height: 170px; display: flex; margin-bottom: 10px; }
 .voice-sky-box { position: relative; }
 /* No mapa, o céu preenche o espaço todo, liso (sem a carta com anéis da faixa da lista); dá para arrastar o fundo */
-#voiceSky.map { flex: 1 1 auto; width: 100%; height: 100%; max-height: none; margin: 0; background: var(--sunken); user-select: none; touch-action: none; cursor: grab; }
+#voiceSky.map { position: relative; flex: 1 1 auto; width: 100%; height: 100%; max-height: none; margin: 0; background: transparent; user-select: none; touch-action: none; cursor: grab; }
+/* O fundo do mapa fica na camada da fumaça, embaixo dele, do mesmo tamanho (ceu-voz.js › drawSkyNebulas) */
+.voice-sky-neb { position: absolute; inset: 0; display: block; box-sizing: border-box; width: 100%; height: 100%; border: 1px solid transparent;
+  border-radius: var(--radius); background: var(--sunken); pointer-events: none; }
+.voice-sky-neb[hidden] { display: none; }
 .voice-sky-box.panning, .voice-sky-box.panning #voiceSky.map { cursor: grabbing; }
 .sky-zoom { position: absolute; top: 8px; right: 8px; display: flex; flex-direction: column; gap: 4px; }
 .sky-zoom .btn.icon { width: 28px; height: 28px; padding: 0; display: grid; place-items: center; font-size: 16px; line-height: 1; background: color-mix(in srgb, var(--panel) 85%, transparent); }
@@ -1241,8 +1268,7 @@ button.sky-card-info:hover:not(:disabled) .sky-card-go { color: var(--accent); }
 .dock.tight-2 .live-info { display: none; }
 .dock.tight-2 .dock-invite .dock-label, .dock.tight-2 #voiceMeText, .dock.tight-2 .stage-layout .dock-label { display: none; }
 .dock.tight-2 .dock-invite { padding: 0; width: 36px; justify-content: center; }
-.dock.tight-3 .voice-avatar .va-name { display: none; }
-.dock.tight-3 .voice-avatar:not(:has(.avatar))::before { content: attr(data-initial); font-weight: 700; }
+.dock.tight-3 .vs-label { display: none; }
 .dock.tight-4 .voice-avatars { display: none !important; }
 /* 5) o que ainda não cabe vai para o menu da setinha, antes do Sair */
 .dock .dock-overflow { display: none !important; }
@@ -1834,7 +1860,9 @@ html[data-tips="off"] .tip { display: none !important; }
 .music-tile .music-note { flex: none; display: inline-flex; color: var(--accent); }
 .music-tile .music-note svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .music-tile .music-where { flex: none; }
-.music-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+/* O player do tamanho do vídeo (16:9), no meio: as barras em volta são do quadro, para a luz ambiente (musica.js) */
+.music-body { container-type: size; }
+.music-frame { position: absolute; inset: 0; margin: auto; width: min(100cqw, 100cqh * 16 / 9); height: min(100cqh, 100cqw * 9 / 16); border: 0; display: block; pointer-events: none; } /* o mouse fica com o quadro (mostra e esconde os controles); os controles são os nossos (controls=0) */
 .music-controls { flex: none; display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-top: 1px solid var(--line); background: var(--panel); }
 .music-controls .btn.icon { width: 30px; height: 30px; padding: 0; display: grid; place-items: center; }
 .music-controls svg { width: 15px; height: 15px; fill: currentColor; stroke: none; }
@@ -1844,8 +1872,6 @@ html[data-tips="off"] .tip { display: none !important; }
 .music-controls :disabled { opacity: .45; cursor: not-allowed; }
 .tile.small .music-controls { display: none; }
 @container (max-width: 420px) { .music-controls .btn.small, .music-time { display: none; } }
-.tile:fullscreen .music-controls { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; background: var(--theme-glass); opacity: 0; transition: opacity .2s; }
-.tile:fullscreen:hover .music-controls, .tile:fullscreen .music-controls:focus-within { opacity: 1; }
 /* No painel de voz: a música do canal, embaixo do cabeçalho dele, com Ouvir */
 .voice-music { display: flex; align-items: center; gap: 8px; margin: 4px 0 2px; padding: 6px 8px; border: 1px dashed var(--line-strong); border-radius: 6px; font-size: 12.5px; }
 .voice-music-icon { flex: none; display: inline-flex; color: var(--accent); }

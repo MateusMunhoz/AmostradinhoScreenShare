@@ -80,6 +80,8 @@ contextBridge.exposeInMainWorld('api', {
   windowMaterial: (mode, color) => ipcRenderer.invoke('window-material', String(mode || ''), String(color || '')),
   setTitleBar: (color, symbolColor) => ipcRenderer.invoke('window-titlebar', String(color || ''), String(symbolColor || '')),
   setWindowIcon: (png) => ipcRenderer.invoke('window-icon', String(png || '')),
+  // Luz ambiente da música: as cores (PNG de 32 x 18) de um retângulo da janela do app
+  captureRegion: (x, y, w, h) => ipcRenderer.invoke('capture-region', Number(x) || 0, Number(y) || 0, Number(w) || 0, Number(h) || 0),
   setPriority: (level) => ipcRenderer.invoke('set-priority', level),
   statsStart: () => ipcRenderer.invoke('stats-start'),
   statsStop: () => ipcRenderer.invoke('stats-stop'),

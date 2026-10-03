@@ -229,6 +229,27 @@ function swapTiles(a, b) {
   renderFocus();
 }
 
+// Mouse parado em cima da tela (ou fora dela): a faixa do nome e os controles da música somem (.ui-idle, CSS);
+// mexer o mouse traz de volta. Com o mouse em cima de uma das faixas, elas ficam
+const TILE_IDLE_MS = 2500;
+function setupTileIdle(el) {
+  let timer = 0, x = 0, y = 0;
+  // Pela posição do mouse (escondida, a faixa não recebe o mouse, então :hover não serve)
+  const overBar = () => [...el.querySelectorAll('.tile-name, .music-controls')].some((b) => {
+    const r = b.getBoundingClientRect();
+    return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+  });
+  const idle = () => { if (!overBar()) el.classList.add('ui-idle'); };
+  el.classList.add('ui-idle');
+  el.addEventListener('pointermove', (e) => {
+    x = e.clientX; y = e.clientY;
+    el.classList.remove('ui-idle');
+    clearTimeout(timer);
+    timer = setTimeout(idle, TILE_IDLE_MS);
+  });
+  el.addEventListener('pointerleave', () => { clearTimeout(timer); el.classList.add('ui-idle'); });
+}
+
 // Arrastar pela faixa do nome (os botões dela continuam funcionando normalmente)
 function setupTileDrag(id, el) {
   const handle = el.querySelector('.tile-name');

@@ -1,15 +1,16 @@
 'use strict';
 // Céu da voz (estilo em styles-estelar.css): cada canal (Voz geral e cada subsala) é um sol, e quem está nele orbita
-// como planeta. Os sóis se espalham meio ao acaso, mas juntinhos: o segundo fica ao lado do primeiro, o terceiro
-// fecha um triângulo, e os outros vão encostando no grupo onde couber. A posição de cada sol só depende dos canais
-// que vêm antes dele, então criar uma subsala não mexe nas outras. Uma linha fraca liga cada sol ao vizinho mais perto.
+// como planeta. O primeiro (a Voz geral) fica no meio, e as subsalas se espalham em volta dele, juntinhas e
+// equilibradas: cada uma vai para o lado que tem menos (o terceiro fica do outro lado do segundo, o quarto e o quinto
+// em cima e embaixo...). A posição de cada sol só depende dos canais que vêm antes dele, então criar uma subsala não
+// mexe nas outras. Uma linha fraca liga cada sol ao vizinho mais perto.
 //
 // Duas visões no painel de voz (Lista | Mapa no topo, salvo neste PC):
 //  - Lista: canais e pessoas em lista; o céu fica pequeno em cima, só de enfeite.
 //  - Mapa: o céu grande no lugar da lista, fazendo tudo que a lista faz. Clicar num sol abre o canal (Entrar, apagar a
 //    subsala e quem está nele, com volume, Assistir e perfil); clicar num planeta abre a pessoa; arrastar um planeta
 //    até outro sol leva a pessoa para lá. Nova subsala e quem transmite fora da voz continuam embaixo do mapa.
-//    O mapa ocupa o painel todo (os sóis se espalham conforme o formato dele), e dá para aproximar e afastar (roda do
+//    O mapa ocupa o painel todo (a câmera enquadra; os sóis não mudam de lugar com o tamanho), e dá para aproximar e afastar (roda do
 //    mouse ou + e −) e andar arrastando o fundo: no mais perto cabe um sistema inteiro; no mais longe, todos.
 // O planeta tem data-person, então voz.js acende quem fala junto com a lista.
 // Script clássico: divide o escopo global com os outros (ordem no index.html). Usa de: util, estado, voz, membros, subsalas.
@@ -53,15 +54,14 @@ function skyEl(tag, attrs = {}) {
 }
 
 // Onde fica cada sol. Para cada sol novo: candidatos em volta de cada sol que já existe (a uma distância de vizinho),
-// sem encostar em nenhum; fica o mais perto do meio do grupo, com um pouco de acaso (o hash do canal) para não virar
-// uma grade. Com 3 canais isso dá um triângulo; depois o grupo cresce para os lados, sem padrão.
-// aspect: largura/altura do espaço; num espaço alto, o grupo cresce mais para cima e para baixo (e vice-versa).
-function skyLayout(chs, { D, MIN }, aspect = 1) {
-  const stretch = Math.min(2.5, Math.max(.4, aspect)) ** .3;
+// sem encostar em nenhum; ganha o que fica mais perto do primeiro (o meio, em 0,0) e deixa o grupo mais equilibrado
+// em volta dele (o centro de todos os sóis, com o novo, mais perto de 0,0), com um pouco de acaso (o hash do canal)
+// para não virar uma grade. Assim os lados ficam com quase o mesmo tanto de salas, em anéis em volta do meio.
+function skyLayout(chs, { D, MIN }) {
   const pts = [];
   for (const ch of chs) {
     if (!pts.length) { pts.push([0, 0]); continue; }
-    const mx = pts.reduce((s, p) => s + p[0], 0) / pts.length, my = pts.reduce((s, p) => s + p[1], 0) / pts.length;
+    const sx = pts.reduce((s, p) => s + p[0], 0), sy = pts.reduce((s, p) => s + p[1], 0);
     let best = null;
     pts.forEach(([px, py], j) => {
       for (let k = 0; k < 24; k++) {
@@ -70,12 +70,11 @@ function skyLayout(chs, { D, MIN }, aspect = 1) {
         const d = D * (.96 + ((h >>> 10) % 100) / 100 * .14);
         const x = px + d * Math.cos(a), y = py + d * Math.sin(a);
         if (pts.some(([qx, qy]) => Math.hypot(qx - x, qy - y) < MIN)) continue;
-        const st = pts.length === 2 ? 1 : stretch; // o terceiro sempre fecha o triângulo, em qualquer formato
-        const score = Math.hypot((x - mx) / st, (y - my) * st) + ((h >>> 20) % 100) / 100 * 16;
+        const score = Math.hypot(x, y) + Math.hypot(sx + x, sy + y) + ((h >>> 20) % 100) / 100 * 16;
         if (!best || score < best[2]) best = [x, y, score];
       }
     });
-    pts.push(best ? [best[0], best[1]] : [mx + D * pts.length, my]);
+    pts.push(best ? [best[0], best[1]] : [D * pts.length, 0]);
   }
   return pts;
 }
@@ -94,11 +93,11 @@ function skySystems() {
 function renderVoiceSky() {
   const sky = $('voiceSky'), box = $('voiceSkyBox'), map = voiceMapOn(), geo = SKY_GEO[map ? 'mapa' : 'lista'];
   if (voiceDrag) return; // arrastando um planeta: o céu fica parado até soltar
-  if (!map && document.body.classList.contains('app-blurred')) { skyStale = true; return; } // fora de foco: redesenha ao voltar (o Mapa segue)
   if (mapFocus.on && !mapFocusFits()) setMapFocus(false);
   else if (mapFocus.pinned && !mapFocus.on && mapFocusFits()) setMapFocus(true);
   renderMapPin();
   const systems = skySystems();
+  skyNoteEvents(sky, systems, map); // antes de apagar: onde cada planeta estava (para quem sai ou muda de canal)
   sky.replaceChildren();
   sky.classList.toggle('map', map);
   if (map) sky.removeAttribute('aria-hidden'); else sky.setAttribute('aria-hidden', 'true');
@@ -106,20 +105,22 @@ function renderVoiceSky() {
   else { sky.removeAttribute('role'); sky.removeAttribute('aria-label'); }
   const show = map || (appPreferences.appearance.voiceSky && systems.some((s) => s.people.length));
   box.hidden = !show;
+  $('voiceSkyNeb').toggleAttribute('hidden', !map); // svg: sem a propriedade hidden do HTML
   $('skyZoom').hidden = true;
   if (!show) return renderSkyPop();
   const labels = systems.length > 1 || map;
   const outer = (n) => skyRadii(n, geo).at(-1) || 9;
-  // No mapa, o espaço é o painel inteiro: a disposição acompanha o formato dele
+  // A disposição depende só dos canais, não do formato do painel: com o formato (era assim antes), o mapa crescendo
+  // (Mapa grande) passava de largo para alto e os sóis trocavam de lado, parecendo que o mapa virava de cabeça para
+  // baixo. Agora o painel mudando de tamanho só reenquadra a câmera
   const rect = map ? sky.getBoundingClientRect() : null;
-  const aspect = map && rect.width && rect.height ? rect.width / rect.height : 1;
-  const pts = skyGlide(systems.map((s) => s.ch), skyLayout(systems.map((s) => s.ch), geo, aspect), map);
+  const pts = skyGlide(systems.map((s) => s.ch), skyLayout(systems.map((s) => s.ch), geo), map);
   // Caixa em volta de tudo (órbitas e nomes)
   let [x0, y0, x1, y1] = [Infinity, Infinity, -Infinity, -Infinity];
   systems.forEach((s, i) => {
     const [x, y] = pts[i], r = Math.max(outer(s.people.length), 13) + (map ? 12 : 6);
     x0 = Math.min(x0, x - r - (labels ? 14 : 0)); x1 = Math.max(x1, x + r + (labels ? 14 : 0));
-    y0 = Math.min(y0, y - r); y1 = Math.max(y1, y + r + (labels ? 10 : 0) + (map && s.people.length ? 6 : 0));
+    y0 = Math.min(y0, y - r); y1 = Math.max(y1, y + r + (labels ? 10 : 0) + (map ? 7 : 0) + (map && s.people.length ? 6 : 0)); // no mapa, + a linha de quantos
   });
   let w = x1 - x0, h = y1 - y0;
   if (map) {
@@ -131,11 +132,25 @@ function renderVoiceSky() {
     if (w < h * 3.4) { x0 -= (h * 3.4 - w) / 2; w = h * 3.4; } // na lista, o céu é uma faixa larga e baixa
     sky.setAttribute('viewBox', `${x0.toFixed(1)} ${y0.toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}`);
   }
-  drawSkyDust(sky, x0, y0, w, h, map ? 160 : 90);
-  drawSkyBridges(sky, pts);
+  // Fora de foco, o céu em cima da lista não é desenhado (redesenha ao voltar; o Mapa segue). O tamanho dele (a
+  // caixa e o viewBox) já fica certo: senão ele crescia ao focar e empurrava a lista bem na hora do clique
+  if (!map && document.body.classList.contains('app-blurred')) { skyStale = true; return; }
+  drawSkyDust(sky, x0, y0, w, h, map ? 140 : 90);
+  if (map) {
+    drawSkyDefs(sky);
+    drawSkyGalaxy(sky, x0, y0, w, h, pts[0]);
+    drawSkyClusters(sky, systems, pts, outer);
+    drawSkyShooting(sky, x0, y0, w, h);
+    drawSkyNebulas($('voiceSkyNeb'), systems, pts, outer);
+  }
+  drawSkyBridges(sky, pts, map ? systems.map((s) => s.ch) : null);
   const now = performance.now() / 1000; // a órbita continua de onde estava quando o céu é redesenhado
   systems.forEach((s, i) => drawSkySystem(sky, s, pts[i], { map, geo, labels, now, outer: outer(s.people.length) }));
-  if (map) applySkyCam();
+  if (map) {
+    skyEv.suns = new Map(systems.map((s, i) => [s.ch, pts[i]]));
+    playSkyEvents(sky, systems, pts);
+    applySkyCam();
+  }
   if (map && orbitPointer) setOrbitSpeeds(orbitPointer); // redesenhou com o mouse em cima: a velocidade continua
   renderSkyPop();
 }
@@ -159,8 +174,8 @@ $('voiceSkyBox').addEventListener('pointermove', (e) => {
 });
 $('voiceSkyBox').addEventListener('pointerleave', () => { orbitPointer = null; setOrbitSpeeds(null); });
 
-// Os sóis deslizam até o lugar novo quando a disposição muda (o mapa cresce e eles passam de lado a lado para em
-// pé, ou o contrário): 600 ms, desacelerando, redesenhando a cada quadro só enquanto se movem. Canal novo já nasce
+// Os sóis deslizam até o lugar novo quando a disposição muda (um canal some e os de depois se reorganizam):
+// 600 ms, desacelerando, redesenhando a cada quadro só enquanto se movem. Canal novo já nasce
 // no lugar; trocar entre Lista e Mapa não desliza (as escalas são outras).
 const skyAnim = { shown: new Map(), from: null, to: null, start: 0, map: false, frame: 0 };
 function skyGlide(chs, target, map) {
@@ -183,6 +198,107 @@ function skyGlide(chs, target, map) {
   return pts;
 }
 
+// ---------- Animações de eventos no mapa ----------
+// Alguém entra na voz (chega como cometa, com um clarão), sai (escapa para fora do sol e some), muda de canal (faz
+// um arco até o outro sol) ou começa a transmitir (um anel se abre); uma subsala nasce (o sol acende com uma onda de
+// choque) ou some (o sol se apaga). Cada redesenho compara com o anterior (skyNoteEvents). Cada evento vale por um
+// tempo; se o mapa for redesenhado no meio, a animação segue de onde estava (atraso negativo da Web Animations).
+// Curtas e só em resposta a algo que aconteceu; sem nada com "reduzir animações" do sistema.
+const SKY_EV_DUR = { enter: 1100, leave: 1000, move: 1200, live: 900, born: 1300, gone: 800 };
+const skyEv = { prev: null, list: [], suns: new Map() };
+function skyNoteEvents(sky, systems, map) {
+  const now = performance.now();
+  skyEv.list = skyEv.list.filter((e) => now - e.start < SKY_EV_DUR[e.kind]);
+  if (!map) { skyEv.prev = null; skyEv.list = []; return; }
+  // Onde cada planeta está agora, no desenho (ele gira: pega a posição do momento)
+  const pos = new Map(), inv = sky.getScreenCTM()?.inverse();
+  if (inv) for (const g of sky.querySelectorAll('.sky-star[data-person]')) {
+    const m = g.getScreenCTM();
+    if (m) { const p = new DOMPoint(0, 0).matrixTransform(inv.multiply(m)); pos.set(g.dataset.person, [p.x, p.y]); }
+  }
+  const cur = { people: new Map(), live: new Set(), chs: new Set(systems.map((s) => s.ch)) };
+  for (const s of systems) for (const p of s.people) { cur.people.set(p.id, s.ch); if (p.sharing) cur.live.add(p.id); }
+  const prev = skyEv.prev;
+  skyEv.prev = cur;
+  if (!prev || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const add = (e) => skyEv.list.push({ ...e, start: now });
+  for (const [id, ch] of cur.people) {
+    if (!prev.people.has(id)) add({ kind: 'enter', id });
+    else if (prev.people.get(id) !== ch) add({ kind: 'move', id, from: pos.get(id) });
+    if (cur.live.has(id) && !prev.live.has(id)) add({ kind: 'live', id });
+  }
+  for (const [id, ch] of prev.people) if (!cur.people.has(id) && pos.has(id)) add({ kind: 'leave', at: pos.get(id), sun: skyEv.suns.get(ch) });
+  for (const ch of cur.chs) if (!prev.chs.has(ch)) add({ kind: 'born', ch });
+  for (const ch of prev.chs) if (!cur.chs.has(ch) && skyEv.suns.has(ch)) add({ kind: 'gone', at: skyEv.suns.get(ch) });
+}
+function playSkyEvents(sky, systems, pts) {
+  const now = performance.now();
+  const star = (id) => [...sky.querySelectorAll('.sky-star')].find((g) => g.dataset.person === id);
+  const where = (el) => { const m = sky.getScreenCTM()?.inverse().multiply(el.getScreenCTM()); return m ? [m.e, m.f] : null; };
+  // Um fantasma solto no desenho (quem saiu, quem está mudando de canal, o sol que se apagou)
+  const ghost = (x, y, ...kids) => {
+    const g = skyEl('g', { transform: `translate(${x.toFixed(1)} ${y.toFixed(1)})` }), fx = skyEl('g', { class: 'sky-ghost' });
+    fx.append(...kids);
+    g.append(fx);
+    sky.append(g);
+    return fx;
+  };
+  for (const e of skyEv.list) {
+    const opts = { duration: SKY_EV_DUR[e.kind], delay: e.start - now, easing: 'cubic-bezier(.2, .7, .3, 1)' };
+    const planet = e.id ? star(e.id) : null, fx = planet?.querySelector('.sky-fx');
+    if (e.kind === 'enter' && fx) {
+      const ox = +fx.dataset.ox || 0, oy = +fx.dataset.oy || 0;
+      fx.animate([{ transform: `translate(${ox * 40}px, ${oy * 40}px)`, opacity: 0 }, { opacity: 1, offset: .25 }, { transform: 'none', opacity: 1 }], opts);
+      const tail = skyEl('line', { class: 'sky-comet', x1: 0, y1: 0, x2: ox * 14, y2: oy * 14 });
+      fx.prepend(tail);
+      tail.animate([{ opacity: 1 }, { opacity: 1, offset: .5 }, { opacity: 0 }], { ...opts, fill: 'forwards' });
+      const flash = skyEl('circle', { class: 'sky-flash', r: 3 });
+      fx.querySelector('.sky-upright').append(flash);
+      flash.animate([{ opacity: 0, transform: 'scale(1)' }, { opacity: 0, offset: .55 }, { opacity: .9, offset: .6 }, { opacity: 0, transform: 'scale(4)' }], { ...opts, fill: 'forwards' });
+    } else if (e.kind === 'move' && fx) {
+      const to = where(planet);
+      fx.animate([{ opacity: 0 }, { opacity: 0, offset: .85 }, { opacity: 1 }], { ...opts, easing: 'linear' });
+      if (e.from && to) {
+        // Arco de gravidade: uma curva que sobe por cima do caminho reto
+        const [ax, ay] = e.from, [bx, by] = to, d = Math.hypot(bx - ax, by - ay) || 1;
+        let [nx, ny] = [-(by - ay) / d, (bx - ax) / d];
+        if (ny > 0) [nx, ny] = [-nx, -ny]; // a curva sempre para cima
+        const cx = (ax + bx) / 2 + nx * d * .3, cy = (ay + by) / 2 + ny * d * .3;
+        const frames = Array.from({ length: 13 }, (_, k) => {
+          const t = k / 12, x = (1 - t) ** 2 * ax + 2 * (1 - t) * t * cx + t * t * bx - ax, y = (1 - t) ** 2 * ay + 2 * (1 - t) * t * cy + t * t * by - ay;
+          return { transform: `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`, opacity: k === 12 ? 0 : 1 };
+        });
+        ghost(ax, ay, skyEl('circle', { class: 'sky-ghost-core', r: planet.classList.contains('me') ? 2.4 : 1.9 }))
+          .animate(frames, { ...opts, easing: 'cubic-bezier(.45, 0, .55, 1)', fill: 'forwards' });
+      }
+    } else if (e.kind === 'live' && fx) {
+      const burst = skyEl('circle', { class: 'sky-burst', r: 4 });
+      fx.querySelector('.sky-upright').append(burst);
+      burst.animate([{ opacity: .9, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(5)' }], { ...opts, easing: 'ease-out', fill: 'forwards' });
+    } else if (e.kind === 'leave') {
+      const [x, y] = e.at, [sx, sy] = e.sun || [x, y + 1], d = Math.hypot(x - sx, y - sy) || 1;
+      const ring = skyEl('circle', { class: 'sky-ghost-ring', r: 2.2 });
+      ghost(x, y, ring);
+      ring.animate([{ opacity: .6 }, { opacity: 0 }], { ...opts, fill: 'forwards' });
+      ghost(x, y, skyEl('circle', { class: 'sky-ghost-core', r: 1.9 }))
+        .animate([{ transform: 'none', opacity: 1 }, { opacity: 1, offset: .2 }, { transform: `translate(${((x - sx) / d * 45).toFixed(1)}px, ${((y - sy) / d * 45).toFixed(1)}px)`, opacity: 0 }],
+          { ...opts, easing: 'cubic-bezier(.5, 0, .8, .4)', fill: 'forwards' });
+    } else if (e.kind === 'born') {
+      const sun = [...sky.querySelectorAll('.sky-sun')].find((el) => el.dataset.channel === e.ch), i = systems.findIndex((s) => s.ch === e.ch);
+      if (!sun || i < 0) continue;
+      sun.querySelector('.sky-sun-fx').animate([{ transform: 'scale(0)' }, { transform: 'scale(0)', offset: .08 }, { transform: 'scale(1.7)', offset: .3 }, { transform: 'scale(1)', offset: .45 }, { transform: 'scale(1)' }], { ...opts, easing: 'ease-out' });
+      const shock = skyEl('circle', { class: 'sky-shock', r: 5 });
+      ghost(pts[i][0], pts[i][1], shock);
+      shock.animate([{ opacity: 0, transform: 'scale(1)' }, { opacity: .9, offset: .12 }, { opacity: 0, transform: 'scale(7)', offset: .55 }, { opacity: 0, transform: 'scale(7)' }], { ...opts, easing: 'ease-out', fill: 'forwards' });
+      for (const t of sun.parentNode.querySelectorAll('.sky-label, .sky-count')) t.animate([{ opacity: 0 }, { opacity: 0, offset: .35 }, { opacity: 1, offset: .55 }, { opacity: 1 }], opts);
+    } else if (e.kind === 'gone') {
+      const [x, y] = e.at;
+      ghost(x, y, skyEl('circle', { class: 'sky-ghost-sun', r: 6 }), skyEl('circle', { class: 'sky-ghost-sun core', r: 3.6 }))
+        .animate([{ transform: 'scale(1)', opacity: 1 }, { transform: 'scale(1.3)', opacity: 1, offset: .2 }, { transform: 'scale(0)', opacity: 0 }], { ...opts, easing: 'ease-in', fill: 'forwards' });
+    }
+  }
+}
+
 // Poeira de fundo: sempre as mesmas estrelinhas, para o céu não mudar a cada redesenho
 function drawSkyDust(sky, x0, y0, w, h, max) {
   const dust = Math.round(Math.min(max, w * h / 900));
@@ -191,14 +307,117 @@ function drawSkyDust(sky, x0, y0, w, h, max) {
     sky.append(skyEl('circle', { class: 'sky-dust', cx: (x0 + 3 + hh % Math.max(1, w - 6)).toFixed(1), cy: (y0 + 3 + (hh >>> 9) % Math.max(1, h - 6)).toFixed(1), r: (hh >>> 17) % 3 ? .5 : .9 }));
   }
 }
-// Linha fraca de cada sol até o vizinho mais perto entre os que vieram antes, de borda a borda
-function drawSkyBridges(sky, pts) {
+// Mapa: ao fundo, uma galáxia em espiral girando bem devagar (uma volta a cada 7 min) em volta do primeiro canal (a
+// Voz geral, sempre no meio do grupo: as subsalas se espalham em volta dele), com o núcleo brilhando na cor de
+// destaque. Dois braços de estrelinhas numa espiral logarítmica, sempre as mesmas (hash), algumas cintilando. Os braços
+// vão até o canto mais longe do que aparece com tudo à vista, girando sem deixar canto vazio
+function drawSkyGalaxy(sky, x0, y0, w, h, [cx, cy]) {
+  const R = Math.max(...[[x0, y0], [x0 + w, y0], [x0, y0 + h], [x0 + w, y0 + h]].map(([x, y]) => Math.hypot(x - cx, y - cy)));
+  const a = R / 30, now = performance.now() / 1000;
+  const g = skyEl('g', { class: 'sky-galaxy', style: `transform-origin: ${cx.toFixed(1)}px ${cy.toFixed(1)}px; animation-delay: -${(now % 420).toFixed(2)}s` });
+  g.append(skyEl('circle', { class: 'sky-galaxy-core', cx: cx.toFixed(1), cy: cy.toFixed(1), r: (Math.hypot(w, h) * .27).toFixed(1) }));
+  const n = Math.round(Math.min(340, w * h / 200));
+  for (let arm = 0; arm < 2; arm++) {
+    for (let i = 0; i < n; i++) {
+      const hh = skyHash(`galaxia${arm}:${i}`, 17), h2 = skyHash(`galaxia${arm}:${i}`, 23);
+      const t = (hh % 10000) / 10000 * 3.3 * Math.PI, r = a * Math.exp(.33 * t), ang = t + arm * Math.PI, j = r * .16;
+      const x = cx + r * Math.cos(ang) + ((h2 % 1000) / 1000 - .5) * j * 2, y = cy + r * Math.sin(ang) * .82 + (((h2 >>> 10) % 1000) / 1000 - .5) * j * 2;
+      const attrs = { class: 'sky-dust' + ((hh >>> 14) % 5 ? '' : ' tint'), cx: x.toFixed(1), cy: y.toFixed(1), r: (.3 + ((hh >>> 20) % 100) / 100 * .6).toFixed(2), style: `opacity: ${(.35 + ((h2 >>> 20) % 100) / 100 * .65).toFixed(2)}` };
+      if (!((hh >>> 27) % 6)) { attrs.class += ' sky-tw'; attrs.style = `animation-duration: ${3 + (h2 % 60) / 10}s; animation-delay: -${(hh % 50) / 10}s`; }
+      g.append(skyEl('circle', attrs));
+    }
+  }
+  sky.append(g);
+}
+// Mapa: o núcleo da galáxia e o brilho das estrelas cadentes
+const skyHue = (ch) => (ch ? 1 + skyHash(ch, 3) % 4 : 0); // cor da nebulosa: Voz geral, a de destaque; cada subsala, uma de quatro
+// Mapa: um aglomerado de estrelinhas em volta de cada subsala (o da Voz geral é o vórtice da galáxia): mais
+// juntas perto do sol e rareando para fora, sempre as mesmas para cada canal (hash), algumas cintilando
+function drawSkyClusters(sky, systems, pts, outer) {
+  systems.forEach((s, i) => {
+    if (!i) return;
+    const [x, y] = pts[i], R = outer(s.people.length) + 38, g = skyEl('g', { class: 'sky-cluster' });
+    for (let k = 0; k < 70; k++) {
+      const hh = skyHash(`${s.ch}:estrela${k}`, 29), h2 = skyHash(`${s.ch}:estrela${k}`, 31);
+      const ang = (hh % 3600) / 3600 * 2 * Math.PI, d = R * (.25 + .75 * Math.sqrt(((h2 % 1000) / 1000) ** 1.6));
+      const attrs = { class: 'sky-dust' + ((hh >>> 14) % 6 ? '' : ' tint'), cx: (x + d * Math.cos(ang)).toFixed(1), cy: (y + d * Math.sin(ang)).toFixed(1),
+        r: (.25 + ((hh >>> 20) % 100) / 100 * .5).toFixed(2), style: `opacity: ${(.3 + ((h2 >>> 12) % 100) / 100 * .55 * (1 - d / R * .6)).toFixed(2)}` };
+      if (!((hh >>> 27) % 5)) { attrs.class += ' sky-tw'; attrs.style = `animation-duration: ${3 + (h2 % 60) / 10}s; animation-delay: -${(hh % 50) / 10}s`; }
+      g.append(skyEl('circle', attrs));
+    }
+    sky.append(g);
+  });
+}
+function drawSkyDefs(sky) {
+  const defs = skyEl('defs');
+  const core = skyEl('radialGradient', { id: 'skyCore' }); // o núcleo da galáxia
+  for (const [offset, op] of [[0, .2], [.4, .06], [1, 0]]) core.append(skyEl('stop', { offset, style: `stop-color: var(--accent); stop-opacity: ${op}` }));
+  defs.append(core);
+  const tail = skyEl('linearGradient', { id: 'skyTail' });
+  tail.append(skyEl('stop', { offset: 0, style: 'stop-color: var(--text); stop-opacity: .9' }), skyEl('stop', { offset: 1, style: 'stop-color: var(--text); stop-opacity: 0' }));
+  defs.append(tail);
+  sky.append(defs);
+}
+// Duas estrelas cadentes, de vez em quando (cada uma passa num ponto do céu, fora de compasso)
+function drawSkyShooting(sky, x0, y0, w, h) {
+  [[.88, .08, 13, 2], [.5, .14, 17, 9]].forEach(([fx, fy, dur, delay]) => {
+    const len = Math.max(20, w * .1), dx = -w * .45, dy = w * .22;
+    const g = skyEl('g', { transform: `translate(${(x0 + w * fx).toFixed(1)} ${(y0 + h * fy).toFixed(1)})` });
+    g.append(skyEl('line', { class: 'sky-shoot', x1: 0, y1: 0, x2: (len * .9).toFixed(1), y2: (-len * .45).toFixed(1),
+      style: `--shoot: translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px); animation-duration: ${dur}s; animation-delay: -${delay}s` }));
+    sky.append(g);
+  });
+}
+// Uma nebulosa em volta de cada canal com gente, na cor do canal: duas manchas desfeitas em fumaça (ruído que
+// entorta a borda e desfoca). Fica numa camada só dela (#voiceSkyNeb, atrás do mapa), redesenhada só quando os canais
+// ou os sóis mudam: a fumaça custa caro para recalcular, e o mapa em cima é redesenhado o tempo todo pelas órbitas.
+// Ela respira pela camada inteira (opacidade, no CSS), o que não recalcula nada.
+let skyNebKey = '';
+function drawSkyNebulas(neb, systems, pts, outer) {
+  const key = systems.map((s, i) => `${s.ch}:${s.people.length}:${pts[i][0].toFixed(0)}:${pts[i][1].toFixed(0)}`).join('|');
+  if (key === skyNebKey && neb.firstChild) return;
+  skyNebKey = key;
+  neb.replaceChildren();
+  const defs = skyEl('defs');
+  for (let i = 0; i < 5; i++) {
+    const g = skyEl('radialGradient', { id: `skyNeb${i}` });
+    for (const [offset, op] of [[0, .38], [.5, .12], [1, 0]]) g.append(skyEl('stop', { offset, style: `stop-color: var(--sky-neb-${i}); stop-opacity: ${op}` }));
+    defs.append(g);
+  }
+  const smoke = skyEl('filter', { id: 'skySmoke', x: '-50%', y: '-50%', width: '200%', height: '200%' });
+  smoke.append(skyEl('feTurbulence', { type: 'fractalNoise', baseFrequency: .035, numOctaves: 3, seed: 4 }),
+    skyEl('feDisplacementMap', { in: 'SourceGraphic', scale: 30, xChannelSelector: 'R', yChannelSelector: 'G' }),
+    skyEl('feGaussianBlur', { stdDeviation: 3 }));
+  defs.append(smoke);
+  neb.append(defs);
+  systems.forEach((s, i) => {
+    if (!s.people.length) return;
+    const [x, y] = pts[i], big = outer(s.people.length) + 30 + s.people.length * 2, h = skyHash(s.ch || 'geral', 13), rot = h % 180;
+    const g = skyEl('g', { class: 'sky-neb', filter: 'url(#skySmoke)', style: `transform-origin: ${x.toFixed(1)}px ${y.toFixed(1)}px` });
+    g.dataset.channel = s.ch;
+    const fill = `url(#skyNeb${skyHue(s.ch)})`;
+    g.append(
+      skyEl('ellipse', { cx: x.toFixed(1), cy: y.toFixed(1), rx: big.toFixed(1), ry: (big * .72).toFixed(1), fill, transform: `rotate(${rot} ${x.toFixed(1)} ${y.toFixed(1)})` }),
+      skyEl('ellipse', { cx: (x + big * .22).toFixed(1), cy: (y - big * .12).toFixed(1), rx: (big * .6).toFixed(1), ry: (big * .4).toFixed(1), fill, transform: `rotate(${rot + 60} ${x.toFixed(1)} ${y.toFixed(1)})` }),
+    );
+    neb.append(g);
+  });
+}
+// Linha fraca de cada sol até o vizinho mais perto entre os que vieram antes, de borda a borda.
+// chs (o Mapa): a linha faz uma curva e uma luz corre por ela, na cor do canal de onde sai
+function drawSkyBridges(sky, pts, chs = null) {
   for (let i = 1; i < pts.length; i++) {
     const [x2, y2] = pts[i];
-    const [x1b, y1b] = pts.slice(0, i).reduce((a, b) => (Math.hypot(b[0] - x2, b[1] - y2) < Math.hypot(a[0] - x2, a[1] - y2) ? b : a));
+    const j = pts.slice(0, i).reduce((a, b, k) => (Math.hypot(b[0] - x2, b[1] - y2) < Math.hypot(pts[a][0] - x2, pts[a][1] - y2) ? k : a), 0);
+    const [x1b, y1b] = pts[j];
     const d = Math.hypot(x2 - x1b, y2 - y1b), gap = 9;
     const [ux, uy] = [(x2 - x1b) / d, (y2 - y1b) / d];
-    sky.append(skyEl('line', { class: 'sky-link sky-bridge', x1: x1b + ux * gap, y1: y1b + uy * gap, x2: x2 - ux * gap, y2: y2 - uy * gap }));
+    const [ax, ay, bx, by] = [x1b + ux * gap, y1b + uy * gap, x2 - ux * gap, y2 - uy * gap];
+    if (!chs) { sky.append(skyEl('line', { class: 'sky-link sky-bridge', x1: ax, y1: ay, x2: bx, y2: by })); continue; }
+    const bend = d * .14, cx = (ax + bx) / 2 - uy * bend, cy = (ay + by) / 2 + ux * bend;
+    const path = `M${ax.toFixed(1)} ${ay.toFixed(1)} Q${cx.toFixed(1)} ${cy.toFixed(1)} ${bx.toFixed(1)} ${by.toFixed(1)}`;
+    sky.append(skyEl('path', { class: 'sky-link sky-bridge sky-arc', d: path }),
+      skyEl('path', { class: 'sky-lane', d: path, style: `stroke: var(--sky-neb-${skyHue(chs[j])}); animation-delay: -${i}s` }));
   }
 }
 
@@ -218,7 +437,9 @@ function applySkyCam() {
   const keep = (c, a, b, v) => (v >= b - a ? (a + b) / 2 : Math.min(b - v / 2, Math.max(a + v / 2, c)));
   skyCam.x = keep(skyCam.x, x0, x1, vw);
   skyCam.y = keep(skyCam.y, y0, y1, vh);
-  sky.setAttribute('viewBox', `${(skyCam.x - vw / 2).toFixed(1)} ${(skyCam.y - vh / 2).toFixed(1)} ${vw.toFixed(1)} ${vh.toFixed(1)}`);
+  const vb = `${(skyCam.x - vw / 2).toFixed(1)} ${(skyCam.y - vh / 2).toFixed(1)} ${vw.toFixed(1)} ${vh.toFixed(1)}`;
+  sky.setAttribute('viewBox', vb);
+  $('voiceSkyNeb').setAttribute('viewBox', vb); // a fumaça atrás anda e aproxima junto
   $('skyZoom').hidden = skyCam.uIn >= skyCam.uFit * .98; // tudo já cabe de perto: sem zoom
   $('skyZoomIn').disabled = skyCam.u <= skyCam.uIn * 1.001;
   $('skyZoomOut').disabled = $('skyZoomFit').disabled = skyCam.u >= skyCam.uFit * .999;
@@ -279,7 +500,7 @@ function setupSkyCamera() {
   $('skyZoomIn').onclick = () => zoomSky(1 / 1.5);
   $('skyZoomOut').onclick = () => zoomSky(1.5);
   $('skyZoomFit').onclick = fitSky;
-  // O painel mudou de tamanho: a disposição acompanha o formato novo (uma vez por quadro)
+  // O painel mudou de tamanho: redesenha (uma vez por quadro) para a câmera e a poeira cobrirem o tamanho novo
   let pending = false;
   new ResizeObserver(() => {
     if (pending || !voiceMapOn() || box.hidden) return;
@@ -290,9 +511,15 @@ function setupSkyCamera() {
 
 function drawSkySystem(sky, { ch, name, here, people, music }, [sx, sy], { map, geo, labels, now, outer }) {
   // Cada sol com os planetas num grupo: no mapa, a órbita desacelera com o mouse chegando perto (setOrbitSpeeds)
-  const sys = skyEl('g', { class: 'sky-system' });
+  const sys = skyEl('g', { class: 'sky-system', style: `--hue: var(--sky-neb-${skyHue(ch)})` });
   Object.assign(sys.dataset, { cx: sx, cy: sy, r: Math.max(outer, 13) + 7 });
   sky.append(sys);
+  // No mapa, com o mouse no sistema, a nebulosa dele acende (a camada da fumaça não recebe o mouse)
+  if (map) {
+    const neb = () => [...$('voiceSkyNeb').querySelectorAll('.sky-neb')].find((n) => n.dataset.channel === ch);
+    sys.onpointerenter = () => neb()?.classList.add('hot');
+    sys.onpointerleave = () => neb()?.classList.remove('hot');
+  }
   // No mapa, a área em volta do sol inteira recebe o clique e o planeta arrastado
   if (map) {
     const hit = skyEl('circle', { class: 'sky-hit', cx: sx, cy: sy, r: Math.max(outer, 13) + 7 });
@@ -304,19 +531,23 @@ function drawSkySystem(sky, { ch, name, here, people, music }, [sx, sy], { map, 
   radii.forEach((radius, r) => {
     const onRing = people.filter((_, j) => j % radii.length === r);
     if (!onRing.length) return;
-    sys.append(skyEl('circle', { class: 'sky-path', cx: sx, cy: sy, r: radius }));
+    const path = skyEl('circle', { class: 'sky-path', cx: sx, cy: sy, r: radius });
+    sys.append(path);
     const period = 50 + r * 30, delay = `-${(now % period).toFixed(2)}s`;
     const ring = skyEl('g', { class: 'sky-ring', style: `transform-origin: ${sx}px ${sy}px; animation-duration: ${period}s; animation-delay: ${delay}` });
     const base = (skyHash(ch + ':' + r, 5) % 360) * Math.PI / 180;
     onRing.forEach((p, k) => {
       const a = base + 2 * Math.PI * k / onRing.length;
-      ring.append(skyPlanet(p, ch, sx + radius * Math.cos(a), sy + radius * Math.sin(a), { map, period, delay }));
+      ring.append(skyPlanet(p, ch, sx + radius * Math.cos(a), sy + radius * Math.sin(a), { map, period, delay, trail: map && { sx, sy, radius, a } }));
     });
     sys.append(ring);
   });
   const sun = skyEl('g', { class: 'sky-sun' + (here ? ' here' : '') + (people.length ? '' : ' empty'), transform: `translate(${sx.toFixed(1)} ${sy.toFixed(1)})` });
   sun.dataset.channel = ch;
-  sun.append(skyEl('circle', { class: 'sky-corona', r: 6 }), skyEl('circle', { class: 'sky-sun-core', r: 3.6 }));
+  const sunFx = skyEl('g', { class: 'sky-sun-fx' }); // o que cresce com o mouse e acende quando a subsala nasce
+  if (map && people.length) sunFx.append(skyEl('circle', { class: 'sky-glow', r: 10 })); // o brilho em volta, respirando
+  sunFx.append(skyEl('circle', { class: 'sky-corona', r: 6 }), skyEl('circle', { class: 'sky-sun-core', r: 3.6 }));
+  sun.append(sunFx);
   const count = people.length === 1 ? '1 pessoa' : `${people.length} pessoas`;
   const title = skyEl('title');
   title.textContent = `${name} · ${count}`;
@@ -329,11 +560,13 @@ function drawSkySystem(sky, { ch, name, here, people, music }, [sx, sy], { map, 
     sun.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openSkyPop({ kind: 'channel', ch }, sun); } };
   }
   sys.append(sun);
-  // Canal com música: uma notinha ao lado do sol (no mapa)
+  // Canal com música: notinhas subindo do sol, na cor do canal (no mapa)
   if (map && music) {
-    const note = skyEl('text', { class: 'sky-music', x: (sx + 8).toFixed(1), y: (sy - 6).toFixed(1) });
-    note.textContent = '♪';
-    sys.append(note);
+    ['♪', '♫', '♪'].forEach((n, k) => {
+      const note = skyEl('text', { class: 'sky-music', x: (sx + 6 + k * 2).toFixed(1), y: (sy - 5).toFixed(1), style: `animation-delay: -${k * 1.2}s` });
+      note.textContent = n;
+      sys.append(note);
+    });
   }
   if (labels) {
     // No mapa, o nome do canal fica mais para baixo quando tem planeta (o nome da pessoa vai embaixo dela)
@@ -341,16 +574,40 @@ function drawSkySystem(sky, { ch, name, here, people, music }, [sx, sy], { map, 
     const label = skyEl('text', { class: 'sky-label' + (here ? ' here' : ''), x: sx.toFixed(1), y: (sy + below).toFixed(1) });
     label.textContent = name;
     sys.append(label);
+    // No mapa, embaixo do nome, quantos estão no canal
+    if (map) {
+      const n = skyEl('text', { class: 'sky-count', x: sx.toFixed(1), y: (sy + below + 6.5).toFixed(1) });
+      n.textContent = people.length ? count.toUpperCase() : 'VAZIO';
+      sys.append(n);
+    }
   }
 }
 
 // Um planeta: a pessoa. Gira com o anel; no mapa, o nome vai junto, de pé (gira para o outro lado na mesma velocidade)
-function skyPlanet(p, ch, x, y, { map, period, delay }) {
-  const g = skyEl('g', { class: 'sky-star' + (p.sharing ? ' live' : '') + (p.muted ? ' muted' : '') + (p.deafened ? ' deafened' : ''), transform: `translate(${x.toFixed(1)} ${y.toFixed(1)})` });
+function skyPlanet(p, ch, x, y, { map, period, delay, trail }) {
+  const g = skyEl('g', { class: 'sky-star' + (p.me ? ' me' : '') + (p.sharing ? ' live' : '') + (p.muted ? ' muted' : '') + (p.deafened ? ' deafened' : ''), transform: `translate(${x.toFixed(1)} ${y.toFixed(1)})` });
   g.dataset.person = p.id;
   g.classList.toggle('speaking', speaking.has(p.id));
+  // fx: o que as animações de chegar e de mudar de canal movem (playSkyEvents); ox, oy: a direção para fora do sol
+  const fx = skyEl('g', { class: 'sky-fx' });
+  g.append(fx);
+  // No mapa, um rastro na órbita atrás do planeta: três arcos sobrepostos, sumindo para trás (gira com o anel); com
+  // o mouse em cima, uma linha tracejada até o sol
+  if (trail) {
+    const { sx, sy, radius, a } = trail;
+    Object.assign(fx.dataset, { ox: Math.cos(a), oy: Math.sin(a) });
+    for (const [deg, op] of [[46, .1], [28, .14], [12, .2]]) {
+      const b = a - deg * Math.PI / 180, rx = sx + radius * Math.cos(b) - x, ry = sy + radius * Math.sin(b) - y;
+      fx.append(skyEl('path', { class: 'sky-trail', d: `M${rx.toFixed(1)} ${ry.toFixed(1)} A${radius} ${radius} 0 0 1 0 0`, style: `stroke-opacity: ${op}` }));
+    }
+    const k = (radius - 7) / radius;
+    fx.append(skyEl('line', { class: 'sky-tether', x1: (-Math.cos(a) * 3.5).toFixed(1), y1: (-Math.sin(a) * 3.5).toFixed(1), x2: (-Math.cos(a) * radius * k).toFixed(1), y2: (-Math.sin(a) * radius * k).toFixed(1) }));
+  }
   const up = skyEl('g', { class: 'sky-upright', style: `animation-duration: ${period}s; animation-delay: ${delay}` });
   if (map) up.append(skyEl('circle', { class: 'sky-phit', r: 7 }));
+  // No mapa, ondas saindo do planeta: verdes enquanto a pessoa fala (o CSS só mostra com .speaking), azuis enquanto transmite
+  if (map) up.append(skyEl('circle', { class: 'sky-wave', r: 3 }), skyEl('circle', { class: 'sky-wave', r: 3, style: 'animation-delay: -1.2s' }));
+  if (map && p.sharing) for (const d of [0, 1, 2]) up.append(skyEl('circle', { class: 'sky-bwave', r: 3.5, style: `animation-delay: -${d}s` }));
   if (p.sharing) up.append(skyEl('circle', { class: 'sky-orbit', r: 5.5 }));
   if (p.deafened) up.append(skyEl('circle', { class: 'sky-deaf', r: 4 }));
   up.append(skyEl('circle', { class: 'sky-halo', r: 4.5 }), skyEl('circle', { class: 'sky-core', r: p.me ? 2.4 : 1.9 }));
@@ -368,7 +625,7 @@ function skyPlanet(p, ch, x, y, { map, period, delay }) {
     g.onpointerdown = (e) => skyPointerDown(e, g, p, ch);
     g.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openSkyPop({ kind: 'person', id: p.id }, g); } };
   }
-  g.append(up);
+  fx.append(up);
   return g;
 }
 

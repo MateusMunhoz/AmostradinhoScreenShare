@@ -65,6 +65,8 @@
       <p id="voicePaneStatus" class="hint"></p>
       <!-- Céu da voz: cada canal é um sol e quem está nele orbita como planeta. Na visão Mapa, fica grande no lugar da lista (renderer/ceu-voz.js) -->
       <div id="voiceSkyBox" class="voice-sky-box" hidden>
+        <!-- Mapa: a fumaça colorida das nebulosas, atrás do céu (drawSkyNebulas) -->
+        <svg id="voiceSkyNeb" class="voice-sky-neb" viewBox="0 0 300 70" preserveAspectRatio="xMidYMid meet" aria-hidden="true" hidden></svg>
         <svg id="voiceSky" class="voice-sky" viewBox="0 0 300 70" preserveAspectRatio="xMidYMid meet" aria-hidden="true"></svg>
         <!-- Mapa: aproximar, afastar e ver tudo (também pela roda do mouse; arrastar o fundo anda) -->
         <!-- Perfil no mapa: clicar num planeta aproxima até a pessoa, com as ações na órbita (renderSkyProfile) -->
@@ -536,7 +538,7 @@
               <button class="btn" id="voiceJoin" type="button">Entrar na voz</button>
               <button class="btn icon ghost" id="voiceSettingsBtn" type="button"></button>
             </div>
-            <button class="btn icon" id="overlayToggle" type="button" aria-pressed="false"></button>
+            <button class="btn icon ghost" id="overlayToggle" type="button" aria-pressed="false"></button>
             <div id="stageLayout" class="seg stage-layout" role="group" aria-label="Arrumação das telas" hidden><button type="button" data-layout="grid" title="Todas do mesmo tamanho, como no Google Meet">Grade</button><button type="button" data-layout="spotlight" title="Uma grande e as outras numa coluna ao lado">Destaque</button></div>
             <span class="dock-spacer"></span>
             <!-- Convidar: copia o endereço da sala (que aparece ao passar o mouse e em Pessoas na sala) -->
@@ -827,7 +829,7 @@
             <label><input type="radio" name="border" value="liquid"><span class="glass-swatch" data-border-swatch="liquid" aria-hidden="true"></span><span>Líquido</span></label>
           </div>
         </div>
-        <label class="vd-check"><input type="checkbox" id="ambientLight"> Luz ambiente nos vídeos: as barras pretas pegam as cores da transmissão</label>
+        <label class="vd-check"><input type="checkbox" id="ambientLight"> Luz ambiente nos vídeos: as barras pretas pegam as cores da transmissão e da música</label>
         <label class="vd-check"><input type="checkbox" id="voiceSkyOn"> Céu da voz em cima da lista: canais como sóis e quem está neles como planetas</label>
         <div class="settings-row"><label for="fontFamily">Fonte</label>
           <div class="font-pick"><select id="fontFamily"></select><button id="loadLocalFonts" class="btn small" type="button">Fontes deste PC</button></div>
