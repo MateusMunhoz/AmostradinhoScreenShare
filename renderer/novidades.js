@@ -3,6 +3,13 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.15.8",
+    "date": "2026-10-03",
+    "items": [
+      "feat: adiciona tema Renascença"
+    ]
+  },
+  {
     "version": "1.15.7",
     "date": "2026-10-03",
     "items": [
@@ -64,14 +71,6 @@ const NOVIDADES = [
     "items": [
       "add versao",
       "Salas dos amigos pela internet: entre com um clique na sala que um amigo do Razze abriu"
-    ]
-  },
-  {
-    "version": "1.13.0",
-    "date": "2026-10-02",
-    "items": [
-      "ajustes UI e temas novos",
-      "add logo"
     ]
   }
 ];
