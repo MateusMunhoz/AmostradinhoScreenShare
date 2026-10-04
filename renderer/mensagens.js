@@ -90,6 +90,7 @@ async function dmPoll() {
   dm.polling = true;
   const account = dm.account;
   let incoming = false;
+  let ligando = null; // chamada que acabou de chegar (chamada.js)
   const changed = new Set();
   try {
     for (let page = 0; page < 20; page++) {
@@ -103,6 +104,8 @@ async function dmPoll() {
         if (!dmAdd(c, m)) continue;
         changed.add(c);
         if (!mine && !dmIsOpen(c.id)) { c.unread++; dmPutInBar(c.id, false); incoming = true; }
+        const cv = !mine && !m.locked && lerConvite(m.text);
+        if (cv?.chamada && Date.now() - m.createdAt < CHAMADA_AVISO_MS) ligando = { cv, quem: friendName(c.id) };
       }
       if (!res.more) break;
     }
@@ -116,7 +119,8 @@ async function dmPoll() {
     dm.polling = false;
   }
   for (const c of changed) dmSaveConv(c);
-  if (incoming) void appSounds.play('chat');
+  if (ligando) avisarChamada(ligando.cv, ligando.quem);
+  else if (incoming) void appSounds.play('chat');
   if (changed.size || incoming) dmSaveBar();
   renderDm();
 }
@@ -263,10 +267,11 @@ function dmElements(c) {
   name.className = 'dm-name';
   const badge = document.createElement('span');
   badge.className = 'hub-badge dm-badge';
+  const call = dmIconButton('dm-chip-btn dm-call-btn', ICON.phone, 'Ligar (cria uma sala só para vocês e entra na voz)', () => void ligarPara(c.id));
   const pin = dmIconButton('dm-chip-btn dm-pin', ICON.pin, 'Travar aberta', () => toggleDmPin(c.id));
   const min = dmIconButton('dm-chip-btn dm-min', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12"/></svg>', 'Minimizar', () => minimizeDm(c.id));
   const close = dmIconButton('dm-chip-btn', ICON.close, 'Fechar a conversa (o histórico fica salvo neste PC)', () => closeDm(c.id));
-  chip.append(dot, name, badge, pin, min, close);
+  chip.append(dot, name, badge, call, pin, min, close);
   slot.append(win, chip);
   c.el = { slot, win, list, empty, status, input, chip, dot, name, badge, pin, min };
   return c.el;
@@ -316,7 +321,7 @@ function dmMessageEl(c, m, prev) {
     body.append(note);
   }
   body.append(line);
-  if (convite) body.append(cartaoConvite(convite, mine, friendName(c.id)));
+  if (convite) body.append(cartaoConvite(convite, mine, friendName(c.id), m.createdAt));
   li.append(when, body);
   return li;
 }
@@ -493,7 +498,7 @@ function fillDmList(prefix = 'dmPanel') {
     li.onclick = () => void openDm(id);
     li.onkeydown = (e) => { if (e.key === 'Enter') void openDm(id); };
     const last = c?.last;
-    const preview = last ? `${last.from === dm.account ? 'você: ' : ''}${last.locked ? 'Mensagem criptografada' : lerConvite(last.text) ? 'Convite para a sala' : last.text.replace(/\s+/g, ' ')}` : friendsData.friends.some((f) => f.id === id) ? 'Nenhuma mensagem ainda' : '';
+    const preview = last ? `${last.from === dm.account ? 'você: ' : ''}${last.locked ? 'Mensagem criptografada' : lerConvite(last.text) ? (lerConvite(last.text).chamada ? 'Chamada' : 'Convite para a sala') : last.text.replace(/\s+/g, ' ')}` : friendsData.friends.some((f) => f.id === id) ? 'Nenhuma mensagem ainda' : '';
     const info = hubInfo(name, preview);
     li.append(hubAvatar(name, friendOnline(id)), info);
     if (last) {

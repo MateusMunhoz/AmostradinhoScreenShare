@@ -25,7 +25,12 @@ Tudo o que dá para fazer no Tela P2P, com os detalhes. Para começar do zero, v
 - **Painel à direita:** só o chat. O **botão de pessoas**, na barrinha da direita, mostra o total e acende uma bolinha verde quando alguém fala. Ele abre a lista por cima do chat, com:
   - quem está na sala, com **Assistir** e o volume de cada pessoa;
   - os detalhes da sua transmissão;
-  - o endereço da sala, com **Copiar**.
+  - o endereço da sala, com **Copiar**;
+  - a **senha** da sala (para quem entrou com ela e para o host), escondida, com o **olho** para mostrar, **Copiar** e
+    **Mudar**. Só o host muda: quem já está continua na sala e recebe a nova; quem entrar depois precisa dela. Vazia,
+    a sala fica sem senha (no modo Internet, mínimo 4 caracteres). No modo Internet, mudar também cancela os convites
+    sem senha (pelas mensagens e pela lista dos amigos), e se o host sai, quem está há mais tempo assume. Numa sala
+    cujo servidor é antigo, o **Mudar** fica desativado e explica.
 
   Clicar fora ou apertar Esc fecha a lista.
 - **Perfil de alguém:** o mesmo cartão em todo lugar (Pessoas da sala, voz em lista e voz no mapa): fundo, foto, nome, onde a pessoa está, as ações (assistir, adicionar como amigo, mandar mensagem para amigos, silenciar e mudar de canal na voz) e o volume.
@@ -262,6 +267,7 @@ No HUB (a barra fina na borda esquerda), aba **Amigos**. Precisa de conta Razze.
 
 - **Buscar:** o campo do topo filtra a lista pelo nome. Os chips **Todos**, **Online** e **Pedidos** mudam o que aparece; o número no **Pedidos** conta os pedidos recebidos e enviados.
 - **Adicionar:** clique em **Adicionar**, digite o nickname exato e **Enviar pedido** (ou Enter). Se der errado, o motivo aparece embaixo do campo. Quando der certo, o pedido vai para **Pedidos enviados**.
+- **Ligar:** o **telefone** ao lado do balão (só com o amigo online). Veja [Ligar](#ligar).
 - **Convidar:** aparece só para quem está online, com você numa sala. Manda um **convite** nas mensagens diretas do
   amigo, que aparece como um cartão com **Entrar** (veja abaixo).
 - **Remover:** no **⋯** da linha, **Remover [nome]**. A própria linha pergunta se é isso mesmo; **Não** ou Esc desiste.
@@ -293,6 +299,22 @@ Conversa com um amigo (conta Razze), dentro ou fora da sala.
     avisa qual usar, em HUB › Rede. O app não troca o modo sozinho.
   - **Já numa sala:** pergunta se quer sair dela e entrar na do amigo.
   - **App antigo:** quem ainda não atualizou vê o convite como texto, com o código ou o endereço, e entra à mão.
+
+### Ligar
+
+O **telefone** no chip da conversa (ou ao lado do nome, no HUB › Amigos) liga para o amigo.
+
+- **A única escolha:** o modo de rede (Internet, Radmin ou rede local, Razze). Vem marcado o que você usa agora; o
+  que não está pronto (sem servidor, sem conta Razze, VPN desligada) aparece desativado, com o motivo.
+- **O app faz o resto:** passa a usar esse modo, cria uma sala **escondida** (fora da lista de sessões e da lista dos
+  amigos) com uma **senha gerada** (como `K7P-4MX-Q2R`), te põe na voz e manda a chamada pela mensagem privada. A
+  senha vai junto, porque a mensagem é criptografada de ponta a ponta. Já numa sala, pergunta antes de sair dela.
+- **Quem recebe:** o aviso "[nome] está te ligando" com **Atender** (e um som), mesmo com a conversa fechada, e o
+  cartão na conversa. Depois de 10 minutos o cartão vira "Chamada de [nome]", com **Entrar**.
+- **Atender:** entra com a senha da mensagem e vai direto para a voz. Se você estiver em outro modo, pergunta antes
+  de trocar. Na Razze, precisa estar com a mesma rede ligada.
+- **Os dois veem a senha** no Painel da sala (botão de pessoas), para passar a outra pessoa ou mudar.
+- **App antigo:** vê o convite comum, e o texto da mensagem traz o código ou o endereço e a senha.
 
 - **Abrir:** clique em **Mensagens**, na barra de baixo: a lista das conversas abre para cima, com busca, a última mensagem e as não lidas. Ou, no HUB, aba **Amigos**, no balão ao lado do nome.
 - **Barra de conversas:** fica embaixo da tela. Cada conversa aberta vira um chip. Clicar no chip abre a janela; o **—** minimiza de volta para o chip; o **X** tira da barra.

@@ -10,7 +10,7 @@ let room = null;
 let roomChanged = () => {};
 
 const {
-  MAX_MEMBERS, send, cleanSessao, newMember, memberInfo, createChat, createSubsalas, createMusicas, limparMusicas, handleMemberMessage,
+  MAX_MEMBERS, send, cleanSessao, cleanSenha, newMember, memberInfo, createChat, createSubsalas, createMusicas, limparMusicas, handleMemberMessage,
 } = require('./sala-protocolo');
 
 const LOCAL = ['127.0.0.1', '::1', '::ffff:127.0.0.1'];
@@ -41,7 +41,7 @@ function isRazzeAddress(address) {
 
 // seed: quando a sala passa para outra pessoa, o novo servidor continua a conversa e a numeração.
 // seed.onlyRazze: sala criada no modo Razze (só aceita quem vem pela VPN Razze)
-function startServer(port, password = '', seed = {}) {
+function startServer(port, password = '', seed = {}) { // a senha pode mudar depois (mensagem "senha" do host)
   stopServer();
   return new Promise((resolve) => {
     const server = new WebSocketServer({ port, host: '0.0.0.0', maxPayload: 256 * 1024 });
@@ -152,7 +152,7 @@ function startServer(port, password = '', seed = {}) {
             id,
             hostId,
             members: [...members].map(([mid, m]) => memberInfo(mid, m)),
-            features: ['chat', 'voice', 'handoff', 'sessoes', 'subsalas', 'subsala-move', 'musica'],
+            features: ['chat', 'voice', 'handoff', 'sessoes', 'subsalas', 'subsala-move', 'musica', 'senha'],
             chat: chat.log,
             subsalas: subsalas.list,
             musicas: [...musicas.map.values()],
@@ -165,6 +165,18 @@ function startServer(port, password = '', seed = {}) {
           return;
         }
 
+        // Mudar a senha: só o host. Quem já está na sala continua; todos recebem a nova (a troca de host e a volta
+        // depois de a conexão cair entram com ela). Vazia: a sala fica sem senha
+        if (msg.type === 'senha') {
+          if (id !== hostId) return send(ws, { type: 'senha-erro', message: 'Só o host da sala muda a senha.' });
+          const nova = cleanSenha(msg.password);
+          if (nova === null) return send(ws, { type: 'senha-erro', message: 'Senha inválida (até 64 caracteres).' });
+          password = nova;
+          if (room) room.password = nova;
+          broadcast({ type: 'senha', password: nova, by: id });
+          roomChanged();
+          return;
+        }
         handleMemberMessage({ members, broadcast, chat, subsalas, musicas }, id, me, msg);
       });
 

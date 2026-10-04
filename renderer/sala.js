@@ -179,6 +179,7 @@ function enterRoom(welcome, owner, host, port, cloud = null) {
   state.subsalas = (welcome.features || []).includes('subsalas') && Array.isArray(welcome.subsalas) ? welcome.subsalas : null;
   state.subsalaMove = (welcome.features || []).includes('subsala-move');
   state.musicaOn = (welcome.features || []).includes('musica');
+  state.senhaOn = (welcome.features || []).includes('senha'); // o servidor sabe mudar a senha da sala
   state.order = [...welcome.members.map((m) => m.id), welcome.id];
   lembrarDaSala();
   voice.reset(welcome);
@@ -354,6 +355,7 @@ async function rejoin(host, timeoutMs) {
   state.sessao = welcome.sessao || state.sessao;
   state.subsalaMove = (welcome.features || []).includes('subsala-move');
   state.musicaOn = (welcome.features || []).includes('musica');
+  state.senhaOn = (welcome.features || []).includes('senha'); // o servidor sabe mudar a senha da sala
   setSubsalas((welcome.features || []).includes('subsalas') ? welcome.subsalas : null);
   setMusicas(state.musicaOn ? welcome.musicas : [], welcome.now);
   if (state.musicaOn) resendListening();
@@ -461,6 +463,15 @@ function onRoomMessage(m) {
       break;
     case 'chat':
       onChatMessage(m);
+      break;
+    case 'senha': // o host mudou a senha da sala (chamada.js)
+      receberSenha(m);
+      break;
+    case 'senha-erro':
+      toast(String(m.message || 'Não foi possível mudar a senha.').slice(0, 200), 'error');
+      break;
+    case 'host': // modo Internet: o host saiu e outro assumiu
+      if (m.id === state.myId || state.members.has(m.id)) { state.hostId = m.id; renderMembers(); renderRoomAddress(); }
       break;
   }
 }

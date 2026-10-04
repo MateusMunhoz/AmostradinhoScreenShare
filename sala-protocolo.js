@@ -53,6 +53,12 @@ function cleanSessao(s) {
 
 function cleanClient(c) { return /^[a-f0-9]{32}$/.test(String(c || '')) ? String(c) : ''; }
 
+// Senha nova da sala (mensagem "senha", só do host): até 64 caracteres, sem caracteres de controle; null se não vale
+function cleanSenha(p, min = 0) {
+  if (typeof p !== 'string' || p.length < min || p.length > 64 || /[\u0000-\u001f\u007f]/.test(p)) return null;
+  return p;
+}
+
 // Subsalas de voz: canais dentro da sala. Só quem está no mesmo canal se conecta e se ouve; '' é a Voz geral.
 // Os nomes são sempre Subsala_N, com N = o maior número que existe + 1 (apagar a última libera o número dela).
 const SUBSALAS_MAX = 50;
@@ -256,6 +262,6 @@ function handleMemberMessage({ members, broadcast, chat, subsalas = null, musica
 }
 
 module.exports = {
-  MAX_MEMBERS, CHAT_KEEP, SUBSALAS_MAX, send, cleanShareInfo, cleanHash, cleanNameFont, cleanAddrs, cleanSessao, cleanClient,
+  MAX_MEMBERS, CHAT_KEEP, SUBSALAS_MAX, send, cleanShareInfo, cleanHash, cleanNameFont, cleanAddrs, cleanSessao, cleanClient, cleanSenha,
   cleanChannel, createSubsalas, cleanVideoId, createMusicas, limparMusicas, newMember, memberInfo, createChat, handleMemberMessage,
 };

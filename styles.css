@@ -2242,3 +2242,18 @@ body:has(.modal:not([hidden]), #hubBody:not([hidden]), #dmPanel:not([hidden]), #
 :root[data-mirror="on"] .pane-resize { left: auto; right: -11px; }
 .pane-resizing { cursor: col-resize; user-select: none; }
 .pane-resizing :is(iframe, video, webview) { pointer-events: none; }
+
+/* Ligar pela mensagem privada e a senha da sala (renderer/chamada.js) */
+.addr.room-senha { margin-top: 6px; gap: 6px; }
+.room-senha-label { font-size: 12px; color: var(--muted); }
+.addr.room-senha code { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: .04em; }
+.room-senha .btn.icon { width: 28px; height: 28px; padding: 0; display: grid; place-items: center; }
+.room-senha .btn.icon svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.chamada-modos { display: flex; flex-direction: column; gap: 6px; }
+.chamada-modo { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 2px 8px; padding: 8px 10px; border-radius: 8px; background: var(--sunken); cursor: pointer; }
+.chamada-modo:has(input:disabled) { cursor: default; opacity: .6; }
+.chamada-modo small { grid-column: 2; }
+.chamada-senha-linha { display: flex; gap: 8px; }
+.chamada-senha-linha input { flex: 1; min-width: 0; font-family: Consolas, monospace; font-size: 15px; letter-spacing: .04em; }
+.dm-invite.dm-call { border-color: var(--accent); }
+.dm-call-btn svg { stroke-linejoin: round; }

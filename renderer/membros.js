@@ -43,6 +43,7 @@ async function renderRoomAddress() {
     box.append(row);
   }
   state.roomAddr = addrs[0] || '';
+  renderSenhaSala(); // a senha e o Mudar (chamada.js)
   $('dockAddr').hidden = !state.roomAddr;
   $('dockAddr').title = state.cloud
     ? `Copiar o código da sala para convidar alguém: ${state.roomAddr}`

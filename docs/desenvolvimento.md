@@ -84,7 +84,7 @@ isso (chamam `watch`, `state`, `speaking`... direto na página).
 | 30 | `chat.js` | Mensagens, arquivos, não lidas |
 | 31 | `estatisticas.js` | Desempenho, aba Transmissão, codificador em uso |
 | 32 | `novidades.js`, `atualizacao.js` | `NOVIDADES` (gerada pelo `publicar.js` com os commits); atualização pela sala, pelo GitHub, o aviso e o cartão Novidades do Início |
-| 33 | `sessoes.js`, `salas-amigos.js` | Sessões abertas na rede (a lista da tela inicial); no modo Internet, as salas dos amigos do Razze, com o passe de convite, e o convite para a sala pelas mensagens diretas ([spec](spec/salas-dos-amigos.md)) |
+| 33 | `sessoes.js`, `salas-amigos.js`, `chamada.js` | Sessões abertas na rede (a lista da tela inicial); no modo Internet, as salas dos amigos do Razze, com o passe de convite, e o convite para a sala pelas mensagens diretas ([spec](spec/salas-dos-amigos.md)); ligar para um amigo pela mensagem privada e a senha da sala no Painel: ver, copiar, mudar ([spec](spec/chamada.md)) |
 | 34 | `transmitir.js` | Escolher a fonte, som, iniciar, trocar e parar, quem assiste, transmissão aberta ou só para o seu canal |
 | 35 | `comando-voz-regras.js`, `comando-voz-acoes.js`, `comando-voz.js` | Comando de voz (recurso extra): as regras que transformam o texto num comando e a lista única de ações para os pedidos livres (os dois sem DOM, testados no `node:test`); gravar enquanto a tecla está apertada, executar e a aba Recursos extras ([spec](spec/comando-de-voz.md)) |
 | 36 | `mapa-conexoes.js` | O Mapa de conexões, na aba Rede do HUB: grafo em pé, atualiza a cada 5 s só com a aba à vista |
@@ -134,6 +134,7 @@ Arquivo novo na página: entra no `index.html` (na posição certa), em `PACK_FI
 | `npm run test:clipe` | Clipe com H.264 e som de verdade (WebCodecs): monta o MP4 e abre num `<video>`; depois o modo "uma por pessoa" com uma faixa ao vivo dentro do app (uns 25 s) | Não |
 | `npm run test:e2e` | Tudo de ponta a ponta (uns 10 minutos) | Sim |
 | `npx electron tests/e2e/carga.cjs` | Se o app abre sem erro e os nomes globais existem (5 s) | Não |
+| `npx electron tests/e2e/chamada.cjs` | Ligar e atender com dois apps (modo Internet com o servidor de verdade em 127.0.0.1 e modo Radmin), a voz dos dois e mudar a senha (~30 s). Sem internet | Não |
 | `npx electron tests/e2e/comando-voz.cjs` | Comando de voz de ponta a ponta: liga, baixa o Whisper (internet na 1ª vez, ~70 MB, fica guardado na pasta temporária), grava de um microfone de mentira com a voz do Windows e confere o comando. Só Windows | Não |
 
 Sobre o `npm run test:e2e` (`tests/e2e/`):

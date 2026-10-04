@@ -11,13 +11,15 @@
 //   hello { room, passe }              -> entra com o passe de convite de alguém da sala, no lugar da senha
 //   passe { passe }                     -> quem entrou com a senha registra o próprio passe de convite (null tira);
 //                                          o app anuncia o passe só para os amigos, pela RazzeAPI
+//   senha { password }                  -> o host muda a senha; quem entrou com a senha recebe a nova, os passes caem
+//   host { id }  (do servidor)          -> o host saiu e outro assumiu (é quem pode mudar a senha)
 //   info                                -> { type: 'info', app: 'tela-p2p-internet' } (teste da aba Rede)
 'use strict';
 const http = require('http');
 const crypto = require('crypto');
 const { WebSocketServer } = require('ws');
 const {
-  MAX_MEMBERS, send, cleanSessao, cleanClient, newMember, memberInfo, createChat, createSubsalas, createMusicas, limparMusicas, handleMemberMessage,
+  MAX_MEMBERS, send, cleanSessao, cleanClient, cleanSenha, newMember, memberInfo, createChat, createSubsalas, createMusicas, limparMusicas, handleMemberMessage,
 } = require('../sala-protocolo');
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sem 0/O e 1/I, que confundem
@@ -58,6 +60,7 @@ function createPasses() {
     digest,
     set(id, passe) { if (passe) byMember.set(id, digest(passe)); else byMember.delete(id); },
     remove(id) { byMember.delete(id); },
+    clear() { byMember.clear(); }, // a senha mudou: os convites antigos caem (a chave fica: quem entrou por passe ainda volta)
     // Confere contra todos os passes (sem parar no primeiro, para levar sempre o mesmo tempo)
     check(passe) {
       if (typeof passe !== 'string' || !PASSE_RE.test(passe)) return false;
@@ -160,6 +163,14 @@ function createInternetServer(options = {}) {
     if (room.members.size === 0) {
       rooms.delete(room.code);
       cfg.log(`sala ${room.code} fechada`);
+      return;
+    }
+    // O host saiu: passa para quem está há mais tempo e entrou com a senha (senão, quem está há mais tempo).
+    // É o host quem pode mudar a senha da sala
+    if (room.hostId === id) {
+      const all = [...room.members];
+      room.hostId = (all.find(([, m]) => !m.viaPasse) || all[0])[0];
+      room.broadcast({ type: 'host', id: room.hostId });
     }
   }
 
@@ -209,6 +220,18 @@ function createInternetServer(options = {}) {
       if (me && msg.type === 'passe') { // só quem entrou com a senha pode convidar com um passe
         if (me.viaPasse) return;
         if (msg.passe === null || (typeof msg.passe === 'string' && PASSE_RE.test(msg.passe))) room.passes.set(id, msg.passe);
+        return;
+      }
+      // Mudar a senha: só o host. Quem já está na sala continua. Quem entrou com a senha recebe a nova (para voltar
+      // depois de a conexão cair); quem entrou por um passe só fica sabendo. Os passes antigos deixam de valer
+      if (me && msg.type === 'senha') {
+        if (id !== room.hostId) return send(ws, { type: 'senha-erro', message: 'Só o host da sala muda a senha.' });
+        const nova = cleanSenha(msg.password, cfg.minPassword);
+        if (nova === null) return send(ws, { type: 'senha-erro', message: `No modo Internet a senha precisa ter de ${cfg.minPassword} a 64 caracteres.` });
+        room.check = passwordCheck(nova);
+        room.passes.clear();
+        for (const [mid, m] of room.members) if (!room.away.has(mid)) send(m.ws, m.viaPasse ? { type: 'senha', by: id } : { type: 'senha', password: nova, by: id });
+        cfg.log(`sala ${room.code}: senha mudada`);
         return;
       }
       if (me) return handleMemberMessage({ members: room.members, broadcast: room.broadcast, chat: room.chat, subsalas: room.subsalas, musicas: room.musicas }, id, me, msg);
@@ -275,7 +298,7 @@ function createInternetServer(options = {}) {
         hostId: room.hostId,
         sala: room.code,
         members: [...room.members].filter(([mid]) => mid !== id).map(([mid, m]) => memberInfo(mid, m)),
-        features: ['chat', 'voice', 'internet', 'resume', 'subsalas', 'subsala-move', 'musica', 'passe'],
+        features: ['chat', 'voice', 'internet', 'resume', 'subsalas', 'subsala-move', 'musica', 'passe', 'senha'],
         chat: room.chat.log,
         subsalas: room.subsalas.list,
         musicas: [...room.musicas.map.values()],
