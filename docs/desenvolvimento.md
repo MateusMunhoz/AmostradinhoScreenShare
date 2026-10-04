@@ -73,7 +73,7 @@ isso (chamam `watch`, `state`, `speaking`... direto na página).
 | 20 | `microfone.js` | Microfone escolhido, RNNoise, eco, sensibilidade, ouvir a própria voz, apertar para falar, janela "Voz e atalhos" |
 | 21 | `subsalas.js` | Subsalas de voz: criar e apagar (Subsala_1, Subsala_2…), entrar numa subsala e a lista por canal no painel de voz |
 | 22 | `membros.js` | Painel da sala: endereço e lista de pessoas |
-| 23 | `clipe-mp4.js`, `clipes.js` | Clipe dos últimos 30 s: buffer dos pedaços H.264 do modo "uma vez só", MP4 sem recodificar (com o `mp4-muxer` de `vendor/`), atalho, tesoura e aviso ([spec](spec/clipes.md)) |
+| 23 | `clipe-mp4.js`, `clipes.js` | Clipe dos últimos segundos com som: buffer dos pedaços H.264 (do modo "uma vez só", ou recodificados no "uma por pessoa"), som em AAC/Opus, MP4 com o `mp4-muxer` de `vendor/`, duração, atalho, tesoura e aviso ([spec](spec/clipes.md)) |
 | 24 | `assistir.js` | Quadros de vídeo, ver a própria transmissão, destaque, tela cheia |
 | 25 | `palco.js` | Como as telas assistidas se arrumam no palco |
 | 26 | `pip.js` | Janelas flutuantes |
@@ -126,7 +126,7 @@ Arquivo novo na página: entra no `index.html` (na posição certa), em `PACK_FI
 | `npm run test:settings` | Configurações em janelas invisíveis e a persistência entre dois processos | Não |
 | `npm run test:razze-api` | Só os testes `razze-*` (já incluídos no `npm test`) | Não |
 | `npm run test:rtc` | Áudio WebRTC de verdade entre duas janelas ocultas, sem o seu microfone | Não |
-| `npm run test:clipe` | Clipe com H.264 de verdade (WebCodecs): monta o MP4 e abre num `<video>` (uns 10 s) | Não |
+| `npm run test:clipe` | Clipe com H.264 e som de verdade (WebCodecs): monta o MP4 e abre num `<video>`; depois o modo "uma por pessoa" com uma faixa ao vivo dentro do app (uns 25 s) | Não |
 | `npm run test:e2e` | Tudo de ponta a ponta (uns 10 minutos) | Sim |
 | `npx electron tests/e2e/carga.cjs` | Se o app abre sem erro e os nomes globais existem (5 s) | Não |
 

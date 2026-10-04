@@ -87,7 +87,7 @@ function createTile(id, name) {
   const clipBtn = document.createElement('button');
   clipBtn.className = 'btn icon';
   clipBtn.hidden = true;
-  setIcon(clipBtn, 'scissors', `Salvar clipe dos últimos ${CLIP_SECONDS} s (${accelLabel(shortcutKeys.clip || '')})`);
+  setIcon(clipBtn, 'scissors', 'Salvar clipe');
   clipBtn.onclick = () => saveClip(id);
   const fs = document.createElement('button');
   fs.className = 'btn icon';
@@ -104,7 +104,7 @@ function createTile(id, name) {
   const qualityTimer = setInterval(() => {
     if (!el.isConnected) return clearInterval(qualityTimer);
     clipBtn.hidden = !clipReady(id);
-    if (!clipBtn.hidden) clipBtn.title = clipBtn.ariaLabel = `Salvar clipe dos últimos ${CLIP_SECONDS} s (${accelLabel(shortcutKeys.clip || '')})`;
+    if (!clipBtn.hidden) clipBtn.title = clipBtn.ariaLabel = `Salvar clipe dos últimos ${clipSeconds()} s (${accelLabel(shortcutKeys.clip || '')})`;
     const h = video.videoHeight;
     quality.hidden = !h;
     if (!h) return;

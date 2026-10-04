@@ -95,3 +95,33 @@ test('Gravar: nome limpo, sem sobrescrever, e "mostrar" só para clipes deste ap
   assert.equal((await store.save(new Uint8Array(2), 'x')).ok, false);
   fs.rmSync(dir, { recursive: true, force: true });
 });
+
+test('MP4 com som: só o som que cai dentro do vídeo, alinhado pelo relógio de chegada', () => {
+  // Vídeo: ts do relógio de quem transmite; chegou 2 s "depois" no relógio deste PC (at = ts + 2e6)
+  const frames = [];
+  for (let i = 0; i < 60; i++) frames.push({ key: i % 30 === 0, ts: 10e6 + i * 33333, at: 12e6 + i * 33333, data: i % 30 === 0 ? keyFrame(i) : delta(i) });
+  assert.equal(ClipMp4.videoOffset(frames), 2e6);
+  const audio = new ClipMp4.ClipAudioBuffer({ seconds: 30 });
+  audio.config = { codec: 'aac', sampleRate: 48000, numberOfChannels: 2, description: new Uint8Array([0x11, 0x90]) };
+  // Som de 11 s a 15 s no relógio deste PC: o vídeo vai de 12 s a 14 s, então entram só os de 12 s a ~14 s
+  for (let t = 11e6; t < 15e6; t += 21333) audio.push({ ts: t, data: new Uint8Array([1, 2, 3]), duration: 21333 });
+  const { bytes, audio: withAudio } = ClipMp4.buildMp4(frames, { width: 1280, height: 720 }, Mp4Muxer, audio);
+  assert.equal(withAudio, true);
+  const text = Buffer.from(bytes).toString('latin1');
+  assert.ok(text.includes('mp4a') && text.includes('avc1'), 'duas faixas: vídeo e som');
+  // Sem som que caia dentro do vídeo: sai só com o vídeo
+  const late = new ClipMp4.ClipAudioBuffer({ seconds: 30 });
+  late.config = audio.config;
+  late.push({ ts: 99e6, data: new Uint8Array([1]), duration: 1 });
+  const only = ClipMp4.buildMp4(frames, { width: 1280, height: 720 }, Mp4Muxer, late);
+  assert.equal(only.audio, false);
+  assert.ok(!Buffer.from(only.bytes).toString('latin1').includes('mp4a'));
+});
+
+test('Som: buffer guarda a janela mais uma folga e recomeça se o tempo voltar', () => {
+  const a = new ClipMp4.ClipAudioBuffer({ seconds: 10 });
+  for (let t = 0; t <= 60e6; t += 1e6) a.push({ ts: t, data: new Uint8Array(1), duration: 1e6 });
+  assert.equal(a.chunks[0].ts, 60e6 - 22e6, '10 s + 12 s de folga (o vídeo começa no quadro-chave anterior)');
+  a.push({ ts: 5e6, data: new Uint8Array(1), duration: 1 });
+  assert.equal(a.chunks.length, 1);
+});

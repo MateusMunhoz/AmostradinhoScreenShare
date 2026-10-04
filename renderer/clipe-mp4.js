@@ -71,7 +71,8 @@ const ClipMp4 = (() => {
     return 'avc1.' + [sps[1], sps[2], sps[3]].map((b) => b.toString(16).padStart(2, '0')).join('');
   }
 
-  // Últimos segundos de uma transmissão. Pedaços: { key, ts (µs), data (Uint8Array) }.
+  // Últimos segundos de uma transmissão. Pedaços: { key, ts (µs, relógio de quem codificou), data (Uint8Array),
+  // at (µs, relógio deste PC na chegada; opcional, serve para alinhar o som) }.
   // Guarda a janela inteira mais o quadro-chave anterior a ela; se o tempo voltar ou pular (troca de motor, de
   // resolução), recomeça. Limite de memória para não crescer sem fim se faltar quadro-chave.
   class ClipBuffer {
@@ -135,27 +136,68 @@ const ClipMp4 = (() => {
     }
   }
 
+  // Som do clipe: pedaços já codificados (AAC ou Opus) com ts no relógio deste PC (µs). Guarda um pouco mais que a
+  // janela do vídeo, porque o vídeo começa no quadro-chave anterior.
+  class ClipAudioBuffer {
+    constructor({ seconds = 30 } = {}) {
+      this.seconds = seconds;
+      this.chunks = [];
+      this.config = null; // { codec: 'aac'|'opus', sampleRate, numberOfChannels, description }
+    }
+    push(chunk) {
+      const last = this.chunks[this.chunks.length - 1];
+      if (last && chunk.ts <= last.ts) this.chunks = [];
+      this.chunks.push(chunk);
+      const from = chunk.ts - (this.seconds + 12) * 1e6;
+      let drop = 0;
+      while (drop < this.chunks.length && this.chunks[drop].ts < from) drop++;
+      if (drop) this.chunks.splice(0, drop);
+    }
+  }
+
+  // Diferença entre o relógio deste PC e o do vídeo: a menor (o quadro que chegou com menos atraso)
+  function videoOffset(frames) {
+    let best = Infinity;
+    for (const f of frames) if (typeof f.at === 'number') best = Math.min(best, f.at - f.ts);
+    return Number.isFinite(best) ? best : null;
+  }
+
   // Pedaços (começando num quadro-chave) -> bytes do MP4. muxerLib = o mp4-muxer (global Mp4Muxer ou require).
-  function buildMp4(frames, { width, height }, muxerLib) {
+  // audio (opcional): { config, chunks } do ClipAudioBuffer; entra alinhado pelo `at` dos quadros.
+  function buildMp4(frames, { width, height }, muxerLib, audio = null) {
     if (!frames.length || !frames[0].key) throw new Error('O clipe precisa começar num quadro-chave.');
     const samples = frames.map((f) => ({ key: f.key, ts: f.ts, ...toAvcc(f.data) }));
     const first = samples[0];
     if (!first.sps || !first.pps) throw new Error('O quadro-chave veio sem SPS/PPS.');
     const { Muxer, ArrayBufferTarget } = muxerLib;
     const target = new ArrayBufferTarget();
-    const muxer = new Muxer({ target, fastStart: 'in-memory', firstTimestampBehavior: 'offset', video: { codec: 'avc', width, height } });
-    const meta = { decoderConfig: { codec: codecString(first.sps), codedWidth: width, codedHeight: height, description: avcC(first.sps, first.pps) } };
     const t0 = first.ts;
     const gaps = samples.slice(1).map((s, i) => s.ts - samples[i].ts);
     const typical = gaps.length ? gaps.slice().sort((a, b) => a - b)[gaps.length >> 1] : 16667;
+    const end = samples[samples.length - 1].ts - t0 + typical;
+    // Som: só o que cai dentro do vídeo, já no tempo do vídeo (sem nenhum pedaço, o arquivo sai sem faixa de som)
+    const offset = videoOffset(frames);
+    const sound = audio?.config && offset !== null
+      ? audio.chunks.map((c) => ({ ...c, t: c.ts - offset - t0 })).filter((c) => c.t >= 0 && c.t <= end) : [];
+    const muxer = new Muxer({
+      target, fastStart: 'in-memory', firstTimestampBehavior: 'cross-track-offset', video: { codec: 'avc', width, height },
+      ...(sound.length ? { audio: { codec: audio.config.codec, sampleRate: audio.config.sampleRate, numberOfChannels: audio.config.numberOfChannels } } : {}),
+    });
+    const meta = { decoderConfig: { codec: codecString(first.sps), codedWidth: width, codedHeight: height, description: avcC(first.sps, first.pps) } };
     samples.forEach((s, i) => {
       const duration = i + 1 < samples.length ? samples[i + 1].ts - s.ts : typical;
       muxer.addVideoChunkRaw(s.data, s.key ? 'key' : 'delta', s.ts - t0, duration, i === 0 ? meta : undefined);
     });
+    if (sound.length) {
+      const c = audio.config;
+      const ameta = { decoderConfig: { codec: c.codec === 'aac' ? 'mp4a.40.2' : 'opus', sampleRate: c.sampleRate, numberOfChannels: c.numberOfChannels,
+        ...(c.description ? { description: c.description } : {}) } };
+      sound.forEach((a, i) => muxer.addAudioChunkRaw(a.data, 'key', a.t, a.duration, i === 0 ? ameta : undefined));
+    }
     muxer.finalize();
-    return { bytes: new Uint8Array(target.buffer), seconds: (samples[samples.length - 1].ts - t0 + typical) / 1e6 };
+    return { bytes: new Uint8Array(target.buffer), seconds: end / 1e6, audio: sound.length > 0 };
   }
 
-  return { splitNals, toAvcc, avcC, codecString, ClipBuffer, buildMp4 };
+  return { splitNals, toAvcc, avcC, codecString, ClipBuffer, ClipAudioBuffer, videoOffset, buildMp4 };
 })();
 if (typeof module !== 'undefined') module.exports = ClipMp4;

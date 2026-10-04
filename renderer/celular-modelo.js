@@ -75,7 +75,7 @@ const CelularModelo = (() => {
       ? { chat: o.chat, voice: o.voice, streams: o.streams } : null)),
     stageLayout: um('grid', 'spotlight'), stageSide: numero(0.15, 0.5), vozVisao: um('lista', 'mapa'),
     mapaFixo: um('0', '1'), panelOpen: um('0', '1'),
-    quality: texto(12, /^[0-9a-z]+$/), encodeMode: um('per', 'once'), audioMode: um('all', 'none', 'exclude'),
+    quality: texto(12, /^[0-9a-z]+$/), encodeMode: um('per', 'once'), encodeMode2: um('per', 'once'), clipSeconds: um('15', '30', '60', '120'), audioMode: um('all', 'none', 'exclude'),
     mostrarMouse: um('0', '1'), priority: texto(12, /^[a-z]+$/),
     excludeApps: json((o) => (Array.isArray(o) ? o.filter((x) => typeof x === 'string' && x.length <= 260 && /^[^\\/:*?"<>|\u0000-\u001f]+$/.test(x)).slice(0, 100) : null)),
     atalhos: json(atalhos), // não fica no localStorage: vem e vai pelo processo principal (main/atalhos.js)
@@ -179,7 +179,7 @@ const CelularModelo = (() => {
     const n = Object.keys(ler('volumes') || {}).length;
     if (n) linhas.push(n === 1 ? 'Volume de 1 pessoa' : `Volume de ${n} pessoas`);
     if (['workspaceViews.v1', 'stageLayout', 'vozVisao'].some((k) => itens[k])) linhas.push('Painéis e palco');
-    if (['quality', 'encodeMode', 'audioMode', 'excludeApps'].some((k) => itens[k])) linhas.push('Opções de transmissão');
+    if (['quality', 'encodeMode', 'encodeMode2', 'clipSeconds', 'audioMode', 'excludeApps'].some((k) => itens[k])) linhas.push('Opções de transmissão');
     if (itens.atalhos) linhas.push('Atalhos de teclado');
     return linhas;
   }

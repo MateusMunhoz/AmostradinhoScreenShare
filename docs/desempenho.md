@@ -31,7 +31,7 @@ Para quem transmite e joga ao mesmo tempo. Para o uso geral, veja o [Guia](guia.
 
 ## Codificar uma vez só
 
-Na tela de transmitir, **Codificação > Uma vez só para todos (experimental)** codifica o vídeo uma vez e manda o mesmo vídeo para todos. O peso não aumenta quando mais gente entra. O app escolhe o motor sozinho, nesta ordem:
+Na tela de transmitir, **Codificação > Uma vez só para todos** codifica o vídeo uma vez e manda o mesmo vídeo para todos. É o padrão quando o PC consegue (é também o que deixa o [clipe](guia.md#clipes) sair sem recodificar); **Uma por pessoa** continua na mesma opção. O peso não aumenta quando mais gente entra. O app escolhe o motor sozinho, nesta ordem:
 
 1. **NVENC direto** (NVIDIA com driver 522 ou mais novo): o `videocap.exe` captura a tela pelo Windows e codifica no NVENC, sem passar pelo processador. No teste com 2 pessoas assistindo, o app usou:
    - 0,6% do processador no NVENC direto;
