@@ -30,6 +30,7 @@ function cleanShareInfo(i) {
   if (typeof i.engine === 'string' && /^[\w .-]{1,24}$/.test(i.engine)) out.engine = i.engine;
   if (typeof i.hw === 'boolean') out.hw = i.hw;
   if (typeof i.audio === 'boolean') out.audio = i.audio;
+  if (typeof i.open === 'boolean') out.open = i.open; // false: só quem está no mesmo canal assiste
   return out;
 }
 

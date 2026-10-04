@@ -23,6 +23,7 @@
     "test:razze-admin": "node tests/e2e/razze-admin.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.131.0",
     "ws": "^8.18.0"
   },
   "devDependencies": {

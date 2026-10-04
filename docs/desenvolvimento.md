@@ -85,12 +85,13 @@ isso (chamam `watch`, `state`, `speaking`... direto na página).
 | 31 | `estatisticas.js` | Desempenho, aba Transmissão, codificador em uso |
 | 32 | `novidades.js`, `atualizacao.js` | `NOVIDADES` (gerada pelo `publicar.js` com os commits); atualização pela sala, pelo GitHub, o aviso e o cartão Novidades do Início |
 | 33 | `sessoes.js`, `salas-amigos.js` | Sessões abertas na rede (a lista da tela inicial); no modo Internet, as salas dos amigos do Razze, com o passe de convite, e o convite para a sala pelas mensagens diretas ([spec](spec/salas-dos-amigos.md)) |
-| 34 | `transmitir.js` | Escolher a fonte, som, iniciar, trocar e parar, quem assiste |
-| 35 | `mapa-conexoes.js` | O Mapa de conexões, na aba Rede do HUB: grafo em pé, atualiza a cada 5 s só com a aba à vista |
-| 36 | `hub.js` | HUB: a barra fininha da esquerda, com as abas Salas (salas abertas, a atual e o menu inicial) , Amigos (adicionar, filtrar, convidar, pedidos) e Rede (a conta primeiro, depois conexão, servidores, redes Razze e o Mapa de conexões) |
-| 37 | `mensagens.js` | Mensagens diretas entre amigos: aba Mensagens do HUB, barra de conversas embaixo, busca na RazzeAPI a cada 4 s e histórico local |
-| 38 | `navegacao.js` | Barrinha da direita e painéis simultâneos da sala (`workspaceViews.v1`), painel de voz com os canais |
-| 39 | `inicio.js` | Tela inicial e a partida: liga os botões e listeners, carrega as preferências |
+| 34 | `transmitir.js` | Escolher a fonte, som, iniciar, trocar e parar, quem assiste, transmissão aberta ou só para o seu canal |
+| 35 | `comando-voz-regras.js`, `comando-voz-acoes.js`, `comando-voz.js` | Comando de voz (recurso extra): as regras que transformam o texto num comando e a lista única de ações para os pedidos livres (os dois sem DOM, testados no `node:test`); gravar enquanto a tecla está apertada, executar e a aba Recursos extras ([spec](spec/comando-de-voz.md)) |
+| 36 | `mapa-conexoes.js` | O Mapa de conexões, na aba Rede do HUB: grafo em pé, atualiza a cada 5 s só com a aba à vista |
+| 37 | `hub.js` | HUB: a barra fininha da esquerda, com as abas Salas (salas abertas, a atual e o menu inicial) , Amigos (adicionar, filtrar, convidar, pedidos) e Rede (a conta primeiro, depois conexão, servidores, redes Razze e o Mapa de conexões) |
+| 38 | `mensagens.js` | Mensagens diretas entre amigos: aba Mensagens do HUB, barra de conversas embaixo, busca na RazzeAPI a cada 4 s e histórico local |
+| 39 | `navegacao.js` | Barrinha da direita e painéis simultâneos da sala (`workspaceViews.v1`), painel de voz com os canais |
+| 40 | `inicio.js` | Tela inicial e a partida: liga os botões e listeners, carrega as preferências |
 
 **A regra que evita erro na carga:** só o `inicio.js` roda código quando a página abre (listeners,
 `onclick`, preferências). Os outros só declaram funções e variáveis. Um arquivo que rodasse algo na
@@ -110,6 +111,8 @@ Arquivo novo na página: entra no `index.html` (na posição certa), em `PACK_FI
 | `janela-flutuante.js` | Vagas, fila, transparência e modo de ajuste das janelas flutuantes |
 | `chat-jogo.js` | A janela do chat por cima do jogo e o modo de escrever (Ctrl+Enter) |
 | `atalhos.js` | Atalhos globais e o apertar para falar (`teclas.exe`) |
+| `comando-voz.js` | Comando de voz: baixa o whisper.cpp e o modelo para `%APPDATA%\Tela P2P\comando-voz` só para quem liga, confere cada arquivo por SHA-256 fixo no código e transcreve o WAV que chega pela memória (stdin), com prioridade baixa. A tecla de segurar fica em `atalhos.js` (outro `teclas.exe`). Só módulos do Node ([spec](spec/comando-de-voz.md)) |
+| `comando-voz-ia.js` | Pedidos livres do comando de voz: manda o texto e o estado da sala com a lista de ações para a nuvem (`@anthropic-ai/sdk`, chave cifrada com o safeStorage, nunca volta para a página) ou para um servidor local compatível com a API da OpenAI (só `localhost`). Só módulos do Node ([spec](spec/comando-de-voz.md)) |
 | `clipes.js` | Grava os clipes em `Vídeos\Tela P2P\Clipes` (nome limpo, até 300 MB) e mostra na pasta só os que ele salvou. Só módulos do Node ([spec](spec/clipes.md)) |
 | `bandeja.js` | Ícone na bandeja e o menu dele; o X da janela esconde nela (sair de verdade marca `setQuitting`). Mute e ensurdecer mandam as mesmas mensagens dos atalhos; "Procurar atualização" manda `tray-update` |
 | `sessoes.js` | Anúncio e busca das sessões abertas (UDP na rede da Radmin) |
@@ -131,6 +134,7 @@ Arquivo novo na página: entra no `index.html` (na posição certa), em `PACK_FI
 | `npm run test:clipe` | Clipe com H.264 e som de verdade (WebCodecs): monta o MP4 e abre num `<video>`; depois o modo "uma por pessoa" com uma faixa ao vivo dentro do app (uns 25 s) | Não |
 | `npm run test:e2e` | Tudo de ponta a ponta (uns 10 minutos) | Sim |
 | `npx electron tests/e2e/carga.cjs` | Se o app abre sem erro e os nomes globais existem (5 s) | Não |
+| `npx electron tests/e2e/comando-voz.cjs` | Comando de voz de ponta a ponta: liga, baixa o Whisper (internet na 1ª vez, ~70 MB, fica guardado na pasta temporária), grava de um microfone de mentira com a voz do Windows e confere o comando. Só Windows | Não |
 
 Sobre o `npm run test:e2e` (`tests/e2e/`):
 - **Como funciona:** abre várias cópias do app no seu PC, cada uma como uma pessoa, e confere:

@@ -202,6 +202,7 @@ function renderTileAudio(id) {
 let soundHintShown = false; // o aviso do som desligado aparece uma vez só por vez que o app abre
 function watch(id) {
   if (state.in.has(id) || !state.members.get(id)?.sharing) return;
+  if (!canWatch(id)) return toast(closedShareText(id)); // fechada para outros canais (transmitir.js)
   const pc = new RTCPeerConnection(RTC_CONFIG);
   const tile = createTile(id, nameOf(id));
   const link = { pc, chain: Promise.resolve(), tile, lastBytes: 0, lastTs: 0, videoOn: true, tracks: [], once: null };

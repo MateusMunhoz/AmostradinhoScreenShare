@@ -124,6 +124,7 @@ Se o host sai, ou se o app dele fecha ou trava, a sala não acaba.
 - **Várias ao mesmo tempo:** qualquer pessoa pode clicar em **Transmitir minha tela**, e várias podem transmitir juntas.
 - **O que transmitir:** na janela de transmitir, escolha a tela inteira ou uma janela, a qualidade e o áudio.
 - **Sem prévia:** a prévia da sua própria tela não aparece na sala. Você vê o que escolheu ao começar.
+- **Só para o seu canal:** na janela de transmitir, **Outros canais podem assistir** diz se quem está em outra subsala (ou na Voz geral, se você está numa subsala) pode assistir. Vem ligado e fica salvo. Durante a transmissão, o botão ao lado de **Trocar** (**Para todos** ou **Só meu canal**) muda só a transmissão atual; a próxima começa como está na janela. Fechada, quem está fora do seu canal vê o **Assistir** desligado, e quem já assistia de fora para de ver (também quando você ou a pessoa muda de canal).
 - **Trocar sem parar:** enquanto transmite, clique em **Trocar**, ao lado de "Ao vivo", e escolha outra tela ou janela (por exemplo, de uma janela do Chrome para a do Firefox, ou de uma janela para a tela inteira). Quem assiste passa a ver a fonte nova em um instante, sem reconectar. A qualidade, o som e a codificação continuam os mesmos. Funciona nos três modos (normal, WebCodecs e NVENC direto).
 - **Firewall:** na primeira vez, o Windows pergunta se o app pode acessar a rede. Marque **redes privadas e públicas**.
 
@@ -251,6 +252,7 @@ Uma música por canal (Voz geral ou subsala), que todo mundo ouve junto, no mesm
 - **Só seus:** o volume (fica salvo neste PC) e o **X**, que para de ouvir sem parar para os outros.
 - **Como funciona:** cada pessoa toca no player oficial do YouTube, no próprio PC; a sala só combina o que tocar e em que ponto. Cada um vê os próprios anúncios.
 - **Fim:** quando a música acaba, ela sai sozinha e o canal fica livre para outra.
+- **Live do YouTube:** o progresso e o contador dão lugar ao selo **Ao vivo** e cada um assiste na ponta da transmissão, sem pausas para acertar o ponto. Tocar, pausar, **Trocar** e **Parar** continuam valendo para todos; a live não sai sozinha.
 - **Vídeo que não toca:** quem publicou pode não deixar tocar fora do YouTube; a tela avisa para trocar por outro.
 - **Modo Internet:** o servidor da VPS precisa estar atualizado; sem isso, a nota musical não aparece.
 
@@ -406,6 +408,62 @@ enquanto o Tela P2P fica aberto. Ligado, o controle fica aceso e o app:
 
 Voz, chat, música, transmitir e assistir continuam funcionando. As suas escolhas de aparência não mudam: desligar
 devolve tudo como era. Fica salvo neste PC.
+
+## Comando de voz (recurso extra)
+
+Controle o app falando, até dentro do jogo. É um recurso extra: fica desligado até você ligar, e só então o app baixa o
+que precisa.
+
+- **Ligar:** Configurações gerais (a engrenagem) › **Recursos extras** › **Comando de voz**. O app pede para baixar o
+  reconhecimento de fala (Whisper), uns 70 MB no modo **Leve** ou 200 MB no **Preciso** (entende melhor, demora um
+  pouco mais). Depois disso funciona sem internet. Desligar não apaga o download; o botão **Apagar o download** apaga.
+- **Usar:** numa sala, segure **Ctrl+Shift+V** (dá para trocar em **Voz e atalhos**), fale e solte. Aparece
+  **Ouvindo…** em cima da janela e, depois de soltar, **Entendendo…** (cerca de 1 s). Enquanto você segura, a call não
+  ouve você. Um toque rápido na tecla (como o Ctrl+Shift+V de colar texto) não faz nada.
+  - **Na voz,** pode falar junto com a tecla: o microfone do comando já fica aberto e guarda o último meio segundo, só
+    na memória (nada vai para a call nem para o disco; entra no comando só quando você aperta a tecla).
+  - **Fora da voz,** o microfone abre quando você aperta (aparece **Abrindo o microfone…**): fale depois do toque.
+  - Em **Recursos extras** aparece o último comando que o app ouviu, para conferir o que ele entendeu.
+- **O que dá para pedir:**
+  - "assistir o Fulano", "abre a live do Fulano";
+  - "parar de assistir o Fulano", "fechar todas";
+  - "Fulano na janela flutuante no canto esquerdo de cima" (abre a transmissão, se precisar);
+  - "tirar o Fulano da janela flutuante";
+  - "entrar na voz", "sair da voz", "desligar o microfone", "ligar o microfone";
+  - "ir para a subsala 2", "voltar para a voz geral", "me leva pra sala da Débora" (o canal em que ela está);
+  - **música:** "toca Evidências", "põe aquela música do Coldplay", "pausa a música", "continua a música", "para a
+    música" (a do seu canal; "toca" busca no YouTube e põe o primeiro vídeo, ou troca a que estiver tocando);
+  - **som:** "abaixa o Mateus", "aumenta o volume da Ana", "silencia o Lucas" (a voz, só para você); "liga o som da
+    live da Ana", "desliga o som da tela do Mateus"; "silencia todo mundo", "volta a ouvir todo mundo" (o fone);
+  - **destaque e tela cheia:** "deixa a do Lucas grande", "tira o destaque", "tela cheia da Ana", "sai da tela cheia";
+  - **clipe:** "salva um clipe", "salva um clipe do Mateus";
+  - **a sua transmissão:** "deixa minha live só pro meu canal", "abre minha live pra todo mundo", "para a minha live".
+    Parar pergunta antes (dois toques iguais): segure a tecla de novo e diga "sim" (ou "não") em até 15 s.
+- **Resposta:** um aviso na tela e a **Confirmação** escolhida em Recursos extras:
+  - **Sons** (o padrão): um toque ao começar e ao terminar de gravar; depois, dois tons subindo quando o comando foi
+    feito, um som grave descendo (recusa) quando não deu ou não havia nada a fazer, e dois toques iguais quando o app
+    pergunta antes ("Parar a sua transmissão?");
+  - **Voz:** os toques e a voz do Windows dizendo o que foi feito ("Assistindo Fulano");
+  - **Nenhuma:** só o aviso na tela.
+  Escolher uma opção já toca um exemplo. Com dois nomes parecidos na sala, o app pergunta
+  ("Daniel ou Daniela?") em vez de chutar; sem entender, ele diz o que ouviu.
+- **Pedidos livres:** em Recursos extras › **Pedidos livres**, um modelo de linguagem entende o que as regras não
+  entendem, dito do seu jeito ("deixa o Mateus num cantinho pra eu ver", "fecha tudo e me leva pra sala do Lucas").
+  Ele escolhe entre as mesmas ações acima, uma ou várias em sequência, e o app confirma tudo num aviso só. Os pedidos
+  simples continuam pelas regras (instantâneo); só o que elas não entendem, ou o que tem mais de uma coisa, vai para o
+  modelo (aparece **Pensando…**).
+  - **Local:** um modelo no seu PC pelo Ollama (`http://localhost:11434`) ou LM Studio (`http://localhost:1234`).
+    Grátis e sem internet, mas usa o PC (a placa de vídeo, se tiver) enquanto pensa. O modelo precisa saber escolher
+    ações ("tools"): o recomendado é o `qwen2.5:7b` (no Ollama: `ollama pull qwen2.5:7b`, uns 4,7 GB; responde em
+    menos de 1 s numa RTX 3060). Modelos de raciocínio, como o `deepseek-r1`, não servem. O app pede para o Ollama
+    tirar o modelo da placa de vídeo 1 minuto depois do último comando (sozinho, ele deixaria 5 minutos).
+  - **Nuvem:** Claude, pela API da Anthropic, com a sua chave (cobrada na sua conta). Entende melhor e não pesa no PC.
+    A chave fica cifrada neste PC e não volta para a tela. Vai para a Anthropic só o texto do pedido, os nomes de quem
+    está na sala (e quem transmite) e dos canais; nunca o áudio. Precisa do instalador novo do Tela P2P.
+  - **Testar** manda um pedido de mentira e diz se o modelo escolheu a ação certa e em quanto tempo.
+- **Privacidade:** a voz é entendida neste PC. O áudio do comando não vai para o disco, para a sala nem para servidor
+  nenhum.
+- Por enquanto, só no Windows.
 
 ## Configurações no celular
 

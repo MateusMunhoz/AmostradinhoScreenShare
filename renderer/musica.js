@@ -165,6 +165,11 @@ function createMusicTile(ch, entry) {
   seek.className = 'music-seek';
   seek.min = '0'; seek.max = '0'; seek.step = '1'; seek.value = '0';
   seek.setAttribute('aria-label', 'Ponto da música (para todos)');
+  // Live do YouTube: no lugar do progresso, só o selo (não há fim nem ponto para combinar)
+  const liveChip = document.createElement('span');
+  liveChip.className = 'tile-chip live music-live';
+  liveChip.textContent = 'Ao vivo';
+  liveChip.hidden = true;
   const swap = document.createElement('button');
   swap.type = 'button';
   swap.className = 'btn small';
@@ -173,7 +178,7 @@ function createMusicTile(ch, entry) {
   stopAll.type = 'button';
   stopAll.className = 'btn small danger';
   stopAll.textContent = 'Parar a música';
-  controls.append(playBtn, time, seek, swap, stopAll);
+  controls.append(playBtn, time, seek, liveChip, swap, stopAll);
   const pipNote = document.createElement('div'); // idem: o palco mexe nele, aqui fica sempre escondido
   pipNote.hidden = true;
   // Luz ambiente (Aparência), como nas transmissões: o player fica do tamanho do vídeo (16:9) e as barras em volta
@@ -206,7 +211,7 @@ function createMusicTile(ch, entry) {
   vol.addEventListener('input', () => { const nav = $('navMusicVol'); if (nav && nav !== document.activeElement) { nav.value = vol.value; nav.nextElementSibling.textContent = `${vol.value}%`; } });
 
   // ---------- Conversa com o player ----------
-  const mu = { ch, entry, videoId: '', ready: false, state: -1, time: 0, timeAt: 0, duration: 0, title: '', error: 0, endTimer: null, listen: null, seeking: false };
+  const mu = { ch, entry, videoId: '', ready: false, state: -1, time: 0, timeAt: 0, duration: 0, title: '', error: 0, endTimer: null, listen: null, seeking: false, live: false };
   const post = (func, args = []) => iframe.contentWindow?.postMessage(JSON.stringify({ event: 'command', func, args }), YT_ORIGIN);
   function applyVolume() {
     if (!mu.ready) return;
@@ -228,6 +233,7 @@ function createMusicTile(ch, entry) {
     cc.setAttribute('aria-pressed', String(musica.legenda));
   }
   function loadVideo(videoId, at) {
+    if (videoId !== mu.videoId) mu.live = false; // recarregar o mesmo (legendas) continua sendo live
     mu.videoId = videoId;
     mu.ready = false;
     mu.state = -1;
@@ -251,6 +257,13 @@ function createMusicTile(ch, entry) {
   function correct() {
     const e = mu.entry;
     if (!mu.ready || mu.error || !e) return;
+    // Live: a "duração" é só o que já foi transmitido e cresce aos pedaços (uns 10 s). Combinar o ponto pelo relógio
+    // passa do fim e o player para esperando; aqui cada um fica na ponta da transmissão e a sala só diz tocar ou pausar
+    if (mu.live) {
+      if (e.playing && mu.state !== 1 && mu.state !== 3) post('playVideo');
+      else if (!e.playing && (mu.state === 1 || mu.state === 3)) post('pauseVideo');
+      return;
+    }
     const want = musicPos(e);
     if (mu.duration && want >= mu.duration) { if (mu.state !== 0) post('seekTo', [mu.duration, true]); return; }
     const off = Math.abs(playerTime() - want) > MUSIC_DRIFT;
@@ -288,7 +301,15 @@ function createMusicTile(ch, entry) {
       const i = d.info;
       if (typeof i.currentTime === 'number') { mu.time = i.currentTime; mu.timeAt = performance.now(); }
       if (typeof i.playerState === 'number') mu.state = i.playerState;
-      if (typeof i.duration === 'number' && i.duration > 0) mu.duration = i.duration;
+      if (typeof i.duration === 'number' && i.duration > 0) {
+        // A duração cresceu com o vídeo já carregado: é live (vídeo normal tem duração fixa)
+        if (!mu.live && (i.videoData?.isLive === true || (mu.duration > 0 && i.duration > mu.duration + 2))) {
+          mu.live = true;
+          render();
+          correct();
+        }
+        mu.duration = i.duration;
+      } else if (!mu.live && i.videoData?.isLive === true) { mu.live = true; render(); }
       if (typeof i.volume === 'number') mu.volume = i.volume; // o que o player diz (para conferir o volume local)
       if (typeof i.muted === 'boolean') mu.muted = i.muted;
       const title = i.videoData?.title;
@@ -299,7 +320,7 @@ function createMusicTile(ch, entry) {
       }
     }
     // Acabou: quem pôs para a música (ou, se essa pessoa saiu, quem controla, um pouco depois)
-    if (mu.state === 0 && !mu.endTimer && canControlMusic(mu.entry)) {
+    if (mu.state === 0 && !mu.live && !mu.endTimer && canControlMusic(mu.entry)) {
       const video0 = mu.videoId;
       mu.endTimer = setTimeout(() => {
         mu.endTimer = null;
@@ -348,6 +369,8 @@ function createMusicTile(ch, entry) {
     const why = can ? '' : ` (só quem está em ${channelName(ch)} controla)`;
     setIcon(playBtn, e.playing ? 'pause' : 'play', (e.playing ? 'Pausar para todos' : 'Tocar para todos') + why);
     for (const b of [playBtn, seek, swap, stopAll]) b.disabled = !can;
+    time.hidden = seek.hidden = mu.live;
+    liveChip.hidden = !mu.live;
     swap.title = can ? 'Trocar por outra música (para todos)' : why.trim();
     stopAll.title = can ? 'Parar a música para todo mundo' : why.trim();
     syncMute();
@@ -379,7 +402,7 @@ function createMusicTile(ch, entry) {
   const timer = setInterval(() => {
     if (!el.isConnected) { clearInterval(timer); clearInterval(mu.listen); clearTimeout(mu.endTimer); return; }
     const now = mu.ready ? playerTime() : musicPos(mu.entry);
-    if (!mu.seeking) {
+    if (!mu.seeking && !mu.live) {
       seek.max = String(Math.floor(mu.duration || 0));
       seek.value = String(Math.floor(Math.min(now, mu.duration || now)));
       time.textContent = mu.duration ? `${clock(now)} / ${clock(mu.duration)}` : clock(now);

@@ -117,7 +117,7 @@ const DOCK_STEPS = ['tight-1', 'tight-2', 'tight-3', 'tight-4'];
 // 5) ainda sem espaço: os botões saem da barra para o menu da setinha ^, nesta ordem (os mais usados por último).
 // stageLayout é o grupo Grade/Destaque: no menu vira os dois itens.
 const DOCK_OVERFLOW = ['stageLayout',
-  'voiceDeafen', 'selfViewBtn', 'switchShareBtn', 'voiceMute', 'voiceJoin'];
+  'voiceDeafen', 'selfViewBtn', 'shareOpenBtn', 'switchShareBtn', 'voiceMute', 'voiceJoin'];
 function fitDock() {
   const dock = document.querySelector('.dock');
   if (!dock || !dock.offsetParent) return;

@@ -137,6 +137,7 @@ function memberRow(id, name, sharing) {
     btn.className = watching ? 'btn small' : 'btn small primary';
     btn.textContent = watching ? 'Parar' : 'Assistir';
     btn.onclick = () => (watching ? stopWatching(id) : watch(id));
+    if (!watching && !canWatch(id)) { btn.disabled = true; btn.title = closedShareText(id); }
     li.append(btn);
   }
   return li;

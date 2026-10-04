@@ -183,7 +183,7 @@ function enterRoom(welcome, owner, host, port, cloud = null) {
   lembrarDaSala();
   voice.reset(welcome);
   setMusicas(state.musicaOn ? welcome.musicas : [], welcome.now, true); // as músicas que já estavam tocando na sala
-  window.api.roomKeys(true).catch(() => {});
+  window.api.roomKeys(true).then(syncComandoVozTecla, () => {});
   renderLeaveBtn();
   resetChat(welcome);
   renderRoomAddress();
@@ -225,7 +225,7 @@ function leaveRoom(reason, kind = 'info', endRoom = false) {
   retirarSalaInternet();
   closeChatOverlay();
   closePersonCard();
-  window.api.roomKeys(false).catch(() => {});
+  window.api.roomKeys(false).catch(() => {}); // solta também a tecla do comando de voz
   resetChat(null);
   state.members.clear();
   state.myId = null;
@@ -505,6 +505,7 @@ function handleSignal(from, data) {
     if (!link) return;
     if (data.unavailable) {
       stopWatching(from, false);
+      if (data.closed) return toast(closedShareText(from));
       return toast(`${nameOf(from)} não está mais transmitindo.`);
     }
     link.chain = link.chain.then(async () => {

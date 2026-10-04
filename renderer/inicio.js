@@ -106,7 +106,7 @@ $('gateDb').oninput = () => { voiceCfg.gateDb = Number($('gateDb').value); saveV
 $('duckAmount').oninput = () => { voiceCfg.duck = Number($('duckAmount').value); saveVoiceCfg(); renderVoiceDialog(); updateDuck(); };
 $('duckSelf').onchange = () => { voiceCfg.duckSelf = $('duckSelf').checked; saveVoiceCfg(); updateDuck(); };
 $('shortcutReset').onclick = async () => {
-  const defaults = { compose: 'CommandOrControl+Enter', mute: 'CommandOrControl+Shift+M', deafen: 'CommandOrControl+Shift+D', edit: 'CommandOrControl+Shift+E', hideChat: 'CommandOrControl+Shift+O', clip: 'CommandOrControl+Shift+C' };
+  const defaults = { compose: 'CommandOrControl+Enter', mute: 'CommandOrControl+Shift+M', deafen: 'CommandOrControl+Shift+D', edit: 'CommandOrControl+Shift+E', hideChat: 'CommandOrControl+Shift+O', clip: 'CommandOrControl+Shift+C', voiceCmd: 'CommandOrControl+Shift+V' };
   for (const action of Object.keys(defaults)) await window.api.setShortcut(action, '').catch(() => {}); // solta todos antes
   for (const [action, accel] of Object.entries(defaults)) await applyShortcut(action, accel);
 };
@@ -126,6 +126,7 @@ window.api.onPip((m) => {
   if (m.type === 'deafen-key' && voice.session) voice.deafen();
   if (m.type === 'tray-update') checkGithub(true);
   if (m.type === 'clip-key') saveClip();
+  if (m.type === 'cmd-key') onComandoVozTecla(!!m.down);
   if (m.type === 'compose') {
     overlay.compose = !!m.on;
     renderChatOverlay();
@@ -158,6 +159,7 @@ $('soundOn').checked = load('audioMode', 'all') !== 'none'; // "exclude" da vers
 // sozinho (transmitir.js › checkEncodeOnce).
 setRadio('encodeMode', load('encodeMode2', 'once') === 'per' ? 'per' : 'once');
 $('cursorOn').checked = load('mostrarMouse', '1') !== '0';
+$('shareOpenOn').checked = load('transmissaoAberta', '1') !== '0';
 // Dicas (o "i"): liga e desliga todas de uma vez (renderer/util.js)
 $('tipsOn').checked = document.documentElement.dataset.tips !== 'off';
 $('tipsOn').onchange = () => { save('dicas', $('tipsOn').checked ? '1' : '0'); document.documentElement.dataset.tips = $('tipsOn').checked ? 'on' : 'off'; };
@@ -183,6 +185,8 @@ $('shareDialog').addEventListener('change', (e) => {
     syncCursor();
   } else if (t.id === 'soundOn') {
     syncAudioMode();
+  } else if (t.id === 'shareOpenOn') {
+    save('transmissaoAberta', t.checked ? '1' : '0');
   }
   renderShareSummary();
 });
@@ -339,6 +343,7 @@ $('startBtn').onclick = () => (state.shareSwitching ? switchSource() : startShar
 $('switchShareBtn').onclick = () => openShareDialog(true);
 setIcon($('switchShareBtn'), 'swap', 'Trocar a tela ou janela transmitida, sem parar');
 setIcon($('stopShareBtn'), 'stop', 'Parar de transmitir');
+$('shareOpenBtn').onclick = () => setShareOpen(state.shareOpen === false);
 $('refreshSources').onclick = loadSources;
 $('refreshApps').onclick = loadAudioApps;
 // Ícone das Estatísticas, na sala ao lado de Sair da sala
@@ -432,5 +437,6 @@ setupWorkspace();
 startClips();
 watchDock();
 setupGeneralSettings();
+setupComandoVoz();
 setupPhone();
 show('home');

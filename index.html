@@ -511,6 +511,19 @@
                       <p id="cursorNote" class="hint"></p>
                     </div>
 
+                    <!-- Quem está em outro canal (subsala ou Voz geral) pode assistir: é o começo de cada transmissão; o botão
+                         da barra Ao vivo muda só a atual (renderer/transmitir.js) -->
+                    <div class="group" id="shareOpenGroup">
+                      <div class="group-head">
+                        <span class="group-title" id="shareOpenLabel">Outros canais podem assistir</span>
+                        <label class="switch">
+                          <input type="checkbox" id="shareOpenOn" role="switch" aria-labelledby="shareOpenLabel" aria-describedby="shareOpenNote">
+                          <span class="track" aria-hidden="true"></span>
+                        </label>
+                      </div>
+                      <p id="shareOpenNote" class="hint">Desligado, só quem está no mesmo canal que você (subsala ou Voz geral) assiste. Durante a transmissão, dá para mudar na barra Ao vivo.</p>
+                    </div>
+
                     <div class="group advanced">
                       <button type="button" class="adv-toggle" id="advToggle" aria-expanded="false" aria-controls="advPanel">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
@@ -565,6 +578,7 @@
               <!-- A miniatura do que você transmite é o "Me ver" (abre a sua tela no palco); ao lado, o que é e quem assiste -->
               <button class="live-thumb" id="selfViewBtn" type="button" aria-pressed="false"><img id="liveThumb" alt=""><span class="live-pill">Ao vivo</span></button>
               <span class="live-info"><strong id="liveSource"></strong><span id="liveText"></span></span>
+              <button class="btn small" id="shareOpenBtn" type="button">Para todos</button>
               <button class="btn small icon" id="switchShareBtn" type="button"></button>
               <button class="btn small icon danger" id="stopShareBtn" type="button"></button>
             </div>
@@ -714,6 +728,7 @@
           <button type="button" data-group="aparencia">Aparência<small>Tema · Janela e fonte · Cores</small></button>
           <button type="button" data-group="sons">Sons<small>Avisos sonoros</small></button>
           <button type="button" data-group="celular">Celular<small>Mudar as configurações pelo celular</small></button>
+          <button type="button" data-group="extras">Recursos extras<small>Comando de voz</small></button>
           <button type="button" data-group="stats">Estatísticas<small>Desempenho · Transmissão</small></button>
         </nav>
         <div class="settings-main">
@@ -726,6 +741,7 @@
           <button id="settingsTab-colors" type="button" role="tab" data-group="aparencia" data-tab="colors" aria-controls="settingsPanel-colors">Cores</button>
           <button id="settingsTab-sounds" type="button" role="tab" data-group="sons" data-tab="sounds" aria-controls="settingsPanel-sounds">Sons</button>
           <button id="settingsTab-phone" type="button" role="tab" data-group="celular" data-tab="phone" aria-controls="settingsPanel-phone">Celular</button>
+          <button id="settingsTab-extras" type="button" role="tab" data-group="extras" data-tab="extras" aria-controls="settingsPanel-extras">Recursos extras</button>
           <button id="statsTabPerf" type="button" role="tab" data-group="stats" data-tab="perf" data-panel="stats" aria-controls="settingsPanel-stats">Desempenho</button>
           <button id="statsTabStream" type="button" role="tab" data-group="stats" data-tab="stream" data-panel="stats" aria-controls="settingsPanel-stats">Transmissão</button>
         </div>
@@ -944,6 +960,64 @@
           <p id="streamEmpty" class="hint">Ninguém está transmitindo agora.</p>
         </div>
         </section>
+        <!-- Recursos extras: só funcionam para quem liga; nada é baixado antes (renderer/comando-voz.js) -->
+        <section id="settingsPanel-extras" class="settings-section extras-panel" role="tabpanel" aria-labelledby="settingsTab-extras" hidden>
+          <h3>Recursos extras</h3>
+          <p class="hint">Recursos a mais, que só funcionam se você ligar. Nada é baixado antes disso.</p>
+          <div class="extra-card">
+            <div class="group-head">
+              <span class="group-title" id="vozCmdLabel">Comando de voz</span>
+              <label class="switch">
+                <input type="checkbox" id="vozCmdOn" role="switch" aria-labelledby="vozCmdLabel" aria-describedby="vozCmdHint">
+                <span class="track" aria-hidden="true"></span>
+              </label>
+            </div>
+            <p id="vozCmdHint" class="hint">Numa sala, segure <kbd id="vozCmdKey">Ctrl+Shift+V</kbd> e fale, até dentro do jogo: “abre a live do Fulano no canto esquerdo de cima”, “parar de assistir o Fulano”, “ir para a subsala 2”, “desligar o microfone”. Enquanto você segura, a call não ouve. A voz é entendida neste PC e não sai dele. A tecla dá para trocar em Voz e atalhos.</p>
+            <div class="settings-row"><span class="settings-label" id="vozCmdModeloLabel">Reconhecimento de fala</span>
+              <div class="seg" role="radiogroup" aria-labelledby="vozCmdModeloLabel">
+                <label><input type="radio" name="vozCmdModelo" value="leve"><span>Leve · 60 MB</span></label>
+                <label><input type="radio" name="vozCmdModelo" value="preciso"><span>Preciso · 190 MB</span></label>
+              </div>
+            </div>
+            <div class="settings-row"><span class="settings-label" id="vozCmdConfirmarLabel">Confirmação</span>
+              <div class="seg" role="radiogroup" aria-labelledby="vozCmdConfirmarLabel">
+                <label title="Um toque subindo quando fez; um som grave descendo quando não deu"><input type="radio" name="vozCmdConfirmar" value="som"><span>Sons</span></label>
+                <label title="A voz do Windows diz o que fez (“Assistindo Fulano”)"><input type="radio" name="vozCmdConfirmar" value="voz"><span>Voz</span></label>
+                <label title="Só o aviso na tela"><input type="radio" name="vozCmdConfirmar" value="nada"><span>Nenhuma</span></label>
+              </div>
+            </div>
+            <div class="settings-row"><span class="settings-label" id="vozIaLabel">Pedidos livres</span>
+              <p class="hint" id="vozIaHint">Quando o app não entende o pedido, um modelo de linguagem escolhe o que fazer: “deixa o Mateus num cantinho pra eu ver”, “fecha tudo e me leva pra sala do Lucas”.</p>
+              <div class="seg" role="radiogroup" aria-labelledby="vozIaLabel">
+                <label><input type="radio" name="vozIa" value=""><span>Desligado</span></label>
+                <label title="Um modelo rodando no seu PC (Ollama ou LM Studio): grátis e sem internet, mas usa o PC enquanto pensa"><input type="radio" name="vozIa" value="local"><span>Local</span></label>
+                <label title="Claude, pela API da Anthropic: entende melhor e não pesa no PC; precisa de internet e da sua chave"><input type="radio" name="vozIa" value="nuvem"><span>Nuvem</span></label>
+              </div>
+            </div>
+            <div id="vozIaLocal" class="voz-ia-box" hidden>
+              <label class="field">Endereço do servidor<input id="vozIaUrl" type="text" spellcheck="false" placeholder="http://localhost:11434"></label>
+              <label class="field">Modelo<input id="vozIaModeloLocal" type="text" spellcheck="false" placeholder="qwen2.5:7b"></label>
+              <p class="hint">Ollama: <code>http://localhost:11434</code>; LM Studio: <code>http://localhost:1234</code>. O modelo precisa saber escolher ações (tools), como qwen2.5 ou llama3.1.</p>
+            </div>
+            <div id="vozIaNuvem" class="voz-ia-box" hidden>
+              <label class="field">Modelo<select id="vozIaModeloNuvem">
+                <option value="claude-opus-5-5">Claude Opus 5.5 (entende mais)</option>
+                <option value="claude-sonnet-5-5">Claude Sonnet 5.5</option>
+                <option value="claude-haiku-4-5">Claude Haiku 4.5 (mais rápido e barato)</option>
+              </select></label>
+              <label class="field">Chave da API da Anthropic<span class="voz-ia-chave"><input id="vozIaChave" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…"><button id="vozIaSalvarChave" class="btn small" type="button">Guardar</button><button id="vozIaApagarChave" class="btn small ghost" type="button" hidden>Apagar</button></span></label>
+              <p class="hint">A chave fica cifrada neste PC e não volta para a tela. Vai para a Anthropic só o texto do pedido, os nomes de quem está na sala (e quem transmite) e os nomes dos canais; nunca o áudio. Cada pedido é cobrado na sua conta da Anthropic.</p>
+            </div>
+            <div id="vozIaTestarLinha" class="voz-ia-teste" hidden><button id="vozIaTestar" class="btn small" type="button">Testar</button><span id="vozIaStatus" class="hint" role="status" aria-live="polite"></span></div>
+            <div id="vozCmdBaixar" class="voz-cmd-download" hidden>
+              <progress id="vozCmdProgresso" max="1" value="0"></progress>
+              <span id="vozCmdProgressoTexto" class="hint"></span>
+              <button id="vozCmdCancelar" class="btn small" type="button">Cancelar</button>
+            </div>
+            <p id="vozCmdStatus" class="hint" role="status" aria-live="polite"></p>
+            <button id="vozCmdRemover" class="btn small ghost" type="button" hidden>Apagar o download</button>
+          </div>
+        </section>
         <footer class="settings-version"><span>Tela P2P</span><span id="settingsVersion"></span></footer>
         </div>
       </div>
@@ -951,6 +1025,8 @@
   </div>
 
   <div id="toast" class="toast" role="status"></div>
+  <!-- Comando de voz: "Ouvindo…" enquanto a tecla está apertada, "Entendendo…" depois (renderer/comando-voz.js) -->
+  <div id="voiceCmdBadge" class="voice-cmd-badge" role="status" hidden></div>
   <!-- Lente do modo Líquido: o fundo atrás das barras e botões ondula de leve, como vidro grosso -->
   <svg class="glass-defs" width="0" height="0" aria-hidden="true" focusable="false">
     <filter id="liquidLens" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
@@ -1000,6 +1076,9 @@
   <script src="renderer/sessoes.js"></script>
   <script src="renderer/salas-amigos.js"></script>
   <script src="renderer/transmitir.js"></script>
+  <script src="renderer/comando-voz-regras.js"></script>
+  <script src="renderer/comando-voz-acoes.js"></script>
+  <script src="renderer/comando-voz.js"></script>
   <script src="renderer/mapa-conexoes.js"></script>
   <script src="renderer/hub.js"></script>
   <script src="renderer/mensagens.js"></script>

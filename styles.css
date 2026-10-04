@@ -825,6 +825,9 @@ fieldset.group > legend { margin-bottom: 10px; }
   font-size: 14px; max-width: min(520px, 90vw); transition: opacity .2s, transform .2s; z-index: 10;
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
+/* Comando de voz: "Ouvindo…" enquanto você segura a tecla (amarelo: é você), "Entendendo…" depois. Parado, sem animação */
+.voice-cmd-badge { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 11; pointer-events: none; padding: 7px 16px; border-radius: 999px; background: var(--live-fill); color: var(--live-ink); font-size: 13px; font-weight: 700; }
+.voice-cmd-badge[hidden] { display: none; }
 .toast.error { border-color: var(--warn); }
 .toast.has-action { pointer-events: auto; display: flex; align-items: center; gap: 12px; } /* aviso com botão (clipe salvo) */
 .toast-action { flex: none; }
@@ -1986,6 +1989,7 @@ html[data-tips="off"] .tip { display: none !important; }
 .music-controls svg { width: 15px; height: 15px; fill: currentColor; stroke: none; }
 .music-time { flex: none; min-width: 84px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .music-seek { flex: 1; min-width: 60px; accent-color: var(--accent); }
+.music-live { margin-right: auto; }
 .music-controls .btn.small { flex: none; }
 .music-controls :disabled { opacity: .45; cursor: not-allowed; }
 .tile.small .music-controls { display: none; }
@@ -2020,6 +2024,19 @@ html[data-tips="off"] .tip { display: none !important; }
 
 /* Configurações › Celular (renderer/celular.js): os dois botões, depois um passo de cada vez (senha, QR, resumo) */
 .phone-panel { display: grid; gap: 12px; }
+.extras-panel { display: grid; gap: 12px; }
+.extras-panel h3 { margin: 0; }
+.extra-card { display: grid; gap: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); }
+.extra-card .hint { margin: 0; }
+.extra-card .btn.small { justify-self: start; }
+.voz-cmd-download { display: flex; align-items: center; gap: 10px; }
+.voz-ia-box { display: grid; gap: 8px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; }
+.voz-ia-box[hidden], .voz-ia-teste[hidden] { display: none; }
+.voz-ia-chave { display: flex; gap: 6px; align-items: center; }
+.voz-ia-chave input { flex: 1; min-width: 0; }
+.voz-ia-teste { display: flex; align-items: center; gap: 10px; }
+.voz-cmd-download[hidden] { display: none; }
+.voz-cmd-download progress { flex: 1; min-width: 80px; accent-color: var(--accent); }
 .phone-panel h3 { margin: 0; }
 .phone-actions, .phone-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
 .phone-actions[hidden], .phone-flow[hidden], .phone-pass[hidden], .phone-qr[hidden], .phone-summary[hidden] { display: none; }

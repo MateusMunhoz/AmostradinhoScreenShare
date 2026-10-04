@@ -251,7 +251,8 @@ const ptt = { down: false, active: 0, releaseTimer: null };
 function applyMicGate() {
   const t = voice.stream?.getAudioTracks()[0];
   if (!t) return;
-  t.enabled = !voice.muted && (voiceCfg.mode !== 'ptt' || ptt.down);
+  // Segurando a tecla do comando de voz (comando-voz.js), a call não ouve
+  t.enabled = !voice.muted && (voiceCfg.mode !== 'ptt' || ptt.down) && !(typeof comandoVoz === 'object' && comandoVoz.gravando);
 }
 function syncPtt() {
   const want = voice.session && voiceCfg.mode === 'ptt' ? voiceCfg.pttVk : 0;
@@ -294,6 +295,7 @@ const SHORTCUT_NAMES = {
   edit: 'Ajustar ou travar as janelas por cima do jogo',
   hideChat: 'Esconder ou mostrar o chat por cima do jogo',
   clip: 'Salvar clipe da transmissão (os últimos segundos, com o som; vai para Vídeos › Tela P2P › Clipes)',
+  voiceCmd: 'Comando de voz: segure e fale (Configurações › Recursos extras)',
 };
 let shortcutKeys = {};
 let capturing = null; // { kind: 'shortcut'|'ptt', action, btn }
@@ -399,6 +401,7 @@ function renderShortcutRows() {
   const box = $('shortcutRows');
   box.replaceChildren();
   for (const [action, name] of Object.entries(SHORTCUT_NAMES)) {
+    if (action === 'voiceCmd' && !comandoVoz.ligado) continue; // só para quem ligou o recurso
     const row = document.createElement('div');
     row.className = 'vd-row';
     const label = document.createElement('span');
@@ -433,6 +436,7 @@ async function applyShortcut(action, accel) {
   if (!res.ok) { toast(res.error || 'Não deu para usar esse atalho.', 'error'); return false; }
   shortcutKeys = res.keys;
   renderShortcutRows();
+  if (action === 'voiceCmd') renderComandoVozConfig(); // a tecla aparece em Recursos extras
   return true;
 }
 

@@ -233,6 +233,8 @@ function syncMuteSound() {
 }
 function renderVoice() {
   if (typeof renderMusicTiles === 'function') renderMusicTiles(); // os controles da música dependem do seu canal (musica.js)
+  if (typeof syncShareOpen === 'function') syncShareOpen(); // transmissão só para o seu canal: quem saiu dele para de ver
+  if (typeof syncComandoVozMic === 'function') void syncComandoVozMic(); // comando de voz: na voz, o microfone dele espera aberto
   const active = !!voice.session;
   const join = $('voiceJoin');
   join.disabled = !voice.supported;
