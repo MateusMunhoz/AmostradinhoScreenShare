@@ -3,7 +3,7 @@
 // da VPS: salas por código + senha, STUN e TURN, sem VPN nenhuma).
 // Script clássico: divide o escopo global com os outros (ordem no index.html). Usa de: util, estado, navegacao.
 //
-// Fica no HUB, aba Rede (renderer/hub.js), separada das Configurações gerais. O Razze
+// Fica no HUB, aba Rede (renderer/hub.js), separada das Configurações. O Razze
 // reúne servidor e redes. A conta fica no Perfil e os amigos na aba Amigos.
 
 const NETWORK_PREF_KEY = 'connectivity.v1';

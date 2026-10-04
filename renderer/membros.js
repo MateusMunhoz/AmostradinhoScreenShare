@@ -75,12 +75,24 @@ function memberRow(id, name, sharing) {
   // Fone silenciado ("Silenciar vozes"): a pessoa não está ouvindo ninguém
   const deafOn = voiceOn && (id ? !!voice.members.get(id)?.deafened : voice.deafened);
   const parts = [];
-  if (who === state.hostId) parts.push('Host');
   if (sharing) parts.push(inPip ? 'Transmitindo · na janela flutuante' : paused ? 'Transmitindo, em pausa para você' : 'Transmitindo');
-  if (voiceOn) parts.push(['na voz', micOff && 'microfone desligado', deafOn && 'fone silenciado'].filter(Boolean).join(', '));
-  status.textContent = parts.join(' · ') || 'Na sala';
+  // Na voz não vira texto: os ícones de microfone e fone desligados (logo abaixo) já dizem
+  status.textContent = parts.join(' · ') || (voiceOn ? '' : 'Na sala');
+  status.hidden = !status.textContent;
   info.append(nameEl, status);
-  li.append(dot, info);
+  // Host: uma coroinha no canto do avatar; com o mouse em cima, aparece "Host" (CSS)
+  let face = dot;
+  if (who === state.hostId) {
+    face = document.createElement('span');
+    face.className = 'member-face is-host';
+    const crown = document.createElement('span');
+    crown.className = 'host-badge';
+    crown.setAttribute('role', 'img');
+    crown.setAttribute('aria-label', 'Host');
+    crown.innerHTML = ICON.crown;
+    face.append(dot, crown);
+  }
+  li.append(face, info);
   for (const [on, icon, title] of [[micOff, 'micOff', 'Microfone desligado'], [deafOn, 'headphonesOff', 'Fone silenciado: não está ouvindo a voz']]) {
     if (!on) continue;
     const mo = document.createElement('span');

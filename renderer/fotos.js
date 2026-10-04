@@ -246,7 +246,7 @@ function removeMyPhoto() {
 function renderMyPhoto() {
   repaintAllAvatars();
   $('profilePhotoRemove').hidden = !fotos.mine;
-  $('profilePhotoPick').textContent = fotos.mine ? 'Trocar foto' : 'Escolher foto';
+  $('profilePhotoPick').textContent = fotos.mine ? 'Trocar' : 'Escolher';
   $('profilePhotoFit').hidden = !fotos.mine || !fotos.mineFull;
   for (const b of $('profilePhotoFit').querySelectorAll('[data-fit]')) b.setAttribute('aria-checked', String(b.dataset.fit === fotoFit));
   // Foto escolhida antes da 1.11.19: só existe o recorte, e é ele que os outros veem no seu perfil

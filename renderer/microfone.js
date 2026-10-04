@@ -45,15 +45,18 @@ async function buildMic() {
     try {
       if (!noiseWasm) noiseWasm = await window.api.noiseWasm(simdOk());
       if (!noiseWasm) throw new Error('arquivo da IA não encontrado');
+      // O nosso worklet primeiro: ele embrulha o RNNoise para devolver a chance de voz (VAD)
+      await ctx.audioWorklet.addModule('renderer/rnnoise-vad-worklet.js').catch((err) => console.warn('VAD do RNNoise indisponível:', err));
       await ctx.audioWorklet.addModule('vendor/noise/rnnoiseWorklet.js');
       const bin = noiseWasm.buffer.slice(noiseWasm.byteOffset, noiseWasm.byteOffset + noiseWasm.byteLength);
       // A IA limpa um canal só (maxChannels: 1). Microfone estéreo (muitos fones) entrava com dois e o segundo
       // saía mudo: "ouvir minha voz" tocava só no lado esquerdo. Entra e sai mono; na saída, o mono vai
       // igual para os dois lados.
-      node = new AudioWorkletNode(ctx, RNNOISE_ID, {
+      const opts = {
         channelCount: 1, channelCountMode: 'explicit', channelInterpretation: 'speakers', outputChannelCount: [1],
         processorOptions: { maxChannels: 1, wasmBinary: bin },
-      });
+      };
+      try { node = new AudioWorkletNode(ctx, `${RNNOISE_ID}#vad`, opts); } catch { node = new AudioWorkletNode(ctx, RNNOISE_ID, opts); }
       src.connect(node);
       last = node;
     } catch (err) {
@@ -64,39 +67,69 @@ async function buildMic() {
   }
   const pre = ctx.createAnalyser();
   pre.fftSize = 1024;
+  // O som cru, antes da IA: mostra o ruído do ambiente (depois da IA ele quase some)
+  const rawAn = ctx.createAnalyser();
+  rawAn.fftSize = 1024;
+  src.connect(rawAn);
   const gate = ctx.createGain();
   const dest = ctx.createMediaStreamDestination();
   last.connect(pre);
   last.connect(gate);
   gate.connect(dest);
-  const mic = { raw, out: dest.stream, ctx, node, pre, gate, gateOpen: true, holdUntil: 0, floor: -70, level: -100, timer: null };
-  mic.timer = setInterval(() => tickGate(mic), 20);
+  // O ruído começa do último medido neste microfone (com este filtro) e se calibra nos primeiros 500 ms
+  const noise = loadNoiseFloors();
+  const key = noiseKey(node ? 'ia' : voiceCfg.ns);
+  const mic = { raw, out: dest.stream, ctx, node, pre, rawAn, gate, key, buf: new Float32Array(pre.fftSize),
+    porta: MicGate.createGate(), floorEst: MicGate.createFloor(noise[key] ?? -70), ambEst: MicGate.createFloor(noise[noiseKey('cru')] ?? -70),
+    gateOpen: false, level: -100, ambient: -70, vad: null, vadAt: 0, timer: null };
+  // Chance de voz do RNNoise (vem do worklet a cada ~21 ms): número de 0 a 1, o resto é ignorado
+  if (node) node.port.onmessage = (e) => {
+    const v = e.data?.vad;
+    if (typeof v === 'number' && v >= 0 && v <= 1) { mic.vad = v; mic.vadAt = performance.now(); }
+  };
+  gate.gain.value = 0;
+  mic.timer = setInterval(() => tickGate(mic), MicGate.TICK_MS);
   // Microfone desconectado: avisa a voz do mesmo jeito que o microfone "cru" avisaria
   for (const t of raw.getAudioTracks()) t.addEventListener('ended', () => dest.stream.getAudioTracks().forEach((o) => o.dispatchEvent(new Event('ended'))));
   return mic;
 }
 
-// Sensibilidade: mede o som (depois da IA) a cada 20 ms. Acima do limite, a porta abre na hora; abaixo,
-// espera 300 ms e fecha suave. No automático, o limite fica 12 dB acima do ruído de fundo medido.
-function gateThreshold(mic) {
-  return voiceCfg.gateAuto ? Math.max(-72, Math.min(-30, mic.floor + 12)) : voiceCfg.gateDb;
+// Último ruído medido de cada microfone, por filtro ('ia', 'chrome', 'off') e o do som cru
+const noiseKey = (kind) => `${voiceCfg.micId || 'padrao'}|${kind}`;
+function loadNoiseFloors() {
+  try { const o = JSON.parse(load('vozRuido', '{}')); return o && typeof o === 'object' ? o : {}; } catch { return {}; }
 }
-function tickGate(mic) {
-  const buf = new Float32Array(mic.pre.fftSize);
-  mic.pre.getFloatTimeDomainData(buf);
+function saveNoiseFloors(mic) {
+  const o = loadNoiseFloors();
+  const fin = (v) => Number.isFinite(v) && v > -100 && v < 0;
+  if (fin(mic.floorEst.floor)) o[mic.key] = Math.round(mic.floorEst.floor * 10) / 10;
+  const raw = mic.key.replace(/\|[^|]*$/, '|cru');
+  if (fin(mic.ambEst.floor)) o[raw] = Math.round(mic.ambEst.floor * 10) / 10;
+  save('vozRuido', JSON.stringify(o));
+}
+
+const rmsDb = (an, buf) => {
+  an.getFloatTimeDomainData(buf);
   let sum = 0;
   for (const x of buf) sum += x * x;
-  const db = 20 * Math.log10(Math.sqrt(sum / buf.length) + 1e-9);
+  return Math.max(-100, 20 * Math.log10(Math.sqrt(sum / buf.length) + 1e-9));
+};
+// Sensibilidade: mede o som (depois da IA) e o cru a cada 20 ms. As contas ficam em renderer/porta-microfone.js:
+// ruído pelo percentil 10 dos últimos ~4 s, limite 12 dB acima dele, abre no limite e fecha 3 dB abaixo após 300 ms.
+function gateThreshold(mic) {
+  return MicGate.threshold({ auto: voiceCfg.gateAuto, manualDb: voiceCfg.gateDb, ns: mic.node ? 'ia' : voiceCfg.ns, floor: mic.floorEst.floor });
+}
+function tickGate(mic) {
+  const db = rmsDb(mic.pre, mic.buf);
   mic.level = db;
-  // Ruído de fundo: desce rápido, sobe devagar (a voz não puxa o limite para cima)
-  mic.floor = db < mic.floor ? db * 0.3 + mic.floor * 0.7 : mic.floor + 0.02;
+  MicGate.updateFloor(mic.floorEst, db);
+  mic.ambient = mic.node ? MicGate.updateFloor(mic.ambEst, rmsDb(mic.rawAn, mic.buf)) : mic.floorEst.floor;
   const now = performance.now();
-  const open = db > gateThreshold(mic);
-  if (open) mic.holdUntil = now + 300;
-  const want = open || now < mic.holdUntil;
-  if (want !== mic.gateOpen) {
-    mic.gateOpen = want;
-    mic.gate.gain.setTargetAtTime(want ? 1 : 0, mic.ctx.currentTime, want ? 0.004 : 0.04);
+  // VAD só no automático e se chegou há pouco (worklet sem VAD ou travado: decide só pelo volume)
+  const vad = voiceCfg.gateAuto && now - mic.vadAt < 100 ? mic.vad : null;
+  if (MicGate.decide(mic.porta, db, gateThreshold(mic), now, vad)) {
+    mic.gateOpen = mic.porta.open;
+    mic.gate.gain.setTargetAtTime(mic.gateOpen ? 1 : 0, mic.ctx.currentTime, mic.gateOpen ? 0.004 : 0.04);
   }
 }
 
@@ -105,6 +138,7 @@ function closeMic(mic) {
   mic.raw.getTracks().forEach((t) => t.stop());
   if (mic.out !== mic.raw) mic.out.getTracks().forEach((t) => t.stop());
   clearInterval(mic.timer);
+  saveNoiseFloors(mic);
   try { mic.node?.port.postMessage('destroy'); } catch {}
   mic.ctx?.close().catch(() => {});
   if (micNow === mic) micNow = null;
@@ -209,7 +243,7 @@ function renderMicTest() {
   btn.textContent = micTest.on ? 'Parar de ouvir' : 'Ouvir minha voz';
   btn.classList.toggle('primary', micTest.on);
   btn.setAttribute('aria-pressed', String(micTest.on));
-  if (!$('voiceDialog').hidden) renderVoiceDialog();
+  if (voiceSettingsOpen()) renderVoiceDialog();
 }
 
 // O microfone só manda som quando: não está desligado e (detecção de voz, ou a tecla está apertada)
@@ -300,25 +334,20 @@ function keyLabel(e) {
   return e.key.length === 1 ? e.key.toUpperCase() : e.key;
 }
 
-// Na sala, Voz e atalhos vira um painel à esquerda (do tamanho dos painéis de chat e voz, do outro lado),
-// com a transmissão no meio; fora da sala, continua uma janela no meio da tela
-function openVoiceDialog() {
-  const side = !!state.myId;
-  document.body.classList.toggle('voice-side', side);
-  $('voiceDialog').querySelector('.dialog').setAttribute('aria-modal', String(!side));
-  $('voiceDialog').hidden = false;
+// Voz e atalhos é um grupo das configurações (abas Voz e Atalhos): abrir leva até ele; o medidor e o teste do
+// microfone só correm com ele à vista (enterVoiceSettings/leaveVoiceSettings, chamados por showSettingsTab)
+const voiceSettingsOpen = () => settingsOpenOn('voz');
+function openVoiceDialog(tab = 'voice') { openGeneralSettings(tab); }
+function closeVoiceDialog() { if (voiceSettingsOpen()) closeGeneralSettings(); }
+function enterVoiceSettings() {
   renderVoiceDialog();
   renderMicList();
   window.api.getShortcuts().then((k) => { shortcutKeys = k || {}; renderShortcutRows(); }).catch(() => {});
-  $('closeVoiceDialog').focus();
   meterLoop();
 }
-function closeVoiceDialog() {
+function leaveVoiceSettings() {
   stopCapture();
   stopMicTest();
-  $('voiceDialog').hidden = true;
-  document.body.classList.remove('voice-side');
-  $('voiceSettingsBtn').focus();
 }
 
 function renderVoiceDialog() {
@@ -423,7 +452,7 @@ function stopCapture() {
 // Escala do medidor e do controle: -80 dB (esquerda) a 0 dB (direita)
 const dbToPct = (db) => Math.max(0, Math.min(100, ((db + 80) / 80) * 100));
 function meterLoop() {
-  if ($('voiceDialog').hidden) return;
+  if (!voiceSettingsOpen()) return;
   const mic = micNow || micTest.own;
   // Verde: o microfone abriu e o som sai (na voz, também precisa não estar desligado ou esperando a tecla)
   const sending = mic === micTest.own || !!voice.stream?.getAudioTracks()[0]?.enabled;
@@ -435,5 +464,6 @@ function meterLoop() {
     if (voiceCfg.gateAuto) $('gateDb').value = String(Math.round(th));
     $('gateValue').textContent = `${Math.round(th)} dB`;
   }
+  $('micAmbient').textContent = mic ? `Ruído do ambiente: ${Math.round(mic.ambient)} dB` : '';
   requestAnimationFrame(meterLoop);
 }

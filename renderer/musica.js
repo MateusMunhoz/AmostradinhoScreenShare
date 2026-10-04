@@ -70,6 +70,8 @@ function clearMusicas() {
   musica.wantOpen = null;
   closeMusicPop();
 }
+// Ao entrar (ou o servidor da sala trocar), conta de novo que você está ouvindo
+function resendListening() { const l = listenedMusic(); if (l) send({ type: 'musica-ouvindo', ch: l.ch, on: true }); }
 function musicCtl(e, action, extra = {}) { send({ type: 'musica-ctl', ch: e.ch, action, ...extra }); }
 
 // ---------- A tela de música no palco ----------
@@ -79,6 +81,7 @@ function listenMusic(ch) {
   const tile = createMusicTile(ch, e);
   // Entra no palco como "você se vendo" (assistir.js): sem conexão, sem sinal para ninguém
   state.in.set(key, { self: true, music: tile.music, pc: SELF_PC, tile, videoOn: true, tracks: [], once: null, lastBytes: 0, lastTs: 0 });
+  send({ type: 'musica-ouvindo', ch, on: true }); // ouvindo conta como gente: a música não é tirada por falta de ouvinte
   renderNavMusic();
   renderFocus();
   renderMembers();
@@ -422,7 +425,7 @@ function musicRow(ch) {
   info.append(title, by);
   const btn = document.createElement('button');
   btn.type = 'button';
-  btn.className = 'btn small' + (open ? '' : ' primary');
+  btn.className = 'btn small';
   btn.textContent = open ? 'Parar de ouvir' : 'Ouvir';
   btn.title = open ? 'Fecha a tela da música (ela continua para os outros)' : 'Abre a tela da música e ouve junto, no mesmo ponto';
   btn.onclick = () => toggleListenMusic(ch);

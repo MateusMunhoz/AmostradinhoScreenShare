@@ -46,6 +46,7 @@ const ICON = {
   volume: svg('M11 5 6 9H2v6h4l5 4V5zM15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14'),
   muted: svg('M11 5 6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6'),
   close: svg('M18 6 6 18M6 6l12 12'),
+  crown: svg('M12 6l4 6 5-4-2 10H5L3 8l5 4z'), // host da sala
   prev: svg('M15 18l-6-6 6-6'),
   next: svg('M9 18l6-6-6-6'),
   refresh: svg('M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6'),
@@ -84,6 +85,8 @@ const ICON = {
   moveTo: svg('M5 12h14M13 6l6 6-6 6'),
   pin: svg('M12 17v5M9 3h6l-1 6 4 4H6l4-4z'),                                         // alfinete: fixar                                            // seta: mudar de canal
   pause: svg('M7 4h4v16H7zM13 4h4v16h-4z'),
+  swap: svg('M4 7h13l-3-3M20 17H7l3 3'),
+  stop: svg('M7 7h10v10H7z'),
 };
 
 // Botão só com ícone: a dica (title) e o nome lido pelo leitor de tela são o mesmo texto

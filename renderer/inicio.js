@@ -11,9 +11,10 @@ document.addEventListener('mousedown', (e) => {
 $('voiceJoin').onclick = () => {
   if (voice.session || voice.pending) return voice.leave();
   if (state.systemLoopback) return toast('Pare sua transmissão, entre na voz e depois reinicie a transmissão: a captura atual inclui todo o som do PC.', 'error');
-  mixer.ensure(); // o clique libera o áudio do app
-  voice.join();
+  joinVoiceIn($('voiceJoin').dataset.channel || ''); // o canal com mais gente (renderVoiceJoin)
 };
+$('voiceJoinMore').onclick = () => ($('voiceJoinPop') ? closeVoiceJoinPop() : openVoiceJoinPop());
+setIcon($('voiceJoinMore'), 'chevronUp', 'Escolher o canal para entrar');
 $('voiceMute').onclick = () => voice.mute();
 $('paneVoiceSubsala').onclick = () => createSubsala(true);
 $('voiceDeafen').onclick = () => voice.deafen();
@@ -61,7 +62,7 @@ document.querySelectorAll('input[name="noise"]').forEach((r) => {
   r.onchange = () => { voiceCfg.ns = r.value; saveVoiceCfg(); renderVoiceDialog(); restartMic(); };
 });
 // Foto de perfil (renderer/fotos.js)
-$('profilePhotoPick').onclick = () => $('profilePhotoFile').click();
+$('profilePhotoPick').onclick = $('profilePhotoBig').onclick = () => $('profilePhotoFile').click();
 $('profilePhotoFile').onchange = async () => {
   const file = $('profilePhotoFile').files[0];
   $('profilePhotoFile').value = '';
@@ -81,7 +82,7 @@ $('micSelect').onchange = () => {
   saveVoiceCfg();
   restartMic();
 };
-navigator.mediaDevices.addEventListener('devicechange', () => { if (!$('voiceDialog').hidden) renderMicList(); });
+navigator.mediaDevices.addEventListener('devicechange', () => { if (voiceSettingsOpen()) renderMicList(); });
 $('echoOn').onchange = () => { voiceCfg.echo = $('echoOn').checked; saveVoiceCfg(); restartMic(); };
 document.querySelectorAll('input[name="talkMode"]').forEach((r) => {
   r.onchange = () => {
@@ -110,10 +111,7 @@ $('shortcutReset').onclick = async () => {
   for (const [action, accel] of Object.entries(defaults)) await applyShortcut(action, accel);
 };
 $('micTestBtn').onclick = () => (micTest.on ? stopMicTest() : startMicTest());
-$('voiceSettingsBtn').onclick = () => ($('voiceDialog').hidden ? openVoiceDialog() : closeVoiceDialog()); // de novo: fecha
-$('closeVoiceDialog').onclick = closeVoiceDialog;
-closeOnBackdrop('voiceDialog', closeVoiceDialog);
-closeOnBackdrop('statsDialog', closeStats);
+$('voiceSettingsBtn').onclick = () => (voiceSettingsOpen() ? closeVoiceDialog() : openVoiceDialog()); // de novo: fecha
 
 window.addEventListener('beforeunload', () => { stopMicTest(); voice.leave(false); });
 
@@ -187,7 +185,7 @@ $('tabScreens').onclick = () => { state.sourceTab = 'screens'; renderSources(); 
 $('tabWindows').onclick = () => { state.sourceTab = 'windows'; renderSources(); };
 $('advToggle').onclick = () => setAdvanced($('advToggle').getAttribute('aria-expanded') !== 'true');
 // Todo botão de fechar janela é um X (a dica e o leitor de tela dizem "Fechar")
-for (const id of ['closeShare', 'closeStats', 'closeVoiceDialog', 'closeGeneralSettings', 'closeProfile']) setIcon($(id), 'close', 'Fechar');
+for (const id of ['closeShare', 'closeGeneralSettings', 'closeProfile']) setIcon($(id), 'close', 'Fechar');
 setIcon($('refreshSources'), 'refresh', 'Atualizar lista');
 $('closeShare').onclick = closeShareDialog;
 
@@ -334,21 +332,14 @@ $('shareSummaryMore').onclick = () => {
 })();
 $('startBtn').onclick = () => (state.shareSwitching ? switchSource() : startSharing());
 $('switchShareBtn').onclick = () => openShareDialog(true);
+setIcon($('switchShareBtn'), 'swap', 'Trocar a tela ou janela transmitida, sem parar');
+setIcon($('stopShareBtn'), 'stop', 'Parar de transmitir');
 $('refreshSources').onclick = loadSources;
 $('refreshApps').onclick = loadAudioApps;
 // Ícone das Estatísticas, na sala ao lado de Sair da sala
 setIcon($('openStatsRoom'), 'stats', 'Estatísticas: desempenho do PC e a transmissão de cada pessoa');
 $('openStatsRoom').onclick = openStats;
 $('selfViewBtn').onclick = toggleSelfView;
-$('statsTabPerf').onclick = () => setStatsTab('perf');
-$('statsTabStream').onclick = () => setStatsTab('stream');
-for (const id of ['statsTabPerf', 'statsTabStream']) {
-  $(id).addEventListener('keydown', (e) => {
-    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
-    e.preventDefault();
-    setStatsTab(statsTab === 'perf' ? 'stream' : 'perf', true);
-  });
-}
 
 // Chat
 $('chatToggle').insertAdjacentHTML('afterbegin', ICON.chat);
@@ -361,6 +352,7 @@ $('peopleBtn').onclick = () => {
 // Clicar fora da lista fecha (o cartão de volume, que abre de dentro dela, conta como dentro)
 document.addEventListener('mousedown', (e) => {
   if ($('voiceStackPop') && !e.target.closest('#voiceStackPop, #voiceAvatars, #personCard')) closeVoiceStackPop();
+  if ($('voiceJoinPop') && !e.target.closest('#voiceJoinPop, #voiceJoinMore')) closeVoiceJoinPop();
 });
 document.addEventListener('mousedown', (e) => {
   if ($('peoplePop').hidden) return;
@@ -406,19 +398,17 @@ $('chatTab').addEventListener('drop', (e) => {
   $('chatDrop').hidden = true;
   stageFiles([...e.dataTransfer.files]);
 });
-$('closeStats').onclick = closeStats;
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
-  if (!$('generalSettingsDialog').hidden) closeGeneralSettings();
-  else if (!$('voiceDialog').hidden) { if (!capturing) closeVoiceDialog(); }
+  if (!$('generalSettingsDialog').hidden) { if (!capturing) closeGeneralSettings(); } // trocando uma tecla, o Esc cancela só a troca
   else if (!$('personCard').hidden) closePersonCard();
+  else if ($('voiceJoinPop')) { closeVoiceJoinPop(); $('voiceJoinMore').focus(); }
   else if ($('voiceStackPop')) { closeVoiceStackPop(); $('voiceAvatars').querySelector('.voice-stack')?.focus(); }
   else if (!$('voiceMapPop').hidden) closeSkyPop();
   else if (!$('dmPanel').hidden) { setDmPanel(false); $('dmBarLabel').focus(); }
   else if (!$('dmMoreMenu').hidden) { setDmMore(false); $('dmMore').focus(); }
   else if (!$('musicPop').hidden) closeMusicPop();
   else if (!$('peoplePop').hidden) { setPeopleOpen(false); $('peopleBtn').focus(); }
-  else if (!$('statsDialog').hidden) closeStats();
   else if (!$('closeDialog').hidden) closeCloseDialog();
   else if (!$('shareDialog').hidden) closeShareDialog();
   else if (state.focus && !document.fullscreenElement) setFocus(null);

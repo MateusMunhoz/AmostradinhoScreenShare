@@ -4,12 +4,13 @@ const { WebSocketServer } = require('ws');
 
 let wss = null;
 let pingTimer = null;
+let musicTimer = null; // tira as músicas esquecidas (limparMusicas)
 // A sala em andamento, para o anúncio das sessões abertas: { sessao, port, password, members, hostId() }
 let room = null;
 let roomChanged = () => {};
 
 const {
-  MAX_MEMBERS, send, cleanSessao, newMember, memberInfo, createChat, createSubsalas, createMusicas, handleMemberMessage,
+  MAX_MEMBERS, send, cleanSessao, newMember, memberInfo, createChat, createSubsalas, createMusicas, limparMusicas, handleMemberMessage,
 } = require('./sala-protocolo');
 
 const LOCAL = ['127.0.0.1', '::1', '::ffff:127.0.0.1'];
@@ -69,6 +70,7 @@ function startServer(port, password = '', seed = {}) {
           ws.ping();
         }
       }, 10000);
+      musicTimer = setInterval(() => { if (limparMusicas(musicas, members)) broadcast(musicas.msg()); }, 15000);
       resolve({ ok: true });
     });
 
@@ -180,6 +182,8 @@ function startServer(port, password = '', seed = {}) {
 function stopServer({ endRoom = false } = {}) {
   clearInterval(pingTimer);
   pingTimer = null;
+  clearInterval(musicTimer);
+  musicTimer = null;
   room = null;
   if (wss) {
     for (const ws of wss.clients) {

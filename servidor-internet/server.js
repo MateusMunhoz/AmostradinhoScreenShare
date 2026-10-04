@@ -17,7 +17,7 @@ const http = require('http');
 const crypto = require('crypto');
 const { WebSocketServer } = require('ws');
 const {
-  MAX_MEMBERS, send, cleanSessao, cleanClient, newMember, memberInfo, createChat, createSubsalas, createMusicas, handleMemberMessage,
+  MAX_MEMBERS, send, cleanSessao, cleanClient, newMember, memberInfo, createChat, createSubsalas, createMusicas, limparMusicas, handleMemberMessage,
 } = require('../sala-protocolo');
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sem 0/O e 1/I, que confundem
@@ -305,6 +305,10 @@ function createInternetServer(options = {}) {
       try { ws.ping(); } catch {}
     }
   }, 15000);
+  // Tira as músicas esquecidas (pausadas há muito tempo, ou sem ninguém no canal nem ouvindo)
+  const musicTimer = setInterval(() => {
+    for (const r of rooms.values()) if (limparMusicas(r.musicas, r.members)) r.broadcast(r.musicas.msg());
+  }, 15000);
 
   return {
     httpServer, wss, rooms, cfg,
@@ -316,6 +320,7 @@ function createInternetServer(options = {}) {
     },
     close() {
       clearInterval(pingTimer);
+      clearInterval(musicTimer);
       for (const r of rooms.values()) for (const t of r.away.values()) clearTimeout(t);
       for (const ws of wss.clients) ws.terminate();
       return new Promise((resolve) => wss.close(() => httpServer.close(() => resolve())));
