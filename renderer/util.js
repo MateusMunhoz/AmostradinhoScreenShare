@@ -14,12 +14,21 @@ function show(id) {
 }
 
 let toastTimer;
-function toast(text, kind = 'info') {
+// action (opcional): { label, run } vira um botão no aviso, que fica um pouco mais na tela
+function toast(text, kind = 'info', action = null) {
   const t = $('toast');
   t.textContent = text;
-  t.className = `toast show ${kind}`;
+  if (action) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'btn small toast-action';
+    b.textContent = action.label;
+    b.onclick = () => { t.className = 'toast'; action.run(); };
+    t.append(b);
+  }
+  t.className = `toast show ${kind}${action ? ' has-action' : ''}`;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { t.className = 'toast'; }, 5000);
+  toastTimer = setTimeout(() => { t.className = 'toast'; }, action ? 9000 : 5000);
 }
 
 function save(key, val) { try { localStorage.setItem(key, val); } catch {} }
@@ -87,6 +96,7 @@ const ICON = {
   pause: svg('M7 4h4v16H7zM13 4h4v16h-4z'),
   swap: svg('M4 7h13l-3-3M20 17H7l3 3'),
   stop: svg('M7 7h10v10H7z'),
+  scissors: svg('M6 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12'), // tesoura: salvar clipe
 };
 
 // Botão só com ícone: a dica (title) e o nome lido pelo leitor de tela são o mesmo texto

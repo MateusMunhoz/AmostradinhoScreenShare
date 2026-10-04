@@ -118,3 +118,11 @@
   content: "Di'Luna"; position: absolute; right: 16px; top: 50%; translate: 0 -50%; font: 700 32px/1 "Palatino Linotype", "Book Antiqua", Cambria, Georgia, serif;
   background: linear-gradient(135deg, #EAF6FF, #6FE3FF 35%, #4D7CFF 68%, #A57BFF); -webkit-background-clip: text; background-clip: text; color: transparent;
 }
+
+/* ---------- Interface espelhada (Aparência › Espelhar a interface): a Lua vai para a direita, longe do chat e da voz ---------- */
+:root[data-skin="diluna"][data-mirror="on"] body::before { transform: scaleX(-1); }
+:root[data-skin="diluna"][data-mirror="on"] body::after { background: linear-gradient(270deg, transparent 18%, rgba(2, 3, 12, .25) 45%, rgba(2, 3, 12, .1) 100%); }
+@media (min-width: 1301px) {
+  :root[data-skin="diluna"][data-mirror="on"] .home-screen::before { left: auto; right: calc(var(--dl-edge) + 4vh); }
+  :root[data-skin="diluna"][data-mirror="on"] .home-screen { padding-left: 40px; padding-right: calc(var(--dl-edge) + 4vh + var(--dl-name) * .95 + 40px); }
+}

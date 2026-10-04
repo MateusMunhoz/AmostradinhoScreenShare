@@ -75,21 +75,22 @@ isso (chamam `watch`, `state`, `speaking`... direto na página).
 | 21 | `microfone.js` | Microfone escolhido, RNNoise, eco, sensibilidade, ouvir a própria voz, apertar para falar, grupo "Voz e atalhos" das Configurações |
 | 22 | `subsalas.js` | Subsalas de voz: criar e apagar (Subsala_1, Subsala_2…), entrar numa subsala e a lista por canal no painel de voz |
 | 23 | `membros.js` | Painel da sala: endereço e lista de pessoas |
-| 24 | `assistir.js` | Quadros de vídeo, ver a própria transmissão, destaque, tela cheia |
-| 25 | `palco.js` | Como as telas assistidas se arrumam no palco |
-| 26 | `pip.js` | Janelas flutuantes |
-| 27 | `overlay.js` | Chat por cima do jogo |
-| 28 | `metadados.js` | Tira localização, autor, datas e outros metadados dos arquivos (fotos, vídeos, PDF, Office) antes de irem para o chat |
-| 29 | `chat.js` | Mensagens, arquivos, não lidas |
-| 30 | `estatisticas.js` | Desempenho, aba Transmissão, codificador em uso |
-| 29 | `novidades.js`, `atualizacao.js` | `NOVIDADES` (gerada pelo `publicar.js` com os commits); atualização pela sala, pelo GitHub, o aviso e o cartão Novidades do Início |
-| 31 | `sessoes.js`, `salas-amigos.js` | Sessões abertas na rede (a lista da tela inicial); no modo Internet, as salas dos amigos do Razze, com o passe de convite, e o convite para a sala pelas mensagens diretas ([spec](spec/salas-dos-amigos.md)) |
-| 32 | `transmitir.js` | Escolher a fonte, som, iniciar, trocar e parar, quem assiste |
-| 33 | `mapa-conexoes.js` | O Mapa de conexões, na aba Rede do HUB: grafo em pé, atualiza a cada 5 s só com a aba à vista |
-| 34 | `hub.js` | HUB: a barra fininha da esquerda, com as abas Salas (salas abertas, a atual e o menu inicial) , Amigos (adicionar, filtrar, convidar, pedidos) e Rede (a conta primeiro, depois conexão, servidores, redes Razze e o Mapa de conexões) |
-| 35 | `mensagens.js` | Mensagens diretas entre amigos: aba Mensagens do HUB, barra de conversas embaixo, busca na RazzeAPI a cada 4 s e histórico local |
-| 36 | `navegacao.js` | Barrinha da direita e painéis simultâneos da sala (`workspaceViews.v1`), painel de voz com os canais |
-| 37 | `inicio.js` | Tela inicial e a partida: liga os botões e listeners, carrega as preferências |
+| 24 | `clipe-mp4.js`, `clipes.js` | Clipe dos últimos segundos com som: buffer dos pedaços H.264 (do modo "uma vez só", ou recodificados no "uma por pessoa"), som em AAC/Opus, MP4 com o `mp4-muxer` de `vendor/`, duração, atalho, tesoura e aviso ([spec](spec/clipes.md)) |
+| 25 | `assistir.js` | Quadros de vídeo, ver a própria transmissão, destaque, tela cheia |
+| 26 | `palco.js` | Como as telas assistidas se arrumam no palco |
+| 27 | `pip.js` | Janelas flutuantes |
+| 28 | `overlay.js` | Chat por cima do jogo |
+| 29 | `metadados.js` | Tira localização, autor, datas e outros metadados dos arquivos (fotos, vídeos, PDF, Office) antes de irem para o chat |
+| 30 | `chat.js` | Mensagens, arquivos, não lidas |
+| 31 | `estatisticas.js` | Desempenho, aba Transmissão, codificador em uso |
+| 32 | `novidades.js`, `atualizacao.js` | `NOVIDADES` (gerada pelo `publicar.js` com os commits); atualização pela sala, pelo GitHub, o aviso e o cartão Novidades do Início |
+| 33 | `sessoes.js`, `salas-amigos.js` | Sessões abertas na rede (a lista da tela inicial); no modo Internet, as salas dos amigos do Razze, com o passe de convite, e o convite para a sala pelas mensagens diretas ([spec](spec/salas-dos-amigos.md)) |
+| 34 | `transmitir.js` | Escolher a fonte, som, iniciar, trocar e parar, quem assiste |
+| 35 | `mapa-conexoes.js` | O Mapa de conexões, na aba Rede do HUB: grafo em pé, atualiza a cada 5 s só com a aba à vista |
+| 36 | `hub.js` | HUB: a barra fininha da esquerda, com as abas Salas (salas abertas, a atual e o menu inicial) , Amigos (adicionar, filtrar, convidar, pedidos) e Rede (a conta primeiro, depois conexão, servidores, redes Razze e o Mapa de conexões) |
+| 37 | `mensagens.js` | Mensagens diretas entre amigos: aba Mensagens do HUB, barra de conversas embaixo, busca na RazzeAPI a cada 4 s e histórico local |
+| 38 | `navegacao.js` | Barrinha da direita e painéis simultâneos da sala (`workspaceViews.v1`), painel de voz com os canais |
+| 39 | `inicio.js` | Tela inicial e a partida: liga os botões e listeners, carrega as preferências |
 
 **A regra que evita erro na carga:** só o `inicio.js` roda código quando a página abre (listeners,
 `onclick`, preferências). Os outros só declaram funções e variáveis. Um arquivo que rodasse algo na
@@ -109,6 +110,8 @@ Arquivo novo na página: entra no `index.html` (na posição certa), em `PACK_FI
 | `janela-flutuante.js` | Vagas, fila, transparência e modo de ajuste das janelas flutuantes |
 | `chat-jogo.js` | A janela do chat por cima do jogo e o modo de escrever (Ctrl+Enter) |
 | `atalhos.js` | Atalhos globais e o apertar para falar (`teclas.exe`) |
+| `clipes.js` | Grava os clipes em `Vídeos\Tela P2P\Clipes` (nome limpo, até 300 MB) e mostra na pasta só os que ele salvou. Só módulos do Node ([spec](spec/clipes.md)) |
+| `bandeja.js` | Ícone na bandeja e o menu dele; o X da janela esconde nela (sair de verdade marca `setQuitting`). Mute e ensurdecer mandam as mesmas mensagens dos atalhos; "Procurar atualização" manda `tray-update` |
 | `sessoes.js` | Anúncio e busca das sessões abertas (UDP na rede da Radmin) |
 | `mensagens.js` | Histórico local das mensagens diretas: um arquivo por amigo em `%APPDATA%\Tela P2P\mensagens\<conta>`, cifrado com o safeStorage |
 | `mensagens-cripto.js` | Mensagens diretas criptografadas de ponta a ponta (X25519 + AES-256-GCM): a chave privada só aqui; cifra no envio e decifra na busca, entre o IPC e a RazzeAPI ([spec](spec/mensagens-criptografadas.md)) |
@@ -125,6 +128,7 @@ Arquivo novo na página: entra no `index.html` (na posição certa), em `PACK_FI
 | `npm run test:settings` | Configurações em janelas invisíveis e a persistência entre dois processos | Não |
 | `npm run test:razze-api` | Só os testes `razze-*` (já incluídos no `npm test`) | Não |
 | `npm run test:rtc` | Áudio WebRTC de verdade entre duas janelas ocultas, sem o seu microfone | Não |
+| `npm run test:clipe` | Clipe com H.264 e som de verdade (WebCodecs): monta o MP4 e abre num `<video>`; depois o modo "uma por pessoa" com uma faixa ao vivo dentro do app (uns 25 s) | Não |
 | `npm run test:e2e` | Tudo de ponta a ponta (uns 10 minutos) | Sim |
 | `npx electron tests/e2e/carga.cjs` | Se o app abre sem erro e os nomes globais existem (5 s) | Não |
 

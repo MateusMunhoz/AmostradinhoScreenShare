@@ -94,6 +94,10 @@ quem está com ela, quantas pessoas estão dentro e um cadeado se tiver senha.
 No modo Internet, a lista da tela inicial vira **Salas dos seus amigos**: as salas que os seus amigos do Razze
 abriram pela internet. Basta estar logado na conta Razze (aba Rede do HUB); a VPN Razze não precisa estar ligada.
 
+- **Quem instala agora:** o app já começa no modo Internet, com o servidor da equipe e a conta Razze prontos. É só criar
+  a conta na aba Rede, adicionar os amigos e criar ou entrar nas salas. Quem já usava o app continua na Radmin; para
+  mudar, escolha **Internet (servidor)** em **Como os PCs se conectam**.
+
 - **Entrar:** o botão **Entrar** entra direto, sem senha, por um **passe de convite** que o app de quem criou a
   sala manda só para os amigos dele. Se o passe não valer mais (quem convidou saiu da sala) ou o servidor for
   antigo, abre o **Entrar com código** com o código preenchido, e é só digitar a senha. O servidor usado é o da
@@ -149,6 +153,17 @@ Qualidade, codificação e jogo em tela cheia estão em [Desempenho](desempenho.
 - **Volume por pessoa:** veja [Voz](#voz).
 - **App minimizado:** com a janela minimizada ou coberta pelo jogo por 3 segundos, o app para de baixar o vídeo e fica só com o som. Ao voltar, o vídeo volta na hora. Quem transmite vê "(vídeo pausado)" ao lado do seu nome.
 
+## Clipes
+
+Salva os últimos segundos de uma transmissão, com o som dela, num arquivo de vídeo, como o replay do ShadowPlay: aconteceu algo legal, você aperta e o que **já passou** fica guardado.
+
+- **Como salvar:** **Ctrl+Shift+C** (dá para trocar em [Voz e atalhos](#voz-e-atalhos); funciona com o jogo na frente), a **tesoura** na barra de cima da transmissão ou **Salvar clipe da transmissão** no [ícone da bandeja](#ícone-na-bandeja).
+- **Quanto tempo:** 15 s, 30 s (padrão), 1 min ou 2 min, em **Voz e atalhos › Clipe**. Mais tempo usa mais memória (2 min em 1080p: uns 100 a 200 MB por transmissão).
+- **Qual transmissão:** a que está em destaque; sem destaque, a que você assiste. A sua própria transmissão também vale: transmitindo seu jogo, o atalho salva a sua jogada (com placa NVIDIA, mesmo sem ninguém assistindo; nas outras, só com alguém assistindo).
+- **Onde fica:** `Vídeos\Tela P2P\Clipes`, em MP4, com o nome de quem transmitia e a hora. O aviso tem **Mostrar na pasta**.
+- **Som:** o som da transmissão (o jogo, a música) vai junto. A voz da call fica de fora.
+- **Qualidade:** no modo **Uma vez só** (o padrão), a mesma que chegou para você, sem perder nada. No modo **Uma por pessoa**, o app codifica o vídeo de novo só para o clipe: pela placa de vídeo no tamanho que chega ou, sem ela, pelo processador em até 720p a 30 quadros, para pesar pouco. O clipe começa no último quadro inteiro antes do tempo escolhido: pode ter alguns segundos a mais.
+- **Vídeo pausado não entra:** com o app minimizado ou coberto pelo jogo, o vídeo de quem você assiste para de chegar, e o clipe recomeça quando ele volta. Para clipar alguém enquanto joga, deixe a transmissão numa [janela flutuante](#janela-flutuante).
 ## Janela flutuante
 
 Para ver uma transmissão enquanto joga.
@@ -346,6 +361,10 @@ A configuração de outra pessoa só aparece se ela e o host estiverem na versã
 
 Abra **Configurações** pela engrenagem no pé da barrinha da direita. A barrinha fica na borda direita da janela, no início e dentro de uma sala. À esquerda da janela ficam os grupos (**Voz e atalhos**, **Aparência**, **Sons**, **Celular** e **Estatísticas**); em cima, as abas do grupo escolhido. Tema, **Janela e fonte** (transparência e fonte) e Cores ficam juntos em **Aparência**. Cada grupo lembra a última aba aberta.
 
+Prefere tudo do outro lado? **Configurações › Aparência › Espelhar a interface** troca os lados: a barrinha, o chat e a voz vão para a esquerda e o HUB para a direita. O resto continua igual, e a escolha fica salva (trocar de tema não desfaz).
+
+**Largura do chat e da voz:** passe o mouse no vão entre o painel e o vídeo até aparecer uma linha; arraste para alargar ou estreitar (de 300 px até pouco mais da metade da janela). O vídeo se ajusta e a largura fica salva. Dois cliques na linha voltam ao tamanho automático. Pelo teclado: Tab até a linha e as setas.
+
 O botão **Perfil** (no alto da barrinha) abre **Seu perfil**: em cima, uma prévia de como os outros te veem na voz (o fundo, a foto e o nome na fonte escolhida); clicar na foto troca a foto e **Trocar fundo** fica no canto do fundo. Embaixo, **Aparência** (foto e o ajuste dela na bolinha, fundo e fonte do nome; a lixeira tira a foto ou o fundo) e **Nome**, que só pode ser editado fora da sala (na sala aparece com um cadeado). Nele também fica o **Fundo do perfil**: uma imagem (recortada em quadrado) ou um GIF de até 1 MB, que aparece atrás do seu perfil para quem clicar em você na voz; **Tirar fundo** volta ao normal. O GIF só se mexe com o perfil aberto. Dentro da sala, **Chat**, **Voz** e **Transmissão** ficam logo abaixo deles, num grupo separado, só com o ícone (o nome aparece ao parar o mouse em cima), e são alternadores independentes: clique para exibir ou ocultar cada painel. Chat e voz abrem se desdobrando ao lado da barrinha. Os selecionados permanecem visíveis juntos, dividindo o espaço. Perfil e configurações também podem ficar abertos ao mesmo tempo. Cada painel tem sua própria rolagem quando necessário. A seleção dos três painéis da sala é lembrada ao reabrir o app.
 
 O painel **Voz** mostra os participantes, seus controles de volume e botões para entrar, sair, mutar e silenciar as vozes. Mostrar ou ocultar esse painel não liga nem desliga o microfone. Da mesma forma, ocultar **Transmissão** não encerra uma transmissão em andamento; use o botão **Parar** para encerrá-la.
@@ -360,6 +379,7 @@ Digite um hexadecimal de três ou seis dígitos, com ou sem `#`, ou use a amostr
 No tema **Du'Sol** (aba Tema), o fundo é o Sol: um pedaço gigante dele à esquerda, com manchas e a borda brilhando, e o espaço com estrelas no resto. As cores ficam entre o preto, o amarelo e o laranja, e o nome **Du'Sol** aparece como no Arasaka: em pé no saguão, grande no palco sem transmissão e na barra de título. O fundo é parado e some no modo gamer.
 
 O tema **Di'Luna** é o irmão do Du'Sol, com a Lua cheia: um pedaço gigante dela à esquerda, com crateras e a borda acesa em ciano, e a noite com véus roxos e faíscas de luz no resto. As cores ficam entre o branco, o ciano, o azul e o roxo, e os letreiros têm serifa. O nome **Di'Luna** aparece nos mesmos lugares do Du'Sol, em pé do lado de fora da Lua no saguão.
+O tema **Renascença** transforma o app numa galeria: o fundo é uma pintura famosa da Renascença (A Escola de Atenas, A Anunciação, A Última Ceia e A Criação de Adão, uma a cada vez que o app abre), com o tom amarelado de verniz antigo e uma etiqueta de museu no canto dizendo qual é. O cartão do Início, o palco e cada transmissão ganham uma moldura dourada entalhada. Créditos das obras em `assets/temas/OBRAS.md`.
 
 No tema Padrão, a tela inicial tem um céu ao fundo; de vez em quando (a cada 20 a 90 segundos, ao acaso) uma estrela cadente cruza esse céu. Ela só aparece com a janela do app em foco e não aparece se o Windows estiver com os efeitos de animação desligados.
 
@@ -405,8 +425,16 @@ no celular, e nada passa pela internet: o celular precisa estar no mesmo Wi-Fi d
   lado do QR. Se a página não abrir, confira se o celular está no mesmo Wi-Fi e se o Windows deixa o Tela P2P
   receber conexões na rede privada.
 
+## Ícone na bandeja
+
+O Tela P2P fica com um ícone na bandeja do Windows (perto do relógio), na cor do tema.
+
+- **O X da janela esconde, não fecha:** a call, a transmissão e as janelas flutuantes continuam. Na primeira vez, um aviso lembra onde o app ficou.
+- **Clique no ícone:** abre a janela de novo.
+- **Botão direito no ícone:** **Abrir o Tela P2P**, **Procurar atualização…**, **Mutar / desmutar microfone** e **Ensurdecer / voltar a ouvir** (só na sala), **Reiniciar o Tela P2P** e **Sair do Tela P2P**, que fecha de vez.
+
 ## Atualizações
 
 - **Sozinho:** o app procura versão nova no GitHub e com quem está na sala. Quando acha, um aviso no canto oferece **Atualizar agora**.
-- **Na mão:** **Procurar atualização**, no rodapé do Início.
+- **Na mão:** **Procurar atualização**, no rodapé do Início ou no menu do ícone da bandeja.
 - **Novidades:** depois de atualizar, o Início mostra uma vez o que mudou na versão. Para ver de novo, ou ver as versões anteriores, clique em **Novidades** no rodapé.

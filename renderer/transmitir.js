@@ -285,8 +285,8 @@ async function startSharing() {
   state.quality = QUALITY[radioValue('quality')] ? radioValue('quality') : '1080p30';
   const q = QUALITY[state.quality];
   const audioMode = $('soundOn').checked ? 'all' : 'none';
-  const encodeMode = radioValue('encodeMode') || 'per';
-  save('encodeMode', encodeMode);
+  const encodeMode = radioValue('encodeMode') || 'once';
+  save('encodeMode2', encodeMode);
   const excluded = audioMode === 'none' ? [] : appsLoaded() ? checkedApps() : savedExcludes();
   save('quality', state.quality);
   save('audioMode', audioMode);

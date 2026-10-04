@@ -427,6 +427,59 @@ function setupPaneFold() {
   setPaneFold(paneFold.which);
 }
 
+// ---------- Largura do chat e da voz ----------
+// Uma alça na borda do painel que dá para o vídeo (a esquerda; com a interface espelhada, a direita). Arrastar muda a
+// largura e o vídeo se ajusta; fica salva em appPreferences.appearance.paneWidth. Dois cliques voltam à automática.
+// Nunca passa de 55% da janela, para sobrar palco.
+function savePaneWidth(px) {
+  appPreferences.appearance = { ...appPreferences.appearance, paneWidth: AppPreferences.paneWidth(px) };
+  saveAppPreferences();
+}
+function setupPaneResize(host) {
+  const grip = document.createElement('div');
+  grip.className = 'pane-resize';
+  grip.tabIndex = 0;
+  grip.setAttribute('role', 'separator');
+  grip.setAttribute('aria-orientation', 'vertical');
+  grip.setAttribute('aria-label', 'Largura do chat e da voz');
+  grip.title = 'Arraste para mudar a largura. Dois cliques voltam ao normal.';
+  host.append(grip);
+  const { min, max } = AppPreferences.paneLimits;
+  const limit = (px) => Math.max(min, Math.min(max, innerWidth * 0.55, Math.round(px)));
+  const mirrored = () => document.documentElement.dataset.mirror === 'on';
+  let drag = null;
+  grip.onpointerdown = (e) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    const r = host.getBoundingClientRect();
+    drag = { edge: mirrored() ? r.left : r.right, width: r.width, moved: false };
+    grip.setPointerCapture(e.pointerId);
+    document.body.classList.add('pane-resizing');
+  };
+  grip.onpointermove = (e) => {
+    if (!drag) return;
+    drag.width = limit(mirrored() ? e.clientX - drag.edge : drag.edge - e.clientX);
+    drag.moved = true;
+    applyPaneWidth(drag.width);
+  };
+  const end = () => {
+    if (!drag) return;
+    if (drag.moved) savePaneWidth(drag.width); // só clicar não fixa a largura automática
+    drag = null;
+    document.body.classList.remove('pane-resizing');
+  };
+  grip.onpointerup = end;
+  grip.onpointercancel = end;
+  grip.ondblclick = () => savePaneWidth(0);
+  // Teclado: setas mudam de 20 em 20 px (a seta aponta para onde a borda vai)
+  grip.onkeydown = (e) => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    e.preventDefault();
+    const grow = (e.key === 'ArrowLeft') !== mirrored();
+    savePaneWidth(limit(host.getBoundingClientRect().width + (grow ? 20 : -20)));
+  };
+}
+
 function setupWorkspace() {
   setupConnectionMap();
   const host = $('workspacePanes');
@@ -435,6 +488,7 @@ function setupWorkspace() {
   setupPaneSplit(host);
   setupPaneFold();
   host.append($('peoplePop'));
+  setupPaneResize(host);
   document.body.append($('profilePane'), $('generalSettingsDialog'));
   $('sidePanel').hidden = true;
   $('generalSettingsDialog').setAttribute('aria-labelledby', 'generalSettingsTitle');

@@ -246,3 +246,7 @@
     var(--bracket), #030304;
 }
 :root[data-skin="arasaka"] .voice-sky .sky-link { stroke: rgba(255, 31, 79, .55); stroke-dasharray: 3 2; }
+
+/* Interface espelhada (Aparência › Espelhar a interface): o nome em pé e a linha vermelha vão para a direita */
+:root[data-skin="arasaka"][data-mirror="on"] .home-screen::before { left: auto; right: 26px; }
+:root[data-skin="arasaka"][data-mirror="on"] .home-screen::after { left: auto; right: 150px; }

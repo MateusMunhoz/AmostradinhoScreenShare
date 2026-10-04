@@ -1,6 +1,6 @@
 {
   "name": "tela-p2p",
-  "version": "1.15.1",
+  "version": "1.15.8",
   "description": "Configurações e Personalização de Layout",
   "main": "boot.js",
   "scripts": {
@@ -10,6 +10,7 @@
     "test": "node --test tests/*.test.js",
     "test:settings": "node tests/settings-run.cjs",
     "test:rtc": "electron tests/rtc-smoke.cjs",
+    "test:clipe": "electron tests/e2e/clipe.cjs && electron tests/e2e/clipe-faixa.cjs",
     "test:e2e": "node tests/e2e/rodar.js",
     "dist": "electron-builder --win portable",
     "dist:eva": "electron-builder --win portable -c.win.icon=assets/icone/tela-p2p-eva.ico",
@@ -57,6 +58,7 @@
       "styles-eva.css",
       "styles-dusol.css",
       "styles-diluna.css",
+      "styles-renascenca.css",
       "renderer/**",
       "assets/audio/**",
       "assets/icone/**",

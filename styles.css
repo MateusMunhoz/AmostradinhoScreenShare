@@ -826,6 +826,8 @@ fieldset.group > legend { margin-bottom: 10px; }
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 .toast.error { border-color: var(--warn); }
+.toast.has-action { pointer-events: auto; display: flex; align-items: center; gap: 12px; } /* aviso com botão (clipe salvo) */
+.toast-action { flex: none; }
 
 @media (max-width: 700px) {
   .stat-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -2193,3 +2195,33 @@ body:has(.modal:not([hidden]), #hubBody:not([hidden]), #dmPanel:not([hidden]), #
 /* O cartão de perfil também sobe do pé da lista de Pessoas da sala */
 #peoplePop > .sky-focus.sky-page, #peoplePop > .sky-focus.sky-page.has-bg { position: sticky; inset: auto; bottom: -12px; z-index: 3; flex: none;
   margin: auto -10px -12px; max-height: none; overflow: visible; }
+
+/* Interface espelhada (Aparência › Espelhar a interface; renderer/configuracoes.js põe data-mirror): o HUB vai para a
+   direita e a barrinha, o chat e a voz para a esquerda. Só troca os lados; tamanhos e ordem continuam os mesmos */
+:root[data-mirror="on"] main { margin-left: var(--rail-w); margin-right: var(--hub-w); }
+:root[data-mirror="on"] #workspaceNav { right: auto; left: 0; border-left: 0; border-right: 1px solid var(--line); }
+:root[data-mirror="on"] #workspacePanes { right: auto; left: calc(16px + var(--rail-w)); }
+:root[data-mirror="on"] .workspace-wide #workspacePanes { left: calc(16px + var(--rail-w)); right: calc(16px + var(--hub-w)); }
+:root[data-mirror="on"] .voice-side #voiceDialog { left: auto; right: calc(16px + var(--hub-w)); }
+:root[data-mirror="on"] .voice-side.workspace-wide #workspacePanes { left: calc(16px + var(--rail-w)); right: calc(var(--workspace-width) + 28px + var(--hub-w)); }
+:root[data-mirror="on"] .workspace-brand { left: calc(24px + var(--rail-w)); }
+:root[data-mirror="on"] .update-banner { right: calc(16px + var(--hub-w)); }
+:root[data-mirror="on"] .hub-rail { left: auto; right: 0; border-right: 0; border-left: 1px solid var(--line); }
+:root[data-mirror="on"] .hub-rail.open { box-shadow: -12px 0 40px rgba(0, 0, 0, .5); }
+:root[data-mirror="on"] .dm-bar { left: var(--rail-w); right: var(--hub-w); }
+:root[data-mirror="on"] .has-dm-bar .dm-bar { left: var(--rail-w); right: 0; }
+:root[data-mirror="on"] .theme-decor { left: var(--rail-w); }
+:root[data-mirror="on"] .has-workspace-pane:not(.workspace-wide) main { padding-right: 0; padding-left: calc(var(--workspace-width) + 12px); }
+:root[data-mirror="on"] .voice-side main { padding-left: 0; padding-right: calc(var(--workspace-width) + 12px); }
+:root[data-mirror="on"] .voice-side.has-workspace-pane:not(.workspace-wide) main { padding-left: calc(var(--workspace-width) + 12px); }
+
+/* Alça da largura do chat e da voz (renderer/navegacao.js › setupPaneResize): na borda que dá para o vídeo, no vão entre
+   os dois. Some no modo largo (chat e voz ocupando a sala toda) */
+.pane-resize { position: absolute; top: 0; bottom: 0; left: -11px; z-index: 5; width: 8px; cursor: col-resize; touch-action: none; }
+.pane-resize::after { content: ""; position: absolute; top: 12px; bottom: 12px; left: 3px; width: 2px; border-radius: 2px; background: transparent; transition: background .12s; }
+.pane-resize:hover::after, .pane-resize:focus-visible::after, .pane-resizing .pane-resize::after { background: var(--accent); }
+.pane-resize:focus-visible { outline: none; }
+.workspace-wide .pane-resize { display: none; }
+:root[data-mirror="on"] .pane-resize { left: auto; right: -11px; }
+.pane-resizing { cursor: col-resize; user-select: none; }
+.pane-resizing :is(iframe, video, webview) { pointer-events: none; }

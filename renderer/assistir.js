@@ -83,6 +83,12 @@ function createTile(id, name) {
   focusBtn.className = 'btn icon';
   focusBtn.hidden = true; // só com 2 ou mais transmissões abertas
   focusBtn.onclick = () => setFocus(state.focus === id ? null : id);
+  // Tesoura: salva os últimos segundos (renderer/clipes.js); só aparece quando já há o que clipar
+  const clipBtn = document.createElement('button');
+  clipBtn.className = 'btn icon';
+  clipBtn.hidden = true;
+  setIcon(clipBtn, 'scissors', 'Salvar clipe');
+  clipBtn.onclick = () => saveClip(id);
   const fs = document.createElement('button');
   fs.className = 'btn icon';
   setFsIcon(fs, false);
@@ -91,12 +97,14 @@ function createTile(id, name) {
   close.className = 'btn icon';
   setIcon(close, 'close', 'Parar de assistir');
   close.onclick = () => stopWatching(id);
-  bar.append(barSpace, mute, vol, pipBtn, focusBtn, fs, close);
+  bar.append(barSpace, mute, vol, clipBtn, pipBtn, focusBtn, fs, close);
   label.append(bar); // os controles ficam na faixa do nome, sempre à vista
   // Qualidade que está chegando: altura do vídeo e quadros por segundo (medidos a cada 2 s). Em pausa, só a altura.
   let lastFrames = null;
   const qualityTimer = setInterval(() => {
     if (!el.isConnected) return clearInterval(qualityTimer);
+    clipBtn.hidden = !clipReady(id);
+    if (!clipBtn.hidden) clipBtn.title = clipBtn.ariaLabel = `Salvar clipe dos últimos ${clipSeconds()} s (${accelLabel(shortcutKeys.clip || '')})`;
     const h = video.videoHeight;
     quality.hidden = !h;
     if (!h) return;

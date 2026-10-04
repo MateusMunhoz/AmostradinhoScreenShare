@@ -3,6 +3,55 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.15.8",
+    "date": "2026-10-03",
+    "items": [
+      "feat: adiciona tema Renascença"
+    ]
+  },
+  {
+    "version": "1.15.7",
+    "date": "2026-10-03",
+    "items": [
+      "Clipes: som da transmissão, duração escolhida e modo uma por pessoa"
+    ]
+  },
+  {
+    "version": "1.15.6",
+    "date": "2026-10-03",
+    "items": [
+      "Clipes: salvar os últimos 30 s de uma transmissão em MP4"
+    ]
+  },
+  {
+    "version": "1.15.5",
+    "date": "2026-10-03",
+    "items": [
+      "Chat e voz: arrastar a borda para mudar a largura do painel"
+    ]
+  },
+  {
+    "version": "1.15.4",
+    "date": "2026-10-03",
+    "items": [
+      "Aparência: espelhar a interface (HUB na direita, barrinha, chat e voz na esquerda)"
+    ]
+  },
+  {
+    "version": "1.15.3",
+    "date": "2026-10-03",
+    "items": [
+      "Ícone na bandeja: abrir, procurar atualização, mutar, reiniciar e sair (#20)"
+    ]
+  },
+  {
+    "version": "1.15.2",
+    "date": "2026-10-03",
+    "items": [
+      "Modo Internet já vem com o servidor da equipe; Hyperswarm deixado de lado (#19)"
+    ]
+  },
+  {
     "version": "1.15.1",
     "date": "2026-10-03",
     "items": [
@@ -22,62 +71,6 @@ const NOVIDADES = [
     "items": [
       "add versao",
       "Salas dos amigos pela internet: entre com um clique na sala que um amigo do Razze abriu"
-    ]
-  },
-  {
-    "version": "1.13.0",
-    "date": "2026-10-02",
-    "items": [
-      "ajustes UI e temas novos",
-      "add logo"
-    ]
-  },
-  {
-    "version": "1.12.13",
-    "date": "2026-10-02",
-    "items": [
-      "add ajuste de interface",
-      "Protótipo: ponte da sala pela HyperDHT, sem servidor do projeto (#17)",
-      "Estrela cadente de vez em quando no céu da tela inicial (#16)",
-      "Docs: meta do briefing para 50+ e nova ordem do roadmap (#15)"
-    ]
-  },
-  {
-    "version": "1.12.12",
-    "date": "2026-10-02",
-    "items": [
-      "Mapa: cartão do canal no sol; música aparece para quem entra na sala; mapa continua girando fora de foco",
-      "Build do .dmg para Mac automático a cada Release"
-    ]
-  },
-  {
-    "version": "1.12.11",
-    "date": "2026-10-01",
-    "items": [
-      "Voz: opção em Aparência para esconder o céu em cima da lista"
-    ]
-  },
-  {
-    "version": "1.12.10",
-    "date": "2026-10-01",
-    "items": [
-      "Início: novidades de cada versão, com o que mudou e as versões anteriores"
-    ]
-  },
-  {
-    "version": "1.12.9",
-    "date": "2026-10-01",
-    "items": [
-      "Razze: carregar conta, amigos e mensagens ao abrir o app, sem precisar abrir a aba Rede",
-      "Amigos: busca única com Adicionar, chips de filtro, menu ⋯ com remoção confirmada na linha; ícones centrados nos botões"
-    ]
-  },
-  {
-    "version": "1.12.8",
-    "date": "2026-10-01",
-    "items": [
-      "Chat: /musica com prévia do vídeo; players do YouTube isolados (sandbox); Ao vivo com miniatura e quem assiste",
-      "Lista de opções não fecha mais quando um painel sem relação rola (#13)"
     ]
   }
 ];
