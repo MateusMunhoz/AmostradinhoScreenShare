@@ -1,5 +1,5 @@
 'use strict';
-// Configurações gerais › Celular (docs/spec/config-no-celular.md): guardar as configurações num arquivo cifrado no
+// Configurações › Celular (docs/spec/config-no-celular.md): guardar as configurações num arquivo cifrado no
 // celular e trazer de volta em qualquer PC, pelo Wi-Fi, com QR code e senha. A senha só existe neste PC; o celular
 // guarda e devolve o arquivo (main/celular.js serve a página dele). O que vai e a validação: renderer/celular-modelo.js.
 // Script clássico: divide o escopo global com os outros (ordem no index.html). Usa de: util, preferencias-modelo, qr,

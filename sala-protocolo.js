@@ -96,7 +96,27 @@ function createMusicas(seed, now = Date.now) {
     if (!videoId || map.has(ch)) continue;
     map.set(ch, { ch, videoId, title: cleanTitle(m.title), by: /^\d{1,6}$/.test(String(m.by || '')) ? String(m.by) : '', playing: m.playing !== false, pos: cleanPos(m.pos), at: now() });
   }
-  return { map, now, msg: () => ({ type: 'musicas', list: [...map.values()], now: now() }) };
+  // sozinha: canal -> desde quando a música está sem ninguém no canal e sem ninguém ouvindo (limparMusicas)
+  return { map, now, sozinha: new Map(), msg: () => ({ type: 'musicas', list: [...map.values()], now: now() }) };
+}
+// Tira sozinho as músicas esquecidas: pausada há mais de 4 min, ou 1 min sem ninguém no canal e sem ninguém ouvindo
+// (tocando ou não). Pausada, "at" é o instante da pausa. Os servidores chamam de tempos em tempos; true se tirou alguma.
+const MUSICA_PAUSADA_MS = 4 * 60 * 1000, MUSICA_SOZINHA_MS = 60 * 1000;
+function limparMusicas(musicas, members) {
+  const t = musicas.now();
+  let changed = false;
+  for (const [ch, m] of musicas.map) {
+    let gente = false;
+    for (const x of members.values()) if ((x.voiceSession && channelOf(x) === ch) || x.ouvindo?.has(ch)) { gente = true; break; }
+    if (gente) musicas.sozinha.delete(ch);
+    else if (!musicas.sozinha.has(ch)) musicas.sozinha.set(ch, t);
+    if ((!m.playing && t - m.at >= MUSICA_PAUSADA_MS) || (!gente && t - musicas.sozinha.get(ch) >= MUSICA_SOZINHA_MS)) {
+      musicas.map.delete(ch);
+      musicas.sozinha.delete(ch);
+      changed = true;
+    }
+  }
+  return changed;
 }
 // O canal de alguém: o da voz; fora da voz, a Voz geral
 const channelOf = (m) => (m.voiceSession ? m.voiceChannel || '' : '');
@@ -176,6 +196,12 @@ function handleMemberMessage({ members, broadcast, chat, subsalas = null, musica
     if (musicas.map.has(ch)) return send(me.ws, { type: 'musica-erro', text: `Já tem uma música em ${channelLabel(ch)}. Troque ou pare a que está tocando.` });
     musicas.map.set(ch, { ch, videoId, title: cleanTitle(msg.title), by: id, playing: true, pos: 0, at: musicas.now() });
     broadcast(musicas.msg());
+  } else if (msg.type === 'musica-ouvindo' && musicas) {
+    // Abriu ou fechou a tela da música (Ouvir): conta como gente para limparMusicas, mesmo fora do canal
+    const ch = cleanChannel(msg.ch);
+    me.ouvindo ??= new Set();
+    if (msg.on === true && musicas.map.has(ch) && me.ouvindo.size <= SUBSALAS_MAX) me.ouvindo.add(ch);
+    else if (msg.on !== true) me.ouvindo.delete(ch);
   } else if (msg.type === 'musica-ctl' && musicas) {
     const ch = cleanChannel(msg.ch), m = musicas.map.get(ch);
     if (!m) return;
@@ -230,5 +256,5 @@ function handleMemberMessage({ members, broadcast, chat, subsalas = null, musica
 
 module.exports = {
   MAX_MEMBERS, CHAT_KEEP, SUBSALAS_MAX, send, cleanShareInfo, cleanHash, cleanNameFont, cleanAddrs, cleanSessao, cleanClient,
-  cleanChannel, createSubsalas, cleanVideoId, createMusicas, newMember, memberInfo, createChat, handleMemberMessage,
+  cleanChannel, createSubsalas, cleanVideoId, createMusicas, limparMusicas, newMember, memberInfo, createChat, handleMemberMessage,
 };

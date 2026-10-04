@@ -67,6 +67,8 @@
       "voice.js",
       "encode-once.js",
       "pcm-worklet.js",
+      "renderer/porta-microfone.js",
+      "renderer/rnnoise-vad-worklet.js",
       "vendor/**"
     ],
     "win": {

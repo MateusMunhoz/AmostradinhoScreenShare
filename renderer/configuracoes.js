@@ -148,18 +148,24 @@ function renderGeneralSettings() {
   $('notificationVolume').value = appPreferences.sounds.volume;
   $('notificationVolumeValue').textContent = `${appPreferences.sounds.volume}%`;
 }
-function openGeneralSettings() {
+// tab: a aba que abre (voice, shortcuts, skin, appearance, colors, sounds, phone, perf, stream); sem ela, a última
+function openGeneralSettings(tab) {
+  if (typeof tab !== 'string') tab = null; // pelo onclick chega o evento
   if (!$('friendsDialog').hidden) closeFriendsDialog();
   if (!$('profilePane').hidden) closeProfilePopup();
   if (!$('networkDialog').hidden) closeNetworkDialog();
   settingsReturnFocus = document.activeElement;
   renderGeneralSettings();
   $('generalSettingsDialog').hidden = false;
+  const name = tab || settingsTabNow || load('settingsTab') || 'appearance';
+  settingsTabNow = null; // o grupo entra de novo (liga o medidor do microfone ou os números das estatísticas)
+  showSettingsTab(name);
   syncWorkspace();
   setUtilityBackground(true);
   $('closeGeneralSettings').focus();
 }
 function closeGeneralSettings() {
+  settingsGroupChanged(settingsGroupOf(settingsTabNow), null);
   $('generalSettingsDialog').hidden = true;
   if (phone.modo) cancelPhone(); // o servidor da rede local do Celular não fica aberto com as configurações fechadas
   syncWorkspace();
@@ -397,29 +403,66 @@ function setupAppearance() {
     $('loadLocalFonts').disabled = false;
   };
 }
-// Abas das configurações: Tema, Aparência, Cores e Sons (a rede tem a própria janela, networkDialog). Lembra a última aberta.
+// Configurações: os grupos na barra da esquerda (Voz e atalhos, Aparência, Sons, Celular, Estatísticas) e as abas do
+// grupo no topo (só quando ele tem mais de uma). Cada grupo lembra a última aba; a janela lembra a última de todas.
+let settingsTabNow = null;
+const settingsTabs = () => [...document.querySelectorAll('.settings-tabs [role=tab]')];
+const settingsGroupOf = (name) => settingsTabs().find((t) => t.dataset.tab === name)?.dataset.group || null;
+const settingsOpenOn = (group) => !$('generalSettingsDialog').hidden && settingsGroupOf(settingsTabNow) === group;
 function showSettingsTab(name, focus = false) {
-  const tabs = [...document.querySelectorAll('.settings-tabs [role=tab]')];
+  const tabs = settingsTabs();
   const tab = tabs.find((t) => t.dataset.tab === name) || tabs[0];
+  const group = tab.dataset.group, before = settingsGroupOf(settingsTabNow);
+  const panel = (t) => t.dataset.panel || t.dataset.tab;
+  settingsTabNow = tab.dataset.tab;
   for (const t of tabs) {
-    const on = t === tab;
-    t.setAttribute('aria-selected', String(on));
-    t.tabIndex = on ? 0 : -1;
-    $('settingsPanel-' + t.dataset.tab).hidden = !on;
+    t.hidden = t.dataset.group !== group;
+    t.setAttribute('aria-selected', String(t === tab));
+    t.tabIndex = t === tab ? 0 : -1;
   }
-  save('settingsTab', tab.dataset.tab);
+  for (const id of new Set(tabs.map(panel))) $('settingsPanel-' + id).hidden = id !== panel(tab);
+  document.querySelector('.settings-tabs').hidden = tabs.filter((t) => t.dataset.group === group).length < 2;
+  for (const b of document.querySelectorAll('.settings-nav [data-group]')) {
+    if (b.dataset.group === group) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current');
+  }
+  save('settingsTab', settingsTabNow);
+  save('settingsTab:' + group, settingsTabNow);
+  if ($('generalSettingsDialog').hidden) return;
+  if (group === 'stats') setStatsTab(settingsTabNow);
+  settingsGroupChanged(before, group);
   if (focus) tab.focus();
 }
+// Entrar e sair de um grupo liga e desliga o que só corre com ele à vista
+function settingsGroupChanged(before, now) {
+  if (before === now) return;
+  if (before === 'voz') leaveVoiceSettings();
+  if (before === 'stats') leaveStats();
+  if (now === 'voz') enterVoiceSettings();
+  if (now === 'stats') enterStats();
+}
 function setupSettingsTabs() {
-  const tabs = [...document.querySelectorAll('.settings-tabs [role=tab]')];
+  const tabs = settingsTabs();
   for (const t of tabs) {
     t.onclick = () => showSettingsTab(t.dataset.tab);
     t.onkeydown = (e) => {
-      const i = tabs.indexOf(t);
-      const next = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: tabs.length - 1 }[e.key];
+      const mine = tabs.filter((x) => !x.hidden);
+      const i = mine.indexOf(t);
+      const next = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: mine.length - 1 }[e.key];
       if (next === undefined) return;
       e.preventDefault();
-      showSettingsTab(tabs[(next + tabs.length) % tabs.length].dataset.tab, true);
+      showSettingsTab(mine[(next + mine.length) % mine.length].dataset.tab, true);
+    };
+  }
+  const groups = [...document.querySelectorAll('.settings-nav [data-group]')];
+  for (const b of groups) {
+    const g = b.dataset.group;
+    b.onclick = () => showSettingsTab(load('settingsTab:' + g) || tabs.find((t) => t.dataset.group === g).dataset.tab);
+    b.onkeydown = (e) => {
+      const i = groups.indexOf(b);
+      const next = { ArrowDown: i + 1, ArrowUp: i - 1, Home: 0, End: groups.length - 1 }[e.key];
+      if (next === undefined) return;
+      e.preventDefault();
+      groups[(next + groups.length) % groups.length].focus();
     };
   }
   showSettingsTab(load('settingsTab') || 'appearance');
@@ -491,7 +534,7 @@ function setupGeneralSettings() {
   };
   $('resetColors').onclick = () => { appPreferences.colors = { ...AppPreferences.defaults.colors }; renderGeneralSettings(); saveAppPreferences(); };
   $('openGeneralSettingsRoom').onclick = openGeneralSettings;
-  setIcon($('openGeneralSettingsRoom'), 'sliders', 'Configurações gerais: cores e sons');
+  setIcon($('openGeneralSettingsRoom'), 'sliders', 'Configurações: voz, aparência, sons e estatísticas');
   $('closeGeneralSettings').onclick = closeGeneralSettings;
   renderGeneralSettings();
   window.addEventListener('beforeunload', () => appSounds.stopAll());

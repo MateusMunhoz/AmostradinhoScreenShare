@@ -45,6 +45,7 @@ function setPeopleOpen(open) {
   $('peoplePop').hidden = !open;
   $('peopleBtn').setAttribute('aria-expanded', String(open));
   if (!open) closePersonCard();
+  if (!open && typeof skyFocusFrom !== 'undefined' && skyFocusFrom === 'pessoas') closeSkyProfile();
 }
 
 function chatAtBottom() {
@@ -69,6 +70,8 @@ function renderUnread() {
   $('navUnread').textContent = n > 99 ? '99+' : String(n);
   $('chatUnread').hidden = !n;
   $('chatUnread').textContent = n > 99 ? '99+' : String(n);
+  $('chatFoldUnread').hidden = !n; // chat recolhido: as novas no título (setupPaneFold)
+  $('chatFoldUnread').textContent = n === 1 ? '1 nova' : `${n > 99 ? '99+' : n} novas`;
   $('mapChatUnread').hidden = !n;
   $('mapChatUnread').textContent = n === 1 ? '1 nova' : `${n > 99 ? '99+' : n} novas`;
   const label = chat.open ? 'Recolher o painel da sala'
@@ -98,7 +101,6 @@ function resetChat(welcome) {
   clearStaged(); // sala nova: nada da bandeja da sala anterior
   $('chatSend').disabled = !chat.supported || !$('chatInput').value.trim();
   for (const m of (welcome && welcome.chat) || []) appendMessage(m, false);
-  $('chatEmpty').hidden = !!$('chatList').children.length || !chat.supported;
   setPanelOpen(workspaceViews.chat);
   requestAnimationFrame(scrollChatToEnd);
 }
@@ -125,7 +127,6 @@ function onChatMessage(m) {
     chat.lastMsg = null;
   }
   appendMessage(m, true);
-  $('chatEmpty').hidden = true;
   if (m.from === state.myId || (chat.open && wasBottom && !document.hidden)) scrollChatToEnd();
   if (unseen) {
     chat.unread++;

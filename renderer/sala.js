@@ -356,6 +356,7 @@ async function rejoin(host, timeoutMs) {
   state.musicaOn = (welcome.features || []).includes('musica');
   setSubsalas((welcome.features || []).includes('subsalas') ? welcome.subsalas : null);
   setMusicas(state.musicaOn ? welcome.musicas : [], welcome.now);
+  if (state.musicaOn) resendListening();
   if (!state.isOwner && !state.cloud) save('roomAddr', `${host}:${state.port}`);
   const present = new Set(welcome.members.map((m) => m.id));
   for (const m of state.members.values()) delete m.back;

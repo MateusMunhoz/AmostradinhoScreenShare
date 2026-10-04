@@ -170,11 +170,11 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 
 /* Campos e botões */
 .field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted); }
-.field > input, .field select, .field .select-btn {
+.field > input, .field .profile-name-box > input, .field select, .field .select-btn {
   font: inherit; font-size: 15px; color: var(--text); background: var(--bg);
   border: 1px solid var(--field-line); border-radius: 8px; padding: 10px 12px; min-width: 0;
 }
-.field > input:focus, .field select:focus, .field .select-btn:focus-visible, .field .select-btn[aria-expanded=true] { border-color: var(--accent); outline: none; }
+.field > input:focus, .field .profile-name-box > input:focus, .field select:focus, .field .select-btn:focus-visible, .field .select-btn[aria-expanded=true] { border-color: var(--accent); outline: none; }
 .btn {
   font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; border-radius: 6px;
   padding: 10px 18px; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); box-shadow: var(--lift);
@@ -231,13 +231,14 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 @keyframes eq { 0%, 100% { transform: scaleY(.3); } 50% { transform: scaleY(1); } }
 @media (prefers-reduced-motion: reduce) { .eq > span { animation: none; transform: scaleY(.7); } }
 .speaking .eq, .voice-me .eq { display: inline-flex; }
-.speaking > .avatar, .avatar.speaking, .voice-avatar.speaking .avatar { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--ok); }
+.speaking > .avatar, .speaking > .member-face > .avatar, .avatar.speaking, .voice-avatar.speaking .avatar { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--ok); }
 .tile.speaking::after { content: ""; position: absolute; inset: 0; border: 2px solid var(--ok); border-radius: inherit; pointer-events: none; z-index: 3; animation: speak-blink 1.1s ease-in-out infinite; }
 .tile.speaking .tile-name { background: var(--ok-soft); }
 @keyframes speak-blink { 50% { opacity: .3; } }
 @media (prefers-reduced-motion: reduce) { .tile.speaking::after { animation: none; } }
 
 #overlayToggle.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+body:not(.workspace-in-room) #workspaceNav .rail-overlay { display: none; }
 
 /* Voz na barra de baixo */
 .voice-dock { display: flex; align-items: center; gap: 6px; }
@@ -521,6 +522,12 @@ kbd { font-family: Consolas, monospace; font-size: 11px; color: var(--muted); bo
   color: var(--bg); font-size: 13px; font-weight: 700; display: grid; place-items: center; user-select: none;
 }
 /* Foto de perfil no lugar da inicial (renderer/fotos.js) */
+/* Host na lista: coroinha no canto do avatar; com o mouse na pessoa, um "Host" pequeno em cima do avatar */
+.member-face { position: relative; flex: none; display: inline-flex; }
+.host-badge { position: absolute; right: -4px; bottom: -4px; width: 15px; height: 15px; border-radius: 50%; background: var(--panel); display: grid; place-items: center; color: #E5C07B; pointer-events: none; }
+.host-badge svg { width: 10px; height: 10px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linejoin: round; }
+.member-face.is-host::after { content: "Host"; position: absolute; left: 50%; bottom: calc(100% + 4px); translate: -50% 0; padding: 1px 6px; border-radius: 4px; background: var(--panel-2); color: var(--muted); font-size: 10.5px; line-height: 1.4; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .12s; z-index: 2; }
+.member:hover .member-face.is-host::after { opacity: 1; transition-delay: .3s; }
 .avatar.photo, #navProfileAvatar.photo { background-size: cover !important; background-position: center !important; background-repeat: no-repeat; color: transparent !important; }
 .msg-line .avatar { display: inline-block; width: 18px; height: 18px; margin-right: 6px; vertical-align: -4px; }
 /* Sem foto: uma estrela de quatro pontas sobre fundo escuro, na cor da pessoa (--star, renderer/fotos.js) */
@@ -672,12 +679,9 @@ html .chat-form #chatSend:disabled { opacity: 1; background: transparent; border
 
 /* Estatísticas */
 .modal.global { position: fixed; z-index: 20; }
-.dialog.stats { width: min(780px, 100%); overflow-y: auto; }
 .stat-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 .stat-group { margin: 4px 0 -6px; }
 .stat-card { min-width: 0; display: flex; flex-direction: column; gap: 3px; padding: 12px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); }
-.stats-tabs { align-self: flex-start; }
-.stats-tabs button { flex: none; padding: 0 18px; }
 .stats-panel { display: flex; flex-direction: column; gap: 16px; }
 .stream-list { display: flex; flex-direction: column; gap: 10px; }
 .stream-card { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
@@ -839,7 +843,7 @@ fieldset.group > legend { margin-bottom: 10px; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 
 /* Voz e atalhos */
-.dialog.voice-dialog { width: min(520px, 100%); overflow-y: auto; gap: 18px; }
+.settings-section.voice-dialog { gap: 18px; }
 .dialog-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .dialog-head h2 { margin: 0; font-size: 18px; }
 .vd-section { display: flex; flex-direction: column; gap: 10px; }
@@ -862,6 +866,7 @@ fieldset.group > legend { margin-bottom: 10px; }
 .voice-me.ptt-open { color: var(--ok); }
 .vd-meter-bar { position: relative; }
 .vd-meter-bar #gateMark { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--primary); left: 50%; }
+.vd-ambient { margin: 0; color: var(--muted); }
 .vd-slider { display: flex; align-items: center; gap: 12px; }
 .vd-slider input[type="range"] { flex: 1; accent-color: var(--accent); }
 .vd-slider input[type="range"]:disabled { opacity: .45; }
@@ -941,7 +946,7 @@ fieldset.group > legend { margin-bottom: 10px; }
 }
 .tile-overlay, .chat-drop { background: var(--theme-glass); }
 .btn:not(.primary):not(.ghost):not(.danger):not(.on):not(.live) { color: var(--surface-text); }
-.field > input, .field select, .field .select-btn { color: var(--surface-text); background: var(--sunken); }
+.field > input, .field .profile-name-box > input, .field select, .field .select-btn { color: var(--surface-text); background: var(--sunken); }
 .join-panel .field > input { background: var(--sunken); }
 .general-settings input[type=text], .general-settings input[type=email], .general-settings input[type=password], .general-settings input[type=url], .general-settings select, .general-settings .select-btn { color: var(--surface-text); background: var(--sunken); border: 1px solid var(--field-line); border-radius: 6px; padding: 8px 10px; font: inherit; }
 .general-settings { --text: var(--surface-text); --text-2: var(--surface-text-2); --muted: var(--surface-muted); background: var(--panel); color: var(--text); width: min(680px, 100%); overflow-y: auto; }
@@ -1047,7 +1052,9 @@ body:not(.workspace-in-room) .nav-sep { display: none; }
 .rail-music-vol svg { flex: none; width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .rail-music-vol input { flex: 1; min-width: 0; accent-color: var(--accent); }
 .rail-music-vol output { flex: none; width: 36px; text-align: right; font-variant-numeric: tabular-nums; }
-#workspaceNav .rail-leave:hover:not(:disabled) { color: var(--warn); border-color: var(--warn); }
+#workspaceNav .rail-leave { color: #E26B6B; }
+#workspaceNav .rail-leave:hover:not(:disabled) { color: #F08F8F; border-color: rgba(226, 107, 107, .45); background: rgba(226, 107, 107, .1); }
+.rail-leave-sep:has(+ #leaveBtn[hidden]) { display: none; }
 .workspace-tab { display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 0 8px; border-radius: 6px; border: 1px solid transparent; background: transparent; color: var(--surface-text); font: inherit; font-size: 12px; cursor: pointer; white-space: nowrap; position: relative; }
 .workspace-tab:hover { background: var(--panel-2); }
 /* Chat, Voz e Transmissão ligados é o normal: tingido e discreto, sem competir com as ações (desligado fica
@@ -1073,11 +1080,13 @@ body:not(.workspace-in-room) .nav-sep { display: none; }
 .pane-voice-actions .pane-toggle svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .pane-voice-actions .pane-toggle[aria-pressed=true] { border-color: var(--warn); color: var(--warn); background: var(--warn-soft); }
 /* Na voz: a faixa de controles fica embaixo da lista, separada por uma linha. Microfone, fone e Voz e atalhos só
-   com o ícone (o nome na dica); Sair da voz à direita, com texto, na cor de perigo */
+   com o ícone (o nome na dica). Sair fica no título (pílula vermelha, longe do microfone e do fone, que usam o laranja) */
 .voice-in-call .pane-voice-actions { flex-wrap: nowrap; align-items: center; margin: 10px 0 0; padding-top: 10px; border-top: 1px solid var(--line); }
 .pane-voice-actions .btn.icon { width: 32px; padding: 0; justify-content: center; }
-.pane-voice-actions .btn.icon svg, .pane-voice-actions .pane-leave svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.pane-voice-actions .pane-leave { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; }
+.pane-voice-actions .btn.icon svg, .pane-head .pane-leave svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.pane-head .pane-leave { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 10px; border-radius: 13px; border-color: rgba(226, 107, 107, .45); background: rgba(226, 107, 107, .1); color: #F08F8F; font-size: 12px; }
+.pane-head .pane-leave:hover:not(:disabled) { background: rgba(226, 107, 107, .2); border-color: #E26B6B; }
+.pane-head .pane-leave svg { width: 13px; height: 13px; }
 /* Fora da voz: Entrar largo e Nova subsala do lado. Na voz: + Subsala na faixa, separado do microfone e do fone */
 .pane-voice-actions .pane-join.primary { flex: 1; }
 .pane-voice-actions .pane-subsala { display: inline-flex; align-items: center; gap: 6px; }
@@ -1093,7 +1102,7 @@ body:not(.workspace-in-room) .nav-sep { display: none; }
 .voice-view button[aria-pressed=true] { background: var(--panel-2); color: var(--text); }
 .voice-view button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .voice-view button { display: grid; place-items: center; padding: 3px 7px; }
-/* Fixar o mapa: logo depois de Lista | Mapa (o espaço que empurra Voz e atalhos para a direita passa para ele) */
+/* Fixar o mapa: logo depois de Lista | Mapa (o espaço que empurra o Sair para a direita passa para ele) */
 .voice-view:has(+ .map-pin:not([hidden])) { margin-right: 0; }
 .map-pin { margin-right: auto; width: 28px; height: 28px; }
 .map-pin svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
@@ -1137,6 +1146,17 @@ body:not(.workspace-in-room) .nav-sep { display: none; }
 .sky-focus.sky-pop .sky-focus-back { top: 6px; left: auto; right: 6px; }
 /* Fundo do perfil (renderer/fundo-perfil.js): a imagem cobrindo, com o véu escuro por cima para o texto e os botões */
 .sky-focus.has-bg { background: linear-gradient(var(--scrim), var(--scrim)), var(--fundo) center / cover no-repeat, var(--sunken); }
+/* Perfil no mapa: uma faixa no topo da caixa do céu, com a órbita menor à esquerda e canal, nome e volume ao lado;
+   o mapa continua à vista embaixo. O fundo do perfil fica só nela, mais escuro do lado do texto */
+.sky-focus-info { width: 100%; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: inherit; }
+.sky-focus.sky-head { inset: 0 0 auto 0; flex-direction: row; justify-content: flex-start; gap: 12px; padding: 10px 48px 10px 10px;
+  border-radius: var(--radius) var(--radius) 0 0; border-bottom: 1px solid var(--line-strong); }
+.sky-head .sky-orbit { margin: calc((var(--orbit, 1) - 1) * 85px); }
+.sky-head .sky-focus-info { flex: 1; align-items: flex-start; gap: 4px; }
+.sky-head .sky-focus-back { left: auto; right: 6px; background: none; border-color: transparent; box-shadow: none; color: var(--text-2); }
+.sky-head .sky-focus-back:hover { background: none; color: var(--text); }
+.sky-focus.sky-head.has-bg { background: linear-gradient(90deg, color-mix(in srgb, var(--sunken) 85%, transparent) 35%, color-mix(in srgb, var(--sunken) 45%, transparent)),
+  linear-gradient(var(--scrim), var(--scrim)), var(--fundo) center / cover no-repeat, var(--sunken); }
 .sky-focus.sky-pop.has-bg { background: linear-gradient(var(--scrim), var(--scrim)), var(--fundo) center / cover no-repeat, var(--panel); }
 /* Na caixinha, a foto é maior (76 px em vez de 52, dentro da mesma órbita), e os selos acompanham a borda dela */
 .sky-pop .sky-orbit .avatar { left: 47px; top: 47px; width: 76px; height: 76px; font-size: 30px; }
@@ -1183,6 +1203,9 @@ body:not(.workspace-in-room) .nav-sep { display: none; }
 /* Mapa: o céu ocupa o lugar da lista; embaixo ficam só Nova subsala e quem transmite fora da voz */
 #voicePane.voice-map > .voice-sky-box { flex: 1 1 0; min-height: 170px; display: flex; margin-bottom: 10px; }
 .voice-sky-box { position: relative; }
+/* Na Lista sem céu, a caixa só segura o perfil aberto (ceu-voz.js › renderVoiceSky): sem altura e sem o desenho */
+.voice-sky-box.only-profile { height: 0; margin: 0; }
+.voice-sky-box.only-profile > :not(#skyFocus) { display: none !important; }
 /* No mapa, o céu preenche o espaço todo, liso (sem a carta com anéis da faixa da lista); dá para arrastar o fundo */
 #voiceSky.map { position: relative; flex: 1 1 auto; width: 100%; height: 100%; max-height: none; margin: 0; background: transparent; user-select: none; touch-action: none; cursor: grab; }
 /* O fundo do mapa fica na camada da fumaça, embaixo dele, do mesmo tamanho (ceu-voz.js › drawSkyNebulas) */
@@ -1221,7 +1244,7 @@ button.sky-card-info:hover:not(:disabled) .sky-card-go { color: var(--accent); }
 .sky-card-info strong { font: 500 13px var(--st-mono, inherit); letter-spacing: .06em; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sky-card-info span { font-size: 12px; color: var(--muted); }
 .sky-card-music { margin: 0; padding: 4px 8px 0; }
-.sky-card-nomusic { width: 100%; margin: 0; background: none; color: var(--muted); font: inherit; font-size: 12px; text-align: left; cursor: pointer; }
+.sky-card-nomusic { width: 100%; margin: 0; background: none; border-style: dashed; border-color: var(--line-strong); color: var(--muted); font: inherit; font-size: 12px; text-align: left; cursor: pointer; }
 .sky-card-nomusic:hover { border-color: var(--accent); }
 .sky-card-nomusic:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .sky-card-nomusic-text { flex: 1; }
@@ -1251,6 +1274,33 @@ button.sky-card-info:hover:not(:disabled) .sky-card-go { color: var(--accent); }
 #voicePane > #voicePaneMembers { flex: 0 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 /* Chat e voz abertos juntos: a voz ocupa só o que precisa (até metade), o chat fica com o resto */
 .workspace-in-room.has-workspace-pane:not(.workspace-wide) #chatTab:not([hidden]) ~ #voicePane { flex: 0 1 auto; max-height: 50%; }
+/* Divisória entre o chat e a voz (setupPaneSplit): fica no vão entre os dois, só quando os dois estão abertos */
+.pane-split { display: none; position: relative; flex: none; height: 12px; margin: -11px 0; cursor: row-resize; touch-action: none; z-index: 1; }
+/* Puxador: sempre à vista, discreto; com o mouse, arrastando ou com foco cresce e fica azul */
+.pane-split::after { content: ""; position: absolute; left: calc(50% - 12px); width: 24px; top: 5px; height: 2px; border-radius: 1px; background: var(--line-strong); transition: background .15s, left .15s, width .15s; }
+.pane-split:hover::after, .pane-split.dragging::after, .pane-split:focus-visible::after { left: 35%; width: 30%; background: var(--accent); }
+.pane-split:focus-visible { outline: none; }
+.workspace-in-room.has-workspace-pane:not(.workspace-wide) #chatTab:not([hidden]) + .pane-split:has(+ #voicePane:not([hidden])) { display: block; }
+/* Com tamanho escolhido: a voz fica com essa fração da coluna, na Lista e no Mapa */
+.workspace-in-room.has-workspace-pane:not(.workspace-wide) .voice-sized:not(.map-focus) #chatTab:not([hidden]) ~ #voicePane.workspace-pane { flex: 0 0 calc(var(--voice-split) * 100%); max-height: none; }
+/* Recolher (setPaneFold): a seta no título; recolhido, o painel vira só o título e o outro ocupa a coluna */
+.pane-fold { display: none; flex: none; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 5px; background: none; color: var(--muted); cursor: pointer; place-items: center; }
+.pane-fold:hover { background: var(--panel-2); color: var(--text); }
+.pane-fold:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.pane-fold svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform .15s; }
+.pane-fold[aria-expanded=false] svg { transform: rotate(-90deg); }
+.pane-fold-unread { display: none; }
+.workspace-in-room.has-workspace-pane:not(.workspace-wide) #chatTab:not([hidden]) ~ #voicePane:not([hidden]) .pane-fold,
+.workspace-in-room.has-workspace-pane:not(.workspace-wide) #chatTab:not([hidden]):has(~ #voicePane:not([hidden])) .pane-fold { display: grid; }
+.workspace-in-room.has-workspace-pane:not(.workspace-wide) .fold-chat #chatTab:not([hidden]):has(~ #voicePane:not([hidden])) { flex: none; cursor: pointer; }
+.fold-chat #chatTab:has(~ #voicePane:not([hidden])) > :not(.chat-head) { display: none !important; }
+.fold-chat #chatTab .chat-head { margin: 0; }
+.fold-chat #chatTab .pane-fold-unread:not([hidden]) { display: inline; margin-left: auto; padding: 1px 8px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); font-size: 12px; }
+.workspace-in-room.has-workspace-pane:not(.workspace-wide) #workspacePanes.fold-chat #chatTab:not([hidden]) ~ #voicePane.workspace-pane { flex: 1 1 0; max-height: none; }
+.workspace-in-room.has-workspace-pane:not(.workspace-wide) #workspacePanes.fold-voice #chatTab:not([hidden]) ~ #voicePane.workspace-pane { flex: none; max-height: none; cursor: pointer; }
+.fold-voice #chatTab:not([hidden]) ~ #voicePane > :not(.pane-head) { display: none !important; }
+.fold-voice #voicePane .pane-head { margin: 0; }
+.fold-chat #chatTab:not([hidden]) + .pane-split, .fold-voice #chatTab:not([hidden]) + .pane-split { display: none !important; }
 /* No Mapa, a voz divide o espaço com o chat meio a meio (o mapa cresce para preencher) */
 .workspace-in-room.has-workspace-pane:not(.workspace-wide) #chatTab:not([hidden]) ~ #voicePane.voice-map { flex: 1 1 0; max-height: none; }
 .profile-summary { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; overflow-wrap: anywhere; }
@@ -1261,17 +1311,6 @@ button.sky-card-info:hover:not(:disabled) .sky-card-go { color: var(--accent); }
 #workspacePanes .chat-form { flex: none; }
 #workspacePanes .people-pop { top: 50px; right: 8px; left: 8px; max-height: calc(100% - 60px); z-index: 8; }
 
-/* Voz e atalhos na sala: painel à esquerda, espelhando os painéis de chat e voz (renderer/microfone.js) */
-.voice-side #voiceDialog { position: fixed; inset: 16px auto 16px 16px; width: var(--workspace-width); padding: 0; background: none; display: flex; align-items: stretch; z-index: 11; } /* começa na altura da barra de atalhos da direita, acima do cabeçalho */
-.voice-side #voiceDialog .dialog { --text: var(--surface-text); --text-2: var(--surface-text-2); --muted: var(--surface-muted); width: 100%; max-height: none; flex: 1; min-height: 0; overflow-y: auto; color: var(--text); background: var(--panel); border-radius: 10px; padding: 16px; }
-.voice-side main { padding-left: calc(var(--workspace-width) + 12px); }
-/* Janela estreita com chat ou voz abertos à direita: empurrar as telas deixaria só uma tira no meio, então
-   Voz e atalhos fica por cima das telas (fecha no X) */
-@media (max-width: 1199px) {
-  .voice-side.has-workspace-pane:not(.workspace-wide) main { padding-left: 16px; }
-  .voice-side.has-workspace-pane:not(.workspace-wide) #voiceDialog .dialog { box-shadow: 0 12px 40px rgba(0, 0, 0, .55); }
-}
-.voice-side.workspace-wide #workspacePanes { left: calc(var(--workspace-width) + 28px); }
 
 .settings-pane .general-settings { width: auto; max-height: none; border: 0; padding: 0; overflow: visible; display: grid; gap: 16px; }
 .settings-pane .dialog-head h2 { font-size: 15px; }
@@ -1377,7 +1416,7 @@ button.sky-card-info:hover:not(:disabled) .sky-card-go { color: var(--accent); }
 .utility-popup { z-index: 30 !important; }
 .utility-popup .dialog { --text: var(--surface-text); --text-2: var(--surface-text-2); --muted: var(--surface-muted); background: var(--panel); color: var(--text); overflow-y: auto; }
 .profile-dialog { width: min(420px,100%); }
-.utility-popup .general-settings { width: min(680px,100%); }
+.utility-popup .general-settings { width: min(940px,100%); }
 #navProfile { padding: 2px 5px; background: transparent; }
 #navProfileAvatar { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-size: 14px; font-weight: 700; }
 .workspace-tab[aria-expanded=true] { border-color: var(--accent); }
@@ -1522,8 +1561,26 @@ html[data-glass=liquid] .select-item { border-radius: 12px; }
 html[data-border=liquid] .select-pop { border-top-color: var(--edge-sheen); }
 
 /* Configurações em abas: uma seção por vez, sem a linha entre seções */
-.settings-tabs { flex-wrap: wrap; }
-.settings-tabs button { flex: 1 1 0; min-width: 88px; }
+/* Configurações: os grupos na barra da esquerda e as abas do grupo no topo (renderer/configuracoes.js) */
+.settings-layout { flex: 1 1 auto; min-height: 0; display: flex; gap: 18px; }
+.settings-nav { flex: none; width: 190px; display: flex; flex-direction: column; gap: 2px; padding-right: 14px; border-right: 1px solid var(--line); overflow-y: auto; }
+.settings-nav button { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 8px 10px; border: 0; border-radius: 8px; background: none; color: var(--text); font: inherit; font-size: 14px; text-align: left; cursor: pointer; }
+.settings-nav button small { font-size: 11px; color: var(--muted); }
+.settings-nav button:hover { background: color-mix(in srgb, var(--text) 7%, transparent); }
+.settings-nav button[aria-current=true] { background: var(--accent-soft); color: var(--accent); }
+.settings-main { flex: 1 1 auto; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 12px; }
+.settings-tabs { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid var(--line); }
+.settings-tabs[hidden] { display: none; }
+.settings-main .settings-section { grid-template-columns: minmax(0, 1fr); overflow-x: hidden; } /* um nome de microfone comprido não alarga a coluna */
+.settings-main .vd-select { width: 100%; min-width: 0; text-overflow: ellipsis; }
+.settings-tabs button { padding: 8px 12px; margin-bottom: -1px; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--muted); font: inherit; font-size: 14px; cursor: pointer; }
+.settings-tabs button[aria-selected=true] { color: var(--accent); border-bottom-color: var(--accent); }
+.settings-tabs button:hover { color: var(--text); }
+@media (max-width: 640px) {
+  .settings-layout { flex-direction: column; gap: 10px; }
+  .settings-nav { width: auto; flex-direction: row; overflow-x: auto; padding: 0 0 8px; border-right: 0; border-bottom: 1px solid var(--line); }
+  .settings-nav button small { display: none; }
+}
 .general-settings .settings-section + .settings-section { padding-top: 0; border-top: 0; }
 #appearanceTitle { display: none; }
 
@@ -1667,9 +1724,7 @@ html[data-glass=liquid] .theme-swatches { border-radius: 10px; }
 :root { --hub-w: 28px; --hub-open-w: 320px; }
 main { margin-left: var(--hub-w); }
 .workspace-brand { left: calc(24px + var(--hub-w)); }
-.voice-side #voiceDialog { left: calc(16px + var(--hub-w)); }
 .workspace-wide #workspacePanes { left: calc(16px + var(--hub-w)); }
-.voice-side.workspace-wide #workspacePanes { left: calc(var(--workspace-width) + 28px + var(--hub-w)); }
 .hub-rail { --text: var(--surface-text); --muted: var(--surface-muted); position: fixed; top: 0; bottom: 0; left: 0; z-index: 13; width: var(--hub-w);
   display: flex; flex-direction: column; background: var(--panel); border-right: 1px solid var(--line); color: var(--text);
   transition: width .16s ease, box-shadow .16s ease; overflow: hidden; }
@@ -1812,7 +1867,6 @@ main { margin-left: var(--hub-w); }
 .has-dm-bar main { height: calc(100% - var(--dm-h)); }
 .has-dm-bar #workspacePanes { bottom: calc(16px + var(--dm-h)); }
 .has-dm-bar.workspace-wide #workspacePanes { bottom: calc(116px + var(--dm-h)); }
-.has-dm-bar.voice-side #voiceDialog { bottom: calc(16px + var(--dm-h)); }
 .dm-bar { --text: var(--surface-text); --muted: var(--surface-muted); position: fixed; left: var(--hub-w); right: var(--rail-w); bottom: 0; z-index: 12; height: var(--dm-h);
   display: flex; align-items: stretch; gap: 6px; padding: 0 10px 0 0; background: var(--panel); border-top: 1px solid var(--line); color: var(--text); }
 .dm-bar-label { flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 0 14px; border: 0; border-right: 1px solid var(--line); background: transparent;
@@ -1937,7 +1991,7 @@ html[data-tips="off"] .tip { display: none !important; }
 .tile.small .music-controls { display: none; }
 @container (max-width: 420px) { .music-controls .btn.small, .music-time { display: none; } }
 /* No painel de voz: a música do canal, embaixo do cabeçalho dele, com Ouvir */
-.voice-music { display: flex; align-items: center; gap: 8px; margin: 4px 0 2px; padding: 6px 8px; border: 1px dashed var(--line-strong); border-radius: 6px; font-size: 12.5px; }
+.voice-music { display: flex; align-items: center; gap: 8px; margin: 4px 0 2px; padding: 6px 8px; border: 1px solid var(--line); background: var(--panel-2); border-radius: 6px; font-size: 12.5px; }
 .voice-music-icon { flex: none; display: inline-flex; color: var(--accent); }
 .voice-music-icon svg, .voice-channel-music svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .voice-music-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
@@ -1987,6 +2041,160 @@ html[data-tips="off"] .tip { display: none !important; }
 .phone-qr-side { flex: 1; min-width: 200px; display: grid; gap: 8px; align-content: start; }
 .phone-qr-side p { margin: 0; }
 .phone-url { display: block; padding: 8px 10px; border-radius: 6px; background: var(--sunken); font-size: 12px; overflow-wrap: anywhere; user-select: all; }
+
+/* Estatísticas e chat saíram da barra de baixo: ficam nas Configurações e na barrinha da direita (os botões continuam no
+   HTML, escondidos, porque o código ainda atualiza o estado deles) */
+.dock .dock-off { display: none !important; }
+
+/* Barra da sala flutuante: uma pílula por cima das telas, embaixo e no meio, em vez de uma faixa embaixo delas.
+   Transmitindo, o bloco Ao vivo mostra a miniatura, o nome da tela, Trocar e Parar (sem quem assiste). */
+.stage-col { position: relative; }
+.dock {
+  position: absolute; left: 50%; bottom: 16px; z-index: 6; translate: -50% 0; width: max-content; max-width: calc(100% - 32px);
+  min-height: 0; padding: 6px; gap: 8px; border-radius: 999px; box-shadow: 0 10px 30px rgba(0, 0, 0, .55);
+}
+.workspace-wide .dock { min-height: 0; }
+.dock > .dock-spacer { display: none; }
+.dock .live-chip { border-radius: 999px; }
+.dock .voice-dock.active { border-radius: 999px; }
+.dock > .voice-dock:not(.active) { padding-left: 0; border-left: 0; }
+.dock .dock-share { border-radius: 999px; }
+#liveText { display: none; }
+.dock .live-chip .btn.icon { border-radius: 50%; }
+.dock .live-thumb { border-radius: 999px 5px 5px 999px; }
+/* A pílula fica por cima do pé do palco: o texto do palco vazio sobe para não ficar embaixo dela */
+#room .empty-stage { padding-bottom: 96px; }
+:root:not([data-skin]) #room .empty-stage::after { top: 18px; bottom: auto; }
+
+/* Barra flutuante igual ao desenho A: botões redondos e cheios; Parar e Sair da voz em laranja cheio; a voz sem a
+   caixa em volta nem o "Na voz"; uma linha fina separando a transmissão da voz. Convidar saiu (fica em Pessoas). */
+.dock .btn.icon { width: 34px; height: 34px; border: 0; border-radius: 50%; background: color-mix(in srgb, var(--text) 10%, transparent); color: var(--text); box-shadow: none; }
+.dock .btn.icon:hover:not(:disabled) { background: color-mix(in srgb, var(--text) 18%, transparent); }
+.dock .live-chip { gap: 8px; height: 40px; padding: 3px 4px 3px 3px; }
+.dock .live-chip .btn.icon { width: 30px; height: 30px; }
+.dock #stopShareBtn, .dock #voiceJoin.voice-leave { background: var(--warn) !important; color: var(--bg) !important; border: 0 !important; }
+.dock #stopShareBtn:hover:not(:disabled), .dock #voiceJoin.voice-leave:hover:not(:disabled) { filter: brightness(1.1); }
+.dock .voice-dock.active { padding: 0 0 0 8px; border: 0; border-left: 1px solid var(--line); border-radius: 0; background: none; }
+.dock #voiceMe { display: none !important; }
+.dock #voiceMute[aria-pressed=true], .dock #voiceDeafen[aria-pressed=true] { background: var(--warn-soft, color-mix(in srgb, var(--warn) 22%, transparent)); color: var(--warn); }
+.dock #dockAddr { display: none !important; }
+/* Com o player do YouTube no palco, a pílula sobe e fica acima dos controles dele (play, barra de progresso, Trocar) */
+.stage-col:has(.music-tile:not(.small)) .dock { bottom: 64px; }
+/* Some sozinha com o mouse parado, junto com as telas (watchDock em renderer/navegacao.js) */
+/* O mesmo fade das faixas das telas e dos controles do YouTube (.ui-idle): só a opacidade, em .2s */
+.dock { transition: opacity .2s; }
+.dock.dock-sleep { opacity: 0; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .dock { transition: none; } }
+/* Voz e atalhos saiu da barrinha da direita: fica nas Configurações (a engrenagem) */
+#voiceSettingsBtn { display: none !important; }
+/* Com qualquer janela ou menu aberto (configurações, transmitir, HUB, perfil, mensagens, pessoas, música, imagem,
+   cartão de alguém, confirmações), a pílula sai da frente */
+body:has(.modal:not([hidden]), #hubBody:not([hidden]), #dmPanel:not([hidden]), #peoplePop:not([hidden]), #musicPop:not([hidden]),
+  #imageViewer:not([hidden]), #personCard:not([hidden])) .dock { opacity: 0 !important; pointer-events: none !important; }
+/* Entrar na voz (fora dela): as bolinhas de quem já está na voz e "Entrar", numa pílula; a setinha ao lado abre os
+   canais com gente (renderVoiceJoin em renderer/voz.js). As bolinhas soltas da barra só aparecem dentro da voz */
+.dock .voice-enter { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 16px 0 12px; border: 0; border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 10%, transparent); color: var(--text); font-weight: 600; box-shadow: none; }
+.dock .voice-enter:hover:not(:disabled) { background: color-mix(in srgb, var(--text) 18%, transparent); }
+.dock .voice-enter > svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.dock .voice-enter .vs-faces .avatar { box-shadow: 0 0 0 2px var(--panel); }
+.dock .voice-dock:not(.active) #voiceAvatars { display: none !important; }
+.dock #voiceJoinMore { width: 30px; height: 30px; margin-left: -4px; }
+#voiceJoinPop .vs-row .vs-faces { flex: none; }
+/* Perfil aberto pela lista: o painel de voz vira a página da pessoa (renderSkyPage em renderer/ceu-voz.js). O fundo do
+   perfil fica só na faixa de cima; sem fundo, a faixa leva a cor da pessoa */
+.sky-focus.sky-page, .sky-focus.sky-page.has-bg { position: absolute; inset: 0; z-index: 7; display: flex; flex-direction: column; align-items: stretch;
+  justify-content: flex-start; gap: 0; padding: 0; border-radius: inherit; background: var(--panel); overflow-y: auto; }
+.sky-page-banner { position: relative; flex: none; height: 140px; background: color-mix(in srgb, var(--person, var(--accent)) 35%, var(--sunken)); }
+.sky-page.has-bg .sky-page-banner { background: var(--fundo) center / cover no-repeat, var(--sunken); }
+.sky-page .avatar.sky-page-avatar { position: absolute; left: 16px; bottom: 14px; width: 72px; height: 72px; font-size: 28px; box-shadow: 0 0 0 3px color-mix(in srgb, var(--panel) 85%, transparent); }
+.sky-page .avatar.sky-page-avatar.speaking { box-shadow: 0 0 0 3px var(--panel), 0 0 0 5px var(--ok); }
+.sky-page .avatar.sky-page-avatar.live { box-shadow: 0 0 0 3px var(--panel), 0 0 0 5px var(--live); }
+.sky-page-head { display: flex; align-items: flex-start; gap: 8px; padding: 12px 10px 4px 16px; }
+.sky-page-who { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.sky-page-back { flex: none; }
+.sky-page .sky-focus-name { font-size: 18px; white-space: normal; }
+.sky-page-state { font-size: 12px; color: var(--muted); }
+.sky-page-actions { display: flex; flex-direction: column; gap: 2px; padding: 8px; }
+.sky-page-act { display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 12px; border: 0; border-radius: 8px; background: none; color: var(--text);
+  font: inherit; font-size: 14px; text-align: left; cursor: pointer; }
+.sky-page-act:hover:not(:disabled) { background: color-mix(in srgb, var(--text) 7%, transparent); }
+.sky-page-act[aria-pressed=true] { color: var(--warn); }
+.sky-page-act:disabled { opacity: .45; cursor: default; }
+.sky-page-act svg { flex: none; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.sky-page .sky-focus-vol { width: auto; margin: 4px 20px 16px; }
+/* Na voz: microfone, fone e sair no meio da pílula; no fim, quem está na chamada (as bolinhas, depois de uma linha) */
+.dock .voice-dock #voiceMute { order: 1; }
+.dock .voice-dock #voiceDeafen { order: 2; }
+.dock .voice-dock #voiceJoin { order: 3; }
+.dock .voice-dock #voiceJoinMore { order: 4; }
+.dock .voice-dock #voiceAvatars { order: 5; padding-left: 8px; border-left: 1px solid var(--line); }
+.dock .voice-dock .voice-stack { border-radius: 999px; }
+
+/* Página do perfil: nome em destaque, canal e Ao vivo em selos na mesma linha, volume com nome, X sem fundo e sem
+   ser cortado pela barra de rolagem */
+.sky-page .sky-focus-name { color: var(--text); font-weight: 700; }
+.sky-page-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.sky-page-tags .live-pill { font-size: 10px; padding: 2px 8px; text-transform: uppercase; letter-spacing: .04em; }
+.sky-focus.sky-page { scrollbar-width: thin; } /* sem reservar espaço para a barra: o fundo vai até a borda direita */
+.sky-page .sky-page-back { width: 32px; height: 32px; background: none; border-color: transparent; box-shadow: none; color: var(--text-2); }
+.sky-page .sky-page-back:hover { color: var(--text); background: color-mix(in srgb, var(--text) 8%, transparent); }
+.sky-page-label { margin: 8px 20px 0; font-size: 12px; color: var(--muted); }
+.sky-page .sky-focus-vol { margin-top: 4px; }
+.sky-vol-icon { color: var(--text-2); }
+/* Topo do perfil (desenho 1): o fundo é só um pouco mais alto que a foto, e ela fica no centro dele; nome e selos
+   centralizados embaixo; o X no canto do fundo */
+.sky-page-banner { height: 116px; display: grid; place-items: center; }
+.sky-page .avatar.sky-page-avatar { position: relative; left: auto; bottom: auto; width: 84px; height: 84px; font-size: 32px; }
+.sky-page-head { position: static; flex-direction: column; align-items: center; padding: 10px 16px 4px; text-align: center; }
+.sky-page-who { align-items: center; }
+.sky-page-tags { justify-content: center; }
+.sky-page .sky-page-back { position: absolute; top: 8px; right: 8px; color: var(--text); background: color-mix(in srgb, var(--panel) 70%, transparent); }
+/* A foto fica colada à esquerda do fundo (ainda no meio da altura); nome e selos alinhados com ela, à esquerda */
+.sky-page-banner { place-items: center start; padding-left: 16px; }
+.sky-page-head { align-items: flex-start; text-align: left; }
+.sky-page-who { align-items: flex-start; }
+.sky-page-tags { justify-content: flex-start; }
+/* O perfil fica embaixo, colado na borda de baixo do painel de voz (a lista continua à vista em cima) */
+.sky-focus.sky-page, .sky-focus.sky-page.has-bg { inset: auto 0 0 0; max-height: 100%; border-radius: 14px 14px 0 0;
+  border-top: 1px solid var(--line-strong); box-shadow: 0 -12px 32px rgba(0, 0, 0, .45); }
+.sky-page .sky-focus-vol { margin-bottom: 14px; }
+
+/* Seu perfil: a prévia em cima (fundo, foto à esquerda e o nome na fonte escolhida), depois Aparência e Nome */
+.profile-card { margin: 0 0 18px; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--sunken); }
+.profile-card-bg { position: relative; height: 116px; display: flex; align-items: center; padding-left: 16px;
+  background: color-mix(in srgb, var(--person, var(--accent)) 35%, var(--sunken)) center / cover no-repeat; }
+.profile-card-bg.has-bg { background-color: var(--sunken); }
+.profile-card-photo { position: relative; padding: 0; border: 0; background: none; border-radius: 50%; cursor: pointer; }
+.profile-card-photo .avatar { width: 84px; height: 84px; font-size: 32px; box-shadow: 0 0 0 3px color-mix(in srgb, var(--panel) 85%, transparent); }
+.profile-card-photo:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.profile-card-cam { position: absolute; right: -2px; bottom: -2px; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%;
+  background: var(--panel); color: var(--text); box-shadow: 0 0 0 2px var(--sunken); }
+.profile-card-cam svg, .profile-card-bgbtn svg, .profile-lock svg, .profile-row .btn.icon svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.profile-card-bgbtn { position: absolute; right: 8px; bottom: 8px; display: inline-flex; align-items: center; gap: 6px;
+  background: color-mix(in srgb, var(--panel) 80%, transparent); }
+.profile-card-info { display: flex; flex-direction: column; gap: 4px; padding: 10px 16px 12px; }
+.profile-card-info strong { font-size: 18px; overflow-wrap: anywhere; }
+.profile-sec { margin: 6px 0 4px; font: 600 12px/1 var(--st-mono, Consolas, monospace); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.profile-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; font-size: 14px; }
+.profile-row[hidden] { display: none; }
+.profile-row > span:first-child { display: inline-flex; align-items: center; gap: 4px; }
+.profile-row-actions { display: inline-flex; gap: 6px; }
+.profile-row .btn.icon { width: 34px; height: 34px; padding: 0; display: grid; place-items: center; }
+.profile-seg { display: inline-flex; padding: 3px; border-radius: 10px; background: var(--sunken); border: 1px solid var(--line); }
+.profile-seg button { height: 30px; padding: 0 14px; border: 0; border-radius: 7px; background: none; color: var(--text-2); font: inherit; font-size: 13px; cursor: pointer; }
+.profile-seg button[aria-checked="true"] { background: var(--accent); color: var(--accent-ink, var(--bg)); font-weight: 600; }
+.profile-dialog > .field { margin-top: 6px; }
+.profile-name-box { position: relative; display: block; }
+.profile-name-box input { width: 100%; box-sizing: border-box; }
+.profile-lock { position: absolute; right: 12px; top: 50%; translate: 0 -50%; display: none; color: var(--muted); }
+.profile-name-box:has(input:disabled) .profile-lock { display: flex; }
+.profile-name-box input:disabled { border-style: dashed; opacity: 1; color: var(--text); padding-right: 36px; cursor: default; }
+.profile-dialog > * { flex-shrink: 0; } /* a prévia e as linhas não encolhem quando falta altura: o painel rola */
+
+/* O cartão de perfil também sobe do pé da lista de Pessoas da sala */
+#peoplePop > .sky-focus.sky-page, #peoplePop > .sky-focus.sky-page.has-bg { position: sticky; inset: auto; bottom: -12px; z-index: 3; flex: none;
+  margin: auto -10px -12px; max-height: none; overflow: visible; }
 
 /* Interface espelhada (Aparência › Espelhar a interface; renderer/configuracoes.js põe data-mirror): o HUB vai para a
    direita e a barrinha, o chat e a voz para a esquerda. Só troca os lados; tamanhos e ordem continuam os mesmos */

@@ -38,3 +38,5 @@ CLAUDE.local.md
 
 # Protótipos de design: ficam só neste PC, nunca vão para o GitHub
 prototipo-ui/
+.idea/
+dist-*/

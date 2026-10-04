@@ -170,14 +170,17 @@ function removeMyProfileBg() {
 }
 function renderMyProfileBg() {
   const url = profileBgOf(null);
-  $('profileBgPreview').hidden = !url;
+  // O fundo da prévia do perfil; sem fundo, a faixa fica na sua cor
+  $('profileBgPreview').classList.toggle('has-bg', !!url);
   $('profileBgPreview').style.backgroundImage = url ? `url("${url}")` : '';
+  $('profileBgPreview').style.setProperty('--person', personColor(null));
   $('profileBgRemove').hidden = !fundos.mine;
-  $('profileBgPick').textContent = fundos.mine ? 'Trocar fundo' : 'Escolher imagem ou GIF';
+  $('profileBgPick').textContent = fundos.mine ? 'Trocar' : 'Escolher';
+  $('profileBgPickTop').querySelector('span').textContent = fundos.mine ? 'Trocar fundo' : 'Escolher fundo';
   if (typeof skyFocusId !== 'undefined' && skyFocusId === state.myId) fundoChanged(skyFocusId);
 }
 function setupProfileBg() {
-  $('profileBgPick').onclick = () => $('profileBgFile').click();
+  $('profileBgPick').onclick = $('profileBgPickTop').onclick = () => $('profileBgFile').click();
   $('profileBgFile').onchange = async () => {
     const file = $('profileBgFile').files[0];
     $('profileBgFile').value = '';

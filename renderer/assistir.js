@@ -334,7 +334,7 @@ function stopWatching(id, notify = true) {
   link.tile.video.srcObject = null;
   link.tile.el.remove();
   state.in.delete(id);
-  if (link.music) renderNavMusic(); // parou de ouvir: o botão de música da barrinha some
+  if (link.music) { renderNavMusic(); send({ type: 'musica-ouvindo', ch: id.slice('musica:'.length), on: false }); } // parou de ouvir: o botão de música da barrinha some
   if (state.focus === id) state.focus = null; // quem estava em destaque saiu: as outras voltam
   renderFocus();
   renderMembers();
