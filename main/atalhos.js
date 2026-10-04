@@ -17,6 +17,7 @@ const DEFAULT_KEYS = {
   compose: 'CommandOrControl+Enter',
   mute: 'CommandOrControl+Shift+M',
   deafen: 'CommandOrControl+Shift+D',
+  clip: 'CommandOrControl+Shift+C',
 };
 const keysFile = () => path.join(app.getPath('userData'), 'atalhos.json');
 let shortcutKeys = null;
@@ -44,6 +45,7 @@ const ACTIONS = {
   compose: { active: () => roomKeysOn, run: () => sendMain({ type: 'compose-key' }) },
   mute: { active: () => roomKeysOn, run: () => sendMain({ type: 'mute-key' }) },
   deafen: { active: () => roomKeysOn, run: () => sendMain({ type: 'deafen-key' }) },
+  clip: { active: () => roomKeysOn, run: () => sendMain({ type: 'clip-key' }) }, // salvar clipe (renderer/clipes.js)
 };
 const registered = {}; // ação -> atalho registrado agora
 const busyWarned = {};

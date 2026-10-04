@@ -19,6 +19,8 @@ contextBridge.exposeInMainWorld('api', {
   noiseWasm: (simd) => ipcRenderer.invoke('noise-wasm', !!simd),
   chatCompose: (on, opening = false) => ipcRenderer.invoke('chat-compose', !!on, !!opening),
   openLink: (url) => ipcRenderer.invoke('open-link', url),
+  clipSave: (bytes, label) => ipcRenderer.invoke('clip-save', bytes, label),
+  clipShow: (id) => ipcRenderer.invoke('clip-show', id),
   onPip: (cb) => {
     ipcRenderer.removeAllListeners('pip');
     ipcRenderer.on('pip', (_e, msg) => cb(msg));

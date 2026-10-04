@@ -23,6 +23,7 @@ function menuModel({ version, call }) {
     { type: 'separator' },
     { id: 'mute', label: 'Mutar / desmutar microfone', enabled: call },
     { id: 'deafen', label: 'Ensurdecer / voltar a ouvir', enabled: call },
+    { id: 'clip', label: 'Salvar clipe da transmissão', enabled: call },
     { type: 'separator' },
     { id: 'restart', label: 'Reiniciar o Tela P2P' },
     { id: 'quit', label: 'Sair do Tela P2P' },
@@ -50,6 +51,7 @@ const RUN = {
   update: () => { showMain(); sendMain({ type: 'tray-update' }); },
   mute: () => sendMain({ type: 'mute-key' }),
   deafen: () => sendMain({ type: 'deafen-key' }),
+  clip: () => sendMain({ type: 'clip-key' }),
   restart: () => actions.restart(),
   quit,
 };

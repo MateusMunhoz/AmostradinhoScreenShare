@@ -114,10 +114,12 @@ function onceWanted() {
   return onceLinks().some(([, l]) => l.dc.readyState === 'open' && !l.videoOff) || !!ownPreview.link;
 }
 
-// O NVENC fica em pausa enquanto ninguém precisa do vídeo
+// O NVENC ficava em pausa enquanto ninguém precisava do vídeo. Agora ele segue codificando enquanto você transmite,
+// para o clipe da sua própria tela (renderer/clipes.js) ter os últimos segundos mesmo sem ninguém assistindo: é o chip
+// de vídeo dedicado da placa, quase sem custo. O WebCodecs continua parando sem ninguém (encodeFrame), porque pesa.
 function onceViewersChanged() {
   if (!once.active || once.engine !== 'nvenc') return;
-  const want = onceWanted();
+  const want = onceWanted() || CLIP_OWN_NVENC;
   if (want === once.nvencRunning) return;
   once.nvencRunning = want;
   window.api.videoCapCmd(want ? 'resume' : 'pause');
@@ -145,7 +147,7 @@ async function startNvenc(sourceId) {
   // 4K numa tela menor: a taxa acompanha o tamanho que o videocap está mandando de verdade
   const rate = bitrateFor(q, res.width, res.height);
   if (rate !== q.bitrate) window.api.videoCapCmd(`bitrate ${rate}`);
-  onceViewersChanged(); // ninguém assistindo ainda: pausa
+  onceViewersChanged(); // ninguém assistindo ainda: pausa (menos com o clipe da própria tela)
   return true;
 }
 
@@ -282,6 +284,7 @@ async function onEncoderError(err) {
 // ---- Envio: o mesmo quadro para todos ----
 function broadcastChunk({ key, timestamp, data }) {
   if (ownPreview.link) feedPreview(key, timestamp, data);
+  clipFeed(once, key, timestamp, data, requestKey); // últimos segundos da sua transmissão (renderer/clipes.js)
   const seq = once.seq = (once.seq + 1) >>> 0;
   const total = Math.max(1, Math.ceil(data.length / PART_SIZE));
   const msgs = [];
@@ -377,6 +380,7 @@ async function fallbackToTracks() {
 }
 
 function stopOnceEncoder() {
+  clipDrop(once);
   if (once.engine === 'nvenc') {
     window.api.offVideoCap();
     window.api.videoCapStop();
@@ -483,19 +487,30 @@ function onPart(link, buf) {
   const total = v.getUint16(15);
   const body = new Uint8Array(buf, HEADER);
   if (part === 0) {
+    if (r.frame) clipGap(link); // o quadro anterior ficou pela metade
     r.frame = { key, seq, ts: v.getFloat64(5), total, parts: [body], size: body.length };
   } else if (r.frame && r.frame.seq === seq && r.frame.parts.length === part) {
     r.frame.parts.push(body);
     r.frame.size += body.length;
   } else {
     r.frame = null; // pedaço fora de ordem: descarta o quadro
+    clipGap(link);
     return;
   }
   if (r.frame.parts.length < total) return;
   const f = r.frame;
   r.frame = null;
   r.bytes += f.size;
+  clipFeed(link, f.key, f.ts, joinParts(f), () => askKeyFrom(r)); // últimos segundos para o clipe (renderer/clipes.js)
   decodeFrame(link, f);
+}
+
+function joinParts(f) {
+  if (f.parts.length === 1) return f.parts[0];
+  const data = new Uint8Array(f.size);
+  let off = 0;
+  for (const p of f.parts) { data.set(p, off); off += p.length; }
+  return data;
 }
 
 function decodeFrame(link, f) {
@@ -544,6 +559,7 @@ function closeOnceReceiver(link) {
   const r = link.once;
   if (!r) return;
   link.once = null;
+  clipDrop(link);
   if (r.decoder && r.decoder.state !== 'closed') { try { r.decoder.close(); } catch {} }
   r.writer.close().catch(() => {});
   r.gen.stop();

@@ -259,6 +259,7 @@ const SHORTCUT_NAMES = {
   deafen: 'Silenciar ou voltar a ouvir as vozes (fone; desliga o microfone junto)',
   edit: 'Ajustar ou travar as janelas por cima do jogo',
   hideChat: 'Esconder ou mostrar o chat por cima do jogo',
+  clip: 'Salvar clipe dos últimos 30 s da transmissão (vai para Vídeos › Tela P2P › Clipes)',
 };
 let shortcutKeys = {};
 let capturing = null; // { kind: 'shortcut'|'ptt', action, btn }
