@@ -809,6 +809,17 @@
         <div id="shortcutRows" class="vd-shortcuts"></div>
         <button class="btn small ghost" id="shortcutReset" type="button">Voltar aos atalhos padrão</button>
       </section>
+
+      <section class="vd-section">
+        <h3 id="clipSecondsLabel">Clipe<button type="button" class="tip" data-tip="O atalho do clipe (ou a tesoura na transmissão) salva os últimos segundos, com o som da transmissão, em Vídeos › Tela P2P › Clipes." aria-label="O atalho do clipe (ou a tesoura na transmissão) salva os últimos segundos, com o som da transmissão, em Vídeos › Tela P2P › Clipes."></button></h3>
+        <div class="seg" role="radiogroup" aria-labelledby="clipSecondsLabel">
+          <label><input type="radio" name="clipSeconds" value="15"><span>15 s</span></label>
+          <label><input type="radio" name="clipSeconds" value="30"><span>30 s</span></label>
+          <label><input type="radio" name="clipSeconds" value="60"><span>1 min</span></label>
+          <label><input type="radio" name="clipSeconds" value="120"><span>2 min</span></label>
+        </div>
+        <p class="hint">Mais tempo usa mais memória: 2 min de uma transmissão em 1080p ficam em uns 100 a 200 MB.</p>
+      </section>
     </div>
   </div>
 

@@ -155,7 +155,10 @@ const savedQuality = load('quality', '1080p30');
 setRadio('quality', savedQuality === '720p30' ? '720p60' : savedQuality);
 if (!radioValue('quality')) setRadio('quality', '1080p30');
 $('soundOn').checked = load('audioMode', 'all') !== 'none'; // "exclude" da versão antiga conta como com som
-setRadio('encodeMode', load('encodeMode', 'per') === 'once' ? 'once' : 'per');
+// "Uma vez só" é o padrão (dá clipe sem recodificar e pesa menos com várias pessoas). A chave mudou de nome para
+// quem tinha "uma por pessoa" salvo só por ser o padrão antigo começar no novo; quem não tem o modo cai em "uma por pessoa"
+// sozinho (transmitir.js › checkEncodeOnce).
+setRadio('encodeMode', load('encodeMode2', 'once') === 'per' ? 'per' : 'once');
 $('cursorOn').checked = load('mostrarMouse', '1') !== '0';
 // Dicas (o "i"): liga e desliga todas de uma vez (renderer/util.js)
 $('tipsOn').checked = document.documentElement.dataset.tips !== 'off';
@@ -436,6 +439,7 @@ window.addEventListener('blur', syncPreview);
 setupHub();
 setupDm();
 setupWorkspace();
+startClips();
 watchDock();
 setupGeneralSettings();
 setupPhone();

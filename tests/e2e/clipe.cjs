@@ -20,7 +20,7 @@ const PAGE = `(async () => {
   const buffer = new ClipMp4.ClipBuffer({ seconds: 31 });
   const pending = [];
   const enc = new VideoEncoder({
-    output: (chunk) => { const data = new Uint8Array(chunk.byteLength); chunk.copyTo(data); pending.push({ key: chunk.type === 'key', ts: chunk.timestamp, data }); },
+    output: (chunk) => { const data = new Uint8Array(chunk.byteLength); chunk.copyTo(data); pending.push({ key: chunk.type === 'key', ts: chunk.timestamp, at: chunk.timestamp + 5e6, data }); },
     error: (e) => { throw e; },
   });
   enc.configure({ codec: 'avc1.42001f', width: W, height: H, bitrate: 1_500_000, framerate: FPS, avc: { format: 'annexb' }, latencyMode: 'realtime' });
@@ -36,7 +36,38 @@ const PAGE = `(async () => {
   }
   await enc.flush();
   for (const f of pending.splice(0)) buffer.push(f);
-  const { bytes, seconds } = ClipMp4.buildMp4(buffer.take(30), { width: W, height: H }, Mp4Muxer);
+  // Som: 40 s de um tom, codificado como no app (AAC; sem AAC, Opus), no "relógio deste PC" (+5 s, igual ao vídeo)
+  const sound = new ClipMp4.ClipAudioBuffer({ seconds: 31 });
+  let audioCodec = '';
+  for (const [codec, bitrate] of [['mp4a.40.2', 160000], ['opus', 128000]]) {
+    const config = { codec, sampleRate: 48000, numberOfChannels: 2, bitrate };
+    if ((await AudioEncoder.isConfigSupported(config)).supported) { audioCodec = codec; break; }
+  }
+  if (audioCodec) {
+    const aenc = new AudioEncoder({
+      output: (chunk, meta) => {
+        if (meta && meta.decoderConfig) {
+          const d = meta.decoderConfig.description;
+          sound.config = { codec: audioCodec === 'opus' ? 'opus' : 'aac', sampleRate: 48000, numberOfChannels: 2,
+            description: d ? new Uint8Array(ArrayBuffer.isView(d) ? d.buffer.slice(d.byteOffset, d.byteOffset + d.byteLength) : d.slice(0)) : null };
+        }
+        const b = new Uint8Array(chunk.byteLength); chunk.copyTo(b);
+        sound.push({ ts: chunk.timestamp + 5e6, data: b, duration: chunk.duration || 0 });
+      },
+      error: (e) => { throw e; },
+    });
+    aenc.configure({ codec: audioCodec, sampleRate: 48000, numberOfChannels: 2, bitrate: 128000 });
+    const N = 960;
+    for (let k = 0; k < SECONDS * 50; k++) {
+      const pcm = new Float32Array(N * 2);
+      for (let i = 0; i < N; i++) pcm[i] = pcm[N + i] = 0.3 * Math.sin(2 * Math.PI * 440 * (k * N + i) / 48000);
+      const data = new AudioData({ format: 'f32-planar', sampleRate: 48000, numberOfFrames: N, numberOfChannels: 2, timestamp: Math.round(k * N * 1e6 / 48000), data: pcm });
+      aenc.encode(data);
+      data.close();
+    }
+    await aenc.flush();
+  }
+  const { bytes, seconds, audio } = ClipMp4.buildMp4(buffer.take(30), { width: W, height: H }, Mp4Muxer, sound);
   const video = document.createElement('video');
   video.muted = true;
   video.src = URL.createObjectURL(new Blob([bytes], { type: 'video/mp4' }));
@@ -49,7 +80,15 @@ const PAGE = `(async () => {
     c.drawImage(video, 0, 0);
     return Math.round(c.getImageData(W / 2, H / 2, 1, 1).data[0] / 6);
   };
-  return { size: bytes.length, seconds, duration, width: video.videoWidth, height: video.videoHeight, firstSecond: await colorAt(0), lastSecond: await colorAt(duration - 0.1) };
+  const firstSecond = await colorAt(0), lastSecond = await colorAt(duration - 0.1);
+  // Toca um pouco (mudo) para ver se o som decodifica
+  video.currentTime = 2;
+  await new Promise((res) => { video.onseeked = res; });
+  await video.play();
+  await new Promise((res) => setTimeout(res, 1200));
+  video.pause();
+  const audioBytes = video.webkitAudioDecodedByteCount || 0;
+  return { size: bytes.length, seconds, duration, audioCodec, audio, audioBytes, width: video.videoWidth, height: video.videoHeight, firstSecond, lastSecond };
 })()`;
 
 app.whenReady().then(async () => {
@@ -67,6 +106,7 @@ app.whenReady().then(async () => {
     check('Duração: 30 s mais o caminho até o quadro-chave anterior (até 8 s)', r.duration >= 29.5 && r.duration <= 38.5, r.duration.toFixed(2));
     check('Começa num quadro-chave (segundo 8, múltiplo de 8)', r.firstSecond === 8, r.firstSecond);
     check('Termina no último segundo gravado (39)', r.lastSecond === 39, r.lastSecond);
+    check('Som entra no arquivo e toca', r.audio && r.audioBytes > 0, `codec ${r.audioCodec || 'nenhum'}, ${r.audioBytes} bytes decodificados`);
   } catch (e) {
     check('Sem exceção', false, e.message);
   }
