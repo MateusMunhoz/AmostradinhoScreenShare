@@ -378,6 +378,7 @@ Digite um hexadecimal de três ou seis dígitos, com ou sem `#`, ou use a amostr
 No tema **Du'Sol** (aba Tema), o fundo é o Sol: um pedaço gigante dele à esquerda, com manchas e a borda brilhando, e o espaço com estrelas no resto. As cores ficam entre o preto, o amarelo e o laranja, e o nome **Du'Sol** aparece como no Arasaka: em pé no saguão, grande no palco sem transmissão e na barra de título. O fundo é parado e some no modo gamer.
 
 O tema **Di'Luna** é o irmão do Du'Sol, com a Lua cheia: um pedaço gigante dela à esquerda, com crateras e a borda acesa em ciano, e a noite com véus roxos e faíscas de luz no resto. As cores ficam entre o branco, o ciano, o azul e o roxo, e os letreiros têm serifa. O nome **Di'Luna** aparece nos mesmos lugares do Du'Sol, em pé do lado de fora da Lua no saguão.
+O tema **Renascença** transforma o app numa galeria: o fundo é uma pintura famosa da Renascença (A Escola de Atenas, A Anunciação, A Última Ceia e A Criação de Adão, uma a cada vez que o app abre), com o tom amarelado de verniz antigo e uma etiqueta de museu no canto dizendo qual é. O cartão do Início, o palco e cada transmissão ganham uma moldura dourada entalhada. Créditos das obras em `assets/temas/OBRAS.md`.
 
 No tema Padrão, a tela inicial tem um céu ao fundo; de vez em quando (a cada 20 a 90 segundos, ao acaso) uma estrela cadente cruza esse céu. Ela só aparece com a janela do app em foco e não aparece se o Windows estiver com os efeitos de animação desligados.
 
