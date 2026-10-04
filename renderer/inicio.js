@@ -105,7 +105,7 @@ $('gateDb').oninput = () => { voiceCfg.gateDb = Number($('gateDb').value); saveV
 $('duckAmount').oninput = () => { voiceCfg.duck = Number($('duckAmount').value); saveVoiceCfg(); renderVoiceDialog(); updateDuck(); };
 $('duckSelf').onchange = () => { voiceCfg.duckSelf = $('duckSelf').checked; saveVoiceCfg(); updateDuck(); };
 $('shortcutReset').onclick = async () => {
-  const defaults = { compose: 'CommandOrControl+Enter', mute: 'CommandOrControl+Shift+M', deafen: 'CommandOrControl+Shift+D', edit: 'CommandOrControl+Shift+E', hideChat: 'CommandOrControl+Shift+O' };
+  const defaults = { compose: 'CommandOrControl+Enter', mute: 'CommandOrControl+Shift+M', deafen: 'CommandOrControl+Shift+D', edit: 'CommandOrControl+Shift+E', hideChat: 'CommandOrControl+Shift+O', clip: 'CommandOrControl+Shift+C' };
   for (const action of Object.keys(defaults)) await window.api.setShortcut(action, '').catch(() => {}); // solta todos antes
   for (const [action, accel] of Object.entries(defaults)) await applyShortcut(action, accel);
 };
@@ -127,6 +127,7 @@ window.api.onPip((m) => {
   if (m.type === 'mute-key' && voice.session) voice.mute();
   if (m.type === 'deafen-key' && voice.session) voice.deafen();
   if (m.type === 'tray-update') checkGithub(true);
+  if (m.type === 'clip-key') saveClip();
   if (m.type === 'compose') {
     overlay.compose = !!m.on;
     renderChatOverlay();

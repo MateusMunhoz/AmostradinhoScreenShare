@@ -154,6 +154,18 @@ Qualidade, codificação e jogo em tela cheia estão em [Desempenho](desempenho.
 - **Volume por pessoa:** veja [Voz](#voz).
 - **App minimizado:** com a janela minimizada ou coberta pelo jogo por 3 segundos, o app para de baixar o vídeo e fica só com o som. Ao voltar, o vídeo volta na hora. Quem transmite vê "(vídeo pausado)" ao lado do seu nome.
 
+## Clipes
+
+Salva os últimos 30 segundos de uma transmissão num arquivo de vídeo, como o replay do ShadowPlay: aconteceu algo legal, você aperta e o que **já passou** fica guardado.
+
+- **Como salvar:** **Ctrl+Shift+C** (dá para trocar em [Voz e atalhos](#voz-e-atalhos); funciona com o jogo na frente), a **tesoura** na barra de cima da transmissão ou **Salvar clipe da transmissão** no [ícone da bandeja](#ícone-na-bandeja).
+- **Qual transmissão:** a que está em destaque; sem destaque, a que você assiste. A sua própria transmissão também vale: transmitindo seu jogo, o atalho salva a sua jogada (com placa NVIDIA, mesmo sem ninguém assistindo; nas outras, só com alguém assistindo).
+- **Onde fica:** `Vídeos\Tela P2P\Clipes`, em MP4, com o nome de quem transmitia e a hora. O aviso tem **Mostrar na pasta**.
+- **Qualidade:** a mesma que chegou para você, sem perder nada (o vídeo não é codificado de novo). O clipe tem de 30 a uns 38 s: ele começa no último quadro inteiro antes dos 30 s.
+- **Só no modo "Uma vez só":** o clipe usa o vídeo desse modo. Se quem transmite está em "Uma por pessoa", não há clipe (a tesoura não aparece). O modo de cada transmissão aparece em [Estatísticas](#estatísticas), na aba Transmissão.
+- **Vídeo pausado não entra:** com o app minimizado ou coberto pelo jogo, o vídeo de quem você assiste para de chegar, e o clipe recomeça quando ele volta. Para clipar alguém enquanto joga, deixe a transmissão numa [janela flutuante](#janela-flutuante).
+- **Ainda sem som:** por enquanto o clipe é só o vídeo.
+
 ## Janela flutuante
 
 Para ver uma transmissão enquanto joga.

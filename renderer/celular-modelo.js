@@ -58,7 +58,7 @@ const CelularModelo = (() => {
     }
     return r;
   };
-  const ATALHOS = ['edit', 'hideChat', 'compose', 'mute', 'deafen'];
+  const ATALHOS = ['edit', 'hideChat', 'compose', 'mute', 'deafen', 'clip'];
   const atalhos = (o) => {
     if (!objeto(o)) return null;
     const r = {};

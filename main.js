@@ -24,6 +24,8 @@ const { createDmE2E } = require('./main/mensagens-cripto');
 let dmE2E = null; // mensagens criptografadas de ponta a ponta (criado junto com o dmStore)
 const { createPresence, cleanInternetRoom } = require('./main/razze-presence');
 const bandeja = require('./main/bandeja');
+const { createClipStore } = require('./main/clipes');
+let clips = null; // clipes salvos (criado quando o app fica pronto: precisa da pasta Vídeos)
 let activeRazzeNetwork = '', roomRazzeNetwork = '';
 let internetRoom = null; // sala do modo Internet em que estou, para os amigos (renderer/salas-amigos.js)
 const razzePresence = createPresence({
@@ -469,6 +471,10 @@ if (hasSingleInstance) app.whenReady().then(() => {
     try { return fs.readFileSync(path.join(__dirname, 'vendor', 'noise', simd ? 'rnnoise_simd.wasm' : 'rnnoise.wasm')); } catch { return null; }
   });
   ipcMain.handle('chat-compose', (_e, on, opening) => chatComposeRequest(on, opening));
+  // Clipes (renderer/clipes.js): a página manda os bytes do MP4 e um nome; a pasta é sempre a mesma
+  clips = createClipStore({ dir: path.join(app.getPath('videos'), 'Tela P2P', 'Clipes'), showItem: (file) => shell.showItemInFolder(file) });
+  ipcMain.handle('clip-save', (_e, bytes, label) => clips.save(bytes, String(label || '')));
+  ipcMain.handle('clip-show', (_e, id) => clips.show(Number(id) || 0));
   ipcMain.handle('open-link', (_e, url) => {
     if (typeof url === 'string' && /^https?:\/\/[^\s]+$/i.test(url)) shell.openExternal(url);
   });
