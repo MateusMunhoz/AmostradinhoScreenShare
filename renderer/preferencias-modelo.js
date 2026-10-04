@@ -140,6 +140,10 @@ const AppPreferences = (() => {
     // Di'Luna: a Lua cheia, irmã do Du'Sol. Branco, ciano, azul e roxo, letreiros com serifa (styles-diluna.css)
     { id: 'diluna', label: "Di'Luna", note: 'A Lua cheia: um pedaço dela gigante à esquerda e a noite com faíscas de luz. Branco, ciano, azul e roxo.',
       colors: { main: '#04050C', secondary: '#0B0E1E', detail1: '#6FE3FF', detail2: '#A57BFF', warn: '#FF7AA8', text: '#E8EEFF', line: '#23264A' }, appearance: { glass: 'opaque', border: 'solid' } },
+    // Renascença: o app como galeria. Uma pintura famosa (domínio público) no fundo, molduras douradas entalhadas e as
+    // cores de verniz antigo: ouro (você/ao vivo), verdete (quem fala), terra de Siena (cuidado) (styles-renascenca.css)
+    { id: 'renascenca', label: 'Renascença', note: 'Uma galeria da Renascença: uma pintura famosa no fundo (a cada vez que o app abre, outra), molduras douradas entalhadas e o tom de verniz antigo.',
+      colors: { main: '#1C140D', secondary: '#2B1F15', detail1: '#D4AF5A', detail2: '#8DB37A', warn: '#E0873A', text: '#EEE2C6', line: '#5A4426' }, appearance: { glass: 'opaque', border: 'solid' } },
   ];
   const cleanSkin = (id) => skins.some((k) => k.id && k.id === id) ? id : '';
   // Preferências com o tema aplicado (o resto, como fontes e sons, fica como está)

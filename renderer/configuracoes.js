@@ -53,6 +53,14 @@ function applyAppIcon() {
 }
 // A imagem de fundo saiu do app: apaga a que tenha ficado guardada
 try { localStorage.removeItem('appWallpaper.v1'); } catch {}
+// Tema Renascença: a pintura do fundo (styles-renascenca.css › data-obra). A cada vez que o app abre, a próxima da lista.
+const RENAISSANCE_WORKS = ['atenas', 'anunciacao', 'ceia', 'adao'];
+function nextRenaissanceWork() {
+  const last = RENAISSANCE_WORKS.indexOf(load('obraRenascenca', ''));
+  const work = RENAISSANCE_WORKS[(last + 1) % RENAISSANCE_WORKS.length];
+  save('obraRenascenca', work);
+  return work;
+}
 // Largura do chat e da voz (alça em renderer/navegacao.js). 0 = a automática do styles.css; nunca passa de 55% da janela
 function applyPaneWidth(px) {
   const root = document.documentElement;
@@ -99,6 +107,7 @@ function applyAppTheme(d = document) {
   root.dataset.glass = glassMode();
   // Interface espelhada: HUB na direita, barrinha e painéis de chat e voz na esquerda (styles.css)
   root.dataset.mirror = appPreferences.appearance.mirror ? 'on' : 'off';
+  if (skin === 'renascenca' && !root.dataset.obra) root.dataset.obra = nextRenaissanceWork();
   applyPaneWidth(appPreferences.appearance.paneWidth);
   applyWindowMaterial();
   applyTitleBar();
