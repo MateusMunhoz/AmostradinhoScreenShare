@@ -3,6 +3,14 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.16.0",
+    "date": "2026-10-04",
+    "items": [
+      "Ligar para um amigo pela mensagem privada e mudar a senha da sala",
+      "Comando de voz (recurso extra), transmissão só para o seu canal e músicas ao vivo do YouTube sem pausar"
+    ]
+  },
+  {
     "version": "1.15.9",
     "date": "2026-10-04",
     "items": [
@@ -63,13 +71,6 @@ const NOVIDADES = [
     "date": "2026-10-03",
     "items": [
       "Mapa da voz: galáxia, nebulas, eventos e hover"
-    ]
-  },
-  {
-    "version": "1.15.0",
-    "date": "2026-10-03",
-    "items": [
-      "Mensagens criptografadas de ponta a ponta, convite para a sala pelas mensagens, janelinha que minimiza ao clicar fora (com alfinete para travar) e modo Internet como padrão"
     ]
   }
 ];
