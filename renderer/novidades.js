@@ -3,6 +3,13 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.15.7",
+    "date": "2026-10-03",
+    "items": [
+      "Clipes: som da transmissão, duração escolhida e modo uma por pessoa"
+    ]
+  },
+  {
     "version": "1.15.6",
     "date": "2026-10-03",
     "items": [
@@ -65,16 +72,6 @@ const NOVIDADES = [
     "items": [
       "ajustes UI e temas novos",
       "add logo"
-    ]
-  },
-  {
-    "version": "1.12.13",
-    "date": "2026-10-02",
-    "items": [
-      "add ajuste de interface",
-      "Protótipo: ponte da sala pela HyperDHT, sem servidor do projeto (#17)",
-      "Estrela cadente de vez em quando no céu da tela inicial (#16)",
-      "Docs: meta do briefing para 50+ e nova ordem do roadmap (#15)"
     ]
   }
 ];
