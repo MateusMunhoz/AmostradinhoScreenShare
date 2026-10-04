@@ -3,6 +3,13 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.15.6",
+    "date": "2026-10-03",
+    "items": [
+      "Clipes: salvar os últimos 30 s de uma transmissão em MP4"
+    ]
+  },
+  {
     "version": "1.15.5",
     "date": "2026-10-03",
     "items": [
@@ -68,14 +75,6 @@ const NOVIDADES = [
       "Protótipo: ponte da sala pela HyperDHT, sem servidor do projeto (#17)",
       "Estrela cadente de vez em quando no céu da tela inicial (#16)",
       "Docs: meta do briefing para 50+ e nova ordem do roadmap (#15)"
-    ]
-  },
-  {
-    "version": "1.12.12",
-    "date": "2026-10-02",
-    "items": [
-      "Mapa: cartão do canal no sol; música aparece para quem entra na sala; mapa continua girando fora de foco",
-      "Build do .dmg para Mac automático a cada Release"
     ]
   }
 ];
