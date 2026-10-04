@@ -1,4 +1,4 @@
-// audiocap.exe - captura o som do Windows ignorando um ou mais aplicativos.
+p// audiocap.exe - captura o som do Windows ignorando um ou mais aplicativos.
 // Usa a API "process loopback" do Windows 10 2004+ / Windows 11.
 //
 //   audiocap.exe --list                          lista os apps que estão usando áudio, um por linha:

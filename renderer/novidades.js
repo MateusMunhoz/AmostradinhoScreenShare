@@ -3,6 +3,13 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.15.9",
+    "date": "2026-10-04",
+    "items": [
+      "Sensibilidade do microfone e ajustes na voz"
+    ]
+  },
+  {
     "version": "1.15.8",
     "date": "2026-10-03",
     "items": [
@@ -63,14 +70,6 @@ const NOVIDADES = [
     "date": "2026-10-03",
     "items": [
       "Mensagens criptografadas de ponta a ponta, convite para a sala pelas mensagens, janelinha que minimiza ao clicar fora (com alfinete para travar) e modo Internet como padrão"
-    ]
-  },
-  {
-    "version": "1.14.0",
-    "date": "2026-10-02",
-    "items": [
-      "add versao",
-      "Salas dos amigos pela internet: entre com um clique na sala que um amigo do Razze abriu"
     ]
   }
 ];
