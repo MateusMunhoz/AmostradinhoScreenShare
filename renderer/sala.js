@@ -195,7 +195,7 @@ function enterRoom(welcome, owner, host, port, cloud = null) {
   const live = welcome.members.filter((m) => m.sharing).length;
   if (live) toast(live === 1 ? '1 pessoa está transmitindo. Clique em Assistir para ver.' : `${live} pessoas estão transmitindo. Escolha quem assistir.`);
   checkUpdates();
-  void appSounds.play('join');
+  void appSounds.play('enter'); // você entrou (no Top Gun: "Bravo six, going dark.")
   registrarPasseSala();
   publicarSalaInternet();
 }

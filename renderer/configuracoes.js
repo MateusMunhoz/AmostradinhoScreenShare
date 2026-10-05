@@ -61,6 +61,14 @@ function nextRenaissanceWork() {
   save('obraRenascenca', work);
   return work;
 }
+// Tema Top Gun: a foto de caça do fundo (styles-topgun.css › data-foto), também uma a cada vez que o app abre
+const TOPGUN_PHOTOS = ['catapulta', 'f22-silhueta', 'conves', 'superhornet', 'formacao', 'f22-noite', 'mar', 'f35-noite', 'f16'];
+function nextTopGunPhoto() {
+  const last = TOPGUN_PHOTOS.indexOf(load('fotoTopGun', ''));
+  const photo = TOPGUN_PHOTOS[(last + 1) % TOPGUN_PHOTOS.length];
+  save('fotoTopGun', photo);
+  return photo;
+}
 // Largura do chat e da voz (alça em renderer/navegacao.js). 0 = a automática do styles.css; nunca passa de 55% da janela
 function applyPaneWidth(px) {
   const root = document.documentElement;
@@ -86,6 +94,11 @@ function applyAppTheme(d = document) {
   }
   // Com a fonte padrão, o Du'Sol usa a Bahnschrift (vem no Windows) nos títulos, como o letreiro dele
   if (skin === 'dusol' && appPreferences.font.family === 'system') fonts.display = 'Bahnschrift, "Segoe UI", system-ui, sans-serif';
+  // Com a fonte padrão, o Top Gun usa a Bahnschrift (vem no Windows) e números em fonte fixa, como o HUD da cabine
+  if (skin === 'topgun' && appPreferences.font.family === 'system') {
+    fonts.display = 'Bahnschrift, "Segoe UI", system-ui, sans-serif';
+    fonts.console = '"Cascadia Mono", Consolas, monospace';
+  }
   // O letreiro na lateral (index.html › #themeDecor) é do E.V.A
   if (d === document) $('themeDecor').hidden = skin !== 'eva';
   root.style.setProperty('--font-body', fonts.body);
@@ -108,6 +121,7 @@ function applyAppTheme(d = document) {
   // Interface espelhada: HUB na direita, barrinha e painéis de chat e voz na esquerda (styles.css)
   root.dataset.mirror = appPreferences.appearance.mirror ? 'on' : 'off';
   if (skin === 'renascenca' && !root.dataset.obra) root.dataset.obra = nextRenaissanceWork();
+  if (skin === 'topgun' && !root.dataset.foto) root.dataset.foto = nextTopGunPhoto();
   applyPaneWidth(appPreferences.appearance.paneWidth);
   applyWindowMaterial();
   applyTitleBar();
@@ -242,16 +256,28 @@ function chooseSkin(id) {
   id = AppPreferences.cleanSkin(id);
   if (id === appSkin) return;
   if (!appSkin) save('temaCoresAntes', JSON.stringify({ colors: appPreferences.colors, appearance: appPreferences.appearance }));
+  // Tema com sons próprios (Top Gun): guarda os seus sons ao entrar e devolve ao sair para um tema sem sons
+  const skinSounds = (k) => !!AppPreferences.skins.find((s) => s.id === k)?.sounds;
+  const restoreSounds = skinSounds(appSkin) && !skinSounds(id);
+  if (skinSounds(id) && !skinSounds(appSkin)) save('temaSonsAntes', JSON.stringify(appPreferences.sounds));
   if (id) appPreferences = AppPreferences.applyTheme(appPreferences, id);
   else {
     let before = null;
     try { before = JSON.parse(load('temaCoresAntes', 'null')); } catch {}
     appPreferences = before ? AppPreferences.normalize({ ...appPreferences, ...before }) : AppPreferences.applyTheme(appPreferences, 'grafiteaco');
   }
+  if (restoreSounds) {
+    let sounds = null;
+    try { sounds = JSON.parse(load('temaSonsAntes', 'null')); } catch {}
+    // O volume continua o de agora; só os sons de cada evento voltam
+    appPreferences = AppPreferences.normalize({ ...appPreferences, sounds: { ...(sounds || AppPreferences.defaults.sounds), volume: appPreferences.sounds.volume } });
+  }
   appSkin = id;
   save('tema', id);
   saveAppPreferences();
   renderGeneralSettings();
+  // O Top Gun desenha a voz como radar (ceu-voz.js › drawSkyRadar): entrando ou saindo dele, o céu é redesenhado
+  if (typeof renderVoiceSky === 'function' && state.myId) renderVoiceSky();
 }
 function renderSkins() {
   const list = $('skinList');

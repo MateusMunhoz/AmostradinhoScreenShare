@@ -185,4 +185,36 @@ test('largura do chat e da voz: automática, limitada e mantida ao trocar de tem
   assert.equal(P.normalize({ appearance: { paneWidth: '600' } }).appearance.paneWidth, 0);
   assert.equal(P.normalize({ appearance: { paneWidth: -1 } }).appearance.paneWidth, 0);
   assert.equal(P.applyTheme({ appearance: { paneWidth: 600 } }, 'neon').appearance.paneWidth, 600);
+});test('Tema Top Gun: cores de MFD e as chamadas de rádio como sons', () => {
+  const fs = require('node:fs'), path = require('node:path');
+  const tg = P.skins.find(k => k.id === 'topgun');
+  assert.equal(P.cleanSkin('topgun'), 'topgun');
+  for (const id of Object.values(tg.sounds)) {
+    const s = P.sounds.find(x => x.id === id);
+    assert.ok(s, `som ${id} existe`);
+    for (const file of s.files || [s.file]) assert.ok(fs.existsSync(path.join(__dirname, '..', 'assets', 'audio', file)), `arquivo ${file} existe`);
+  }
+  const p = P.applyTheme(P.normalize({ sounds: { volume: 30, join: 'none' } }), 'topgun');
+  assert.equal(p.sounds.voiceJoin, 'radioFoxOne', 'entrou: Fox one');
+  assert.equal(p.sounds.enter, 'radioBravoSix', 'você entrou na sala: Bravo six, going dark');
+  assert.equal(p.sounds.voiceLeave, 'radioSplash', 'saiu: Splash one');
+  assert.equal(p.sounds.shareStart, 'radioCheck', 'transmissão: Radio check');
+  assert.equal(p.sounds.shareStop, 'radioRtb', 'parou de transmitir: R T B');
+  assert.equal(p.sounds.unmute, 'radioGoingHot', 'microfone ligado: Going hot');
+  assert.equal(p.sounds.volume, 30, 'o volume fica');
+  assert.equal(P.applyTheme(P.normalize({ sounds: { voiceJoin: 'whoosh' } }), 'eva').sounds.voiceJoin, 'whoosh', 'tema sem sons não mexe neles');
+  const pal = P.palette(p.colors);
+  assert.equal(new Set([pal['--live'], pal['--ok'], pal['--warn']]).size, 3, 'você, quem fala e cuidado em cores diferentes');
+});
+test('Som com várias falas: sorteia uma e não repete a última', async () => {
+  const P2 = P, played = [];
+  const sound = P2.sounds.find(s => s.id === 'radioSplash');
+  let r = 0;
+  const player = new P2.SoundPlayer({ settings: () => P2.normalize({ sounds: { leave: 'radioSplash', volume: 100 } }), random: () => r,
+    createAudio: (url) => { played.push(url); return { play: async () => {}, pause() {} }; }, now: (() => { let t = 0; return () => (t += 1000); })() });
+  for (let i = 0; i < 6; i++) { r = 0; await player.play('leave'); }
+  assert.equal(played.length, 6);
+  for (let i = 1; i < played.length; i++) assert.notEqual(played[i], played[i - 1], 'não repete a última');
+  assert.ok(played.every(u => sound.files.some(f => u.endsWith(f))));
+  assert.ok(P2.events.includes('enter'), 'evento de você entrar na sala');
 });
