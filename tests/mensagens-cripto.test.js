@@ -120,3 +120,41 @@ test('de ponta a ponta com a RazzeAPI de verdade: o banco guarda só o texto cif
   assert.match(raw.messages[0].text, /^e2e1:/);
   assert.equal((await bia.e2e.messages(0)).messages[0].text, 'segredo entre amigas');
 });
+
+test('sinais da conexão direta: vão cifrados, só abrem para o amigo, e chave diferente da fixada é recusada', async (t) => {
+  const { createApiServer } = require('../razze-api/server');
+  const { RazzeApiClient } = require('../main/razze-api-client');
+  const server = createApiServer({ dbPath: ':memory:', requireApproval: false, stun: false });
+  const address = await server.listen(0, '127.0.0.1');
+  t.after(() => { server.server.closeAllConnections(); return server.close(); });
+  const url = 'http://127.0.0.1:' + address.port;
+  const account = async (name, client = new RazzeApiClient(url)) => {
+    const r = await client.register(name + '@test.example', 'correct-password-123', name);
+    client.setAccessToken(r.accessToken);
+    return { client, id: r.user.id, r };
+  };
+  const e2eFor = (client, baseDir) => createDmE2E({ baseDir, storage, service: { me: () => client.me(), state: () => ({ baseUrl: url }), api: () => client, listFriends: () => client.listFriends(),
+    sendMessage: (to, text) => client.sendMessage(to, text), messages: (after) => client.messages(after) } });
+  const ana = await account('Ana'), bia = await account('Bia');
+  await bia.client.acceptFriendRequest((await ana.client.requestFriend('Bia')).id);
+  ana.e2e = e2eFor(ana.client, dir(t));
+  bia.e2e = e2eFor(bia.client, dir(t));
+  await ana.e2e.ensurePublished();
+  await bia.e2e.ensurePublished();
+  const oferta = JSON.stringify({ t: 'oferta', sdp: 'v=0 segredo', s: 'c'.repeat(32) });
+  await ana.e2e.sendSignal(bia.id, oferta);
+  const raw = await bia.client.signals(); // o que o servidor entrega: só cifrado (e já some de lá)
+  assert.match(raw.signals[0].text, /^e2e1:/);
+  assert.ok(!raw.signals[0].text.includes('segredo'));
+  await ana.e2e.sendSignal(bia.id, oferta);
+  const abertos = await bia.e2e.signals();
+  assert.deepEqual(abertos.map((s) => [s.from, s.text]), [[ana.id, oferta]]);
+  assert.deepEqual(await bia.e2e.signals(), []); // entregue uma vez só
+  await assert.rejects(ana.e2e.sendSignal(bia.id, 'x'.repeat(12001)));
+  // A Ana troca de PC (chave nova): a Bia, que fixou a antiga, descarta o sinal dela até chegar uma mensagem
+  const anaNova = e2eFor(ana.client, dir(t));
+  await anaNova.ensurePublished();
+  await anaNova.sendSignal(bia.id, oferta);
+  assert.deepEqual(await bia.e2e.signals(), []);
+  await assert.rejects(bia.e2e.sendSignal(ana.id, oferta), /mudou/);
+});

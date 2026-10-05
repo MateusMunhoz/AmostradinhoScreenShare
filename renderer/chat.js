@@ -286,7 +286,7 @@ function showImage(parts, url) {
 // ← e → passam entre as imagens da conversa; Copiar, Salvar; Esc ou clicar fora fecha.
 const viewer = { list: [], index: 0, returnTo: null };
 function openImageViewer(img) {
-  viewer.list = [...$('chatList').querySelectorAll('img.chat-image')];
+  viewer.list = [...(img.closest('.chat-list') || $('chatList')).querySelectorAll('img.chat-image')]; // a do chat da sala ou a da mensagem privada
   viewer.index = Math.max(0, viewer.list.indexOf(img));
   viewer.returnTo = img;
   $('imageViewer').hidden = false;

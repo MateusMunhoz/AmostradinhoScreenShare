@@ -88,12 +88,19 @@ async function startPhoneSave() {
   $('phonePassError').textContent = 'Cifrando…';
   try {
     const keys = await window.api.getShortcuts().catch(() => null);
-    const itens = CelularModelo.juntar(localStorage, keys);
+    // Mensagens privadas (Configurações › Mensagens privadas): só com a caixinha ligada e a conta Razze aberta
+    let mensagensItem = '', aviso = '';
+    if (appPreferences.mensagens.backup && dm.account) {
+      const b = CelularModelo.mensagensBackup(dm.account, await window.api.dmExportar(dm.account).catch(() => []));
+      mensagensItem = b.item;
+      if (b.fora) aviso = ` Das mensagens privadas, ${b.fora} das mais antigas ficaram de fora (o arquivo tem limite de 16 MB).`;
+    } else if (appPreferences.mensagens.backup) aviso = ' As mensagens privadas não foram: entre na conta Razze para levá-las.';
+    const itens = CelularModelo.juntar(localStorage, keys, mensagensItem);
     const texto = await CelularModelo.cifrar(itens, a, { appVersion: await window.api.getVersion().catch(() => '') });
     const res = await window.api.celularEntregar(texto);
     if (!res?.ok) throw new Error(res?.error || 'Não foi possível abrir a conexão com o celular.');
     $('phonePass').value = $('phonePass2').value = '';
-    showPhoneQr(res.urls, 'Leia com a câmera do celular e toque em Baixar arquivo. O código vale por 5 minutos e serve uma vez.');
+    showPhoneQr(res.urls, 'Leia com a câmera do celular e toque em Baixar arquivo. O código vale por 5 minutos e serve uma vez.' + aviso);
   } catch (err) {
     $('phonePassError').textContent = err.message;
   } finally {
@@ -116,8 +123,10 @@ async function openPhoneFile() {
     $('phonePass').value = '';
     const linhas = CelularModelo.resumo(phone.pronto.itens);
     $('phoneSummaryList').replaceChildren(...linhas.map((t) => Object.assign(document.createElement('li'), { textContent: t })));
-    $('phoneSummaryNote').textContent = novo || phone.pronto.fora.length
-      ? 'Parte do arquivo não serve para esta versão do app e fica de fora.' : '';
+    const conta = phone.pronto.itens.mensagens ? JSON.parse(phone.pronto.itens.mensagens).conta : '';
+    $('phoneSummaryNote').textContent = [novo || phone.pronto.fora.length ? 'Parte do arquivo não serve para esta versão do app e fica de fora.' : '',
+      conta && conta !== dm.account ? 'As mensagens privadas são de outra conta Razze (ou você não entrou nela neste PC) e ficam de fora.' : '',
+      conta && conta === dm.account ? 'As mensagens privadas se juntam às deste PC; nada é apagado.' : ''].filter(Boolean).join(' ');
     phoneStatus('');
     phoneStep('resumo');
     $('phoneApply').focus();
@@ -135,7 +144,11 @@ async function applyPhoneConfig() {
   if (!itens) return;
   if (state.myId) { phoneStatus('Saia da sala para aplicar: a interface recarrega.', 'warn'); return; }
   $('phoneApply').disabled = true;
-  for (const [k, v] of Object.entries(itens)) if (k !== 'atalhos') save(k, v);
+  for (const [k, v] of Object.entries(itens)) if (k !== 'atalhos' && k !== 'mensagens') save(k, v);
+  if (itens.mensagens) {
+    const o = JSON.parse(itens.mensagens);
+    if (o.conta === dm.account) await window.api.dmImportar(o.conta, o.conversas).catch(() => 0);
+  }
   if (itens.atalhos) {
     // Primeiro solta todos (dois atalhos podem trocar de lugar entre si), depois põe os do arquivo
     const novos = JSON.parse(itens.atalhos);

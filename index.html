@@ -280,12 +280,12 @@
       <div class="music-pop-actions"><button id="musicPopCancel" type="button" class="btn small">Cancelar</button><button id="musicPopGo" type="submit" class="btn small primary">Tocar</button></div>
     </form>
   </div>
-  <!-- Barra de conversas: embaixo; o "Mensagens" abre a lista para cima, e um chip por conversa aberta, que também abre para cima (renderer/mensagens.js) -->
+  <!-- Barra de conversas: embaixo, entre o HUB e a barrinha; o envelope (mensagens privadas) abre a lista para cima, e um chip por conversa aberta, que também abre para cima (renderer/mensagens.js) -->
   <footer id="dmBar" class="dm-bar" aria-label="Conversas" hidden>
-    <button id="dmBarLabel" type="button" class="dm-bar-label" title="Mensagens: abrir a lista de conversas" aria-expanded="false" aria-controls="dmPanel">Mensagens <span id="dmBarBadge" class="hub-badge" hidden></span></button>
-    <!-- O "Mensagens" abre para cima a lista das conversas -->
+    <button id="dmBarLabel" type="button" class="dm-bar-label" title="Mensagens privadas: abrir a lista de conversas" aria-label="Mensagens privadas" aria-expanded="false" aria-controls="dmPanel"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg><span id="dmBarBadge" class="hub-badge" hidden></span></button>
+    <!-- O envelope abre para cima a lista das conversas -->
     <div id="dmPanel" class="dm-panel" role="dialog" aria-label="Conversas" hidden>
-      <div class="dm-panel-head"><strong>Mensagens</strong><button id="dmPanelClose" type="button" class="dm-chip-btn" title="Fechar" aria-label="Fechar a lista de conversas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+      <div class="dm-panel-head"><strong>Mensagens privadas</strong><button id="dmPanelClose" type="button" class="dm-chip-btn" title="Fechar" aria-label="Fechar a lista de conversas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
       <input id="dmPanelFilter" class="hub-filter" type="search" placeholder="Buscar conversa" aria-label="Buscar conversa pelo nome" autocomplete="off">
       <p id="dmPanelUnsupported" class="warn" hidden>O servidor Razze ainda não tem mensagens diretas. Quem cuida do servidor precisa atualizar a RazzeAPI.</p>
       <p id="dmPanelError" class="razze-status" role="status"></p>
@@ -293,7 +293,7 @@
       <p id="dmPanelConvEmpty" class="hint" hidden></p>
     </div>
     <div id="dmSlots" class="dm-slots"></div>
-    <span id="dmBarHint" class="dm-bar-hint">Clique em Mensagens para abrir uma conversa</span>
+    <span id="dmBarHint" class="dm-bar-hint">Clique no envelope para abrir uma conversa privada</span>
     <!-- As conversas que não cabem na largura: o "+N" lista e traz de volta para a barra -->
     <button id="dmMore" type="button" class="dm-more" aria-haspopup="menu" aria-expanded="false" aria-controls="dmMoreMenu" hidden></button>
     <div id="dmMoreMenu" class="dm-more-menu" role="menu" aria-label="Outras conversas" hidden></div>
@@ -766,6 +766,7 @@
           <button type="button" data-group="aparencia">Aparência<small>Tema · Janela e fonte · Cores</small></button>
           <button type="button" data-group="sons">Sons<small>Avisos sonoros</small></button>
           <button type="button" data-group="celular">Celular<small>Mudar as configurações pelo celular</small></button>
+          <button type="button" data-group="mensagens">Mensagens privadas<small>Histórico · Backup no celular</small></button>
           <button type="button" data-group="extras">Recursos extras<small>Comando de voz</small></button>
           <button type="button" data-group="stats">Estatísticas<small>Desempenho · Transmissão</small></button>
         </nav>
@@ -779,6 +780,7 @@
           <button id="settingsTab-colors" type="button" role="tab" data-group="aparencia" data-tab="colors" aria-controls="settingsPanel-colors">Cores</button>
           <button id="settingsTab-sounds" type="button" role="tab" data-group="sons" data-tab="sounds" aria-controls="settingsPanel-sounds">Sons</button>
           <button id="settingsTab-phone" type="button" role="tab" data-group="celular" data-tab="phone" aria-controls="settingsPanel-phone">Celular</button>
+          <button id="settingsTab-dms" type="button" role="tab" data-group="mensagens" data-tab="dms" aria-controls="settingsPanel-dms">Mensagens privadas</button>
           <button id="settingsTab-extras" type="button" role="tab" data-group="extras" data-tab="extras" aria-controls="settingsPanel-extras">Recursos extras</button>
           <button id="statsTabPerf" type="button" role="tab" data-group="stats" data-tab="perf" data-panel="stats" aria-controls="settingsPanel-stats">Desempenho</button>
           <button id="statsTabStream" type="button" role="tab" data-group="stats" data-tab="stream" data-panel="stats" aria-controls="settingsPanel-stats">Transmissão</button>
@@ -963,6 +965,27 @@
               <div class="phone-buttons"><button id="phoneSummaryCancel" class="btn small" type="button">Cancelar</button><button id="phoneApply" class="btn small primary" type="button">Aplicar</button></div>
             </div>
             <p id="phoneStatus" class="hint phone-status" role="status" aria-live="polite"></p>
+          </div>
+        </section>
+        <section id="settingsPanel-dms" class="settings-section dms-panel" role="tabpanel" aria-labelledby="settingsTab-dms" hidden>
+          <h3>Mensagens privadas</h3>
+          <p class="hint">Vale só para este PC. O servidor Razze guarda o texto por 30 dias de qualquer jeito, para chegar a quem está offline; imagens e arquivos nunca passam por ele.</p>
+          <div class="settings-row"><span class="settings-label" id="dmRetencaoLabel">Histórico neste PC</span>
+            <div class="seg" role="radiogroup" aria-labelledby="dmRetencaoLabel" aria-describedby="dmRetencaoHint">
+              <label><input type="radio" name="dmRetencao" value="sempre"><span>Guardar para sempre</span></label>
+              <label><input type="radio" name="dmRetencao" value="30"><span>Apagar depois de 30 dias</span></label>
+            </div>
+          </div>
+          <p id="dmRetencaoHint" class="hint"></p>
+          <div class="extra-card">
+            <div class="group-head">
+              <span class="group-title" id="dmBackupLabel">Levar as mensagens no backup do celular</span>
+              <label class="switch">
+                <input type="checkbox" id="dmBackup" role="switch" aria-labelledby="dmBackupLabel" aria-describedby="dmBackupHint">
+                <span class="track" aria-hidden="true"></span>
+              </label>
+            </div>
+            <p id="dmBackupHint" class="hint">Ligado, o Guardar no celular (Configurações › Celular) leva também o texto das conversas da sua conta Razze, cifrado com a mesma senha. Imagens e arquivos não vão. Ao trazer de volta, junta com o histórico do PC, sem apagar nada.</p>
           </div>
         </section>
         <section id="settingsPanel-stats" class="settings-section stats" role="tabpanel" aria-labelledby="statsTabPerf" hidden>
@@ -1208,6 +1231,7 @@
   <script src="renderer/mapa-conexoes.js"></script>
   <script src="renderer/hub.js"></script>
   <script src="renderer/mensagens.js"></script>
+  <script src="renderer/mensagens-direto.js"></script>
   <script src="renderer/primeira-entrada.js"></script>
   <script src="renderer/conta.js"></script>
   <script src="renderer/recorte.js"></script>

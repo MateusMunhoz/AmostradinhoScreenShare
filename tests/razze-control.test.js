@@ -175,3 +175,25 @@ test('mensagens criptografadas: chave pública por conta, entregue só aos amigo
   assert.equal((await req('messages', 'POST', { to: b.user.id, text: 'e2e1:' + 'A'.repeat(9001) }, a.accessToken)).status, 400);
   assert.equal((await req('messages', 'GET', undefined, b.accessToken)).messages[0].text, longE2e);
 });
+
+test('sinais da conexão direta: só entre amigos, só cifrados, entregues uma vez e apagados em 2 minutos', async t => {
+  const { req, register, advance } = await fixture(t);
+  const a = await register('Ana'), b = await register('Bia'), stranger = await register('Eve');
+  const friend = await req('friends/requests', 'POST', { email: b.user.email }, a.accessToken);
+  await req('friends/requests/' + friend.id + '/accept', 'POST', undefined, b.accessToken);
+  const sinal = 'e2e1:' + 'B'.repeat(200);
+  assert.equal((await req('signals', 'POST', { to: b.user.id, text: sinal }, a.accessToken)).status, 201);
+  assert.equal((await req('signals', 'POST', { to: b.user.id, text: 'texto aberto' }, a.accessToken)).status, 400);
+  assert.equal((await req('signals', 'POST', { to: b.user.id, text: 'e2e1:' + 'B'.repeat(16000) }, a.accessToken)).status, 400);
+  assert.equal((await req('signals', 'POST', { to: b.user.id, text: sinal }, stranger.accessToken)).status, 403);
+  assert.equal((await req('signals', 'POST', { to: a.user.id, text: sinal }, a.accessToken)).status, 403);
+  const recebidos = await req('signals', 'GET', undefined, b.accessToken);
+  assert.deepEqual(recebidos.signals.map(s => [s.from, s.text]), [[a.user.id, sinal]]);
+  assert.equal((await req('signals', 'GET', undefined, b.accessToken)).signals.length, 0); // uma vez só
+  // Não vão para o histórico das mensagens
+  assert.equal((await req('messages', 'GET', undefined, b.accessToken)).messages.length, 0);
+  // Esperando mais de 2 minutos, some
+  await req('signals', 'POST', { to: b.user.id, text: sinal }, a.accessToken);
+  advance(2 * 60 * 1000 + 1);
+  assert.equal((await req('signals', 'GET', undefined, b.accessToken)).signals.length, 0);
+});

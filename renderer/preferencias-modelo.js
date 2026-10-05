@@ -119,7 +119,9 @@ const AppPreferences = (() => {
     sounds: { enter: 'notification035', join: 'notification035', leave: 'whoosh', chat: 'wood', voiceJoin: 'suaveEntrou', voiceLeave: 'suaveSaiu',
       mute: 'suaveMutou', unmute: 'suaveDesmutou', deafen: 'suaveFoneDesligou', undeafen: 'suaveFoneLigou',
       shareStart: 'suaveTransmitiu', shareStop: 'suaveParouTransmitir', mention: 'suaveMencao',
-      chatMuted: false, volume: 50, levels: { enter: 100, join: 100, leave: 100, chat: 100, mention: 100, voiceJoin: 100, voiceLeave: 100, mute: 100, unmute: 100, deafen: 100, undeafen: 100, shareStart: 100, shareStop: 100 } } };
+      chatMuted: false, volume: 50, levels: { enter: 100, join: 100, leave: 100, chat: 100, mention: 100, voiceJoin: 100, voiceLeave: 100, mute: 100, unmute: 100, deafen: 100, undeafen: 100, shareStart: 100, shareStop: 100 } },
+    // Mensagens privadas: histórico neste PC para sempre ou por 30 dias; levar o histórico no backup do celular
+    mensagens: { retencao: 'sempre', backup: false } };
   // Temas prontos (Aparência > Temas): cores e material de uma vez. As cores de detalhe que não aparecem aqui
   // voltam ao automático. Mantêm a leitura do app: destaque = você/ao vivo, detalhe 2 = quem fala.
   const themes = [
@@ -203,7 +205,9 @@ const AppPreferences = (() => {
     // Sem cores salvas: o tema padrão inteiro. Com cores, a opcional que faltar fica no automático ('').
     const base = raw?.colors ? { ...defaults.colors, ...Object.fromEntries(optionalColors.map(k => [k, ''])) } : defaults.colors;
     const result = { colors: { ...base }, appearance: { ...defaults.appearance }, font: { ...defaults.font },
-      nameFont: cleanNameFont(raw?.nameFont), sounds: { ...defaults.sounds, levels: { ...defaults.sounds.levels } } };
+      nameFont: cleanNameFont(raw?.nameFont), sounds: { ...defaults.sounds, levels: { ...defaults.sounds.levels } }, mensagens: { ...defaults.mensagens } };
+    if (['sempre', '30'].includes(raw?.mensagens?.retencao)) result.mensagens.retencao = raw.mensagens.retencao;
+    if (typeof raw?.mensagens?.backup === 'boolean') result.mensagens.backup = raw.mensagens.backup;
     if (borderModes.includes(raw?.appearance?.border)) result.appearance.border = raw.appearance.border;
     if (glassModes.includes(raw?.appearance?.glass)) result.appearance.glass = raw.appearance.glass;
     const level = raw?.appearance?.level;

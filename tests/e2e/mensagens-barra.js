@@ -1,4 +1,4 @@
-// Barra de mensagens: o "Mensagens" abre a lista das conversas para cima, em cima da própria barra (não no HUB).
+// Barra de mensagens: o envelope (mensagens privadas) abre a lista das conversas para cima, em cima da própria barra (não no HUB).
 // Sem servidor Razze: a conta e as conversas são de mentira, só no app (nada é enviado).
 const { openApp, check, sleep, run } = require('./ajuda');
 
@@ -23,6 +23,7 @@ run('Barra de mensagens abre para cima', 90000, async () => {
   const geo = await A.eval(`(() => { const p = $('dmPanel').getBoundingClientRect(), b = $('dmBar').getBoundingClientRect(), l = $('dmBarLabel').getBoundingClientRect(); return { pBottom: p.bottom, bTop: b.top, pLeft: p.left, lLeft: l.left, h: p.height }; })()`);
   check('Clicar em Mensagens abre o painel para cima, colado na barra', await A.eval(`!$('dmPanel').hidden`) && Math.abs(geo.pBottom - geo.bTop) < 2 && Math.abs(geo.pLeft - geo.lLeft) < 2 && geo.h > 150, JSON.stringify(geo));
   check('O HUB não abre', await A.eval(`!hub.open`));
+  check('A barra não invade o HUB, que vai de cima a baixo', await A.eval(`(() => { const h = $('hubRail').getBoundingClientRect(), b = $('dmBar').getBoundingClientRect(); return b.left >= h.right - 1 && h.bottom >= innerHeight - 1; })()`));
   check('Lista: Bia (com a prévia e 2 não lidas) antes do Caio', await A.eval(`(() => {
     const rows = [...$('dmPanelConvList').children];
     return rows.length === 2 && rows[0].textContent.includes('Bia') && rows[0].textContent.includes('oi, bora jogar?') && rows[0].querySelector('.hub-badge')?.textContent === '2' && rows[1].textContent.includes('Caio');
@@ -50,6 +51,7 @@ run('Barra de mensagens abre para cima', 90000, async () => {
   // Muitas conversas abertas: as que não cabem vão para o "+N", e nada passa da borda da janela
   const ids = ['d', 'e', 'f', 'g', 'h'].map((ch) => ch.repeat(32));
   await A.eval(`(() => {
+    ['i', 'j'].forEach((ch, i) => { const id = ch.repeat(32); friendsData.friends.push({ id, displayName: 'Extra ' + (i + 1), online: false }); dmPutInBar(id, false); });
     ${JSON.stringify(ids)}.forEach((id, i) => { friendsData.friends.push({ id, displayName: 'Amigo ' + (i + 1), online: i % 2 === 0 }); dmPutInBar(id, i < 3); });
     dmConv('${'h'.repeat(32)}').unread = 3;
     renderDm();

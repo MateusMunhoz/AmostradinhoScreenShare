@@ -147,3 +147,5 @@ localmente por um gerador pequeno em `vendor/qr/` (sem CDN; licença em `vendor/
 - Trazer exige estar fora de uma sala (aplicar recarrega a interface), em vez de aplicar parte na hora.
 - Testes: `tests/celular.test.js` (modelo e QR) e `tests/celular-servidor.test.js` (servidor).
 - O limite subiu de 2 para **4 MB** com o fundo do perfil (`fundoPerfil`, GIF ou WebP de até 1 MB; [spec](fundo-do-perfil.md)), que também vai no arquivo e é conferido pelo hash.
+- E de 4 para **16 MB** com o histórico das mensagens privadas (item `mensagens`, opcional, desligado por padrão;
+  [spec](mensagens-conexao-direta.md)). Ele vem e vai pelo processo principal, como os atalhos.

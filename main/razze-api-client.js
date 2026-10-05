@@ -74,6 +74,8 @@ class RazzeApiClient {
   friendLinkPreview(token) { return this.request('GET', '/v1/friends/links/preview?token=' + encodeURIComponent(token)); }
   friendLinkAccept(token) { return this.request('POST', '/v1/friends/links/accept', { token }); }
   sendMessage(to, text) { return this.request('POST', '/v1/messages', { to, text }); }
+  sendSignal(to, text) { return this.request('POST', '/v1/signals', { to, text }); }
+  signals() { return this.request('GET', '/v1/signals'); }
   setDmKey(publicKey) { return this.request('PUT', '/v1/me/dm-key', { publicKey }); }
   messages(after = 0) { return this.request('GET', '/v1/messages?after=' + Math.max(0, Math.floor(Number(after) || 0))); }
   listNetworks() { return this.request('GET', '/v1/networks'); }

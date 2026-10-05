@@ -365,14 +365,17 @@ O **telefone** no chip da conversa (ou ao lado do nome, no HUB › Amigos) liga 
 - **Os dois veem a senha** no Painel da sala (botão de pessoas), para passar a outra pessoa ou mudar.
 - **App antigo:** vê o convite comum, e o texto da mensagem traz o código ou o endereço e a senha.
 
-- **Abrir:** clique em **Mensagens**, na barra de baixo: a lista das conversas abre para cima, com busca, a última mensagem e as não lidas. Ou, no HUB, aba **Amigos**, no balão ao lado do nome.
+- **Abrir:** clique no **envelope** (mensagens privadas), no começo da barra de baixo: a lista das conversas abre para cima, com busca, a última mensagem e as não lidas. Ou, no HUB, aba **Amigos**, no balão ao lado do nome.
 - **Barra de conversas:** fica embaixo da tela. Cada conversa aberta vira um chip. Clicar no chip abre a janela; o **—** minimiza de volta para o chip; o **X** tira da barra.
 - **Muitas conversas:** as que não cabem na largura vão para o **+N** no canto direito (fica destacado se alguma tem mensagem não lida). Clicar nele lista as escondidas; escolher uma traz ela de volta para a barra.
 - **Ordem:** arraste um chip para a esquerda ou para a direita de outro (ou **Alt+←** / **Alt+→** com ele selecionado). A ordem fica salva.
 - **Histórico:** fica salvo neste PC, um arquivo por amigo. Fechar a conversa no X não apaga nada: ao abrir de novo, tudo volta.
+- **Conexão direta:** com os dois online, abrir a conversa liga uma conexão direta entre os PCs, só da conversa (não tira ninguém da sala em que está). A linha acima do campo diz o modo: **Conexão direta** (texto e arquivos vão direto) ou **Pelo servidor** (só texto, criptografado). Funciona com a Razze, a Radmin e a rede local; no modo Internet, com o STUN do servidor da aba Rede (atrás de algumas redes, não dá e fica pelo servidor).
 - **Amigo offline:** a mensagem fica no servidor Razze por até 30 dias e chega quando ele abrir o app.
-- **Mensagem nova:** a conversa aparece na barra, minimizada, com o número de mensagens não lidas. O total aparece no **Mensagens** da barra.
-- **Arquivos:** por enquanto só texto (os arquivos do chat da sala vão direto de PC para PC, e o amigo pode não estar na mesma rede).
+- **Prazo do histórico** (Configurações › **Mensagens privadas**): **Guardar para sempre** (padrão) ou **Apagar depois de 30 dias**. Vale só para este PC; com 30 dias, o que passou do prazo (mensagens e imagens guardadas) sai na hora.
+- **Backup no celular:** na mesma aba, **Levar as mensagens no backup do celular** (desligado por padrão). Ligado, o **Guardar no celular** leva o texto das conversas da conta Razze, cifrado com a senha do backup (imagens e arquivos não vão). Ao trazer, se for a mesma conta Razze, junta com o histórico deste PC sem apagar nada. O arquivo tem até 16 MB: passando disso, vão as mensagens mais novas e o app avisa.
+- **Mensagem nova:** a conversa aparece na barra, minimizada, com o número de mensagens não lidas. O total aparece no envelope da barra.
+- **Arquivos e imagens:** pelo clipe, colando (Ctrl+V) ou arrastando para a janela, até 200 MB, sem metadados (como no chat da sala). Só pela conexão direta: arquivo nunca passa pelo servidor, então sem ela o clipe fica apagado. Imagem de até 8 MB chega sozinha, aparece na conversa e fica guardada, protegida, neste PC; outro arquivo chega com **Baixar**, que traz direto do PC de quem mandou enquanto o app dele estiver aberto, e depois **Salvar**.
 
 ## Voz e atalhos
 

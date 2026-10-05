@@ -60,7 +60,7 @@ function testInternetServer(url, timeoutMs = 6000) {
       try { m = JSON.parse(e.data); } catch {}
       clearTimeout(timer);
       ws.close();
-      if (m?.type === 'info' && m.app === 'tela-p2p-internet') resolve({ turn: !!m.turn });
+      if (m?.type === 'info' && m.app === 'tela-p2p-internet') resolve({ turn: !!m.turn, stun: (Array.isArray(m.stun) ? m.stun : []).filter((u) => typeof u === 'string' && /^stuns?:[^\s]{1,200}$/.test(u)).slice(0, 5) });
       else reject(new Error('Esse endereço respondeu, mas não é um servidor do modo Internet.'));
     };
     ws.onerror = () => { clearTimeout(timer); reject(new Error('Não foi possível conectar. Confira o endereço, a porta e o firewall da VPS.')); };

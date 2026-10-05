@@ -1864,7 +1864,8 @@ main { margin-left: var(--hub-w); }
 .voice-dragging .drop-target.voice-channel { outline: 2px solid var(--accent); background: var(--accent-soft); }
 .voice-dragging .drop-target.member { box-shadow: inset 2px 0 0 var(--accent); }
 
-/* Mensagens diretas (renderer/mensagens.js). Barra de conversas: uma faixa fina embaixo, como o HUB na esquerda.
+/* Mensagens diretas (renderer/mensagens.js). Barra de conversas: uma faixa fina embaixo, entre o HUB e a barrinha
+   (não encosta no HUB: ele segue de cima a baixo e, aberto, fica por cima dela). O envelope abre a lista.
    Cada conversa é um chip; aberta, o chip vira o rodapé de uma janela que sobe por cima do conteúdo */
 :root { --dm-h: 34px; }
 .has-dm-bar main { height: calc(100% - var(--dm-h)); }
@@ -1872,12 +1873,14 @@ main { margin-left: var(--hub-w); }
 .has-dm-bar.workspace-wide #workspacePanes { bottom: calc(116px + var(--dm-h)); }
 .dm-bar { --text: var(--surface-text); --muted: var(--surface-muted); position: fixed; left: var(--hub-w); right: var(--rail-w); bottom: 0; z-index: 12; height: var(--dm-h);
   display: flex; align-items: stretch; gap: 6px; padding: 0 10px 0 0; background: var(--panel); border-top: 1px solid var(--line); color: var(--text); }
-.dm-bar-label { flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 0 14px; border: 0; border-right: 1px solid var(--line); background: transparent;
-  color: var(--muted); font: inherit; font-size: 11px; font-weight: 700; letter-spacing: .24em; text-transform: uppercase; cursor: pointer; }
+.dm-bar-label { position: relative; flex: none; display: inline-flex; align-items: center; justify-content: center; width: 44px; padding: 0; border: 0; border-right: 1px solid var(--line); background: transparent;
+  color: var(--muted); font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
+.dm-bar-label svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.dm-bar-label .hub-badge { position: absolute; top: 2px; right: 2px; min-width: 15px; height: 15px; padding: 0 4px; font-size: 9.5px; pointer-events: none; }
 .dm-bar-label:hover, .dm-bar-label:focus-visible, .dm-bar-label.open { color: var(--accent); background: var(--panel-2); outline: none; }
 .dm-bar-label.open { box-shadow: inset 0 2px 0 var(--accent); }
 /* O painel das conversas: sobe a partir do "Mensagens", grudado na barra (como a janela de uma conversa) */
-.dm-panel { position: absolute; left: 0; bottom: 100%; width: 340px; max-width: calc(100vw - var(--hub-w) - 20px); height: min(460px, calc(100vh - 180px));
+.dm-panel { position: absolute; left: 0; bottom: 100%; width: 340px; max-width: calc(100vw - var(--hub-w) - var(--rail-w) - 20px); height: min(460px, calc(100vh - 180px));
   display: flex; flex-direction: column; gap: 8px; padding: 10px 12px 12px; background: var(--panel); border: 1px solid var(--line); border-bottom: 0;
   border-radius: 0 10px 0 0; box-shadow: 0 -12px 36px rgba(0, 0, 0, .45); transform-origin: bottom; animation: dm-panel-up .16s ease-out; z-index: 1; }
 .dm-panel[hidden] { display: none; }
@@ -1908,9 +1911,6 @@ main { margin-left: var(--hub-w); }
 .dm-locked { color: var(--muted); font-style: italic; }
 .dm-plain { margin-left: 6px; padding: 0 5px; font-size: 10.5px; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; white-space: nowrap; }
 .dm-key-changed { margin: 0 0 4px; padding: 6px 9px; font-size: 12px; color: var(--warn); background: var(--panel-2); border-left: 3px solid var(--warn); border-radius: 4px; }
-/* Com a barra das mensagens, o HUB para em cima dela (aberto, ele não cobre o "Mensagens") e a barra vai até a borda */
-.has-dm-bar .hub-rail { bottom: var(--dm-h); }
-.has-dm-bar .dm-bar { left: 0; }
 .dm-window { position: absolute; left: 0; right: 0; bottom: 100%; height: min(460px, calc(100vh - 180px)); display: flex; flex-direction: column; gap: 8px; padding: 10px 12px 12px;
   background: var(--panel); border: 1px solid var(--line); border-bottom: 0; border-radius: 10px 10px 0 0; box-shadow: 0 -12px 36px rgba(0, 0, 0, .45); }
 .dm-window[hidden] { display: none; }
@@ -1922,6 +1922,11 @@ main { margin-left: var(--hub-w); }
   color: var(--text); background: var(--sunken); border: 1px solid var(--line); border-radius: 6px; }
 .dm-form textarea:focus { border-color: var(--accent); outline: none; }
 .dm-form .btn.icon { width: 40px; height: 40px; }
+/* Conexão direta (renderer/mensagens-direto.js): o modo em cima do campo e o clipe, que só acende com ela */
+.dm-modo { flex: none; margin: 0; font-size: 11.5px; line-height: 1.35; color: var(--muted); }
+.dm-modo[data-modo="direto"] { color: var(--ok); }
+.dm-form .dm-attach:disabled { opacity: .45; cursor: not-allowed; }
+.dm-window .file-card { width: 240px; }
 /* Convite para uma sala dentro da conversa (salas-amigos.js › cartaoConvite) */
 .dm-invite { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 12px; margin-top: 4px; padding: 9px 11px;
   background: var(--panel-2); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 8px; max-width: 360px; }
@@ -2025,6 +2030,8 @@ html[data-tips="off"] .tip { display: none !important; }
 /* Configurações › Celular (renderer/celular.js): os dois botões, depois um passo de cada vez (senha, QR, resumo) */
 .phone-panel { display: grid; gap: 12px; }
 .extras-panel { display: grid; gap: 12px; }
+.dms-panel { display: grid; gap: 12px; }
+.dms-panel h3, .dms-panel .hint { margin: 0; }
 .extras-panel h3 { margin: 0; }
 .extra-card { display: grid; gap: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); }
 .extra-card .hint { margin: 0; }
@@ -2226,7 +2233,6 @@ body:has(.modal:not([hidden]), #hubBody:not([hidden]), #dmPanel:not([hidden]), #
 :root[data-mirror="on"] .hub-rail { left: auto; right: 0; border-right: 0; border-left: 1px solid var(--line); }
 :root[data-mirror="on"] .hub-rail.open { box-shadow: -12px 0 40px rgba(0, 0, 0, .5); }
 :root[data-mirror="on"] .dm-bar { left: var(--rail-w); right: var(--hub-w); }
-:root[data-mirror="on"] .has-dm-bar .dm-bar { left: var(--rail-w); right: 0; }
 :root[data-mirror="on"] .theme-decor { left: var(--rail-w); }
 :root[data-mirror="on"] .has-workspace-pane:not(.workspace-wide) main { padding-right: 0; padding-left: calc(var(--workspace-width) + 12px); }
 :root[data-mirror="on"] .voice-side main { padding-left: 0; padding-right: calc(var(--workspace-width) + 12px); }

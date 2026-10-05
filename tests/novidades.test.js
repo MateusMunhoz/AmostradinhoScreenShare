@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { novidadesDoLog } = require('../publicar');
+const { novidadesDoLog, lerArgs } = require('../publicar');
 
 const LOG = [
   '2026-10-03|Chat: /musica com prévia; players isolados',
@@ -33,4 +33,12 @@ test('sem versão nova, os commits soltos do topo não entram; guarda no máximo
 test('mensagem muito longa é cortada', () => {
   const l = novidadesDoLog(['2026-10-01|' + 'a'.repeat(400)], '2.0.0', '2026-10-01');
   assert.equal(l[0].items[0].length, 300);
+});
+
+test('publicar: a versão escolhida vale com ou sem --notas, e o texto das notas nunca vira versão', () => {
+  assert.equal(lerArgs(['1.17.0']).version, '1.17.0');
+  assert.equal(lerArgs([]).version, undefined);
+  assert.deepEqual(lerArgs(['1.17.0', '--notas', 'texto', '--sem-github']), { version: '1.17.0', notes: 'texto', github: false });
+  assert.equal(lerArgs(['--notas', '2.0.0']).version, undefined);
+  assert.equal(lerArgs(['--notas', '2.0.0', '1.17.0']).version, '1.17.0');
 });

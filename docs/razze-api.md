@@ -76,6 +76,8 @@ Todas as respostas usam JSON. Erros seguem `{ "error": { "code": "...", "message
 | `POST /v1/admin/users/:id/reset-code`, `POST /v1/auth/reset` (`{ email, code, password }`) | Esqueci a senha **sem e-mail**: o administrador gera um código (`ABCD-EFGH`, vale 1 hora, uso único, só o hash fica no banco; botão **Código de senha** no painel) e passa para a pessoa, que redefine a senha. 5 erros queimam o código; redefinir derruba as sessões da conta |
 | `POST /v1/messages` (`{ to, text }`) | Mandar mensagem direta para um amigo (até 2000 caracteres, ou até 9000 se for cifrada, `e2e1:<base64url>`; 30 mensagens a cada 10 s por conta). O app só manda cifrada ([spec](spec/mensagens-criptografadas.md)) |
 | `GET /v1/messages?after=<seq>` | Mensagens diretas (enviadas e recebidas) depois do número de sequência `after`, 200 por vez (`more` diz se há mais) |
+| `POST /v1/signals` (`{ to, text }`) | Sinal da conexão direta das mensagens privadas para um amigo: só cifrado (`e2e1:`), até 16000 caracteres, 30 a cada 10 s por conta ([spec](spec/mensagens-conexao-direta.md)) |
+| `GET /v1/signals` | Os sinais que chegaram para esta conta; cada um é entregue uma vez só. Ficam só na memória e somem em 2 minutos |
 | `GET /v1/networks`, `POST /v1/networks` | Listar redes visíveis e criar rede |
 | `GET/PATCH/DELETE /v1/networks/:id` | Consultar, editar ou excluir rede própria |
 | `GET /v1/networks/:id/members` | Listar membros da rede |

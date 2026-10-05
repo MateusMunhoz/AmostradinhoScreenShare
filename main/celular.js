@@ -10,7 +10,7 @@ const http = require('http');
 const os = require('os');
 const crypto = require('crypto');
 
-const MAX = 4 * 1024 * 1024; // o arquivo (o fundo do perfil, um GIF de até 1 MB, é o maior item)
+const MAX = 16 * 1024 * 1024; // o arquivo (o histórico das mensagens privadas, opcional, é o maior item)
 const VIDA = 5 * 60 * 1000;
 let atual = null; // { server, chave, modo, arquivo, avisar, timer, usado }
 

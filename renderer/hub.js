@@ -59,7 +59,7 @@ function renderHub() {
   if (!rail) return;
   const inRoom = !!state.myId;
   const pending = friendsData.incoming.length;
-  $('hubRailBadge').hidden = !pending; // mensagens novas aparecem no "Mensagens" da barra de baixo
+  $('hubRailBadge').hidden = !pending; // mensagens novas aparecem no envelope da barra de baixo
   $('hubRailBadge').textContent = pending > 9 ? '9+' : String(pending);
   $('hubRailBadge').title = `${pending} ${pending === 1 ? 'pedido' : 'pedidos'} de amizade`;
   $('hubFriendsBadge').hidden = !pending;

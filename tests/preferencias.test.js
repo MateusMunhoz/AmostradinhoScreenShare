@@ -218,3 +218,10 @@ test('Som com várias falas: sorteia uma e não repete a última', async () => {
   assert.ok(played.every(u => sound.files.some(f => u.endsWith(f))));
   assert.ok(P2.events.includes('enter'), 'evento de você entrar na sala');
 });
+
+test('mensagens privadas: prazo do histórico e backup no celular, com padrão seguro e mantidos ao trocar de tema', () => {
+  assert.deepEqual(P.normalize(null).mensagens, { retencao: 'sempre', backup: false });
+  assert.deepEqual(P.normalize({ mensagens: { retencao: '30', backup: true } }).mensagens, { retencao: '30', backup: true });
+  assert.deepEqual(P.normalize({ mensagens: { retencao: '7', backup: 'sim' } }).mensagens, { retencao: 'sempre', backup: false });
+  assert.deepEqual(P.applyTheme({ mensagens: { retencao: '30', backup: true } }, 'neon').mensagens, { retencao: '30', backup: true });
+});
