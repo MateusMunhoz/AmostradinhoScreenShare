@@ -23,6 +23,11 @@ const DM_MAX_E2E = 9000;
 const DM_E2E_RE = /^e2e1:[A-Za-z0-9_-]+$/;
 const DM_KEY_RE = /^[A-Za-z0-9+/]{43}=$/; // chave pública X25519 (32 bytes, base64)
 const DM_PAGE = 200;
+// Sinais da conexão direta das mensagens privadas (oferta e resposta WebRTC, cifradas de ponta a ponta): só na
+// memória, entregues uma vez e apagados em 2 minutos. Nunca vão para o banco nem para o histórico
+const SIGNAL_TTL_MS = 2 * 60 * 1000;
+const SIGNAL_MAX = 16000;
+const SIGNAL_QUEUE = 50; // sinais esperando por conta
 
 class ApiError extends Error {
   constructor(status, code, message) { super(message); this.status = status; this.code = code; }
@@ -68,6 +73,8 @@ function createApiServer(options = {}) {
   const now = options.now || (() => Date.now());
   const authAttempts = new Map();
   const dmRate = new Map(); // userId -> { count, resetAt }: no máximo 30 mensagens a cada 10 s por conta
+  const signals = new Map(); // receiverId -> [{ id, from, text, createdAt }]
+  const signalRate = new Map(); // userId -> { count, resetAt }: no máximo 30 sinais a cada 10 s por conta
   const dmRow = (r) => ({ seq: r.seq, id: r.id, from: r.senderId, to: r.receiverId, text: r.body, createdAt: r.createdAt });
   const DM_SELECT = 'SELECT seq, id, sender_id AS senderId, receiver_id AS receiverId, body, created_at AS createdAt FROM direct_messages';
   // Devolve a função que conta a tentativa: o cadastro conta sempre; o login só quando erra a senha
@@ -353,6 +360,35 @@ function createApiServer(options = {}) {
         const rows = db.prepare(DM_SELECT + ' WHERE seq > ? AND (receiver_id = ? OR sender_id = ?) AND created_at >= ? ORDER BY seq LIMIT ?')
           .all(after, userId, userId, now() - DM_KEEP_MS, DM_PAGE + 1);
         return send(res, 200, { messages: rows.slice(0, DM_PAGE).map(dmRow), more: rows.length > DM_PAGE });
+      }
+
+      // Sinais da conexão direta: só entre amigos, sempre cifrados (e2e1:), entregues uma vez
+      if (method === 'POST' && pathname === '/v1/signals') {
+        const body = await readBody(req);
+        const to = String(body.to || '');
+        if (!/^[a-f0-9]{32}$/.test(to)) throw new ApiError(400, 'invalid_input', 'Destinatário inválido.');
+        if (to === userId || !friendshipExists(userId, to)) throw new ApiError(403, 'not_friends', 'Só dá para mandar sinal para amigos.');
+        if (typeof body.text !== 'string' || !DM_E2E_RE.test(body.text) || body.text.length > SIGNAL_MAX) throw new ApiError(400, 'invalid_input', 'Sinal inválido.');
+        const timestamp = now();
+        let rate = signalRate.get(userId);
+        if (!rate || rate.resetAt <= timestamp) rate = { count: 0, resetAt: timestamp + 10_000 };
+        if (rate.count >= 30) throw new ApiError(429, 'rate_limited', 'Muitos sinais seguidos. Espere alguns segundos.');
+        rate.count++;
+        signalRate.set(userId, rate);
+        if (signalRate.size > 10_000) for (const [key, item] of signalRate) if (item.resetAt <= timestamp) signalRate.delete(key);
+        const queue = (signals.get(to) || []).filter((x) => x.createdAt > timestamp - SIGNAL_TTL_MS);
+        if (queue.length >= SIGNAL_QUEUE) queue.shift();
+        const id = newId();
+        queue.push({ id, from: userId, text: body.text, createdAt: timestamp });
+        signals.set(to, queue);
+        if (signals.size > 10_000) for (const [key, list] of signals) if (!list.some((x) => x.createdAt > timestamp - SIGNAL_TTL_MS)) signals.delete(key);
+        return send(res, 201, { id });
+      }
+      if (method === 'GET' && pathname === '/v1/signals') {
+        const timestamp = now();
+        const queue = (signals.get(userId) || []).filter((x) => x.createdAt > timestamp - SIGNAL_TTL_MS && friendshipExists(userId, x.from));
+        signals.delete(userId);
+        return send(res, 200, { signals: queue.map(({ id, from, text, createdAt }) => ({ id, from, to: userId, text, createdAt })) });
       }
 
       if (method === 'GET' && pathname === '/v1/networks') {

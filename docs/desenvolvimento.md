@@ -89,7 +89,7 @@ isso (chamam `watch`, `state`, `speaking`... direto na página).
 | 35 | `comando-voz-regras.js`, `comando-voz-acoes.js`, `comando-voz.js` | Comando de voz (recurso extra): as regras que transformam o texto num comando e a lista única de ações para os pedidos livres (os dois sem DOM, testados no `node:test`); gravar enquanto a tecla está apertada, executar e a aba Recursos extras ([spec](spec/comando-de-voz.md)) |
 | 36 | `mapa-conexoes.js` | O Mapa de conexões, na aba Rede do HUB: grafo em pé, atualiza a cada 5 s só com a aba à vista |
 | 37 | `hub.js` | HUB: a barra fininha da esquerda, com as abas Salas (salas abertas, a atual e o menu inicial) , Amigos (adicionar, filtrar, convidar, pedidos) e Rede (a conta primeiro, depois conexão, servidores, redes Razze e o Mapa de conexões) |
-| 38 | `mensagens.js` | Mensagens diretas entre amigos: aba Mensagens do HUB, barra de conversas embaixo, busca na RazzeAPI a cada 4 s e histórico local |
+| 38 | `mensagens.js`, `mensagens-direto.js` | Mensagens diretas entre amigos: barra de conversas embaixo (o envelope abre a lista), busca na RazzeAPI a cada 4 s, histórico local e a aba Mensagens privadas das Configurações; a conexão direta da conversa (RTCPeerConnection própria, sinais cifrados por `/v1/signals`) para texto e arquivos ([spec](spec/mensagens-conexao-direta.md)) |
 | 39 | `navegacao.js` | Barrinha da direita e painéis simultâneos da sala (`workspaceViews.v1`), painel de voz com os canais |
 | 40 | `inicio.js` | Tela inicial e a partida: liga os botões e listeners, carrega as preferências |
 
@@ -116,8 +116,8 @@ Arquivo novo na página: entra no `index.html` (na posição certa), em `PACK_FI
 | `clipes.js` | Grava os clipes em `Vídeos\Tela P2P\Clipes` (nome limpo, até 300 MB) e mostra na pasta só os que ele salvou. Só módulos do Node ([spec](spec/clipes.md)) |
 | `bandeja.js` | Ícone na bandeja e o menu dele; o X da janela esconde nela (sair de verdade marca `setQuitting`). Mute e ensurdecer mandam as mesmas mensagens dos atalhos; "Procurar atualização" manda `tray-update` |
 | `sessoes.js` | Anúncio e busca das sessões abertas (UDP na rede da Radmin) |
-| `mensagens.js` | Histórico local das mensagens diretas: um arquivo por amigo em `%APPDATA%\Tela P2P\mensagens\<conta>`, cifrado com o safeStorage |
-| `mensagens-cripto.js` | Mensagens diretas criptografadas de ponta a ponta (X25519 + AES-256-GCM): a chave privada só aqui; cifra no envio e decifra na busca, entre o IPC e a RazzeAPI ([spec](spec/mensagens-criptografadas.md)) |
+| `mensagens.js` | Histórico local das mensagens diretas: um arquivo por amigo em `%APPDATA%\Tela P2P\mensagens\<conta>`, cifrado com o safeStorage; prazo (para sempre ou 30 dias), imagens recebidas em `anexos/` e exportar/juntar para o backup no celular |
+| `mensagens-cripto.js` | Mensagens diretas criptografadas de ponta a ponta (X25519 + AES-256-GCM): a chave privada só aqui; cifra no envio e decifra na busca, entre o IPC e a RazzeAPI ([spec](spec/mensagens-criptografadas.md)); também os sinais da conexão direta |
 | `celular.js` | Configurações no celular: servidor HTTP na rede local só enquanto o QR está aberto (chave de uso único, 5 min, até 4 MB); serve a página do celular. Só módulos do Node (testado sem o Electron) |
 
 `janela-flutuante.js`, `chat-jogo.js` e `atalhos.js` usam uns aos outros. Cada um faz o

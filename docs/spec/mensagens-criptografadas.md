@@ -34,6 +34,9 @@ quem recebe leem. O histórico guardado no PC também fica protegido.
   texto ainda abre e é cifrado na próxima gravação.
 - **RazzeAPI:** tabela `dm_keys` (uma pública por conta), `dmKey` em `/v1/friends`, e mensagens `e2e1:` até 9000
   caracteres (texto comum continua até 2000).
+- **Sinais da conexão direta** ([spec](mensagens-conexao-direta.md)): o mesmo formato, com o info
+  `telap2p-dm-sinal-v1`, por `/v1/signals`. Sinal de uma chave diferente da fixada é descartado (só uma mensagem
+  aceita a troca de chave).
 
 ## Compatibilidade
 - App antigo (sem chave): não recebe mensagens de quem atualizou; quem atualizou vê o aviso para ele atualizar.

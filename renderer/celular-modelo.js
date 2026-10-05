@@ -3,9 +3,12 @@
 // item ao trazer e a cifra (PBKDF2 + AES-GCM, pela WebCrypto). A cifra é feita aqui no PC: a página do celular só
 // guarda e devolve o arquivo. Usado por renderer/celular.js e pelos testes (tests/celular.test.js).
 // Nunca vão no arquivo: clientId (identifica este PC na sala), conta e chaves da Razze, endereço da sala e caches.
+// Opcional (Configurações › Mensagens privadas): o texto das mensagens privadas da conta Razze, no item "mensagens".
 
 const CelularModelo = (() => {
-  const APP = 'tela-p2p-config', VERSAO = 1, ITER = 600000, MAX = 4 * 1024 * 1024; // o fundo do perfil (GIF de até 1 MB) é o maior item
+  // Até 16 MB: o histórico das mensagens privadas (opcional) é o maior item; sem ele, o fundo do perfil (GIF de até 1 MB)
+  const APP = 'tela-p2p-config', VERSAO = 1, ITER = 600000, MAX = 16 * 1024 * 1024;
+  const MENSAGENS_MAX = 8 * 1024 * 1024; // o histórico, em texto, antes de cifrar (cifrado e em base64, cresce um terço)
   const Prefs = typeof AppPreferences !== 'undefined' ? AppPreferences : require('./preferencias-modelo');
 
   // ---------- Validação: cada item chega como texto (como no localStorage) e sai limpo, ou null ----------
@@ -65,6 +68,38 @@ const CelularModelo = (() => {
     for (const k of ATALHOS) if (typeof o[k] === 'string' && o[k].length <= 60 && /^[\w+]*$/.test(o[k])) r[k] = o[k];
     return r;
   };
+  // Mensagens privadas: { conta, conversas: [{ friend, name, messages }] }; o processo principal limpa de novo ao juntar
+  const CONTA = /^[a-f0-9]{32}$/, MSG_ID = /^[A-Za-z0-9_-]{1,64}$/;
+  const anexo = (f) => (objeto(f) && MSG_ID.test(String(f.id)) && typeof f.name === 'string' && f.name.length <= 200 && typeof f.mime === 'string' && f.mime.length <= 100
+    && Number.isInteger(f.size) && f.size >= 0 ? { id: f.id, name: f.name, size: f.size, mime: f.mime } : null);
+  const mensagem = (m) => {
+    if (!objeto(m) || !MSG_ID.test(String(m.id)) || !CONTA.test(String(m.from)) || typeof m.text !== 'string' || m.text.length > 2000 || !Number.isFinite(m.createdAt)) return null;
+    const file = m.file ? anexo(m.file) : null;
+    return { id: m.id, seq: Number.isFinite(m.seq) ? m.seq : 0, from: m.from, text: m.text, createdAt: m.createdAt,
+      ...['e2e', 'plain', 'locked', 'keyChanged', 'direto'].reduce((o, k) => (m[k] === true ? { ...o, [k]: true } : o), {}), ...(file ? { file } : {}) };
+  };
+  const mensagens = (o) => {
+    if (!objeto(o) || !CONTA.test(String(o.conta)) || !Array.isArray(o.conversas)) return null;
+    const conversas = [];
+    for (const c of o.conversas.slice(0, 2000)) {
+      if (!objeto(c) || !CONTA.test(String(c.friend)) || !Array.isArray(c.messages)) continue;
+      const messages = c.messages.slice(-10000).map(mensagem).filter(Boolean);
+      if (messages.length) conversas.push({ friend: c.friend, name: typeof c.name === 'string' ? c.name.slice(0, 60) : '', messages });
+    }
+    return { conta: o.conta, conversas };
+  };
+  // Monta o item com as conversas deste PC; passando do limite, vão as mensagens mais novas. Devolve quantas ficaram de fora
+  function mensagensBackup(conta, conversas, limite = MENSAGENS_MAX) {
+    const todas = [];
+    (Array.isArray(conversas) ? conversas : []).forEach((c, i) => { for (const m of c.messages || []) todas.push({ i, m, tam: JSON.stringify(m).length + 1 }); });
+    todas.sort((a, b) => b.m.createdAt - a.m.createdAt);
+    let usado = 0, cabem = 0;
+    while (cabem < todas.length && usado + todas[cabem].tam <= limite) usado += todas[cabem++].tam;
+    const ficam = new Set(todas.slice(0, cabem).map((x) => x.m));
+    const lista = conversas.map((c) => ({ friend: c.friend, name: c.name || '', messages: (c.messages || []).filter((m) => ficam.has(m)) })).filter((c) => c.messages.length);
+    return { item: JSON.stringify({ conta, conversas: lista }), fora: todas.length - cabem, total: todas.length };
+  }
+
   const ITENS = {
     'appPreferences.v1': json((o) => (objeto(o) ? Prefs.normalize(o) : null)),
     tema: (v) => (typeof v === 'string' && Prefs.cleanSkin(v) === v ? v : null),
@@ -79,11 +114,12 @@ const CelularModelo = (() => {
     mostrarMouse: um('0', '1'), priority: texto(12, /^[a-z]+$/),
     excludeApps: json((o) => (Array.isArray(o) ? o.filter((x) => typeof x === 'string' && x.length <= 260 && /^[^\\/:*?"<>|\u0000-\u001f]+$/.test(x)).slice(0, 100) : null)),
     atalhos: json(atalhos), // não fica no localStorage: vem e vai pelo processo principal (main/atalhos.js)
+    mensagens: json(mensagens), // nem este: vem e vai pelo processo principal (main/mensagens.js)
   };
-  const CHAVES_LOCAIS = Object.keys(ITENS).filter((k) => k !== 'atalhos');
+  const CHAVES_LOCAIS = Object.keys(ITENS).filter((k) => k !== 'atalhos' && k !== 'mensagens');
 
   // As configurações deste PC, como texto, só as chaves da lista
-  function juntar(storage, keys) {
+  function juntar(storage, keys, mensagensItem = '') {
     const itens = {};
     for (const k of CHAVES_LOCAIS) {
       let v = null;
@@ -91,6 +127,7 @@ const CelularModelo = (() => {
       if (typeof v === 'string') itens[k] = v;
     }
     if (objeto(keys)) itens.atalhos = JSON.stringify(atalhos(keys));
+    if (mensagensItem) itens.mensagens = mensagensItem;
     return itens;
   }
   // Valida o que veio do arquivo: chave desconhecida ou valor inválido fica de fora. A foto tem de bater com o hash.
@@ -137,7 +174,7 @@ const CelularModelo = (() => {
     const dados = new Uint8Array(await subtle().encrypt({ name: 'AES-GCM', iv }, await chave(senha, salt, ITER), conteudo));
     const texto = JSON.stringify({ app: APP, v: VERSAO, kdf: { name: 'PBKDF2', hash: 'SHA-256', iterations: ITER, salt: emBase64(salt) },
       cipher: { name: 'AES-GCM', iv: emBase64(iv) }, data: emBase64(dados) });
-    if (texto.length > MAX) throw new Error('As configurações passaram de 4 MB.');
+    if (texto.length > MAX) throw new Error('As configurações passaram de 16 MB.');
     return texto;
   }
   // Erros com código: 'formato' (não é um arquivo do app) ou 'senha' (senha errada ou arquivo alterado)
@@ -181,9 +218,11 @@ const CelularModelo = (() => {
     if (['workspaceViews.v1', 'stageLayout', 'vozVisao'].some((k) => itens[k])) linhas.push('Painéis e palco');
     if (['quality', 'encodeMode', 'encodeMode2', 'clipSeconds', 'audioMode', 'excludeApps'].some((k) => itens[k])) linhas.push('Opções de transmissão');
     if (itens.atalhos) linhas.push('Atalhos de teclado');
+    const conversas = ler('mensagens')?.conversas?.length || 0;
+    if (conversas) linhas.push(conversas === 1 ? 'Mensagens privadas: 1 conversa' : `Mensagens privadas: ${conversas} conversas`);
     return linhas;
   }
 
-  return { APP, VERSAO, MAX, ITENS, CHAVES_LOCAIS, ATALHOS, juntar, limpar, cifrar, decifrar, resumo };
+  return { APP, VERSAO, MAX, MENSAGENS_MAX, ITENS, CHAVES_LOCAIS, ATALHOS, juntar, limpar, cifrar, decifrar, resumo, mensagensBackup };
 })();
 if (typeof module !== 'undefined') module.exports = CelularModelo;

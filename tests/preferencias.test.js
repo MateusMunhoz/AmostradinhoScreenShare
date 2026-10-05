@@ -186,3 +186,10 @@ test('largura do chat e da voz: automática, limitada e mantida ao trocar de tem
   assert.equal(P.normalize({ appearance: { paneWidth: -1 } }).appearance.paneWidth, 0);
   assert.equal(P.applyTheme({ appearance: { paneWidth: 600 } }, 'neon').appearance.paneWidth, 600);
 });
+
+test('mensagens privadas: prazo do histórico e backup no celular, com padrão seguro e mantidos ao trocar de tema', () => {
+  assert.deepEqual(P.normalize(null).mensagens, { retencao: 'sempre', backup: false });
+  assert.deepEqual(P.normalize({ mensagens: { retencao: '30', backup: true } }).mensagens, { retencao: '30', backup: true });
+  assert.deepEqual(P.normalize({ mensagens: { retencao: '7', backup: 'sim' } }).mensagens, { retencao: 'sempre', backup: false });
+  assert.deepEqual(P.applyTheme({ mensagens: { retencao: '30', backup: true } }, 'neon').mensagens, { retencao: '30', backup: true });
+});

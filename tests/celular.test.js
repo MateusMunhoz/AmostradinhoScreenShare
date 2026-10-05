@@ -84,3 +84,29 @@ test('QR: versões 1 a 10 com o tamanho certo, e texto grande demais recusado', 
   assert.throws(() => QR.encode('x'.repeat(300)));
   assert.match(QR.svg('oi'), /^<svg class="qr"/);
 });
+
+test('Celular: mensagens privadas vão só quando pedidas, validadas, e passando do limite ficam as mais novas', async () => {
+  const conta = 'a'.repeat(32), amigo = 'b'.repeat(32);
+  const conversas = [{ friend: amigo, name: 'Bia', messages: [
+    { id: 'm1', seq: 1, from: amigo, text: 'antiga', createdAt: 1, e2e: true },
+    { id: 'm2', seq: 2, from: conta, text: 'nova', createdAt: 2, direto: true },
+  ] }];
+  assert.equal(C.juntar(memoria({}), null).mensagens, undefined);
+  const b = C.mensagensBackup(conta, conversas);
+  assert.equal(b.fora, 0);
+  const itens = C.juntar(memoria({}), null, b.item);
+  const { itens: limpos } = await C.limpar(itens);
+  assert.deepEqual(JSON.parse(limpos.mensagens).conversas[0].messages.map((m) => m.text), ['antiga', 'nova']);
+  assert.ok(C.resumo(limpos).includes('Mensagens privadas: 1 conversa'));
+  // Limite pequeno: só a mais nova cabe
+  const curto = C.mensagensBackup(conta, conversas, JSON.stringify(conversas[0].messages[1]).length + 1);
+  assert.equal(curto.fora, 1);
+  assert.deepEqual(JSON.parse(curto.item).conversas[0].messages.map((m) => m.id), ['m2']);
+  // Conta inválida ou mensagem estranha: fora
+  const { itens: ruins, fora } = await C.limpar({ mensagens: JSON.stringify({ conta: '../x', conversas: [] }) });
+  assert.equal(ruins.mensagens, undefined);
+  assert.deepEqual(fora, ['mensagens']);
+  const misto = JSON.parse((await C.limpar({ mensagens: JSON.stringify({ conta, conversas: [{ friend: amigo, messages: [{ id: 'ok', from: amigo, text: 'x', createdAt: 1 }, { id: '../', from: amigo, text: 'y', createdAt: 1 }] }] }) })).itens.mensagens);
+  assert.deepEqual(misto.conversas[0].messages.map((m) => m.id), ['ok']);
+  assert.equal(C.MAX, 16 * 1024 * 1024);
+});

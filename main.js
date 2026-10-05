@@ -430,7 +430,6 @@ if (hasSingleInstance) app.whenReady().then(() => {
   ipcMain.handle('razze-accept-friend', (_e, id) => razze.acceptFriendRequest(String(id || '')));
   ipcMain.handle('razze-cancel-friend-request', (_e, id) => razze.cancelFriendRequest(String(id || '')));
   ipcMain.handle('razze-remove-friend', (_e, id) => razze.removeFriend(String(id || '')));
-  // Mensagens diretas: pela RazzeAPI; o histórico fica em arquivos locais (main/mensagens.js)
   // Mensagens diretas: cifradas aqui antes de ir para a RazzeAPI e decifradas ao chegar (main/mensagens-cripto.js)
   ipcMain.handle('razze-send-message', (_e, to, text) => dmE2E.send(String(to || ''), String(text || '')));
   ipcMain.handle('razze-messages', (_e, after) => dmE2E.messages(Number(after) || 0));
@@ -439,6 +438,15 @@ if (hasSingleInstance) app.whenReady().then(() => {
   ipcMain.handle('dm-list', (_e, account) => dmStore.list(String(account || '')));
   ipcMain.handle('dm-load', (_e, account, friend) => dmStore.load(String(account || ''), String(friend || '')));
   ipcMain.handle('dm-save', (_e, account, friend, data) => dmStore.save(String(account || ''), String(friend || ''), data));
+  // Conexão direta das mensagens (renderer/mensagens-direto.js): os sinais vão cifrados pela RazzeAPI
+  ipcMain.handle('dm-signal-send', (_e, to, text) => dmE2E.sendSignal(String(to || ''), String(text || '')));
+  ipcMain.handle('dm-signals', () => dmE2E.signals());
+  ipcMain.handle('dm-retencao', (_e, days, account) => dmStore.setRetention(Number(days) || 0, String(account || '')));
+  ipcMain.handle('dm-imagem-salvar', (_e, account, id, mime, bytes) => dmStore.saveImage(String(account || ''), String(id || ''), String(mime || ''), bytes instanceof Uint8Array ? bytes : new Uint8Array(0)));
+  ipcMain.handle('dm-imagem-ler', (_e, account, id) => dmStore.loadImage(String(account || ''), String(id || '')));
+  // Backup no celular: o texto das conversas vai para a janela, que cifra com a senha do backup (celular-modelo.js)
+  ipcMain.handle('dm-exportar', (_e, account) => dmStore.exportAll(String(account || '')));
+  ipcMain.handle('dm-importar', (_e, account, convs) => dmStore.importAll(String(account || ''), Array.isArray(convs) ? convs : []));
   ipcMain.handle('razze-wg-connections', () => razze.wireguard.connections());
   ipcMain.handle('razze-wg-status', (_e, networkId) => razze.wireguard.status(String(networkId || '')));
   ipcMain.handle('razze-wg-connect', async (_e, networkId, name) => { const result = await razze.wireguard.connect(razze.api(), String(networkId || ''), String(name || 'Razze')); activeRazzeNetwork = String(networkId); razzePresence.track(activeRazzeNetwork); return result; });

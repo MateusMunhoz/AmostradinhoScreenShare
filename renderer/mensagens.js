@@ -1,15 +1,18 @@
 'use strict';
-// Mensagens diretas entre amigos (contas Razze), fora da sala: vão pela RazzeAPI (POST/GET /v1/messages) e o
-// histórico completo fica num arquivo por amigo neste PC (main/mensagens.js). O servidor guarda só 30 dias.
+// Mensagens diretas entre amigos (contas Razze), fora da sala. Com a conexão direta (renderer/mensagens-direto.js),
+// texto e arquivos vão direto de PC para PC; sem ela, o texto vai pela RazzeAPI (POST/GET /v1/messages) e arquivo
+// nenhum sai. O histórico fica num arquivo por amigo neste PC (main/mensagens.js), para sempre ou por 30 dias
+// (Configurações › Mensagens privadas). O servidor guarda só 30 dias.
 // Criptografadas de ponta a ponta no processo principal (main/mensagens-cripto.js): aqui chega texto normal, com
 // as marcas e2e, plain (de antes, sem criptografia), locked (não abre neste PC) e keyChanged (a chave do amigo mudou).
-// - Barra de conversas, embaixo: o "Mensagens" abre para cima a lista das conversas (amigos e quem já conversou com
+// - Barra de conversas, embaixo: o envelope abre para cima a lista das conversas (amigos e quem já conversou com
 //   você, com a última mensagem e as não lidas); um chip por conversa aberta. Arrastar um chip (ou Alt+←/→) muda a
 //   ordem; as que não cabem na largura vão para o "+N" no fim da barra, que lista e traz de volta. Clicar abre a janela (o mesmo desenho do chat da
 //   sala); o "—" minimiza de volta para o chip; o X tira da barra (o histórico continua no arquivo).
 //   Clicar fora da janela minimiza; o alfinete trava a janela aberta (fica salvo com a barra).
 // Mensagem nova de alguém fora da barra: a conversa entra na barra, minimizada, com o número de não lidas.
-// Script clássico: divide o escopo global com os outros (ordem no index.html). Usa de: util, tema, chat, conectividade, hub.
+// Script clássico: divide o escopo global com os outros (ordem no index.html). Usa de: util, tema, chat, conectividade, hub,
+// mensagens-direto.
 
 const DM_POLL_MS = 4000;
 const dm = {
@@ -18,6 +21,8 @@ const dm = {
 };
 
 const dmKey = (k) => `${k}.${dm.account}`;
+// Configurações › Mensagens privadas: por quanto tempo o histórico fica neste PC (0 = para sempre)
+function dmRetencaoDias() { return appPreferences?.mensagens?.retencao === '30' ? 30 : 0; }
 function dmSaveBar() {
   save(dmKey('dmBar'), JSON.stringify(dm.bar.map(({ id, open, pinned }) => ({ id, open, ...(pinned ? { pinned: true } : {}) }))));
   save(dmKey('dmUnread'), JSON.stringify(Object.fromEntries([...dm.convs].filter(([, c]) => c.unread).map(([id, c]) => [id, c.unread]))));
@@ -50,7 +55,8 @@ function dmSaveConv(c) {
 function dmAdd(c, m) {
   if (c.messages.some((x) => x.id === m.id)) return false;
   c.messages.push({ id: m.id, seq: m.seq || 0, from: m.from, text: m.text, createdAt: m.createdAt,
-    ...(m.e2e ? { e2e: true } : {}), ...(m.plain ? { plain: true } : {}), ...(m.locked ? { locked: true } : {}), ...(m.keyChanged ? { keyChanged: true } : {}) });
+    ...(m.e2e ? { e2e: true } : {}), ...(m.plain ? { plain: true } : {}), ...(m.locked ? { locked: true } : {}), ...(m.keyChanged ? { keyChanged: true } : {}),
+    ...(m.direto ? { direto: true } : {}), ...(m.file ? { file: m.file } : {}) });
   c.messages.sort((a, b) => a.createdAt - b.createdAt || a.seq - b.seq);
   c.last = c.messages.at(-1);
   return true;
@@ -73,11 +79,14 @@ async function dmStart(account) {
   dm.bar = (Array.isArray(bar) ? bar : []).filter((b) => /^[a-f0-9]{32}$/.test(String(b?.id))).map((b) => ({ id: b.id, open: !!b.open, pinned: !!b.pinned }));
   for (const b of dm.bar) { const c = dmConv(b.id); if (b.open) await dmLoadConv(c); }
   renderDm();
+  window.api.dmRetencao(dmRetencaoDias(), account).catch(() => {});
   void dmPoll();
   dm.timer = setInterval(dmPoll, DM_POLL_MS);
+  diretoAgendarSinais();
 }
 function dmStop() {
   clearInterval(dm.timer);
+  diretoParar();
   dm.timer = null;
   for (const c of dm.convs.values()) c.el?.slot.remove();
   Object.assign(dm, { account: '', convs: new Map(), bar: [], cursor: 0, unsupported: false, error: '' });
@@ -133,6 +142,9 @@ async function dmSend(c) {
   // O campo nunca é desativado (isso tiraria o foco): limpa na hora e, se não for, devolve o texto
   input.value = '';
   fitDmInput(input);
+  const p = diretoAberto(c.id);
+  if (p) { diretoTexto(p, c, text); renderDm(); dmScrollEnd(c, true); return; }
+  diretoGarantir(c.id);
   try {
     const res = await window.api.razzeSendMessage(c.id, text);
     if (res?.message) { dmAdd(c, res.message); dmSaveConv(c); }
@@ -160,6 +172,7 @@ async function openDm(id) {
   dmBringIntoView(id);
   c.unread = 0;
   dmSaveBar();
+  diretoGarantir(id);
   if (typeof hub === 'object' && hub.open) setHubOpen(false);
   setDmPanel(false);
   renderDm();
@@ -196,9 +209,10 @@ function minimizeDmOutside(target) {
   dmSaveBar();
   renderDm();
 }
-// Tira da barra: o histórico continua no arquivo e volta quando abrir de novo (pela lista do "Mensagens")
+// Tira da barra: o histórico continua no arquivo e volta quando abrir de novo (pela lista do envelope)
 function closeDm(id) {
   dm.bar = dm.bar.filter((b) => b.id !== id);
+  diretoFechar(id);
   const c = dm.convs.get(id);
   if (c) { c.unread = 0; c.el?.slot.remove(); c.el = null; c.shown = 0; }
   dmSaveBar();
@@ -249,8 +263,33 @@ function dmElements(c) {
   sendBtn.className = 'btn primary icon';
   setIcon(sendBtn, 'send', 'Enviar');
   form.onsubmit = (e) => { e.preventDefault(); void dmSend(c); };
-  form.append(input, sendBtn);
-  win.append(empty, list, status, form);
+  // Clipe, colar e arrastar: só com a conexão direta (arquivo nunca vai pelo servidor)
+  const attach = document.createElement('button');
+  attach.type = 'button';
+  attach.className = 'btn icon dm-attach';
+  const picker = document.createElement('input');
+  picker.type = 'file';
+  picker.multiple = true;
+  picker.hidden = true;
+  attach.onclick = () => picker.click();
+  picker.onchange = () => { const files = [...picker.files]; picker.value = ''; void diretoAnexar(c, files); };
+  input.addEventListener('paste', (e) => {
+    const files = [...(e.clipboardData?.files || [])];
+    if (!files.length) return;
+    e.preventDefault();
+    void diretoAnexar(c, files);
+  });
+  win.addEventListener('dragover', (e) => { if ([...(e.dataTransfer?.types || [])].includes('Files')) { e.preventDefault(); e.dataTransfer.dropEffect = attach.disabled ? 'none' : 'copy'; } });
+  win.addEventListener('drop', (e) => {
+    const files = [...(e.dataTransfer?.files || [])];
+    if (!files.length) return;
+    e.preventDefault();
+    void diretoAnexar(c, files);
+  });
+  form.append(attach, picker, input, sendBtn);
+  const modo = document.createElement('p');
+  modo.className = 'dm-modo';
+  win.append(empty, list, status, modo, form);
   const chip = document.createElement('div');
   chip.className = 'dm-chip';
   chip.tabIndex = 0;
@@ -273,7 +312,7 @@ function dmElements(c) {
   const close = dmIconButton('dm-chip-btn', ICON.close, 'Fechar a conversa (o histórico fica salvo neste PC)', () => closeDm(c.id));
   chip.append(dot, name, badge, call, pin, min, close);
   slot.append(win, chip);
-  c.el = { slot, win, list, empty, status, input, chip, dot, name, badge, pin, min };
+  c.el = { slot, win, list, empty, status, input, chip, dot, name, badge, pin, min, modo, attach };
   return c.el;
 }
 
@@ -304,7 +343,7 @@ function dmMessageEl(c, m, prev) {
     text.textContent = 'Mensagem criptografada para outro PC: não dá para abrir aqui.';
     text.title = 'Ela foi cifrada para a chave de outro PC desta conta (ou de antes de trocar de PC).';
   } else if (!convite) textWithLinks(text, m.text);
-  if (convite) line.append(who); else line.append(who, sep, text);
+  if (convite || (m.file && !m.text)) line.append(who); else line.append(who, sep, text);
   if (m.plain) {
     const tag = document.createElement('span');
     tag.className = 'dm-plain';
@@ -322,6 +361,7 @@ function dmMessageEl(c, m, prev) {
   }
   body.append(line);
   if (convite) body.append(cartaoConvite(convite, mine, friendName(c.id), m.createdAt));
+  if (m.file) body.append(diretoCartao(c, m));
   li.append(when, body);
   return li;
 }
@@ -346,6 +386,8 @@ function renderDmWindow(c, open) {
   el.win.hidden = !open;
   el.input.placeholder = `Mensagem para ${friendName(c.id)}`;
   if (!open) return;
+  renderDiretoJanela(c);
+  queueMicrotask(() => diretoGarantir(c.id));
   if (c.shown !== c.messages.length) {
     const atEnd = el.list.scrollHeight - el.list.scrollTop - el.list.clientHeight < 80;
     el.list.replaceChildren(...c.messages.map((m, i) => dmMessageEl(c, m, c.messages[i - 1])));
@@ -353,7 +395,7 @@ function renderDmWindow(c, open) {
     if (atEnd || !el.list.dataset.scrolled) { el.list.scrollTop = el.list.scrollHeight; el.list.dataset.scrolled = '1'; }
   }
   el.empty.hidden = c.messages.length > 0;
-  el.empty.textContent = `Comece a conversa com ${friendName(c.id)}. As mensagens são criptografadas de ponta a ponta: só vocês dois leem. Chegam mesmo se a pessoa estiver offline (o servidor guarda por 30 dias) e ficam salvas, protegidas, neste PC.`;
+  el.empty.textContent = `Comece a conversa com ${friendName(c.id)}. As mensagens são criptografadas de ponta a ponta: só vocês dois leem. Com os dois online, vão direto de PC para PC (e dá para mandar imagens e arquivos); senão, pelo servidor, que guarda por 30 dias. Ficam salvas, protegidas, neste PC.`;
 }
 
 function renderDmBar() {
@@ -498,7 +540,7 @@ function fillDmList(prefix = 'dmPanel') {
     li.onclick = () => void openDm(id);
     li.onkeydown = (e) => { if (e.key === 'Enter') void openDm(id); };
     const last = c?.last;
-    const preview = last ? `${last.from === dm.account ? 'você: ' : ''}${last.locked ? 'Mensagem criptografada' : lerConvite(last.text) ? (lerConvite(last.text).chamada ? 'Chamada' : 'Convite para a sala') : last.text.replace(/\s+/g, ' ')}` : friendsData.friends.some((f) => f.id === id) ? 'Nenhuma mensagem ainda' : '';
+    const preview = last ? `${last.from === dm.account ? 'você: ' : ''}${last.locked ? 'Mensagem criptografada' : last.file && !last.text ? (CHAT_IMAGE_TYPES.includes(last.file.mime) ? 'Imagem' : `Arquivo: ${last.file.name}`) : lerConvite(last.text) ? (lerConvite(last.text).chamada ? 'Chamada' : 'Convite para a sala') : last.text.replace(/\s+/g, ' ')}` : friendsData.friends.some((f) => f.id === id) ? 'Nenhuma mensagem ainda' : '';
     const info = hubInfo(name, preview);
     li.append(hubAvatar(name, friendOnline(id)), info);
     if (last) {
@@ -515,7 +557,7 @@ function fillDmList(prefix = 'dmPanel') {
   $(prefix + 'ConvEmpty').textContent = needle ? `Ninguém com “${dm.filter.trim()}”.` : 'Adicione amigos na aba Amigos para conversar com eles.';
 }
 
-// ---------- Painel da barra: o "Mensagens" abre a lista para cima, em cima da barra ----------
+// ---------- Painel da barra: o envelope abre a lista para cima, em cima da barra ----------
 function setDmPanel(open) {
   open = open && !!dm.account;
   const was = !$('dmPanel').hidden;
@@ -535,7 +577,32 @@ function renderDm() {
   if (typeof renderHub === 'function') renderHub();
 }
 
+// ---------- Configurações › Mensagens privadas ----------
+function renderDmConfig() {
+  const m = appPreferences.mensagens;
+  for (const r of document.querySelectorAll('input[name="dmRetencao"]')) r.checked = r.value === m.retencao;
+  $('dmRetencaoHint').textContent = m.retencao === '30'
+    ? 'Mensagens e imagens guardadas com mais de 30 dias saem deste PC sozinhas.'
+    : 'Tudo fica neste PC, protegido, até você apagar (até 10 mil mensagens por conversa).';
+  $('dmBackup').checked = m.backup;
+}
+// Mudou o prazo: o processo principal apaga o que passou e as conversas abertas recarregam do arquivo
+async function setDmRetencao(valor) {
+  appPreferences.mensagens = { ...appPreferences.mensagens, retencao: valor };
+  saveAppPreferences();
+  renderDmConfig();
+  if (!dm.account) return;
+  await window.api.dmRetencao(dmRetencaoDias(), dm.account).catch(() => {});
+  for (const c of dm.convs.values()) { c.loaded = false; c.messages = []; c.shown = -1; c.last = null; }
+  for (const s of await window.api.dmList(dm.account).catch(() => [])) dmConv(s.friend).last = s.last;
+  for (const b of dm.bar) if (b.open) await dmLoadConv(dmConv(b.id));
+  renderDm();
+}
+
 function setupDm() {
+  for (const r of document.querySelectorAll('input[name="dmRetencao"]')) r.onchange = () => { if (r.checked) void setDmRetencao(r.value); };
+  $('dmBackup').onchange = () => { appPreferences.mensagens = { ...appPreferences.mensagens, backup: $('dmBackup').checked }; saveAppPreferences(); renderDmConfig(); };
+  renderDmConfig();
   $('dmBarLabel').onclick = () => setDmPanel($('dmPanel').hidden);
   $('dmPanelClose').onclick = () => { setDmPanel(false); $('dmBarLabel').focus(); };
   $('dmPanelFilter').oninput = () => { dm.filter = $('dmPanelFilter').value; renderDmPanel(); };

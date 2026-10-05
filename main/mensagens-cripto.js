@@ -13,6 +13,9 @@
 // - Chave do amigo fixada na primeira vez (TOFU): se mudar (PC novo, reinstalou ou um servidor trocando chaves),
 //   a mensagem vem com keyChanged e a conversa avisa.
 // - Amigo sem chave (app antigo): a mensagem não sai; o erro pede para ele atualizar.
+// - Sinais da conexão direta (oferta e resposta WebRTC, renderer/mensagens-direto.js): o mesmo formato, com outro
+//   "info" (telap2p-dm-sinal-v1), por POST/GET /v1/signals. Como a impressão digital DTLS vai dentro do sinal
+//   cifrado, só o amigo dono da chave fecha a conexão. Sinal de uma chave diferente da fixada é descartado.
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -26,25 +29,28 @@ const HEAD = 1 + 32 + 32 + 16 + 12;
 
 const rawToPublic = (raw) => crypto.createPublicKey({ key: Buffer.concat([SPKI, raw]), format: 'der', type: 'spki' });
 const publicToRaw = (key) => key.export({ format: 'der', type: 'spki' }).subarray(-32);
-const infoOf = (from, to) => Buffer.from(`telap2p-dm-v1|${from}|${to}`);
-function aesKey(privateKey, peerRaw, salt, from, to) {
+const INFO = { dm: 'telap2p-dm-v1', sinal: 'telap2p-dm-sinal-v1' };
+const infoOf = (from, to, kind = 'dm') => Buffer.from(`${INFO[kind] || INFO.dm}|${from}|${to}`);
+const SIGNAL_MAX = 12000; // o sinal em texto (JSON), antes de cifrar
+const SIGNAL_FRESH_MS = 90 * 1000;
+function aesKey(privateKey, peerRaw, salt, from, to, kind) {
   const shared = crypto.diffieHellman({ privateKey, publicKey: rawToPublic(peerRaw) });
-  return Buffer.from(crypto.hkdfSync('sha256', shared, salt, infoOf(from, to), 32));
+  return Buffer.from(crypto.hkdfSync('sha256', shared, salt, infoOf(from, to, kind), 32));
 }
 
 // Cifra para quem recebe (myRaw: a minha pública; toRaw: a do amigo)
-function seal({ privateKey, myRaw, toRaw, from, to, text }) {
+function seal({ privateKey, myRaw, toRaw, from, to, text, kind }) {
   const salt = crypto.randomBytes(16);
   const iv = crypto.randomBytes(12);
   const head = Buffer.concat([Buffer.from([1]), myRaw, toRaw, salt, iv]);
-  const cipher = crypto.createCipheriv('aes-256-gcm', aesKey(privateKey, toRaw, salt, from, to), iv);
+  const cipher = crypto.createCipheriv('aes-256-gcm', aesKey(privateKey, toRaw, salt, from, to, kind), iv);
   cipher.setAAD(head);
   const body = Buffer.concat([cipher.update(String(text), 'utf8'), cipher.final(), cipher.getAuthTag()]);
   return PREFIX + Buffer.concat([head, body]).toString('base64url');
 }
 
 // Abre uma mensagem em que eu (me, com myRaw) sou quem recebe ou quem mandou. null se não der (outra chave, mexida)
-function open({ privateKey, myRaw, me, from, to, payload }) {
+function open({ privateKey, myRaw, me, from, to, payload, kind }) {
   if (!String(payload).startsWith(PREFIX)) return null;
   const buf = Buffer.from(String(payload).slice(PREFIX.length), 'base64url');
   if (buf.length < HEAD + 16 || buf[0] !== 1) return null;
@@ -53,7 +59,7 @@ function open({ privateKey, myRaw, me, from, to, payload }) {
   const mine = from === me;
   if (!(mine ? senderRaw : recipientRaw).equals(myRaw)) return { locked: true, senderRaw };
   try {
-    const decipher = crypto.createDecipheriv('aes-256-gcm', aesKey(privateKey, mine ? recipientRaw : senderRaw, salt, from, to), iv);
+    const decipher = crypto.createDecipheriv('aes-256-gcm', aesKey(privateKey, mine ? recipientRaw : senderRaw, salt, from, to, kind), iv);
     decipher.setAAD(buf.subarray(0, HEAD));
     decipher.setAuthTag(buf.subarray(buf.length - 16));
     const text = Buffer.concat([decipher.update(buf.subarray(HEAD, buf.length - 16)), decipher.final()]).toString('utf8');
@@ -97,6 +103,7 @@ function createKeyStore(baseDir, storage) {
     cache.set(account, entry);
     return entry;
   }
+  const pinned = (account, friend) => get(account).amigos[friend] || '';
   // Fixa a chave do amigo; true se ela mudou desde a última vez
   function pin(account, friend, keyB64) {
     const entry = get(account);
@@ -106,7 +113,7 @@ function createKeyStore(baseDir, storage) {
     write(account, entry);
     return !!before;
   }
-  return { get, pin };
+  return { get, pin, pinned };
 }
 
 function createDmE2E({ baseDir, storage, service }) {
@@ -168,10 +175,44 @@ function createDmE2E({ baseDir, storage, service }) {
     return { ...res, messages: (res?.messages || []).map((m) => decode(acct, k, m)) };
   }
 
+  // Sinal da conexão direta para um amigo (texto JSON da janela, até 12000 caracteres)
+  async function sendSignal(to, text) {
+    if (!ID.test(String(to))) throw new RazzeApiError(0, 'invalid_input', 'Amigo inválido.');
+    text = String(text);
+    if (!text || text.length > SIGNAL_MAX) throw new RazzeApiError(0, 'invalid_input', 'Sinal inválido.');
+    const { acct, k } = await ensurePublished();
+    const f = await friendInfo(to);
+    if (!f?.dmKey || !KEY_RE.test(f.dmKey)) throw new RazzeApiError(0, 'no_dm_key', 'Esse amigo ainda não tem a conexão direta.');
+    const fixed = keys.pinned(acct, to);
+    if (fixed && fixed !== f.dmKey) throw new RazzeApiError(0, 'key_changed', 'A chave desse amigo mudou: a conexão direta espera uma mensagem dele.');
+    if (!fixed) keys.pin(acct, to, f.dmKey);
+    const payload = seal({ privateKey: k.privateKey, myRaw: k.myRaw, toRaw: Buffer.from(f.dmKey, 'base64'), from: acct, to, text, kind: 'sinal' });
+    await service.api().sendSignal(to, payload);
+    return { ok: true };
+  }
+  // Os sinais que chegaram (cada um vem uma vez só). Os que não abrem, velhos ou de outra chave ficam de fora
+  async function signals() {
+    const { acct, k } = await ensurePublished();
+    const res = await service.api().signals();
+    const out = [];
+    for (const m of res?.signals || []) {
+      if (!m || !ID.test(String(m.from)) || m.from === acct || typeof m.text !== 'string') continue;
+      if (Math.abs(Date.now() - (Number(m.createdAt) || 0)) > SIGNAL_FRESH_MS) continue;
+      const r = open({ privateKey: k.privateKey, myRaw: k.myRaw, me: acct, from: m.from, to: acct, payload: m.text, kind: 'sinal' });
+      if (!r || r.locked || r.text.length > SIGNAL_MAX) continue;
+      const senderKey = Buffer.from(r.senderRaw).toString('base64');
+      const fixed = keys.pinned(acct, m.from);
+      if (fixed && fixed !== senderKey) continue;
+      if (!fixed) keys.pin(acct, m.from, senderKey);
+      out.push({ from: m.from, text: r.text, createdAt: Number(m.createdAt) || 0 });
+    }
+    return out;
+  }
+
   // Trocou de conta ou de servidor: esquece quem sou
   function reset() { account = ''; published = ''; serverOld = false; }
 
-  return { send, messages, reset, ensurePublished };
+  return { send, messages, sendSignal, signals, reset, ensurePublished };
 }
 
 module.exports = { createDmE2E, seal, open, createKeyStore };

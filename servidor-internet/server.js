@@ -13,7 +13,8 @@
 //                                          o app anuncia o passe só para os amigos, pela RazzeAPI
 //   senha { password }                  -> o host muda a senha; quem entrou com a senha recebe a nova, os passes caem
 //   host { id }  (do servidor)          -> o host saiu e outro assumiu (é quem pode mudar a senha)
-//   info                                -> { type: 'info', app: 'tela-p2p-internet' } (teste da aba Rede)
+//   info                                -> { type: 'info', app: 'tela-p2p-internet', turn, stun } (teste da aba Rede; o STUN
+//                                          também serve à conexão direta das mensagens privadas)
 'use strict';
 const http = require('http');
 const crypto = require('crypto');
@@ -236,7 +237,7 @@ function createInternetServer(options = {}) {
       }
       if (me) return handleMemberMessage({ members: room.members, broadcast: room.broadcast, chat: room.chat, subsalas: room.subsalas, musicas: room.musicas }, id, me, msg);
       if (busy) return;
-      if (msg.type === 'info') { send(ws, { type: 'info', app: 'tela-p2p-internet', turn: !!(cfg.turnHost && cfg.turnSecret) }); return ws.close(); }
+      if (msg.type === 'info') { send(ws, { type: 'info', app: 'tela-p2p-internet', turn: !!(cfg.turnHost && cfg.turnSecret), stun: [...cfg.stunUrls, ...(cfg.turnHost ? [`stun:${cfg.turnHost}:${cfg.turnPort}`] : [])] }); return ws.close(); }
       if (msg.type !== 'hello') return;
 
       if (fails.blocked(ip)) return deny('Muitas tentativas erradas. Espere alguns minutos e tente de novo.');
