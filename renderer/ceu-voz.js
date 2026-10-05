@@ -105,8 +105,11 @@ function renderVoiceSky() {
   else { sky.removeAttribute('role'); sky.removeAttribute('aria-label'); }
   // Na lista, o perfil aberto por uma linha (openSkyProfile) mora na caixa do céu: ela fica à vista enquanto ele está aberto
   // e o modo gamer (modo-gamer.js) tira o céu de cima da lista
-  const show = map || !!skyFocusId || (!gamerOn() && appPreferences.appearance.voiceSky && systems.some((s) => s.people.length));
+  const sky0 = map || (!gamerOn() && appPreferences.appearance.voiceSky && systems.some((s) => s.people.length));
+  const show = sky0 || !!skyFocusId;
   box.hidden = !show;
+  // Só o perfil segurando a caixa (Lista sem céu): ela fica sem altura e sem o céu, só com o cartão solto por cima
+  box.classList.toggle('only-profile', !sky0);
   const radar = document.documentElement.dataset.skin === 'topgun'; // tema Top Gun: o radar no lugar do céu (drawSkyRadar)
   $('voiceSkyNeb').toggleAttribute('hidden', !map || radar); // svg: sem a propriedade hidden do HTML
   $('skyZoom').hidden = true;
@@ -163,15 +166,15 @@ function renderVoiceSky() {
   renderSkyPop();
 }
 
-// Órbitas no mapa: com o mouse chegando perto de um sol, a dele vai desacelerando (a partir de 3x o raio da área do
-// clique) até parar na área do clique; as outras seguem girando. Muda só a velocidade das animações do CSS
+// Órbitas no mapa: com o mouse dentro da órbita mais de fora de um sol (a área do clique: a órbita e o planeta), as
+// dele param; fora dela, giram normal. As dos outros sóis seguem girando. Muda só a velocidade das animações do CSS
 let orbitPointer = null, orbitFrame = 0;
 function setOrbitSpeeds(ev) {
   const sky = $('voiceSky'), m = ev && sky.classList.contains('map') ? sky.getScreenCTM() : null;
   const p = m ? new DOMPoint(ev.clientX, ev.clientY).matrixTransform(m.inverse()) : null;
   for (const g of sky.querySelectorAll('.sky-system')) {
     const r = Number(g.dataset.r), d = p ? Math.hypot(p.x - g.dataset.cx, p.y - g.dataset.cy) : Infinity;
-    const rate = Math.max(0, Math.min(1, (d - r) / (r * 2)));
+    const rate = d <= r ? 0 : 1;
     // Só as órbitas (st-orbit): as transições curtas (o anel do hover, quem fala) seguem no tempo normal
     for (const a of g.getAnimations({ subtree: true })) if (a.animationName === 'st-orbit' && Math.abs(a.playbackRate - rate) > .01) a.updatePlaybackRate(rate);
   }
@@ -463,41 +466,66 @@ function drawSkyShooting(sky, x0, y0, w, h) {
   });
 }
 // Uma nebulosa em volta de cada canal com gente, na cor do canal: duas manchas desfeitas em fumaça (ruído que
-// entorta a borda e desfoca). Fica numa camada só dela (#voiceSkyNeb, atrás do mapa), redesenhada só quando os canais
-// ou os sóis mudam: a fumaça custa caro para recalcular, e o mapa em cima é redesenhado o tempo todo pelas órbitas.
-// Ela respira pela camada inteira (opacidade, no CSS), o que não recalcula nada.
+// entorta a borda e desfoca). A fumaça é calculada uma vez só, numa imagem (skySmokeTexture), para cada canal e cor;
+// depois o mapa só estica essa imagem, sem recalcular nada ao aproximar, andar ou redesenhar. Fica numa camada só dela
+// (#voiceSkyNeb, atrás do mapa), redesenhada só quando os canais ou os sóis mudam, e respira inteira (opacidade, no CSS).
 let skyNebKey = '';
 function drawSkyNebulas(neb, systems, pts, outer) {
-  const gamer = gamerOn(); // modo gamer: a mancha de cor sem o filtro de fumaça, que pesa
-  const key = gamer + systems.map((s, i) => `${s.ch}:${s.people.length}:${pts[i][0].toFixed(0)}:${pts[i][1].toFixed(0)}`).join('|');
+  const colors = skyNebColors();
+  const key = colors.join() + systems.map((s, i) => `${s.ch}:${s.people.length}:${pts[i][0].toFixed(0)}:${pts[i][1].toFixed(0)}`).join('|');
   if (key === skyNebKey && neb.firstChild) return;
   skyNebKey = key;
   neb.replaceChildren();
-  const defs = skyEl('defs');
-  for (let i = 0; i < 5; i++) {
-    const g = skyEl('radialGradient', { id: `skyNeb${i}` });
-    for (const [offset, op] of [[0, .38], [.5, .12], [1, 0]]) g.append(skyEl('stop', { offset, style: `stop-color: var(--sky-neb-${i}); stop-opacity: ${op}` }));
-    defs.append(g);
-  }
-  const smoke = skyEl('filter', { id: 'skySmoke', x: '-50%', y: '-50%', width: '200%', height: '200%' });
-  smoke.append(skyEl('feTurbulence', { type: 'fractalNoise', baseFrequency: .035, numOctaves: 3, seed: 4 }),
-    skyEl('feDisplacementMap', { in: 'SourceGraphic', scale: 30, xChannelSelector: 'R', yChannelSelector: 'G' }),
-    skyEl('feGaussianBlur', { stdDeviation: 3 }));
-  defs.append(smoke);
-  neb.append(defs);
   systems.forEach((s, i) => {
     if (!s.people.length) return;
-    const [x, y] = pts[i], big = outer(s.people.length) + 30 + s.people.length * 2, h = skyHash(s.ch || 'geral', 13), rot = h % 180;
+    const url = skySmokeTexture(colors[skyHue(s.ch)], skyHash(s.ch || 'geral', 13));
+    if (!url) return; // a imagem ainda está sendo feita: o mapa redesenha quando ficar pronta
+    const [x, y] = pts[i], big = outer(s.people.length) + 30 + s.people.length * 2, size = big * SKY_SMOKE.px / SKY_SMOKE.rx;
     const g = skyEl('g', { class: 'sky-neb', style: `transform-origin: ${x.toFixed(1)}px ${y.toFixed(1)}px` });
-    if (!gamer) g.setAttribute('filter', 'url(#skySmoke)');
     g.dataset.channel = s.ch;
-    const fill = `url(#skyNeb${skyHue(s.ch)})`;
-    g.append(
-      skyEl('ellipse', { cx: x.toFixed(1), cy: y.toFixed(1), rx: big.toFixed(1), ry: (big * .72).toFixed(1), fill, transform: `rotate(${rot} ${x.toFixed(1)} ${y.toFixed(1)})` }),
-      skyEl('ellipse', { cx: (x + big * .22).toFixed(1), cy: (y - big * .12).toFixed(1), rx: (big * .6).toFixed(1), ry: (big * .4).toFixed(1), fill, transform: `rotate(${rot + 60} ${x.toFixed(1)} ${y.toFixed(1)})` }),
-    );
+    g.append(skyEl('image', { href: url, x: (x - size / 2).toFixed(1), y: (y - size / 2).toFixed(1), width: size.toFixed(1), height: size.toFixed(1), preserveAspectRatio: 'none' }));
     neb.append(g);
   });
+}
+// As cores das nebulosas como o tema deixa agora (as variáveis --sky-neb-N viram uma cor de verdade); mudou o tema,
+// muda a chave e as imagens são refeitas
+function skyNebColors() {
+  const probe = document.createElement('i');
+  $('voiceSkyBox').append(probe);
+  const colors = [0, 1, 2, 3, 4].map((i) => { probe.style.color = `var(--sky-neb-${i})`; return getComputedStyle(probe).color; });
+  probe.remove();
+  return colors;
+}
+// A imagem da fumaça de um canal: as duas manchas com o filtro de ruído, desenhadas num SVG solto, passadas para um
+// canvas e guardadas como blob (a CSP deixa img-src blob:). Feita uma vez por cor e canal; enquanto não fica pronta,
+// devolve '' e, quando fica, redesenha o mapa. seed: cada canal com o seu formato de fumaça.
+const SKY_SMOKE = { px: 320, rx: 92 }; // tamanho da imagem e o raio da mancha grande dentro dela
+const skySmokeCache = new Map();
+function skySmokeTexture(color, seed) {
+  const key = `${color}|${seed % 97}`;
+  const hit = skySmokeCache.get(key);
+  if (hit !== undefined) return hit;
+  skySmokeCache.set(key, '');
+  const { px, rx } = SKY_SMOKE, c = px / 2, rot = seed % 180;
+  const grad = `<radialGradient id="g"><stop offset="0" stop-color="${color}" stop-opacity=".38"/><stop offset=".5" stop-color="${color}" stop-opacity=".12"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></radialGradient>`;
+  const smoke = `<filter id="f" x="-50%" y="-50%" width="200%" height="200%"><feTurbulence type="fractalNoise" baseFrequency=".026" numOctaves="3" seed="${seed % 97}"/><feDisplacementMap in="SourceGraphic" scale="40" xChannelSelector="R" yChannelSelector="G"/><feGaussianBlur stdDeviation="4"/></filter>`;
+  const blobs = `<g filter="url(#f)"><ellipse cx="${c}" cy="${c}" rx="${rx}" ry="${rx * .72}" fill="url(#g)" transform="rotate(${rot} ${c} ${c})"/>` +
+    `<ellipse cx="${c + rx * .22}" cy="${c - rx * .12}" rx="${rx * .6}" ry="${rx * .4}" fill="url(#g)" transform="rotate(${rot + 60} ${c} ${c})"/></g>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${px}" height="${px}"><defs>${grad}${smoke}</defs>${blobs}</svg>`;
+  const img = new Image();
+  img.onload = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = px;
+    canvas.getContext('2d').drawImage(img, 0, 0);
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      skySmokeCache.set(key, URL.createObjectURL(blob));
+      skyNebKey = '';
+      if (voiceMapOn() && !voiceDrag) renderVoiceSky();
+    });
+  };
+  img.src = 'data:image/svg+xml,' + encodeURIComponent(svg);
+  return '';
 }
 // Linha fraca de cada sol até o vizinho mais perto entre os que vieram antes, de borda a borda.
 // chs (o Mapa): a linha faz uma curva e uma luz corre por ela, na cor do canal de onde sai
@@ -606,7 +634,7 @@ function setupSkyCamera() {
 }
 
 function drawSkySystem(sky, { ch, name, here, people, music }, [sx, sy], { map, geo, labels, now, outer }) {
-  // Cada sol com os planetas num grupo: no mapa, a órbita desacelera com o mouse chegando perto (setOrbitSpeeds)
+  // Cada sol com os planetas num grupo: no mapa, as órbitas param com o mouse dentro da de fora (setOrbitSpeeds)
   const sys = skyEl('g', { class: 'sky-system', style: `--hue: var(--sky-neb-${skyHue(ch)})` });
   Object.assign(sys.dataset, { cx: sx, cy: sy, r: Math.max(outer, 13) + 7 });
   sky.append(sys);
@@ -780,7 +808,10 @@ function skyPointerDown(e, g, p, from) {
 // at: o evento do clique (abre onde clicou) ou o elemento (pelo teclado, abre embaixo dele)
 function openSkyPop(what, at) {
   if (voiceDrag) return;
-  if (what.kind === 'person') return openSkyProfile(what.id, at); // a pessoa abre o perfil no mapa
+  if (what.kind === 'person') { // a pessoa abre o perfil no mapa; se ele já estava aberto, o clique só fechou
+    if (what.id === skyJustClosed && at && 'clientX' in at) return;
+    return openSkyProfile(what.id, at);
+  }
   if (!mapFocus.on) clearTimeout(mapFocus.timer); // com o balão do canal aberto, o mapa não muda de tamanho
   if (skyPop && skyPop.kind === what.kind && skyPop.ch === what.ch && skyPop.id === what.id && !$('voiceMapPop').hidden) return closeSkyPop();
   skyPop = what;
@@ -1028,20 +1059,23 @@ window.addEventListener('focus', () => {
 // (o cartão com volume e amizade; na caixinha da lista, Voltar o volume ao padrão), Silenciar para mim e Mudar de canal; de você: microfone, fone e Mudar de canal.
 // Só os ícones; o nome de cada ação fica na dica. Põe o mapa em foco; "‹ Mapa" ou Esc volta. Só redesenha quando algo mostrado muda (o volume
 // arrastando não perde o foco); quem fala acende sozinho pelo data-person (voz.js).
+let skyJustClosed = null; // quem teve o perfil fechado por este clique (pointerdown); vale até o próximo clique
 let skyProfileBack = null; // o canal do cartão de onde o perfil foi aberto: sair do perfil volta para ele
-function openSkyProfile(id, at) {
+let skyFocusFrom = null; // 'pessoas': aberto pela lista de Pessoas da sala (o cartão sobe do pé dela)
+function openSkyProfile(id, at, from = null) {
   closeSkyPop();
   skyProfileBack = null;
+  skyFocusFrom = from;
   clearTimeout(skyFocusClosing); // abriu de novo no meio da transição de fechar
   $('skyFocus').classList.remove('closing');
   $('skyFocus').hidden = true;
   skyFocusId = id;
   skyFocusKey = '';
   requestProfileBg(id); // pergunta pelo fundo do perfil dela (pode ter trocado); chega e redesenha sozinho
-  setMapFocus(true);
-  if (!voiceMapOn()) $('voiceSkyBox').hidden = false; // na lista, a caixa do céu pode estar escondida (renderVoiceSky)
+  if (!from) setMapFocus(true);
+  if (!from && !voiceMapOn()) $('voiceSkyBox').hidden = false; // na lista, a caixa do céu pode estar escondida (renderVoiceSky)
   renderSkyProfile();
-  if (at && !('clientX' in at)) $('skyFocus').querySelector('.sky-focus-back')?.focus(); // pelo teclado
+  if (at && !('clientX' in at)) $('skyFocus').querySelector('.sky-page-back')?.focus(); // pelo teclado
 }
 // Na lista do painel de voz, clicar na linha de quem está na voz (a foto, o nome, o estado; os botões dela não) abre o
 // mesmo perfil do mapa, por cima do painel. Antes do clique geral das fotos e nomes (voz.js), que abriria o cartão
@@ -1055,7 +1089,12 @@ $('voicePaneMembers').addEventListener('click', (e) => {
 // A caixinha fecha com um clique fora dela (a linha da pessoa abre e fecha pelo clique acima; o cartão da pessoa e o
 // menu de canais não a fecham)
 document.addEventListener('pointerdown', (e) => {
-  if (!skyFocusId || voiceMapOn() || e.target.closest?.('#skyFocus, #personCard, #voicePaneMembers li.member.in-voice')) return;
+  // no mapa, qualquer clique fora da faixa fecha (num planeta, o perfil dele abre logo depois)
+  const keep = skyFocusFrom === 'pessoas' ? '#skyFocus, #personCard, #peoplePop [data-profile]'
+    : voiceMapOn() ? '#skyFocus, #personCard, #voiceMapPop' : '#skyFocus, #personCard, #voicePaneMembers li.member.in-voice';
+  skyJustClosed = null;
+  if (!skyFocusId || e.target.closest?.(keep)) return;
+  skyJustClosed = skyFocusId; // o clique no planeta da mesma pessoa só fecha (ao soltar, openSkyPop não reabre)
   // a linha fica embaixo da caixinha: o clique na foto dela cai na caixinha e não fecha
   closeSkyProfile();
 });
@@ -1092,17 +1131,17 @@ function leaveSkyProfile() {
 }
 function renderSkyProfile() {
   const box = $('skyFocus'), id = skyFocusId, me = id === state.myId, pid = me ? null : id;
-  if (!id || $('voiceSkyBox').hidden || !inVoice(id) || (!me && !state.members.has(id))) return closeSkyProfile();
-  // Na lista, o perfil é uma caixinha solta na página (.sky-pop), com a foto bem em cima da foto da linha; no mapa,
-  // fica dentro da caixa do céu e cobre o mapa
-  const list = !voiceMapOn();
-  if (list && box.parentElement !== document.body) document.body.append(box);
-  if (!list && box.parentElement !== $('voiceSkyBox')) $('voiceSkyBox').insertBefore(box, $('skyZoom'));
-  if (!list) { box.style.left = box.style.top = ''; } // a posição da caixinha (placeSkyProfile) não vale no mapa
-  box.classList.toggle('sky-pop', list);
-  // A órbita encolhe quando o espaço é baixo (sem foco, ou janela pequena); na caixinha, fica sempre menor
-  const h = $('voiceSkyBox').clientHeight;
-  box.style.setProperty('--orbit', list ? '0.75' : String(Math.max(0.55, Math.min(1, (h - 160) / 170))));
+  const fromPeople = skyFocusFrom === 'pessoas', voiceNow = inVoice(id);
+  if (!id || (!me && !state.members.has(id)) || (fromPeople ? $('peoplePop').hidden : $('voiceSkyBox').hidden || !voiceNow)) return closeSkyProfile();
+  // O mesmo cartão de perfil em todo lugar (.sky-page, renderSkyPage): sobe do pé do painel onde a pessoa foi clicada,
+  // a lista de Pessoas da sala ou o painel de voz (na lista e no mapa), com o resto ainda à vista em cima
+  const list = true;
+  const home = fromPeople ? $('peoplePop') : $('voicePane');
+  if (box.parentElement !== home) home.append(box);
+  box.style.left = box.style.top = '';
+  box.classList.remove('sky-head');
+  box.classList.add('sky-page');
+  box.style.setProperty('--orbit', '0.62');
   const name = me ? `${getName()} (você)` : nameOf(id);
   const sharing = me ? state.sharing : !!state.members.get(id)?.sharing;
   const micOff = me ? voice.muted : !!voice.members.get(id)?.muted;
@@ -1112,7 +1151,7 @@ function renderSkyProfile() {
   const here = voiceChannelOf(pid);
   const canMove = channels.length > 1 && canDragVoice(pid);
   const bg = profileBgOf(pid); // o fundo do perfil da pessoa (renderer/fundo-perfil.js), se já chegou
-  const key = JSON.stringify([list, id, name, sharing, state.in.has(id), micOff, deafOn, v?.muted, v?.voice, v?.screen, bg.length, bg.slice(-40), here, canMove, channels.map(channelName), photoHashOf(pid)]);
+  const key = JSON.stringify([skyFocusFrom, voiceNow, id, name, sharing, state.in.has(id), micOff, deafOn, v?.muted, v?.voice, v?.screen, bg.length, bg.slice(-40), here, canMove, channels.map(channelName), photoHashOf(pid), typeof friendsData === 'object' ? [friendsData.friends.length, friendsData.outgoing.length, friendsData.incoming.length] : 0]);
   if (key === skyFocusKey && !box.hidden) return placeSkyProfile();
   skyFocusKey = key;
   box.replaceChildren();
@@ -1120,11 +1159,12 @@ function renderSkyProfile() {
   // Fundo do perfil: a imagem cobrindo a caixa, com um véu por cima (CSS .has-bg); some ao fechar
   box.classList.toggle('has-bg', !!bg);
   if (bg) box.style.setProperty('--fundo', `url("${bg}")`); else box.style.removeProperty('--fundo');
+  if (list) return renderSkyPage(box, { id, me, pid, name, sharing, micOff, deafOn, v, channels, here, canMove: voiceNow && canMove, voiceNow });
 
   const back = document.createElement('button');
   back.type = 'button';
   back.className = 'btn small icon sky-focus-back';
-  if (list) setIcon(back, 'close', 'Fechar'); else setIcon(back, 'prev', 'Voltar para o mapa');
+  setIcon(back, 'close', 'Fechar perfil');
   back.onclick = leaveSkyProfile;
 
   const orbit = document.createElement('div');
@@ -1153,12 +1193,8 @@ function renderSkyProfile() {
     // Assistir só aparece para quem está transmitindo; sem ele, os três que sobram ficam em triângulo (t, r, l)
     const watching = state.in.has(id);
     if (sharing) act('a1', 'eye', watching ? 'Parar de assistir' : 'Assistir', () => (watching ? stopWatching(id) : watch(id)));
-    // No mapa, Perfil abre o cartão da pessoa (volume e amizade). Na caixinha da lista, que já é o perfil, no lugar
-    // dele fica Voltar o volume ao padrão (como no cartão)
-    const isDefault = v.voice === DEFAULT_VOICE && v.screen === DEFAULT_SCREEN && !v.muted;
-    if (!list) act(sharing ? 'a2' : 't', 'user', 'Perfil', (e) => openPersonCard(id, e.currentTarget, e.detail === 0));
-    else act(sharing ? 'a2' : 't', 'reset', isDefault ? 'O volume já está no padrão' : `Voltar ao padrão: voz em ${DEFAULT_VOICE}% e a transmissão sem som`,
-      () => setVol(id, { voice: DEFAULT_VOICE, screen: DEFAULT_SCREEN, muted: false }), { disabled: isDefault });
+    // Perfil abre o cartão da pessoa (volume e amizade), no mapa e na lista
+    act(sharing ? 'a2' : 't', 'user', 'Perfil', (e) => openPersonCard(id, e.currentTarget, e.detail === 0));
     act(sharing ? 'a3' : 'r', v.muted ? 'muted' : 'volume', v.muted ? 'Ouvir de novo' : 'Silenciar para mim', () => setVol(id, { muted: !v.muted }), { pressed: v.muted });
   }
   const moveBtn = act(sharing && !me ? 'a4' : 'l', 'moveTo', canMove ? 'Mudar de canal' : 'Sem outro canal', () => toggleSkyMoveMenu(moveBtn, pid, channels, here), { disabled: !canMove });
@@ -1195,40 +1231,116 @@ function renderSkyProfile() {
   const where = document.createElement('span');
   where.className = 'sky-focus-where';
   where.textContent = subsalasOn() ? channelName(here) : 'Na voz';
-  box.append(back, orbit, where, title);
+  // Canal, nome e volume numa coluna: centrada embaixo da órbita na caixinha, ao lado dela na faixa do mapa
+  const info = document.createElement('div');
+  info.className = 'sky-focus-info';
+  info.append(where, title);
+  box.append(back, orbit, info);
 
-  // Volume da voz dessa pessoa para você (como no cartão): enquanto arrasta só muda o som; ao soltar, salva
-  if (v) {
-    const row = document.createElement('label');
-    row.className = 'sky-focus-vol';
-    const icon = document.createElement('span');
-    icon.innerHTML = ICON.volume;
-    icon.className = 'mic-off-icon';
-    const input = document.createElement('input');
-    input.type = 'range';
-    input.min = '0'; input.max = '200'; input.step = '5';
-    input.value = String(v.voice);
-    input.setAttribute('aria-label', `Volume da voz de ${name}`);
-    const out = document.createElement('output');
-    out.textContent = v.muted ? 'mudo' : `${v.voice}%`;
-    input.oninput = () => {
-      out.textContent = `${input.value}%`;
-      volumes[name] = { ...volOf(id), voice: Number(input.value), muted: false };
-      mixer.apply(id);
-    };
-    input.onchange = () => setVol(id, { voice: Number(input.value), muted: false });
-    row.append(icon, input, out);
-    box.append(row);
-  }
+  if (v) info.append(skyVolumeRow(id, name, v));
   box.hidden = false;
   placeSkyProfile();
+}
+// Volume da voz dessa pessoa para você (como no cartão): enquanto arrasta só muda o som; ao soltar, salva
+function skyVolumeRow(id, name, v) {
+  const row = document.createElement('label');
+  row.className = 'sky-focus-vol';
+  const icon = document.createElement('span');
+  icon.innerHTML = ICON.volume;
+  icon.className = v.muted ? 'mic-off-icon' : 'mic-off-icon sky-vol-icon';
+  const input = document.createElement('input');
+  input.type = 'range';
+  input.min = '0'; input.max = '200'; input.step = '5';
+  input.value = String(v.voice);
+  input.setAttribute('aria-label', `Volume da voz de ${name}`);
+  const out = document.createElement('output');
+  out.textContent = v.muted ? 'mudo' : `${v.voice}%`;
+  input.oninput = () => {
+    out.textContent = `${input.value}%`;
+    volumes[name] = { ...volOf(id), voice: Number(input.value), muted: false };
+    mixer.apply(id);
+  };
+  input.onchange = () => setVol(id, { voice: Number(input.value), muted: false });
+  row.append(icon, input, out);
+  return row;
+}
+// Página do perfil (na lista): o painel de voz inteiro vira a pessoa. Em cima, o fundo do perfil (ou a cor dela) com a
+// setinha de voltar; a foto grande sobreposta, o nome e o canal; embaixo, as ações em lista, com nome, e o volume
+function renderSkyPage(box, { id, me, pid, name, sharing, micOff, deafOn, v, channels, here, canMove, voiceNow = true }) {
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text) e.textContent = text; return e; };
+  const banner = el('div', 'sky-page-banner');
+  const back = el('button', 'btn small icon ghost sky-page-back');
+  back.type = 'button';
+  setIcon(back, 'close', 'Fechar o perfil e voltar para a lista');
+  back.onclick = leaveSkyProfile;
+  const av = avatar(me ? getName() : name, pid);
+  av.dataset.person = id;
+  av.classList.add('sky-page-avatar');
+  av.classList.toggle('speaking', speaking.has(id));
+  av.classList.toggle('live', sharing);
+  const head = el('div', 'sky-page-head');
+  const title = el('h3', 'sky-focus-name', name);
+  title.id = 'skyFocusName';
+  paintName(title, pid);
+  const where = el('span', 'sky-focus-where', !voiceNow ? 'Na sala' : subsalasOn() ? channelName(here) : 'Na voz');
+  const states = voiceNow ? [micOff && 'Microfone desligado', deafOn && 'Fone silenciado', v?.muted && 'Silenciada para você'].filter(Boolean) : [];
+  const who = el('div', 'sky-page-who');
+  const tags = el('div', 'sky-page-tags');
+  tags.append(where);
+  if (sharing) tags.append(el('span', 'live-pill', 'Ao vivo'));
+  who.append(title, tags);
+  if (states.length) who.append(el('span', 'sky-page-state', states.join(' · ')));
+  head.append(who, back);
+  const list = el('div', 'sky-page-actions');
+  const act = (icon, label, onclick, { pressed, disabled } = {}) => {
+    const b = el('button', 'sky-page-act');
+    b.type = 'button';
+    b.innerHTML = ICON[icon];
+    b.append(label);
+    if (pressed !== undefined) b.setAttribute('aria-pressed', String(pressed));
+    if (disabled) b.disabled = true;
+    b.onclick = onclick;
+    list.append(b);
+    return b;
+  };
+  if (me) {
+    act(micOff ? 'micOff' : 'mic', micOff ? 'Ligar o microfone' : 'Desligar o microfone', () => $('voiceMute').click(), { pressed: micOff });
+    act(deafOn ? 'headphonesOff' : 'headphones', deafOn ? 'Ouvir as vozes' : 'Silenciar as vozes', () => $('voiceDeafen').click(), { pressed: deafOn });
+  } else {
+    const watching = state.in.has(id);
+    if (sharing) act('eye', watching ? 'Parar de assistir' : 'Assistir a tela', () => (watching ? stopWatching(id) : watch(id)));
+    const fb = friendButton(id, nameOf(id));
+    const done = fb.getAttribute('aria-disabled') === 'true';
+    const label = fb.title.startsWith('Você e') ? 'Vocês já são amigos' : fb.title.startsWith('Pedido') ? 'Pedido de amizade enviado'
+      : fb.title.startsWith('Aceitar') ? 'Aceitar o pedido de amizade' : 'Adicionar como amigo';
+    const add = act(done && fb.title.startsWith('Você e') ? 'userCheck' : 'userPlus', label, async () => {
+      add.disabled = true;
+      await fb.onclick();
+      skyFocusKey = '';
+      renderSkyProfile();
+    }, { disabled: done });
+    add.title = fb.title;
+    // Já são amigos: Mandar mensagem abre a conversa direta (mensagens.js)
+    const key = nameOf(id).trim().toLowerCase();
+    const friend = typeof friendsData === 'object' && friendsData.friends.find((f) => String(f.displayName || '').trim().toLowerCase() === key);
+    if (friend && typeof openDm === 'function') act('chat', 'Mandar mensagem', () => { closeSkyProfile(); void openDm(friend.id); });
+    if (voiceNow) act(v.muted ? 'muted' : 'volume', v.muted ? 'Ouvir de novo' : 'Silenciar para mim', () => setVol(id, { muted: !v.muted }), { pressed: v.muted });
+  }
+  if (canMove) {
+    const move = act('moveTo', 'Mudar de canal', () => toggleSkyMoveMenu(move, pid, channels, here));
+    move.setAttribute('aria-haspopup', 'menu');
+  }
+  banner.append(av); // a foto fica dentro do fundo, no canto de baixo
+  box.append(banner, head, list);
+  if (v && voiceNow) box.append(el('span', 'sky-page-label', 'Volume da voz'), skyVolumeRow(id, name, v));
+  box.hidden = false;
 }
 // A caixinha da lista: a foto de dentro dela fica centrada em cima da foto da linha (sem sair da janela). As linhas são
 // redesenhadas a toda hora, então acha a linha de novo pelo data-person. "fixed" conta a partir do body (que desce
 // pela barra de título): mede o 0 de verdade e desconta, como o cartão da pessoa
 function placeSkyProfile() {
   const box = $('skyFocus');
-  if (voiceMapOn() || box.hidden) return;
+  if (voiceMapOn() || box.hidden || box.matches('.sky-head, .sky-page')) return; // a faixa e a página ficam no lugar delas
   const row = $('voicePaneMembers').querySelector(`li.member[data-person="${CSS.escape(skyFocusId || '')}"]`);
   const from = row?.querySelector('.avatar')?.getBoundingClientRect(), inner = box.querySelector('.sky-orbit .avatar');
   box.style.left = box.style.top = '0px';
@@ -1267,13 +1379,10 @@ function toggleSkyMoveMenu(btn, pid, channels, here) {
   btn.setAttribute('aria-expanded', 'true');
   menu.querySelector('button')?.focus();
 }
-// Clicar no perfil fora dos botões (e do volume) volta para o mapa; com o menu de canais aberto, só fecha o menu
-// (na caixinha da lista, não: ela fecha pelo X, Esc ou um clique fora)
+// Clicar no perfil fora dos botões com o menu de canais aberto fecha só o menu; o perfil fecha pelo X, Esc ou um clique fora
 $('skyFocus').addEventListener('click', (e) => {
   if (e.target.closest('button, input, label, .sky-move-menu')) return;
-  const menu = $('skyFocus').querySelector('.sky-move-menu');
-  if (menu) return menu.remove();
-  if (voiceMapOn()) leaveSkyProfile();
+  $('skyFocus').querySelector('.sky-move-menu')?.remove();
 });
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape' || !skyFocusId || !$('personCard').hidden) return;

@@ -1,6 +1,6 @@
 {
   "name": "tela-p2p",
-  "version": "1.15.8",
+  "version": "1.16.0",
   "description": "Configurações e Personalização de Layout",
   "main": "boot.js",
   "scripts": {
@@ -23,6 +23,7 @@
     "test:razze-admin": "node tests/e2e/razze-admin.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.131.0",
     "ws": "^8.18.0"
   },
   "devDependencies": {
@@ -68,6 +69,8 @@
       "voice.js",
       "encode-once.js",
       "pcm-worklet.js",
+      "renderer/porta-microfone.js",
+      "renderer/rnnoise-vad-worklet.js",
       "vendor/**"
     ],
     "win": {

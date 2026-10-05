@@ -265,7 +265,8 @@ function friendRow(f, isOnline) {
   info.lastChild.dataset.friendPresence = f.id; // o teste da Razze confere o texto por aqui
   info.lastChild.classList.toggle('on', isOnline);
   li.append(hubAvatar(f.displayName, isOnline), info,
-    hubIconButton(ICON.chat, `Mandar mensagem para ${f.displayName}`, () => openDm(f.id), 'hub-talk', 'talk:' + f.id));
+    hubIconButton(ICON.chat, `Mandar mensagem para ${f.displayName}`, () => openDm(f.id), 'hub-talk', 'talk:' + f.id),
+    hubIconButton(ICON.phone, `Ligar para ${f.displayName} (cria uma sala só para vocês e entra na voz)`, () => void ligarPara(f.id), 'hub-talk hub-call', 'call:' + f.id));
   // Convidar só faz sentido para quem está online
   if (isOnline) {
     const inRoom = !!state.myId && !!state.roomAddr;

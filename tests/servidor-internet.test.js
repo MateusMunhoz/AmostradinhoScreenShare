@@ -189,3 +189,62 @@ test('passe tirado (null) para de valer', async (t) => {
   const b = await connect(url, { room: a.first.sala, name: 'Beto', passe, client: client() });
   assert.equal(b.first.type, 'error');
 });
+
+test('mudar a senha: só o host; a antiga e os passes param de valer; quem entrou por passe não recebe a nova', async (t) => {
+  const { url } = await start(t);
+  const passe = crypto.randomBytes(32).toString('base64url');
+  const a = await connect(url, { create: true, name: 'Ana', password: 'pizza-azul', client: client() });
+  t.after(() => a.ws.terminate());
+  assert.ok(a.first.features.includes('senha'));
+  a.send({ type: 'passe', passe });
+  await new Promise((r) => setTimeout(r, 50));
+  const b = await connect(url, { room: a.first.sala, name: 'Beto', password: 'pizza-azul', client: client() });
+  t.after(() => b.ws.terminate());
+  const cc = client();
+  const c = await connect(url, { room: a.first.sala, name: 'Caio', passe, client: cc });
+  t.after(() => c.ws.terminate());
+  assert.equal(c.first.type, 'welcome');
+
+  // Só o host muda, e no modo Internet a senha precisa do mínimo
+  b.send({ type: 'senha', password: 'tentei-mudar' });
+  assert.match((await b.wait((m) => m.type === 'senha-erro')).message, /host/);
+  a.send({ type: 'senha', password: 'abc' });
+  await a.wait((m) => m.type === 'senha-erro');
+
+  a.send({ type: 'senha', password: 'K7P-4MX-Q2R' });
+  assert.equal((await b.wait((m) => m.type === 'senha')).password, 'K7P-4MX-Q2R');
+  assert.equal((await a.wait((m) => m.type === 'senha')).password, 'K7P-4MX-Q2R');
+  const avisoC = await c.wait((m) => m.type === 'senha');
+  assert.equal(avisoC.password, undefined, 'quem entrou pelo passe não recebe a senha');
+  assert.equal(avisoC.by, a.first.id);
+
+  // A antiga e o passe não entram mais; a nova entra
+  assert.equal((await connect(url, { room: a.first.sala, name: 'Duda', password: 'pizza-azul', client: client() })).first.type, 'error');
+  assert.equal((await connect(url, { room: a.first.sala, name: 'Eva', passe, client: client() })).first.type, 'error');
+  const f = await connect(url, { room: a.first.sala, name: 'Fábio', password: 'K7P-4MX-Q2R', client: client() });
+  t.after(() => f.ws.terminate());
+  assert.equal(f.first.type, 'welcome');
+
+  // Quem entrou pelo passe ainda volta se a conexão cair
+  c.ws.terminate();
+  await new Promise((r) => setTimeout(r, 50));
+  const c2 = await connect(url, { room: a.first.sala, name: 'Caio', passe, client: cc, resume: c.first.id });
+  t.after(() => c2.ws.terminate());
+  assert.equal(c2.first.type, 'welcome');
+});
+
+test('o host sai: quem está há mais tempo e entrou com a senha assume (e pode mudar a senha)', async (t) => {
+  const { url } = await start(t);
+  const passe = crypto.randomBytes(32).toString('base64url');
+  const a = await connect(url, { create: true, name: 'Ana', password: 'pizza-azul', client: client() });
+  a.send({ type: 'passe', passe });
+  await new Promise((r) => setTimeout(r, 50));
+  const c = await connect(url, { room: a.first.sala, name: 'Caio', passe, client: client() });
+  t.after(() => c.ws.terminate());
+  const b = await connect(url, { room: a.first.sala, name: 'Beto', password: 'pizza-azul', client: client() });
+  t.after(() => b.ws.terminate());
+  a.send({ type: 'leave' });
+  assert.equal((await b.wait((m) => m.type === 'host')).id, b.first.id, 'o Caio chegou antes, mas entrou pelo passe');
+  b.send({ type: 'senha', password: 'nova-senha' });
+  assert.equal((await b.wait((m) => m.type === 'senha')).password, 'nova-senha');
+});

@@ -14,7 +14,7 @@ run('Voz, volume e chat por cima do jogo', 150000, async () => {
   await B.eval(`localStorage.removeItem('volumes'); volumes = {};`);
   const anaId = await A.eval('state.myId');
 
-  check('Botão "Entrar na voz" na barra', await B.eval(`$('voiceJoin').textContent.includes('Entrar na voz') && !$('voiceDock').classList.contains('active')`));
+  check('Botão "Entrar na voz" na barra', await B.eval(`['Voz', 'Entrar'].some((t) => $('voiceJoin').textContent.endsWith(t)) && !$('voiceDock').classList.contains('active')`));
   await A.eval(TONE);
   await B.eval(TONE);
   // Sons da voz: registra o que tocaria na Bia (o som toca de verdade também)
@@ -30,7 +30,7 @@ run('Voz, volume e chat por cima do jogo', 150000, async () => {
   await B.waitFor(`mixer.nodes.has('${anaId}')`, 10000);
   check('Voz da Ana passa pelo mixer (volume próprio)', true);
   const row = `[...document.querySelectorAll('#members .member')].find((li) => li.dataset.person === '${anaId}')`;
-  check('Lista mostra "na voz" e o botão de volume da Ana', await B.eval(`${row}.textContent.includes('na voz') && !!${row}.querySelector('.vol-btn')`));
+  check('Lista mostra a Ana na voz (sem o texto "na voz") com o botão de volume', await B.eval(`${row}.classList.contains('in-voice') && !${row}.textContent.includes('na voz') && !!${row}.querySelector('.vol-btn')`));
   await B.waitFor(`speaking.has('${anaId}')`, 15000);
   check('Quem fala: a Ana aparece falando', await B.eval(`${row}.classList.contains('speaking')`));
   await B.waitFor(`speaking.has(state.myId)`, 15000);
@@ -137,5 +137,5 @@ run('Voz, volume e chat por cima do jogo', 150000, async () => {
 
   await B.eval(`$('voiceJoin').click()`);
   await sleep(300);
-  check('Sair da voz volta ao botão "Entrar na voz"', await B.eval(`!voice.session && $('voiceJoin').textContent.includes('Entrar na voz') && !mixer.localNode`));
+  check('Sair da voz volta ao botão "Entrar na voz"', await B.eval(`!voice.session && ['Voz', 'Entrar'].some((t) => $('voiceJoin').textContent.endsWith(t)) && !mixer.localNode`));
 });

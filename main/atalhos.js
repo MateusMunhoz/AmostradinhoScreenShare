@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
 const { BIN } = require('./nativos');
+const { vksDoAtalho } = require('./comando-voz');
 const { janelas, sendMain } = require('./contexto');
 
 // ---------- Atalhos (dá para trocar em "Voz e atalhos") ----------
@@ -18,6 +19,7 @@ const DEFAULT_KEYS = {
   mute: 'CommandOrControl+Shift+M',
   deafen: 'CommandOrControl+Shift+D',
   clip: 'CommandOrControl+Shift+C',
+  voiceCmd: 'CommandOrControl+Shift+V', // comando de voz: segurar (teclas.exe), nunca registrado como atalho comum
 };
 const keysFile = () => path.join(app.getPath('userData'), 'atalhos.json');
 let shortcutKeys = null;
@@ -46,6 +48,8 @@ const ACTIONS = {
   mute: { active: () => roomKeysOn, run: () => sendMain({ type: 'mute-key' }) },
   deafen: { active: () => roomKeysOn, run: () => sendMain({ type: 'deafen-key' }) },
   clip: { active: () => roomKeysOn, run: () => sendMain({ type: 'clip-key' }) }, // salvar clipe (renderer/clipes.js)
+  // Comando de voz: é de segurar, então quem cuida é o teclas.exe (setVoiceCmdKey); aqui só para poder trocar a tecla
+  voiceCmd: { active: () => false, run: () => {} },
 };
 const registered = {}; // ação -> atalho registrado agora
 const busyWarned = {};
@@ -79,6 +83,7 @@ function setShortcut(action, accel) {
   keys()[action] = accel;
   fs.writeFile(keysFile(), JSON.stringify(keys()), () => {});
   syncShortcuts();
+  if (action === 'voiceCmd' && voiceCmdOn) { voiceCmdOn = false; setVoiceCmdKey(true); } // a tecla nova já vale
   return { ok: true, keys: keys() };
 }
 
@@ -88,6 +93,7 @@ function setRoomKeys(on) {
   if (!on) {
     if (janelas.chatCompose) setChatCompose(false);
     setPtt(0);
+    setVoiceCmdKey(false);
   }
 }
 
@@ -132,7 +138,42 @@ function setPtt(vk) {
   return true;
 }
 
+// ---------- Comando de voz (docs/spec/comando-de-voz.md) ----------
+// Outro teclas.exe, com cada tecla do atalho (Ctrl+Shift+V = 17, 16, 86): "apertado" enquanto todas estão juntas.
+// Só roda com o recurso ligado e numa sala; a tecla não é interceptada (o jogo também a recebe).
+let cmdProc = null;
+let voiceCmdOn = false;
+function setVoiceCmdKey(on) {
+  on = !!on && process.platform === 'win32';
+  const vks = on ? vksDoAtalho(keys().voiceCmd) : [];
+  if (on === voiceCmdOn && (!on || cmdProc)) return !on || vks.length > 0;
+  voiceCmdOn = on;
+  if (cmdProc) { const p = cmdProc; cmdProc = null; try { p.stdin?.end(); p.kill(); } catch {} }
+  sendMain({ type: 'cmd-key', down: false });
+  if (!vks.length) return !on;
+  if (!fs.existsSync(TECLAS)) return false;
+  const proc = spawn(TECLAS, vks.map(String), { windowsHide: true, stdio: ['pipe', 'pipe', 'ignore'] });
+  cmdProc = proc;
+  const down = new Set();
+  let held = false;
+  let buf = '';
+  proc.stdout.on('data', (d) => {
+    buf += d.toString();
+    let i;
+    while ((i = buf.indexOf('\n')) >= 0) {
+      const [what, vk] = buf.slice(0, i).trim().split(' ');
+      buf = buf.slice(i + 1);
+      if (what === 'down') down.add(Number(vk));
+      else if (what === 'up') down.delete(Number(vk));
+      const all = vks.every((v) => down.has(v));
+      if (all !== held) { held = all; sendMain({ type: 'cmd-key', down: all }); }
+    }
+  });
+  proc.on('exit', () => { if (cmdProc === proc) { cmdProc = null; voiceCmdOn = false; if (held) sendMain({ type: 'cmd-key', down: false }); } });
+  return true;
+}
+
 // Exportado antes dos require de baixo: janela-flutuante.js e chat-jogo.js também usam este arquivo
-Object.assign(module.exports, { keys, syncShortcuts, setShortcut, setRoomKeys, setPtt });
+Object.assign(module.exports, { keys, syncShortcuts, setShortcut, setRoomKeys, setPtt, setVoiceCmdKey });
 const { pips, setPipEdit } = require('./janela-flutuante');
 const { setChatCompose } = require('./chat-jogo');

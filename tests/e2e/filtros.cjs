@@ -125,7 +125,7 @@ app.whenReady().then(async () => {
     // Janela Voz e atalhos
     await run(`openVoiceDialog()`);
     await sleep(300);
-    check('Janela "Voz e atalhos" com 4 atalhos', await run(`!$('voiceDialog').hidden && $('shortcutRows').querySelectorAll('.vd-row').length === 4 && $('shortcutRows').textContent.includes('Ctrl+Enter')`));
+    check('Janela "Voz e atalhos" com 4 atalhos', await run(`voiceSettingsOpen() && $('shortcutRows').querySelectorAll('.vd-row').length === 4 && $('shortcutRows').textContent.includes('Ctrl+Enter')`));
     await sleep(1200);
     fs.writeFileSync(path.join(OUT, 'voz-e-atalhos.png'), (await win.webContents.capturePage()).toPNG());
     check('Atalho sem Ctrl/Alt é recusado', await run(`(() => { const a = accelFromEvent(new KeyboardEvent('keydown', { code: 'KeyK', key: 'k', shiftKey: true })); return !a.strong && !a.fkey; })()`));

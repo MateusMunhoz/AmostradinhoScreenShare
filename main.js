@@ -12,7 +12,10 @@ const {
 const { janelas } = require('./main/contexto');
 const { pips, livePip, freeSlot, pipBounds, setPipSize, setPipGroup, setPipOpacity, setPipEdit, setupPip } = require('./main/janela-flutuante');
 const { chatBounds, setupChatOverlay, chatComposeRequest } = require('./main/chat-jogo');
-const { keys, setShortcut, setRoomKeys, setPtt } = require('./main/atalhos');
+const { keys, setShortcut, setRoomKeys, setPtt, setVoiceCmdKey } = require('./main/atalhos');
+const comandoVoz = require('./main/comando-voz');
+const { criarIa, buscarYoutube } = require('./main/comando-voz-ia');
+let vozCmd = null; // comando de voz: Whisper baixado só por quem liga (criado quando o app fica pronto)
 const sessoes = require('./main/sessoes');
 const celular = require('./main/celular');
 const { dedupeWindows, thumbSignature } = require('./main/fontes');
@@ -475,6 +478,26 @@ if (hasSingleInstance) app.whenReady().then(() => {
   clips = createClipStore({ dir: path.join(app.getPath('videos'), 'Tela P2P', 'Clipes'), showItem: (file) => shell.showItemInFolder(file) });
   ipcMain.handle('clip-save', (_e, bytes, label) => clips.save(bytes, String(label || '')));
   ipcMain.handle('clip-show', (_e, id) => clips.show(Number(id) || 0));
+  // Comando de voz (renderer/comando-voz.js): o Whisper e o modelo vão para a pasta de dados, conferidos por SHA-256;
+  // a página manda só o WAV (na memória) e a dica com os nomes, e recebe o texto
+  vozCmd = comandoVoz.criar(app.getPath('userData'));
+  ipcMain.handle('voz-cmd-estado', () => vozCmd.estado());
+  ipcMain.handle('voz-cmd-instalar', (e, modelo) => vozCmd.instalar(String(modelo || ''), (p) => {
+    if (!e.sender.isDestroyed()) e.sender.send('voz-cmd', { etapa: p.etapa, feito: p.feito, total: p.total });
+  }));
+  ipcMain.handle('voz-cmd-cancelar', () => vozCmd.cancelar());
+  ipcMain.handle('voz-cmd-remover', () => vozCmd.remover());
+  ipcMain.handle('voz-cmd-transcrever', (_e, wav, modelo, dica) => vozCmd.transcrever(wav, String(modelo || ''), String(dica || '')));
+  ipcMain.handle('voz-cmd-tecla', (_e, on) => setVoiceCmdKey(!!on));
+  // Pedidos livres (etapa B): a chave da Anthropic fica aqui, cifrada; a página só grava, apaga e pergunta se existe
+  const vozIa = criarIa(app.getPath('userData'), { storage: safeStorage });
+  const opcoesIa = (o) => ({ provedor: o?.provedor === 'nuvem' || o?.provedor === 'local' ? o.provedor : '', modelo: String(o?.modelo || '').slice(0, 100), url: String(o?.url || '').slice(0, 200) });
+  ipcMain.handle('voz-ia-estado', () => ({ temChave: vozIa.temChave(), nuvem: vozIa.nuvemDisponivel() }));
+  ipcMain.handle('voz-ia-chave', (_e, chave) => vozIa.salvarChave(String(chave || '').slice(0, 400)));
+  ipcMain.handle('voz-ia-apagar-chave', () => vozIa.apagarChave());
+  ipcMain.handle('voz-ia-entender', (_e, texto, ctx, opcoes) => vozIa.entender(String(texto || '').slice(0, 500), ctx && typeof ctx === 'object' ? ctx : {}, opcoesIa(opcoes)));
+  ipcMain.handle('voz-ia-testar', (_e, opcoes) => vozIa.testar(opcoesIa(opcoes)));
+  ipcMain.handle('voz-cmd-youtube', (_e, busca) => buscarYoutube(String(busca || '').slice(0, 100))); // "toca Evidências"
   ipcMain.handle('open-link', (_e, url) => {
     if (typeof url === 'string' && /^https?:\/\/[^\s]+$/i.test(url)) shell.openExternal(url);
   });

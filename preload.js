@@ -21,6 +21,24 @@ contextBridge.exposeInMainWorld('api', {
   openLink: (url) => ipcRenderer.invoke('open-link', url),
   clipSave: (bytes, label) => ipcRenderer.invoke('clip-save', bytes, label),
   clipShow: (id) => ipcRenderer.invoke('clip-show', id),
+  // Comando de voz (main/comando-voz.js): baixar e conferir o Whisper, transcrever o WAV do comando, a tecla de segurar
+  vozCmdEstado: () => ipcRenderer.invoke('voz-cmd-estado'),
+  vozCmdInstalar: (modelo) => ipcRenderer.invoke('voz-cmd-instalar', String(modelo || '')),
+  vozCmdCancelar: () => ipcRenderer.invoke('voz-cmd-cancelar'),
+  vozCmdRemover: () => ipcRenderer.invoke('voz-cmd-remover'),
+  vozCmdTranscrever: (wav, modelo, dica) => ipcRenderer.invoke('voz-cmd-transcrever', wav instanceof Uint8Array ? wav : null, String(modelo || ''), String(dica || '')),
+  vozCmdTecla: (on) => ipcRenderer.invoke('voz-cmd-tecla', !!on),
+  // Pedidos livres (main/comando-voz-ia.js): a chave só vai, nunca volta
+  vozIaEstado: () => ipcRenderer.invoke('voz-ia-estado'),
+  vozIaChave: (chave) => ipcRenderer.invoke('voz-ia-chave', String(chave || '')),
+  vozIaApagarChave: () => ipcRenderer.invoke('voz-ia-apagar-chave'),
+  vozIaEntender: (texto, ctx, opcoes) => ipcRenderer.invoke('voz-ia-entender', String(texto || ''), ctx, opcoes),
+  vozIaTestar: (opcoes) => ipcRenderer.invoke('voz-ia-testar', opcoes),
+  vozCmdYoutube: (busca) => ipcRenderer.invoke('voz-cmd-youtube', String(busca || '')), // o primeiro vídeo da busca
+  onVozCmd: (cb) => {
+    ipcRenderer.removeAllListeners('voz-cmd');
+    ipcRenderer.on('voz-cmd', (_e, msg) => cb(msg));
+  },
   onPip: (cb) => {
     ipcRenderer.removeAllListeners('pip');
     ipcRenderer.on('pip', (_e, msg) => cb(msg));

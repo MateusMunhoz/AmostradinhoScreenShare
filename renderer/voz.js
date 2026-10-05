@@ -233,6 +233,8 @@ function syncMuteSound() {
 }
 function renderVoice() {
   if (typeof renderMusicTiles === 'function') renderMusicTiles(); // os controles da música dependem do seu canal (musica.js)
+  if (typeof syncShareOpen === 'function') syncShareOpen(); // transmissão só para o seu canal: quem saiu dele para de ver
+  if (typeof syncComandoVozMic === 'function') void syncComandoVozMic(); // comando de voz: na voz, o microfone dele espera aberto
   const active = !!voice.session;
   const join = $('voiceJoin');
   join.disabled = !voice.supported;
@@ -240,13 +242,7 @@ function renderVoice() {
   if (active || voice.pending) {
     join.className = 'btn icon voice-leave';
     setIcon(join, 'phoneOff', voice.pending ? 'Cancelar entrada na voz' : 'Sair da voz');
-  } else {
-    join.className = 'btn';
-    join.innerHTML = ICON.mic;
-    join.append('Entrar na voz');
-    join.title = !voice.supported ? 'O host precisa da versão 1.8.4 ou mais nova para ter voz' : 'Liga o microfone e entra na conversa por voz';
-    join.removeAttribute('aria-label');
-  }
+  } else renderVoiceJoin();
   $('voiceMute').hidden = $('voiceDeafen').hidden = $('voiceMe').hidden = !active;
   setIcon($('voiceMute'), voice.muted ? 'micOff' : 'mic', voice.muted ? 'Ligar o microfone' : 'Desligar o microfone');
   $('voiceMute').setAttribute('aria-pressed', String(voice.muted));
@@ -258,7 +254,7 @@ function renderVoice() {
   syncPtt();
   renderVoiceMe();
   syncMicTest();
-  if (!$('voiceDialog').hidden) renderVoiceDialog();
+  if (voiceSettingsOpen()) renderVoiceDialog();
   renderVoiceAvatars();
   if (state.myId) renderMembers();
   if (!$('personCard').hidden) renderPersonCard();
@@ -289,6 +285,7 @@ let dockVoiceKey = '';
 // Quem está na voz, na barra (com o painel recolhido): até 3 fotos sobrepostas (quem fala entra nelas e acende) e
 // quantos são, num botão só, colado no Entrar. Clicar abre a lista que sobe (renderVoiceStackPop)
 function renderVoiceAvatars(onlyIfChanged = false) {
+  if (!voice.session && !voice.pending) renderVoiceJoin(); // as bolinhas do Entrar acompanham quem entra e sai
   const { all, shown } = dockVoicePick();
   const key = shown.join(',') + '|' + all.length;
   if (onlyIfChanged && key === dockVoiceKey) return;
@@ -296,7 +293,7 @@ function renderVoiceAvatars(onlyIfChanged = false) {
   dockVoiceShown = shown;
   const box = $('voiceAvatars');
   box.replaceChildren();
-  box.hidden = chat.open || !all.length;
+  box.hidden = !all.length; // no fim da pílula, quem está na chamada com você
   if (box.hidden) return closeVoiceStackPop();
   const b = document.createElement('button');
   b.type = 'button';
@@ -324,6 +321,98 @@ function renderVoiceAvatars(onlyIfChanged = false) {
   b.onclick = () => ($('voiceStackPop') ? closeVoiceStackPop() : openVoiceStackPop());
   box.append(b);
   renderVoiceStackPop();
+}
+
+// ---------- Entrar na voz (fora dela): as bolinhas de quem já está conversando e "Entrar" ----------
+// Sem ninguém, fica "Voz". Entrar vai para o canal com mais gente (empate: a Voz geral). Com subsalas e gente em mais
+// de um canal, a setinha ao lado abre a lista desses canais (voiceJoinPop) para escolher onde entrar.
+function voiceBusyChannels() {
+  if (!subsalasOn()) {
+    const ids = [...voice.members].filter(([id, m]) => m.session && state.members.has(id)).map(([id]) => id);
+    return ids.length ? [{ ch: '', ids }] : [];
+  }
+  return ['', ...state.subsalas.map((x) => x.id)].map((ch) => ({ ch, ids: voiceIdsIn(ch).filter(Boolean) })).filter((c) => c.ids.length);
+}
+function voiceJoinTarget() {
+  const busy = voiceBusyChannels();
+  return busy.reduce((best, c) => (c.ids.length > best.ids.length ? c : best), busy[0] || { ch: '', ids: [] });
+}
+function voiceFaces(ids) {
+  const faces = document.createElement('span');
+  faces.className = 'vs-faces';
+  for (const id of ids.slice(0, DOCK_VOICE_MAX)) {
+    const av = avatar(nameOf(id), id);
+    av.dataset.person = id;
+    av.classList.toggle('speaking', speaking.has(id));
+    faces.append(av);
+  }
+  return faces;
+}
+function renderVoiceJoin() {
+  const join = $('voiceJoin'), more = $('voiceJoinMore');
+  if (voice.session || voice.pending) { more.hidden = true; return closeVoiceJoinPop(); }
+  const busy = voiceBusyChannels(), target = voiceJoinTarget();
+  join.className = 'btn voice-enter';
+  join.replaceChildren();
+  if (target.ids.length) join.append(voiceFaces(target.ids), 'Entrar');
+  else { join.innerHTML = ICON.mic; join.append('Voz'); }
+  const names = target.ids.map(nameOf).join(', ');
+  join.title = !voice.supported ? 'O host precisa da versão 1.8.4 ou mais nova para ter voz'
+    : target.ids.length ? `Entrar na voz${subsalasOn() ? ` (${channelName(target.ch)})` : ''}: ${names}` : 'Liga o microfone e entra na conversa por voz';
+  join.setAttribute('aria-label', join.title);
+  join.dataset.channel = target.ch;
+  more.hidden = busy.length < 2;
+  if (more.hidden) closeVoiceJoinPop(); else renderVoiceJoinPop();
+}
+function openVoiceJoinPop() {
+  const pop = document.createElement('div');
+  pop.id = 'voiceJoinPop';
+  pop.className = 'voice-stack-pop';
+  pop.setAttribute('role', 'menu');
+  pop.setAttribute('aria-label', 'Canais com gente na voz');
+  document.body.append(pop);
+  $('voiceJoinMore').setAttribute('aria-expanded', 'true');
+  renderVoiceJoinPop();
+  pop.querySelector('button')?.focus();
+}
+function closeVoiceJoinPop() {
+  $('voiceJoinPop')?.remove();
+  $('voiceJoinMore')?.setAttribute('aria-expanded', 'false');
+}
+function renderVoiceJoinPop() {
+  const pop = $('voiceJoinPop');
+  if (!pop) return;
+  pop.replaceChildren();
+  const head = document.createElement('div');
+  head.className = 'vsp-head';
+  head.innerHTML = '<strong>Entrar em</strong>';
+  const list = document.createElement('div');
+  list.className = 'vsp-list';
+  for (const { ch, ids } of voiceBusyChannels()) {
+    const row = document.createElement('button');
+    row.type = 'button';
+    row.className = 'vs-row';
+    row.setAttribute('role', 'menuitem');
+    const name = document.createElement('span');
+    name.className = 'vs-name';
+    name.textContent = channelName(ch);
+    const count = document.createElement('span');
+    count.className = 'vsp-where';
+    count.textContent = String(ids.length);
+    row.append(voiceFaces(ids), name, count);
+    row.title = `Entrar em ${channelName(ch)}: ${ids.map(nameOf).join(', ')}`;
+    row.onclick = () => { closeVoiceJoinPop(); joinVoiceIn(ch); };
+    list.append(row);
+  }
+  pop.append(head, list);
+  const r = $('voiceDock').getBoundingClientRect();
+  pop.style.left = `${Math.max(8, Math.min(r.left, window.innerWidth - pop.offsetWidth - 8))}px`;
+  pop.style.bottom = `${window.innerHeight - r.top + 8}px`;
+}
+function joinVoiceIn(ch) {
+  if (state.systemLoopback) return toast('Pare sua transmissão, entre na voz e depois reinicie a transmissão: a captura atual inclui todo o som do PC.', 'error');
+  mixer.ensure(); // o clique libera o áudio do app
+  voice.setChannel(ch);
 }
 
 // ---------- Lista que sobe do "N na voz" ----------
@@ -411,6 +500,10 @@ document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-profile]');
   if (!el || !state.members.has(el.dataset.profile)) return;
   e.stopPropagation();
+  if (el.closest('#peoplePop')) { // na lista de Pessoas, o mesmo perfil da voz; a mesma pessoa de novo fecha
+    if (skyFocusId === el.dataset.profile && skyFocusFrom === 'pessoas') return closeSkyProfile();
+    return openSkyProfile(el.dataset.profile, e.detail === 0 ? el : e, 'pessoas');
+  }
   openPersonCard(el.dataset.profile, el, e.detail === 0);
 });
 document.addEventListener('keydown', (e) => {

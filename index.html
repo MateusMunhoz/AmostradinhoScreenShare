@@ -53,48 +53,53 @@
       <button id="dockHome" type="button" class="workspace-tab rail-home" title="Ir para o início sem sair da sala" aria-label="Início" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/></svg></button>
       <!-- No menu inicial com a sala aberta: volta para ela (no lugar do Início), com as mensagens novas -->
       <button id="navBackToRoom" type="button" class="workspace-tab rail-home" title="Voltar para a sala" aria-label="Voltar para a sala" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg><span id="navBackUnread" class="unread" hidden></span></button>
-      <button id="leaveBtn" type="button" class="workspace-tab rail-leave" hidden></button>
       <span class="nav-sep" aria-hidden="true"></span>
       <!-- Modo gamer (renderer/modo-gamer.js): desliga o que pesa no PC enquanto a pessoa joga -->
+      <!-- Chat por cima do jogo (renderer/overlay.js): só na sala -->
+      <button id="overlayToggle" type="button" class="workspace-tab rail-overlay" aria-pressed="false"></button>
       <button id="navGamer" type="button" class="workspace-tab rail-gamer" aria-label="Modo gamer" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 11h4M8 9v4M15 12h.01M18 10h.01M17.3 5H6.7a4 4 0 0 0-4 3.6l-.9 7.8A2.5 2.5 0 0 0 6.2 18l1.6-1.6a2 2 0 0 1 1.4-.4h5.6a2 2 0 0 1 1.4.4l1.6 1.6a2.5 2.5 0 0 0 4.4-1.6l-.9-7.8a4 4 0 0 0-4-3.6z"/></svg></button>
-      <button id="navSettings" type="button" class="workspace-tab settings-tab" aria-label="Configurações gerais" title="Configurações gerais" aria-haspopup="dialog" aria-expanded="false" aria-controls="generalSettingsDialog"><span class="nav-icon" aria-hidden="true"></span></button>
+      <!-- Voz e atalhos (microfone, supressão de ruído, teclas): ícone ao lado da engrenagem (renderer/voz.js) -->
+      <button id="voiceSettingsBtn" type="button" class="workspace-tab"></button>
+      <button id="navSettings" type="button" class="workspace-tab settings-tab" aria-label="Configurações" title="Configurações" aria-haspopup="dialog" aria-expanded="false" aria-controls="generalSettingsDialog"><span class="nav-icon" aria-hidden="true"></span></button>
+      <!-- Sair da sala: por último, separado do Início e dos ajustes, em vermelho -->
+      <span class="nav-sep rail-leave-sep" aria-hidden="true"></span>
+      <button id="leaveBtn" type="button" class="workspace-tab rail-leave" hidden></button>
     </nav>
   </header>
   <aside id="workspacePanes" aria-label="Painéis selecionados" hidden>
     <section id="profilePane" class="modal global utility-popup" hidden>
       <div class="dialog profile-dialog" role="dialog" aria-modal="true" aria-labelledby="profileTitle">
       <div class="pane-head"><h2 id="profileTitle">Seu perfil</h2><button id="closeProfile" class="btn icon" type="button"></button></div>
-      <div class="profile-summary"><span id="profileAvatar" class="avatar"></span><strong id="profileDisplayName"></strong></div>
-      <div class="profile-photo">
-        <button id="profilePhotoPick" class="btn small" type="button">Escolher foto</button>
-        <button id="profilePhotoRemove" class="btn small ghost" type="button" hidden>Remover foto</button>
-        <input id="profilePhotoFile" type="file" accept="image/*" hidden>
-        <div id="profilePhotoFit" class="photo-fit" role="radiogroup" aria-label="Como a foto aparece na bolinha" hidden>
-          <span>Na bolinha:</span>
-          <button type="button" role="radio" data-fit="inteira" title="A foto toda, sem zoom">Inteira</button>
-          <button type="button" role="radio" data-fit="preencher" title="Corta o meio da foto para preencher a bolinha">Preencher</button>
+      <!-- Prévia: o seu perfil como os outros veem na voz (fundo, foto e nome). Clicar na foto troca a foto -->
+      <div class="profile-card">
+        <div id="profileBgPreview" class="profile-card-bg" role="img" aria-label="Seu fundo do perfil">
+          <button id="profilePhotoBig" class="profile-card-photo" type="button" title="Trocar foto" aria-label="Trocar foto"><span id="profileAvatar" class="avatar"></span><span class="profile-card-cam" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span></button>
+          <button id="profileBgPickTop" class="btn small profile-card-bgbtn" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/></svg><span>Trocar fundo</span></button>
         </div>
-        <p id="profilePhotoOld" class="hint photo-old" hidden>Foto de versão antiga: os outros a veem cortada. Escolha de novo.</p>
+        <div class="profile-card-info"><strong id="profileDisplayName"></strong><span class="hint">Assim os outros te veem na voz.</span></div>
       </div>
-      <!-- Fundo do perfil (renderer/fundo-perfil.js): aparece atrás do seu perfil para quem o abre na voz -->
-      <div class="profile-bg">
-        <span class="profile-bg-label">Fundo do perfil<button type="button" class="tip" data-tip="Imagem ou GIF (até 1 MB) atrás do seu perfil, para quem clicar em você na voz. O GIF só se mexe com o perfil aberto." aria-label="Imagem ou GIF (até 1 MB) atrás do seu perfil, para quem clicar em você na voz. O GIF só se mexe com o perfil aberto."></button></span>
-        <div id="profileBgPreview" class="profile-bg-preview" role="img" aria-label="Seu fundo do perfil" hidden></div>
-        <div class="profile-bg-buttons">
-          <button id="profileBgPick" class="btn small" type="button">Escolher imagem ou GIF</button>
-          <button id="profileBgRemove" class="btn small ghost" type="button" hidden>Tirar fundo</button>
-        </div>
-        <input id="profileBgFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
+      <!-- Aparência: foto (e o ajuste dela na bolinha), fundo (renderer/fundo-perfil.js) e a fonte do nome -->
+      <h3 class="profile-sec">Aparência</h3>
+      <div class="profile-row"><span>Foto</span><span class="profile-row-actions"><button id="profilePhotoPick" class="btn small" type="button">Escolher</button><button id="profilePhotoRemove" class="btn small icon" type="button" title="Tirar foto" aria-label="Tirar foto" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 11v6M14 11v6M7 7l1 12h8l1-12M9 7V4h6v3"/></svg></button></span></div>
+      <input id="profilePhotoFile" type="file" accept="image/*" hidden>
+      <div id="profilePhotoFit" class="profile-row" role="radiogroup" aria-label="Ajuste da foto" hidden>
+        <span>Ajuste da foto</span>
+        <span class="profile-seg"><button type="button" role="radio" data-fit="inteira" title="A foto toda, sem zoom">Inteira</button><button type="button" role="radio" data-fit="preencher" title="Corta o meio da foto para preencher a bolinha">Preencher</button></span>
       </div>
-      <label class="field">Nome de exibição<input id="profileName" maxlength="32" autocomplete="off"></label>
-      <p id="profileHint" class="hint"></p>
+      <p id="profilePhotoOld" class="hint photo-old" hidden>Foto de versão antiga: os outros a veem cortada. Escolha de novo.</p>
+      <div class="profile-row"><span>Fundo<button type="button" class="tip" data-tip="Imagem ou GIF (até 1 MB) atrás do seu perfil, para quem clicar em você na voz. O GIF só se mexe com o perfil aberto." aria-label="Imagem ou GIF (até 1 MB) atrás do seu perfil, para quem clicar em você na voz. O GIF só se mexe com o perfil aberto."></button></span><span class="profile-row-actions"><button id="profileBgPick" class="btn small" type="button">Escolher</button><button id="profileBgRemove" class="btn small icon" type="button" title="Tirar fundo" aria-label="Tirar fundo" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 11v6M14 11v6M7 7l1 12h8l1-12M9 7V4h6v3"/></svg></button></span></div>
+      <input id="profileBgFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
       <label class="field"><span>Fonte do nome<button type="button" class="tip" data-tip="Todos na sala veem o seu nome nesta fonte." aria-label="Todos na sala veem o seu nome nesta fonte."></button></span><select id="profileNameFont"></select></label>
+      <!-- Nome: na sala fica travado (com o cadeado) -->
+      <h3 class="profile-sec">Nome</h3>
+      <label class="field">Nome de exibição<span class="profile-name-box"><input id="profileName" maxlength="32" autocomplete="off"><span class="profile-lock" role="img" aria-label="Travado na sala"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span></span></label>
+      <p id="profileHint" class="hint"></p>
       </div>
     </section>
     <!-- Mapa em foco (renderer/ceu-voz.js): o chat encolhe e fica só esta faixa; clicar traz o chat de volta -->
     <button id="mapChatStrip" class="map-chat-strip" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Chat escondido enquanto você olha o mapa</span><span id="mapChatUnread" class="map-chat-unread" hidden></span></button>
     <section id="voicePane" class="workspace-pane" aria-labelledby="voicePaneTitle" hidden>
-      <div class="pane-head"><h2 id="voicePaneTitle">Chat de voz</h2><div class="voice-view" role="group" aria-label="Como ver a voz"><button id="voiceViewList" type="button" title="Lista: canais e pessoas em linhas" aria-label="Lista"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><button id="voiceViewMap" type="button" title="Mapa: canais como sóis e pessoas como planetas" aria-label="Mapa"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0zM5 7.6c1.5.2 2.3 1.2 2.1 2.4-.2 1.3.9 1.9 1.9 2.4 1 .6.8 2-.3 2.4-1 .4-1.4 1.4-1 2.5M14.2 3.4c-.7 1.2-.2 2.4 1 2.9 1.3.5 2 1.4 1.4 2.6M20.8 13.4c-1.3-.5-2.7.1-3.1 1.3-.4 1.3-1.5 1.8-2.6 1.5"/></svg></button></div><button id="mapPin" class="btn small icon map-pin" type="button" aria-pressed="false" hidden></button><button id="paneVoiceSettings" class="btn small" type="button">Voz e atalhos</button></div>
+      <div class="pane-head"><h2 id="voicePaneTitle">Chat de voz</h2><div class="voice-view" role="group" aria-label="Como ver a voz"><button id="voiceViewList" type="button" title="Lista: canais e pessoas em linhas" aria-label="Lista"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><button id="voiceViewMap" type="button" title="Mapa: canais como sóis e pessoas como planetas" aria-label="Mapa"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0zM5 7.6c1.5.2 2.3 1.2 2.1 2.4-.2 1.3.9 1.9 1.9 2.4 1 .6.8 2-.3 2.4-1 .4-1.4 1.4-1 2.5M14.2 3.4c-.7 1.2-.2 2.4 1 2.9 1.3.5 2 1.4 1.4 2.6M20.8 13.4c-1.3-.5-2.7.1-3.1 1.3-.4 1.3-1.5 1.8-2.6 1.5"/></svg></button></div><button id="mapPin" class="btn small icon map-pin" type="button" aria-pressed="false" hidden></button></div>
       <p id="voicePaneStatus" class="hint"></p>
       <!-- Céu da voz: cada canal é um sol e quem está nele orbita como planeta. Na visão Mapa, fica grande no lugar da lista (renderer/ceu-voz.js) -->
       <div id="voiceSkyBox" class="voice-sky-box" hidden>
@@ -110,7 +115,7 @@
       </div>
       <ul id="voicePaneMembers" class="members"></ul>
       <!-- Fora da voz: Entrar. Na voz: faixa de controles embaixo da lista (microfone, fone, Voz e atalhos | Sair da voz) -->
-      <div class="pane-voice-actions"><button id="paneVoiceMute" class="btn small icon pane-toggle" type="button" hidden></button><button id="paneVoiceDeafen" class="btn small icon pane-toggle" type="button" hidden></button><button id="paneVoiceJoin" class="btn primary small" type="button">Entrar na voz</button><button id="paneVoiceSubsala" class="btn small pane-subsala" type="button" title="Criar uma subsala e entrar nela" hidden></button></div>
+      <div class="pane-voice-actions"><button id="paneVoiceSettings" class="btn small icon" type="button" hidden></button><button id="paneVoiceMute" class="btn small icon pane-toggle" type="button" hidden></button><button id="paneVoiceDeafen" class="btn small icon pane-toggle" type="button" hidden></button><button id="paneVoiceJoin" class="btn primary small" type="button">Entrar na voz</button><button id="paneVoiceSubsala" class="btn small pane-subsala" type="button" title="Criar uma subsala e entrar nela" hidden></button></div>
     </section>
   </aside>
   <!-- HUB: barra fininha na borda esquerda (renderer/hub.js). Aberta: abas Salas e Amigos -->
@@ -507,6 +512,19 @@
                       <p id="cursorNote" class="hint"></p>
                     </div>
 
+                    <!-- Quem está em outro canal (subsala ou Voz geral) pode assistir: é o começo de cada transmissão; o botão
+                         da barra Ao vivo muda só a atual (renderer/transmitir.js) -->
+                    <div class="group" id="shareOpenGroup">
+                      <div class="group-head">
+                        <span class="group-title" id="shareOpenLabel">Outros canais podem assistir</span>
+                        <label class="switch">
+                          <input type="checkbox" id="shareOpenOn" role="switch" aria-labelledby="shareOpenLabel" aria-describedby="shareOpenNote">
+                          <span class="track" aria-hidden="true"></span>
+                        </label>
+                      </div>
+                      <p id="shareOpenNote" class="hint">Desligado, só quem está no mesmo canal que você (subsala ou Voz geral) assiste. Durante a transmissão, dá para mudar na barra Ao vivo.</p>
+                    </div>
+
                     <div class="group advanced">
                       <button type="button" class="adv-toggle" id="advToggle" aria-expanded="false" aria-controls="advPanel">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
@@ -561,8 +579,9 @@
               <!-- A miniatura do que você transmite é o "Me ver" (abre a sua tela no palco); ao lado, o que é e quem assiste -->
               <button class="live-thumb" id="selfViewBtn" type="button" aria-pressed="false"><img id="liveThumb" alt=""><span class="live-pill">Ao vivo</span></button>
               <span class="live-info"><strong id="liveSource"></strong><span id="liveText"></span></span>
-              <button class="btn small" id="switchShareBtn" type="button" title="Trocar a tela ou janela transmitida, sem parar">Trocar</button>
-              <button class="btn small danger" id="stopShareBtn" type="button">Parar</button>
+              <button class="btn small" id="shareOpenBtn" type="button">Para todos</button>
+              <button class="btn small icon" id="switchShareBtn" type="button"></button>
+              <button class="btn small icon danger" id="stopShareBtn" type="button"></button>
             </div>
             <div class="pip-chip" id="pipChip" hidden>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v14H3zM12 11h7v6h-7z"/></svg>
@@ -580,9 +599,8 @@
               <button class="btn icon" id="voiceMute" type="button" aria-pressed="false" hidden></button>
               <button class="btn icon" id="voiceDeafen" type="button" aria-pressed="false" hidden></button>
               <button class="btn" id="voiceJoin" type="button">Entrar na voz</button>
-              <button class="btn icon ghost" id="voiceSettingsBtn" type="button"></button>
+              <button class="btn icon" id="voiceJoinMore" type="button" aria-haspopup="menu" aria-expanded="false" hidden></button>
             </div>
-            <button class="btn icon ghost" id="overlayToggle" type="button" aria-pressed="false"></button>
             <div id="stageLayout" class="seg stage-layout" role="group" aria-label="Arrumação das telas" hidden><button type="button" data-layout="grid" title="Todas do mesmo tamanho, como no Google Meet">Grade</button><button type="button" data-layout="spotlight" title="Uma grande e as outras numa coluna ao lado">Destaque</button></div>
             <span class="dock-spacer"></span>
             <!-- Convidar: copia o endereço da sala (que aparece ao passar o mouse e em Pessoas na sala) -->
@@ -590,8 +608,8 @@
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 9h11v11H9zM5 15H4V4h11v1"/></svg><span class="dock-label">Convidar</span>
             </button>
             <button class="btn icon" id="openGeneralSettingsRoom" type="button"></button>
-            <button class="btn icon" id="openStatsRoom" type="button"></button>
-            <button class="btn icon chat-toggle" id="chatToggle" type="button" aria-pressed="true">
+            <button class="btn icon dock-off" id="openStatsRoom" type="button"></button>
+            <button class="btn icon chat-toggle dock-off" id="chatToggle" type="button" aria-pressed="true">
               <span id="chatUnread" class="unread" hidden></span>
             </button>
             <!-- Janela estreita: o que não cabe na barra vai para este menu (fitDock em renderer/navegacao.js) -->
@@ -607,10 +625,9 @@
         <aside class="panel" id="sidePanel">
           <div class="chat" id="chatTab">
             <div class="chat-head">
-              <h2 class="chat-title">Chat</h2>
+              <h2 class="chat-title">Chat</h2><span id="chatFoldUnread" class="pane-fold-unread" hidden></span>
             </div>
             <p id="chatOff" class="warn" hidden>O chat está desligado nesta sala: quem criou precisa da versão 1.7.0 ou mais nova.</p>
-            <p id="chatEmpty" class="hint">Nenhuma mensagem ainda.</p>
             <ul id="chatList" class="chat-list" aria-live="polite"></ul>
             <button class="jump-new" id="chatJump" type="button" hidden>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7"/></svg>Ir para as mensagens novas
@@ -650,6 +667,7 @@
             </div>
             <div class="pp-addr">
               <div id="roomAddress"></div>
+              <div id="roomSenha" class="addr room-senha" hidden></div>
               <p id="noRadmin" class="warn" hidden>Nenhum IP da Radmin VPN (26.x.x.x) encontrado. Ligue a Radmin e entre na rede.</p>
             </div>
           </div>
@@ -687,144 +705,6 @@
     <div class="iv-stage" id="ivStage"><img id="ivImg" alt=""></div>
     <button class="btn icon iv-nav iv-next" id="ivNext" type="button"></button>
   </div>
-  <div id="statsDialog" class="modal global" hidden>
-    <div class="dialog stats" role="dialog" aria-modal="true" aria-labelledby="statsTitle">
-      <div class="dialog-head">
-        <h2 id="statsTitle">Estatísticas</h2>
-        <button class="btn icon" id="closeStats" type="button"></button>
-      </div>
-      <div class="seg stats-tabs" role="tablist" aria-label="Estatísticas">
-        <button type="button" role="tab" id="statsTabPerf" aria-controls="statsPerf" aria-selected="true">Desempenho</button>
-        <button type="button" role="tab" id="statsTabStream" aria-controls="statsStream" aria-selected="false" tabindex="-1">Transmissão</button>
-      </div>
-      <!-- Desempenho: quanto o app usa do PC e o que entra e sai pela rede -->
-      <div id="statsPerf" class="stats-panel" role="tabpanel" aria-labelledby="statsTabPerf">
-      <h3 class="stat-group">Uso do app</h3>
-      <div class="stat-cards">
-        <div class="stat-card"><span class="stat-label">Processador</span><strong id="stCpu">–</strong><span id="stCpuAvg" class="stat-avg"></span><span id="stCpuPC" class="stat-sub"></span><svg id="stCpuChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
-        <div class="stat-card"><span class="stat-label">Placa de vídeo 3D</span><strong id="stGpu">–</strong><span id="stGpuAvg" class="stat-avg"></span><span id="stGpuPC" class="stat-sub"></span><svg id="stGpuChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
-        <div class="stat-card"><span class="stat-label">Codificação de vídeo</span><strong id="stEnc">–</strong><span id="stEncAvg" class="stat-avg"></span><span id="stEncPC" class="stat-sub"></span><svg id="stEncChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
-        <div class="stat-card"><span class="stat-label">Decodificação de vídeo</span><strong id="stDec">–</strong><span id="stDecAvg" class="stat-avg"></span><span id="stDecPC" class="stat-sub"></span><svg id="stDecChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
-      </div>
-      <h3 class="stat-group">Rede</h3>
-      <div class="stat-cards">
-        <div class="stat-card"><span class="stat-label">Quadros capturados</span><strong id="stCap">–</strong><span id="stCapAvg" class="stat-avg"></span><svg id="stCapChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
-        <div class="stat-card"><span class="stat-label">Quadros enviados</span><strong id="stSent">–</strong><span id="stSentAvg" class="stat-avg"></span><svg id="stSentChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
-        <div class="stat-card"><span class="stat-label">Enviando</span><strong id="stUp">–</strong><span id="stUpAvg" class="stat-avg"></span><svg id="stUpChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
-        <div class="stat-card"><span class="stat-label">Recebendo</span><strong id="stDown">–</strong><span id="stDownAvg" class="stat-avg"></span><svg id="stDownChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
-      </div>
-      <p id="stCodec" class="hint"></p>
-      <div class="stat-scroll">
-        <table class="stat-table">
-          <thead>
-            <tr><th>Processo</th><th>Processador</th><th>Placa 3D</th><th>Codif. vídeo</th><th>Decodif. vídeo</th><th>Memória de vídeo</th></tr>
-          </thead>
-          <tbody id="stRows"></tbody>
-        </table>
-      </div>
-      <p id="stNote" class="hint"></p>
-      </div>
-      <!-- Transmissão: a configuração de cada pessoa que está transmitindo e como chega até você -->
-      <div id="statsStream" class="stats-panel" role="tabpanel" aria-labelledby="statsTabStream" hidden>
-        <div id="streamRows" class="stream-list"></div>
-        <p id="streamEmpty" class="hint">Ninguém está transmitindo agora.</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Voz e atalhos: microfone (ruído e eco), modo de fala e as teclas de atalho -->
-  <div id="voiceDialog" class="modal global" hidden>
-    <div class="dialog narrow voice-dialog" role="dialog" aria-modal="true" aria-labelledby="voiceDialogTitle">
-      <div class="dialog-head">
-        <h2 id="voiceDialogTitle">Voz e atalhos</h2>
-        <button class="btn icon" id="closeVoiceDialog" type="button"></button>
-      </div>
-
-      <section class="vd-section">
-        <h3><label for="micSelect">Microfone</label></h3>
-        <select id="micSelect" class="vd-select"></select>
-        <div class="vd-row">
-          <span id="micTestLabel">Testar o microfone<button type="button" class="tip" id="micTestHint" data-tip="Você se ouve como a sala ouve. Use fone: com caixa de som, apita." aria-label="Você se ouve como a sala ouve. Use fone: com caixa de som, apita."></button></span>
-          <button class="btn small" id="micTestBtn" type="button" aria-pressed="false" aria-labelledby="micTestLabel micTestBtn" aria-describedby="micTestHint">Ouvir minha voz</button>
-        </div>
-      </section>
-
-      <section class="vd-section">
-        <h3 id="nsLabel">Supressão de ruído</h3>
-        <div class="seg" role="radiogroup" aria-labelledby="nsLabel">
-          <label><input type="radio" name="noise" value="ia"><span>Avançado</span></label>
-          <label><input type="radio" name="noise" value="chrome"><span>Básica</span></label>
-          <label><input type="radio" name="noise" value="off"><span>Desligada</span></label>
-        </div>
-        <p class="hint" id="nsHint"></p>
-        <div class="vd-row">
-          <span id="echoLabel">Cancelamento de eco<button type="button" class="tip" data-tip="Tira da sua voz o som das suas caixas. Com fone, pode desligar." aria-label="Tira da sua voz o som das suas caixas. Com fone, pode desligar."></button></span>
-          <label class="switch">
-            <input type="checkbox" id="echoOn" role="switch" aria-labelledby="echoLabel">
-            <span class="track" aria-hidden="true"></span>
-          </label>
-        </div>
-      </section>
-
-      <section class="vd-section">
-        <div class="vd-row">
-          <h3 id="gateLabel">Sensibilidade do microfone</h3>
-          <label class="vd-check"><input type="checkbox" id="gateAuto"> Automática</label>
-        </div>
-        <div class="vd-meter" id="micMeterBox" hidden>
-          <div class="vd-meter-bar" aria-hidden="true"><span id="micMeter"></span><i id="gateMark"></i></div>
-        </div>
-        <div class="vd-slider">
-          <input type="range" id="gateDb" min="-80" max="0" step="1" aria-labelledby="gateLabel" aria-describedby="gateHint">
-          <span id="gateValue" class="vd-value"></span>
-        </div>
-        <p class="hint" id="gateHint"></p>
-      </section>
-
-      <section class="vd-section">
-        <h3 id="duckLabel">Atenuação<button type="button" class="tip" data-tip="Abaixa o som das telas enquanto alguém fala na voz." aria-label="Abaixa o som das telas enquanto alguém fala na voz."></button></h3>
-        <div class="vd-slider">
-          <input type="range" id="duckAmount" min="0" max="100" step="5" aria-labelledby="duckLabel">
-          <span id="duckValue" class="vd-value"></span>
-        </div>
-        <label class="vd-check"><input type="checkbox" id="duckSelf"> Abaixar também quando eu falo</label>
-      </section>
-
-      <section class="vd-section">
-        <h3 id="modeLabel">Como falar</h3>
-        <div class="seg" role="radiogroup" aria-labelledby="modeLabel">
-          <label><input type="radio" name="talkMode" value="voz"><span>Detecção de voz</span></label>
-          <label><input type="radio" name="talkMode" value="ptt"><span>Apertar para falar</span></label>
-        </div>
-        <div class="vd-row" id="pttRow" hidden>
-          <span>Tecla para falar</span>
-          <span class="vd-keys">
-            <kbd id="pttKey"></kbd>
-            <button class="btn small" id="pttChange" type="button">Trocar</button>
-          </span>
-        </div>
-        <p class="hint" id="modeHint"></p>
-      </section>
-
-      <section class="vd-section">
-        <h3>Atalhos<button type="button" class="tip" data-tip="Funcionam dentro do jogo. Use Ctrl ou Alt junto, ou F1 a F24." aria-label="Funcionam dentro do jogo. Use Ctrl ou Alt junto, ou F1 a F24."></button></h3>
-        <div id="shortcutRows" class="vd-shortcuts"></div>
-        <button class="btn small ghost" id="shortcutReset" type="button">Voltar aos atalhos padrão</button>
-      </section>
-
-      <section class="vd-section">
-        <h3 id="clipSecondsLabel">Clipe<button type="button" class="tip" data-tip="O atalho do clipe (ou a tesoura na transmissão) salva os últimos segundos, com o som da transmissão, em Vídeos › Tela P2P › Clipes." aria-label="O atalho do clipe (ou a tesoura na transmissão) salva os últimos segundos, com o som da transmissão, em Vídeos › Tela P2P › Clipes."></button></h3>
-        <div class="seg" role="radiogroup" aria-labelledby="clipSecondsLabel">
-          <label><input type="radio" name="clipSeconds" value="15"><span>15 s</span></label>
-          <label><input type="radio" name="clipSeconds" value="30"><span>30 s</span></label>
-          <label><input type="radio" name="clipSeconds" value="60"><span>1 min</span></label>
-          <label><input type="radio" name="clipSeconds" value="120"><span>2 min</span></label>
-        </div>
-        <p class="hint">Mais tempo usa mais memória: 2 min de uma transmissão em 1080p ficam em uns 100 a 200 MB.</p>
-      </section>
-    </div>
-  </div>
-
   <!-- Aviso de atualização: aparece em qualquer tela, e um botão baixa e reinicia -->
   <div id="updateBanner" class="update-banner" role="status" aria-live="polite" hidden>
     <span class="ub-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg></span>
@@ -843,121 +723,313 @@
 
   <div id="generalSettingsDialog" class="modal global utility-popup" hidden>
     <div class="dialog general-settings" role="dialog" aria-modal="true" aria-labelledby="generalSettingsTitle">
-      <div class="dialog-head"><h2 id="generalSettingsTitle">Configurações gerais</h2><button id="closeGeneralSettings" class="btn icon" type="button"></button></div>
-      <p class="hint" id="settingsSaveStatus" role="status">Salvo neste dispositivo. As escolhas continuam ao reabrir o app.</p>
-      <div class="settings-tabs seg" role="tablist" aria-label="Seções das configurações">
-        <button id="settingsTab-skin" type="button" role="tab" data-tab="skin" aria-controls="settingsPanel-skin">Tema</button>
-        <button id="settingsTab-appearance" type="button" role="tab" data-tab="appearance" aria-controls="settingsPanel-appearance">Aparência</button>
-        <button id="settingsTab-colors" type="button" role="tab" data-tab="colors" aria-controls="settingsPanel-colors">Cores</button>
-        <button id="settingsTab-sounds" type="button" role="tab" data-tab="sounds" aria-controls="settingsPanel-sounds">Sons</button>
-        <button id="settingsTab-phone" type="button" role="tab" data-tab="phone" aria-controls="settingsPanel-phone">Celular</button>
-      </div>
-      <section id="settingsPanel-skin" class="settings-section" role="tabpanel" aria-labelledby="settingsTab-skin" hidden>
-        <h3 id="skinTitle">Tema<button type="button" class="tip" data-tip="Muda o desenho do app inteiro, não só as cores. Voltar ao Padrão devolve as suas cores." aria-label="Muda o desenho do app inteiro, não só as cores. Voltar ao Padrão devolve as suas cores."></button></h3>
-        <div id="skinList" class="skin-list" role="radiogroup" aria-labelledby="skinTitle"></div>
-      </section>
-      <section id="settingsPanel-appearance" class="settings-section" role="tabpanel" aria-labelledby="settingsTab-appearance" hidden>
-        <h3 id="appearanceTitle">Aparência</h3>
-        <label class="vd-check"><input type="checkbox" id="tipsOn"> Mostrar as dicas (o ícone <span class="tip-sample" aria-hidden="true">i</span> que explica ao passar o mouse)</label>
-        <div class="settings-row"><span id="themesLabel" class="settings-label">Temas prontos</span><div id="themeList" class="theme-list" role="radiogroup" aria-labelledby="themesLabel"></div><small id="themeHint" class="hint"></small></div>
-        <p class="hint" id="glassLabel">Material das janelas</p>
-        <div class="seg glass-seg" role="radiogroup" aria-labelledby="glassLabel">
-          <label><input type="radio" name="glass" value="opaque"><span class="glass-swatch" data-glass-swatch="opaque" aria-hidden="true"></span><span>Opaco</span></label>
-          <label><input type="radio" name="glass" value="clear"><span class="glass-swatch" data-glass-swatch="clear" aria-hidden="true"></span><span>Transparente</span></label>
-          <label><input type="radio" name="glass" value="liquid"><span class="glass-swatch" data-glass-swatch="liquid" aria-hidden="true"></span><span>Líquido</span></label>
+      <div class="dialog-head"><h2 id="generalSettingsTitle">Configurações</h2><button id="closeGeneralSettings" class="btn icon" type="button"></button></div>
+      <div class="settings-layout">
+        <nav class="settings-nav" aria-label="Grupos das configurações">
+          <button type="button" data-group="voz">Voz e atalhos<small>Voz · Atalhos</small></button>
+          <button type="button" data-group="aparencia">Aparência<small>Tema · Janela e fonte · Cores</small></button>
+          <button type="button" data-group="sons">Sons<small>Avisos sonoros</small></button>
+          <button type="button" data-group="celular">Celular<small>Mudar as configurações pelo celular</small></button>
+          <button type="button" data-group="extras">Recursos extras<small>Comando de voz</small></button>
+          <button type="button" data-group="stats">Estatísticas<small>Desempenho · Transmissão</small></button>
+        </nav>
+        <div class="settings-main">
+        <p class="hint" id="settingsSaveStatus" role="status">Salvo neste dispositivo. As escolhas continuam ao reabrir o app.</p>
+        <div class="settings-tabs" role="tablist" aria-label="Seções do grupo">
+          <button id="settingsTab-voice" type="button" role="tab" data-group="voz" data-tab="voice" aria-controls="settingsPanel-voice">Voz</button>
+          <button id="settingsTab-shortcuts" type="button" role="tab" data-group="voz" data-tab="shortcuts" aria-controls="settingsPanel-shortcuts">Atalhos</button>
+          <button id="settingsTab-skin" type="button" role="tab" data-group="aparencia" data-tab="skin" aria-controls="settingsPanel-skin">Tema</button>
+          <button id="settingsTab-appearance" type="button" role="tab" data-group="aparencia" data-tab="appearance" aria-controls="settingsPanel-appearance">Janela e fonte</button>
+          <button id="settingsTab-colors" type="button" role="tab" data-group="aparencia" data-tab="colors" aria-controls="settingsPanel-colors">Cores</button>
+          <button id="settingsTab-sounds" type="button" role="tab" data-group="sons" data-tab="sounds" aria-controls="settingsPanel-sounds">Sons</button>
+          <button id="settingsTab-phone" type="button" role="tab" data-group="celular" data-tab="phone" aria-controls="settingsPanel-phone">Celular</button>
+          <button id="settingsTab-extras" type="button" role="tab" data-group="extras" data-tab="extras" aria-controls="settingsPanel-extras">Recursos extras</button>
+          <button id="statsTabPerf" type="button" role="tab" data-group="stats" data-tab="perf" data-panel="stats" aria-controls="settingsPanel-stats">Desempenho</button>
+          <button id="statsTabStream" type="button" role="tab" data-group="stats" data-tab="stream" data-panel="stats" aria-controls="settingsPanel-stats">Transmissão</button>
         </div>
-        <p class="hint" id="glassHint"></p>
-        <div id="glassLevelRow" class="settings-row" hidden><label for="glassLevel">Transparência</label><div class="vd-slider"><input type="range" id="glassLevel" min="0" max="100" step="1"><output id="glassLevelValue" for="glassLevel"></output></div></div>
-        <div class="settings-row"><span id="borderLabel" class="settings-label">Bordas</span>
-          <div class="seg glass-seg" role="radiogroup" aria-labelledby="borderLabel">
-            <label><input type="radio" name="border" value="solid"><span class="glass-swatch" data-border-swatch="solid" aria-hidden="true"></span><span>Normal</span></label>
-            <label><input type="radio" name="border" value="clear"><span class="glass-swatch" data-border-swatch="clear" aria-hidden="true"></span><span>Transparente</span></label>
-            <label><input type="radio" name="border" value="liquid"><span class="glass-swatch" data-border-swatch="liquid" aria-hidden="true"></span><span>Líquido</span></label>
+        <section id="settingsPanel-voice" class="settings-section voice-dialog" role="tabpanel" aria-labelledby="settingsTab-voice" hidden>
+          <section class="vd-section">
+            <h3><label for="micSelect">Microfone</label></h3>
+            <select id="micSelect" class="vd-select"></select>
+            <div class="vd-row">
+              <span id="micTestLabel">Testar o microfone<button type="button" class="tip" id="micTestHint" data-tip="Você se ouve como a sala ouve. Use fone: com caixa de som, apita." aria-label="Você se ouve como a sala ouve. Use fone: com caixa de som, apita."></button></span>
+              <button class="btn small" id="micTestBtn" type="button" aria-pressed="false" aria-labelledby="micTestLabel micTestBtn" aria-describedby="micTestHint">Ouvir minha voz</button>
+            </div>
+          </section>
+          <section class="vd-section">
+            <h3 id="nsLabel">Supressão de ruído</h3>
+            <div class="seg" role="radiogroup" aria-labelledby="nsLabel">
+              <label><input type="radio" name="noise" value="ia"><span>Avançado</span></label>
+              <label><input type="radio" name="noise" value="chrome"><span>Básica</span></label>
+              <label><input type="radio" name="noise" value="off"><span>Desligada</span></label>
+            </div>
+            <p class="hint" id="nsHint"></p>
+            <div class="vd-row">
+              <span id="echoLabel">Cancelamento de eco<button type="button" class="tip" data-tip="Tira da sua voz o som das suas caixas. Com fone, pode desligar." aria-label="Tira da sua voz o som das suas caixas. Com fone, pode desligar."></button></span>
+              <label class="switch">
+                <input type="checkbox" id="echoOn" role="switch" aria-labelledby="echoLabel">
+                <span class="track" aria-hidden="true"></span>
+              </label>
+            </div>
+          </section>
+          <section class="vd-section">
+            <div class="vd-row">
+              <h3 id="gateLabel">Sensibilidade do microfone</h3>
+              <label class="vd-check"><input type="checkbox" id="gateAuto"> Automática</label>
+            </div>
+            <div class="vd-meter" id="micMeterBox" hidden>
+              <div class="vd-meter-bar" aria-hidden="true"><span id="micMeter"></span><i id="gateMark"></i></div>
+              <p class="hint vd-ambient" id="micAmbient" aria-live="off"></p>
+            </div>
+            <div class="vd-slider">
+              <input type="range" id="gateDb" min="-80" max="0" step="1" aria-labelledby="gateLabel" aria-describedby="gateHint">
+              <span id="gateValue" class="vd-value"></span>
+            </div>
+            <p class="hint" id="gateHint"></p>
+          </section>
+          <section class="vd-section">
+            <h3 id="duckLabel">Atenuação<button type="button" class="tip" data-tip="Abaixa o som das telas enquanto alguém fala na voz." aria-label="Abaixa o som das telas enquanto alguém fala na voz."></button></h3>
+            <div class="vd-slider">
+              <input type="range" id="duckAmount" min="0" max="100" step="5" aria-labelledby="duckLabel">
+              <span id="duckValue" class="vd-value"></span>
+            </div>
+            <label class="vd-check"><input type="checkbox" id="duckSelf"> Abaixar também quando eu falo</label>
+          </section>
+          <section class="vd-section">
+            <h3 id="modeLabel">Como falar</h3>
+            <div class="seg" role="radiogroup" aria-labelledby="modeLabel">
+              <label><input type="radio" name="talkMode" value="voz"><span>Detecção de voz</span></label>
+              <label><input type="radio" name="talkMode" value="ptt"><span>Apertar para falar</span></label>
+            </div>
+            <div class="vd-row" id="pttRow" hidden>
+              <span>Tecla para falar</span>
+              <span class="vd-keys">
+                <kbd id="pttKey"></kbd>
+                <button class="btn small" id="pttChange" type="button">Trocar</button>
+              </span>
+            </div>
+            <p class="hint" id="modeHint"></p>
+          </section>
+        </section>
+        <section id="settingsPanel-shortcuts" class="settings-section voice-dialog" role="tabpanel" aria-labelledby="settingsTab-shortcuts" hidden>
+          <section class="vd-section">
+            <h3 id="shortcutsTitle">Atalhos<button type="button" class="tip" data-tip="Funcionam dentro do jogo. Use Ctrl ou Alt junto, ou F1 a F24." aria-label="Funcionam dentro do jogo. Use Ctrl ou Alt junto, ou F1 a F24."></button></h3>
+            <div id="shortcutRows" class="vd-shortcuts"></div>
+            <button class="btn small ghost" id="shortcutReset" type="button">Voltar aos atalhos padrão</button>
+          </section>
+          <section class="vd-section">
+            <h3 id="clipSecondsLabel">Clipe<button type="button" class="tip" data-tip="O atalho do clipe (ou a tesoura na transmissão) salva os últimos segundos, com o som da transmissão, em Vídeos › Tela P2P › Clipes." aria-label="O atalho do clipe (ou a tesoura na transmissão) salva os últimos segundos, com o som da transmissão, em Vídeos › Tela P2P › Clipes."></button></h3>
+            <div class="seg" role="radiogroup" aria-labelledby="clipSecondsLabel">
+              <label><input type="radio" name="clipSeconds" value="15"><span>15 s</span></label>
+              <label><input type="radio" name="clipSeconds" value="30"><span>30 s</span></label>
+              <label><input type="radio" name="clipSeconds" value="60"><span>1 min</span></label>
+              <label><input type="radio" name="clipSeconds" value="120"><span>2 min</span></label>
+            </div>
+            <p class="hint">Mais tempo usa mais memória: 2 min de uma transmissão em 1080p ficam em uns 100 a 200 MB.</p>
+          </section>
+        </section>
+        <section id="settingsPanel-skin" class="settings-section" role="tabpanel" aria-labelledby="settingsTab-skin" hidden>
+          <h3 id="skinTitle">Tema<button type="button" class="tip" data-tip="Muda o desenho do app inteiro, não só as cores. Voltar ao Padrão devolve as suas cores." aria-label="Muda o desenho do app inteiro, não só as cores. Voltar ao Padrão devolve as suas cores."></button></h3>
+          <div id="skinList" class="skin-list" role="radiogroup" aria-labelledby="skinTitle"></div>
+        </section>
+        <section id="settingsPanel-appearance" class="settings-section" role="tabpanel" aria-labelledby="settingsTab-appearance" hidden>
+          <h3 id="appearanceTitle">Aparência</h3>
+          <label class="vd-check"><input type="checkbox" id="tipsOn"> Mostrar as dicas (o ícone <span class="tip-sample" aria-hidden="true">i</span> que explica ao passar o mouse)</label>
+          <div class="settings-row"><span id="themesLabel" class="settings-label">Temas prontos</span><div id="themeList" class="theme-list" role="radiogroup" aria-labelledby="themesLabel"></div><small id="themeHint" class="hint"></small></div>
+          <p class="hint" id="glassLabel">Material das janelas</p>
+          <div class="seg glass-seg" role="radiogroup" aria-labelledby="glassLabel">
+            <label><input type="radio" name="glass" value="opaque"><span class="glass-swatch" data-glass-swatch="opaque" aria-hidden="true"></span><span>Opaco</span></label>
+            <label><input type="radio" name="glass" value="clear"><span class="glass-swatch" data-glass-swatch="clear" aria-hidden="true"></span><span>Transparente</span></label>
+            <label><input type="radio" name="glass" value="liquid"><span class="glass-swatch" data-glass-swatch="liquid" aria-hidden="true"></span><span>Líquido</span></label>
           </div>
-        </div>
-        <label class="vd-check"><input type="checkbox" id="ambientLight"> Luz ambiente nos vídeos: as barras pretas pegam as cores da transmissão e da música</label>
-        <label class="vd-check"><input type="checkbox" id="voiceSkyOn"> Céu da voz em cima da lista: canais como sóis e quem está neles como planetas</label>
-        <label class="vd-check"><input type="checkbox" id="mirrorOn"> Espelhar a interface: HUB na direita, barrinha, chat e voz na esquerda</label>
-        <div class="settings-row"><label for="fontFamily">Fonte</label>
-          <div class="font-pick"><select id="fontFamily"></select><button id="loadLocalFonts" class="btn small" type="button">Fontes deste PC</button></div>
-        </div>
-        <div id="fontCustomRow" class="settings-row" hidden><label for="fontCustom">Nome da fonte instalada</label><input type="text" id="fontCustom" maxlength="64" spellcheck="false" autocomplete="off" placeholder="Ex.: Noto Sans, Roboto, Fira Sans" aria-describedby="fontCustomHint"><small id="fontCustomHint" class="hint">O nome exato, como em Configurações › Fontes.</small></div>
-        <p id="fontPreview" class="font-preview" aria-live="polite"><strong>Tela P2P · Transmitindo ao vivo</strong><span>Ação, coração, pão e ânimo · 0123456789</span><span id="fontPreviewScript" hidden></span></p>
-        <label class="vd-check"><input type="checkbox" id="fontChat"> Usar também no chat (o padrão é a letra de console, Tahoma)</label>
-        <p class="hint" id="fontStatus" role="status"></p>
-      </section>
-      <section id="settingsPanel-colors" class="settings-section" role="tabpanel" aria-labelledby="settingsTab-colors" hidden>
-        <h3 id="colorsTitle">Cores do layout<button type="button" class="tip" data-tip="Um código como #3366FF ou a amostra. Muda na hora." aria-label="Um código como #3366FF ou a amostra. Muda na hora."></button></h3>
-        <div class="settings-colors"><div class="settings-color"><label for="hex-main">Principal<small>Fundo do aplicativo</small></label><div class="settings-color-input"><input type="color" id="color-main" aria-label="Escolher cor: Principal"><input type="text" id="hex-main" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-main"></div><small id="error-main" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-secondary">Secundária<small>Painéis e cartões</small></label><div class="settings-color-input"><input type="color" id="color-secondary" aria-label="Escolher cor: Secundária"><input type="text" id="hex-secondary" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-secondary"></div><small id="error-secondary" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-detail1">Detalhes 1<small>Botões e destaques</small></label><div class="settings-color-input"><input type="color" id="color-detail1" aria-label="Escolher cor: Detalhes 1"><input type="text" id="hex-detail1" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-detail1"></div><small id="error-detail1" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-detail2">Detalhes 2<small>Indicadores e avisos</small></label><div class="settings-color-input"><input type="color" id="color-detail2" aria-label="Escolher cor: Detalhes 2"><input type="text" id="hex-detail2" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-detail2"></div><small id="error-detail2" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><p class="settings-colors-sub"><strong>Cores de detalhe</strong><small>Em cinza: calculada a partir das cores principais. Escolha uma cor para usar a sua; apague o código para voltar ao automático.</small></p><div class="settings-color"><label for="hex-text">Texto<small>Letras do app</small></label><div class="settings-color-input"><input type="color" id="color-text" aria-label="Escolher cor: Texto"><input type="text" id="hex-text" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-text"></div><small id="error-text" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-live">Ao vivo<small>Quem transmite e o botão Transmitir</small></label><div class="settings-color-input"><input type="color" id="color-live" aria-label="Escolher cor: Ao vivo"><input type="text" id="hex-live" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-live"></div><small id="error-live" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-speaking">Quem fala<small>Borda e barrinhas de quem fala</small></label><div class="settings-color-input"><input type="color" id="color-speaking" aria-label="Escolher cor: Quem fala"><input type="text" id="hex-speaking" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-speaking"></div><small id="error-speaking" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-warn">Avisos<small>Erros e alertas</small></label><div class="settings-color-input"><input type="color" id="color-warn" aria-label="Escolher cor: Avisos"><input type="text" id="hex-warn" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-warn"></div><small id="error-warn" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-line">Bordas<small>Linhas dos painéis e campos</small></label><div class="settings-color-input"><input type="color" id="color-line" aria-label="Escolher cor: Bordas"><input type="text" id="hex-line" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-line"></div><small id="error-line" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div></div>
-        <button id="resetColors" class="btn small" type="button">Restaurar cores padrão</button>
-      </section>
-      <section id="settingsPanel-sounds" class="settings-section sounds-panel" role="tabpanel" aria-labelledby="settingsTab-sounds" hidden>
-        <div class="sound-master"><svg class="sound-master-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4V5zM15.5 8.5a5 5 0 0 1 0 7"/></svg><label for="notificationVolume">Volume geral<button type="button" class="tip" data-tip="Multiplica os volumes de cada aviso. Em 0%, todos ficam em silêncio." aria-label="Multiplica os volumes de cada aviso. Em 0%, todos ficam em silêncio."></button></label><input type="range" id="notificationVolume" min="0" max="100" step="1"><output id="notificationVolumeValue" for="notificationVolume"></output><span class="sound-master-sep" aria-hidden="true"></span><label class="vd-check"><input type="checkbox" id="muteChatSound"> Chat em silêncio<button type="button" class="tip" data-tip="Não toca som para mensagens novas do chat. O histórico já é silencioso." aria-label="Não toca som para mensagens novas do chat. O histórico já é silencioso."></button></label></div>
-        <div class="sound-group" role="group" aria-labelledby="soundGroupRoom"><h4 class="sound-group-title" id="soundGroupRoom">Sala</h4>
-          <div class="sound-row"><button class="btn icon sound-play" id="preview-enter" type="button" title="Ouvir prévia" aria-label="Ouvir prévia: Você entrou"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><label for="sound-enter">Você entrou</label><select id="sound-enter"></select><input id="volume-enter" type="range" min="0" max="100" step="1" aria-label="Volume: Você entrou"><output id="value-enter" for="volume-enter">100%</output></div>
-          <div class="sound-row"><button class="btn icon sound-play" id="preview-join" type="button" title="Ouvir prévia" aria-label="Ouvir prévia: Alguém entrou"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><label for="sound-join">Alguém entrou</label><select id="sound-join"></select><input id="volume-join" type="range" min="0" max="100" step="1" aria-label="Volume: Alguém entrou"><output id="value-join" for="volume-join">100%</output></div>
-          <div class="sound-row"><button class="btn icon sound-play" id="preview-leave" type="button" title="Ouvir prévia" aria-label="Ouvir prévia: Alguém saiu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><label for="sound-leave">Alguém saiu</label><select id="sound-leave"></select><input id="volume-leave" type="range" min="0" max="100" step="1" aria-label="Volume: Alguém saiu"><output id="value-leave" for="volume-leave">100%</output></div>
-        </div>
-        <div class="sound-group" role="group" aria-labelledby="soundGroupChat"><h4 class="sound-group-title" id="soundGroupChat">Chat</h4>
-          <div class="sound-row"><button class="btn icon sound-play" id="preview-chat" type="button" title="Ouvir prévia" aria-label="Ouvir prévia: Mensagem"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><label for="sound-chat">Mensagem</label><select id="sound-chat"></select><input id="volume-chat" type="range" min="0" max="100" step="1" aria-label="Volume: Mensagem"><output id="value-chat" for="volume-chat">100%</output></div>
-          <div class="sound-row"><button class="btn icon sound-play" id="preview-mention" type="button" title="Ouvir prévia" aria-label="Ouvir prévia: Menção a você"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><label for="sound-mention">Menção a você</label><select id="sound-mention"></select><input id="volume-mention" type="range" min="0" max="100" step="1" aria-label="Volume: Menção a você"><output id="value-mention" for="volume-mention">100%</output></div>
-        </div>
-        <div class="sound-group" role="group" aria-labelledby="soundGroupVoice"><h4 class="sound-group-title" id="soundGroupVoice">Voz<button type="button" class="tip" data-tip="“Sem som” desliga só aquele aviso. Os da voz tocam quando você está na voz." aria-label="“Sem som” desliga só aquele aviso. Os da voz tocam quando você está na voz."></button></h4>
-          <div class="sound-row"><button class="btn icon sound-play" id="preview-voiceJoin" type="button" title="Ouvir prévia" aria-label="Ouvir prévia: Entrou na voz"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><label for="sound-voiceJoin">Entrou na voz</label><select id="sound-voiceJoin"></select><input id="volume-voiceJoin" type="range" min="0" max="100" step="1" aria-label="Volume: Entrou na voz"><output id="value-voiceJoin" for="volume-voiceJoin">100%</output></div>
-          <div class="sound-row"><button class="btn icon sound-play" id="preview-voiceLeave" type="button" title="Ouvir prévia" aria-label="Ouvir prévia: Saiu da voz"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><label for="sound-voiceLeave">Saiu da voz</label><select id="sound-voiceLeave"></select><input id="volume-voiceLeave" type="range" min="0" max="100" step="1" aria-label="Volume: Saiu da voz"><output id="value-voiceLeave" for="volume-voiceLeave">100%</output></div>
-          <div class="sound-row"><button class="btn icon sound-play" id="preview-mute" type="button" title="Ouvir prévia" aria-label="Ouvir prévia: Microfone desligado"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><label for="sound-mute">Microfone desligado</label><select id="sound-mute"></select><input id="volume-mute" type="range" min="0" max="100" step="1" aria-label="Volume: Microfone desligado"><output id="value-mute" for="volume-mute">100%</output></div>
-          <div class="sound-row"><button class="btn icon sound-play" id="preview-unmute" type="button" title="Ouvir prévia" aria-label="Ouvir prévia: Microfone ligado"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><label for="sound-unmute">Microfone ligado</label><select id="sound-unmute"></select><input id="volume-unmute" type="range" min="0" max="100" step="1" aria-label="Volume: Microfone ligado"><output id="value-unmute" for="volume-unmute">100%</output></div>
-          <div class="sound-row"><button class="btn icon sound-play" id="preview-deafen" type="button" title="Ouvir prévia" aria-label="Ouvir prévia: Fone silenciado"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><label for="sound-deafen">Fone silenciado</label><select id="sound-deafen"></select><input id="volume-deafen" type="range" min="0" max="100" step="1" aria-label="Volume: Fone silenciado"><output id="value-deafen" for="volume-deafen">100%</output></div>
-          <div class="sound-row"><button class="btn icon sound-play" id="preview-undeafen" type="button" title="Ouvir prévia" aria-label="Ouvir prévia: Fone ligado"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><label for="sound-undeafen">Fone ligado</label><select id="sound-undeafen"></select><input id="volume-undeafen" type="range" min="0" max="100" step="1" aria-label="Volume: Fone ligado"><output id="value-undeafen" for="volume-undeafen">100%</output></div>
-        </div>
-        <div class="sound-group" role="group" aria-labelledby="soundGroupShare"><h4 class="sound-group-title" id="soundGroupShare">Transmissão</h4>
-          <div class="sound-row"><button class="btn icon sound-play" id="preview-shareStart" type="button" title="Ouvir prévia" aria-label="Ouvir prévia: Começou a transmitir"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><label for="sound-shareStart">Começou a transmitir</label><select id="sound-shareStart"></select><input id="volume-shareStart" type="range" min="0" max="100" step="1" aria-label="Volume: Começou a transmitir"><output id="value-shareStart" for="volume-shareStart">100%</output></div>
-          <div class="sound-row"><button class="btn icon sound-play" id="preview-shareStop" type="button" title="Ouvir prévia" aria-label="Ouvir prévia: Parou de transmitir"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><label for="sound-shareStop">Parou de transmitir</label><select id="sound-shareStop"></select><input id="volume-shareStop" type="range" min="0" max="100" step="1" aria-label="Volume: Parou de transmitir"><output id="value-shareStop" for="volume-shareStop">100%</output></div>
-        </div>
-      </section>
-      <!-- Celular (renderer/celular.js): guardar as configurações num arquivo cifrado no celular e trazer de volta em
-           qualquer PC, pelo Wi-Fi, com QR code e senha (docs/spec/config-no-celular.md) -->
-      <section id="settingsPanel-phone" class="settings-section phone-panel" role="tabpanel" aria-labelledby="settingsTab-phone" hidden>
-        <h3>Configurações no celular</h3>
-        <p class="hint">Guarde tema, nome, foto, voz, volumes e atalhos num arquivo no seu celular e traga de volta em qualquer PC. O celular precisa estar no mesmo Wi-Fi do PC; nada passa pela internet. A conta Razze não vai junto: entre nela de novo.</p>
-        <div id="phoneActions" class="phone-actions">
-          <button id="phoneSave" class="btn primary" type="button">Guardar no celular</button>
-          <button id="phoneLoad" class="btn" type="button">Trazer do celular</button>
-        </div>
-        <div id="phoneFlow" class="phone-flow" hidden>
-          <form id="phonePassForm" class="phone-pass" hidden>
-            <strong id="phonePassTitle"></strong>
-            <p id="phonePassHint" class="hint"></p>
-            <label class="field">Senha<input id="phonePass" type="password" maxlength="200" autocomplete="new-password"></label>
-            <label class="field" id="phonePass2Field">Repita a senha<input id="phonePass2" type="password" maxlength="200" autocomplete="new-password"></label>
-            <p id="phonePassError" class="hint phone-error" role="status" aria-live="polite"></p>
-            <div class="phone-buttons"><button id="phonePassCancel" class="btn small" type="button">Cancelar</button><button id="phonePassGo" class="btn small primary" type="submit">Continuar</button></div>
-          </form>
-          <div id="phoneQrBox" class="phone-qr" hidden>
-            <div id="phoneQr" class="phone-qr-code"></div>
-            <div class="phone-qr-side">
-              <p id="phoneQrHint"></p>
-              <p class="hint">Sem câmera? Digite no navegador do celular:</p>
-              <code id="phoneUrl" class="phone-url"></code>
-              <label class="field" id="phoneIpLabel" hidden>Rede<select id="phoneIp"></select></label>
-              <div class="phone-buttons"><button id="phoneQrCancel" class="btn small" type="button">Cancelar</button></div>
+          <p class="hint" id="glassHint"></p>
+          <div id="glassLevelRow" class="settings-row" hidden><label for="glassLevel">Transparência</label><div class="vd-slider"><input type="range" id="glassLevel" min="0" max="100" step="1"><output id="glassLevelValue" for="glassLevel"></output></div></div>
+          <div class="settings-row"><span id="borderLabel" class="settings-label">Bordas</span>
+            <div class="seg glass-seg" role="radiogroup" aria-labelledby="borderLabel">
+              <label><input type="radio" name="border" value="solid"><span class="glass-swatch" data-border-swatch="solid" aria-hidden="true"></span><span>Normal</span></label>
+              <label><input type="radio" name="border" value="clear"><span class="glass-swatch" data-border-swatch="clear" aria-hidden="true"></span><span>Transparente</span></label>
+              <label><input type="radio" name="border" value="liquid"><span class="glass-swatch" data-border-swatch="liquid" aria-hidden="true"></span><span>Líquido</span></label>
             </div>
           </div>
-          <div id="phoneSummary" class="phone-summary" hidden>
-            <strong>O arquivo traz</strong>
-            <ul id="phoneSummaryList"></ul>
-            <p id="phoneSummaryNote" class="hint"></p>
-            <p class="hint">Aplicar troca as configurações deste PC por essas e recarrega a interface.</p>
-            <div class="phone-buttons"><button id="phoneSummaryCancel" class="btn small" type="button">Cancelar</button><button id="phoneApply" class="btn small primary" type="button">Aplicar</button></div>
+          <label class="vd-check"><input type="checkbox" id="ambientLight"> Luz ambiente nos vídeos: as barras pretas pegam as cores da transmissão e da música</label>
+          <label class="vd-check"><input type="checkbox" id="voiceSkyOn"> Céu da voz em cima da lista: canais como sóis e quem está neles como planetas</label>
+          <label class="vd-check"><input type="checkbox" id="mirrorOn"> Espelhar a interface: HUB na direita, barrinha, chat e voz na esquerda</label>
+          <div class="settings-row"><label for="fontFamily">Fonte</label>
+            <div class="font-pick"><select id="fontFamily"></select><button id="loadLocalFonts" class="btn small" type="button">Fontes deste PC</button></div>
           </div>
-          <p id="phoneStatus" class="hint phone-status" role="status" aria-live="polite"></p>
+          <div id="fontCustomRow" class="settings-row" hidden><label for="fontCustom">Nome da fonte instalada</label><input type="text" id="fontCustom" maxlength="64" spellcheck="false" autocomplete="off" placeholder="Ex.: Noto Sans, Roboto, Fira Sans" aria-describedby="fontCustomHint"><small id="fontCustomHint" class="hint">O nome exato, como em Configurações › Fontes.</small></div>
+          <p id="fontPreview" class="font-preview" aria-live="polite"><strong>Tela P2P · Transmitindo ao vivo</strong><span>Ação, coração, pão e ânimo · 0123456789</span><span id="fontPreviewScript" hidden></span></p>
+          <label class="vd-check"><input type="checkbox" id="fontChat"> Usar também no chat (o padrão é a letra de console, Tahoma)</label>
+          <p class="hint" id="fontStatus" role="status"></p>
+        </section>
+        <section id="settingsPanel-colors" class="settings-section" role="tabpanel" aria-labelledby="settingsTab-colors" hidden>
+          <h3 id="colorsTitle">Cores do layout<button type="button" class="tip" data-tip="Um código como #3366FF ou a amostra. Muda na hora." aria-label="Um código como #3366FF ou a amostra. Muda na hora."></button></h3>
+          <div class="settings-colors"><div class="settings-color"><label for="hex-main">Principal<small>Fundo do aplicativo</small></label><div class="settings-color-input"><input type="color" id="color-main" aria-label="Escolher cor: Principal"><input type="text" id="hex-main" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-main"></div><small id="error-main" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-secondary">Secundária<small>Painéis e cartões</small></label><div class="settings-color-input"><input type="color" id="color-secondary" aria-label="Escolher cor: Secundária"><input type="text" id="hex-secondary" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-secondary"></div><small id="error-secondary" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-detail1">Detalhes 1<small>Botões e destaques</small></label><div class="settings-color-input"><input type="color" id="color-detail1" aria-label="Escolher cor: Detalhes 1"><input type="text" id="hex-detail1" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-detail1"></div><small id="error-detail1" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-detail2">Detalhes 2<small>Indicadores e avisos</small></label><div class="settings-color-input"><input type="color" id="color-detail2" aria-label="Escolher cor: Detalhes 2"><input type="text" id="hex-detail2" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-detail2"></div><small id="error-detail2" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><p class="settings-colors-sub"><strong>Cores de detalhe</strong><small>Em cinza: calculada a partir das cores principais. Escolha uma cor para usar a sua; apague o código para voltar ao automático.</small></p><div class="settings-color"><label for="hex-text">Texto<small>Letras do app</small></label><div class="settings-color-input"><input type="color" id="color-text" aria-label="Escolher cor: Texto"><input type="text" id="hex-text" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-text"></div><small id="error-text" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-live">Ao vivo<small>Quem transmite e o botão Transmitir</small></label><div class="settings-color-input"><input type="color" id="color-live" aria-label="Escolher cor: Ao vivo"><input type="text" id="hex-live" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-live"></div><small id="error-live" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-speaking">Quem fala<small>Borda e barrinhas de quem fala</small></label><div class="settings-color-input"><input type="color" id="color-speaking" aria-label="Escolher cor: Quem fala"><input type="text" id="hex-speaking" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-speaking"></div><small id="error-speaking" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-warn">Avisos<small>Erros e alertas</small></label><div class="settings-color-input"><input type="color" id="color-warn" aria-label="Escolher cor: Avisos"><input type="text" id="hex-warn" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-warn"></div><small id="error-warn" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-line">Bordas<small>Linhas dos painéis e campos</small></label><div class="settings-color-input"><input type="color" id="color-line" aria-label="Escolher cor: Bordas"><input type="text" id="hex-line" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-line"></div><small id="error-line" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div></div>
+          <button id="resetColors" class="btn small" type="button">Restaurar cores padrão</button>
+        </section>
+        <section id="settingsPanel-sounds" class="settings-section sounds-panel" role="tabpanel" aria-labelledby="settingsTab-sounds" hidden>
+          <div class="sound-master"><svg class="sound-master-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4V5zM15.5 8.5a5 5 0 0 1 0 7"/></svg><label for="notificationVolume">Volume geral<button type="button" class="tip" data-tip="Multiplica os volumes de cada aviso. Em 0%, todos ficam em silêncio." aria-label="Multiplica os volumes de cada aviso. Em 0%, todos ficam em silêncio."></button></label><input type="range" id="notificationVolume" min="0" max="100" step="1"><output id="notificationVolumeValue" for="notificationVolume"></output><span class="sound-master-sep" aria-hidden="true"></span><label class="vd-check"><input type="checkbox" id="muteChatSound"> Chat em silêncio<button type="button" class="tip" data-tip="Não toca som para mensagens novas do chat. O histórico já é silencioso." aria-label="Não toca som para mensagens novas do chat. O histórico já é silencioso."></button></label></div>
+          <div class="sound-group" role="group" aria-labelledby="soundGroupRoom"><h4 class="sound-group-title" id="soundGroupRoom">Sala</h4>
+            <div class="sound-row"><button class="btn icon sound-play" id="preview-enter" type="button" title="Ouvir prévia" aria-label="Ouvir prévia: Você entrou"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><label for="sound-enter">Você entrou</label><select id="sound-enter"></select><input id="volume-enter" type="range" min="0" max="100" step="1" aria-label="Volume: Você entrou"><output id="value-enter" for="volume-enter">100%</output></div>
+            <div class="sound-row"><button class="btn icon sound-play" id="preview-join" type="button" title="Ouvir prévia" aria-label="Ouvir prévia: Alguém entrou"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><label for="sound-join">Alguém entrou</label><select id="sound-join"></select><input id="volume-join" type="range" min="0" max="100" step="1" aria-label="Volume: Alguém entrou"><output id="value-join" for="volume-join">100%</output></div>
+            <div class="sound-row"><button class="btn icon sound-play" id="preview-leave" type="button" title="Ouvir prévia" aria-label="Ouvir prévia: Alguém saiu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><label for="sound-leave">Alguém saiu</label><select id="sound-leave"></select><input id="volume-leave" type="range" min="0" max="100" step="1" aria-label="Volume: Alguém saiu"><output id="value-leave" for="volume-leave">100%</output></div>
+          </div>
+          <div class="sound-group" role="group" aria-labelledby="soundGroupChat"><h4 class="sound-group-title" id="soundGroupChat">Chat</h4>
+            <div class="sound-row"><button class="btn icon sound-play" id="preview-chat" type="button" title="Ouvir prévia" aria-label="Ouvir prévia: Mensagem"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><label for="sound-chat">Mensagem</label><select id="sound-chat"></select><input id="volume-chat" type="range" min="0" max="100" step="1" aria-label="Volume: Mensagem"><output id="value-chat" for="volume-chat">100%</output></div>
+            <div class="sound-row"><button class="btn icon sound-play" id="preview-mention" type="button" title="Ouvir prévia" aria-label="Ouvir prévia: Menção a você"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><label for="sound-mention">Menção a você</label><select id="sound-mention"></select><input id="volume-mention" type="range" min="0" max="100" step="1" aria-label="Volume: Menção a você"><output id="value-mention" for="volume-mention">100%</output></div>
+          </div>
+          <div class="sound-group" role="group" aria-labelledby="soundGroupVoice"><h4 class="sound-group-title" id="soundGroupVoice">Voz<button type="button" class="tip" data-tip="“Sem som” desliga só aquele aviso. Os da voz tocam quando você está na voz." aria-label="“Sem som” desliga só aquele aviso. Os da voz tocam quando você está na voz."></button></h4>
+            <div class="sound-row"><button class="btn icon sound-play" id="preview-voiceJoin" type="button" title="Ouvir prévia" aria-label="Ouvir prévia: Entrou na voz"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><label for="sound-voiceJoin">Entrou na voz</label><select id="sound-voiceJoin"></select><input id="volume-voiceJoin" type="range" min="0" max="100" step="1" aria-label="Volume: Entrou na voz"><output id="value-voiceJoin" for="volume-voiceJoin">100%</output></div>
+            <div class="sound-row"><button class="btn icon sound-play" id="preview-voiceLeave" type="button" title="Ouvir prévia" aria-label="Ouvir prévia: Saiu da voz"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><label for="sound-voiceLeave">Saiu da voz</label><select id="sound-voiceLeave"></select><input id="volume-voiceLeave" type="range" min="0" max="100" step="1" aria-label="Volume: Saiu da voz"><output id="value-voiceLeave" for="volume-voiceLeave">100%</output></div>
+            <div class="sound-row"><button class="btn icon sound-play" id="preview-mute" type="button" title="Ouvir prévia" aria-label="Ouvir prévia: Microfone desligado"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><label for="sound-mute">Microfone desligado</label><select id="sound-mute"></select><input id="volume-mute" type="range" min="0" max="100" step="1" aria-label="Volume: Microfone desligado"><output id="value-mute" for="volume-mute">100%</output></div>
+            <div class="sound-row"><button class="btn icon sound-play" id="preview-unmute" type="button" title="Ouvir prévia" aria-label="Ouvir prévia: Microfone ligado"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><label for="sound-unmute">Microfone ligado</label><select id="sound-unmute"></select><input id="volume-unmute" type="range" min="0" max="100" step="1" aria-label="Volume: Microfone ligado"><output id="value-unmute" for="volume-unmute">100%</output></div>
+            <div class="sound-row"><button class="btn icon sound-play" id="preview-deafen" type="button" title="Ouvir prévia" aria-label="Ouvir prévia: Fone silenciado"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><label for="sound-deafen">Fone silenciado</label><select id="sound-deafen"></select><input id="volume-deafen" type="range" min="0" max="100" step="1" aria-label="Volume: Fone silenciado"><output id="value-deafen" for="volume-deafen">100%</output></div>
+            <div class="sound-row"><button class="btn icon sound-play" id="preview-undeafen" type="button" title="Ouvir prévia" aria-label="Ouvir prévia: Fone ligado"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><label for="sound-undeafen">Fone ligado</label><select id="sound-undeafen"></select><input id="volume-undeafen" type="range" min="0" max="100" step="1" aria-label="Volume: Fone ligado"><output id="value-undeafen" for="volume-undeafen">100%</output></div>
+          </div>
+          <div class="sound-group" role="group" aria-labelledby="soundGroupShare"><h4 class="sound-group-title" id="soundGroupShare">Transmissão</h4>
+            <div class="sound-row"><button class="btn icon sound-play" id="preview-shareStart" type="button" title="Ouvir prévia" aria-label="Ouvir prévia: Começou a transmitir"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><label for="sound-shareStart">Começou a transmitir</label><select id="sound-shareStart"></select><input id="volume-shareStart" type="range" min="0" max="100" step="1" aria-label="Volume: Começou a transmitir"><output id="value-shareStart" for="volume-shareStart">100%</output></div>
+            <div class="sound-row"><button class="btn icon sound-play" id="preview-shareStop" type="button" title="Ouvir prévia" aria-label="Ouvir prévia: Parou de transmitir"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><label for="sound-shareStop">Parou de transmitir</label><select id="sound-shareStop"></select><input id="volume-shareStop" type="range" min="0" max="100" step="1" aria-label="Volume: Parou de transmitir"><output id="value-shareStop" for="volume-shareStop">100%</output></div>
+          </div>
+        </section>
+        <!-- Celular (renderer/celular.js): guardar as configurações num arquivo cifrado no celular e trazer de volta em
+             qualquer PC, pelo Wi-Fi, com QR code e senha (docs/spec/config-no-celular.md) -->
+        <section id="settingsPanel-phone" class="settings-section phone-panel" role="tabpanel" aria-labelledby="settingsTab-phone" hidden>
+          <h3>Configurações no celular</h3>
+          <p class="hint">Guarde tema, nome, foto, voz, volumes e atalhos num arquivo no seu celular e traga de volta em qualquer PC. O celular precisa estar no mesmo Wi-Fi do PC; nada passa pela internet. A conta Razze não vai junto: entre nela de novo.</p>
+          <div id="phoneActions" class="phone-actions">
+            <button id="phoneSave" class="btn primary" type="button">Guardar no celular</button>
+            <button id="phoneLoad" class="btn" type="button">Trazer do celular</button>
+          </div>
+          <div id="phoneFlow" class="phone-flow" hidden>
+            <form id="phonePassForm" class="phone-pass" hidden>
+              <strong id="phonePassTitle"></strong>
+              <p id="phonePassHint" class="hint"></p>
+              <label class="field">Senha<input id="phonePass" type="password" maxlength="200" autocomplete="new-password"></label>
+              <label class="field" id="phonePass2Field">Repita a senha<input id="phonePass2" type="password" maxlength="200" autocomplete="new-password"></label>
+              <p id="phonePassError" class="hint phone-error" role="status" aria-live="polite"></p>
+              <div class="phone-buttons"><button id="phonePassCancel" class="btn small" type="button">Cancelar</button><button id="phonePassGo" class="btn small primary" type="submit">Continuar</button></div>
+            </form>
+            <div id="phoneQrBox" class="phone-qr" hidden>
+              <div id="phoneQr" class="phone-qr-code"></div>
+              <div class="phone-qr-side">
+                <p id="phoneQrHint"></p>
+                <p class="hint">Sem câmera? Digite no navegador do celular:</p>
+                <code id="phoneUrl" class="phone-url"></code>
+                <label class="field" id="phoneIpLabel" hidden>Rede<select id="phoneIp"></select></label>
+                <div class="phone-buttons"><button id="phoneQrCancel" class="btn small" type="button">Cancelar</button></div>
+              </div>
+            </div>
+            <div id="phoneSummary" class="phone-summary" hidden>
+              <strong>O arquivo traz</strong>
+              <ul id="phoneSummaryList"></ul>
+              <p id="phoneSummaryNote" class="hint"></p>
+              <p class="hint">Aplicar troca as configurações deste PC por essas e recarrega a interface.</p>
+              <div class="phone-buttons"><button id="phoneSummaryCancel" class="btn small" type="button">Cancelar</button><button id="phoneApply" class="btn small primary" type="button">Aplicar</button></div>
+            </div>
+            <p id="phoneStatus" class="hint phone-status" role="status" aria-live="polite"></p>
+          </div>
+        </section>
+        <section id="settingsPanel-stats" class="settings-section stats" role="tabpanel" aria-labelledby="statsTabPerf" hidden>
+        <!-- Desempenho: quanto o app usa do PC e o que entra e sai pela rede -->
+        <div id="statsPerf" class="stats-panel">
+        <h3 class="stat-group">Uso do app</h3>
+        <div class="stat-cards">
+          <div class="stat-card"><span class="stat-label">Processador</span><strong id="stCpu">–</strong><span id="stCpuAvg" class="stat-avg"></span><span id="stCpuPC" class="stat-sub"></span><svg id="stCpuChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
+          <div class="stat-card"><span class="stat-label">Placa de vídeo 3D</span><strong id="stGpu">–</strong><span id="stGpuAvg" class="stat-avg"></span><span id="stGpuPC" class="stat-sub"></span><svg id="stGpuChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
+          <div class="stat-card"><span class="stat-label">Codificação de vídeo</span><strong id="stEnc">–</strong><span id="stEncAvg" class="stat-avg"></span><span id="stEncPC" class="stat-sub"></span><svg id="stEncChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
+          <div class="stat-card"><span class="stat-label">Decodificação de vídeo</span><strong id="stDec">–</strong><span id="stDecAvg" class="stat-avg"></span><span id="stDecPC" class="stat-sub"></span><svg id="stDecChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
         </div>
-      </section>
-      <footer class="settings-version"><span>Tela P2P</span><span id="settingsVersion"></span></footer>
+        <h3 class="stat-group">Rede</h3>
+        <div class="stat-cards">
+          <div class="stat-card"><span class="stat-label">Quadros capturados</span><strong id="stCap">–</strong><span id="stCapAvg" class="stat-avg"></span><svg id="stCapChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
+          <div class="stat-card"><span class="stat-label">Quadros enviados</span><strong id="stSent">–</strong><span id="stSentAvg" class="stat-avg"></span><svg id="stSentChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
+          <div class="stat-card"><span class="stat-label">Enviando</span><strong id="stUp">–</strong><span id="stUpAvg" class="stat-avg"></span><svg id="stUpChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
+          <div class="stat-card"><span class="stat-label">Recebendo</span><strong id="stDown">–</strong><span id="stDownAvg" class="stat-avg"></span><svg id="stDownChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
+        </div>
+        <p id="stCodec" class="hint"></p>
+        <div class="stat-scroll">
+          <table class="stat-table">
+            <thead>
+              <tr><th>Processo</th><th>Processador</th><th>Placa 3D</th><th>Codif. vídeo</th><th>Decodif. vídeo</th><th>Memória de vídeo</th></tr>
+            </thead>
+            <tbody id="stRows"></tbody>
+          </table>
+        </div>
+        <p id="stNote" class="hint"></p>
+        </div>
+        <!-- Transmissão: a configuração de cada pessoa que está transmitindo e como chega até você -->
+        <div id="statsStream" class="stats-panel" hidden>
+          <div id="streamRows" class="stream-list"></div>
+          <p id="streamEmpty" class="hint">Ninguém está transmitindo agora.</p>
+        </div>
+        </section>
+        <!-- Recursos extras: só funcionam para quem liga; nada é baixado antes (renderer/comando-voz.js) -->
+        <section id="settingsPanel-extras" class="settings-section extras-panel" role="tabpanel" aria-labelledby="settingsTab-extras" hidden>
+          <h3>Recursos extras</h3>
+          <p class="hint">Recursos a mais, que só funcionam se você ligar. Nada é baixado antes disso.</p>
+          <div class="extra-card">
+            <div class="group-head">
+              <span class="group-title" id="vozCmdLabel">Comando de voz</span>
+              <label class="switch">
+                <input type="checkbox" id="vozCmdOn" role="switch" aria-labelledby="vozCmdLabel" aria-describedby="vozCmdHint">
+                <span class="track" aria-hidden="true"></span>
+              </label>
+            </div>
+            <p id="vozCmdHint" class="hint">Numa sala, segure <kbd id="vozCmdKey">Ctrl+Shift+V</kbd> e fale, até dentro do jogo: “abre a live do Fulano no canto esquerdo de cima”, “parar de assistir o Fulano”, “ir para a subsala 2”, “desligar o microfone”. Enquanto você segura, a call não ouve. A voz é entendida neste PC e não sai dele. A tecla dá para trocar em Voz e atalhos.</p>
+            <div class="settings-row"><span class="settings-label" id="vozCmdModeloLabel">Reconhecimento de fala</span>
+              <div class="seg" role="radiogroup" aria-labelledby="vozCmdModeloLabel">
+                <label><input type="radio" name="vozCmdModelo" value="leve"><span>Leve · 60 MB</span></label>
+                <label><input type="radio" name="vozCmdModelo" value="preciso"><span>Preciso · 190 MB</span></label>
+              </div>
+            </div>
+            <div class="settings-row"><span class="settings-label" id="vozCmdConfirmarLabel">Confirmação</span>
+              <div class="seg" role="radiogroup" aria-labelledby="vozCmdConfirmarLabel">
+                <label title="Um toque subindo quando fez; um som grave descendo quando não deu"><input type="radio" name="vozCmdConfirmar" value="som"><span>Sons</span></label>
+                <label title="A voz do Windows diz o que fez (“Assistindo Fulano”)"><input type="radio" name="vozCmdConfirmar" value="voz"><span>Voz</span></label>
+                <label title="Só o aviso na tela"><input type="radio" name="vozCmdConfirmar" value="nada"><span>Nenhuma</span></label>
+              </div>
+            </div>
+            <div class="settings-row"><span class="settings-label" id="vozIaLabel">Pedidos livres</span>
+              <p class="hint" id="vozIaHint">Quando o app não entende o pedido, um modelo de linguagem escolhe o que fazer: “deixa o Mateus num cantinho pra eu ver”, “fecha tudo e me leva pra sala do Lucas”.</p>
+              <div class="seg" role="radiogroup" aria-labelledby="vozIaLabel">
+                <label><input type="radio" name="vozIa" value=""><span>Desligado</span></label>
+                <label title="Um modelo rodando no seu PC (Ollama ou LM Studio): grátis e sem internet, mas usa o PC enquanto pensa"><input type="radio" name="vozIa" value="local"><span>Local</span></label>
+                <label title="Claude, pela API da Anthropic: entende melhor e não pesa no PC; precisa de internet e da sua chave"><input type="radio" name="vozIa" value="nuvem"><span>Nuvem</span></label>
+              </div>
+            </div>
+            <div id="vozIaLocal" class="voz-ia-box" hidden>
+              <label class="field">Endereço do servidor<input id="vozIaUrl" type="text" spellcheck="false" placeholder="http://localhost:11434"></label>
+              <label class="field">Modelo<input id="vozIaModeloLocal" type="text" spellcheck="false" placeholder="qwen2.5:7b"></label>
+              <p class="hint">Ollama: <code>http://localhost:11434</code>; LM Studio: <code>http://localhost:1234</code>. O modelo precisa saber escolher ações (tools), como qwen2.5 ou llama3.1.</p>
+            </div>
+            <div id="vozIaNuvem" class="voz-ia-box" hidden>
+              <label class="field">Modelo<select id="vozIaModeloNuvem">
+                <option value="claude-opus-5-5">Claude Opus 5.5 (entende mais)</option>
+                <option value="claude-sonnet-5-5">Claude Sonnet 5.5</option>
+                <option value="claude-haiku-4-5">Claude Haiku 4.5 (mais rápido e barato)</option>
+              </select></label>
+              <label class="field">Chave da API da Anthropic<span class="voz-ia-chave"><input id="vozIaChave" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…"><button id="vozIaSalvarChave" class="btn small" type="button">Guardar</button><button id="vozIaApagarChave" class="btn small ghost" type="button" hidden>Apagar</button></span></label>
+              <p class="hint">A chave fica cifrada neste PC e não volta para a tela. Vai para a Anthropic só o texto do pedido, os nomes de quem está na sala (e quem transmite) e os nomes dos canais; nunca o áudio. Cada pedido é cobrado na sua conta da Anthropic.</p>
+            </div>
+            <div id="vozIaTestarLinha" class="voz-ia-teste" hidden><button id="vozIaTestar" class="btn small" type="button">Testar</button><span id="vozIaStatus" class="hint" role="status" aria-live="polite"></span></div>
+            <div id="vozCmdBaixar" class="voz-cmd-download" hidden>
+              <progress id="vozCmdProgresso" max="1" value="0"></progress>
+              <span id="vozCmdProgressoTexto" class="hint"></span>
+              <button id="vozCmdCancelar" class="btn small" type="button">Cancelar</button>
+            </div>
+            <p id="vozCmdStatus" class="hint" role="status" aria-live="polite"></p>
+            <button id="vozCmdRemover" class="btn small ghost" type="button" hidden>Apagar o download</button>
+          </div>
+        </section>
+        <footer class="settings-version"><span>Tela P2P</span><span id="settingsVersion"></span></footer>
+        </div>
+      </div>
     </div>
   </div>
 
   <div id="toast" class="toast" role="status"></div>
+  <!-- Comando de voz: "Ouvindo…" enquanto a tecla está apertada, "Entendendo…" depois (renderer/comando-voz.js) -->
+  <div id="voiceCmdBadge" class="voice-cmd-badge" role="status" hidden></div>
   <!-- Lente do modo Líquido: o fundo atrás das barras e botões ondula de leve, como vidro grosso -->
   <svg class="glass-defs" width="0" height="0" aria-hidden="true" focusable="false">
     <filter id="liquidLens" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
@@ -986,6 +1058,7 @@
   <script src="renderer/conectividade.js"></script>
   <script src="renderer/sala.js"></script>
   <script src="renderer/voz.js"></script>
+  <script src="renderer/porta-microfone.js"></script>
   <script src="renderer/microfone.js"></script>
   <script src="renderer/subsalas.js"></script>
   <script src="renderer/membros.js"></script>
@@ -1005,7 +1078,11 @@
   <script src="renderer/atualizacao.js"></script>
   <script src="renderer/sessoes.js"></script>
   <script src="renderer/salas-amigos.js"></script>
+  <script src="renderer/chamada.js"></script>
   <script src="renderer/transmitir.js"></script>
+  <script src="renderer/comando-voz-regras.js"></script>
+  <script src="renderer/comando-voz-acoes.js"></script>
+  <script src="renderer/comando-voz.js"></script>
   <script src="renderer/mapa-conexoes.js"></script>
   <script src="renderer/hub.js"></script>
   <script src="renderer/mensagens.js"></script>

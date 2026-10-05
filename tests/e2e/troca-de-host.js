@@ -46,7 +46,7 @@ run('Troca de host', 240000, async () => {
   await C.eval(`(() => { $('chatInput').value = 'depois da troca'; sendChat(); })()`);
   await B.waitFor(`[...$('chatList').querySelectorAll('.msg-text')].some((p) => p.textContent === 'depois da troca')`, 5000);
   check('Chat funciona depois da troca', true);
-  check('Lista mostra "Host" na Bia', await C.eval(`[...document.querySelectorAll('.member')].some((li) => li.textContent.includes('Bia') && li.textContent.includes('Host'))`));
+  check('Lista mostra a coroa de host na Bia', await C.eval(`[...document.querySelectorAll('.member')].some((li) => li.textContent.includes('Bia') && !!li.querySelector('.host-badge'))`));
 
   // 2) Uma pessoa nova entra na sala da Bia com a senha de antes
   const D = await openApp('hostD', 9474);

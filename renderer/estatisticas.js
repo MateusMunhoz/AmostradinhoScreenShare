@@ -50,7 +50,7 @@ function onPerfSample(s) {
   });
   if (perf.samples.length > PERF_KEEP) perf.samples.shift();
   perf.last = s;
-  if (!$('statsDialog').hidden) renderStats();
+  if (settingsOpenOn('stats')) renderStats();
 }
 
 // Média, mínimo e máximo dos últimos N segundos (só o que foi medido)
@@ -192,19 +192,16 @@ function renderStreamStats() {
   $('streamEmpty').hidden = cards.length > 0;
 }
 
-function openStats() {
-  $('statsDialog').hidden = false;
+// As Estatísticas são um grupo das configurações: abrir leva até ele; os números só correm com ele à vista
+function openStats() { openGeneralSettings(statsTab); }
+function closeStats() { if (settingsOpenOn('stats')) closeGeneralSettings(); }
+function enterStats() {
   renderStats();
   renderCodecInfo();
-  codecTimer = setInterval(renderCodecInfo, 1000);
-  $('closeStats').focus();
-}
-
-function closeStats() {
-  if ($('statsDialog').hidden) return;
-  $('statsDialog').hidden = true;
   clearInterval(codecTimer);
+  codecTimer = setInterval(renderCodecInfo, 1000);
 }
+function leaveStats() { clearInterval(codecTimer); }
 
 function renderStats() {
   if (statsTab === 'stream') return renderStreamStats();

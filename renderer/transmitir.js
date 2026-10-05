@@ -287,6 +287,7 @@ async function startSharing() {
   const audioMode = $('soundOn').checked ? 'all' : 'none';
   const encodeMode = radioValue('encodeMode') || 'once';
   save('encodeMode2', encodeMode);
+  state.shareOpen = $('shareOpenOn').checked; // o começo de cada transmissão; a barra Ao vivo muda só esta
   const excluded = audioMode === 'none' ? [] : appsLoaded() ? checkedApps() : savedExcludes();
   save('quality', state.quality);
   save('audioMode', audioMode);
@@ -516,6 +517,8 @@ async function switchSource() {
 // senão (ex.: versão antiga), vai como faixa WebRTC normal, com o codificador próprio dessa conexão.
 function addWatcher(id, wantsOnce) {
   if (!state.sharing || !state.stream) return sendSignal(id, { side: 'sharer', unavailable: true });
+  // Fechada para outros canais: quem está fora do meu recebe a recusa (unavailable para versões antigas)
+  if (!mayWatchMe(id)) return sendSignal(id, { side: 'sharer', unavailable: true, closed: true });
   closeOut(id);
   const pc = new RTCPeerConnection(RTC_CONFIG);
   const link = { pc, chain: Promise.resolve(), dc: null };
@@ -614,7 +617,7 @@ function awayReport() {
 // Só manda de novo quando algo muda (ex.: o NVENC caiu para o WebCodecs, ou descobriu a placa de vídeo).
 function myShareInfo(hw) {
   const info = { quality: state.quality, mode: once.active ? 'once' : 'per', engine: once.active ? engineName() : 'WebRTC',
-    audio: !!state.stream?.getAudioTracks().length };
+    audio: !!state.stream?.getAudioTracks().length, open: state.shareOpen !== false };
   const h = once.active ? once.hardware : hw;
   if (typeof h === 'boolean') info.hw = h;
   return info;
@@ -627,6 +630,38 @@ function sendShareInfo(hw) {
   state.shareInfoKey = key;
   state.shareInfo = info;
   send({ type: 'share', sharing: true, info });
+}
+
+// ---------- Aberta ou só para o meu canal ----------
+// Canal de alguém: o da voz; fora da voz, a Voz geral ('')
+function channelOfMember(id) { const v = voice.members.get(id); return v?.session ? v.channel || '' : ''; }
+// A minha transmissão: aberta, qualquer um da sala assiste; fechada, só quem está no meu canal
+function mayWatchMe(id) { return state.shareOpen !== false || channelOfMember(id) === myVoiceChannel(); }
+// A transmissão de alguém: quem não manda "open" (versão antiga) está aberta
+function canWatch(id) { return state.members.get(id)?.shareInfo?.open !== false || channelOfMember(id) === myVoiceChannel(); }
+function closedShareText(id) { return `${nameOf(id)} deixou a transmissão só para quem está em ${channelName(channelOfMember(id))}.`; }
+// Muda só a transmissão atual; a próxima começa como está na janela de transmitir
+function setShareOpen(open) {
+  if (!state.sharing) return;
+  state.shareOpen = open;
+  sendShareInfo();
+  syncShareOpen();
+  toast(open ? 'Transmissão aberta: qualquer um da sala pode assistir.' : `Agora só quem está em ${channelName(myVoiceChannel())} pode assistir.`);
+}
+// Fechou, ou alguém (ou você) mudou de canal: quem ficou de fora para de assistir. E o botão da barra acompanha
+function syncShareOpen() {
+  const btn = $('shareOpenBtn');
+  const open = state.shareOpen !== false;
+  btn.textContent = open ? 'Para todos' : 'Só meu canal';
+  btn.title = open
+    ? 'Qualquer um da sala pode assistir. Clique para deixar só quem está no seu canal (só nesta transmissão)'
+    : `Só quem está em ${channelName(myVoiceChannel())} pode assistir. Clique para abrir para a sala toda (só nesta transmissão)`;
+  if (!state.sharing) return;
+  for (const id of [...state.out.keys()]) {
+    if (mayWatchMe(id)) continue;
+    sendSignal(id, { side: 'sharer', unavailable: true, closed: true });
+    closeOut(id);
+  }
 }
 
 // Mostra para quem transmite qual codec está em uso e se a placa de vídeo está codificando
@@ -722,6 +757,7 @@ function renderShareBox() {
   $('liveThumb').hidden = !src?.thumbnail;
   if (src?.thumbnail) $('liveThumb').src = src.thumbnail;
   $('selfViewBtn').setAttribute('aria-pressed', String(selfOn));
+  syncShareOpen();
   $('myShare').hidden = !state.sharing;
   syncPreview();
   renderWatchers();

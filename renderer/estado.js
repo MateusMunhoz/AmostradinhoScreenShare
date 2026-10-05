@@ -39,6 +39,7 @@ const state = {
   musicas: new Map(),      // música de cada canal: ch -> { videoId, title, by, playing, pos, at } (renderer/musica.js)
   musicaOn: false,         // o servidor da sala sabe guardar a música dos canais
   handoff: false,          // o servidor da sala sabe passar a sala adiante
+  senhaOn: false,          // o servidor da sala sabe mudar a senha (mensagem "senha", só do host)
   order: [],               // ids na ordem em que entraram, inclusive o meu
   password: '',
   migrating: false,

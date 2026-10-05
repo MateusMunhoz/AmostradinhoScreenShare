@@ -1,31 +1,23 @@
-// Voz e atalhos na sala: painel à esquerda, do tamanho dos painéis de chat e voz (do outro lado), com a
-// transmissão no meio sem nada por cima; fechar devolve o espaço. Fora da sala, continua a janela no meio.
+// Voz e atalhos é o primeiro grupo das Configurações (abas Voz e Atalhos), na sala e fora dela; o botão de
+// ajustes da voz abre direto nele e, clicado de novo, fecha. Depois, as cores automáticas.
 const { openApp, createRoom, check, sleep, run } = require('./ajuda');
 
 const R = (sel) => `(() => { const b = document.querySelector('${sel}').getBoundingClientRect(); return { top: Math.round(b.top), bottom: Math.round(b.bottom), left: Math.round(b.left), right: Math.round(b.right), width: Math.round(b.width) }; })()`;
 
-run('Voz e atalhos como painel à esquerda', 60000, async () => {
+run('Voz e atalhos nas Configurações', 60000, async () => {
   const A = await openApp('vozPainel', 9521, { fake: true });
   await A.eval(`openVoiceDialog()`);
   await sleep(300);
-  check('Fora da sala: janela no meio da tela', await A.eval(`!document.body.classList.contains('voice-side') && getComputedStyle($('voiceDialog')).position === 'fixed'`));
+  check('Fora da sala: abre as Configurações em Voz e atalhos', await A.eval(`!$('generalSettingsDialog').hidden && voiceSettingsOpen() && !$('settingsPanel-voice').hidden`));
   await A.eval(`closeVoiceDialog()`);
 
   await createRoom(A, { name: 'Ana', port: 18821 });
   const areaAntes = await A.eval(R('#streamArea'));
-  await A.eval(`openVoiceDialog()`);
+  await A.eval(`$('voiceSettingsBtn').click()`);
   await sleep(400);
-  const painel = await A.eval(R('#voiceDialog .dialog'));
-  const chat = await A.eval(R('#workspacePanes'));
-  const area = await A.eval(R('#streamArea'));
-  const dock = await A.eval(R('.dock'));
-  const nav = await A.eval(R('#workspaceNav'));
-  const hub = await A.eval(`document.querySelector('.hub-rail')?.offsetWidth || 0`); // a barra do HUB fica antes do painel
-  check('Painel à esquerda, com a largura dos painéis da direita, do topo da barra de atalhos até embaixo', painel.left === 16 + hub && painel.width === chat.width && painel.top === nav.top && painel.bottom === chat.bottom, JSON.stringify({ painel, chat, nav }));
-  check('A transmissão fica no meio, sem nada por cima', area.left >= painel.right && area.right <= chat.left && area.width < areaAntes.width, JSON.stringify(area));
-  check('A barra de baixo também fica no meio, livre', dock.left >= painel.right && dock.right <= chat.left, JSON.stringify(dock));
-  check('Sem escurecer a tela', await A.eval(`getComputedStyle($('voiceDialog')).backgroundColor === 'rgba(0, 0, 0, 0)'`));
+  check('Na sala: o botão de ajustes da voz abre o mesmo lugar', await A.eval(`voiceSettingsOpen() && document.querySelector('.settings-nav [data-group=voz]').getAttribute('aria-current') === 'true'`));
   await A.shot('voz-painel.png');
+  await A.eval(`closeGeneralSettings()`);
 
   // Cores novas: vazias são automáticas; escolher uma muda o app na hora; apagar volta ao automático
   await A.eval(`(() => { $('hex-speaking').value = '#FF00AA'; $('hex-speaking').dispatchEvent(new Event('input')); })()`);
@@ -49,7 +41,9 @@ run('Voz e atalhos como painel à esquerda', 60000, async () => {
   await A.eval(`(() => { $('hex-text').value = ''; $('hex-text').dispatchEvent(new Event('input')); })()`);
   await A.eval(`$('voiceSettingsBtn').click()`);
   await sleep(300);
-  check('Clicar de novo no botão de ajustes fecha o painel', await A.eval(`$('voiceDialog').hidden && !document.body.classList.contains('voice-side')`));
+  await A.eval(`$('voiceSettingsBtn').click()`);
+  await sleep(300);
+  check('Clicar de novo no botão de ajustes fecha', await A.eval(`$('generalSettingsDialog').hidden`));
   const depois = await A.eval(R('#streamArea'));
-  check('Fechar devolve o espaço para a transmissão', depois.left === areaAntes.left && depois.width === areaAntes.width, JSON.stringify(depois));
+  check('A transmissão continua do mesmo tamanho', depois.left === areaAntes.left && depois.width === areaAntes.width, JSON.stringify(depois));
 });

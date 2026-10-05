@@ -1,4 +1,4 @@
-// Barra de baixo numa linha só: Transmitir, a voz (com as pessoas), e à direita Convidar, estatísticas, chat
+// Barra de baixo numa linha só: Transmitir, a voz (com as pessoas), e à direita Convidar
 // e Sair (separado). Convidar copia o endereço da sala.
 const { openApp, createRoom, joinRoom, check, sleep, run, FAKE } = require('./ajuda');
 FAKE.push('--disable-backgrounding-occluded-windows', '--disable-features=CalculateNativeWinOcclusion'); // para a foto
@@ -15,12 +15,7 @@ run('Barra de baixo numa linha', 90000, async () => {
   let r = await A.eval(ROW);
   check('Fora da voz: uma linha só', r.linhas === 1 && r.height <= 62, JSON.stringify(r));
   const ordem = r.ordem.join(' ');
-  check('Ordem: Transmitir, voz, ..., Convidar, estatísticas, chat (Início e Sair estão na barrinha)', /^shareBtn voiceDock .*dockAddr openStatsRoom chatToggle$/.test(ordem.replace(/ dock-spacer/, '')), ordem);
-  check('Convidar mostra o endereço ao passar o mouse', await A.eval(`$('dockAddr').title.includes(state.roomAddr) && $('dockAddr').textContent.trim() === 'Convidar'`));
-  // copiar() usa o processo principal e, sem ele, o navegador: as duas saídas são trocadas aqui
-  await A.eval(`(() => { window.copiado = null; navigator.clipboard.writeText = async (t) => { copiado = t; }; copiar = async (t) => { copiado = t; return true; }; $('dockAddr').click(); })()`);
-  await sleep(200);
-  check('Convidar copia o endereço', await A.eval(`copiado === state.roomAddr`));
+  check('Ordem: Transmitir e a voz (Convidar, chat e estatísticas fora da barra)', /^shareBtn voiceDock/.test(ordem) && !ordem.includes('dockAddr'), ordem);
 
   await A.eval(TONE); await B.eval(TONE);
   await A.eval(`$('voiceJoin').click()`); await B.eval(`$('voiceJoin').click()`);
@@ -41,7 +36,7 @@ run('Barra de baixo numa linha', 90000, async () => {
     return { cabe: dentro && !sobrepoe, etapas: [...d.classList].filter((c) => c.startsWith('tight')).join(' ') || 'nenhuma' }; })()`;
   let f = await A.eval(FITS);
   check('Transmitindo e na voz: numa linha, nada vaza nem fica por cima', r.linhas === 1 && f.cabe, `etapas: ${f.etapas}`);
-  check('Os botões de chat e microfone continuam à vista', await A.eval(`['chatToggle', 'voiceMute', 'voiceDeafen', 'stopShareBtn'].every((id) => { const e = $(id); const r = e.getBoundingClientRect(); const d = document.querySelector('.dock').getBoundingClientRect(); return r.width > 0 && r.right <= d.right + 1; })`));
+  check('Os botões de microfone continuam à vista', await A.eval(`['voiceMute', 'voiceDeafen', 'stopShareBtn'].every((id) => { const e = $(id); const r = e.getBoundingClientRect(); const d = document.querySelector('.dock').getBoundingClientRect(); return r.width > 0 && r.right <= d.right + 1; })`));
   await A.shot('barra.png');
 
   // Barrinha da direita: em pé na borda, só com os ícones; chat e voz ficam ao lado dela, num bloco só
@@ -51,7 +46,7 @@ run('Barra de baixo numa linha', 90000, async () => {
   check('Barrinha na borda direita, só com os ícones, e os painéis ao lado dela num bloco', rail.direita === 0 && rail.largura <= 56 && rail.alto > rail.largura * 5
     && rail.folga >= 8 && rail.folga <= 24 && rail.gap === '0px' && rail.texto === 0, JSON.stringify(rail));
   const ordemRail = await A.eval(`[...$('workspaceNav').children].filter((e) => e.getClientRects().length).map((e) => e.id || e.className)`);
-  check('Barrinha: perfil em cima; pessoas, Chat, Voz e Transmissão separados; Início, Sair, o modo gamer e a engrenagem no pé', ordemRail.join(' ') === 'navProfile nav-sep peopleBtn navChat navVoice navStreams nav-space dockHome leaveBtn nav-sep navGamer navSettings'
+  check('Barrinha: perfil em cima; pessoas, Chat, Voz e Transmissão separados; Início, o chat por cima do jogo, o modo gamer, Voz e atalhos, a engrenagem e, por último, Sair no pé', ordemRail.join(' ') === 'navProfile nav-sep peopleBtn navChat navVoice navStreams nav-space dockHome nav-sep overlayToggle navGamer voiceSettingsBtn navSettings nav-sep rail-leave-sep leaveBtn'
     && await A.eval(`$('leaveBtn').getBoundingClientRect().bottom >= $('workspaceNav').getBoundingClientRect().bottom - 20`), ordemRail.join(' '));
   const alturaInicio = await A.eval(`Math.round($('dockHome').getBoundingClientRect().top)`);
   await A.eval(`$('dockHome').click()`);
@@ -99,8 +94,8 @@ run('Barra de baixo numa linha', 90000, async () => {
   if (statsItem >= 0) {
     await A.eval(`$('dockMoreMenu').children[${statsItem}].click()`);
     await sleep(300);
-    check('O item do menu abre as estatísticas e fecha o menu', await A.eval(`!$('statsDialog').hidden && $('dockMoreMenu').hidden`));
-    await A.eval(`$('closeStats').click()`);
+    check('O item do menu abre as estatísticas e fecha o menu', await A.eval(`settingsOpenOn('stats') && $('dockMoreMenu').hidden`));
+    await A.eval(`closeGeneralSettings()`);
   }
   // Com as fontes mais largas (Cascadia Code, monoespaçada, e Verdana), a barrinha da direita continua com o perfil
   // e a engrenagem dentro

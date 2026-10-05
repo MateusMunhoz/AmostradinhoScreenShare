@@ -53,7 +53,7 @@ function setupNameFont() {
 function setupUtilityPopup(id, close) {
   closeOnBackdrop(id, close);
   $(id).addEventListener('keydown', e => {
-    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); return; }
+    if (e.key === 'Escape') { if (capturing) return; e.preventDefault(); e.stopPropagation(); close(); return; } // trocando uma tecla de atalho, o Esc é da troca
     if (e.key !== 'Tab') return;
     const items = [...$(id).querySelectorAll('button, input, select, textarea, [tabindex="0"]')].filter(el => !el.disabled && el.getClientRects().length);
     const first = items[0], last = items.at(-1);
@@ -105,7 +105,7 @@ function syncWorkspace() {
   paintAvatar($('homeAvatar'));
   paintAvatar($('navProfileAvatar'));
   $('navProfile').title = $('navProfile').ariaLabel = 'Perfil de ' + getName();
-  $('profileHint').textContent = state.myId ? 'Para trocar o nome, saia da sala.' : '';
+  $('profileHint').textContent = state.myId ? 'Fica travado enquanto você está numa sala. Saia para trocar.' : 'Aparece para todo mundo na sala e nas mensagens.';
   renderVoicePane();
   renderHomeCall();
   renderHub();
@@ -116,8 +116,8 @@ function syncWorkspace() {
 const DOCK_STEPS = ['tight-1', 'tight-2', 'tight-3', 'tight-4'];
 // 5) ainda sem espaço: os botões saem da barra para o menu da setinha ^, nesta ordem (os mais usados por último).
 // stageLayout é o grupo Grade/Destaque: no menu vira os dois itens.
-const DOCK_OVERFLOW = ['openStatsRoom', 'overlayToggle', 'stageLayout', 'dockAddr', 'voiceSettingsBtn', 'chatToggle',
-  'voiceDeafen', 'selfViewBtn', 'switchShareBtn', 'voiceMute', 'voiceJoin'];
+const DOCK_OVERFLOW = ['stageLayout',
+  'voiceDeafen', 'selfViewBtn', 'shareOpenBtn', 'switchShareBtn', 'voiceMute', 'voiceJoin'];
 function fitDock() {
   const dock = document.querySelector('.dock');
   if (!dock || !dock.offsetParent) return;
@@ -196,6 +196,30 @@ function watchDock() {
     } else if (e.key === 'Tab') closeDockMore();
   });
   document.addEventListener('mousedown', (e) => { if (!$('dockMoreWrap').contains(e.target)) closeDockMore(); });
+  // A pílula aparece e some junto com as faixas das telas e os controles do YouTube (.ui-idle, setupTileIdle em
+  // palco.js): com telas no palco, ela só segue o estado delas; sem telas, usa o mesmo tempo (TILE_IDLE_MS) sozinha.
+  // Com o mouse em cima dela, o foco nela (Tab) ou o menu da setinha aberto, fica
+  const tiles = () => [...$('tiles').querySelectorAll('.tile')];
+  const held = () => dock.matches(':hover, :focus-within') || !$('dockMoreMenu').hidden || !!$('voiceJoinPop');
+  const sync = () => { if (tiles().length) dock.classList.toggle('dock-sleep', !held() && tiles().every((t) => t.classList.contains('ui-idle'))); };
+  new MutationObserver(sync).observe($('tiles'), { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+  let sleepTimer = 0;
+  const sleepSoon = (ms) => { clearTimeout(sleepTimer); sleepTimer = setTimeout(() => { if (held()) return sleepSoon(TILE_IDLE_MS); dock.classList.add('dock-sleep'); }, ms); };
+  const stage = dock.closest('.stage-col') || dock.parentElement;
+  stage.addEventListener('pointermove', () => {
+    if (tiles().length) return;
+    dock.classList.remove('dock-sleep');
+    sleepSoon(TILE_IDLE_MS);
+  }, { passive: true });
+  stage.addEventListener('pointerleave', () => { if (!tiles().length && !held()) { clearTimeout(sleepTimer); dock.classList.add('dock-sleep'); } });
+  // Passar da tela para a pílula não esconde a tela (palco.js); sair da pílula para fora das telas esconde as duas
+  dock.addEventListener('pointerleave', (e) => {
+    if (!e.relatedTarget?.closest?.('.tile')) for (const t of tiles()) t.classList.add('ui-idle');
+    sync();
+  });
+  dock.addEventListener('focusin', () => dock.classList.remove('dock-sleep'));
+  dock.addEventListener('focusout', () => setTimeout(() => (tiles().length ? sync() : sleepSoon(TILE_IDLE_MS))));
+  sleepSoon(TILE_IDLE_MS);
   let queued = false;
   const again = () => { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; fitDock(); }); };
   new ResizeObserver(again).observe(dock);
@@ -215,25 +239,26 @@ function fitNav() {
   if (nav.scrollWidth > nav.clientWidth + 1) nav.classList.add('nav-tight');
 }
 
-// Seção da voz. Fora dela: "Voz e atalhos" no título e Entrar como botão principal. Na voz: embaixo da lista, uma
-// faixa com microfone, fone e Voz e atalhos (só o ícone, o nome na dica) e, à direita, Sair da voz.
+// Seção da voz. Fora dela: Entrar como botão principal. Na voz: embaixo da lista, uma faixa com microfone, fone
+// e Voz e atalhos (só o ícone, o nome na dica); Sair vai no título, ao lado do nome. Fora da voz, Voz e atalhos fica só na
+// barrinha, perto da engrenagem.
 function layoutVoicePane(active) {
   const pane = $('voicePane'), head = pane.querySelector('.pane-head'), actions = pane.querySelector('.pane-voice-actions');
   const settings = $('paneVoiceSettings'), join = $('paneVoiceJoin');
   pane.classList.toggle('voice-in-call', active);
-  if (active) { setIcon(settings, 'sliders', 'Voz e atalhos'); settings.className = 'btn small icon'; actions.append(settings); }
-  else { settings.textContent = 'Voz e atalhos'; settings.className = 'btn small'; settings.removeAttribute('title'); settings.removeAttribute('aria-label'); head.append(settings); }
+  settings.hidden = !active;
+  if (active) { setIcon(settings, 'sliders', 'Voz e atalhos'); actions.append(settings); }
   join.disabled = !voice.supported;
-  if (active) { join.innerHTML = ICON.phoneOff; join.append('Sair da voz'); join.className = 'btn small danger pane-leave'; }
-  else { join.textContent = voice.pending ? 'Cancelar' : subsalasOn() ? 'Entrar na Voz geral' : 'Entrar na voz'; join.className = 'btn small pane-join' + (voice.pending ? '' : ' primary'); }
-  actions.append(join);
-  // Nova subsala: fora da voz, ao lado do Entrar; na voz, na faixa, antes do Sair (cria e já entra: createSubsala)
+  if (active) { join.innerHTML = ICON.phoneOff; join.append('Sair'); join.title = 'Sair da voz'; join.className = 'btn small danger pane-leave'; }
+  else { join.textContent = voice.pending ? 'Cancelar' : subsalasOn() ? 'Entrar na Voz geral' : 'Entrar na voz'; join.removeAttribute('title'); join.className = 'btn small pane-join' + (voice.pending ? '' : ' primary'); }
+  if (active) head.append(join); else actions.append(join);
+  // Nova subsala: fora da voz, ao lado do Entrar; na voz, no fim da faixa (cria e já entra: createSubsala)
   const sub = $('paneVoiceSubsala');
   sub.hidden = !subsalasOn() || !state.myId;
   sub.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
   sub.append(active ? 'Subsala' : 'Nova subsala');
   sub.disabled = !voice.supported;
-  if (active) actions.insertBefore(sub, join); else actions.append(sub);
+  actions.append(sub);
   $('paneVoiceMute').hidden = $('paneVoiceDeafen').hidden = !active;
   const toggle = (btn, on, iconOn, iconOff, textOn, textOff) => {
     setIcon(btn, on ? iconOn : iconOff, on ? textOn : textOff);
@@ -248,7 +273,7 @@ function layoutVoicePane(active) {
 // faixa mostra a sala, quem está nela, a sua voz e o Voltar (com as mensagens novas).
 function goHomeKeepCall() { if (state.myId) show('home'); }
 function backToRoom() { if (state.myId) { show('room'); markChatSeenIfVisible(); } }
-function markChatSeenIfVisible() { if (chat.open && chatAtBottom() && !mapFocus.on) markRead(); }
+function markChatSeenIfVisible() { if (chat.open && chatAtBottom() && !mapFocus.on && paneFold.which !== 'chat') markRead(); }
 function renderHomeCall() {
   const inCall = !!state.myId;
   $('homeCall').hidden = !inCall;
@@ -317,6 +342,91 @@ function renderVoicePane() {
     for (const id of outside) list.append(id ? memberRow(id, nameOf(id), true) : memberRow(null, `${getName()} (você)`, true));
   }
 }
+// ---------- Divisória entre o chat e a voz ----------
+// Arrastar a linha entre os dois muda quanto da coluna é da voz (o chat fica com o resto). Setas também mexem, e o
+// clique duplo volta ao automático. O tamanho fica salvo neste PC (voiceSplit, fração da altura).
+const SPLIT_MIN = 0.15, SPLIT_MAX = 0.85;
+function setupPaneSplit(host) {
+  const bar = document.createElement('div');
+  bar.className = 'pane-split';
+  bar.tabIndex = 0;
+  bar.setAttribute('role', 'separator');
+  bar.setAttribute('aria-orientation', 'horizontal');
+  bar.setAttribute('aria-label', 'Tamanho do chat e da voz');
+  bar.title = 'Arraste para redimensionar';
+  bar.setAttribute('aria-valuemin', String(SPLIT_MIN * 100));
+  bar.setAttribute('aria-valuemax', String(SPLIT_MAX * 100));
+  host.insertBefore(bar, $('voicePane'));
+  const apply = (f) => {
+    if (f == null) { host.style.removeProperty('--voice-split'); host.classList.remove('voice-sized'); bar.removeAttribute('aria-valuenow'); return; }
+    f = Math.min(SPLIT_MAX, Math.max(SPLIT_MIN, f));
+    host.style.setProperty('--voice-split', String(f));
+    host.classList.add('voice-sized');
+    bar.setAttribute('aria-valuenow', String(Math.round(f * 100)));
+    return f;
+  };
+  const saved = Number(load('voiceSplit', ''));
+  apply(saved > 0 ? saved : null);
+  const current = () => Number(host.style.getPropertyValue('--voice-split')) || $('voicePane').offsetHeight / host.clientHeight;
+  bar.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    bar.setPointerCapture(e.pointerId);
+    bar.classList.add('dragging');
+    const move = (ev) => { const r = host.getBoundingClientRect(); apply((r.bottom - ev.clientY) / r.height); };
+    const up = () => {
+      bar.classList.remove('dragging');
+      bar.removeEventListener('pointermove', move);
+      save('voiceSplit', host.style.getPropertyValue('--voice-split'));
+    };
+    bar.addEventListener('pointermove', move);
+    bar.addEventListener('pointerup', up, { once: true });
+    bar.addEventListener('pointercancel', up, { once: true });
+  });
+  bar.addEventListener('keydown', (e) => {
+    const step = e.key === 'ArrowUp' ? 0.05 : e.key === 'ArrowDown' ? -0.05 : 0;
+    if (!step) return;
+    e.preventDefault();
+    save('voiceSplit', String(apply(current() + step)));
+  });
+  bar.addEventListener('dblclick', () => { apply(null); save('voiceSplit', ''); });
+}
+
+// ---------- Recolher o chat ou a voz ----------
+// A seta no título recolhe o painel numa faixa (só o título; o chat mostra as mensagens novas) e o outro ocupa a
+// coluna. Um recolhido de cada vez; fica salvo neste PC. Só vale com os dois abertos juntos (CSS).
+const paneFold = { which: ['chat', 'voice'].includes(load('paneFold', '')) ? load('paneFold', '') : '' };
+function setPaneFold(which) {
+  paneFold.which = which;
+  save('paneFold', which);
+  const host = $('workspacePanes');
+  host.classList.toggle('fold-chat', which === 'chat');
+  host.classList.toggle('fold-voice', which === 'voice');
+  for (const [pane, btn] of [['chat', $('chatFold')], ['voice', $('voiceFold')]]) {
+    const folded = which === pane, name = pane === 'chat' ? 'o chat' : 'a voz';
+    btn.setAttribute('aria-expanded', String(!folded));
+    btn.title = btn.ariaLabel = folded ? `Abrir ${name}` : `Recolher ${name}`;
+  }
+  if (which !== 'chat') { scrollChatToEnd(); markChatSeenIfVisible(); }
+}
+function setupPaneFold() {
+  const make = (id, pane, head) => {
+    const b = document.createElement('button');
+    b.id = id;
+    b.type = 'button';
+    b.className = 'pane-fold';
+    b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+    b.onclick = () => setPaneFold(paneFold.which === pane ? '' : pane);
+    head.prepend(b);
+  };
+  make('chatFold', 'chat', $('chatTab').querySelector('.chat-head'));
+  make('voiceFold', 'voice', $('voicePane').querySelector('.pane-head'));
+  // Clicar no título recolhido também abre
+  $('chatTab').querySelector('.chat-head').addEventListener('click', (e) => { if (paneFold.which === 'chat' && !e.target.closest('button')) setPaneFold(''); });
+  $('voicePane').querySelector('.pane-head').addEventListener('click', (e) => { if (paneFold.which === 'voice' && !e.target.closest('button')) setPaneFold(''); });
+  setPaneFold(paneFold.which);
+}
+
 // ---------- Largura do chat e da voz ----------
 // Uma alça na borda do painel que dá para o vídeo (a esquerda; com a interface espelhada, a direita). Arrastar muda a
 // largura e o vídeo se ajusta; fica salva em appPreferences.appearance.paneWidth. Dois cliques voltam à automática.
@@ -375,6 +485,8 @@ function setupWorkspace() {
   const host = $('workspacePanes');
   host.insertBefore($('chatTab'), $('voicePane'));
   $('chatTab').classList.add('workspace-pane');
+  setupPaneSplit(host);
+  setupPaneFold();
   host.append($('peoplePop'));
   setupPaneResize(host);
   document.body.append($('profilePane'), $('generalSettingsDialog'));
