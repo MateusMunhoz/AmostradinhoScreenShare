@@ -3,6 +3,13 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.17.0",
+    "date": "2026-10-05",
+    "items": [
+      "Correções e melhorias"
+    ]
+  },
+  {
     "version": "1.16.1",
     "date": "2026-10-05",
     "items": [
@@ -64,13 +71,6 @@ const NOVIDADES = [
     "date": "2026-10-03",
     "items": [
       "Ícone na bandeja: abrir, procurar atualização, mutar, reiniciar e sair (#20)"
-    ]
-  },
-  {
-    "version": "1.15.2",
-    "date": "2026-10-03",
-    "items": [
-      "Modo Internet já vem com o servidor da equipe; Hyperswarm deixado de lado (#19)"
     ]
   }
 ];
