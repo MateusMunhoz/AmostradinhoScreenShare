@@ -1,0 +1,253 @@
+/* Tema Top Gun: só vale com o tema escolhido na aba Tema (html[data-skin="topgun"]).
+   A cabine do F-14, para quem voa simulador: cada painel é um MFD (fósforo verde no preto, moldura de bezel cinza,
+   colchetes nos cantos e as legendas das teclas em volta), letreiros em fonte fixa e caixa alta, inverso de vídeo no
+   que está ligado e o âmbar dos avisos. A voz é a tela do radar (anéis, rumos e a varredura girando: renderer/ceu-voz.js
+   › drawSkyRadar), o palco vazio é o HUD e cada transmissão ganha a mira de travamento. Do Top Gun ficam as asas de
+   piloto (três listras de cada lado e a estrela, desenhadas aqui) e o vermelho delas, só nos símbolos.
+   O fundo é preto, com o HUD apagado e o blueprint de um caça em verde (desenhos reais em domínio público ou livres; a cada vez
+   que o app abre, o próximo, em data-foto, por renderer/configuracoes.js), linhas de monitor por cima e a placa de dados
+   no canto do Início. Blueprints em assets/temas/topgun-bp-*.webp (origem e licença em assets/temas/OBRAS.md).
+   Os sons do tema são as chamadas de rádio (skins › sounds em preferencias-modelo.js; os arquivos por
+   assets/temas/gerar-radio.js). As cores vêm do tema; aqui fica só o desenho. Fora a varredura do radar (que para com
+   o app fora de foco e no modo gamer, como as órbitas, e gira mesmo com "reduzir movimento" do Windows), nada anima sozinho. */
+:root[data-skin="topgun"] {
+  --tg-mono: "Cascadia Mono", Consolas, monospace;    /* as letras do MFD */
+  --tg-font: Bahnschrift, "Segoe UI", sans-serif;     /* DIN condensada: o nome pintado */
+  --tg-green: #39FF6A;                                 /* o fósforo */
+  --tg-green-hi: #B8FFC8;
+  --tg-green-dim: rgba(57, 255, 106, .32);
+  --tg-green-faint: rgba(57, 255, 106, .1);
+  --tg-amber: #FFB000;
+  --tg-red: #D7343E;
+  --tg-white: #F4F6FB;
+  --tg-radar: var(--tg-green);
+  --tg-glow: 0 0 6px rgba(57, 255, 106, .45);
+  /* As asas de piloto (máscara: a cor vem de quem usa): três listras afinando para fora de cada lado e a estrela */
+  --tg-wings: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 60'><g fill='black'><path d='M2 18H34V24H6ZM8 28H34V34H12ZM14 38H34V44H18ZM98 18H66V24H94ZM92 28H66V34H88ZM86 38H66V44H82Z'/><path d='M50 16 53.29 25.47 63.31 25.67 55.33 31.73 58.23 41.33 50 35.6 41.77 41.33 44.67 31.73 36.69 25.67 46.71 25.47Z'/></g></svg>");
+  /* As asas pintadas: listras vermelhas dos lados e a estrela branca no meio (fundo de quem usa a máscara) */
+  --tg-wings-paint: linear-gradient(var(--tg-red), var(--tg-red)) 0 0 / 36% 100% no-repeat, linear-gradient(var(--tg-red), var(--tg-red)) 100% 0 / 36% 100% no-repeat, var(--tg-white);
+  /* Os colchetes verdes nos quatro cantos de cada MFD */
+  --tg-corners:
+    linear-gradient(var(--tg-green), var(--tg-green)) 0 0 / 12px 1.5px no-repeat, linear-gradient(var(--tg-green), var(--tg-green)) 0 0 / 1.5px 12px no-repeat,
+    linear-gradient(var(--tg-green), var(--tg-green)) 100% 0 / 12px 1.5px no-repeat, linear-gradient(var(--tg-green), var(--tg-green)) 100% 0 / 1.5px 12px no-repeat,
+    linear-gradient(var(--tg-green), var(--tg-green)) 0 100% / 12px 1.5px no-repeat, linear-gradient(var(--tg-green), var(--tg-green)) 0 100% / 1.5px 12px no-repeat,
+    linear-gradient(var(--tg-green), var(--tg-green)) 100% 100% / 12px 1.5px no-repeat, linear-gradient(var(--tg-green), var(--tg-green)) 100% 100% / 1.5px 12px no-repeat;
+  /* A moldura do MFD: o bezel cinza-escuro em volta da tela e o brilho fraco do fósforo por dentro */
+  --tg-bezel: 0 0 0 3px #0B0E0C, 0 0 0 4px #262C27, inset 0 0 28px rgba(57, 255, 106, .05), 0 14px 30px rgba(0, 0, 0, .6);
+  --radius: 2px;
+  --radius-lg: 3px;
+  /* A logo (três estrelas) em fósforo */
+  --logo-1: #B8FFC8;
+  --logo-2: #39FF6A;
+  --logo-3: #1FA846;
+}
+:root[data-skin="topgun"] ::selection { background: var(--tg-green); color: #000; }
+
+/* ---------- O fundo: preto. Fora da sala, o blueprint técnico de um caça em verde (um a cada vez que o app abre); dentro da sala, só preto (o HUD fica no palco sem transmissão) ---------- */
+:root[data-skin="topgun"], :root[data-skin="topgun"] body { background-color: #000; }
+:root[data-skin="topgun"] body::before, :root[data-skin="topgun"] body::after {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+}
+:root[data-skin="topgun"] body.workspace-in-room::before { display: none; }
+:root[data-skin="topgun"] body::before {
+  inset: 5vh 4vw; background: var(--tg-foto, url(assets/temas/topgun-bp-f22.webp)) center / contain no-repeat; opacity: .6;
+}
+:root[data-skin="topgun"][data-foto="f22"] body::before { --tg-foto: url(assets/temas/topgun-bp-f22.webp); }
+:root[data-skin="topgun"][data-foto="f18"] body::before { --tg-foto: url(assets/temas/topgun-bp-f18.webp); }
+:root[data-skin="topgun"][data-foto="a10"] body::before { --tg-foto: url(assets/temas/topgun-bp-a10.webp); }
+:root[data-skin="topgun"][data-foto="f16"] body::before { --tg-foto: url(assets/temas/topgun-bp-f16.webp); }
+:root[data-skin="topgun"][data-foto="f15"] body::before { --tg-foto: url(assets/temas/topgun-bp-f15.webp); }
+:root[data-skin="topgun"] body::after {
+  background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, .28) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse 80% 75% at 50% 45%, transparent 35%, rgba(0, 0, 0, .78) 100%);
+}
+
+/* ---------- Painéis: cada um é um MFD ---------- */
+:root[data-skin="topgun"] :is(.workspace-pane, .dock, .panel, .home-card, .dialog, .rail-music-menu) {
+  border-radius: var(--radius-lg); background: var(--tg-corners), var(--panel); border-color: var(--tg-green-dim); box-shadow: var(--tg-bezel);
+}
+:root[data-skin="topgun"] .dialog { background: var(--tg-corners), var(--bg); }
+:root[data-skin="topgun"] :is(.hub-rail, #workspaceNav, .sky-focus.sky-pop) { border-color: var(--tg-green-dim); box-shadow: inset 0 0 22px rgba(57, 255, 106, .04); }
+:root[data-skin="topgun"] :is(.pane-head h2, .chat-title, .stream-pane-head h2, .dialog h2, .settings-section h3) {
+  font-family: var(--tg-mono); font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: .16em; color: var(--tg-green); text-shadow: var(--tg-glow);
+}
+/* Os títulos dos painéis com o canal do rádio do lado */
+:root[data-skin="topgun"] :is(.chat-title, #voicePaneTitle, .stream-pane-head h2)::after {
+  font: 400 11px var(--tg-mono); letter-spacing: .16em; color: var(--tg-green-dim); text-shadow: none;
+}
+:root[data-skin="topgun"] .chat-title::after { content: "  // COMM 1"; }
+:root[data-skin="topgun"] #voicePaneTitle::after { content: "  // UHF 243.000"; }
+:root[data-skin="topgun"] .stream-pane-head h2::after { content: "  // HUD REPEATER"; }
+/* Botões: contorno de fósforo; o principal e o ao vivo em inverso de vídeo (verde cheio, letra preta) */
+:root[data-skin="topgun"] .btn { border-color: var(--tg-green-dim); box-shadow: none; }
+:root[data-skin="topgun"] .btn:hover:not(:disabled) { border-color: var(--tg-green); }
+:root[data-skin="topgun"] :is(.btn.primary, .btn.live) {
+  background: var(--tg-green); border-color: var(--tg-green); color: #021006; font-family: var(--tg-mono); font-weight: 700;
+  text-transform: uppercase; letter-spacing: .12em; box-shadow: 0 0 12px rgba(57, 255, 106, .3);
+}
+:root[data-skin="topgun"] .btn.primary:hover:not(:disabled) { background: var(--tg-green-hi); }
+:root[data-skin="topgun"] :is(input, textarea, select) { border-color: var(--tg-green-dim); caret-color: var(--tg-green); }
+:root[data-skin="topgun"] :is(input, textarea):focus { border-color: var(--tg-green); box-shadow: 0 0 0 1px var(--tg-green-faint); }
+:root[data-skin="topgun"] :is(.workspace-tab[aria-pressed=true], .workspace-tab[aria-expanded=true]) {
+  color: var(--tg-green); background: var(--tg-green-faint); box-shadow: inset 2px 0 0 var(--tg-green);
+}
+:root[data-skin="topgun"] .hub-section { color: var(--tg-green); font-family: var(--tg-mono); letter-spacing: .2em; text-shadow: var(--tg-glow); }
+:root[data-skin="topgun"] .toast { border-color: var(--tg-green-dim); font-family: var(--tg-mono); }
+:root[data-skin="topgun"] .toast::before { content: "TOWER // "; color: var(--tg-amber); font-weight: 700; letter-spacing: .08em; }
+:root[data-skin="topgun"] #chatEmpty::before { content: "> GUARD 243.000 ABERTA. AGUARDANDO CONTATO…\A"; white-space: pre-wrap; color: var(--tg-green); letter-spacing: .06em; font-family: var(--tg-mono); text-shadow: var(--tg-glow); }
+:root[data-skin="topgun"] .msg-time { font-family: var(--tg-mono); color: var(--tg-green-dim); }
+:root[data-skin="topgun"] .msg-time::after { content: "Z"; }
+:root[data-skin="topgun"] ::-webkit-scrollbar-thumb { background-color: var(--tg-green-dim) !important; border-radius: 0 !important; }
+
+/* Entrar e sair da voz: as faixas amarelas e pretas do convés do porta-aviões em volta do botão */
+:root[data-skin="topgun"] :is(.pane-join, .pane-leave, #voiceJoin) {
+  border: 3px solid transparent; font-family: var(--tg-mono); font-weight: 700; text-transform: uppercase; letter-spacing: .1em;
+  background: linear-gradient(var(--tg-fill, #050C07), var(--tg-fill, #050C07)) padding-box, repeating-linear-gradient(-45deg, #FFC400 0 7px, #0A0A0A 7px 14px) border-box;
+}
+:root[data-skin="topgun"] .pane-join.primary { --tg-fill: var(--tg-green); color: #021006; }
+:root[data-skin="topgun"] :is(.pane-leave, #voiceJoin) { color: #FFC400; }
+:root[data-skin="topgun"] :is(.pane-join, .pane-leave, #voiceJoin):hover:not(:disabled) { border-color: transparent; filter: brightness(1.12); }
+
+/* ---------- Barra de título e marca: as asas no lugar da logo e o painel de rádio ---------- */
+:root[data-skin="topgun"] .titlebar svg, :root[data-skin="topgun"] .brand-mark svg { display: none; }
+:root[data-skin="topgun"] .titlebar::before, :root[data-skin="topgun"] .brand-mark::before {
+  content: ""; flex: none; width: 24px; height: 16px; background: var(--tg-wings-paint);
+  -webkit-mask: var(--tg-wings) center / contain no-repeat; mask: var(--tg-wings) center / contain no-repeat;
+}
+:root[data-skin="topgun"] .brand-mark::before { width: 48px; height: 30px; }
+:root[data-skin="topgun"] .brand-mark span :is(.logo-you, .logo-friend) { color: inherit; }
+:root[data-skin="topgun"] .titlebar span { font-family: var(--tg-mono); font-weight: 700; text-transform: uppercase; letter-spacing: .22em; font-size: 11px; color: var(--tg-green); }
+:root[data-skin="topgun"] .titlebar::after {
+  content: "UHF 243.000 GRD  ·  TCN 74X  ·  HDG 270  ·  ALT 25000  ·  MASTER ARM ON"; position: absolute; right: 160px; font: 400 11px/1 var(--tg-mono);
+  letter-spacing: .16em; color: var(--tg-green); opacity: .8; text-shadow: var(--tg-glow);
+}
+:root[data-skin="topgun"] .brand-mark { font-family: var(--tg-mono); text-transform: uppercase; letter-spacing: .1em; color: var(--tg-green-hi); text-shadow: 0 0 10px #000, 0 0 3px #000; }
+:root[data-skin="topgun"] .home-title { font-family: var(--tg-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--tg-green); text-shadow: 0 0 10px rgba(57, 255, 106, .4), 0 2px 14px #000; }
+:root[data-skin="topgun"] :is(.home-sub, .home-foot) { text-shadow: 0 0 10px #000, 0 0 3px #000; }
+/* As legendas das teclas em volta do MFD do Início (só enfeite, como no F-14) */
+:root[data-skin="topgun"] .home-card { position: relative; border-radius: 0; padding-top: 34px; padding-bottom: 34px; }
+:root[data-skin="topgun"] .home-card::before {
+  content: "TID     HSD     RDR     FCS     DATA"; position: absolute; left: 0; right: 0; top: 10px; text-align: center; pointer-events: none;
+  font: 400 10px/1 var(--tg-mono); letter-spacing: .2em; color: var(--tg-green); opacity: .6; white-space: pre; text-shadow: 0 0 6px #000;
+}
+:root[data-skin="topgun"] .home-card::after {
+  content: "STBY     A/A     NAV     TGT     BIT"; position: absolute; left: 0; right: 0; bottom: 10px; text-align: center; pointer-events: none;
+  font: 400 10px/1 var(--tg-mono); letter-spacing: .2em; color: var(--tg-green); opacity: .45; white-space: pre; text-shadow: 0 0 6px #000;
+}
+
+/* ---------- Saguão: a placa de dados do blueprint ---------- */
+/* A placa de dados: o caça do blueprint, o fabricante e a origem do desenho */
+:root[data-skin="topgun"] { --tg-placa: "F-22 Raptor\A Desenho: Wikimedia Commons (CC BY-SA 2.0)"; }
+:root[data-skin="topgun"][data-foto="f18"] { --tg-placa: "F/A-18 Hornet"; }
+:root[data-skin="topgun"][data-foto="a10"] { --tg-placa: "A-10 Thunderbolt II\A Desenho: Fairchild Republic"; }
+:root[data-skin="topgun"][data-foto="f16"] { --tg-placa: "F-16 Fighting Falcon\A Desenho: Cristian Ibarra Santillan (CC0)"; }
+:root[data-skin="topgun"][data-foto="f15"] { --tg-placa: "F-15 Eagle\A Desenho: Wikimedia Commons (CC0)"; }
+:root[data-skin="topgun"] .home-screen::after {
+  content: var(--tg-placa); white-space: pre; pointer-events: none; z-index: 1; text-align: left;
+  position: fixed; left: calc(var(--hub-w, 0px) + 54px); bottom: 64px;
+  padding: 8px 14px 9px; border: 1px solid var(--tg-green-dim); border-left: 3px solid var(--tg-red); border-radius: 0;
+  font: 400 11px/1.55 var(--tg-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--tg-green); text-shadow: var(--tg-glow);
+  background: rgba(1, 6, 3, .9); box-shadow: 0 0 0 3px #0B0E0C, 0 0 0 4px #262C27;
+}
+:root[data-skin="topgun"] .home-main { position: relative; z-index: 1; }
+@media (max-width: 1100px) {
+  :root[data-skin="topgun"] .home-screen::after { left: calc(var(--hub-w, 0px) + 22px); }
+}
+@media (max-height: 640px), (max-width: 980px) { :root[data-skin="topgun"] .home-screen::after { display: none; } }
+
+/* ---------- Sem transmissão na tela: o HUD (mira, escada de arfagem, fita de rumo, velocidade, altitude, G e arma), as
+   asas em cima, como a marcação do esquadrão, e a linha da torre embaixo ---------- */
+:root[data-skin="topgun"] .empty-stage {
+  position: relative; overflow: hidden; align-content: end; padding-bottom: 58px; border-style: solid; border-color: var(--tg-green-dim);
+  background:
+    url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 520' fill='none' stroke='%2339FF6A' stroke-width='1.4' stroke-linecap='round' font-family='Consolas,monospace' font-size='13'><g stroke-opacity='.85'><path d='M160 70L160 58'/><path d='M200 70L200 63'/><path d='M240 70L240 58'/><path d='M280 70L280 63'/><path d='M320 70L320 58'/><path d='M360 70L360 63'/><path d='M400 70L400 58'/><path d='M440 70L440 63'/><path d='M480 70L480 58'/><path d='M520 70L520 63'/><path d='M560 70L560 58'/><path d='M600 70L600 63'/><path d='M640 70L640 58'/><path d='M250 70L550 70'/><path d='M400 74L394 84H406Z'/><rect x='378' y='88' width='44' height='18'/><path d='M150 160L156 160'/><path d='M150 180L162 180'/><path d='M150 200L156 200'/><path d='M150 220L162 220'/><path d='M150 240L156 240'/><path d='M150 260L162 260'/><path d='M150 280L156 280'/><path d='M150 300L162 300'/><path d='M150 320L156 320'/><path d='M150 340L162 340'/><path d='M150 360L156 360'/><path d='M166 160L166 360'/><path d='M82 248H146V272H82ZM146 260L156 260'/><path d='M650 160L644 160'/><path d='M650 180L638 180'/><path d='M650 200L644 200'/><path d='M650 220L638 220'/><path d='M650 240L644 240'/><path d='M650 260L638 260'/><path d='M650 280L644 280'/><path d='M650 300L638 300'/><path d='M650 320L644 320'/><path d='M650 340L638 340'/><path d='M650 360L644 360'/><path d='M634 160L634 360'/><path d='M654 248H726V272H654ZM654 260L644 260'/><path d='M300 364H365M435 364H500' stroke-dasharray='7 5'/><path d='M300 364L300 357'/><path d='M500 364L500 357'/><path d='M300 312H365M435 312H500' stroke-dasharray='7 5'/><path d='M300 312L300 305'/><path d='M500 312L500 305'/><path d='M300 208H365M435 208H500'/><path d='M300 208L300 215'/><path d='M500 208L500 215'/><path d='M300 156H365M435 156H500'/><path d='M300 156L300 163'/><path d='M500 156L500 163'/><path d='M330 286H365M435 286H470'/><path d='M330 234H365M435 234H470'/><path d='M240 260L360 260'/><path d='M440 260L560 260'/><circle cx='400' cy='248' r='7'/><path d='M393 248L378 248'/><path d='M407 248L422 248'/><path d='M400 241L400 231'/><path d='M392 262H408M400 254V270' stroke-opacity='.7'/><path d='M340 236V272M340 236H346M340 272H346'/></g><g fill='%2339FF6A' stroke='none' fill-opacity='.9'><text x='160' y='48' text-anchor='middle' fill-opacity='0.8'>240</text><text x='240' y='48' text-anchor='middle' fill-opacity='0.8'>250</text><text x='320' y='48' text-anchor='middle' fill-opacity='0.8'>260</text><text x='400' y='48' text-anchor='middle' fill-opacity='0.8'>270</text><text x='480' y='48' text-anchor='middle' fill-opacity='0.8'>280</text><text x='560' y='48' text-anchor='middle' fill-opacity='0.8'>290</text><text x='640' y='48' text-anchor='middle' fill-opacity='0.8'>300</text><text x='400' y='101' text-anchor='middle'>270</text><text x='140' y='184' text-anchor='end' fill-opacity='0.8'>390</text><text x='140' y='224' text-anchor='end' fill-opacity='0.8'>370</text><text x='140' y='304' text-anchor='end' fill-opacity='0.8'>330</text><text x='140' y='344' text-anchor='end' fill-opacity='0.8'>310</text><text x='142' y='266' text-anchor='end'>350</text><text x='150' y='150' text-anchor='end' fill-opacity='0.6'>KTS</text><text x='150' y='386' text-anchor='end' fill-opacity='0.8'>M 0.62</text><text x='150' y='404' text-anchor='end' fill-opacity='0.8'>G 1.0</text><text x='660' y='184' text-anchor='start' fill-opacity='0.8'>25400</text><text x='660' y='224' text-anchor='start' fill-opacity='0.8'>25200</text><text x='660' y='304' text-anchor='start' fill-opacity='0.8'>24800</text><text x='660' y='344' text-anchor='start' fill-opacity='0.8'>24600</text><text x='660' y='266' text-anchor='start'>25000</text><text x='650' y='150' text-anchor='start' fill-opacity='0.6'>ALT</text><text x='650' y='386' text-anchor='start' fill-opacity='0.8'>R 1200</text><text x='284' y='368' text-anchor='end' fill-opacity='0.8'>20</text><text x='516' y='368' text-anchor='start' fill-opacity='0.8'>20</text><text x='284' y='316' text-anchor='end' fill-opacity='0.8'>10</text><text x='516' y='316' text-anchor='start' fill-opacity='0.8'>10</text><text x='284' y='212' text-anchor='end' fill-opacity='0.8'>10</text><text x='516' y='212' text-anchor='start' fill-opacity='0.8'>10</text><text x='284' y='160' text-anchor='end' fill-opacity='0.8'>20</text><text x='516' y='160' text-anchor='start' fill-opacity='0.8'>20</text><text x='334' y='258' text-anchor='end' fill-opacity='0.7'>α</text><text x='250' y='436' text-anchor='start' fill-opacity='0.8'>AIM-9  SRM  2</text><text x='550' y='436' text-anchor='end' fill-opacity='0.8'>MASTER ARM  ON</text></g></svg>") center 40% / contain no-repeat,
+    var(--tg-corners), rgba(1, 5, 2, .55);
+}
+:root[data-skin="topgun"] .empty-stage::before {
+  content: ""; position: absolute; left: 50%; top: 18px; width: 56px; height: 34px; margin-left: -28px; z-index: 0; pointer-events: none;
+  background: var(--tg-wings-paint);
+  -webkit-mask: var(--tg-wings) center / contain no-repeat; mask: var(--tg-wings) center / contain no-repeat;
+}
+:root[data-skin="topgun"] .empty-stage::after {
+  content: "NAVY FIGHTER WEAPONS SCHOOL  //  TOWER: CLEARED FOR TAKEOFF  //  AGUARDANDO SINAL";
+  position: absolute; left: 22px; right: 22px; bottom: 16px; pointer-events: none; text-align: left;
+  font: 400 11px/1 var(--tg-mono); letter-spacing: .18em; color: var(--tg-green); opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  text-shadow: var(--tg-glow);
+}
+:root[data-skin="topgun"] .empty-stage p { position: relative; z-index: 1; color: var(--tg-green-hi); font-family: var(--tg-mono); text-transform: uppercase; letter-spacing: .08em; text-shadow: 0 0 6px #000, 0 0 2px #000; }
+
+/* ---------- Transmissões: a mira de travamento nos quatro cantos (na cor de quem fala quando quem transmite fala) ---------- */
+:root[data-skin="topgun"] .tile { border-color: var(--tg-green-dim); }
+:root[data-skin="topgun"] .tile::before {
+  --tg-lock: rgba(57, 255, 106, .7);
+  content: ""; position: absolute; inset: 6px; z-index: 4; pointer-events: none;
+  background:
+    linear-gradient(var(--tg-lock), var(--tg-lock)) 0 0 / 16px 2px, linear-gradient(var(--tg-lock), var(--tg-lock)) 0 0 / 2px 16px,
+    linear-gradient(var(--tg-lock), var(--tg-lock)) 100% 0 / 16px 2px, linear-gradient(var(--tg-lock), var(--tg-lock)) 100% 0 / 2px 16px,
+    linear-gradient(var(--tg-lock), var(--tg-lock)) 0 100% / 16px 2px, linear-gradient(var(--tg-lock), var(--tg-lock)) 0 100% / 2px 16px,
+    linear-gradient(var(--tg-lock), var(--tg-lock)) 100% 100% / 16px 2px, linear-gradient(var(--tg-lock), var(--tg-lock)) 100% 100% / 2px 16px;
+  background-repeat: no-repeat;
+}
+:root[data-skin="topgun"] .tile.speaking::before { --tg-lock: var(--ok); }
+:root[data-skin="topgun"] .tile-name { font-family: var(--tg-mono); text-transform: uppercase; letter-spacing: .08em; }
+
+/* ---------- Voz: o radar no lugar do céu ----------
+   Os canais são as bases (o seu, contornado em branco) e quem está neles são os contatos girando em volta (você em
+   fósforo cheio). Os anéis de distância, os rumos e a varredura vêm de drawSkyRadar (ceu-voz.js); cada base acende
+   quando a varredura passa por ela, e cada contato também. Galáxia, nebulosas e poeira não são desenhadas neste tema. */
+:root[data-skin="topgun"] .voice-sky {
+  --sky-grid: rgba(57, 255, 106, .2);
+  --sky-sun: var(--tg-radar);
+  --sky-neb-0: var(--tg-radar); --sky-neb-1: var(--tg-radar); --sky-neb-2: var(--tg-radar); --sky-neb-3: var(--tg-radar); --sky-neb-4: var(--tg-radar);
+  border-color: var(--tg-green-dim); border-radius: 0;
+  background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, .25) 0 1px, transparent 1px 3px), radial-gradient(ellipse at 50% 50%, rgba(57, 255, 106, .07), transparent 75%), #010402;
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, .9);
+}
+:root[data-skin="topgun"] .voice-sky-neb { display: none; }
+:root[data-skin="topgun"] .voice-sky .sky-radar { pointer-events: none; }
+:root[data-skin="topgun"] .voice-sky .sky-radar-ring { fill: none; stroke: rgba(57, 255, 106, .15); stroke-width: .5; }
+:root[data-skin="topgun"] .voice-sky .sky-radar-ring.major { stroke: rgba(57, 255, 106, .3); stroke-width: .6; }
+:root[data-skin="topgun"] .voice-sky .sky-radar-axis { stroke: rgba(57, 255, 106, .16); stroke-width: .4; stroke-dasharray: 2 3; }
+:root[data-skin="topgun"] .voice-sky .sky-radar-tick { stroke: rgba(57, 255, 106, .45); stroke-width: .5; }
+:root[data-skin="topgun"] .voice-sky .sky-radar-hdg { fill: rgba(57, 255, 106, .6); font: 4.4px var(--tg-mono); letter-spacing: .06em; text-anchor: middle; dominant-baseline: middle; }
+:root[data-skin="topgun"] .voice-sky .sky-sweep { animation: st-orbit 6s linear infinite; }
+:root[data-skin="topgun"] .voice-sky .sky-sweep-slice { fill: var(--tg-radar); }
+:root[data-skin="topgun"] .voice-sky .sky-sweep-line { stroke: var(--tg-radar); stroke-width: .7; stroke-opacity: .85; }
+/* As bases: um anel vazado com o ponto no meio, como no scope */
+:root[data-skin="topgun"] .voice-sky .sky-sun { filter: drop-shadow(0 0 2.5px rgba(57, 255, 106, .8)); }
+:root[data-skin="topgun"] .voice-sky .sky-corona { fill: rgba(57, 255, 106, .08); stroke: var(--tg-radar); stroke-width: .7; }
+:root[data-skin="topgun"] .voice-sky .sky-sun.here .sky-corona { stroke: var(--tg-white); stroke-width: 1; }
+/* Contatos: apagados até a varredura passar; aí acendem e vão apagando até a próxima volta (ceu-voz.js › radarTick).
+   Você, quem fala, o seu canal (o centro do radar) e o que está com o mouse em cima ficam sempre acesos */
+:root[data-skin="topgun"] .voice-sky.radar-live :is(.sky-star:not(.me), .sky-sun:not(.here)) { opacity: .3; }
+:root[data-skin="topgun"] .voice-sky.radar-live :is(.sky-star, .sky-sun).blip { animation: tg-blip 6s ease-out forwards; }
+:root[data-skin="topgun"] .voice-sky.radar-live :is(.sky-star.speaking, .sky-star:hover, .sky-star:focus-visible, .sky-sun:hover) { animation: none; opacity: 1; }
+@keyframes tg-blip { 0% { opacity: 1; filter: drop-shadow(0 0 5px var(--tg-green)); } 100% { opacity: .3; filter: none; } }
+body.app-blurred .voice-sky .blip { animation-play-state: paused; }
+:root[data-skin="topgun"] .voice-sky .sky-path { stroke: rgba(57, 255, 106, .2); stroke-dasharray: 1 2; }
+:root[data-skin="topgun"] .voice-sky .sky-link { stroke: rgba(57, 255, 106, .4); stroke-dasharray: 3 2; }
+:root[data-skin="topgun"] .voice-sky .sky-trail { stroke: var(--tg-radar); }
+:root[data-skin="topgun"] .voice-sky .sky-core { fill: var(--tg-green-hi); }
+:root[data-skin="topgun"] .voice-sky .sky-star.me .sky-core { fill: var(--tg-green); }
+:root[data-skin="topgun"] .voice-sky :is(.sky-label, .sky-pname, .sky-count) { font-family: var(--tg-mono); text-transform: uppercase; }
+:root[data-skin="topgun"] .voice-sky .sky-label { fill: var(--tg-radar); }
+:root[data-skin="topgun"] .voice-sky .sky-label.here { fill: var(--tg-white); }
+:root[data-skin="topgun"] .voice-sky .sky-pname { fill: var(--tg-green-hi); }
+body.app-blurred .voice-sky .sky-sweep { animation-play-state: paused; }
+
+/* ---------- Prévia na aba Tema (vale sempre, com as cores fixas do tema): um MFD com o blueprint e as asas ---------- */
+.skin-preview[data-preview=topgun] {
+  background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, .3) 0 1px, transparent 1px 3px),
+    url(assets/temas/topgun-bp-f22.webp) center / auto 84% no-repeat,
+    radial-gradient(ellipse at 25% 50%, rgba(57, 255, 106, .12), transparent 60%), #010402;
+  border-color: #14532A;
+}
+.skin-preview[data-preview=topgun]::before {
+  content: ""; position: absolute; right: 22px; top: 14px; width: 64px; height: 38px;
+  background: linear-gradient(#D7343E, #D7343E) 0 0 / 36% 100% no-repeat, linear-gradient(#D7343E, #D7343E) 100% 0 / 36% 100% no-repeat, #F4F6FB;
+  -webkit-mask: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 60'><g fill='black'><path d='M2 18H34V24H6ZM8 28H34V34H12ZM14 38H34V44H18ZM98 18H66V24H94ZM92 28H66V34H88ZM86 38H66V44H82Z'/><path d='M50 16 53.29 25.47 63.31 25.67 55.33 31.73 58.23 41.33 50 35.6 41.77 41.33 44.67 31.73 36.69 25.67 46.71 25.47Z'/></g></svg>") center / contain no-repeat;
+}
+
+/* ---------- Interface espelhada (Aparência › Espelhar a interface): a foto vira e a placa vai para a direita ---------- */
+:root[data-skin="topgun"][data-mirror="on"] body::before { transform: scaleX(-1); }
+:root[data-skin="topgun"][data-mirror="on"] .home-screen::after { left: auto; right: calc(var(--hub-w, 0px) + 54px); }

@@ -21,10 +21,22 @@ const AppPreferences = (() => {
     { id: 'suaveTransmitiu', label: 'Suave · três tons subindo', synth: [[523, 0, 0.1, 0.9], [659, 0.08, 0.1, 0.9], [784, 0.16, 0.22, 0.9]] },
     { id: 'suaveParouTransmitir', label: 'Suave · três tons descendo', synth: [[784, 0, 0.1, 0.9], [659, 0.08, 0.1, 0.9], [523, 0.16, 0.22, 0.9]] },
     { id: 'suaveMencao', label: 'Suave · chamado agudo', synth: [[988, 0, 0.08, 1], [1319, 0.07, 0.08, 1], [988, 0.2, 0.08, 1], [1319, 0.27, 0.16, 1]] },
+    // Chamadas de rádio do tema Top Gun (voz de piloto no rádio UHF, geradas por assets/temas/gerar-radio.js). Com
+    // files, cada vez toca uma das falas, sorteada sem repetir a última (SoundPlayer)
+    { id: 'radioFoxOne', label: 'Rádio · "Fox one / two / three!"', files: ['radio-fox-1.wav', 'radio-fox-2.wav', 'radio-fox-3.wav'] },
+    { id: 'radioSplash', label: 'Rádio · "Splash one." e "Good kill."', files: ['radio-splash-1.wav', 'radio-splash-2.wav', 'radio-splash-3.wav'] },
+    { id: 'radioCheck', label: 'Rádio · "Radio check."', files: ['radio-radio-check-1.wav', 'radio-radio-check-2.wav', 'radio-radio-check-3.wav'] },
+    { id: 'radioTallyHo', label: 'Rádio · "Tally ho!"', files: ['radio-tally-ho-1.wav', 'radio-tally-ho-2.wav', 'radio-tally-ho-3.wav'] },
+    { id: 'radioRtb', label: 'Rádio · "R T B." (voltando à base)', files: ['radio-rtb-1.wav', 'radio-rtb-2.wav', 'radio-rtb-3.wav'] },
+    { id: 'radioGoingHot', label: 'Rádio · "Going hot." e "Master arm, on."', files: ['radio-going-hot-1.wav', 'radio-going-hot-2.wav', 'radio-going-hot-3.wav'] },
+    { id: 'radioGoingCold', label: 'Rádio · "Going cold." e "Master arm, safe."', files: ['radio-going-cold-1.wav', 'radio-going-cold-2.wav', 'radio-going-cold-3.wav'] },
+    { id: 'radioSilence', label: 'Rádio · "Radio silence."', files: ['radio-radio-silence-1.wav', 'radio-radio-silence-2.wav', 'radio-radio-silence-3.wav'] },
+    { id: 'radioLoudClear', label: 'Rádio · "Loud and clear." e "Five by five."', files: ['radio-loud-and-clear-1.wav', 'radio-loud-and-clear-2.wav', 'radio-loud-and-clear-3.wav'] },
+    { id: 'radioSquelch', label: 'Rádio · Copy', file: 'radio-squelch.wav' },
   ];
   // mute/unmute: o seu microfone (o apertar para falar não conta); deafen/undeafen: o seu fone (Silenciar vozes);
-  // shareStart/shareStop: a sua transmissão; mention: alguém escreveu @seu nome no chat
-  const events = ['join', 'leave', 'chat', 'mention', 'voiceJoin', 'voiceLeave', 'mute', 'unmute', 'deafen', 'undeafen', 'shareStart', 'shareStop'];
+  // shareStart/shareStop: a sua transmissão; mention: alguém escreveu @seu nome no chat; enter: você entrou numa sala
+  const events = ['enter', 'join', 'leave', 'chat', 'mention', 'voiceJoin', 'voiceLeave', 'mute', 'unmute', 'deafen', 'undeafen', 'shareStart', 'shareStop'];
   // Cores: as 4 primeiras sempre valem; as outras começam vazias ('' = automático, calculada das 4) e só
   // passam a valer quando a pessoa escolhe
   const optionalColors = ['text', 'live', 'speaking', 'warn', 'line'];
@@ -104,10 +116,10 @@ const AppPreferences = (() => {
   const defaults = { colors: { main: '#0B0D10', secondary: '#13161B', detail1: '#7FA3C7', detail2: '#39FF9F', text: '#D7DCE3', live: '', speaking: '', warn: '#D9A66C', line: '#232932' },
     appearance: { glass: 'opaque', level: glassLevel.clear, border: 'solid', ambient: true, voiceSky: true, mirror: false, paneWidth: 0 },
     font: { family: 'system', custom: '', chat: false }, nameFont: '',
-    sounds: { join: 'notification035', leave: 'whoosh', chat: 'wood', voiceJoin: 'suaveEntrou', voiceLeave: 'suaveSaiu',
+    sounds: { enter: 'notification035', join: 'notification035', leave: 'whoosh', chat: 'wood', voiceJoin: 'suaveEntrou', voiceLeave: 'suaveSaiu',
       mute: 'suaveMutou', unmute: 'suaveDesmutou', deafen: 'suaveFoneDesligou', undeafen: 'suaveFoneLigou',
       shareStart: 'suaveTransmitiu', shareStop: 'suaveParouTransmitir', mention: 'suaveMencao',
-      chatMuted: false, volume: 50, levels: { join: 100, leave: 100, chat: 100, mention: 100, voiceJoin: 100, voiceLeave: 100, mute: 100, unmute: 100, deafen: 100, undeafen: 100, shareStart: 100, shareStop: 100 } },
+      chatMuted: false, volume: 50, levels: { enter: 100, join: 100, leave: 100, chat: 100, mention: 100, voiceJoin: 100, voiceLeave: 100, mute: 100, unmute: 100, deafen: 100, undeafen: 100, shareStart: 100, shareStop: 100 } },
     // Mensagens privadas: histórico neste PC para sempre ou por 30 dias; levar o histórico no backup do celular
     mensagens: { retencao: 'sempre', backup: false } };
   // Temas prontos (Aparência > Temas): cores e material de uma vez. As cores de detalhe que não aparecem aqui
@@ -146,6 +158,14 @@ const AppPreferences = (() => {
     // cores de verniz antigo: ouro (você/ao vivo), verdete (quem fala), terra de Siena (cuidado) (styles-renascenca.css)
     { id: 'renascenca', label: 'Renascença', note: 'Uma galeria da Renascença: uma pintura famosa no fundo (a cada vez que o app abre, outra), molduras douradas entalhadas e o tom de verniz antigo.',
       colors: { main: '#1C140D', secondary: '#2B1F15', detail1: '#D4AF5A', detail2: '#8DB37A', warn: '#E0873A', text: '#EEE2C6', line: '#5A4426' }, appearance: { glass: 'opaque', border: 'solid' } },
+    // Top Gun: a escola de caça com a cabine do F-14. Painéis de MFD (fósforo verde no preto), o radar na voz, as asas
+    // de piloto e as chamadas de rádio como sons: Fox one (entrou), Splash one (saiu), Radio check (transmissão),
+    // R T B (parou), Going hot/cold (microfone), Radio silence/Loud and clear (fone), Tally ho (menção), e o
+    // "Copy" no chat (styles-topgun.css; o radar em ceu-voz.js › drawSkyRadar)
+    { id: 'topgun', label: 'Top Gun', note: 'A cabine do F-14: painéis de MFD em verde no preto, a voz num radar, asas de piloto, blueprints de caças em verde e as chamadas de rádio como sons (Fox one, Splash one, Radio check).',
+      colors: { main: '#010402', secondary: '#04100A', detail1: '#39FF6A', detail2: '#7DF9FF', warn: '#FFB000', text: '#B9F5C4', line: '#14532A' }, appearance: { glass: 'opaque', border: 'solid' },
+      sounds: { enter: 'radioCheck', join: 'radioFoxOne', voiceJoin: 'radioFoxOne', leave: 'radioSplash', voiceLeave: 'radioSplash', shareStart: 'radioCheck', shareStop: 'radioRtb',
+        mute: 'radioGoingCold', unmute: 'radioGoingHot', deafen: 'radioSilence', undeafen: 'radioLoudClear', mention: 'radioTallyHo', chat: 'radioSquelch' } },
   ];
   const cleanSkin = (id) => skins.some((k) => k.id && k.id === id) ? id : '';
   // Preferências com o tema aplicado (o resto, como fontes e sons, fica como está)
@@ -155,7 +175,9 @@ const AppPreferences = (() => {
     const colors = { ...defaults.colors, text: '', live: '', speaking: '', warn: '', line: '', ...t.colors };
     const before = normalize(prefs).appearance;
     const appearance = { ...defaults.appearance, level: glassLevel[t.appearance.glass] ?? defaults.appearance.level, ambient: before.ambient, voiceSky: before.voiceSky, mirror: before.mirror, paneWidth: before.paneWidth, ...t.appearance };
-    return normalize({ ...prefs, colors, appearance });
+    // Tema com sons próprios (Top Gun): troca só os sons dos eventos dele; volume e o resto ficam
+    const sounds = t.sounds ? { ...normalize(prefs).sounds, ...t.sounds } : undefined;
+    return normalize({ ...prefs, colors, appearance, ...(sounds && { sounds }) });
   }
   // Qual tema pronto bate com as preferências atuais ('' = personalizado). Desfoque, escurecer e fonte não contam.
   // Material e bordas ficam livres: trocar Opaco, Transparente, Líquido ou Normal não tira o tema;
@@ -308,8 +330,16 @@ const AppPreferences = (() => {
     return { pause() { for (const o of nodes) try { o.stop(); } catch {} }, currentTime: 0 };
   }
   class SoundPlayer {
-    constructor({ settings, createAudio = url => new Audio(url), synth = synthTone, now = () => Date.now() }) {
-      Object.assign(this, { settings, createAudio, synth, now }); this.players = new Map(); this.last = new Map();
+    constructor({ settings, createAudio = url => new Audio(url), synth = synthTone, now = () => Date.now(), random = Math.random }) {
+      Object.assign(this, { settings, createAudio, synth, now, random }); this.players = new Map(); this.last = new Map(); this.lastFile = new Map();
+    }
+    // Som com várias falas (files): uma sorteada, sem repetir a última que tocou desse som
+    fileOf(sound) {
+      if (!sound.files) return sound.file;
+      const before = this.lastFile.get(sound.id), pool = sound.files.length > 1 ? sound.files.filter(f => f !== before) : sound.files;
+      const file = pool[Math.floor(this.random() * pool.length) % pool.length];
+      this.lastFile.set(sound.id, file);
+      return file;
     }
     stop(event) {
       const player = this.players.get(event);
@@ -329,7 +359,7 @@ const AppPreferences = (() => {
       let player;
       try {
         if (sound.synth) { this.players.set(slot, this.synth(sound.synth, volume)); return true; }
-        player = this.createAudio('assets/audio/' + sound.file);
+        player = this.createAudio('assets/audio/' + this.fileOf(sound));
         player.volume = volume;
         this.players.set(slot, player);
         player.onended = () => { if (this.players.get(slot) === player) this.players.delete(slot); };

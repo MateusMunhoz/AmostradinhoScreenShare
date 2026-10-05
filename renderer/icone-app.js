@@ -64,3 +64,21 @@ function drawArasakaIcon(ctx, size, color) {
   ctx.restore();
 }
 if (typeof module !== 'undefined') module.exports.drawArasakaIcon = drawArasakaIcon;
+
+// Tema Top Gun: o ícone da janela vira as asas de piloto (as três listras de cada lado e a estrela), o mesmo desenho do
+// --tg-wings em styles-topgun.css (quadro 100 x 60), sobre um fundo escuro para aparecer também em barra clara.
+function drawTopGunIcon(ctx, size) {
+  const s = size / 100;
+  ctx.clearRect(0, 0, size, size);
+  ctx.save();
+  ctx.fillStyle = '#010402';
+  ctx.beginPath(); ctx.roundRect(0, 0, size, size, size * 0.18); ctx.fill();
+  ctx.translate(0, (size - 60 * s) / 2);
+  ctx.scale(s, s);
+  ctx.fillStyle = '#D7343E';
+  ctx.fill(new Path2D('M2 18H34V24H6ZM8 28H34V34H12ZM14 38H34V44H18ZM98 18H66V24H94ZM92 28H66V34H88ZM86 38H66V44H82Z'));
+  ctx.fillStyle = '#F4F6FB';
+  ctx.fill(new Path2D('M50 16 53.29 25.47 63.31 25.67 55.33 31.73 58.23 41.33 50 35.6 41.77 41.33 44.67 31.73 36.69 25.67 46.71 25.47Z'));
+  ctx.restore();
+}
+if (typeof module !== 'undefined') module.exports.drawTopGunIcon = drawTopGunIcon;

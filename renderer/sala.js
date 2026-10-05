@@ -171,6 +171,7 @@ function enterRoom(welcome, owner, host, port, cloud = null) {
   state.host = host;
   state.port = port;
   state.members.clear();
+  resetBiosDaSala();
   resetProfileBgs(); // os ids são da sala: o que sabia do fundo de cada um não vale na próxima (fundo-perfil.js)
   for (const m of welcome.members) state.members.set(m.id, { name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs || [], shareInfo: m.shareInfo || null, avatar: m.avatar || '', avatarFull: m.avatarFull || '', nameFont: AppPreferences.cleanNameFont(m.nameFont) });
   state.hostId = welcome.hostId || null;
@@ -196,7 +197,7 @@ function enterRoom(welcome, owner, host, port, cloud = null) {
   const live = welcome.members.filter((m) => m.sharing).length;
   if (live) toast(live === 1 ? '1 pessoa está transmitindo. Clique em Assistir para ver.' : `${live} pessoas estão transmitindo. Escolha quem assistir.`);
   checkUpdates();
-  void appSounds.play('join');
+  void appSounds.play('enter'); // você entrou
   registrarPasseSala();
   publicarSalaInternet();
 }
@@ -510,6 +511,8 @@ function handleSignal(from, data) {
     onPhotoSignal(from, data);
   } else if (data.side === 'fundo') {
     onProfileBgSignal(from, data).catch(console.error);
+  } else if (data.side === 'bio') {
+    onBioSignal(from, data);
   } else if (data.side === 'sharer') {
     // Mensagem de quem transmite uma tela que eu pedi para assistir
     const link = state.in.get(from);

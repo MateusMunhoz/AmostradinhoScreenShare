@@ -5,6 +5,7 @@ const path = require('node:path');
 const { app, safeStorage } = require('electron');
 const { RazzeApiClient } = require('./razze-api-client');
 const { createWireGuardManager } = require('./razze-wireguard');
+const { loginComGoogle } = require('./google-login');
 
 // RazzeAPI da equipe (conta, amigos e salas dos amigos): quem instala agora já cria a conta sem configurar nada.
 // TELA_RAZZE_API troca o padrão; vazia, o app começa sem servidor (os testes de ponta a ponta usam assim).
@@ -83,6 +84,29 @@ function createRazzeService(options = {}) {
     return { user: result.user, state: state() };
   }
 
+  // Login com Google: o navegador do sistema abre no Google (abrir vem do main.js), o código volta pelo PC e a RazzeAPI faz a troca
+  async function googleConfig() {
+    try { return await requireClient(false).googleConfig(); } catch { return { enabled: false, clientId: '' }; }
+  }
+  async function googleCodigo(abrir) {
+    const cfg = await requireClient(false).googleConfig();
+    if (!cfg.enabled) throw new Error('Entrar com Google não está ligado neste servidor.');
+    return loginComGoogle({ clientId: cfg.clientId, abrir });
+  }
+  async function googleLogin(abrir) {
+    if (!storage.isEncryptionAvailable()) throw new Error('O Windows não disponibilizou armazenamento protegido para a sessão Razze.');
+    const result = await requireClient(false).googleLogin(await googleCodigo(abrir));
+    if (result.status === 'pending_approval') return { status: 'pending_approval', user: result.user };
+    accessToken = result.accessToken;
+    recreateClient();
+    persist();
+    return { status: 'active', user: result.user, state: state() };
+  }
+  async function googleLink(abrir) {
+    const login = await googleCodigo(abrir);
+    return requireClient().googleLink(login);
+  }
+
   async function logout() {
     try { if (client && accessToken) await client.logout(); } finally {
       accessToken = '';
@@ -108,7 +132,8 @@ function createRazzeService(options = {}) {
   load();
   const wireguard = options.wireguard || createWireGuardManager({ app: electronApp, safeStorage: storage });
   return {
-    state, configure, register, login, logout,
+    state, configure, register, login, logout, googleConfig, googleLogin, googleLink,
+    googleUnlink: () => requireClient().googleUnlink(),
     health: () => requireClient(false).health(),
     me,
     listNetworks: () => requireClient().listNetworks(),
@@ -126,6 +151,15 @@ function createRazzeService(options = {}) {
     acceptFriendRequest: (id) => requireClient().acceptFriendRequest(id),
     cancelFriendRequest: (id) => requireClient().cancelFriendRequest(id),
     removeFriend: (id) => requireClient().removeFriend(id),
+    changePassword: (current, next) => requireClient().changePassword(current, next),
+    resetPassword: (email, code, password) => requireClient().resetPassword(email, code, password),
+    setBio: (bio) => requireClient().setBio(bio),
+    setActivity: (activity) => requireClient().setActivity(activity),
+    friendLinkCreate: () => requireClient().friendLinkCreate(),
+    friendLinkList: () => requireClient().friendLinkList(),
+    friendLinkRevoke: (id) => requireClient().friendLinkRevoke(id),
+    friendLinkPreview: (token) => requireClient().friendLinkPreview(token),
+    friendLinkAccept: (token) => requireClient().friendLinkAccept(token),
     sendMessage: (to, text) => requireClient().sendMessage(to, text),
     messages: (after) => requireClient().messages(after),
     wireguard,

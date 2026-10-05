@@ -346,6 +346,32 @@ apertar para falar pelo portal de atalhos globais; "uma vez só" pelo WebCodecs 
 
 ---
 
+## Ideia: Red Room (sala de briefing do tema Top Gun)
+
+**Anotação, ainda não priorizada (04/10/2026).** Para quem joga simulador (DCS e parecidos) junto: uma sala vira a
+"Red Room" na hora de planejar e voar uma missão. O tema Top Gun troca o fósforo verde pelo vermelho (a luz de cabine
+à noite, que não cega a visão noturna) e o app ganha ferramentas de briefing.
+
+**Features a pensar:**
+- **Modo missão:** o líder liga "Briefing" na sala; para todos, o tema fica vermelho e a barra de título mostra a
+  missão, o horário Zulu e o tempo até o "push" (decolagem combinada), com contagem regressiva.
+- **Quadro de briefing:** objetivo, waypoints, frequências de rádio, bingo de combustível e regras, num cartão fixo
+  que todos veem e o líder edita (fica no histórico da sala).
+- **Callsigns e flights:** cada pessoa ganha um indicativo ("Viper 1-1", "Viper 1-2") e as subsalas viram as flights;
+  o radar da voz mostra os contatos com o indicativo.
+- **Check de prontidão:** cada um marca "pronto" ("ready to copy"); o líder vê quem falta e o app toca a chamada de
+  rádio quando todos estão prontos.
+- **Silêncio de rádio:** durante a missão, só o líder (ou a flight) fala na voz geral; os outros ficam na subsala da
+  flight, com "Fence in" e "Fence out" ao entrar e sair da área.
+- **Tela do líder fixada:** o mapa ou o kneeboard do líder fixo no palco de todos durante o briefing.
+- **Debriefing:** os clipes salvos durante a missão (P4) agrupados por pessoa, com a hora Zulu, para rever depois.
+- **Sons:** chamadas de rádio próprias da missão ("Fence in", "Bingo", "Winchester", "Mission complete, R T B").
+
+**Por que esperar:** depende de sinalização nova na sala (estado de missão, quadro e prontidão vêm de outros PCs:
+validar como em `sala-protocolo.js`) e de ver se o tema Top Gun pega com o grupo.
+
+---
+
 ## Riscos e dependências
 
 | Risco | Onde | Plano |
@@ -369,3 +395,8 @@ apertar para falar pelo portal de atalhos globais; "uma vez só" pelo WebCodecs 
 1. Começar pelo **A1** (1–1,5 semana), que é pré-requisito do P1.
 2. Em paralelo, um **protótipo de 2 dias do Hyperswarm dentro do Electron** para tirar o maior risco do P1 cedo.
 3. Revisar este documento no fim de outubro.
+
+## Em planejamento
+
+- **Fluxo, conta e perfil** (auditoria feita; primeira entrada enxuta, convite por link, esqueci a senha, bio, foto e fundo do perfil, atividade opcional, Google): `docs/auditoria-fluxo.md` e `docs/spec/primeira-entrada-e-perfil.md`.
+- **Convite de amigo por link** (plano aguardando aprovação): `docs/spec/convite-por-link.md`.

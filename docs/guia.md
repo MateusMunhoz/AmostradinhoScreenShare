@@ -261,12 +261,61 @@ Uma música por canal (Voz geral ou subsala), que todo mundo ouve junto, no mesm
 - **Vídeo que não toca:** quem publicou pode não deixar tocar fora do YouTube; a tela avisa para trocar por outro.
 - **Modo Internet:** o servidor da VPS precisa estar atualizado; sem isso, a nota musical não aparece.
 
+## Primeira entrada
+
+Na primeira vez que o app abre, uma tela de cada vez (três no máximo):
+
+1. **Como você quer usar?** *Com amigos* (conta, lista de amigos, ligar com um clique) ou *Sala rápida* (só um nome, sem conta).
+2. **Quem é você?** O nome (obrigatório) e a foto (opcional).
+3. **Sua conta** (só em *Com amigos*): entrar ou criar conta com e-mail e senha. **Continuar sem conta por enquanto** leva
+   direto ao Início. Se o servidor exigir aprovação da conta, o app avisa e você usa como sala rápida até ser aprovado.
+
+Quem já usava o app não vê essa tela. Quem escolheu *Com amigos* e ainda não entrou vê no Início uma faixa **Entrar na conta**.
+
+No **Início**, com conta: **Amigos online** (até 5, com **Mensagem** e **Ligar**), **Adicionar amigo** e **Ver todos** (abre o HUB).
+**Abrir minha sala** cria a sala em um clique (com senha gerada e visível para os amigos); **Opções da sala** abre a tela
+de antes, com porta, senha e visibilidade.
+
+## Senha e frase do perfil
+
+- **Entrar com Google:** no passo 3 da primeira entrada e em HUB › Rede, **Entrar com Google** abre o navegador, você escolhe a conta
+  e volta ao app. O botão só aparece se o servidor tiver o Google ligado. Se já existe uma conta com o mesmo e-mail e senha, o app avisa:
+  entre com a senha e use **Vincular Google** (HUB › Rede, na conta). **Desvincular Google** só funciona se a conta tiver senha;
+  quem entrou só pelo Google define a primeira senha em **Trocar senha**, sem precisar da atual.
+- **Trocar a senha:** HUB › Rede › **Trocar senha** (pede a senha atual; mínimo 8 caracteres).
+- **Esqueci a senha:** na tela de entrar (HUB › Rede ou o passo 3 da primeira entrada), **Esqueci a senha**. O servidor não
+  manda e-mail: peça um código ao **administrador**, que o gera no painel (botão **Código de senha**). Digite o e-mail, o
+  código (vale 1 hora e funciona uma vez) e a senha nova.
+- **Frase do perfil:** no seu perfil, **Frase** (até 128 caracteres). Os amigos veem embaixo do seu nome no Início, e quem está na sala vê no seu cartão (ao abrir o seu perfil na voz); ela só passa entre os dois, na hora em que o cartão abre. Sem conta,
+  ela fica salva neste PC e vai para o servidor quando você entrar.
+
+## Atividade no perfil
+
+Em **Seu perfil › Atividade**, cada coisa que os amigos podem ver é uma escolha sua, **desligada por padrão**:
+
+- **Mostrar o jogo que estou jogando:** o app reconhece o jogo pelo nome do programa aberto, numa lista de jogos conhecidos (Valorant,
+  Counter-Strike 2, League of Legends, Fortnite, GTA V e outros; a lista está em `main/atividade.js`). Programa que não está
+  na lista não aparece, e nenhum outro nome de programa sai do PC.
+- **Mostrar a música que estou ouvindo (Spotify):** lê o título da janela do Spotify, só quando ele está tocando.
+
+Embaixo das caixinhas, o app mostra **o que os amigos veem agora**. Só os amigos aceitos veem, no Início: "Jogando Valorant" ou
+"Ouvindo Metallica"; **clicar em "Ouvindo…" mostra a música**. Some em até 2 minutos depois que você para ou desliga. Precisa de
+conta e vale no Windows; sem conta nada é enviado.
+
 ## Amigos
 
 No HUB (a barra fina na borda esquerda), aba **Amigos**. Precisa de conta Razze.
 
 - **Buscar:** o campo do topo filtra a lista pelo nome. Os chips **Todos**, **Online** e **Pedidos** mudam o que aparece; o número no **Pedidos** conta os pedidos recebidos e enviados.
 - **Adicionar:** clique em **Adicionar**, digite o nickname exato e **Enviar pedido** (ou Enter). Se der errado, o motivo aparece embaixo do campo. Quando der certo, o pedido vai para **Pedidos enviados**.
+- **Copiar meu link:** no Início (**Copiar meu link**) ou no formulário de **Adicionar** (**Copiar meu link de convite**). O app
+  copia uma mensagem pronta com o link e o código curto e avisa até quando vale (7 dias, 1 pessoa; até 5 links ativos).
+  Os links ativos aparecem no formulário de Adicionar, cada um com **Revogar**.
+- **Convite por link:** quem recebe o link (`https://…/a/…`, ou o `telap2p://amigo/…`) abre o app, vê "**Fulano quer ser
+  seu amigo. Aceitar?**" e, aceitando, os dois viram amigos na hora. Sem conta, o app leva para a tela de conta e retoma o
+  convite depois de entrar. Quem não tem o app instalado baixa pela página do link e depois **cola o link ou o código**
+  (`ABCD-EFGH-JK`, com os hífens) no campo de **Adicionar**. Cada link vale 7 dias e 1 pessoa. Se o servidor ainda não
+  tem links de amigo, o app avisa e o nickname continua funcionando.
 - **Ligar:** o **telefone** ao lado do balão (só com o amigo online). Veja [Ligar](#ligar).
 - **Convidar:** aparece só para quem está online, com você numa sala. Manda um **convite** nas mensagens diretas do
   amigo, que aparece como um cartão com **Entrar** (veja abaixo).
@@ -392,7 +441,7 @@ Prefere tudo do outro lado? **Configurações › Aparência › Espelhar a inte
 
 **Largura do chat e da voz:** passe o mouse no vão entre o painel e o vídeo até aparecer uma linha; arraste para alargar ou estreitar (de 300 px até pouco mais da metade da janela). O vídeo se ajusta e a largura fica salva. Dois cliques na linha voltam ao tamanho automático. Pelo teclado: Tab até a linha e as setas.
 
-O botão **Perfil** (no alto da barrinha) abre **Seu perfil**: em cima, uma prévia de como os outros te veem na voz (o fundo, a foto e o nome na fonte escolhida); clicar na foto troca a foto e **Trocar fundo** fica no canto do fundo. Embaixo, **Aparência** (foto e o ajuste dela na bolinha, fundo e fonte do nome; a lixeira tira a foto ou o fundo) e **Nome**, que só pode ser editado fora da sala (na sala aparece com um cadeado). Nele também fica o **Fundo do perfil**: uma imagem (recortada em quadrado) ou um GIF de até 1 MB, que aparece atrás do seu perfil para quem clicar em você na voz; **Tirar fundo** volta ao normal. O GIF só se mexe com o perfil aberto. Dentro da sala, **Chat**, **Voz** e **Transmissão** ficam logo abaixo deles, num grupo separado, só com o ícone (o nome aparece ao parar o mouse em cima), e são alternadores independentes: clique para exibir ou ocultar cada painel. Chat e voz abrem se desdobrando ao lado da barrinha. Os selecionados permanecem visíveis juntos, dividindo o espaço. Perfil e configurações também podem ficar abertos ao mesmo tempo. Cada painel tem sua própria rolagem quando necessário. A seleção dos três painéis da sala é lembrada ao reabrir o app.
+O botão **Perfil** (no alto da barrinha) abre **Seu perfil**: em cima, uma prévia de como os outros te veem na voz (o fundo, a foto e o nome na fonte escolhida); clicar na foto troca a foto e **Trocar fundo** fica no canto do fundo. Embaixo, **Aparência** (foto, fundo e fonte do nome; a lixeira tira a foto ou o fundo) e **Nome**, que só pode ser editado fora da sala (na sala aparece com um cadeado). Nele também fica o **Fundo do perfil**: uma imagem (recortada em quadrado) ou um GIF de até 1 MB, que aparece atrás do seu perfil para quem clicar em você na voz; **Tirar fundo** volta ao normal. Ao escolher a foto ou uma imagem de fundo, abre o **editor de recorte**: arraste a imagem para enquadrar e use o zoom (roda do mouse, controle, setas e + / -); na foto a bolinha mostra o resultado, e no fundo a faixa tracejada é a parte que mais aparece no cartão. **Ajustar**, ao lado de Trocar, abre de novo o editor com o enquadramento anterior, sem escolher a imagem outra vez (GIF não corta, então não tem Ajustar). O GIF só se mexe com o perfil aberto. Dentro da sala, **Chat**, **Voz** e **Transmissão** ficam logo abaixo deles, num grupo separado, só com o ícone (o nome aparece ao parar o mouse em cima), e são alternadores independentes: clique para exibir ou ocultar cada painel. Chat e voz abrem se desdobrando ao lado da barrinha. Os selecionados permanecem visíveis juntos, dividindo o espaço. Perfil e configurações também podem ficar abertos ao mesmo tempo. Cada painel tem sua própria rolagem quando necessário. A seleção dos três painéis da sala é lembrada ao reabrir o app.
 
 O painel **Voz** mostra os participantes, seus controles de volume e botões para entrar, sair, mutar e silenciar as vozes. Mostrar ou ocultar esse painel não liga nem desliga o microfone. Da mesma forma, ocultar **Transmissão** não encerra uma transmissão em andamento; use o botão **Parar** para encerrá-la.
 
@@ -407,6 +456,7 @@ No tema **Du'Sol** (aba Tema), o fundo é o Sol: um pedaço gigante dele à esqu
 
 O tema **Di'Luna** é o irmão do Du'Sol, com a Lua cheia: um pedaço gigante dela à esquerda, com crateras e a borda acesa em ciano, e a noite com véus roxos e faíscas de luz no resto. As cores ficam entre o branco, o ciano, o azul e o roxo, e os letreiros têm serifa. O nome **Di'Luna** aparece nos mesmos lugares do Du'Sol, em pé do lado de fora da Lua no saguão.
 O tema **Renascença** transforma o app numa galeria: o fundo é uma pintura famosa da Renascença (A Escola de Atenas, A Anunciação, A Última Ceia e A Criação de Adão, uma a cada vez que o app abre), com o tom amarelado de verniz antigo e uma etiqueta de museu no canto dizendo qual é. O cartão do Início, o palco e cada transmissão ganham uma moldura dourada entalhada. Créditos das obras em `assets/temas/OBRAS.md`.
+O tema **Top Gun** é a cabine de um caça: cada painel vira um MFD, com fósforo verde no preto, moldura de bezel, colchetes nos cantos e letras de painel em caixa alta; o botão principal fica em inverso de vídeo, e os botões de entrar e sair da voz ganham as faixas amarelas e pretas do convés do porta-aviões. Fora da sala, o fundo é preto com o blueprint técnico de um caça em verde (cortes da fuselagem do F-16, F-15 e A-10 e desenhos em 3 vistas do F/A-18 e do F-22; um a cada vez que o app abre), com o nome do avião no canto do Início. Dentro da sala, o fundo é só preto. Na voz, o céu vira um **radar**: anéis de distância, rumos e a varredura girando em volta de você (o canal onde você está na voz; fora dela, a Voz geral); cada pessoa e cada subsala acende quando a varredura passa por ela e vai apagando até a próxima volta (você, quem fala e o seu canal ficam sempre acesos). A varredura gira mesmo com "reduzir movimento" do Windows e para com o app fora de foco e no modo gamer. O tema também troca os sons pelas chamadas de rádio, ditas por pilotos diferentes, só a voz (sem chiado), e com várias falas para cada aviso (o app sorteia uma e não repete a última): **"Radio check"** quando você entra numa sala, **"Fox one/two/three!"** quando alguém entra, **"Splash one."** ou **"Good kill."** quando alguém sai, **"Radio check."** e **"R T B."** quando você começa e para de transmitir, **"Going hot."** e **"Going cold."** ao ligar e desligar o microfone, **"Radio silence."** e **"Loud and clear."** ou **"Five by five."** ao silenciar e voltar a ouvir as vozes, **"Tally ho!"** quando te mencionam e o clique do rádio nas mensagens do chat. Ao trocar para outro tema, os seus sons de antes voltam. Créditos das fotos em `assets/temas/OBRAS.md`.
 
 No tema Padrão, a tela inicial tem um céu ao fundo; de vez em quando (a cada 20 a 90 segundos, ao acaso) uma estrela cadente cruza esse céu. Ela só aparece com a janela do app em foco e não aparece se o Windows estiver com os efeitos de animação desligados.
 

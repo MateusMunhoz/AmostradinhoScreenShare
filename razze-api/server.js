@@ -23,6 +23,24 @@ const DM_MAX_E2E = 9000;
 const DM_E2E_RE = /^e2e1:[A-Za-z0-9_-]+$/;
 const DM_KEY_RE = /^[A-Za-z0-9+/]{43}=$/; // chave pública X25519 (32 bytes, base64)
 const DM_PAGE = 200;
+// Convite de amigo por link (docs/spec/convite-por-link.md): vale 7 dias e 1 pessoa, no máximo 5 ativos por conta
+const FRIEND_LINK_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const FRIEND_LINK_MAX_ACTIVE = 5;
+const FRIEND_LINK_TOKEN_RE = /^[A-Za-z0-9_-]{20,120}$/;
+const FRIEND_CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // 31 símbolos, sem 0/O/1/I/L
+const FRIEND_CODE_LENGTH = 10;
+// Senha: trocar logado (pede a atual) e redefinir com o código que o administrador gera (sem e-mail no servidor)
+const BIO_MAX = 128;
+const RESET_TTL_MS = 60 * 60 * 1000;
+const RESET_MAX_ATTEMPTS = 5;
+// Atividade no perfil (jogo e música): o app só manda o que a pessoa deixou ligado; some em 2 minutos sem renovar
+const ACTIVITY_TTL_MS = 2 * 60 * 1000;
+const ACTIVITY_FIELD_MAX = 80;
+// Login com Google (docs/razze-api.md): o app abre o navegador, o Google devolve um código para o próprio PC (127.0.0.1) e o
+// servidor troca o código pelo dado da conta. O e-mail só é aceito se o Google confirmou (email_verified).
+const GOOGLE_REDIRECT_RE = /^http:\/\/127\.0\.0\.1:\d{2,5}\/callback$/;
+const GOOGLE_ISSUERS = ['https://accounts.google.com', 'accounts.google.com'];
+const DEFAULT_DOWNLOAD_URL = 'https://github.com/MateusMunhoz/AmostradinhoScreenShare/releases/latest';
 // Sinais da conexão direta das mensagens privadas (oferta e resposta WebRTC, cifradas de ponta a ponta): só na
 // memória, entregues uma vez e apagados em 2 minutos. Nunca vão para o banco nem para o histórico
 const SIGNAL_TTL_MS = 2 * 60 * 1000;
@@ -62,12 +80,83 @@ function createApiServer(options = {}) {
     "CREATE INDEX IF NOT EXISTS idx_dm_sender ON direct_messages(sender_id, seq)",
     "CREATE INDEX IF NOT EXISTS idx_dm_created ON direct_messages(created_at)",
     // Chave pública das mensagens criptografadas: uma por conta (a do PC que publicou por último)
-    "CREATE TABLE IF NOT EXISTS dm_keys (user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE, public_key TEXT NOT NULL, updated_at INTEGER NOT NULL)"
+    "CREATE TABLE IF NOT EXISTS dm_keys (user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE, public_key TEXT NOT NULL, updated_at INTEGER NOT NULL)",
+    // Links de amigo: só o hash do segredo e o do código curto ficam no banco
+    "CREATE TABLE IF NOT EXISTS friend_links (id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, token_hash TEXT NOT NULL UNIQUE, code_hash TEXT NOT NULL UNIQUE, expires_at INTEGER NOT NULL, max_uses INTEGER NOT NULL, uses INTEGER NOT NULL DEFAULT 0, revoked INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL)",
+    "CREATE INDEX IF NOT EXISTS idx_friend_links_user ON friend_links(user_id)",
+    // O que a pessoa está jogando e ouvindo agora (só os amigos veem, em /v1/friends); uma linha por conta
+    "CREATE TABLE IF NOT EXISTS user_activity (user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE, game TEXT NOT NULL DEFAULT '', artist TEXT NOT NULL DEFAULT '', title TEXT NOT NULL DEFAULT '', updated_at INTEGER NOT NULL)",
+    // Código de redefinição de senha gerado pelo administrador: uma linha por conta, só o hash, expira e tem limite de erros
+    "CREATE TABLE IF NOT EXISTS password_resets (user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE, code_hash TEXT NOT NULL, expires_at INTEGER NOT NULL, attempts INTEGER NOT NULL DEFAULT 0)"
   ].join(';\n') + ';');
   const userColumns = db.prepare('PRAGMA table_info(users)').all().map((column) => column.name);
+  if (!userColumns.includes('google_sub')) db.exec('ALTER TABLE users ADD COLUMN google_sub TEXT');
+  if (!userColumns.includes('password_set')) db.exec('ALTER TABLE users ADD COLUMN password_set INTEGER NOT NULL DEFAULT 1');
+  db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_sub ON users(google_sub) WHERE google_sub IS NOT NULL');
+  if (!userColumns.includes('bio')) db.exec("ALTER TABLE users ADD COLUMN bio TEXT NOT NULL DEFAULT ''");
   if (!userColumns.includes('status')) db.exec("ALTER TABLE users ADD COLUMN status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('pending', 'active', 'disabled'))");
 
-  const publicUser = (id) => db.prepare('SELECT id, email, display_name AS displayName, role, created_at AS createdAt FROM users WHERE id = ?').get(id) || null;
+  const hashPassword = async (password, salt) => (await scryptAsync(password, salt, 64)).toString('hex');
+  const samePassword = async (user, password) => {
+    const candidate = await scryptAsync(password, user?.salt || 'razze-invalid-user-salt', 64);
+    const stored = user ? Buffer.from(user.passwordHash, 'hex') : Buffer.alloc(64);
+    return !!user && stored.length === candidate.length && timingSafeEqual(stored, candidate);
+  };
+  const cleanBio = (value) => {
+    if (typeof value !== 'string') throw new ApiError(400, 'invalid_input', 'A frase do perfil precisa ser um texto.');
+    const text = value.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim();
+    if (Array.from(text).length > BIO_MAX) throw new ApiError(400, 'invalid_input', 'A frase do perfil pode ter até ' + BIO_MAX + ' caracteres.');
+    return text;
+  };
+  const googleClientId = () => String(options.googleClientId ?? process.env.RAZZE_GOOGLE_CLIENT_ID ?? '');
+  const googleClientSecret = () => String(options.googleClientSecret ?? process.env.RAZZE_GOOGLE_CLIENT_SECRET ?? '');
+  // Troca o código pelos tokens no Google (por TLS, direto). Nos testes entra uma função no lugar (options.googleExchange).
+  const googleExchange = options.googleExchange || (async (p) => {
+    const form = new URLSearchParams({ code: p.code, client_id: p.clientId, redirect_uri: p.redirectUri, grant_type: 'authorization_code', code_verifier: p.codeVerifier });
+    if (p.clientSecret) form.set('client_secret', p.clientSecret);
+    const response = await fetch('https://oauth2.googleapis.com/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: form, signal: AbortSignal.timeout(10_000) });
+    if (!response.ok) throw new Error('google ' + response.status);
+    return response.json();
+  });
+  // Valida o pedido e devolve a identidade confirmada pelo Google: { sub, email, name }
+  const googleIdentity = async (body) => {
+    const clientId = googleClientId();
+    if (!clientId) throw new ApiError(503, 'google_disabled', 'Entrar com Google não está ligado neste servidor.');
+    const code = assertText(body.code, 'Código', 10, 2048);
+    const codeVerifier = assertText(body.codeVerifier, 'Verificador', 43, 128);
+    const redirectUri = typeof body.redirectUri === 'string' ? body.redirectUri : '';
+    if (!GOOGLE_REDIRECT_RE.test(redirectUri)) throw new ApiError(400, 'invalid_input', 'Endereço de retorno inválido.');
+    let payload;
+    try {
+      const tokens = await googleExchange({ code, codeVerifier, redirectUri, clientId, clientSecret: googleClientSecret() });
+      payload = JSON.parse(Buffer.from(String(tokens.id_token).split('.')[1], 'base64url').toString('utf8'));
+    } catch { throw new ApiError(401, 'google_failed', 'Não deu para confirmar o login com o Google. Tente de novo.'); }
+    const emailOk = payload.email_verified === true || payload.email_verified === 'true';
+    if (!GOOGLE_ISSUERS.includes(payload.iss) || payload.aud !== clientId || !(Number(payload.exp) * 1000 > now())
+      || typeof payload.sub !== 'string' || !payload.sub || typeof payload.email !== 'string' || !emailOk) {
+      throw new ApiError(401, 'google_failed', 'O Google não confirmou essa conta. Tente de novo.');
+    }
+    return { sub: payload.sub, email: payload.email.trim().toLowerCase(), name: typeof payload.name === 'string' ? payload.name : '' };
+  };
+  const activityRate = new Map(); // userId -> { count, resetAt }: no máximo 12 envios por minuto
+  const cleanActivity = (value, field) => {
+    if (value === undefined || value === null || value === '') return '';
+    if (typeof value !== 'string') throw new ApiError(400, 'invalid_input', field + ' precisa ser um texto.');
+    const text = value.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim();
+    if (Array.from(text).length > ACTIVITY_FIELD_MAX) throw new ApiError(400, 'invalid_input', field + ' pode ter até ' + ACTIVITY_FIELD_MAX + ' caracteres.');
+    return text;
+  };
+  const activityOf = (id) => {
+    const a = db.prepare('SELECT game, artist, title, updated_at AS at FROM user_activity WHERE user_id = ?').get(id);
+    if (!a || a.at <= now() - ACTIVITY_TTL_MS || (!a.game && !a.artist && !a.title)) return null;
+    return { game: a.game, artist: a.artist, title: a.title };
+  };
+  const publicUser = (id) => {
+    const u = db.prepare('SELECT id, email, display_name AS displayName, bio, role, created_at AS createdAt, google_sub AS googleSub, password_set AS passwordSet FROM users WHERE id = ?').get(id);
+    if (!u) return null;
+    const { googleSub, passwordSet, ...rest } = u;
+    return { ...rest, googleLinked: !!googleSub, hasPassword: !!passwordSet };
+  };
   const newId = () => randomBytes(16).toString('hex');
   const hash = (value) => createHash('sha256').update(value).digest('hex');
   const now = options.now || (() => Date.now());
@@ -172,6 +261,43 @@ function createApiServer(options = {}) {
   const peerRows = (networkId) => db.prepare(
     'SELECT device_id AS deviceId, user_id AS userId, name, public_key AS publicKey, assigned_ip AS assignedIp, endpoint_host AS endpointHost, endpoint_port AS endpointPort, updated_at AS updatedAt FROM wireguard_devices WHERE network_id = ? ORDER BY created_at'
   ).all(networkId);
+  // Aceita o segredo (token) ou o código curto digitado pela pessoa (com ou sem hífen, qualquer caixa)
+  const friendLinkKey = (value) => {
+    const raw = String(value ?? '').trim();
+    if (FRIEND_LINK_TOKEN_RE.test(raw)) return hash(raw);
+    const code = raw.replace(/[\s-]/g, '').toUpperCase();
+    if (code.length === FRIEND_CODE_LENGTH && [...code].every((ch) => FRIEND_CODE_ALPHABET.includes(ch))) return hash(code);
+    return '';
+  };
+  const friendLinkRow = (key) => (key ? db.prepare('SELECT id, user_id AS userId, expires_at AS expiresAt, max_uses AS maxUses, uses, revoked FROM friend_links WHERE token_hash = ? OR code_hash = ?').get(key, key) : null);
+  const newFriendCode = () => {
+    let out = '';
+    while (out.length < FRIEND_CODE_LENGTH) {
+      const [x] = randomBytes(1);
+      if (x < 248) out += FRIEND_CODE_ALPHABET[x % FRIEND_CODE_ALPHABET.length]; // 248 = 8 x 31: sem viés
+    }
+    return out;
+  };
+  const publicBase = (req) => {
+    const fixed = options.publicUrl || process.env.RAZZE_PUBLIC_URL;
+    if (fixed) return String(fixed).replace(/\/+$/, '');
+    const host = String(req.headers.host || '');
+    if (!/^[A-Za-z0-9.-]+(:\d{1,5})?$/.test(host)) return '';
+    const proto = process.env.RAZZE_TRUST_PROXY === '1' && req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
+    return proto + '://' + host;
+  };
+  const friendLinkPage = (token) => {
+    const download = String(options.downloadUrl || process.env.RAZZE_DOWNLOAD_URL || DEFAULT_DOWNLOAD_URL).replace(/[<>"']/g, '');
+    return '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+      + '<meta name="referrer" content="no-referrer"><title>Convite de amigo · Tela P2P</title>'
+      + '<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0B0D10;color:#D7DCE3;font:16px/1.5 system-ui,sans-serif}'
+      + 'main{width:min(420px,90vw);padding:28px;border:1px solid #232932;border-radius:14px;background:#13161B;text-align:center}'
+      + 'h1{font-size:22px;margin:0 0 8px}p{color:#9A9EA4;margin:0 0 20px}a{display:block;padding:12px;border-radius:10px;margin-top:10px;text-decoration:none;font-weight:600}'
+      + '.p{background:#7FA3C7;color:#0B0D10}.s{border:1px solid #3E444D;color:#D7DCE3}</style></head><body><main>'
+      + '<h1>Você recebeu um convite de amigo</h1><p>Abra no Tela P2P para aceitar.</p>'
+      + '<a class="p" href="telap2p://amigo/' + token + '">Abrir no Tela P2P</a>'
+      + '<a class="s" href="' + download + '">Baixar o Tela P2P</a></main></body></html>';
+  };
   const canViewNetwork = (network, userId) => network.ownerId === userId || isMember(network.id, userId)
     || network.visibility === 'public' || (network.visibility === 'friends' && friendshipExists(network.ownerId, userId));
   const requireOwner = (network, userId) => {
@@ -187,6 +313,17 @@ function createApiServer(options = {}) {
       catch { throw new ApiError(400, 'invalid_path', 'Endereço da requisição inválido.'); }
       const method = req.method || 'GET';
       if (control.serveAdmin(req, res, pathname)) return;
+
+      // Página de abertura do convite de amigo: sem login, sem consultar o banco (não confirma se o link existe) e sem script
+      const linkPage = method === 'GET' ? /^\/a\/([A-Za-z0-9_-]{20,120})$/.exec(pathname) : null;
+      if (linkPage) {
+        res.writeHead(200, {
+          'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer',
+          'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+        });
+        return res.end(friendLinkPage(linkPage[1]));
+      }
+      if (method === 'GET' && pathname.startsWith('/a/')) throw new ApiError(404, 'not_found', 'Página não encontrada.');
 
       if (method === 'GET' && pathname === '/v1/health') return send(res, 200, { ok: true, service: 'razze-api', stun: stunServer?.address() ? { port: stunServer.address().port, protocol: 'udp' } : null });
 
@@ -231,6 +368,66 @@ function createApiServer(options = {}) {
         return send(res, 200, { user: publicUser(user.id), accessToken: issueToken(user.id) });
       }
 
+      if (method === 'GET' && pathname === '/v1/auth/google/config') return send(res, 200, { enabled: !!googleClientId(), clientId: googleClientId() });
+      if (method === 'POST' && pathname === '/v1/auth/google') {
+        const failed = enforceAuthLimit(req, 'google', 10, 10 * 60 * 1000);
+        const body = await readBody(req);
+        let identity;
+        try { identity = await googleIdentity(body); } catch (error) { if (error.status !== 503) failed(); throw error; }
+        let user = db.prepare('SELECT id, status FROM users WHERE google_sub = ?').get(identity.sub);
+        if (!user) {
+          if (db.prepare('SELECT 1 AS yes FROM users WHERE email = ?').get(identity.email)) {
+            // Não junta sozinho: quem criou a conta com esse e-mail pode não ser o dono dele. Entra com a senha e vincula.
+            throw new ApiError(409, 'account_exists', 'Já existe uma conta com o e-mail ' + identity.email + '. Entre com a senha e vincule o Google em Conta.');
+          }
+          if (!control.settings().registrationOpen) throw new ApiError(403, 'registration_closed', 'Novos cadastros estão desativados.');
+          const id = newId();
+          const salt = randomBytes(16).toString('hex');
+          const unusable = randomBytes(32).toString('hex'); // senha que ninguém conhece: a conta só entra pelo Google até definir uma
+          const displayName = (identity.name.replace(/\s+/g, ' ').trim() || identity.email.split('@')[0]).slice(0, 60) || 'Usuário';
+          const requiresApproval = control.settings().requireApproval;
+          db.prepare('INSERT INTO users(id, email, display_name, password_salt, password_hash, status, google_sub, password_set, created_at) VALUES(?, ?, ?, ?, ?, ?, ?, 0, ?)')
+            .run(id, identity.email, displayName, salt, await hashPassword(unusable, salt), requiresApproval ? 'pending' : 'active', identity.sub, now());
+          if (requiresApproval) return send(res, 202, { user: publicUser(id), status: 'pending_approval' });
+          return send(res, 201, { user: publicUser(id), status: 'active', accessToken: issueToken(id) });
+        }
+        if (user.status === 'pending') throw new ApiError(403, 'account_pending', 'Sua conta aguarda aprovação do servidor.');
+        if (user.status !== 'active') throw new ApiError(403, 'account_disabled', 'Esta conta está desativada.');
+        return send(res, 200, { user: publicUser(user.id), accessToken: issueToken(user.id) });
+      }
+
+      // Esqueci a senha: o administrador gera um código de uso único (válido por 1 h) e a pessoa define a senha nova com ele
+      if (method === 'POST' && pathname === '/v1/auth/reset') {
+        const failed = enforceAuthLimit(req, 'reset', 10, 15 * 60 * 1000);
+        const body = await readBody(req);
+        const email = assertText(body.email, 'E-mail', 3, 254).toLowerCase();
+        const code = String(body.code ?? '').replace(/[\s-]/g, '').toUpperCase();
+        const password = assertText(body.password, 'Senha', 8, 200);
+        const user = db.prepare("SELECT id FROM users WHERE email = ? AND status = 'active'").get(email);
+        const row = user ? db.prepare('SELECT code_hash AS codeHash, expires_at AS expiresAt, attempts FROM password_resets WHERE user_id = ?').get(user.id) : null;
+        const invalid = () => { failed(); return new ApiError(400, 'reset_invalid', 'Código inválido ou expirado. Peça outro ao administrador.'); };
+        if (!row || row.expiresAt <= now() || row.attempts >= RESET_MAX_ATTEMPTS) {
+          if (row) db.prepare('DELETE FROM password_resets WHERE user_id = ?').run(user.id);
+          throw invalid();
+        }
+        const given = Buffer.from(hash(code), 'hex');
+        const wanted = Buffer.from(row.codeHash, 'hex');
+        if (given.length !== wanted.length || !timingSafeEqual(given, wanted)) {
+          db.prepare('UPDATE password_resets SET attempts = attempts + 1 WHERE user_id = ?').run(user.id);
+          throw invalid();
+        }
+        const salt = randomBytes(16).toString('hex');
+        const passwordHash = await hashPassword(password, salt);
+        db.exec('BEGIN IMMEDIATE');
+        try {
+          db.prepare('UPDATE users SET password_salt = ?, password_hash = ?, password_set = 1 WHERE id = ?').run(salt, passwordHash, user.id);
+          db.prepare('DELETE FROM password_resets WHERE user_id = ?').run(user.id);
+          db.prepare('DELETE FROM sessions WHERE user_id = ?').run(user.id);
+          db.exec('COMMIT');
+        } catch (error) { db.exec('ROLLBACK'); throw error; }
+        return send(res, 200, { ok: true });
+      }
+
       if (pathname.startsWith('/v1/admin/')) return await control.handleAdmin(req, res, pathname);
 
       if (method === 'POST' && pathname === '/v1/invites/accept') {
@@ -261,6 +458,63 @@ function createApiServer(options = {}) {
         return send(res, 200, { rooms: control.rooms(userId, networkId), internet: control.friendRooms(userId) });
       }
       if (method === 'GET' && pathname === '/v1/me') return send(res, 200, { user: publicUser(userId) });
+      if (method === 'PATCH' && pathname === '/v1/me') {
+        const body = await readBody(req);
+        if (!Object.keys(body).length || Object.keys(body).some((k) => k !== 'bio')) throw new ApiError(400, 'invalid_input', 'Só a frase do perfil (bio) pode ser alterada aqui.');
+        db.prepare('UPDATE users SET bio = ? WHERE id = ?').run(cleanBio(body.bio), userId);
+        return send(res, 200, { user: publicUser(userId) });
+      }
+      if (method === 'PUT' && pathname === '/v1/me/activity') {
+        const timestamp = now();
+        let rate = activityRate.get(userId);
+        if (!rate || rate.resetAt <= timestamp) rate = { count: 0, resetAt: timestamp + 60_000 };
+        if (++rate.count > 12) throw new ApiError(429, 'rate_limited', 'Muitas atualizações de atividade. Aguarde um pouco.');
+        activityRate.set(userId, rate);
+        const body = await readBody(req);
+        if (Object.keys(body).some((k) => !['game', 'artist', 'title'].includes(k))) throw new ApiError(400, 'invalid_input', 'Campos de atividade inválidos.');
+        const game = cleanActivity(body.game, 'Jogo');
+        const artist = cleanActivity(body.artist, 'Artista');
+        const title = cleanActivity(body.title, 'Faixa');
+        if (!game && !artist && !title) db.prepare('DELETE FROM user_activity WHERE user_id = ?').run(userId);
+        else db.prepare('INSERT INTO user_activity(user_id, game, artist, title, updated_at) VALUES(?, ?, ?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET game=excluded.game, artist=excluded.artist, title=excluded.title, updated_at=excluded.updated_at').run(userId, game, artist, title, timestamp);
+        return send(res, 200, { ok: true });
+      }
+      if (method === 'POST' && pathname === '/v1/me/google') {
+        const failed = enforceAuthLimit(req, 'google', 10, 10 * 60 * 1000);
+        const body = await readBody(req);
+        let identity;
+        try { identity = await googleIdentity(body); } catch (error) { if (error.status !== 503) failed(); throw error; }
+        const other = db.prepare('SELECT id FROM users WHERE google_sub = ? AND id <> ?').get(identity.sub, userId);
+        if (other) throw new ApiError(409, 'google_taken', 'Essa conta do Google já está ligada a outra conta.');
+        db.prepare('UPDATE users SET google_sub = ? WHERE id = ?').run(identity.sub, userId);
+        return send(res, 200, { user: publicUser(userId) });
+      }
+      if (method === 'DELETE' && pathname === '/v1/me/google') {
+        const u = db.prepare('SELECT google_sub AS googleSub, password_set AS passwordSet FROM users WHERE id = ?').get(userId);
+        if (!u.googleSub) return send(res, 200, { user: publicUser(userId) });
+        if (!u.passwordSet) throw new ApiError(400, 'no_password', 'Defina uma senha antes de desvincular o Google, senão você perde o acesso.');
+        db.prepare('UPDATE users SET google_sub = NULL WHERE id = ?').run(userId);
+        return send(res, 200, { user: publicUser(userId) });
+      }
+      if (method === 'POST' && pathname === '/v1/me/password') {
+        const failed = enforceAuthLimit(req, 'password', 10, 15 * 60 * 1000);
+        const body = await readBody(req);
+        const next = assertText(body.newPassword, 'Senha nova', 8, 200);
+        const user = db.prepare('SELECT id, password_set AS passwordSet, password_salt AS salt, password_hash AS passwordHash FROM users WHERE id = ?').get(userId);
+        if (user.passwordSet) { // quem só entra pelo Google (sem senha ainda) define a primeira sem a atual
+          const current = assertText(body.currentPassword, 'Senha atual', 1, 200);
+          if (!(await samePassword(user, current))) { failed(); throw new ApiError(401, 'invalid_credentials', 'A senha atual está incorreta.'); }
+        }
+        const salt = randomBytes(16).toString('hex');
+        const passwordHash = await hashPassword(next, salt);
+        db.exec('BEGIN IMMEDIATE');
+        try {
+          db.prepare('UPDATE users SET password_salt = ?, password_hash = ?, password_set = 1 WHERE id = ?').run(salt, passwordHash, userId);
+          db.prepare('DELETE FROM sessions WHERE user_id = ? AND token_hash <> ?').run(userId, req.authSessionHash);
+          db.exec('COMMIT');
+        } catch (error) { db.exec('ROLLBACK'); throw error; }
+        return send(res, 200, { ok: true });
+      }
       if (method === 'POST' && pathname === '/v1/auth/logout') {
         const token = /^Bearer ([A-Za-z0-9_-]{30,})$/.exec(String(req.headers.authorization || ''))?.[1];
         if (token) db.prepare('DELETE FROM sessions WHERE token_hash = ?').run(hash(token));
@@ -269,9 +523,9 @@ function createApiServer(options = {}) {
 
       if (method === 'GET' && pathname === '/v1/friends') {
         const rows = db.prepare(
-          "SELECT DISTINCT u.id, u.email, u.display_name AS displayName, k.public_key AS dmKey FROM friend_requests f JOIN users u ON (u.id = f.sender_id AND f.receiver_id = ?) OR (u.id = f.receiver_id AND f.sender_id = ?) LEFT JOIN dm_keys k ON k.user_id = u.id WHERE f.status = 'accepted' ORDER BY u.display_name COLLATE NOCASE"
+          "SELECT DISTINCT u.id, u.email, u.display_name AS displayName, u.bio AS bio, k.public_key AS dmKey FROM friend_requests f JOIN users u ON (u.id = f.sender_id AND f.receiver_id = ?) OR (u.id = f.receiver_id AND f.sender_id = ?) LEFT JOIN dm_keys k ON k.user_id = u.id WHERE f.status = 'accepted' ORDER BY u.display_name COLLATE NOCASE"
         ).all(userId, userId);
-        return send(res, 200, { friends: control.enrichUsers(rows.map((r) => ({ ...r, dmKey: r.dmKey || null }))) });
+        return send(res, 200, { friends: control.enrichUsers(rows.map((r) => ({ ...r, dmKey: r.dmKey || null, activity: activityOf(r.id) }))) });
       }
       // Chave pública das mensagens criptografadas (a privada nunca sai do PC); os amigos recebem em /v1/friends
       if (method === 'PUT' && pathname === '/v1/me/dm-key') {
@@ -333,6 +587,62 @@ function createApiServer(options = {}) {
         db.prepare("DELETE FROM friend_requests WHERE status = 'accepted' AND ((sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?))")
           .run(userId, match[1], match[1], userId);
         return send(res, 200, { ok: true });
+      }
+
+      // Links de amigo: criar, listar, revogar, ver quem convidou e aceitar
+      if (method === 'POST' && pathname === '/v1/friends/links') {
+        db.prepare('DELETE FROM friend_links WHERE expires_at < ?').run(now() - 30 * 24 * 60 * 60 * 1000);
+        const active = db.prepare('SELECT COUNT(*) AS n FROM friend_links WHERE user_id = ? AND revoked = 0 AND expires_at > ? AND uses < max_uses').get(userId, now()).n;
+        if (active >= FRIEND_LINK_MAX_ACTIVE) throw new ApiError(409, 'too_many_links', 'Você já tem ' + FRIEND_LINK_MAX_ACTIVE + ' links ativos. Revogue algum antes de criar outro.');
+        const token = randomBytes(24).toString('base64url');
+        const code = newFriendCode();
+        const id = newId();
+        const createdAt = now();
+        db.prepare('INSERT INTO friend_links(id, user_id, token_hash, code_hash, expires_at, max_uses, created_at) VALUES(?, ?, ?, ?, ?, 1, ?)')
+          .run(id, userId, hash(token), hash(code), createdAt + FRIEND_LINK_TTL_MS, createdAt);
+        const base = publicBase(req);
+        return send(res, 201, {
+          id, token, code: code.slice(0, 4) + '-' + code.slice(4, 8) + '-' + code.slice(8), expiresAt: createdAt + FRIEND_LINK_TTL_MS, maxUses: 1,
+          url: base ? base + '/a/' + token : '', appLink: 'telap2p://amigo/' + token
+        });
+      }
+      if (method === 'GET' && pathname === '/v1/friends/links') {
+        return send(res, 200, { links: db.prepare('SELECT id, expires_at AS expiresAt, max_uses AS maxUses, uses, created_at AS createdAt FROM friend_links WHERE user_id = ? AND revoked = 0 AND expires_at > ? AND uses < max_uses ORDER BY created_at DESC').all(userId, now()) });
+      }
+      let linkMatch = /^\/v1\/friends\/links\/([a-f0-9]{32})$/.exec(pathname);
+      if (method === 'DELETE' && linkMatch) {
+        const result = db.prepare('UPDATE friend_links SET revoked = 1 WHERE id = ? AND user_id = ?').run(linkMatch[1], userId);
+        if (!result.changes) throw new ApiError(404, 'link_not_found', 'Link não encontrado.');
+        return send(res, 200, { ok: true });
+      }
+      if (method === 'GET' && pathname === '/v1/friends/links/preview') {
+        const fail = enforceAuthLimit(req, 'friendlink', 30, 10 * 60 * 1000);
+        const link = friendLinkRow(friendLinkKey(new URL(req.url, 'http://localhost').searchParams.get('token')));
+        if (!link || link.revoked || link.expiresAt <= now()) { fail(); throw new ApiError(404, 'link_invalid', 'Este convite expirou ou não está mais disponível.'); }
+        const owner = publicUser(link.userId);
+        const already = friendshipExists(userId, link.userId);
+        if (!already && link.uses >= link.maxUses) { fail(); throw new ApiError(404, 'link_invalid', 'Este convite expirou ou não está mais disponível.'); }
+        return send(res, 200, { displayName: owner.displayName, own: link.userId === userId, alreadyFriends: already });
+      }
+      if (method === 'POST' && pathname === '/v1/friends/links/accept') {
+        const fail = enforceAuthLimit(req, 'friendlink', 30, 10 * 60 * 1000);
+        const body = await readBody(req);
+        const key = friendLinkKey(body.token);
+        db.exec('BEGIN IMMEDIATE');
+        try {
+          const link = friendLinkRow(key);
+          const owner = link ? db.prepare("SELECT id, display_name AS displayName FROM users WHERE id = ? AND status = 'active'").get(link.userId) : null;
+          if (!link || !owner || link.revoked || link.expiresAt <= now()) { fail(); throw new ApiError(404, 'link_invalid', 'Este convite expirou ou não está mais disponível.'); }
+          if (owner.id === userId) throw new ApiError(400, 'own_link', 'Este é o seu próprio convite. Mande para um amigo.');
+          if (!friendshipExists(userId, owner.id)) {
+            if (link.uses >= link.maxUses) { fail(); throw new ApiError(404, 'link_invalid', 'Este convite expirou ou não está mais disponível.'); }
+            db.prepare("DELETE FROM friend_requests WHERE status = 'pending' AND ((sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?))").run(userId, owner.id, owner.id, userId);
+            db.prepare('INSERT INTO friend_requests(id, sender_id, receiver_id, status, created_at) VALUES(?, ?, ?, ?, ?)').run(newId(), owner.id, userId, 'accepted', now());
+            db.prepare('UPDATE friend_links SET uses = uses + 1 WHERE id = ?').run(link.id);
+          }
+          db.exec('COMMIT');
+          return send(res, 200, { status: 'accepted', friend: { id: owner.id, displayName: owner.displayName } });
+        } catch (error) { db.exec('ROLLBACK'); throw error; }
       }
 
       // Mensagens diretas: mandar só para amigos; buscar as novas pelo número de sequência (after)

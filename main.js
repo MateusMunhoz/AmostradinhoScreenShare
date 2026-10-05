@@ -10,6 +10,7 @@ const {
   videoCapCommand, startAppAudio, stopAppAudio,
 } = require('./main/nativos');
 const { janelas } = require('./main/contexto');
+const { lerAtividade } = require('./main/atividade');
 const { pips, livePip, freeSlot, pipBounds, setPipSize, setPipGroup, setPipOpacity, setPipEdit, setupPip } = require('./main/janela-flutuante');
 const { chatBounds, setupChatOverlay, chatComposeRequest } = require('./main/chat-jogo');
 const { keys, setShortcut, setRoomKeys, setPtt, setVoiceCmdKey } = require('./main/atalhos');
@@ -40,14 +41,17 @@ const razzePresence = createPresence({
 });
 
 let pendingRazzeInvite = '';
+let pendingFriendLink = '';
+// Links do app: telap2p://invite/<token> (rede Razze) e telap2p://amigo/<token> (convite de amigo, docs/spec/convite-por-link.md)
 function consumeRazzeInvite(value) {
   let parsed;
   try { parsed = new URL(String(value || '')); } catch { return false; }
-  if (parsed.protocol !== 'telap2p:' || parsed.hostname !== 'invite') return false;
+  if (parsed.protocol !== 'telap2p:' || !['invite', 'amigo'].includes(parsed.hostname)) return false;
   const token = parsed.pathname.replace(/^\//, '');
   if (!/^[A-Za-z0-9_-]{20,120}$/.test(token)) return false;
-  pendingRazzeInvite = token;
-  if (janelas.main && !janelas.main.isDestroyed()) janelas.main.webContents.send('razze-invite', token);
+  const friend = parsed.hostname === 'amigo';
+  if (friend) pendingFriendLink = token; else pendingRazzeInvite = token;
+  if (janelas.main && !janelas.main.isDestroyed()) janelas.main.webContents.send(friend ? 'razze-friend-link' : 'razze-invite', token);
   return true;
 }
 function showMainWindow() {
@@ -392,6 +396,7 @@ if (hasSingleInstance) app.whenReady().then(() => {
   ipcMain.handle('copy-text', (_e, text) => { clipboard.writeText(String(text || '').slice(0, 4096)); return true; });
   ipcMain.handle('razze-state', () => razze.state());
   ipcMain.handle('razze-pending-invite', () => { const token = pendingRazzeInvite; pendingRazzeInvite = ''; return token; });
+  ipcMain.handle('razze-pending-friend-link', () => { const token = pendingFriendLink; pendingFriendLink = ''; return token; });
   ipcMain.handle('razze-configure', async (_e, url) => {
     const { RazzeApiClient } = require('./main/razze-api-client');
     const normalized = new RazzeApiClient(String(url || '')).baseUrl;
@@ -430,6 +435,22 @@ if (hasSingleInstance) app.whenReady().then(() => {
   ipcMain.handle('razze-accept-friend', (_e, id) => razze.acceptFriendRequest(String(id || '')));
   ipcMain.handle('razze-cancel-friend-request', (_e, id) => razze.cancelFriendRequest(String(id || '')));
   ipcMain.handle('razze-remove-friend', (_e, id) => razze.removeFriend(String(id || '')));
+  const abrirGoogle = (url) => { if (!String(url).startsWith('https://accounts.google.com/o/oauth2/')) throw new Error('Endereço não permitido.'); return shell.openExternal(url); };
+  ipcMain.handle('razze-google-config', () => razze.googleConfig());
+  ipcMain.handle('razze-google-login', () => razze.googleLogin(abrirGoogle));
+  ipcMain.handle('razze-google-link', () => razze.googleLink(abrirGoogle));
+  ipcMain.handle('razze-google-unlink', () => razze.googleUnlink());
+  ipcMain.handle('razze-change-password', (_e, current, next) => razze.changePassword(String(current || '').slice(0, 200), String(next || '').slice(0, 200)));
+  ipcMain.handle('razze-reset-password', (_e, email, code, password) => razze.resetPassword(String(email || '').slice(0, 254), String(code || '').slice(0, 20), String(password || '').slice(0, 200)));
+  // Atividade no perfil: só lê o que a página pediu (jogo e/ou Spotify) e devolve o nome do jogo e a faixa
+  ipcMain.handle('atividade-ler', (_e, opcoes) => lerAtividade({ jogos: !!opcoes?.jogos, musica: !!opcoes?.musica }));
+  ipcMain.handle('razze-set-activity', (_e, a) => razze.setActivity({ game: String(a?.game || '').slice(0, 200), artist: String(a?.artist || '').slice(0, 200), title: String(a?.title || '').slice(0, 200) }));
+  ipcMain.handle('razze-set-bio', (_e, bio) => razze.setBio(String(bio || '').slice(0, 400)));
+  ipcMain.handle('razze-friend-link-create', () => razze.friendLinkCreate());
+  ipcMain.handle('razze-friend-link-list', () => razze.friendLinkList());
+  ipcMain.handle('razze-friend-link-revoke', (_e, id) => razze.friendLinkRevoke(String(id || '')));
+  ipcMain.handle('razze-friend-link-preview', (_e, token) => razze.friendLinkPreview(String(token || '').slice(0, 200)));
+  ipcMain.handle('razze-friend-link-accept', (_e, token) => razze.friendLinkAccept(String(token || '').slice(0, 200)));
   // Mensagens diretas: cifradas aqui antes de ir para a RazzeAPI e decifradas ao chegar (main/mensagens-cripto.js)
   ipcMain.handle('razze-send-message', (_e, to, text) => dmE2E.send(String(to || ''), String(text || '')));
   ipcMain.handle('razze-messages', (_e, after) => dmE2E.messages(Number(after) || 0));

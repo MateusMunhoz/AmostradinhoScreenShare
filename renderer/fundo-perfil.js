@@ -166,6 +166,7 @@ async function setMyProfileBg(file) {
 function removeMyProfileBg() {
   fundos.mine = null;
   save('fundoPerfil', 'null');
+  recorteApagar('fundoOrigem');
   renderMyProfileBg();
 }
 function renderMyProfileBg() {
@@ -175,6 +176,7 @@ function renderMyProfileBg() {
   $('profileBgPreview').style.backgroundImage = url ? `url("${url}")` : '';
   $('profileBgPreview').style.setProperty('--person', personColor(null));
   $('profileBgRemove').hidden = !fundos.mine;
+  $('profileBgAdjust').hidden = !fundos.mine || !recorteTem('fundoOrigem');
   $('profileBgPick').textContent = fundos.mine ? 'Trocar' : 'Escolher';
   $('profileBgPickTop').querySelector('span').textContent = fundos.mine ? 'Trocar fundo' : 'Escolher fundo';
   if (typeof skyFocusId !== 'undefined' && skyFocusId === state.myId) fundoChanged(skyFocusId);
@@ -185,8 +187,10 @@ function setupProfileBg() {
     const file = $('profileBgFile').files[0];
     $('profileBgFile').value = '';
     if (!file) return;
-    try { await setMyProfileBg(file); }
-    catch (e) {
+    try {
+      if (/gif/i.test(file.type)) { await setMyProfileBg(file); recorteApagar('fundoOrigem'); } // GIF não corta: fica animado
+      else await ajustarFundo(file);
+    } catch (e) {
       toast(e.message === 'grande' ? 'Este GIF é grande demais (máx. 1 MB). Tente um menor ou mais curto.'
         : e.message === 'lado' ? 'Este GIF é grande demais (máx. 1024 px de lado).'
         : e.message === 'espaco' ? 'Não sobrou espaço para guardar esse fundo neste PC.'

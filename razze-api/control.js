@@ -2,7 +2,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const { timingSafeEqual } = require('node:crypto');
+const { randomBytes, timingSafeEqual } = require('node:crypto');
 
 // Administração e presença compartilham a autenticação da API, sem depender do Electron.
 function createControl({ db, options, now, hash, requireUser, readBody, send, ApiError, isMember, friendshipExists = () => false }) {
@@ -236,7 +236,7 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
       }
     }
     if (method === 'GET' && pathname === '/v1/admin/users') return result({ users: enrichUsers(db.prepare('SELECT id, email, display_name AS displayName, status, role, ban_reason AS banReason, created_at AS createdAt FROM users ORDER BY created_at DESC').all()) });
-    const target = /^\/v1\/admin\/users\/([a-f0-9]{32})(?:\/(approve|revoke-sessions))?$/.exec(pathname);
+    const target = /^\/v1\/admin\/users\/([a-f0-9]{32})(?:\/(approve|revoke-sessions|reset-code))?$/.exec(pathname);
     if (target) {
       const previous = user(target[1]);
       if (!previous) throw new ApiError(404, 'not_found', 'Usuário não encontrado.');
@@ -244,6 +244,18 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
         if (previous.status !== 'pending') throw new ApiError(404, 'pending_user_not_found', 'Conta pendente não encontrada.');
         transaction(() => { db.prepare("UPDATE users SET status='active' WHERE id=?").run(previous.id); audit(actor, 'user.approve', previous.id); });
         return result({ user: user(previous.id), status: 'active' });
+      }
+      if (method === 'POST' && target[2] === 'reset-code') {
+        if (previous.status !== 'active') throw new ApiError(400, 'invalid_user', 'Só contas ativas podem redefinir a senha.');
+        const alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // 31 símbolos, sem 0/O/1/I/L
+        let code = '';
+        while (code.length < 8) { const [x] = randomBytes(1); if (x < 248) code += alphabet[x % alphabet.length]; }
+        const expiresAt = now() + 60 * 60 * 1000;
+        transaction(() => {
+          db.prepare('INSERT INTO password_resets(user_id, code_hash, expires_at, attempts) VALUES(?, ?, ?, 0) ON CONFLICT(user_id) DO UPDATE SET code_hash=excluded.code_hash, expires_at=excluded.expires_at, attempts=0').run(previous.id, hash(code), expiresAt);
+          audit(actor, 'user.reset-code', previous.id);
+        });
+        return result({ code: code.slice(0, 4) + '-' + code.slice(4), expiresAt });
       }
       if (method === 'POST' && target[2] === 'revoke-sessions') {
         transaction(() => {

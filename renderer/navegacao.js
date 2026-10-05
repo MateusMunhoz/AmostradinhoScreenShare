@@ -284,8 +284,8 @@ function renderHomeCall() {
   $('navBackUnread').textContent = unread > 99 ? '99+' : String(unread);
   $('navBackToRoom').title = $('navBackToRoom').ariaLabel = unread ? `Voltar para a sala · ${unread} ${unread === 1 ? 'mensagem nova' : 'mensagens novas'}` : 'Voltar para a sala';
   // Numa sala: criar ou entrar em outra fica bloqueado (sairia desta sem querer)
-  for (const id of ['goCreate', 'goJoin', 'rejoinBtn']) $(id).disabled = inCall;
-  $('goCreate').title = $('goJoin').title = inCall ? 'Você já está numa sala: volte para ela e saia antes' : '';
+  for (const id of ['goQuick', 'goCreate', 'goJoin', 'rejoinBtn']) $(id).disabled = inCall;
+  $('goQuick').title = $('goCreate').title = $('goJoin').title = inCall ? 'Você já está numa sala: volte para ela e saia antes' : '';
   if (!inCall) return;
   const host = state.hostId === state.myId ? 'você' : nameOf(state.hostId);
   $('homeCallTitle').textContent = host === 'você' ? 'Sua sala' : `Sala de ${host}`;

@@ -67,7 +67,7 @@ $('profilePhotoFile').onchange = async () => {
   const file = $('profilePhotoFile').files[0];
   $('profilePhotoFile').value = '';
   if (!file) return;
-  try { await setMyPhoto(file); } catch { toast('Não deu para abrir essa imagem. Escolha uma foto (JPG, PNG, WebP...).', 'error'); }
+  try { await ajustarFoto(file); } catch { toast('Não deu para abrir essa imagem. Escolha uma foto (JPG, PNG, WebP...).', 'error'); }
 };
 $('profilePhotoRemove').onclick = removeMyPhoto;
 for (const b of $('profilePhotoFit').querySelectorAll('[data-fit]')) b.onclick = () => setPhotoFit(b.dataset.fit);
@@ -243,6 +243,7 @@ function renderLastRoom() {
 function renderHome() {
   renderRadmin();
   renderLastRoom();
+  renderHomeAmigos();
 }
 
 function setJoinOpen(open) {
@@ -277,6 +278,9 @@ setInterval(checkGithubSoon, 60 * 1000);
 window.addEventListener('focus', checkGithubSoon);
 
 $('goCreate').onclick = () => show('create-room');
+setupRecorte(); // editor de recorte da foto e do fundo (renderer/recorte.js)
+setupConta(); // senha e frase do perfil (renderer/conta.js)
+setupPrimeiraEntrada(); // primeira entrada e amigos no Início (renderer/primeira-entrada.js)
 $('goJoin').onclick = () => setJoinOpen(true);
 $('cancelJoin').onclick = () => setJoinOpen(false);
 $('rejoinBtn').onclick = () => {

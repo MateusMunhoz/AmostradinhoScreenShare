@@ -153,6 +153,7 @@ function setFriendsData(value) {
   friendsData.incoming = value.incoming || [];
   friendsData.outgoing = value.outgoing || [];
   renderHub();
+  if (typeof renderHomeAmigos === 'function') renderHomeAmigos();
 }
 // A presença chega a cada poucos segundos (conectividade.js): só troca o online de quem já está na lista
 function updateFriendsPresence(live) {
@@ -170,13 +171,13 @@ function setFriendsAddOpen(on) {
   $('friendsSearchRow').hidden = !!on;
   $('friendsAddOpen').setAttribute('aria-expanded', String(!!on));
   showFriendsAddError('');
-  if (on) $('razzeFriendNickname').focus();
+  if (on) { $('razzeFriendNickname').focus(); if (typeof renderLinksAmigo === 'function') void renderLinksAmigo(); }
   else { $('razzeFriendNickname').value = ''; $('friendsAddOpen').focus(); }
 }
 // Erro do envio aparece embaixo do campo (vazio = sem erro)
 function showFriendsAddError(text) {
   const hint = $('friendsAddHint');
-  hint.textContent = text || 'Digite o nickname exato. A pessoa recebe um pedido e aparece aqui quando aceitar.';
+  hint.textContent = text || 'Digite o nickname exato, ou cole um link ou código de convite (ABCD-EFGH-JK). A pessoa recebe um pedido e aparece aqui quando aceitar.';
   hint.classList.toggle('erro', !!text);
   hint.setAttribute('role', text ? 'alert' : 'note');
   $('razzeFriendNickname').setAttribute('aria-invalid', String(!!text));

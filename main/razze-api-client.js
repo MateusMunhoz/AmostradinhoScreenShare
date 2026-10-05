@@ -60,6 +60,19 @@ class RazzeApiClient {
   acceptFriendRequest(id) { return this.request('POST', '/v1/friends/requests/' + encodeURIComponent(id) + '/accept'); }
   cancelFriendRequest(id) { return this.request('DELETE', '/v1/friends/requests/' + encodeURIComponent(id)); }
   removeFriend(id) { return this.request('DELETE', '/v1/friends/' + encodeURIComponent(id)); }
+  googleConfig() { return this.request('GET', '/v1/auth/google/config'); }
+  googleLogin(login) { return this.request('POST', '/v1/auth/google', login); }
+  googleLink(login) { return this.request('POST', '/v1/me/google', login); }
+  googleUnlink() { return this.request('DELETE', '/v1/me/google'); }
+  changePassword(currentPassword, newPassword) { return this.request('POST', '/v1/me/password', { currentPassword, newPassword }); }
+  resetPassword(email, code, password) { return this.request('POST', '/v1/auth/reset', { email, code, password }); }
+  setActivity(activity) { return this.request('PUT', '/v1/me/activity', activity); }
+  setBio(bio) { return this.request('PATCH', '/v1/me', { bio }); }
+  friendLinkCreate() { return this.request('POST', '/v1/friends/links'); }
+  friendLinkList() { return this.request('GET', '/v1/friends/links'); }
+  friendLinkRevoke(id) { return this.request('DELETE', '/v1/friends/links/' + encodeURIComponent(id)); }
+  friendLinkPreview(token) { return this.request('GET', '/v1/friends/links/preview?token=' + encodeURIComponent(token)); }
+  friendLinkAccept(token) { return this.request('POST', '/v1/friends/links/accept', { token }); }
   sendMessage(to, text) { return this.request('POST', '/v1/messages', { to, text }); }
   sendSignal(to, text) { return this.request('POST', '/v1/signals', { to, text }); }
   signals() { return this.request('GET', '/v1/signals'); }

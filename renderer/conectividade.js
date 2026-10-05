@@ -205,6 +205,7 @@ async function loadRazzeState() {
     if (!state.authenticated) { if (selectedNetworkProvider() === 'razze') setNetSummary(false, 'Razze: servidor ok. Entre ou crie sua conta logo abaixo.'); return; }
     const { user } = await window.api.razzeMe();
     razzeUser = user;
+    if (typeof syncBioComConta === 'function') syncBioComConta(user); // a frase do perfil (renderer/conta.js)
     if (user?.id) void dmStart(user.id); // mensagens diretas desta conta (renderer/mensagens.js)
     $('razzeAccountName').textContent = user?.displayName || user?.email || 'Conta Razze';
     $('razzeAccountEmail').textContent = user?.displayName ? user.email || '' : '';
@@ -543,6 +544,7 @@ function setupConnectivitySettings() {
       $('razzePassword').value = '';
       setRazzeStatus('Você entrou na sua conta.');
       await refreshRazzeState();
+      void retomarConviteAmigo(); // convite de amigo que estava esperando a conta
     } catch (error) { setRazzeStatus('Não foi possível entrar: ' + error.message); }
     finally { $('razzeLogin').disabled = false; }
   };
@@ -590,6 +592,9 @@ function setupConnectivitySettings() {
   };
   const addFriendByNickname = async (nickname) => {
     if (!nickname.trim()) { $('razzeFriendNickname').focus(); return; }
+    // Link ou código de convite colado no lugar do nickname (renderer/primeira-entrada.js)
+    const convite = amigoTokenDe(nickname);
+    if (convite) { setFriendsAddOpen(false); $('razzeFriendNickname').value = ''; return void receberConviteAmigo(convite); }
     try {
       const result = await window.api.razzeRequestFriend(nickname.trim());
       setFriendsAddOpen(false);
@@ -638,4 +643,7 @@ function setupConnectivitySettings() {
   // Abriu o app já com conta: carrega amigos, mensagens diretas e redes sem esperar a aba Rede ou Amigos
   window.api.razzeState().then((s) => { if (s.configured && s.authenticated) return refreshRazzeState(); }).catch(() => {});
   window.api.razzePendingInvite().then((token) => { if (token) void acceptInviteLink(token); }).catch(() => {});
+  // Convite de amigo (telap2p://amigo/…): chegou com o app aberto ou abriu o app
+  window.api.onFriendLink((token) => { void receberConviteAmigo(token); });
+  window.api.razzePendingFriendLink().then((token) => { if (token) void receberConviteAmigo(token); }).catch(() => {});
 }

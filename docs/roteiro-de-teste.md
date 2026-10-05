@@ -55,6 +55,29 @@ quem estava fazendo e o que aconteceu.
 13. **Sessão oculta.** Crie outra sala com **Mostrar esta sessão** desmarcado. Deve acontecer: ela não
     aparece na lista de ninguém, mas dá para entrar pelo endereço.
 
+## Conta, amigos e perfil (dois PCs, servidor atualizado)
+
+Antes: a RazzeAPI da VPS com o código novo (links de amigo, conta, atividade e, se for testar, o Google).
+
+1. **Primeira entrada.** Apague o `localStorage` do app (ou use uma instalação nova) e abra.
+   Deve acontecer: 3 telas no máximo (como usar, nome e foto, conta); "Sala rápida" cai direto no Início.
+2. **Conta.** No passo 3, crie uma conta e entre (com aprovação ligada, o app avisa e o administrador aprova no painel).
+3. **Link de amigo.** No PC A: **Copiar meu link**. Cole no PC B (com o app fechado e depois aberto).
+   Deve acontecer: B vê "A quer ser seu amigo. Aceitar?"; aceitando, os dois aparecem na lista um do outro. Usar o mesmo link
+   de novo, num terceiro PC, deve recusar. **Revogar** na lista de links cancela o link.
+4. **Código curto.** Gere outro link e, no PC B, cole só o código `ABCD-EFGH-JK` em Adicionar amigo.
+5. **Ligar e Abrir minha sala.** No Início, **Ligar** para o amigo online: ele recebe o convite e entra na voz. **Abrir minha sala**:
+   a sala abre em 1 clique e aparece na lista dos amigos.
+6. **Senha.** Troque a senha em HUB › Rede. Depois: o administrador gera um **Código de senha** no painel e a pessoa usa
+   **Esqueci a senha** na tela de entrar (código vale 1 hora e uma vez).
+7. **Frase e cartão.** Escreva uma frase no perfil. Deve acontecer: o amigo a vê no Início, e quem está na sala a vê ao abrir o seu
+   perfil na voz.
+8. **Foto e fundo.** Escolha uma foto e uma imagem de fundo: o editor abre, arraste e dê zoom; **Ajustar** reabre com o enquadramento.
+9. **Atividade.** Ligue "jogo" e "música", abra um jogo da lista e toque algo no Spotify. Deve acontecer: o amigo vê "Jogando X" e
+   "Ouvindo Y" (clicar mostra a faixa); desligue as caixinhas e some em até 2 minutos.
+10. **Google** (se ligado na VPS). **Entrar com Google** abre o navegador e volta logado. Com um e-mail que já tem conta com senha,
+    deve avisar para entrar com a senha e usar **Vincular Google**.
+
 ## Anotações
 
 | Item | Quem | O que aconteceu |

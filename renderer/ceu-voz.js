@@ -110,7 +110,8 @@ function renderVoiceSky() {
   box.hidden = !show;
   // Só o perfil segurando a caixa (Lista sem céu): ela fica sem altura e sem o céu, só com o cartão solto por cima
   box.classList.toggle('only-profile', !sky0);
-  $('voiceSkyNeb').toggleAttribute('hidden', !map); // svg: sem a propriedade hidden do HTML
+  const radar = document.documentElement.dataset.skin === 'topgun'; // tema Top Gun: o radar no lugar do céu (drawSkyRadar)
+  $('voiceSkyNeb').toggleAttribute('hidden', !map || radar); // svg: sem a propriedade hidden do HTML
   $('skyZoom').hidden = true;
   if (!show) return renderSkyPop();
   const labels = systems.length > 1 || map;
@@ -140,8 +141,11 @@ function renderVoiceSky() {
   // Fora de foco, o céu em cima da lista não é desenhado (redesenha ao voltar; o Mapa segue). O tamanho dele (a
   // caixa e o viewBox) já fica certo: senão ele crescia ao focar e empurrava a lista bem na hora do clique
   if (!map && document.body.classList.contains('app-blurred')) { skyStale = true; return; }
-  drawSkyDust(sky, x0, y0, w, h, map ? 140 : 90);
-  if (map) {
+  // O radar fica centrado em você: no canal onde você está na voz (fora da voz, na Voz geral)
+  const radarAt = pts[Math.max(0, systems.findIndex((s) => s.here))];
+  if (radar) drawSkyRadar(sky, x0, y0, w, h, radarAt, map);
+  else drawSkyDust(sky, x0, y0, w, h, map ? 140 : 90);
+  if (map && !radar) {
     drawSkyDefs(sky);
     drawSkyGalaxy(sky, x0, y0, w, h, pts[0]);
     drawSkyClusters(sky, systems, pts, outer);
@@ -151,6 +155,8 @@ function renderVoiceSky() {
   drawSkyBridges(sky, pts, map ? systems.map((s) => s.ch) : null);
   const now = performance.now() / 1000; // a órbita continua de onde estava quando o céu é redesenhado
   systems.forEach((s, i) => drawSkySystem(sky, s, pts[i], { map, geo, labels, now, outer: outer(s.people.length) }));
+  sky.classList.toggle('radar-live', radar && radarLive());
+  if (radar) pingSkyRadar(sky, radarAt); else syncRadarWatch();
   if (map) {
     skyEv.suns = new Map(systems.map((s, i) => [s.ch, pts[i]]));
     playSkyEvents(sky, systems, pts);
@@ -333,6 +339,92 @@ function drawSkyGalaxy(sky, x0, y0, w, h, [cx, cy]) {
     }
   }
   sky.append(g);
+}
+// Tema Top Gun (styles-topgun.css): no lugar da poeira e da galáxia, uma tela de radar em volta de você (o canal
+// onde você está na voz; fora dela, a Voz geral): anéis de distância (um forte a cada dois), os eixos, os rumos de
+// 10 em 10 graus no terceiro anel (só no mapa, com o número a cada 30) e a varredura girando (uma volta a cada 6 s,
+// continuando de onde estava quando o céu é redesenhado), com o rastro em fatias cada vez mais fracas. Os anéis vão
+// até o canto mais longe do que aparece
+const SKY_SWEEP = 6;
+function drawSkyRadar(sky, x0, y0, w, h, [cx, cy], map) {
+  const R = Math.max(...[[x0, y0], [x0 + w, y0], [x0, y0 + h], [x0 + w, y0 + h]].map(([x, y]) => Math.hypot(x - cx, y - cy)));
+  const step = map ? 40 : 30, g = skyEl('g', { class: 'sky-radar' });
+  const at = (deg, r) => [cx + r * Math.sin(deg * Math.PI / 180), cy - r * Math.cos(deg * Math.PI / 180)]; // 0 = norte, horário
+  for (let k = 1; k * step <= R; k++) g.append(skyEl('circle', { class: 'sky-radar-ring' + (k % 2 ? '' : ' major'), cx: cx.toFixed(1), cy: cy.toFixed(1), r: k * step }));
+  g.append(skyEl('path', { class: 'sky-radar-axis', d: `M${(cx - R).toFixed(1)} ${cy.toFixed(1)}H${(cx + R).toFixed(1)}M${cx.toFixed(1)} ${(cy - R).toFixed(1)}V${(cy + R).toFixed(1)}` }));
+  if (map) {
+    const r = step * 3;
+    for (let deg = 0; deg < 360; deg += 10) {
+      const [ax, ay] = at(deg, r - (deg % 30 ? 2 : 3.5)), [bx, by] = at(deg, r);
+      g.append(skyEl('line', { class: 'sky-radar-tick', x1: ax.toFixed(1), y1: ay.toFixed(1), x2: bx.toFixed(1), y2: by.toFixed(1) }));
+      if (deg % 30) continue;
+      const [tx, ty] = at(deg, r + 5);
+      const t = skyEl('text', { class: 'sky-radar-hdg', x: tx.toFixed(1), y: ty.toFixed(1) });
+      t.textContent = String(deg).padStart(3, '0');
+      g.append(t);
+    }
+  }
+  const now = performance.now() / 1000;
+  const sweep = skyEl('g', { class: 'sky-sweep', style: `transform-origin: ${cx.toFixed(1)}px ${cy.toFixed(1)}px; animation-delay: -${(now % SKY_SWEEP).toFixed(2)}s` });
+  const SLICES = 14, SPAN = 4; // o rastro: 14 fatias de 4 graus atrás da linha
+  for (let i = 0; i < SLICES; i++) {
+    const [ax, ay] = at(-i * SPAN, R), [bx, by] = at(-(i + 1) * SPAN, R);
+    sweep.append(skyEl('path', { class: 'sky-sweep-slice', d: `M${cx.toFixed(1)} ${cy.toFixed(1)}L${bx.toFixed(1)} ${by.toFixed(1)}A${R.toFixed(1)} ${R.toFixed(1)} 0 0 1 ${ax.toFixed(1)} ${ay.toFixed(1)}Z`, style: `fill-opacity: ${(.2 * (1 - i / SLICES) ** 1.6).toFixed(3)}` }));
+  }
+  const [lx, ly] = at(0, R);
+  sweep.append(skyEl('line', { class: 'sky-sweep-line', x1: cx.toFixed(1), y1: cy.toFixed(1), x2: lx.toFixed(1), y2: ly.toFixed(1) }));
+  g.append(sweep);
+  sky.append(g);
+}
+// Contatos no radar: cada pessoa (planeta) e cada subsala (base) acende quando a varredura passa por ela e vai
+// apagando até a próxima volta, como no scope de verdade. Os planetas giram, então um relógio leve (a cada 100 ms,
+// só com o radar à vista, a janela em foco e a varredura girando) lê o ângulo da varredura e onde cada contato está, e
+// acende quem ela acabou de cruzar. Você, quem fala e o seu canal (no meio) ficam sempre acesos (styles-topgun.css).
+// Redesenhou o céu: quem já tinha acendido continua apagando de onde estava (lit guarda quando foi)
+const skyRadar = { timer: 0, last: null, center: null, lit: new Map() };
+const radarKey = (el) => (el.dataset.person ? 'p:' + el.dataset.person : el.dataset.channel !== undefined ? 'c:' + el.dataset.channel : '');
+function radarLive() {
+  return document.documentElement.dataset.skin === 'topgun' && !gamerOn(); // como as órbitas: gira mesmo com "reduzir movimento"
+}
+function pingSkyRadar(sky, center) {
+  skyRadar.center = center;
+  const now = performance.now();
+  for (const el of sky.querySelectorAll('.sky-star[data-person], .sky-sun')) {
+    const at = skyRadar.lit.get(radarKey(el));
+    if (at === undefined || now - at > SKY_SWEEP * 1000) continue;
+    el.classList.add('blip');
+    el.style.animationDelay = `-${((now - at) / 1000).toFixed(2)}s`;
+  }
+  syncRadarWatch();
+}
+function syncRadarWatch() {
+  const sky = $('voiceSky');
+  const on = radarLive() && !$('voiceSkyBox').hidden && !document.hidden && !document.body.classList.contains('app-blurred') && !!sky.querySelector('.sky-sweep');
+  if (on && !skyRadar.timer) { skyRadar.last = null; skyRadar.timer = setInterval(radarTick, 100); }
+  if (!on && skyRadar.timer) { clearInterval(skyRadar.timer); skyRadar.timer = 0; }
+}
+function radarTick() {
+  const sky = $('voiceSky'), sweep = sky.querySelector('.sky-sweep'), ctm = sky.getScreenCTM();
+  if (!sweep || !ctm || !skyRadar.center) return syncRadarWatch();
+  const m = new DOMMatrix(getComputedStyle(sweep).transform);
+  const angle = (Math.atan2(m.b, m.a) * 180 / Math.PI + 360) % 360; // 0 = norte, girando no sentido horário
+  const last = skyRadar.last;
+  skyRadar.last = angle;
+  const span = last === null ? 0 : (angle - last + 360) % 360;
+  if (!span || span > 180) return;
+  const c = new DOMPoint(...skyRadar.center).matrixTransform(ctm), now = performance.now();
+  for (const el of sky.querySelectorAll('.sky-star[data-person], .sky-sun')) {
+    const key = radarKey(el), m2 = el.getScreenCTM();
+    if (!key || !m2) continue;
+    const p = new DOMPoint(0, 0).matrixTransform(m2);
+    const bearing = (Math.atan2(p.x - c.x, c.y - p.y) * 180 / Math.PI + 360) % 360;
+    if ((bearing - last + 360) % 360 > span) continue;
+    skyRadar.lit.set(key, now);
+    el.style.animationDelay = '';
+    el.classList.remove('blip');
+    void el.getBoundingClientRect(); // recomeça a animação de apagar
+    el.classList.add('blip');
+  }
 }
 // Mapa: o núcleo da galáxia e o brilho das estrelas cadentes
 const skyHue = (ch) => (ch ? 1 + skyHash(ch, 3) % 4 : 0); // cor da nebulosa: Voz geral, a de destaque; cada subsala, uma de quatro
@@ -955,10 +1047,11 @@ $('mapPin').onclick = () => setMapPinned(!mapFocus.pinned);
 // Com o Tela P2P fora de foco (no jogo, em outra janela), o céu em cima da lista não é desenhado: some e não
 // redesenha; volta ao focar de novo. Na visão Mapa ele continua desenhando e girando
 let skyStale = false;
-window.addEventListener('blur', () => document.body.classList.add('app-blurred'));
+window.addEventListener('blur', () => { document.body.classList.add('app-blurred'); syncRadarWatch(); });
 window.addEventListener('focus', () => {
   document.body.classList.remove('app-blurred');
   if (skyStale) { skyStale = false; renderVoiceSky(); }
+  syncRadarWatch();
 });
 
 // ---------- Perfil no mapa: clicar num planeta aproxima até a pessoa ----------
@@ -978,6 +1071,7 @@ function openSkyProfile(id, at, from = null) {
   $('skyFocus').hidden = true;
   skyFocusId = id;
   skyFocusKey = '';
+  pedirBio(id); // e pela frase do perfil (renderer/conta.js)
   requestProfileBg(id); // pergunta pelo fundo do perfil dela (pode ter trocado); chega e redesenha sozinho
   if (!from) setMapFocus(true);
   if (!from && !voiceMapOn()) $('voiceSkyBox').hidden = false; // na lista, a caixa do céu pode estar escondida (renderVoiceSky)
@@ -1058,7 +1152,7 @@ function renderSkyProfile() {
   const here = voiceChannelOf(pid);
   const canMove = channels.length > 1 && canDragVoice(pid);
   const bg = profileBgOf(pid); // o fundo do perfil da pessoa (renderer/fundo-perfil.js), se já chegou
-  const key = JSON.stringify([skyFocusFrom, voiceNow, id, name, sharing, state.in.has(id), micOff, deafOn, v?.muted, v?.voice, v?.screen, bg.length, bg.slice(-40), here, canMove, channels.map(channelName), photoHashOf(pid), typeof friendsData === 'object' ? [friendsData.friends.length, friendsData.outgoing.length, friendsData.incoming.length] : 0]);
+  const key = JSON.stringify([skyFocusFrom, voiceNow, id, name, sharing, state.in.has(id), micOff, deafOn, v?.muted, v?.voice, v?.screen, bg.length, bg.slice(-40), here, canMove, channels.map(channelName), photoHashOf(pid), bioDe(pid), typeof friendsData === 'object' ? [friendsData.friends.length, friendsData.outgoing.length, friendsData.incoming.length] : 0]);
   if (key === skyFocusKey && !box.hidden) return placeSkyProfile();
   skyFocusKey = key;
   box.replaceChildren();
@@ -1142,6 +1236,7 @@ function renderSkyProfile() {
   const info = document.createElement('div');
   info.className = 'sky-focus-info';
   info.append(where, title);
+  if (bioDe(pid)) { const f = document.createElement('p'); f.className = 'sky-focus-bio'; f.textContent = bioDe(pid); info.append(f); }
   box.append(back, orbit, info);
 
   if (v) info.append(skyVolumeRow(id, name, v));
@@ -1196,6 +1291,7 @@ function renderSkyPage(box, { id, me, pid, name, sharing, micOff, deafOn, v, cha
   tags.append(where);
   if (sharing) tags.append(el('span', 'live-pill', 'Ao vivo'));
   who.append(title, tags);
+  if (bioDe(pid)) who.append(el('p', 'sky-focus-bio', bioDe(pid)));
   if (states.length) who.append(el('span', 'sky-page-state', states.join(' · ')));
   head.append(who, back);
   const list = el('div', 'sky-page-actions');

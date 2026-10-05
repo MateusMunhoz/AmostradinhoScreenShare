@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="styles-dusol.css">
   <link rel="stylesheet" href="styles-diluna.css">
   <link rel="stylesheet" href="styles-renascenca.css">
+  <link rel="stylesheet" href="styles-topgun.css">
 </head>
 <body>
   <div id="titlebar" class="titlebar"><svg class="app-logo" viewBox="0 0 100 100" aria-hidden="true"><path class="logo-c1" d="M46.17 3.83C47 10.79 50.21 14.01 57.17 14.83C50.21 15.65 47 18.87 46.17 25.83C45.34 18.87 42.13 15.65 35.17 14.83C42.13 14.01 45.34 10.79 46.17 3.83Z"/><path class="logo-c2" d="M13.83 57.5C14.65 64.46 17.87 67.67 24.83 68.5C17.87 69.33 14.65 72.54 13.83 79.5C13.01 72.54 9.79 69.33 2.83 68.5C9.79 67.67 13.01 64.46 13.83 57.5Z"/><path class="logo-c3" d="M77.83 55.5C79.31 67.95 85.05 73.69 97.5 75.17C85.05 76.65 79.31 82.39 77.83 94.84C76.35 82.39 70.61 76.65 58.16 75.17C70.61 73.69 76.35 67.95 77.83 55.5Z"/><g class="logo-dots"><circle class="logo-c1" cx="39.67" cy="19.83" r="1"/><circle class="logo-c1" cx="36.5" cy="22.67" r="0.7"/><circle class="logo-c1" cx="33.67" cy="25.33" r="0.58"/><circle class="logo-c12" cx="31.17" cy="28" r="0.5"/><circle class="logo-c12" cx="28.83" cy="30.67" r="0.5"/><circle class="logo-c2" cx="26.5" cy="33.67" r="0.57"/><circle class="logo-c2" cx="24.17" cy="37.33" r="0.67"/><circle class="logo-c2" cx="21.83" cy="41" r="0.75"/><circle class="logo-c2" cx="19.67" cy="45.17" r="0.83"/><circle class="logo-c2" cx="17.83" cy="49.5" r="0.92"/><circle class="logo-c2" cx="16.17" cy="54.33" r="1"/><circle class="logo-c1" cx="54" cy="20.33" r="1.08"/><circle class="logo-c1" cx="57.83" cy="23.83" r="1"/><circle class="logo-c1" cx="61.5" cy="27.67" r="0.92"/><circle class="logo-c1" cx="65" cy="31.83" r="0.92"/><circle class="logo-c1" cx="68.17" cy="36.33" r="0.83"/><circle class="logo-c3" cx="71" cy="41" r="0.92"/><circle class="logo-c3" cx="73.67" cy="46" r="1"/><circle class="logo-c3" cx="75.67" cy="51.33" r="1.08"/><circle class="logo-c2" cx="23" cy="73.17" r="1"/><circle class="logo-c2" cx="26.5" cy="74.83" r="0.6"/><circle class="logo-c2" cx="28.83" cy="75.67" r="0.5"/><circle class="logo-c2" cx="32" cy="76.67" r="0.5"/><circle class="logo-c23" cx="35.17" cy="77.5" r="0.5"/><circle class="logo-c23" cx="38.33" cy="78.33" r="0.5"/><circle class="logo-c3" cx="42" cy="79" r="0.6"/><circle class="logo-c3" cx="46.17" cy="79.5" r="0.75"/><circle class="logo-c3" cx="51" cy="79.67" r="0.92"/><circle class="logo-c3" cx="56.33" cy="79.67" r="1"/><circle class="logo-c3" cx="61.67" cy="79.33" r="1.17"/></g></svg><span>Tela P2P</span></div>
@@ -75,24 +76,34 @@
           <button id="profilePhotoBig" class="profile-card-photo" type="button" title="Trocar foto" aria-label="Trocar foto"><span id="profileAvatar" class="avatar"></span><span class="profile-card-cam" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span></button>
           <button id="profileBgPickTop" class="btn small profile-card-bgbtn" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/></svg><span>Trocar fundo</span></button>
         </div>
-        <div class="profile-card-info"><strong id="profileDisplayName"></strong><span class="hint">Assim os outros te veem na voz.</span></div>
+        <div class="profile-card-info"><strong id="profileDisplayName"></strong><span id="profileCardBio" class="hint"></span><span class="hint">Assim os outros te veem na voz.</span></div>
       </div>
       <!-- Aparência: foto (e o ajuste dela na bolinha), fundo (renderer/fundo-perfil.js) e a fonte do nome -->
       <h3 class="profile-sec">Aparência</h3>
-      <div class="profile-row"><span>Foto</span><span class="profile-row-actions"><button id="profilePhotoPick" class="btn small" type="button">Escolher</button><button id="profilePhotoRemove" class="btn small icon" type="button" title="Tirar foto" aria-label="Tirar foto" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 11v6M14 11v6M7 7l1 12h8l1-12M9 7V4h6v3"/></svg></button></span></div>
+      <div class="profile-row"><span>Foto</span><span class="profile-row-actions"><button id="profilePhotoPick" class="btn small" type="button">Escolher</button><button id="profilePhotoAdjust" class="btn small" type="button" hidden>Ajustar</button><button id="profilePhotoRemove" class="btn small icon" type="button" title="Tirar foto" aria-label="Tirar foto" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 11v6M14 11v6M7 7l1 12h8l1-12M9 7V4h6v3"/></svg></button></span></div>
       <input id="profilePhotoFile" type="file" accept="image/*" hidden>
       <div id="profilePhotoFit" class="profile-row" role="radiogroup" aria-label="Ajuste da foto" hidden>
         <span>Ajuste da foto</span>
         <span class="profile-seg"><button type="button" role="radio" data-fit="inteira" title="A foto toda, sem zoom">Inteira</button><button type="button" role="radio" data-fit="preencher" title="Corta o meio da foto para preencher a bolinha">Preencher</button></span>
       </div>
       <p id="profilePhotoOld" class="hint photo-old" hidden>Foto de versão antiga: os outros a veem cortada. Escolha de novo.</p>
-      <div class="profile-row"><span>Fundo<button type="button" class="tip" data-tip="Imagem ou GIF (até 1 MB) atrás do seu perfil, para quem clicar em você na voz. O GIF só se mexe com o perfil aberto." aria-label="Imagem ou GIF (até 1 MB) atrás do seu perfil, para quem clicar em você na voz. O GIF só se mexe com o perfil aberto."></button></span><span class="profile-row-actions"><button id="profileBgPick" class="btn small" type="button">Escolher</button><button id="profileBgRemove" class="btn small icon" type="button" title="Tirar fundo" aria-label="Tirar fundo" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 11v6M14 11v6M7 7l1 12h8l1-12M9 7V4h6v3"/></svg></button></span></div>
+      <div class="profile-row"><span>Fundo<button type="button" class="tip" data-tip="Imagem ou GIF (até 1 MB) atrás do seu perfil, para quem clicar em você na voz. O GIF só se mexe com o perfil aberto." aria-label="Imagem ou GIF (até 1 MB) atrás do seu perfil, para quem clicar em você na voz. O GIF só se mexe com o perfil aberto."></button></span><span class="profile-row-actions"><button id="profileBgPick" class="btn small" type="button">Escolher</button><button id="profileBgAdjust" class="btn small" type="button" hidden>Ajustar</button><button id="profileBgRemove" class="btn small icon" type="button" title="Tirar fundo" aria-label="Tirar fundo" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 11v6M14 11v6M7 7l1 12h8l1-12M9 7V4h6v3"/></svg></button></span></div>
       <input id="profileBgFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
       <label class="field"><span>Fonte do nome<button type="button" class="tip" data-tip="Todos na sala veem o seu nome nesta fonte." aria-label="Todos na sala veem o seu nome nesta fonte."></button></span><select id="profileNameFont"></select></label>
       <!-- Nome: na sala fica travado (com o cadeado) -->
       <h3 class="profile-sec">Nome</h3>
       <label class="field">Nome de exibição<span class="profile-name-box"><input id="profileName" maxlength="32" autocomplete="off"><span class="profile-lock" role="img" aria-label="Travado na sala"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span></span></label>
       <p id="profileHint" class="hint"></p>
+      <!-- Frase: até 128 caracteres; os amigos veem no Início (renderer/conta.js) -->
+      <h3 class="profile-sec">Frase</h3>
+      <label class="field"><span>Uma frase no seu perfil <span id="bioCount" class="hint"></span></span><input id="profileBio" maxlength="128" autocomplete="off" placeholder="Ex.: jogo à noite e ouço rock"></label>
+      <p id="profileBioHint" class="hint"></p>
+      <!-- Atividade: o que os amigos veem do que você faz; tudo desligado por padrão (renderer/conta.js) -->
+      <h3 class="profile-sec">Atividade</h3>
+      <label class="check-line"><input type="checkbox" id="atvJogo"><span>Mostrar o jogo que estou jogando</span></label>
+      <label class="check-line"><input type="checkbox" id="atvMusica"><span>Mostrar a música que estou ouvindo (Spotify)</span></label>
+      <p id="atvPreview" class="hint" role="status" aria-live="polite"></p>
+      <p class="hint">Desligado por padrão. Só os seus amigos veem, e só o nome do jogo e a faixa: nenhum outro programa é lido. Precisa da conta e vale no Windows.</p>
       </div>
     </section>
     <!-- Mapa em foco (renderer/ceu-voz.js): o chat encolhe e fica só esta faixa; clicar traz o chat de volta -->
@@ -154,8 +165,12 @@
           </div>
           <div id="friendsAddForm" class="hub-add-form" hidden>
             <label for="razzeFriendNickname">Adicionar amigo</label>
-            <input id="razzeFriendNickname" class="hub-filter" type="text" maxlength="60" autocomplete="off" aria-describedby="friendsAddHint">
-            <p id="friendsAddHint" class="hub-add-hint">Digite o nickname exato. A pessoa recebe um pedido e aparece aqui quando aceitar.</p>
+            <input id="razzeFriendNickname" class="hub-filter" type="text" maxlength="300" autocomplete="off" aria-describedby="friendsAddHint">
+            <p id="friendsAddHint" class="hub-add-hint">Digite o nickname exato, ou cole um link ou código de convite (ABCD-EFGH-JK). A pessoa recebe um pedido e aparece aqui quando aceitar.</p>
+            <div class="hub-add-link">
+              <button id="friendsLinkCopy" class="btn small" type="button">Copiar meu link de convite</button>
+              <ul id="friendsLinks" class="hub-links" aria-label="Seus links de convite ativos"></ul>
+            </div>
             <div class="hub-add-actions">
               <button id="friendsAddCancel" class="btn small" type="button">Cancelar</button>
               <button id="razzeAddFriend" class="btn small primary" type="button">Enviar pedido</button>
@@ -189,10 +204,14 @@
               <label class="field"><span>Senha</span><input id="razzePassword" type="password" autocomplete="current-password"></label>
               <button id="razzeLogin" class="btn primary" type="button">Entrar</button>
               <button id="razzeRegister" class="btn primary" type="button" hidden>Criar conta</button>
+              <button id="razzeGoogle" class="btn" type="button" hidden>Entrar com Google</button>
+              <button id="razzeForgot" class="link-btn" type="button">Esqueci a senha</button>
             </div>
             <div id="razzeAccount" class="net-row net-account" hidden>
               <span class="avatar" id="razzeAccountAvatar" aria-hidden="true"></span>
               <span class="net-account-text"><strong id="razzeAccountName"></strong><span class="hint" id="razzeAccountEmail"></span></span>
+              <button id="razzeGoogleLink" class="btn small" type="button" hidden>Vincular Google</button>
+              <button id="razzeChangePassword" class="btn small" type="button">Trocar senha</button>
               <button id="razzeLogout" class="btn small" type="button">Sair da conta</button>
             </div>
           </section>
@@ -317,6 +336,23 @@
           </div>
         </div>
 
+        <section id="homeSignin" class="home-signin" hidden>
+          <span>Entre na sua conta para ver seus amigos e ligar com um clique.</span>
+          <button class="btn small primary" id="homeSigninBtn" type="button">Entrar na conta</button>
+        </section>
+        <section id="homeFriends" class="home-friends" aria-labelledby="homeFriendsTitle" hidden>
+          <div class="home-friends-head">
+            <h2 class="sessions-title" id="homeFriendsTitle">Amigos</h2>
+            <span class="home-friends-actions">
+              <button class="btn small" id="homeFriendsLink" type="button" title="Copia um link de convite: quem abrir vira seu amigo">Copiar meu link</button>
+              <button class="btn small" id="homeFriendsAdd" type="button">Adicionar amigo</button>
+              <button class="link-btn" id="homeFriendsAll" type="button" hidden>Ver todos</button>
+            </span>
+          </div>
+          <ul id="homeFriendsList" class="home-friends-list"></ul>
+          <p id="homeFriendsEmpty" class="hint"></p>
+        </section>
+
         <div class="home-card" id="homeCard">
           <section class="sessions" aria-labelledby="sessionsTitle">
             <h2 class="sessions-title" id="sessionsTitle">Sessões abertas na sua rede</h2>
@@ -325,8 +361,9 @@
           </section>
           <div class="home-cta">
             <div class="create-block">
-              <button class="btn primary big" id="goCreate" type="button">Criar sala</button>
+              <button class="btn primary big" id="goQuick" type="button">Abrir minha sala</button>
               <span class="hint center" id="createBlockHint">Os amigos entram pelo seu endereço</span>
+              <button class="link-btn" id="goCreate" type="button">Opções da sala</button>
             </div>
             <button class="btn big" id="goJoin" type="button" aria-expanded="false" aria-controls="joinPanel">Entrar com endereço</button>
           </div>
@@ -871,7 +908,8 @@
         <section id="settingsPanel-sounds" class="settings-section sounds-panel" role="tabpanel" aria-labelledby="settingsTab-sounds" hidden>
           <div class="sound-master"><svg class="sound-master-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4V5zM15.5 8.5a5 5 0 0 1 0 7"/></svg><label for="notificationVolume">Volume geral<button type="button" class="tip" data-tip="Multiplica os volumes de cada aviso. Em 0%, todos ficam em silêncio." aria-label="Multiplica os volumes de cada aviso. Em 0%, todos ficam em silêncio."></button></label><input type="range" id="notificationVolume" min="0" max="100" step="1"><output id="notificationVolumeValue" for="notificationVolume"></output><span class="sound-master-sep" aria-hidden="true"></span><label class="vd-check"><input type="checkbox" id="muteChatSound"> Chat em silêncio<button type="button" class="tip" data-tip="Não toca som para mensagens novas do chat. O histórico já é silencioso." aria-label="Não toca som para mensagens novas do chat. O histórico já é silencioso."></button></label></div>
           <div class="sound-group" role="group" aria-labelledby="soundGroupRoom"><h4 class="sound-group-title" id="soundGroupRoom">Sala</h4>
-            <div class="sound-row"><button class="btn icon sound-play" id="preview-join" type="button" title="Ouvir prévia" aria-label="Ouvir prévia: Alguém entrou"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><label for="sound-join">Alguém entrou</label><select id="sound-join"></select><input id="volume-join" type="range" min="0" max="100" step="1" aria-label="Volume: Alguém entrou"><output id="value-join" for="volume-join">100%</output></div>
+            <div class="sound-row"><button class="btn icon sound-play" id="preview-enter" type="button" title="Ouvir prévia" aria-label="Ouvir prévia: Você entrou"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><label for="sound-enter">Você entrou</label><select id="sound-enter"></select><input id="volume-enter" type="range" min="0" max="100" step="1" aria-label="Volume: Você entrou"><output id="value-enter" for="volume-enter">100%</output></div>
+          <div class="sound-row"><button class="btn icon sound-play" id="preview-join" type="button" title="Ouvir prévia" aria-label="Ouvir prévia: Alguém entrou"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><label for="sound-join">Alguém entrou</label><select id="sound-join"></select><input id="volume-join" type="range" min="0" max="100" step="1" aria-label="Volume: Alguém entrou"><output id="value-join" for="volume-join">100%</output></div>
             <div class="sound-row"><button class="btn icon sound-play" id="preview-leave" type="button" title="Ouvir prévia" aria-label="Ouvir prévia: Alguém saiu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><label for="sound-leave">Alguém saiu</label><select id="sound-leave"></select><input id="volume-leave" type="range" min="0" max="100" step="1" aria-label="Volume: Alguém saiu"><output id="value-leave" for="volume-leave">100%</output></div>
           </div>
           <div class="sound-group" role="group" aria-labelledby="soundGroupChat"><h4 class="sound-group-title" id="soundGroupChat">Chat</h4>
@@ -1060,6 +1098,92 @@
       <feGaussianBlur in="lens" stdDeviation="7"/>
     </filter>
   </svg>
+  <!-- Primeira entrada: 3 telas, uma por vez (renderer/primeira-entrada.js) -->
+  <div id="onboarding" class="ob-modal" hidden>
+    <div id="obDialog" class="ob-dialog" role="dialog" aria-modal="true" aria-labelledby="obTitle1">
+      <div id="obDots" class="ob-dots" aria-hidden="true"><i></i><i></i><i></i></div>
+      <section data-ob="1">
+        <h2 id="obTitle1">Como você quer usar?</h2>
+        <button class="ob-card" id="obModeFriends" type="button">
+          <strong>Com amigos</strong>
+          <span>Conta, lista de amigos, ligar com um clique e as salas deles aparecendo sozinhas.</span>
+        </button>
+        <button class="ob-card" id="obModeQuick" type="button">
+          <strong>Sala rápida</strong>
+          <span>Só um nome, sem conta. Você abre a sala e passa o endereço.</span>
+        </button>
+      </section>
+      <section data-ob="2" hidden>
+        <h2>Quem é você?</h2>
+        <label class="field">
+          <span>Seu nome</span>
+          <input id="obName" maxlength="32" placeholder="Como os amigos te chamam" autocomplete="off" spellcheck="false">
+        </label>
+        <p id="obNameHint" class="hint"></p>
+        <div class="ob-row">
+          <button class="btn" id="obPhoto" type="button">Escolher foto (opcional)</button>
+          <span id="obPhotoNote" class="hint"></span>
+          <input id="obPhotoFile" type="file" accept="image/*" hidden>
+        </div>
+        <div class="actions">
+          <button class="btn ghost" id="obBack2" type="button">Voltar</button>
+          <button class="btn primary" id="obNext2" type="button">Continuar</button>
+        </div>
+      </section>
+      <section data-ob="3" hidden>
+        <h2>Sua conta</h2>
+        <div class="seg" role="tablist" aria-label="Entrar ou criar conta">
+          <button id="obTabLogin" type="button" role="tab" aria-selected="true">Entrar</button>
+          <button id="obTabRegister" type="button" role="tab" aria-selected="false">Criar conta</button>
+        </div>
+        <label class="field"><span>E-mail</span><input id="obEmail" type="email" autocomplete="username"></label>
+        <label class="field"><span>Senha</span><input id="obPassword" type="password" autocomplete="current-password"></label>
+        <p id="obStatus" class="hint" role="status" aria-live="polite"></p>
+        <div class="actions">
+          <button class="btn ghost" id="obBack3" type="button">Voltar</button>
+          <button class="btn primary" id="obSubmit" type="button">Entrar</button>
+        </div>
+        <button class="btn" id="obGoogle" type="button" hidden>Entrar com Google</button>
+        <button class="link-btn" id="obForgot" type="button">Esqueci a senha</button>
+        <button class="link-btn" id="obSkip" type="button">Continuar sem conta por enquanto</button>
+      </section>
+    </div>
+  </div>
+
+  <!-- Trocar a senha (logado) e esqueci a senha (com o código do administrador): renderer/conta.js -->
+  <div id="senhaDialog" class="ob-modal" hidden>
+    <div class="ob-dialog" role="dialog" aria-modal="true" aria-labelledby="senhaTitle">
+      <h2 id="senhaTitle">Trocar a senha</h2>
+      <p id="senhaIntro" class="hint"></p>
+      <label class="field" id="senhaEmailField"><span>E-mail da conta</span><input id="senhaEmail" type="email" autocomplete="username"></label>
+      <label class="field" id="senhaCodeField"><span>Código que o administrador te passou</span><input id="senhaCode" class="mono" autocomplete="off" spellcheck="false" placeholder="ABCD-EFGH"></label>
+      <label class="field" id="senhaCurrentField"><span>Senha atual</span><input id="senhaCurrent" type="password" autocomplete="current-password"></label>
+      <label class="field"><span>Senha nova (mínimo 8 caracteres)</span><input id="senhaNew" type="password" autocomplete="new-password"></label>
+      <label class="field"><span>Repita a senha nova</span><input id="senhaNew2" type="password" autocomplete="new-password"></label>
+      <p id="senhaStatus" class="hint" role="status" aria-live="polite"></p>
+      <div class="actions">
+        <button class="btn ghost" id="senhaCancel" type="button">Cancelar</button>
+        <button class="btn primary" id="senhaSubmit" type="button">Trocar senha</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recorte da foto e do fundo do perfil: arrastar e zoom (renderer/recorte.js) -->
+  <div id="recorteDialog" class="ob-modal" hidden>
+    <div class="ob-dialog recorte-dialog" role="dialog" aria-modal="true" aria-labelledby="recorteTitulo">
+      <h2 id="recorteTitulo">Ajustar</h2>
+      <p id="recorteDica" class="hint"></p>
+      <div id="recorteArea" class="recorte-area" tabindex="0" role="application" aria-label="Arraste a imagem para enquadrar; setas movem, mais e menos dão zoom">
+        <canvas id="recorteCanvas" width="360" height="360"></canvas>
+      </div>
+      <label class="field recorte-zoom"><span>Zoom</span><input id="recorteZoom" type="range" min="1" max="4" step="0.01" value="1"></label>
+      <div class="actions">
+        <button class="btn ghost" id="recorteCancel" type="button">Cancelar</button>
+        <button class="btn primary" id="recorteOk" type="button">Usar</button>
+      </div>
+    </div>
+  </div>
+
   <script src="encode-once.js"></script>
   <script src="voice.js"></script>
   <script src="renderer/util.js"></script>
@@ -1108,6 +1232,9 @@
   <script src="renderer/hub.js"></script>
   <script src="renderer/mensagens.js"></script>
   <script src="renderer/mensagens-direto.js"></script>
+  <script src="renderer/primeira-entrada.js"></script>
+  <script src="renderer/conta.js"></script>
+  <script src="renderer/recorte.js"></script>
   <script src="renderer/navegacao.js"></script>
   <script src="renderer/inicio.js"></script>
 </body>

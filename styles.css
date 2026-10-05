@@ -75,7 +75,7 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 .home-hello { display: flex; align-items: center; gap: 18px; }
 .avatar.home-avatar { width: 60px; height: 60px; font-size: 24px; background-color: var(--accent); color: var(--accent-ink); }
 /* Com alguém com sala aberta, entrar nela é o mais provável: o amarelo fica só no Entrar, e Criar sala fica neutro */
-.home-card:has(.session) #goCreate { background: var(--panel-2); border-color: var(--line); color: var(--text); }
+.home-card:has(.session) #goQuick { background: var(--panel-2); border-color: var(--line); color: var(--text); }
 .home-hello-text { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
 .home-title { margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -.5px; line-height: 1.15; }
 .home-name { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); }
@@ -102,7 +102,7 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 .btn.big:not(.primary) { background: var(--panel-2); }
 .hint.center { text-align: center; font-size: 12px; }
 /* Com "Entrar numa sala" aberto, ele vira o principal e Criar sala fica discreto */
-.home-card.joining #goCreate { background: var(--panel-2); border-color: var(--line); color: var(--text); }
+.home-card.joining #goQuick { background: var(--panel-2); border-color: var(--line); color: var(--text); }
 .join-panel { display: flex; flex-direction: column; gap: 12px; padding: 18px; border-radius: 12px; background: var(--panel-2); }
 .join-panel strong { font-size: 15px; }
 .join-panel .field > input { background: var(--bg); height: 44px; }
@@ -2263,3 +2263,62 @@ body:has(.modal:not([hidden]), #hubBody:not([hidden]), #dmPanel:not([hidden]), #
 .chamada-senha-linha input { flex: 1; min-width: 0; font-family: Consolas, monospace; font-size: 15px; letter-spacing: .04em; }
 .dm-invite.dm-call { border-color: var(--accent); }
 .dm-call-btn svg { stroke-linejoin: round; }
+
+/* ---------- Primeira entrada (renderer/primeira-entrada.js) ---------- */
+.ob-modal { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 24px; background: var(--bg); }
+.ob-dialog { width: min(460px, 100%); display: flex; flex-direction: column; gap: 14px; }
+.ob-dialog section { display: flex; flex-direction: column; gap: 12px; }
+.ob-dialog section[hidden] { display: none; }
+.ob-dialog h2 { margin: 0; font-size: 22px; letter-spacing: -0.01em; }
+.ob-dots { display: flex; gap: 6px; }
+.ob-dots i { width: 28px; height: 4px; border-radius: 2px; background: var(--line-strong); }
+.ob-dots i.on { background: var(--accent); }
+.ob-card {
+  display: flex; flex-direction: column; gap: 4px; text-align: left; padding: 16px 18px; cursor: pointer;
+  background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 12px; font: inherit;
+}
+.ob-card strong { font-size: 16px; }
+.ob-card span { color: var(--muted); font-size: 13px; line-height: 1.4; }
+.ob-card:hover, .ob-card:focus-visible { border-color: var(--accent); background: var(--panel-2); }
+.ob-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.ob-dialog .actions { display: flex; justify-content: flex-end; gap: 10px; }
+.ob-dialog .link-btn { align-self: center; }
+
+/* ---------- Início: amigos e entrar na conta ---------- */
+.home-signin {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; margin-bottom: 12px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px; font-size: 14px; color: var(--text-2);
+}
+.home-friends { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; margin-bottom: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+.home-friends-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.home-friends-actions { display: flex; align-items: center; gap: 12px; }
+.home-friends-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.home-friend { display: flex; align-items: center; gap: 10px; }
+.home-friend-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.home-friends .hint:empty { display: none; }
+.create-block .link-btn { align-self: center; margin-top: 2px; }
+
+/* ---------- Links de convite de amigo ---------- */
+.hub-add-link { display: flex; flex-direction: column; gap: 8px; }
+.hub-links { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.hub-links:empty { display: none; }
+.hub-link { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--text-2); }
+
+/* ---------- Senha e frase do perfil ---------- */
+.home-friend-name { display: flex; flex-direction: column; gap: 1px; }
+.home-friend-name strong { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.home-friend-bio { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.profile-card-info #profileCardBio:empty { display: none; }
+.ob-dialog .field[hidden] { display: none; }
+
+/* ---------- Recorte da foto e do fundo (renderer/recorte.js) ---------- */
+.recorte-dialog { width: min(420px, 100%); }
+.recorte-area { align-self: center; width: min(360px, 100%); aspect-ratio: 1; border-radius: 12px; overflow: hidden; background: var(--sunken); border: 1px solid var(--line); cursor: grab; touch-action: none; }
+.recorte-area:active { cursor: grabbing; }
+.recorte-area:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.recorte-area canvas { display: block; width: 100%; height: 100%; }
+.recorte-zoom input { width: 100%; }
+
+.home-friend-music { align-self: flex-start; font-size: 12px; text-align: left; padding: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.sky-focus-bio { margin: 4px 0 0; font-size: 13px; line-height: 1.35; color: var(--text-2); overflow-wrap: anywhere; }
