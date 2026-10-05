@@ -66,6 +66,14 @@ Todas as respostas usam JSON. Erros seguem `{ "error": { "code": "...", "message
 | `GET /v1/friends`, `GET /v1/friends/requests` | Listar amizades e solicitações; cada amigo vem com `dmKey` (a chave pública das mensagens criptografadas, ou `null`) |
 | `PUT /v1/me/dm-key` (`{ publicKey }`) | Publicar a chave pública X25519 (32 bytes em base64) das mensagens criptografadas desta conta; vale a do último PC que publicou |
 | `POST /v1/friends/requests`, `POST /v1/friends/requests/:id/accept`, `DELETE /v1/friends/:userId` | Gerenciar amizades |
+| `POST /v1/friends/links`, `GET /v1/friends/links`, `DELETE /v1/friends/links/:id` | Links de amigo: criar (devolve `token`, `code` curto `ABCD-EFGH-JK`, `url` e `appLink`; vale 7 dias e 1 pessoa; até 5 ativos por conta), listar os ativos e revogar |
+| `GET /v1/friends/links/preview?token=`, `POST /v1/friends/links/accept` (`{ token }`) | Ver quem convidou (`displayName`) e aceitar: os dois viram amigos na hora. `token` aceita o segredo ou o código curto. Recusa o próprio link, expirado, usado ou revogado (`link_invalid`, `own_link`); 30 tentativas a cada 10 min por IP |
+| `GET /a/<token>` | Página pública de abertura do convite (sem login, sem script, sem consultar o banco): "Abrir no Tela P2P" (`telap2p://amigo/<token>`) e "Baixar" |
+| `PATCH /v1/me` (`{ bio }`), `POST /v1/me/password` (`{ currentPassword, newPassword }`) | A frase do perfil (até 128 caracteres; os amigos recebem em `/v1/friends` como `bio`) e a troca de senha (pede a atual; mínimo 8 caracteres; 10 tentativas a cada 15 min por IP) |
+| `PUT /v1/me/activity` (`{ game, artist, title }`) | Atividade no perfil: o jogo e a música que a pessoa deixou ligados (cada campo até 80 caracteres; tudo vazio apaga; 12 envios por minuto). Só os amigos veem, em `/v1/friends` como `activity` (`null` sem nada); some 2 minutos depois do último envio |
+| `GET /v1/auth/google/config`, `POST /v1/auth/google` (`{ code, codeVerifier, redirectUri }`) | Entrar com Google: a config diz se está ligado e o client ID; o login troca o código do Google (que voltou para `127.0.0.1` no PC) pela conta. Cria a conta se o e-mail (confirmado pelo Google) é novo; se já existe conta com esse e-mail, responde `account_exists` (409) e **não junta sozinho**. 10 tentativas erradas a cada 10 min por IP |
+| `POST /v1/me/google`, `DELETE /v1/me/google` | Vincular o Google à conta logada e desvincular (só quem tem senha desvincula; quem entrou só pelo Google define a primeira senha em `POST /v1/me/password` sem a atual) |
+| `POST /v1/admin/users/:id/reset-code`, `POST /v1/auth/reset` (`{ email, code, password }`) | Esqueci a senha **sem e-mail**: o administrador gera um código (`ABCD-EFGH`, vale 1 hora, uso único, só o hash fica no banco; botão **Código de senha** no painel) e passa para a pessoa, que redefine a senha. 5 erros queimam o código; redefinir derruba as sessões da conta |
 | `POST /v1/messages` (`{ to, text }`) | Mandar mensagem direta para um amigo (até 2000 caracteres, ou até 9000 se for cifrada, `e2e1:<base64url>`; 30 mensagens a cada 10 s por conta). O app só manda cifrada ([spec](spec/mensagens-criptografadas.md)) |
 | `GET /v1/messages?after=<seq>` | Mensagens diretas (enviadas e recebidas) depois do número de sequência `after`, 200 por vez (`more` diz se há mais) |
 | `GET /v1/networks`, `POST /v1/networks` | Listar redes visíveis e criar rede |
@@ -77,11 +85,27 @@ Todas as respostas usam JSON. Erros seguem `{ "error": { "code": "...", "message
 | `PATCH /v1/networks/:id/devices/:deviceId/endpoint` | Atualizar endpoint UDP reflexivo descoberto por STUN |
 | `DELETE /v1/networks/:id/devices/:deviceId` | Remover dispositivo da rede |
 
+Os links de amigo guardam só o hash do segredo e do código (tabela `friend_links`). O endereço do link vem de `RAZZE_PUBLIC_URL` (ex.: `https://api.exemplo.com`; se faltar, usa o `Host` da requisição, com https atrás do proxy com `RAZZE_TRUST_PROXY=1`) e o botão "Baixar" de `RAZZE_DOWNLOAD_URL` (padrão: a última release no GitHub). Plano e motivos: `docs/spec/convite-por-link.md`.
+
 As mensagens diretas ficam no banco por 30 dias (tabela `direct_messages`), para chegar a quem está offline e aos outros PCs da mesma conta. O histórico completo fica no PC de cada pessoa (`%APPDATA%\Tela P2P\mensagens`). O texto fica guardado sem criptografia de ponta a ponta: quem administra o servidor consegue ler.
 
 Redes podem ser `private`, `friends` ou `public`; para entrar, use um convite. Os convites armazenam apenas o hash do token e aceitam limite de usos e validade configuráveis. Cada rede recebe um bloco privado `/24` e os dispositivos recebem IPs overlay exclusivos.
 
 O cliente HTTP fica em `main/razze-api-client.js`; `main/razze-service.js` persiste a sessão e protege o token com `safeStorage` do Electron. O cliente exige HTTPS fora de localhost e rejeita redirecionamentos. Nas Configurações, o app permite criar/entrar na conta, criar redes, aceitar convites, administrar redes próprias e iniciar o WireGuard.
+
+## Entrar com Google (opcional)
+
+O app abre o navegador do sistema, o Google devolve um código para uma porta local (`http://127.0.0.1:<porta>/callback`) e a
+RazzeAPI troca o código pela identidade (PKCE; o servidor confere emissor, cliente, validade e e-mail confirmado). O app não leva
+nenhuma credencial: o client ID vem de `GET /v1/auth/google/config`. Sem as variáveis abaixo, o botão não aparece.
+
+1. No [Google Cloud Console](https://console.cloud.google.com/): crie um projeto › **APIs e serviços** › **Tela de permissão OAuth**
+   (tipo Externo; escopos `openid`, `email`, `profile`; em teste, adicione os e-mails dos amigos como usuários de teste, ou publique o app).
+2. **Credenciais** › **Criar credenciais** › **ID do cliente OAuth** › tipo **App para computador**. Copie o ID e o segredo.
+3. No `.env` da VPS: `RAZZE_GOOGLE_CLIENT_ID=...` e `RAZZE_GOOGLE_CLIENT_SECRET=...` (o segredo de app para computador não é secreto de
+   verdade, mas o Google exige no pedido). Suba de novo: `docker compose up -d`.
+4. Conta: e-mail novo cria a conta (respeita a aprovação do administrador, se estiver ligada); e-mail que já tem conta com senha pede
+   entrar com a senha e **Vincular Google** no HUB › Rede.
 
 ## WireGuard e limites atuais
 

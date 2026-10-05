@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const net = require('node:net');
 const { WebSocket } = require('ws');
 const { startServer, stopServer } = require('../signaling');
-const { createMusicas, cleanVideoId } = require('../sala-protocolo');
+const { createMusicas, cleanVideoId, limparMusicas, handleMemberMessage } = require('../sala-protocolo');
 
 async function freePort() {
   const probe = net.createServer();
@@ -107,4 +107,33 @@ test('troca de host: o servidor novo continua com a música, do ponto em que est
   const m = a.welcome.musicas[0];
   assert.deepEqual([m.ch, m.videoId, m.pos, m.playing, m.by], ['2', VID, 95.5, true, '5']);
   assert.ok(Math.abs(m.at - a.welcome.now) < 1000);
+});
+
+test('músicas esquecidas: pausada 4 min sai; sem ninguém no canal nem ouvindo, 1 min (tocando ou não)', () => {
+  let t = 0;
+  const musicas = createMusicas([{ ch: '', videoId: 'dQw4w9WgXcQ', by: '1' }, { ch: '2', videoId: 'dQw4w9WgXcQ', by: '1' }], () => t);
+  const members = new Map([['1', { ws: null, voiceSession: 's', voiceChannel: '' }], ['3', { ws: null, voiceSession: '' }]]);
+  const msg = (id, m) => handleMemberMessage({ members, broadcast() {}, chat: null, subsalas: null, musicas }, id, members.get(id), m);
+  // A Voz geral tem gente; a subsala 2 ninguém, mas o 3 ouve de fora
+  msg('3', { type: 'musica-ouvindo', ch: '2', on: true });
+  t = 120000;
+  assert.equal(limparMusicas(musicas, members), false);
+  // Parou de ouvir: a subsala fica sozinha e sai depois de 1 min
+  msg('3', { type: 'musica-ouvindo', ch: '2', on: false });
+  assert.equal(limparMusicas(musicas, members), false);
+  t += 59000;
+  assert.equal(limparMusicas(musicas, members), false);
+  t += 1000;
+  assert.equal(limparMusicas(musicas, members), true);
+  assert.deepEqual([...musicas.map.keys()], ['']);
+  // Pausada com gente: sai só depois de 4 min da pausa
+  Object.assign(musicas.map.get(''), { playing: false, at: t });
+  t += 4 * 60000 - 1;
+  assert.equal(limparMusicas(musicas, members), false);
+  t += 1;
+  assert.equal(limparMusicas(musicas, members), true);
+  assert.equal(musicas.map.size, 0);
+  // Ouvindo só vale para música que existe
+  msg('3', { type: 'musica-ouvindo', ch: '2', on: true });
+  assert.equal(members.get('3').ouvindo.size, 0);
 });

@@ -60,14 +60,14 @@
 :root:not([data-skin]) .msg-time { font-family: var(--st-mono); letter-spacing: 0; }
 
 /* ---------- Voz: quem fala acende; quem transmite ganha uma órbita ---------- */
-:root:not([data-skin]) :is(.speaking > .avatar, .avatar.speaking, .voice-avatar.speaking .avatar) {
+:root:not([data-skin]) :is(.speaking > .avatar, .speaking > .member-face > .avatar, .avatar.speaking, .voice-avatar.speaking .avatar) {
   box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--ok), 0 0 12px 2px color-mix(in srgb, var(--ok) 45%, transparent);
 }
 :root:not([data-skin]) .avatar { transition: box-shadow .15s ease-out; }
 :root:not([data-skin]) .member.speaking .mname { color: var(--ok); }
 :root:not([data-skin]) .member .mname { transition: color .15s ease-out; }
-:root:not([data-skin]) .member.live > .avatar { position: relative; }
-:root:not([data-skin]) .member.live > .avatar::after {
+:root:not([data-skin]) .member.live > .avatar, :root:not([data-skin]) .member.live > .member-face > .avatar { position: relative; }
+:root:not([data-skin]) .member.live > .avatar::after, :root:not([data-skin]) .member.live > .member-face > .avatar::after {
   content: ""; position: absolute; inset: -5px; border: 1px dashed var(--live); border-radius: 50%; opacity: .8;
   animation: st-orbit 14s linear infinite;
 }
@@ -119,8 +119,8 @@
 /* Mapa: sol e planeta são clicáveis; parado com o mouse em cima (e arrastando), para acertar o clique */
 .voice-sky.map .sky-hit, .voice-sky.map .sky-phit { fill: transparent; }
 .voice-sky.map :is(.sky-hit, .sky-sun, .sky-star) { cursor: pointer; outline: none; }
-.voice-sky.dragging :is(.sky-ring, .sky-upright) { animation-play-state: paused; } /* perto do mouse, a órbita desacelera: setOrbitSpeeds (ceu-voz.js) */
-.voice-sky.map .sky-sun:is(:hover, :focus-visible) .sky-corona { stroke: var(--accent); stroke-width: .8; }
+.voice-sky.dragging :is(.sky-ring, .sky-upright) { animation-play-state: paused; } /* com o mouse dentro da órbita de fora, ela para: setOrbitSpeeds (ceu-voz.js) */
+.voice-sky.map :is(.sky-sun:is(:hover, :focus-visible), .sky-hit:hover ~ .sky-sun) .sky-corona { stroke: var(--accent); stroke-width: .8; }
 .voice-sky.map .sky-star:is(:hover, :focus-visible) .sky-halo { opacity: 1; stroke: var(--accent); transition: opacity .15s ease-out; }
 /* Com o mouse em cima, só a borda azul: sem o verde de quem fala (volta ao tirar o mouse) */
 .voice-sky.map .sky-star:is(:hover, :focus-visible) { filter: none; }
@@ -189,8 +189,9 @@ body.app-blurred :is(.voice-sky-neb, .voice-sky :is(.sky-galaxy, .sky-tw, .sky-s
 .voice-sky.map :is(.sky-label, .sky-count) { transition: fill .25s ease-out, opacity .25s ease-out; }
 .voice-sky :is(.sky-fx, .sky-sun-fx, .sky-ghost) { transform-box: view-box; transform-origin: 0 0; }
 .voice-sky .sky-sun-fx { transition: transform .25s cubic-bezier(.3, 1.4, .5, 1); }
-.voice-sky.map .sky-sun:is(:hover, :focus-visible) .sky-sun-fx, .voice-sky.map .sky-sun.drop-target .sky-sun-fx { transform: scale(1.25); }
-.voice-sky.map .sky-sun:is(:hover, :focus-visible) .sky-glow { fill: color-mix(in srgb, var(--sky-sun) 26%, transparent); }
+/* o mouse em qualquer lugar da área do clique (.sky-hit) conta como em cima do sol, cheio ou vazio */
+.voice-sky.map :is(.sky-sun:is(:hover, :focus-visible), .sky-hit:hover ~ .sky-sun) .sky-sun-fx, .voice-sky.map .sky-sun.drop-target .sky-sun-fx { transform: scale(1.25); }
+.voice-sky.map :is(.sky-sun:is(:hover, :focus-visible), .sky-hit:hover ~ .sky-sun) .sky-glow { fill: color-mix(in srgb, var(--sky-sun) 26%, transparent); }
 .voice-sky .sky-core { transform-box: fill-box; transform-origin: center; transition: fill .15s ease-out, transform .2s cubic-bezier(.3, 1.4, .5, 1); }
 .voice-sky.map .sky-star:is(:hover, :focus-visible) .sky-core { transform: scale(1.4); }
 .voice-sky.map .sky-pname { transition: opacity .2s ease-out; }
@@ -252,7 +253,7 @@ body.app-blurred :is(.voice-sky-neb, .voice-sky :is(.sky-galaxy, .sky-tw, .sky-s
 
 @media (prefers-reduced-motion: reduce) {
   :root:not([data-skin]) body::before, :root:not([data-skin]) body::after,
-  :root:not([data-skin]) .member.live > .avatar::after, .voice-sky .sky-orbit, .voice-sky .sky-ring, .voice-sky .sky-upright,
+  :root:not([data-skin]) .member.live > .avatar::after, :root:not([data-skin]) .member.live > .member-face > .avatar::after, .voice-sky .sky-orbit, .voice-sky .sky-ring, .voice-sky .sky-upright,
   .voice-sky-neb, .voice-sky :is(.sky-galaxy, .sky-tw, .sky-lane, .sky-glow, .sky-music, .sky-sun.empty, .sky-wave, .sky-bwave) { animation: none; }
   .voice-sky-neb .sky-neb, .voice-sky :is(.sky-sun-fx, .sky-core) { transition: none; }
   .voice-sky .sky-shoot { display: none; }

@@ -2,7 +2,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const net = require('node:net');
 const { WebSocket } = require('ws');
-const { startServer, stopServer } = require('../signaling');
+const { startServer, stopServer, roomInfo } = require('../signaling');
 
 async function client(port) {
   const ws = new WebSocket(`ws://127.0.0.1:${port}`);
@@ -191,4 +191,36 @@ test('o mesmo PC entrando de novo derruba a conexão antiga (sem pessoas repetid
   const velho2 = await join('Visita');
   assert.notEqual(velho1.id, velho2.id);
   for (const c of [host, certo, velho1, velho2]) c.ws.close();
+});
+
+test('mudar a senha: só o host; todos recebem a nova, e a sessão passa a dizer se tem senha', async t => {
+  const probe = net.createServer();
+  await new Promise(r => probe.listen(0, '127.0.0.1', r));
+  const port = probe.address().port;
+  await new Promise(r => probe.close(r));
+  assert.equal((await startServer(port, '')).ok, true);
+  t.after(stopServer);
+  const host = await client(port); t.after(() => host.ws.terminate());
+  const b = await client(port); t.after(() => b.ws.terminate());
+  assert.ok(host.welcome.features.includes('senha'));
+  assert.equal(roomInfo().senha, false);
+  // Quem não é o host não muda
+  b.send({ type: 'senha', password: 'outra-senha' });
+  assert.match((await b.wait(m => m.type === 'senha-erro')).message, /host/);
+  // O host muda: todos (ele também) recebem a nova
+  host.send({ type: 'senha', password: 'K7P-4MX-Q2R' });
+  const got = await b.wait(m => m.type === 'senha');
+  assert.equal(got.password, 'K7P-4MX-Q2R');
+  assert.equal(got.by, host.welcome.id);
+  assert.equal((await host.wait(m => m.type === 'senha')).password, 'K7P-4MX-Q2R');
+  assert.equal(roomInfo().senha, true);
+  // Inválida (caractere de controle, longa demais) não muda
+  host.send({ type: 'senha', password: 'a\nb' });
+  await host.wait(m => m.type === 'senha-erro');
+  host.send({ type: 'senha', password: 'x'.repeat(65) });
+  await host.wait(m => m.type === 'senha-erro');
+  // Vazia: a sala fica sem senha
+  host.send({ type: 'senha', password: '' });
+  await b.wait(m => m.type === 'senha' && m.password === '');
+  assert.equal(roomInfo().senha, false);
 });

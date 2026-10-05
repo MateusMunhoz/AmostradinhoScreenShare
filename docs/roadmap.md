@@ -395,3 +395,8 @@ validar como em `sala-protocolo.js`) e de ver se o tema Top Gun pega com o grupo
 1. Começar pelo **A1** (1–1,5 semana), que é pré-requisito do P1.
 2. Em paralelo, um **protótipo de 2 dias do Hyperswarm dentro do Electron** para tirar o maior risco do P1 cedo.
 3. Revisar este documento no fim de outubro.
+
+## Em planejamento
+
+- **Fluxo, conta e perfil** (auditoria feita; primeira entrada enxuta, convite por link, esqueci a senha, bio, foto e fundo do perfil, atividade opcional, Google): `docs/auditoria-fluxo.md` e `docs/spec/primeira-entrada-e-perfil.md`.
+- **Convite de amigo por link** (plano aguardando aprovação): `docs/spec/convite-por-link.md`.

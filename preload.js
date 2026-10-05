@@ -21,6 +21,24 @@ contextBridge.exposeInMainWorld('api', {
   openLink: (url) => ipcRenderer.invoke('open-link', url),
   clipSave: (bytes, label) => ipcRenderer.invoke('clip-save', bytes, label),
   clipShow: (id) => ipcRenderer.invoke('clip-show', id),
+  // Comando de voz (main/comando-voz.js): baixar e conferir o Whisper, transcrever o WAV do comando, a tecla de segurar
+  vozCmdEstado: () => ipcRenderer.invoke('voz-cmd-estado'),
+  vozCmdInstalar: (modelo) => ipcRenderer.invoke('voz-cmd-instalar', String(modelo || '')),
+  vozCmdCancelar: () => ipcRenderer.invoke('voz-cmd-cancelar'),
+  vozCmdRemover: () => ipcRenderer.invoke('voz-cmd-remover'),
+  vozCmdTranscrever: (wav, modelo, dica) => ipcRenderer.invoke('voz-cmd-transcrever', wav instanceof Uint8Array ? wav : null, String(modelo || ''), String(dica || '')),
+  vozCmdTecla: (on) => ipcRenderer.invoke('voz-cmd-tecla', !!on),
+  // Pedidos livres (main/comando-voz-ia.js): a chave só vai, nunca volta
+  vozIaEstado: () => ipcRenderer.invoke('voz-ia-estado'),
+  vozIaChave: (chave) => ipcRenderer.invoke('voz-ia-chave', String(chave || '')),
+  vozIaApagarChave: () => ipcRenderer.invoke('voz-ia-apagar-chave'),
+  vozIaEntender: (texto, ctx, opcoes) => ipcRenderer.invoke('voz-ia-entender', String(texto || ''), ctx, opcoes),
+  vozIaTestar: (opcoes) => ipcRenderer.invoke('voz-ia-testar', opcoes),
+  vozCmdYoutube: (busca) => ipcRenderer.invoke('voz-cmd-youtube', String(busca || '')), // o primeiro vídeo da busca
+  onVozCmd: (cb) => {
+    ipcRenderer.removeAllListeners('voz-cmd');
+    ipcRenderer.on('voz-cmd', (_e, msg) => cb(msg));
+  },
   onPip: (cb) => {
     ipcRenderer.removeAllListeners('pip');
     ipcRenderer.on('pip', (_e, msg) => cb(msg));
@@ -76,6 +94,25 @@ contextBridge.exposeInMainWorld('api', {
   razzeAcceptFriend: (id) => ipcRenderer.invoke('razze-accept-friend', String(id || '')),
   razzeCancelFriendRequest: (id) => ipcRenderer.invoke('razze-cancel-friend-request', String(id || '')),
   razzeRemoveFriend: (id) => ipcRenderer.invoke('razze-remove-friend', String(id || '')),
+  razzeGoogleConfig: () => ipcRenderer.invoke('razze-google-config'),
+  razzeGoogleLogin: () => ipcRenderer.invoke('razze-google-login'),
+  razzeGoogleLink: () => ipcRenderer.invoke('razze-google-link'),
+  razzeGoogleUnlink: () => ipcRenderer.invoke('razze-google-unlink'),
+  razzeChangePassword: (current, next) => ipcRenderer.invoke('razze-change-password', String(current || ''), String(next || '')),
+  razzeResetPassword: (email, code, password) => ipcRenderer.invoke('razze-reset-password', String(email || ''), String(code || ''), String(password || '')),
+  atividadeLer: (opcoes) => ipcRenderer.invoke('atividade-ler', { jogos: !!opcoes?.jogos, musica: !!opcoes?.musica }),
+  razzeSetActivity: (activity) => ipcRenderer.invoke('razze-set-activity', { game: String(activity?.game || ''), artist: String(activity?.artist || ''), title: String(activity?.title || '') }),
+  razzeSetBio: (bio) => ipcRenderer.invoke('razze-set-bio', String(bio || '')),
+  razzeFriendLinkCreate: () => ipcRenderer.invoke('razze-friend-link-create'),
+  razzeFriendLinkList: () => ipcRenderer.invoke('razze-friend-link-list'),
+  razzeFriendLinkRevoke: (id) => ipcRenderer.invoke('razze-friend-link-revoke', String(id || '')),
+  razzeFriendLinkPreview: (token) => ipcRenderer.invoke('razze-friend-link-preview', String(token || '')),
+  razzeFriendLinkAccept: (token) => ipcRenderer.invoke('razze-friend-link-accept', String(token || '')),
+  razzePendingFriendLink: () => ipcRenderer.invoke('razze-pending-friend-link'),
+  onFriendLink: (callback) => {
+    ipcRenderer.removeAllListeners('razze-friend-link');
+    ipcRenderer.on('razze-friend-link', (_event, token) => callback(String(token || '')));
+  },
   razzeSendMessage: (to, text) => ipcRenderer.invoke('razze-send-message', String(to || ''), String(text || '')),
   razzeMessages: (after) => ipcRenderer.invoke('razze-messages', Number(after) || 0),
   dmList: (account) => ipcRenderer.invoke('dm-list', String(account || '')),

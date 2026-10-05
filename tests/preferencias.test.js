@@ -196,7 +196,7 @@ test('largura do chat e da voz: automática, limitada e mantida ao trocar de tem
   }
   const p = P.applyTheme(P.normalize({ sounds: { volume: 30, join: 'none' } }), 'topgun');
   assert.equal(p.sounds.voiceJoin, 'radioFoxOne', 'entrou: Fox one');
-  assert.equal(p.sounds.enter, 'radioBravoSix', 'você entrou na sala: Bravo six, going dark');
+  assert.equal(p.sounds.enter, 'radioCheck', 'você entrou na sala: Radio check');
   assert.equal(p.sounds.voiceLeave, 'radioSplash', 'saiu: Splash one');
   assert.equal(p.sounds.shareStart, 'radioCheck', 'transmissão: Radio check');
   assert.equal(p.sounds.shareStop, 'radioRtb', 'parou de transmitir: R T B');

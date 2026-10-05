@@ -84,6 +84,11 @@ async function render() {
         else if (!confirm('Reativar ' + u.displayName + '?')) return false;
         await api('admin/users/' + u.id, 'PATCH', { status: u.status === 'disabled' ? 'active' : 'disabled', banReason: reason });
       }, true));
+      actions.append(action('Código de senha', async () => {
+        if (!confirm('Gerar um código para ' + u.displayName + ' redefinir a senha? Vale por 1 hora e uma vez.')) return false;
+        const r = await api('admin/users/' + u.id + '/reset-code', 'POST');
+        prompt('Passe este código a ' + u.displayName + ' (vale 1 hora):', r.code);
+      }));
       actions.append(action('Revogar sessões', async () => { if (!confirm('Desconectar todas as sessões de ' + u.displayName + '?')) return false; await api('admin/users/' + u.id + '/revoke-sessions', 'POST'); }, true));
       return [u.displayName + ' · ' + u.email, badge(u.online), (u.role === 'admin' ? 'Administrador' : 'Usuário') + ' / ' + ({ active: 'Ativo', pending: 'Pendente', disabled: 'Banido' }[u.status]) + (u.banReason ? ' · ' + u.banReason : ''), actions];
     })));

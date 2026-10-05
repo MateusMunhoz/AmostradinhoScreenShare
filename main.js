@@ -10,9 +10,13 @@ const {
   videoCapCommand, startAppAudio, stopAppAudio,
 } = require('./main/nativos');
 const { janelas } = require('./main/contexto');
+const { lerAtividade } = require('./main/atividade');
 const { pips, livePip, freeSlot, pipBounds, setPipSize, setPipGroup, setPipOpacity, setPipEdit, setupPip } = require('./main/janela-flutuante');
 const { chatBounds, setupChatOverlay, chatComposeRequest } = require('./main/chat-jogo');
-const { keys, setShortcut, setRoomKeys, setPtt } = require('./main/atalhos');
+const { keys, setShortcut, setRoomKeys, setPtt, setVoiceCmdKey } = require('./main/atalhos');
+const comandoVoz = require('./main/comando-voz');
+const { criarIa, buscarYoutube } = require('./main/comando-voz-ia');
+let vozCmd = null; // comando de voz: Whisper baixado só por quem liga (criado quando o app fica pronto)
 const sessoes = require('./main/sessoes');
 const celular = require('./main/celular');
 const { dedupeWindows, thumbSignature } = require('./main/fontes');
@@ -37,14 +41,17 @@ const razzePresence = createPresence({
 });
 
 let pendingRazzeInvite = '';
+let pendingFriendLink = '';
+// Links do app: telap2p://invite/<token> (rede Razze) e telap2p://amigo/<token> (convite de amigo, docs/spec/convite-por-link.md)
 function consumeRazzeInvite(value) {
   let parsed;
   try { parsed = new URL(String(value || '')); } catch { return false; }
-  if (parsed.protocol !== 'telap2p:' || parsed.hostname !== 'invite') return false;
+  if (parsed.protocol !== 'telap2p:' || !['invite', 'amigo'].includes(parsed.hostname)) return false;
   const token = parsed.pathname.replace(/^\//, '');
   if (!/^[A-Za-z0-9_-]{20,120}$/.test(token)) return false;
-  pendingRazzeInvite = token;
-  if (janelas.main && !janelas.main.isDestroyed()) janelas.main.webContents.send('razze-invite', token);
+  const friend = parsed.hostname === 'amigo';
+  if (friend) pendingFriendLink = token; else pendingRazzeInvite = token;
+  if (janelas.main && !janelas.main.isDestroyed()) janelas.main.webContents.send(friend ? 'razze-friend-link' : 'razze-invite', token);
   return true;
 }
 function showMainWindow() {
@@ -389,6 +396,7 @@ if (hasSingleInstance) app.whenReady().then(() => {
   ipcMain.handle('copy-text', (_e, text) => { clipboard.writeText(String(text || '').slice(0, 4096)); return true; });
   ipcMain.handle('razze-state', () => razze.state());
   ipcMain.handle('razze-pending-invite', () => { const token = pendingRazzeInvite; pendingRazzeInvite = ''; return token; });
+  ipcMain.handle('razze-pending-friend-link', () => { const token = pendingFriendLink; pendingFriendLink = ''; return token; });
   ipcMain.handle('razze-configure', async (_e, url) => {
     const { RazzeApiClient } = require('./main/razze-api-client');
     const normalized = new RazzeApiClient(String(url || '')).baseUrl;
@@ -427,6 +435,22 @@ if (hasSingleInstance) app.whenReady().then(() => {
   ipcMain.handle('razze-accept-friend', (_e, id) => razze.acceptFriendRequest(String(id || '')));
   ipcMain.handle('razze-cancel-friend-request', (_e, id) => razze.cancelFriendRequest(String(id || '')));
   ipcMain.handle('razze-remove-friend', (_e, id) => razze.removeFriend(String(id || '')));
+  const abrirGoogle = (url) => { if (!String(url).startsWith('https://accounts.google.com/o/oauth2/')) throw new Error('Endereço não permitido.'); return shell.openExternal(url); };
+  ipcMain.handle('razze-google-config', () => razze.googleConfig());
+  ipcMain.handle('razze-google-login', () => razze.googleLogin(abrirGoogle));
+  ipcMain.handle('razze-google-link', () => razze.googleLink(abrirGoogle));
+  ipcMain.handle('razze-google-unlink', () => razze.googleUnlink());
+  ipcMain.handle('razze-change-password', (_e, current, next) => razze.changePassword(String(current || '').slice(0, 200), String(next || '').slice(0, 200)));
+  ipcMain.handle('razze-reset-password', (_e, email, code, password) => razze.resetPassword(String(email || '').slice(0, 254), String(code || '').slice(0, 20), String(password || '').slice(0, 200)));
+  // Atividade no perfil: só lê o que a página pediu (jogo e/ou Spotify) e devolve o nome do jogo e a faixa
+  ipcMain.handle('atividade-ler', (_e, opcoes) => lerAtividade({ jogos: !!opcoes?.jogos, musica: !!opcoes?.musica }));
+  ipcMain.handle('razze-set-activity', (_e, a) => razze.setActivity({ game: String(a?.game || '').slice(0, 200), artist: String(a?.artist || '').slice(0, 200), title: String(a?.title || '').slice(0, 200) }));
+  ipcMain.handle('razze-set-bio', (_e, bio) => razze.setBio(String(bio || '').slice(0, 400)));
+  ipcMain.handle('razze-friend-link-create', () => razze.friendLinkCreate());
+  ipcMain.handle('razze-friend-link-list', () => razze.friendLinkList());
+  ipcMain.handle('razze-friend-link-revoke', (_e, id) => razze.friendLinkRevoke(String(id || '')));
+  ipcMain.handle('razze-friend-link-preview', (_e, token) => razze.friendLinkPreview(String(token || '').slice(0, 200)));
+  ipcMain.handle('razze-friend-link-accept', (_e, token) => razze.friendLinkAccept(String(token || '').slice(0, 200)));
   // Mensagens diretas: pela RazzeAPI; o histórico fica em arquivos locais (main/mensagens.js)
   // Mensagens diretas: cifradas aqui antes de ir para a RazzeAPI e decifradas ao chegar (main/mensagens-cripto.js)
   ipcMain.handle('razze-send-message', (_e, to, text) => dmE2E.send(String(to || ''), String(text || '')));
@@ -475,6 +499,26 @@ if (hasSingleInstance) app.whenReady().then(() => {
   clips = createClipStore({ dir: path.join(app.getPath('videos'), 'Tela P2P', 'Clipes'), showItem: (file) => shell.showItemInFolder(file) });
   ipcMain.handle('clip-save', (_e, bytes, label) => clips.save(bytes, String(label || '')));
   ipcMain.handle('clip-show', (_e, id) => clips.show(Number(id) || 0));
+  // Comando de voz (renderer/comando-voz.js): o Whisper e o modelo vão para a pasta de dados, conferidos por SHA-256;
+  // a página manda só o WAV (na memória) e a dica com os nomes, e recebe o texto
+  vozCmd = comandoVoz.criar(app.getPath('userData'));
+  ipcMain.handle('voz-cmd-estado', () => vozCmd.estado());
+  ipcMain.handle('voz-cmd-instalar', (e, modelo) => vozCmd.instalar(String(modelo || ''), (p) => {
+    if (!e.sender.isDestroyed()) e.sender.send('voz-cmd', { etapa: p.etapa, feito: p.feito, total: p.total });
+  }));
+  ipcMain.handle('voz-cmd-cancelar', () => vozCmd.cancelar());
+  ipcMain.handle('voz-cmd-remover', () => vozCmd.remover());
+  ipcMain.handle('voz-cmd-transcrever', (_e, wav, modelo, dica) => vozCmd.transcrever(wav, String(modelo || ''), String(dica || '')));
+  ipcMain.handle('voz-cmd-tecla', (_e, on) => setVoiceCmdKey(!!on));
+  // Pedidos livres (etapa B): a chave da Anthropic fica aqui, cifrada; a página só grava, apaga e pergunta se existe
+  const vozIa = criarIa(app.getPath('userData'), { storage: safeStorage });
+  const opcoesIa = (o) => ({ provedor: o?.provedor === 'nuvem' || o?.provedor === 'local' ? o.provedor : '', modelo: String(o?.modelo || '').slice(0, 100), url: String(o?.url || '').slice(0, 200) });
+  ipcMain.handle('voz-ia-estado', () => ({ temChave: vozIa.temChave(), nuvem: vozIa.nuvemDisponivel() }));
+  ipcMain.handle('voz-ia-chave', (_e, chave) => vozIa.salvarChave(String(chave || '').slice(0, 400)));
+  ipcMain.handle('voz-ia-apagar-chave', () => vozIa.apagarChave());
+  ipcMain.handle('voz-ia-entender', (_e, texto, ctx, opcoes) => vozIa.entender(String(texto || '').slice(0, 500), ctx && typeof ctx === 'object' ? ctx : {}, opcoesIa(opcoes)));
+  ipcMain.handle('voz-ia-testar', (_e, opcoes) => vozIa.testar(opcoesIa(opcoes)));
+  ipcMain.handle('voz-cmd-youtube', (_e, busca) => buscarYoutube(String(busca || '').slice(0, 100))); // "toca Evidências"
   ipcMain.handle('open-link', (_e, url) => {
     if (typeof url === 'string' && /^https?:\/\/[^\s]+$/i.test(url)) shell.openExternal(url);
   });

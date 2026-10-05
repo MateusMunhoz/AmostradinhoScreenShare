@@ -18,7 +18,7 @@ const GLOBALS = [
   '$', 'state', 'update', 'QUALITY', 'chat', 'voice', 'mixer', 'once', 'onceSupportCache', 'speaking', 'speakTimer', 'volumes',
   'voiceCfg', 'perf', 'overlay', 'THEME', 'ICON', 'VoiceChat', 'watch', 'watchSelf', 'stopWatching', 'togglePip', 'closePip',
   'setVol', 'sendChat', 'attachFiles', 'startSharing', 'stopSharing', 'switchSource', 'openShareDialog', 'closeShareDialog',
-  'setPanelOpen', 'setPeopleOpen', 'setStatsTab', 'openStats', 'closeStats', 'enterRoom', 'leaveRoom', 'nameOf', 'setRadio',
+  'setPanelOpen', 'setPeopleOpen', 'setStatsTab', 'openStats', 'closeStats', 'showSettingsTab', 'settingsOpenOn', 'voiceSettingsOpen', 'enterRoom', 'leaveRoom', 'nameOf', 'setRadio',
   'openVoiceDialog', 'closeVoiceDialog', 'startCapture', 'accelFromEvent', 'gateThreshold', 'onPttKey', 'renderSpeaking',
   'startSpeakLoop', 'updateDuck', 'setFocus', 'setIncomingVideo', 'renderUpdateBanner', 'scrollChatToEnd', 'markRead',
   'closePersonCard', 'send', 'toast', 'show', 'personColor', 'speakBars', 'renderMembers', 'onceSupport', 'setSessionWatch', 'enterSession', 'onChatPaste', 'FileMetadata', 'withoutMetadata', 'renderMicList', 'fotos', 'paintAvatar', 'setMyPhoto', 'onPhotoSignal', 'appSounds', 'syncMuteSound',
@@ -46,15 +46,18 @@ app.whenReady().then(async () => {
     await run(`enterRoom({ id: '1', features: ['chat', 'voice', 'handoff'], members: [{ id: '2', name: 'Ana', sharing: true, version: '1.9.2' }], chat: [{ id: '1', from: '2', name: 'Ana', ts: Date.now(), text: 'oi' }] }, false, '127.0.0.1', 8765)`);
     await sleep(300);
     check('Entra na sala de mentira: lista e chat', await run(`!$('room').hidden && document.querySelectorAll('#members .member').length === 2 && $('chatList').querySelectorAll('.msg').length === 1`));
-    await run(`(() => { openStats(); setStatsTab('stream'); })()`);
-    check('Estatísticas abrem nas duas abas', await run(`!$('statsDialog').hidden && document.querySelectorAll('#streamRows .stream-card').length === 1`));
-    await run(`(() => { setStatsTab('perf'); closeStats(); openVoiceDialog(); })()`);
-    check('Voz e atalhos abre', await run(`!$('voiceDialog').hidden`));
-    await run(`$('voiceDialog').querySelector('.dialog').dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))`);
-    check('Clicar dentro do cartão não fecha', await run(`!$('voiceDialog').hidden`));
-    await run(`$('voiceDialog').dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))`);
-    await run(`(() => { openStats(); $('statsDialog').dispatchEvent(new MouseEvent('mousedown', { bubbles: true })); })()`);
-    check('Clicar no fundo fecha Voz e atalhos e Estatísticas', await run(`$('voiceDialog').hidden && $('statsDialog').hidden`));
+    await run(`(() => { openStats(); $('statsTabStream').click(); })()`);
+    check('Estatísticas abrem nas configurações, nas duas abas', await run(`!$('generalSettingsDialog').hidden && settingsOpenOn('stats') && !$('settingsPanel-stats').hidden && !$('statsStream').hidden && document.querySelectorAll('#streamRows .stream-card').length === 1`));
+    await run(`(() => { $('statsTabPerf').click(); openVoiceDialog(); })()`);
+    check('Voz e atalhos abre no mesmo lugar, com as duas abas', await run(`voiceSettingsOpen() && !$('settingsPanel-voice').hidden && $('settingsPanel-stats').hidden && !$('settingsTab-shortcuts').hidden && $('statsTabPerf').hidden`));
+    await run(`$('settingsTab-shortcuts').click()`);
+    check('Aba Atalhos troca o painel', await run(`!$('settingsPanel-shortcuts').hidden && $('settingsPanel-voice').hidden && voiceSettingsOpen()`));
+    await run(`document.querySelector('.settings-nav [data-group=sons]').click()`);
+    check('Grupo de uma aba só esconde as abas do topo', await run(`!$('settingsPanel-sounds').hidden && document.querySelector('.settings-tabs').hidden && !voiceSettingsOpen()`));
+    await run(`$('generalSettingsDialog').querySelector('.dialog').dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))`);
+    check('Clicar dentro da janela não fecha', await run(`!$('generalSettingsDialog').hidden`));
+    await run(`$('generalSettingsDialog').dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))`);
+    check('Clicar no fundo fecha as configurações', await run(`$('generalSettingsDialog').hidden`));
     check('Nenhum erro depois de usar', errors.length === 0, errors.join(' | '));
   } catch (e) {
     check('Sem exceção', false, e.message);

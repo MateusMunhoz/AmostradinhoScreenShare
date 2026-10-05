@@ -4,9 +4,9 @@
    que está ligado e o âmbar dos avisos. A voz é a tela do radar (anéis, rumos e a varredura girando: renderer/ceu-voz.js
    › drawSkyRadar), o palco vazio é o HUD e cada transmissão ganha a mira de travamento. Do Top Gun ficam as asas de
    piloto (três listras de cada lado e a estrela, desenhadas aqui) e o vermelho delas, só nos símbolos.
-   O fundo é uma foto real de F-14 Tomcat da Marinha dos EUA (domínio público; a cada vez que o app abre, a próxima,
-   em data-foto, por renderer/configuracoes.js) em tom de visão noturna, com linhas de monitor por cima e a placa de
-   dados no canto do Início. Fotos em assets/temas/topgun-*.webp (origem e licença em assets/temas/OBRAS.md).
+   O fundo é preto, com o HUD apagado e o blueprint de um caça em verde (desenhos reais em domínio público ou livres; a cada vez
+   que o app abre, o próximo, em data-foto, por renderer/configuracoes.js), linhas de monitor por cima e a placa de dados
+   no canto do Início. Blueprints em assets/temas/topgun-bp-*.webp (origem e licença em assets/temas/OBRAS.md).
    Os sons do tema são as chamadas de rádio (skins › sounds em preferencias-modelo.js; os arquivos por
    assets/temas/gerar-radio.js). As cores vêm do tema; aqui fica só o desenho. Fora a varredura do radar (que para com
    o app fora de foco e no modo gamer, como as órbitas, e gira mesmo com "reduzir movimento" do Windows), nada anima sozinho. */
@@ -43,22 +43,20 @@
 }
 :root[data-skin="topgun"] ::selection { background: var(--tg-green); color: #000; }
 
-/* ---------- O fundo: a foto do F-14 em visão noturna, com linhas de monitor e a sombra das bordas ---------- */
+/* ---------- O fundo: preto. Fora da sala, o blueprint técnico de um caça em verde (um a cada vez que o app abre); dentro da sala, só preto (o HUD fica no palco sem transmissão) ---------- */
+:root[data-skin="topgun"], :root[data-skin="topgun"] body { background-color: #000; }
 :root[data-skin="topgun"] body::before, :root[data-skin="topgun"] body::after {
   content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
 }
+:root[data-skin="topgun"] body.workspace-in-room::before { display: none; }
 :root[data-skin="topgun"] body::before {
-  background: #010402 var(--tg-foto, url(assets/temas/topgun-catapulta.webp)) var(--tg-foto-pos, 50% 60%) / cover no-repeat;
-  filter: grayscale(1) sepia(1) hue-rotate(72deg) saturate(2.4) brightness(.36) contrast(1.15);
+  inset: 5vh 4vw; background: var(--tg-foto, url(assets/temas/topgun-bp-f22.webp)) center / contain no-repeat; opacity: .6;
 }
-:root[data-skin="topgun"][data-foto="conves"] body::before { --tg-foto: url(assets/temas/topgun-conves.webp); --tg-foto-pos: 62% 50%; }
-:root[data-skin="topgun"][data-foto="formacao"] body::before { --tg-foto: url(assets/temas/topgun-formacao.webp); --tg-foto-pos: 70% 45%; filter: grayscale(1) sepia(1) hue-rotate(72deg) saturate(2.4) brightness(.24) contrast(1.15); }
-:root[data-skin="topgun"][data-foto="f22-silhueta"] body::before { --tg-foto: url(assets/temas/topgun-f22-silhueta.webp); --tg-foto-pos: 50% 60%; }
-:root[data-skin="topgun"][data-foto="f22-noite"] body::before { --tg-foto: url(assets/temas/topgun-f22-noite.webp); --tg-foto-pos: 50% 40%; filter: grayscale(1) sepia(1) hue-rotate(72deg) saturate(2.4) brightness(.55) contrast(1.2); }
-:root[data-skin="topgun"][data-foto="superhornet"] body::before { --tg-foto: url(assets/temas/topgun-superhornet.webp); --tg-foto-pos: 55% 50%; filter: grayscale(1) sepia(1) hue-rotate(72deg) saturate(2.4) brightness(.28) contrast(1.15); }
-:root[data-skin="topgun"][data-foto="f35-noite"] body::before { --tg-foto: url(assets/temas/topgun-f35-noite.webp); --tg-foto-pos: 50% 60%; }
-:root[data-skin="topgun"][data-foto="f16"] body::before { --tg-foto: url(assets/temas/topgun-f16.webp); --tg-foto-pos: 50% 45%; filter: grayscale(1) sepia(1) hue-rotate(72deg) saturate(2.4) brightness(.3) contrast(1.15); }
-:root[data-skin="topgun"][data-foto="mar"] body::before { --tg-foto: url(assets/temas/topgun-mar.webp); --tg-foto-pos: 50% 50%; }
+:root[data-skin="topgun"][data-foto="f22"] body::before { --tg-foto: url(assets/temas/topgun-bp-f22.webp); }
+:root[data-skin="topgun"][data-foto="f18"] body::before { --tg-foto: url(assets/temas/topgun-bp-f18.webp); }
+:root[data-skin="topgun"][data-foto="a10"] body::before { --tg-foto: url(assets/temas/topgun-bp-a10.webp); }
+:root[data-skin="topgun"][data-foto="f16"] body::before { --tg-foto: url(assets/temas/topgun-bp-f16.webp); }
+:root[data-skin="topgun"][data-foto="f15"] body::before { --tg-foto: url(assets/temas/topgun-bp-f15.webp); }
 :root[data-skin="topgun"] body::after {
   background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, .28) 0 1px, transparent 1px 3px),
     radial-gradient(ellipse 80% 75% at 50% 45%, transparent 35%, rgba(0, 0, 0, .78) 100%);
@@ -137,40 +135,22 @@
   font: 400 10px/1 var(--tg-mono); letter-spacing: .2em; color: var(--tg-green); opacity: .45; white-space: pre; text-shadow: 0 0 6px #000;
 }
 
-/* ---------- Saguão: "TOP GUN" em pé, vazado em fósforo, com o caça da foto visto de cima no fim, e a placa de dados ---------- */
-:root[data-skin="topgun"] { --tg-name: clamp(70px, 12vh, 130px); }
-:root[data-skin="topgun"] .home-screen::before {
-  content: "TOP GUN" var(--tg-jet); position: fixed; left: 34px; top: 90px; bottom: 40px; z-index: 0; pointer-events: none;
-  writing-mode: vertical-rl; transform: rotate(180deg); text-align: center;
-  font: 700 var(--tg-name)/.9 var(--tg-font); font-stretch: condensed; letter-spacing: .16em; white-space: nowrap;
-  color: #020904; -webkit-text-stroke: 3px rgba(57, 255, 106, .8); paint-order: stroke fill; text-shadow: 0 0 14px rgba(57, 255, 106, .25);
-}
-/* O caça de cada foto, visto de cima (o desenho, com as medidas reais, sai de assets/temas/gerar-cacas.js) */
-:root[data-skin="topgun"] { --tg-jet: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='88' height='92' viewBox='-56 -3 112 108'><g transform='rotate(180 0 51)' fill='none' stroke='%2339FF6A' stroke-width='1.5' stroke-linejoin='round'><path d='M0 0 L1.6 6 L3 13 L3.6 19 L4 27 L5 31 L19 55 L50 77 L49 85 L17 72 L13 74 L13 80 L28 93 L28 98 L13 99 L12.5 103 L6.5 103 L6 97 L3 97 L1.5 102 L0 102 L-1.5 102 L-3 97 L-6 97 L-6.5 103 L-12.5 103 L-13 99 L-28 98 L-28 93 L-13 80 L-13 74 L-17 72 L-49 85 L-50 77 L-19 55 L-5 31 L-4 27 L-3.6 19 L-3 13 L-1.6 6Z' fill='%2339FF6A' fill-opacity='.1'/><ellipse cx='0' cy='25' rx='1.9' ry='8.5'/><path d='M6.5 44V97M-6.5 44V97M9 72 11 95M-9 72 -11 95' stroke-opacity='.75' stroke-width='1.1'/></g></svg>"); }
-:root[data-skin="topgun"]:is([data-foto="f22-silhueta"], [data-foto="f22-noite"]) { --tg-jet: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='88' height='92' viewBox='-56 -3 112 108'><g transform='rotate(180 0 51)' fill='none' stroke='%2339FF6A' stroke-width='1.5' stroke-linejoin='round'><path d='M0 0 L2.4 8 L4.4 16 L5.8 26 L9.5 30 L10 38 L10.5 41 L36 66 L35.5 71 L14 77.6 L12.5 78 L12.5 80 L23 92 L22.5 96 L11 101 L9 102 L3 102 L2 99 L0 99 L-2 99 L-3 102 L-9 102 L-11 101 L-22.5 96 L-23 92 L-12.5 80 L-12.5 78 L-14 77.6 L-35.5 71 L-36 66 L-10.5 41 L-10 38 L-9.5 30 L-5.8 26 L-4.4 16 L-2.4 8Z' fill='%2339FF6A' fill-opacity='.1'/><ellipse cx='0' cy='20' rx='2.2' ry='9'/><path d='M9 66 14 77 14 92 9 90ZM-9 66 -14 77 -14 92 -9 90ZM9.5 30 8.5 52M-9.5 30 -8.5 52' stroke-opacity='.75' stroke-width='1.1'/></g></svg>"); }
-:root[data-skin="topgun"][data-foto="superhornet"] { --tg-jet: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='88' height='92' viewBox='-56 -3 112 108'><g transform='rotate(180 0 51)' fill='none' stroke='%2339FF6A' stroke-width='1.5' stroke-linejoin='round'><path d='M0 0 L1.8 7 L3 14 L3.6 20 L4.5 26 L7 34 L10 41 L11.5 46 L35 58.5 L35 64 L12.5 70 L12 70 L11.5 78 L25 88 L25 92 L11 96 L8.5 100 L3.5 100 L2.5 97 L0 97 L-2.5 97 L-3.5 100 L-8.5 100 L-11 96 L-25 92 L-25 88 L-11.5 78 L-12 70 L-12.5 70 L-35 64 L-35 58.5 L-11.5 46 L-10 41 L-7 34 L-4.5 26 L-3.6 20 L-3 14 L-1.8 7Z' fill='%2339FF6A' fill-opacity='.1'/><ellipse cx='0' cy='22' rx='2' ry='10.5'/><path d='M7.5 62 11 70 11 88 7.5 86ZM-7.5 62 -11 70 -11 88 -7.5 86ZM36.5 55V66M-36.5 55V66' stroke-opacity='.75' stroke-width='1.1'/></g></svg>"); }
-:root[data-skin="topgun"][data-foto="f35-noite"] { --tg-jet: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='88' height='92' viewBox='-56 -3 112 108'><g transform='rotate(180 0 51)' fill='none' stroke='%2339FF6A' stroke-width='1.5' stroke-linejoin='round'><path d='M0 0 L2 6 L3.6 12 L4.8 18 L6 24 L10 30 L11 38 L11.5 40 L41.5 60 L40.5 67 L14 73 L13 74 L13 77 L29 88 L29 92 L11 96 L6 96 L4 103 L0 103 L-4 103 L-6 96 L-11 96 L-29 92 L-29 88 L-13 77 L-13 74 L-14 73 L-40.5 67 L-41.5 60 L-11.5 40 L-11 38 L-10 30 L-6 24 L-4.8 18 L-3.6 12 L-2 6Z' fill='%2339FF6A' fill-opacity='.1'/><ellipse cx='0' cy='19' rx='2.3' ry='9'/><path d='M7.5 62 12 72 12 88 7.5 86ZM-7.5 62 -12 72 -12 88 -7.5 86ZM10 30 8 46M-10 30 -8 46' stroke-opacity='.75' stroke-width='1.1'/></g></svg>"); }
-:root[data-skin="topgun"][data-foto="f16"] { --tg-jet: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='88' height='92' viewBox='-56 -3 112 108'><g transform='rotate(180 0 51)' fill='none' stroke='%2339FF6A' stroke-width='1.5' stroke-linejoin='round'><path d='M0 0 L1.6 7 L2.6 14 L3.4 22 L4 30 L6.5 42 L8.5 50 L31 69 L31 76 L8.5 76 L8 77 L8 80 L20 90 L20 94 L7.5 96 L4.2 100 L0 100 L-4.2 100 L-7.5 96 L-20 94 L-20 90 L-8 80 L-8 77 L-8.5 76 L-31 76 L-31 69 L-8.5 50 L-6.5 42 L-4 30 L-3.4 22 L-2.6 14 L-1.6 7Z' fill='%2339FF6A' fill-opacity='.1'/><ellipse cx='0' cy='21' rx='2' ry='9'/><path d='M32.5 64V79M-32.5 64V79M0 70V97' stroke-opacity='.75' stroke-width='1.1'/></g></svg>"); }
-/* A placa de dados: avião e esquadrão, o que acontece na foto, navio e data, e o crédito */
-:root[data-skin="topgun"] { --tg-placa: "F-14 Tomcat  ·  VF-154 Black Knights\A Lançamento na catapulta, pós-combustor aceso\A USS Kitty Hawk (CV-63)  ·  09 nov 2002\A Foto: U.S. Navy / PH3 Todd Frantom"; }
-:root[data-skin="topgun"][data-foto="conves"] { --tg-placa: "F-14 Tomcat  ·  VF-213 Black Lions\A Preparando o lançamento, convés à noite\A USS Theodore Roosevelt (CVN-71)  ·  22 mar 2003\A Foto: U.S. Navy / PH2 James K. McNeil"; }
-:root[data-skin="topgun"][data-foto="formacao"] { --tg-placa: "F-14B Tomcat 201 e 202  ·  VF-11 Red Rippers\A Em formação, numa surtida de combate\A USS George Washington (CVN-73)  ·  22 abr 2004\A Foto: USAF / SSgt Aaron D. Allmon II"; }
-:root[data-skin="topgun"][data-foto="f22-silhueta"] { --tg-placa: "F-22 Raptor  ·  U.S. Air Force\A Em silhueta no pôr do sol\A Caça furtivo de 5ª geração  ·  25 nov 2002\A Foto: USAF / Kevin Robertson"; }
-:root[data-skin="topgun"][data-foto="f22-noite"] { --tg-placa: "F-22 Raptor  ·  433rd Weapons Squadron\A Reabastecendo de um KC-135 à noite\A Nevada Test and Training Range  ·  16 jun 2016\A Foto: USAF / A1C Kevin Tanenbaum"; }
-:root[data-skin="topgun"][data-foto="superhornet"] { --tg-placa: "F/A-18F Super Hornet  ·  VFA-211 Checkmates\A Lançamento na catapulta\A USS Enterprise (CVN-65)  ·  18 jul 2007\A Foto: U.S. Navy / MCSN Brandon Morris"; }
-:root[data-skin="topgun"][data-foto="f35-noite"] { --tg-placa: "F-35C Lightning II  ·  Pax River ITF\A Primeiras operações noturnas no porta-aviões\A USS Nimitz (CVN-68)  ·  13 nov 2014\A Foto: U.S. Navy"; }
-:root[data-skin="topgun"][data-foto="f16"] { --tg-placa: "F-16 Fighting Falcon  ·  8th Tactical Fighter Wing\A Soltando flare contra míssil guiado por calor\A Exercício Team Spirit  ·  mar 1986\A Foto: USAF / A1C Perry Mecum"; }
-:root[data-skin="topgun"][data-foto="mar"] { --tg-placa: "F-14D Tomcat  ·  VF-31 Tomcatters\A Na aproximação para o pouso\A USS Theodore Roosevelt (CVN-71)  ·  28 fev 2006\A Foto: U.S. Navy / AN Nathan Laird"; }
+/* ---------- Saguão: a placa de dados do blueprint ---------- */
+/* A placa de dados: o caça do blueprint, o fabricante e a origem do desenho */
+:root[data-skin="topgun"] { --tg-placa: "F-22 Raptor\A Desenho: Wikimedia Commons (CC BY-SA 2.0)"; }
+:root[data-skin="topgun"][data-foto="f18"] { --tg-placa: "F/A-18 Hornet"; }
+:root[data-skin="topgun"][data-foto="a10"] { --tg-placa: "A-10 Thunderbolt II\A Desenho: Fairchild Republic"; }
+:root[data-skin="topgun"][data-foto="f16"] { --tg-placa: "F-16 Fighting Falcon\A Desenho: Cristian Ibarra Santillan (CC0)"; }
+:root[data-skin="topgun"][data-foto="f15"] { --tg-placa: "F-15 Eagle\A Desenho: Wikimedia Commons (CC0)"; }
 :root[data-skin="topgun"] .home-screen::after {
   content: var(--tg-placa); white-space: pre; pointer-events: none; z-index: 1; text-align: left;
-  position: fixed; left: calc(var(--hub-w, 0px) + 54px + var(--tg-name)); bottom: 64px;
+  position: fixed; left: calc(var(--hub-w, 0px) + 54px); bottom: 64px;
   padding: 8px 14px 9px; border: 1px solid var(--tg-green-dim); border-left: 3px solid var(--tg-red); border-radius: 0;
   font: 400 11px/1.55 var(--tg-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--tg-green); text-shadow: var(--tg-glow);
   background: rgba(1, 6, 3, .9); box-shadow: 0 0 0 3px #0B0E0C, 0 0 0 4px #262C27;
 }
 :root[data-skin="topgun"] .home-main { position: relative; z-index: 1; }
 @media (max-width: 1100px) {
-  :root[data-skin="topgun"] .home-screen::before { display: none; }
   :root[data-skin="topgun"] .home-screen::after { left: calc(var(--hub-w, 0px) + 22px); }
 }
 @media (max-height: 640px), (max-width: 980px) { :root[data-skin="topgun"] .home-screen::after { display: none; } }
@@ -180,7 +160,7 @@
 :root[data-skin="topgun"] .empty-stage {
   position: relative; overflow: hidden; align-content: end; padding-bottom: 58px; border-style: solid; border-color: var(--tg-green-dim);
   background:
-    url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300' fill='none' stroke='%2339FF6A' stroke-width='1.1' font-family='Consolas,monospace' font-size='9'><g stroke-opacity='.7'><path d='M178 150H190L195 158L200 150L205 158L210 150H222'/><circle cx='200' cy='150' r='1.6' fill='%2339FF6A'/><path d='M130 110H180M220 110H270M130 110V116M270 110V116M130 70H180M220 70H270M130 70V76M270 70V76'/><path d='M130 190H180M220 190H270M130 190V184M270 190V184M130 230H180M220 230H270M130 230V224M270 230V224' stroke-dasharray='8 5'/></g><g fill='%2339FF6A' fill-opacity='.7' stroke='none'><text x='124' y='113' text-anchor='end'>10</text><text x='276' y='113'>10</text><text x='124' y='73' text-anchor='end'>20</text><text x='276' y='73'>20</text><text x='124' y='193' text-anchor='end'>-10</text><text x='276' y='193'>-10</text><text x='124' y='233' text-anchor='end'>-20</text><text x='276' y='233'>-20</text><text x='200' y='22' text-anchor='middle'>27</text><text x='150' y='22' text-anchor='middle' fill-opacity='.45'>26</text><text x='250' y='22' text-anchor='middle' fill-opacity='.45'>28</text><text x='44' y='147' text-anchor='middle'>350</text><text x='356' y='147' text-anchor='middle'>25000</text><text x='44' y='164' text-anchor='middle' fill-opacity='.45'>KTS</text><text x='356' y='164' text-anchor='middle' fill-opacity='.45'>FT</text><text x='30' y='272'>G 1.0</text><text x='30' y='285' fill-opacity='.45'>M 0.62</text><text x='370' y='272' text-anchor='end'>AIM-9</text><text x='370' y='285' text-anchor='end' fill-opacity='.45'>SRM</text></g><g stroke-opacity='.5'><path d='M120 30H280M140 30V36M160 30V34M180 30V34M200 26V38M220 30V34M240 30V34M260 30V36M197 42L200 38L203 42'/><path d='M24 100V200M24 150H30M376 100V200M376 150H370' stroke-opacity='.35'/></g></svg>") center 46% / auto 76% no-repeat,
+    url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 520' fill='none' stroke='%2339FF6A' stroke-width='1.4' stroke-linecap='round' font-family='Consolas,monospace' font-size='13'><g stroke-opacity='.85'><path d='M160 70L160 58'/><path d='M200 70L200 63'/><path d='M240 70L240 58'/><path d='M280 70L280 63'/><path d='M320 70L320 58'/><path d='M360 70L360 63'/><path d='M400 70L400 58'/><path d='M440 70L440 63'/><path d='M480 70L480 58'/><path d='M520 70L520 63'/><path d='M560 70L560 58'/><path d='M600 70L600 63'/><path d='M640 70L640 58'/><path d='M250 70L550 70'/><path d='M400 74L394 84H406Z'/><rect x='378' y='88' width='44' height='18'/><path d='M150 160L156 160'/><path d='M150 180L162 180'/><path d='M150 200L156 200'/><path d='M150 220L162 220'/><path d='M150 240L156 240'/><path d='M150 260L162 260'/><path d='M150 280L156 280'/><path d='M150 300L162 300'/><path d='M150 320L156 320'/><path d='M150 340L162 340'/><path d='M150 360L156 360'/><path d='M166 160L166 360'/><path d='M82 248H146V272H82ZM146 260L156 260'/><path d='M650 160L644 160'/><path d='M650 180L638 180'/><path d='M650 200L644 200'/><path d='M650 220L638 220'/><path d='M650 240L644 240'/><path d='M650 260L638 260'/><path d='M650 280L644 280'/><path d='M650 300L638 300'/><path d='M650 320L644 320'/><path d='M650 340L638 340'/><path d='M650 360L644 360'/><path d='M634 160L634 360'/><path d='M654 248H726V272H654ZM654 260L644 260'/><path d='M300 364H365M435 364H500' stroke-dasharray='7 5'/><path d='M300 364L300 357'/><path d='M500 364L500 357'/><path d='M300 312H365M435 312H500' stroke-dasharray='7 5'/><path d='M300 312L300 305'/><path d='M500 312L500 305'/><path d='M300 208H365M435 208H500'/><path d='M300 208L300 215'/><path d='M500 208L500 215'/><path d='M300 156H365M435 156H500'/><path d='M300 156L300 163'/><path d='M500 156L500 163'/><path d='M330 286H365M435 286H470'/><path d='M330 234H365M435 234H470'/><path d='M240 260L360 260'/><path d='M440 260L560 260'/><circle cx='400' cy='248' r='7'/><path d='M393 248L378 248'/><path d='M407 248L422 248'/><path d='M400 241L400 231'/><path d='M392 262H408M400 254V270' stroke-opacity='.7'/><path d='M340 236V272M340 236H346M340 272H346'/></g><g fill='%2339FF6A' stroke='none' fill-opacity='.9'><text x='160' y='48' text-anchor='middle' fill-opacity='0.8'>240</text><text x='240' y='48' text-anchor='middle' fill-opacity='0.8'>250</text><text x='320' y='48' text-anchor='middle' fill-opacity='0.8'>260</text><text x='400' y='48' text-anchor='middle' fill-opacity='0.8'>270</text><text x='480' y='48' text-anchor='middle' fill-opacity='0.8'>280</text><text x='560' y='48' text-anchor='middle' fill-opacity='0.8'>290</text><text x='640' y='48' text-anchor='middle' fill-opacity='0.8'>300</text><text x='400' y='101' text-anchor='middle'>270</text><text x='140' y='184' text-anchor='end' fill-opacity='0.8'>390</text><text x='140' y='224' text-anchor='end' fill-opacity='0.8'>370</text><text x='140' y='304' text-anchor='end' fill-opacity='0.8'>330</text><text x='140' y='344' text-anchor='end' fill-opacity='0.8'>310</text><text x='142' y='266' text-anchor='end'>350</text><text x='150' y='150' text-anchor='end' fill-opacity='0.6'>KTS</text><text x='150' y='386' text-anchor='end' fill-opacity='0.8'>M 0.62</text><text x='150' y='404' text-anchor='end' fill-opacity='0.8'>G 1.0</text><text x='660' y='184' text-anchor='start' fill-opacity='0.8'>25400</text><text x='660' y='224' text-anchor='start' fill-opacity='0.8'>25200</text><text x='660' y='304' text-anchor='start' fill-opacity='0.8'>24800</text><text x='660' y='344' text-anchor='start' fill-opacity='0.8'>24600</text><text x='660' y='266' text-anchor='start'>25000</text><text x='650' y='150' text-anchor='start' fill-opacity='0.6'>ALT</text><text x='650' y='386' text-anchor='start' fill-opacity='0.8'>R 1200</text><text x='284' y='368' text-anchor='end' fill-opacity='0.8'>20</text><text x='516' y='368' text-anchor='start' fill-opacity='0.8'>20</text><text x='284' y='316' text-anchor='end' fill-opacity='0.8'>10</text><text x='516' y='316' text-anchor='start' fill-opacity='0.8'>10</text><text x='284' y='212' text-anchor='end' fill-opacity='0.8'>10</text><text x='516' y='212' text-anchor='start' fill-opacity='0.8'>10</text><text x='284' y='160' text-anchor='end' fill-opacity='0.8'>20</text><text x='516' y='160' text-anchor='start' fill-opacity='0.8'>20</text><text x='334' y='258' text-anchor='end' fill-opacity='0.7'>α</text><text x='250' y='436' text-anchor='start' fill-opacity='0.8'>AIM-9  SRM  2</text><text x='550' y='436' text-anchor='end' fill-opacity='0.8'>MASTER ARM  ON</text></g></svg>") center 40% / contain no-repeat,
     var(--tg-corners), rgba(1, 5, 2, .55);
 }
 :root[data-skin="topgun"] .empty-stage::before {
@@ -255,10 +235,10 @@ body.app-blurred .voice-sky .blip { animation-play-state: paused; }
 :root[data-skin="topgun"] .voice-sky .sky-pname { fill: var(--tg-green-hi); }
 body.app-blurred .voice-sky .sky-sweep { animation-play-state: paused; }
 
-/* ---------- Prévia na aba Tema (vale sempre, com as cores fixas do tema): um MFD com o F-14 e as asas ---------- */
+/* ---------- Prévia na aba Tema (vale sempre, com as cores fixas do tema): um MFD com o blueprint e as asas ---------- */
 .skin-preview[data-preview=topgun] {
   background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, .3) 0 1px, transparent 1px 3px),
-    url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='90' height='87' viewBox='-56 -3 112 108'><g fill='none' stroke='%2339FF6A' stroke-width='1.5' stroke-linejoin='round'><path d='M0 0 L1.6 6 L3 13 L3.6 19 L4 27 L5 31 L19 55 L50 77 L49 85 L17 72 L13 74 L13 80 L28 93 L28 98 L13 99 L12.5 103 L6.5 103 L6 97 L3 97 L1.5 102 L0 102 L-1.5 102 L-3 97 L-6 97 L-6.5 103 L-12.5 103 L-13 99 L-28 98 L-28 93 L-13 80 L-13 74 L-17 72 L-49 85 L-50 77 L-19 55 L-5 31 L-4 27 L-3.6 19 L-3 13 L-1.6 6Z' fill='%2339FF6A' fill-opacity='.1'/><ellipse cx='0' cy='25' rx='1.9' ry='8.5'/><path d='M6.5 44V97M-6.5 44V97M9 72 11 95M-9 72 -11 95' stroke-opacity='.75' stroke-width='1.1'/></g></svg>") 30px 50% / auto 84% no-repeat,
+    url(assets/temas/topgun-bp-f22.webp) center / auto 84% no-repeat,
     radial-gradient(ellipse at 25% 50%, rgba(57, 255, 106, .12), transparent 60%), #010402;
   border-color: #14532A;
 }
@@ -267,12 +247,7 @@ body.app-blurred .voice-sky .sky-sweep { animation-play-state: paused; }
   background: linear-gradient(#D7343E, #D7343E) 0 0 / 36% 100% no-repeat, linear-gradient(#D7343E, #D7343E) 100% 0 / 36% 100% no-repeat, #F4F6FB;
   -webkit-mask: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 60'><g fill='black'><path d='M2 18H34V24H6ZM8 28H34V34H12ZM14 38H34V44H18ZM98 18H66V24H94ZM92 28H66V34H88ZM86 38H66V44H82Z'/><path d='M50 16 53.29 25.47 63.31 25.67 55.33 31.73 58.23 41.33 50 35.6 41.77 41.33 44.67 31.73 36.69 25.67 46.71 25.47Z'/></g></svg>") center / contain no-repeat;
 }
-.skin-preview[data-preview=topgun]::after {
-  content: "TOP GUN"; position: absolute; right: 16px; bottom: 12px;
-  font: 700 18px/1 "Cascadia Mono", Consolas, monospace; letter-spacing: .2em; color: #39FF6A; text-shadow: 0 0 8px rgba(57, 255, 106, .6);
-}
 
-/* ---------- Interface espelhada (Aparência › Espelhar a interface): a foto vira e o letreiro e a placa vão para a direita ---------- */
+/* ---------- Interface espelhada (Aparência › Espelhar a interface): a foto vira e a placa vai para a direita ---------- */
 :root[data-skin="topgun"][data-mirror="on"] body::before { transform: scaleX(-1); }
-:root[data-skin="topgun"][data-mirror="on"] .home-screen::before { left: auto; right: 34px; }
-:root[data-skin="topgun"][data-mirror="on"] .home-screen::after { left: auto; right: calc(var(--hub-w, 0px) + 54px + var(--tg-name)); }
+:root[data-skin="topgun"][data-mirror="on"] .home-screen::after { left: auto; right: calc(var(--hub-w, 0px) + 54px); }

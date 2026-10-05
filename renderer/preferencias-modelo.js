@@ -32,8 +32,7 @@ const AppPreferences = (() => {
     { id: 'radioGoingCold', label: 'Rádio · "Going cold." e "Master arm, safe."', files: ['radio-going-cold-1.wav', 'radio-going-cold-2.wav', 'radio-going-cold-3.wav'] },
     { id: 'radioSilence', label: 'Rádio · "Radio silence."', files: ['radio-radio-silence-1.wav', 'radio-radio-silence-2.wav', 'radio-radio-silence-3.wav'] },
     { id: 'radioLoudClear', label: 'Rádio · "Loud and clear." e "Five by five."', files: ['radio-loud-and-clear-1.wav', 'radio-loud-and-clear-2.wav', 'radio-loud-and-clear-3.wav'] },
-    { id: 'radioBravoSix', label: 'Rádio · "Bravo six, going dark."', files: ['radio-bravo-six-1.wav', 'radio-bravo-six-2.wav'] },
-    { id: 'radioSquelch', label: 'Rádio · clique e chiado', file: 'radio-squelch.wav' },
+    { id: 'radioSquelch', label: 'Rádio · Copy', file: 'radio-squelch.wav' },
   ];
   // mute/unmute: o seu microfone (o apertar para falar não conta); deafen/undeafen: o seu fone (Silenciar vozes);
   // shareStart/shareStop: a sua transmissão; mention: alguém escreveu @seu nome no chat; enter: você entrou numa sala
@@ -159,12 +158,11 @@ const AppPreferences = (() => {
       colors: { main: '#1C140D', secondary: '#2B1F15', detail1: '#D4AF5A', detail2: '#8DB37A', warn: '#E0873A', text: '#EEE2C6', line: '#5A4426' }, appearance: { glass: 'opaque', border: 'solid' } },
     // Top Gun: a escola de caça com a cabine do F-14. Painéis de MFD (fósforo verde no preto), o radar na voz, as asas
     // de piloto e as chamadas de rádio como sons: Fox one (entrou), Splash one (saiu), Radio check (transmissão),
-    // R T B (parou), Going hot/cold (microfone), Radio silence/Loud and clear (fone), Tally ho (menção), Bravo six,
-    // going dark (você entrou numa sala) e o clique
-    // no chat (styles-topgun.css; o radar em ceu-voz.js › drawSkyRadar)
-    { id: 'topgun', label: 'Top Gun', note: 'A cabine do F-14: painéis de MFD em verde no preto, a voz num radar, asas de piloto, fotos reais de caças e as chamadas de rádio como sons (Fox one, Splash one, Radio check).',
+    // R T B (parou), Going hot/cold (microfone), Radio silence/Loud and clear (fone), Tally ho (menção), e o
+    // "Copy" no chat (styles-topgun.css; o radar em ceu-voz.js › drawSkyRadar)
+    { id: 'topgun', label: 'Top Gun', note: 'A cabine do F-14: painéis de MFD em verde no preto, a voz num radar, asas de piloto, blueprints de caças em verde e as chamadas de rádio como sons (Fox one, Splash one, Radio check).',
       colors: { main: '#010402', secondary: '#04100A', detail1: '#39FF6A', detail2: '#7DF9FF', warn: '#FFB000', text: '#B9F5C4', line: '#14532A' }, appearance: { glass: 'opaque', border: 'solid' },
-      sounds: { enter: 'radioBravoSix', join: 'radioFoxOne', voiceJoin: 'radioFoxOne', leave: 'radioSplash', voiceLeave: 'radioSplash', shareStart: 'radioCheck', shareStop: 'radioRtb',
+      sounds: { enter: 'radioCheck', join: 'radioFoxOne', voiceJoin: 'radioFoxOne', leave: 'radioSplash', voiceLeave: 'radioSplash', shareStart: 'radioCheck', shareStop: 'radioRtb',
         mute: 'radioGoingCold', unmute: 'radioGoingHot', deafen: 'radioSilence', undeafen: 'radioLoudClear', mention: 'radioTallyHo', chat: 'radioSquelch' } },
   ];
   const cleanSkin = (id) => skins.some((k) => k.id && k.id === id) ? id : '';

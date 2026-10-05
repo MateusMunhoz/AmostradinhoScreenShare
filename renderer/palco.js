@@ -247,7 +247,11 @@ function setupTileIdle(el) {
     clearTimeout(timer);
     timer = setTimeout(idle, TILE_IDLE_MS);
   });
-  el.addEventListener('pointerleave', () => { clearTimeout(timer); el.classList.add('ui-idle'); });
+  // Indo para a pílula da sala (que fica por cima das telas), a tela continua à vista: as duas somem juntas depois
+  el.addEventListener('pointerleave', (e) => {
+    clearTimeout(timer);
+    if (!e.relatedTarget?.closest?.('.dock')) el.classList.add('ui-idle');
+  });
 }
 
 // Arrastar pela faixa do nome (os botões dela continuam funcionando normalmente)

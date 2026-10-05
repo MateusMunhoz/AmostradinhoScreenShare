@@ -56,6 +56,7 @@ O **Convidar** do HUB › Amigos manda uma mensagem direta com um texto legível
 `{ v: 1, modo: 'radmin' | 'razze', endereco, senha, pessoas, rede? }`. A senha nunca vai. Quem convida pelo modo
 Internet registra um passe na hora (`garantirPasse`), mesmo sem ter criado a sala ou com a caixinha desmarcada;
 quem entrou por um passe não tem como convidar com passe (o convite vai sem, e o amigo digita a senha).
+Exceção: a chamada (`chamada: true`, [spec](chamada.md)) leva a senha em `chave`.
 O app de quem recebe (`lerConvite`, `salas-amigos.js`) confere tudo e mostra um cartão com Entrar na conversa
 (`mensagens.js`); entra só com o clique, só no mesmo modo, e pergunta antes de sair de outra sala.
 

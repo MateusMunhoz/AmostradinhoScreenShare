@@ -17,25 +17,20 @@ em `styles-renascenca.css`, em `PACK_FILES` (`publicar.js`) e cabe no `assets/te
 
 Fontes do tema: Cinzel e EB Garamond (licença SIL OFL, `assets/fontes/OFL-cinzel.txt` e `OFL-eb-garamond.txt`).
 
-# Fotos do tema Top Gun
+# Blueprints do tema Top Gun
 
-Fundos do tema Top Gun (`styles-topgun.css`). Todas em **domínio público**: fotos de militares dos EUA em serviço
-(obra do governo federal americano). Tiradas do Wikimedia Commons, reduzidas para até 1920 px de largura e convertidas
-para WebP (qualidade 0,72; as duas maiores, F-16 e F-35C, com 1600 px e qualidade 0,6) pelo Chromium. O tom de visão
-noturna é feito no CSS; a placa de dados de cada uma (avião, unidade, navio ou lugar, data e fotógrafo) fica em
-`--tg-placa` no CSS, tirada da legenda oficial.
+Fundos do Início no tema Top Gun (`styles-topgun.css`): desenhos técnicos reais, do Wikimedia Commons, convertidos pelo
+Chromium para WebP em verde (#39FF6A) sobre transparente (o preto vem do CSS). Nada foi redesenhado. Cortes (cutaway) e
+míssil desmontado onde existe desenho livre. Só entram desenhos limpos e reais; Su-57, F-35, MiG-29 e AC-130 foram tirados por falta de desenho de boa qualidade. Dentro da sala o fundo é preto.
 
-| Arquivo | Foto | Arquivo de origem no Commons | Licença lá |
+| Arquivo | Conteúdo | Origem no Commons | Licença lá |
 |---|---|---|---|
-| `topgun-catapulta.webp` | F-14 do VF-154 no lançamento, USS Kitty Hawk, 09/11/2002 (PH3 Todd Frantom, U.S. Navy) | `US Navy 021109-N-1810F-017 After burners on an F-14 Tomcat fire as the aircraft makes a cataputl launch.jpg` | Domínio público |
-| `topgun-conves.webp` | F-14 do VF-213 no convés à noite, USS Theodore Roosevelt, 22/03/2003 (PH2 James K. McNeil, U.S. Navy) | `US Navy 030321-N-6895M-502 An F-14 Tomcat assigned to the.jpg` | Domínio público |
-| `topgun-formacao.webp` | F-14B 201 e 202 do VF-11 em formação, 22/04/2004 (SSgt Aaron D. Allmon II, USAF) | `US Navy F-14B Tomcat (2268469404).jpg` | Domínio público |
-| `topgun-mar.webp` | F-14D do VF-31 na aproximação, USS Theodore Roosevelt, 28/02/2006 (AN Nathan Laird, U.S. Navy) | `US Navy 060228-N-7241L-007 An F-14D Tomcat assigned to the.jpg` | Domínio público |
-| `topgun-f22-silhueta.webp` | F-22 Raptor em silhueta, 25/11/2002 (Kevin Robertson, USAF) | `F-22 Raptor, silhouetted - 021105-O-9999G-073.jpg` | Domínio público |
-| `topgun-f22-noite.webp` | F-22 do 433rd Weapons Squadron reabastecendo à noite, Nevada, 16/06/2016 (A1C Kevin Tanenbaum, USAF) | `F-22 Raptor is being refueled by a KC-135 Stratotanker over the Nevada Test and Training Range.jpg` | Domínio público |
-| `topgun-superhornet.webp` | F/A-18F do VFA-211 no lançamento, USS Enterprise, 18/07/2007 (MCSN Brandon Morris, U.S. Navy) | `US Navy 070718-N-6524M-002 An F-A-18F Super Hornet, attached to the.jpg` | Domínio público |
-| `topgun-f35-noite.webp` | F-35C nas primeiras operações noturnas no porta-aviões, USS Nimitz, 13/11/2014 (U.S. Navy) | `An F-35C Lightning II conducts night flight operations. (15628347079).jpg` | Domínio público |
-| `topgun-f16.webp` | F-16 da 8th Tactical Fighter Wing soltando flare, Team Spirit '86 (A1C Perry Mecum, USAF) | `F-16 releases a flare.jpg` | Domínio público |
+| `topgun-bp-f16.webp` | F-16, corte da fuselagem (Cristian Ibarra Santillan) + AIM-9L | `General Dynamics F-16 Fighting Falcon cutaway drawing.jpg` | CC0 |
+| `topgun-bp-f15.webp` | F-15, corte da fuselagem + AIM-9L | `McDonnell Douglas F-15 Eagle cutaway drawing.svg` | CC0 |
+| `topgun-bp-a10.webp` | A-10, corte da fuselagem + AIM-9L | `Fairchild Republic A-10 Thunderbolt II cutaway.jpg` | Domínio público |
+| `topgun-bp-f18.webp` | F/A-18, 3 vistas + AIM-9L | `McDonnell Douglas F-A-18 Hornet 3-view line drawing.png` | Domínio público |
+| `topgun-bp-f22.webp` | F-22, 3 vistas | `Lockheed Martin F-22A Raptor 3-view.png` | CC BY-SA 2.0 |
 
-Foto nova: só foto marcada como domínio público no Commons. Entra aqui, em `TOPGUN_PHOTOS` (`renderer/configuracoes.js`),
-num `data-foto` com a placa em `styles-topgun.css` e em `PACK_FILES` (`publicar.js`).
+O AIM-9L desmontado (`Breakout of the AIM-9L.svg`, domínio público, U.S. Navy) vai ao lado de F-16, F-15, A-10 e F/A-18.
+Su-57 e AC-130 pedem crédito (a placa já cita). Desenho novo: só real e com licença livre; entra aqui, em `TOPGUN_PHOTOS`
+(`renderer/configuracoes.js`), num `data-foto` com a placa em `styles-topgun.css` e em `PACK_FILES` (`publicar.js`).

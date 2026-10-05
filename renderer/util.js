@@ -55,6 +55,7 @@ const ICON = {
   volume: svg('M11 5 6 9H2v6h4l5 4V5zM15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14'),
   muted: svg('M11 5 6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6'),
   close: svg('M18 6 6 18M6 6l12 12'),
+  crown: svg('M12 6l4 6 5-4-2 10H5L3 8l5 4z'), // host da sala
   prev: svg('M15 18l-6-6 6-6'),
   next: svg('M9 18l6-6-6-6'),
   refresh: svg('M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6'),
@@ -66,6 +67,7 @@ const ICON = {
   userCheck: svg('M15 20a6 6 0 0 0-12 0M9 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM16 11l2 2 4-4'),
   leave: svg('M9 21H5V3h4M16 17l5-5-5-5M21 12H9'),
   chat: svg('M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'),
+  phone: svg('M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z'), // ligar
   chevron: svg('M9 6l6 6-6 6'),
   chevronUp: svg('M6 15l6-6 6 6'),
   doc: svg('M14 3H6v18h12V7zM14 3v4h4'),
@@ -85,6 +87,7 @@ const ICON = {
   overlay: svg('M3 4h18v14H3zM6 12h7M6 15h5'),
   captions: svg('M3 5h18v14H3zM10.5 10a2 2 0 0 0 0 4M16.5 10a2 2 0 0 0 0 4'), // CC: legendas        // tela com linhas de texto: chat por cima da tela
   eye: svg('M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z'),
+  eyeOff: svg('M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4M6.6 6.6C3.9 8.3 2 12 2 12s3.5 7 10 7a9.7 9.7 0 0 0 5.4-1.6M9.9 9.9a3 3 0 0 0 4.2 4.2'),
   lock: svg('M6 11h12v10H6zM8 11V7a4 4 0 0 1 8 0v4'),
   sliders: svg('M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6'), // controles: voz e atalhos
   music: svg('M9 18V5l12-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM21 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z'), // nota: música junto
@@ -93,6 +96,8 @@ const ICON = {
   moveTo: svg('M5 12h14M13 6l6 6-6 6'),
   pin: svg('M12 17v5M9 3h6l-1 6 4 4H6l4-4z'),                                         // alfinete: fixar                                            // seta: mudar de canal
   pause: svg('M7 4h4v16H7zM13 4h4v16h-4z'),
+  swap: svg('M4 7h13l-3-3M20 17H7l3 3'),
+  stop: svg('M7 7h10v10H7z'),
   scissors: svg('M6 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12'), // tesoura: salvar clipe
 };
 

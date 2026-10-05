@@ -132,17 +132,21 @@ function lerConvite(text) {
   try { cv = JSON.parse(deB64url(m[1])); } catch { return null; }
   if (!cv || typeof cv !== 'object' || cv.v !== 1 || !MODO_NOME[cv.modo]) return null;
   const pessoas = Number.isInteger(cv.pessoas) ? Math.min(99, Math.max(1, cv.pessoas)) : 1;
+  // Chamada (chamada.js): a senha da sala vem junto, porque a mensagem é criptografada de ponta a ponta
+  const chave = cv.chamada === true && typeof cv.chave === 'string' && cv.chave.length >= 4 && cv.chave.length <= 64
+    && !/[\u0000-\u001f\u007f]/.test(cv.chave) ? cv.chave : '';
+  const chamadaInfo = chave ? { chamada: true, chave } : {};
   if (cv.modo === 'internet') {
     let url = null;
     try { url = new URL(String(cv.servidor)); } catch { return null; }
     if (String(cv.servidor).length > 200 || !['ws:', 'wss:'].includes(url.protocol) || url.username || url.password || url.search || url.hash) return null;
     if (typeof cv.codigo !== 'string' || !/^[A-HJ-NP-Z2-9]{6}$/.test(cv.codigo)) return null;
     const passe = typeof cv.passe === 'string' && /^[A-Za-z0-9_-]{43}$/.test(cv.passe) ? cv.passe : '';
-    return { modo: 'internet', servidor: String(cv.servidor), codigo: cv.codigo, passe, pessoas };
+    return { modo: 'internet', servidor: String(cv.servidor), codigo: cv.codigo, passe, pessoas, ...chamadaInfo };
   }
   if (typeof cv.endereco !== 'string' || !/^\d{1,3}(\.\d{1,3}){3}:\d{2,5}$/.test(cv.endereco)) return null;
   const rede = cv.modo === 'razze' && typeof cv.rede === 'string' && cv.rede.length <= 80 ? cv.rede : '';
-  return { modo: cv.modo, endereco: cv.endereco, senha: !!cv.senha, pessoas, rede };
+  return { modo: cv.modo, endereco: cv.endereco, senha: !!cv.senha, pessoas, rede, ...chamadaInfo };
 }
 
 // Convidar (HUB › Amigos): manda o convite como mensagem direta
@@ -181,12 +185,15 @@ async function aceitarConvite(cv, quem) {
   enterSession({ host: quem, endereco, porta: Number(porta), senha: cv.senha });
 }
 
-// O cartão do convite dentro da conversa (mensagens.js)
-function cartaoConvite(cv, mine, quem) {
+// O cartão do convite dentro da conversa (mensagens.js). quando: a hora da mensagem (a chamada "toca" por um tempo)
+function cartaoConvite(cv, mine, quem, quando = 0) {
   const box = document.createElement('div');
-  box.className = 'dm-invite';
+  box.className = 'dm-invite' + (cv.chamada ? ' dm-call' : '');
   const title = document.createElement('strong');
-  title.textContent = mine ? `Você convidou ${quem} para a sua sala` : `Convite para a sala de ${quem}`;
+  const tocando = cv.chamada && Date.now() - quando < CHAMADA_TOCA_MS;
+  title.textContent = cv.chamada
+    ? (mine ? `Você ligou para ${quem}` : tocando ? `${quem} está te ligando` : `Chamada de ${quem}`)
+    : mine ? `Você convidou ${quem} para a sua sala` : `Convite para a sala de ${quem}`;
   const meta = document.createElement('span');
   meta.className = 'dm-invite-meta';
   const senha = cv.modo === 'internet' ? !cv.passe : cv.senha;
@@ -197,9 +204,9 @@ function cartaoConvite(cv, mine, quem) {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'btn small primary';
-    btn.textContent = 'Entrar';
-    btn.title = `Entrar na sala de ${quem}`;
-    btn.onclick = () => aceitarConvite(cv, quem);
+    btn.textContent = cv.chamada ? (tocando ? 'Atender' : 'Entrar') : 'Entrar';
+    btn.title = cv.chamada ? `Entrar na chamada de ${quem}, direto na voz` : `Entrar na sala de ${quem}`;
+    btn.onclick = () => (cv.chamada ? atenderChamada(cv, quem) : aceitarConvite(cv, quem));
     box.append(btn);
   }
   return box;

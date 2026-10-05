@@ -171,6 +171,7 @@ function enterRoom(welcome, owner, host, port, cloud = null) {
   state.host = host;
   state.port = port;
   state.members.clear();
+  resetBiosDaSala();
   resetProfileBgs(); // os ids são da sala: o que sabia do fundo de cada um não vale na próxima (fundo-perfil.js)
   for (const m of welcome.members) state.members.set(m.id, { name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs || [], shareInfo: m.shareInfo || null, avatar: m.avatar || '', avatarFull: m.avatarFull || '', nameFont: AppPreferences.cleanNameFont(m.nameFont) });
   state.hostId = welcome.hostId || null;
@@ -179,11 +180,12 @@ function enterRoom(welcome, owner, host, port, cloud = null) {
   state.subsalas = (welcome.features || []).includes('subsalas') && Array.isArray(welcome.subsalas) ? welcome.subsalas : null;
   state.subsalaMove = (welcome.features || []).includes('subsala-move');
   state.musicaOn = (welcome.features || []).includes('musica');
+  state.senhaOn = (welcome.features || []).includes('senha'); // o servidor sabe mudar a senha da sala
   state.order = [...welcome.members.map((m) => m.id), welcome.id];
   lembrarDaSala();
   voice.reset(welcome);
   setMusicas(state.musicaOn ? welcome.musicas : [], welcome.now, true); // as músicas que já estavam tocando na sala
-  window.api.roomKeys(true).catch(() => {});
+  window.api.roomKeys(true).then(syncComandoVozTecla, () => {});
   renderLeaveBtn();
   resetChat(welcome);
   renderRoomAddress();
@@ -195,7 +197,7 @@ function enterRoom(welcome, owner, host, port, cloud = null) {
   const live = welcome.members.filter((m) => m.sharing).length;
   if (live) toast(live === 1 ? '1 pessoa está transmitindo. Clique em Assistir para ver.' : `${live} pessoas estão transmitindo. Escolha quem assistir.`);
   checkUpdates();
-  void appSounds.play('enter'); // você entrou (no Top Gun: "Bravo six, going dark.")
+  void appSounds.play('enter'); // você entrou
   registrarPasseSala();
   publicarSalaInternet();
 }
@@ -225,7 +227,7 @@ function leaveRoom(reason, kind = 'info', endRoom = false) {
   retirarSalaInternet();
   closeChatOverlay();
   closePersonCard();
-  window.api.roomKeys(false).catch(() => {});
+  window.api.roomKeys(false).catch(() => {}); // solta também a tecla do comando de voz
   resetChat(null);
   state.members.clear();
   state.myId = null;
@@ -354,8 +356,10 @@ async function rejoin(host, timeoutMs) {
   state.sessao = welcome.sessao || state.sessao;
   state.subsalaMove = (welcome.features || []).includes('subsala-move');
   state.musicaOn = (welcome.features || []).includes('musica');
+  state.senhaOn = (welcome.features || []).includes('senha'); // o servidor sabe mudar a senha da sala
   setSubsalas((welcome.features || []).includes('subsalas') ? welcome.subsalas : null);
   setMusicas(state.musicaOn ? welcome.musicas : [], welcome.now);
+  if (state.musicaOn) resendListening();
   if (!state.isOwner && !state.cloud) save('roomAddr', `${host}:${state.port}`);
   const present = new Set(welcome.members.map((m) => m.id));
   for (const m of state.members.values()) delete m.back;
@@ -461,6 +465,15 @@ function onRoomMessage(m) {
     case 'chat':
       onChatMessage(m);
       break;
+    case 'senha': // o host mudou a senha da sala (chamada.js)
+      receberSenha(m);
+      break;
+    case 'senha-erro':
+      toast(String(m.message || 'Não foi possível mudar a senha.').slice(0, 200), 'error');
+      break;
+    case 'host': // modo Internet: o host saiu e outro assumiu
+      if (m.id === state.myId || state.members.has(m.id)) { state.hostId = m.id; renderMembers(); renderRoomAddress(); }
+      break;
   }
 }
 
@@ -498,12 +511,15 @@ function handleSignal(from, data) {
     onPhotoSignal(from, data);
   } else if (data.side === 'fundo') {
     onProfileBgSignal(from, data).catch(console.error);
+  } else if (data.side === 'bio') {
+    onBioSignal(from, data);
   } else if (data.side === 'sharer') {
     // Mensagem de quem transmite uma tela que eu pedi para assistir
     const link = state.in.get(from);
     if (!link) return;
     if (data.unavailable) {
       stopWatching(from, false);
+      if (data.closed) return toast(closedShareText(from));
       return toast(`${nameOf(from)} não está mais transmitindo.`);
     }
     link.chain = link.chain.then(async () => {

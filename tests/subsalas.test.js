@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const net = require('node:net');
 const { WebSocket } = require('ws');
 const { startServer, stopServer } = require('../signaling');
-const { createSubsalas } = require('../sala-protocolo');
+const { createSubsalas, cleanShareInfo } = require('../sala-protocolo');
 const { VoiceChat } = require('../voice');
 
 async function freePort() {
@@ -32,6 +32,13 @@ async function client(port, hello = {}) {
   const welcome = await wait(m => m.type === 'welcome');
   return { ws, send, wait, messages, welcome };
 }
+
+test('transmissão só para o canal: o "open" passa pela sala só se for true ou false', () => {
+  assert.equal(cleanShareInfo({ quality: '1080p60', open: false }).open, false);
+  assert.equal(cleanShareInfo({ open: true }).open, true);
+  assert.equal('open' in cleanShareInfo({ open: 'nao' }), false);
+  assert.equal('open' in cleanShareInfo({ quality: '1080p60' }), false); // versão antiga: quem assiste trata como aberta
+});
 
 test('nomes sempre Subsala_N: o número seguinte ao maior; apagar a última libera o número', () => {
   const s = createSubsalas();

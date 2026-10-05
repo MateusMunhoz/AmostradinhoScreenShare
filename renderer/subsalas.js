@@ -102,9 +102,9 @@ function voiceRow(id) { return id ? memberRow(id, nameOf(id), !!state.members.ge
 function renderVoiceChannels(list) {
   for (const [ch, sub] of [['', null], ...state.subsalas.map((s) => [s.id, s])]) {
     list.append(channelHead(ch, sub));
-    const music = musicRow(ch); // a música do canal, com Ouvir (renderer/musica.js)
-    if (music) list.append(music);
     for (const id of voiceIdsIn(ch)) { const li = voiceRow(id); li.classList.add('in-channel'); makeVoiceDraggable(li, id, ch); list.append(li); }
+    const music = musicRow(ch); // a música do canal, depois de quem está nele, com Ouvir (renderer/musica.js)
+    if (music) list.append(music);
   }
   setupVoiceDrop(list);
 }

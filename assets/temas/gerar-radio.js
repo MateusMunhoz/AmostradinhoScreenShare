@@ -2,9 +2,9 @@
 // Gera as chamadas de rádio do tema Top Gun (assets/audio/radio-*.wav). Cada som tem várias falas (o app sorteia uma,
 // sem repetir a última: preferencias-modelo.js › sounds[].files), ditas por pilotos diferentes: as vozes em inglês
 // instaladas no Windows (as masculinas primeiro: David e Mark; a Zira se for a única), cada uma num tom um pouco
-// diferente. A voz passa por um rádio UHF de avião: filtro de banda (400 a 2800 Hz), saturada e comprimida, com
-// chiado de fundo, o clique do botão de falar no começo e o chiado do squelch no fim.
-// Também gera o radio-squelch.wav (só o clique e o chiado, para o chat). Só roda no Windows:
+// diferente. A voz passa por um rádio UHF de avião: filtro de banda (400 a 2800 Hz), saturada e comprimida. Só a voz:
+// sem chiado, sem clique, sem squelch.
+// Também gera o radio-squelch.wav (a fala "Copy.", para o chat). Só roda no Windows:
 //   node assets/temas/gerar-radio.js
 // Para ter as vozes masculinas, instale a voz em inglês (PowerShell como administrador):
 //   Add-WindowsCapability -Online -Name "Language.TextToSpeech~~~en-US~0.0.1.0"
@@ -19,7 +19,7 @@ const OUT = path.join(__dirname, '..', 'audio');
 // Nome do som → as falas (o id do som em preferencias-modelo.js usa o mesmo nome, em camelCase, com "radio" na frente)
 const LINES = {
   'fox': ['Fox one!', 'Fox two!', 'Fox three!'],
-  'splash': ['Splash one.', 'Splash two.', 'Good kill, good kill.'],
+  'splash': ['Splash one.', 'Splash two.', 'Good kill.'],
   'radio-check': ['Radio check.', 'Radio check, how copy?', 'Comm check, comm check.'],
   'rtb': ['R. T. B.', 'Returning to base.', 'Bingo fuel. R. T. B.'],
   'going-hot': ['Going hot.', 'Hot mic.', 'Master arm, on.'],
@@ -27,7 +27,6 @@ const LINES = {
   'radio-silence': ['Radio silence.', 'Going silent.', 'Comms out.'],
   'loud-and-clear': ['Loud and clear.', 'Five by five.', 'Read you five by five.'],
   'tally-ho': ['Tally ho!', 'Tally one.', 'Visual. Got eyes on you.'],
-  'bravo-six': ['Bravo six, going dark.', 'Bravo six. Going dark.'],
 };
 // Os pilotos: a voz e o tom (a fala toca k vezes mais devagar: mais grave)
 const PREFERRED = ['Microsoft David', 'Microsoft Mark', 'Microsoft Guy', 'Microsoft Zira'];
@@ -141,10 +140,7 @@ function radio(voice, k) {
   let v = band(resample(trim(voice), k));
   const peak = v.reduce((m, x) => Math.max(m, Math.abs(x)), 0) || 1;
   v = v.map((x) => Math.tanh((x / peak) * 3.2) * 0.8); // saturado e comprimido, como o rádio do avião
-  const hiss = band(noise(v.length, 0.06));
-  v = v.map((x, i) => x + hiss[i]);
-  const carrier = band(noise(Math.round(RATE * 0.05), 0.08));
-  return concat(click(), carrier, v, squelch(), click());
+  return v;
 }
 
 const crew = voices();
@@ -163,6 +159,10 @@ for (const [name, texts] of Object.entries(LINES)) {
     console.log(`${file}  (${voice.name}: "${text}")`);
   });
 }
-writeWav(path.join(OUT, 'radio-squelch.wav'), concat(click(), squelch(0.14, 0.3), click()));
+{
+  const raw = path.join(tmp, 'copy.wav');
+  speak(crew[0], 'Copy.', raw);
+  writeWav(path.join(OUT, 'radio-squelch.wav'), radio(readWav(raw), 1.04));
+}
 console.log('radio-squelch.wav');
 fs.rmSync(tmp, { recursive: true, force: true });

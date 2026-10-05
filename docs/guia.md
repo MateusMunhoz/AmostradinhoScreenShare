@@ -25,17 +25,21 @@ Tudo o que dá para fazer no Tela P2P, com os detalhes. Para começar do zero, v
 - **Painel à direita:** só o chat. O **botão de pessoas**, na barrinha da direita, mostra o total e acende uma bolinha verde quando alguém fala. Ele abre a lista por cima do chat, com:
   - quem está na sala, com **Assistir** e o volume de cada pessoa;
   - os detalhes da sua transmissão;
-  - o endereço da sala, com **Copiar**.
+  - o endereço da sala, com **Copiar**;
+  - a **senha** da sala (para quem entrou com ela e para o host), escondida, com o **olho** para mostrar, **Copiar** e
+    **Mudar**. Só o host muda: quem já está continua na sala e recebe a nova; quem entrar depois precisa dela. Vazia,
+    a sala fica sem senha (no modo Internet, mínimo 4 caracteres). No modo Internet, mudar também cancela os convites
+    sem senha (pelas mensagens e pela lista dos amigos), e se o host sai, quem está há mais tempo assume. Numa sala
+    cujo servidor é antigo, o **Mudar** fica desativado e explica.
 
   Clicar fora ou apertar Esc fecha a lista.
-- **Barra de baixo:**
-  - **Transmitir minha tela** (vira o bloco **Ao vivo**: a miniatura do que você transmite, que abre a sua tela no palco, o nome da tela e quem está assistindo, com **Trocar** e **Parar**);
-  - a voz;
-  - o chat por cima do jogo;
-  - as janelas flutuantes abertas;
-  - **Estatísticas**;
-  - o balão do chat.
-- **Barrinha da direita:** em cima, o perfil; logo abaixo, separados por uma linha, o **botão de pessoas** (o total e uma bolinha verde quando alguém fala; abre a lista de quem está na sala), **Chat**, **Voz** e **Transmissão**. Ouvindo uma música, aparece também o botão de **música**: clicar mostra **Pausar** ou **Continuar** (para todos, se você pode controlar) e **Sair da música** (a música continua para os outros). No pé, **Início** (vai para o saguão sem sair da sala), **Sair** e, depois de uma linha, o **modo gamer** (o controle) e a engrenagem. No saguão, com a sala aberta, o pé mostra **Voltar para a sala**, com o número de mensagens novas.
+- **Perfil de alguém:** o mesmo cartão em todo lugar (Pessoas da sala, voz em lista e voz no mapa): fundo, foto, nome, onde a pessoa está, as ações (assistir, adicionar como amigo, mandar mensagem para amigos, silenciar e mudar de canal na voz) e o volume.
+- **Barra flutuante:** uma pílula por cima das telas, embaixo e no meio. Some sozinha com o mouse parado e volta ao mexer o mouse (com o mouse em cima dela, fica); com uma música do YouTube no palco, fica acima dos controles do player. Tem:
+  - **Transmitir minha tela** (vira o bloco **Ao vivo**: a miniatura do que você transmite, que abre a sua tela no palco, e o nome da tela, com **Trocar** e **Parar**);
+  - a voz: dentro dela, microfone, fone e sair no meio e, no fim, as bolinhas de quem está na chamada com você; fora dela, as bolinhas de quem já está conversando e **Entrar** (entra no canal com mais gente; sem ninguém, o botão diz **Voz**). Com gente em mais de uma subsala, a setinha ao lado abre a lista desses canais para escolher onde entrar;
+  - as janelas flutuantes abertas.
+  As **Estatísticas** ficam nas Configurações, e o chat abre pela barrinha da direita.
+- **Barrinha da direita:** em cima, o perfil; logo abaixo, separados por uma linha, o **botão de pessoas** (o total e uma bolinha verde quando alguém fala; abre a lista de quem está na sala), **Chat**, **Voz** e **Transmissão**. Ouvindo uma música, aparece também o botão de **música**: clicar mostra **Pausar** ou **Continuar** (para todos, se você pode controlar) e **Sair da música** (a música continua para os outros). No pé, **Início** (vai para o saguão sem sair da sala) e, depois de uma linha, o **chat por cima do jogo**, o **modo gamer** (o controle), **Voz e atalhos** e a engrenagem; por último, depois de outra linha, **Sair**, em vermelho. No saguão, com a sala aberta, o pé mostra **Voltar para a sala**, com o número de mensagens novas.
 - **Recolher o painel:** o balão do chat recolhe o painel, e os vídeos ocupam a largura toda. Recolhido, ele mostra quantas mensagens chegaram, e o endereço da sala passa para a barra.
 
 ### Como os PCs se conectam
@@ -50,7 +54,7 @@ ter escolhido outro, continua na Radmin.
 Para usar uma rede virtual sem Radmin, todos precisam usar a mesma instalação da RazzeAPI. O administrador
 hospeda a API, configura a aprovação de contas e fornece o endereço HTTPS do servidor.
 
-1. Abra **Configurações gerais**, escolha **VPN Razze (WireGuard)** e informe o endereço HTTPS.
+1. Abra **Configurações**, escolha **VPN Razze (WireGuard)** e informe o endereço HTTPS.
 2. Crie uma conta. O administrador precisa aprová-la; depois disso, entre com e-mail e senha.
 3. Crie uma rede ou aceite um convite enviado pelo dono. Todos os PCs precisam entrar na mesma rede.
 4. Clique em **Conectar WireGuard**. O Windows pedirá permissão administrativa para criar a interface
@@ -125,6 +129,7 @@ Se o host sai, ou se o app dele fecha ou trava, a sala não acaba.
 - **Várias ao mesmo tempo:** qualquer pessoa pode clicar em **Transmitir minha tela**, e várias podem transmitir juntas.
 - **O que transmitir:** na janela de transmitir, escolha a tela inteira ou uma janela, a qualidade e o áudio.
 - **Sem prévia:** a prévia da sua própria tela não aparece na sala. Você vê o que escolheu ao começar.
+- **Só para o seu canal:** na janela de transmitir, **Outros canais podem assistir** diz se quem está em outra subsala (ou na Voz geral, se você está numa subsala) pode assistir. Vem ligado e fica salvo. Durante a transmissão, o botão ao lado de **Trocar** (**Para todos** ou **Só meu canal**) muda só a transmissão atual; a próxima começa como está na janela. Fechada, quem está fora do seu canal vê o **Assistir** desligado, e quem já assistia de fora para de ver (também quando você ou a pessoa muda de canal).
 - **Trocar sem parar:** enquanto transmite, clique em **Trocar**, ao lado de "Ao vivo", e escolha outra tela ou janela (por exemplo, de uma janela do Chrome para a do Firefox, ou de uma janela para a tela inteira). Quem assiste passa a ver a fonte nova em um instante, sem reconectar. A qualidade, o som e a codificação continuam os mesmos. Funciona nos três modos (normal, WebCodecs e NVENC direto).
 - **Firewall:** na primeira vez, o Windows pergunta se o app pode acessar a rede. Marque **redes privadas e públicas**.
 
@@ -193,7 +198,7 @@ Para ver uma transmissão enquanto joga.
 
 ## Chat por cima do jogo
 
-O botão da barra com a tela e as linhas de texto abre o chat numa janela transparente, sempre por cima, até do jogo (em janela sem bordas).
+O botão da barrinha da direita com a tela e as linhas de texto (acima do modo gamer) abre o chat numa janela transparente, sempre por cima, até do jogo (em janela sem bordas).
 
 - **O que mostra:** as últimas mensagens, que somem 20 s depois de chegar, e quem está falando na voz.
 - **Ajustar:** abre no modo de ajuste. Arraste para mover, puxe as bordas para redimensionar e escreva no campo para responder.
@@ -219,7 +224,7 @@ Clique em **Entrar na voz**, na barra de baixo, para ligar o microfone padrão d
   Só muda o que você ouve. O botão mostra o valor quando não está no padrão. O app lembra o volume de cada pessoa pelo nome, para a próxima sala.
 - **Painel recolhido:** na barra de baixo, ao lado de **Entrar na voz**, ficam até três fotos de quem está na voz (quem fala acende em verde) e quantos são ("6 na voz"). Clicar abre uma lista para cima com cada pessoa (clicar nela abre o volume; a roda do mouse em cima também muda), **Entrar na voz** (se você está fora) e **Abrir o painel da voz**. Esc ou um clique fora fecha.
 - **Roda do mouse:** em cima do nome na barra da voz ou do botão de volume na lista, muda a voz da pessoa (ou o som da tela, se ela não estiver na voz), de 5 em 5%. Em cima da tela da pessoa ou da janela flutuante (no modo de ajuste), muda o som da tela. Um balãozinho mostra o valor.
-- **Sons da voz:** dois tons subindo quando alguém entra na voz (ou você), dois descendo quando sai, e um toque curto quando você muta ou desmuta o microfone. Os de quem entra e sai só tocam enquanto você está na voz; quem muta do outro lado e o apertar para falar não tocam. O som e o volume de cada um ficam em **Configurações gerais** (a engrenagem no topo).
+- **Sons da voz:** dois tons subindo quando alguém entra na voz (ou você), dois descendo quando sai, e um toque curto quando você muta ou desmuta o microfone. Os de quem entra e sai só tocam enquanto você está na voz; quem muta do outro lado e o apertar para falar não tocam. O som e o volume de cada um ficam em **Configurações** (a engrenagem no topo).
 - **Microfone negado:** se o Windows negar o microfone, permita o acesso para aplicativos de desktop nas configurações de privacidade.
 - **Voz e transmissão juntas:** se a captura que exclui o som do app falhar durante a conversa, a tela é transmitida sem áudio do PC, para não retransmitir as vozes. Se uma transmissão já estiver capturando todo o som do PC, pare, entre na voz e recomece a transmissão.
 - **Como funciona:** a voz usa WebRTC direto pela Radmin, uma conexão por par de pessoas, sem servidor. Usa o microfone padrão.
@@ -228,14 +233,14 @@ Clique em **Entrar na voz**, na barra de baixo, para ligar o microfone padrão d
 
 No painel **Chat de voz**, a voz fica dividida em canais: a **Voz geral** e as subsalas.
 
-- **Criar:** fora da voz, clique em **+ Nova subsala**, ao lado de **Entrar na Voz geral**; na voz, em **+ Subsala**, na faixa de baixo do painel. A subsala é criada e você já entra nela. Os nomes são sempre `Subsala_1`, `Subsala_2`, e assim por diante: a nova recebe o número seguinte ao da maior que existe.
+- **Criar:** fora da voz, clique em **+ Nova subsala**, ao lado de **Entrar na Voz geral**; na voz, em **+ Subsala**, na faixa de baixo do painel. Na voz, o **Sair** (vermelho) fica no título do painel, ao lado de Lista e Mapa. A subsala é criada e você já entra nela. Os nomes são sempre `Subsala_1`, `Subsala_2`, e assim por diante: a nova recebe o número seguinte ao da maior que existe.
 - **Entrar:** clique na faixa com o nome do canal. Fora da voz, isso liga o microfone já naquele canal; na voz, você muda de canal sem sair.
 - **Quem ouve quem:** só quem está no mesmo canal se ouve. O chat de texto e as transmissões continuam valendo para a sala toda.
 - **Apagar:** o **X** ao lado da subsala. Quem estava nela volta para a Voz geral.
 - **Mudar alguém de canal:** arraste a pessoa (ou você) até outro canal. Qualquer um pode mover quem está na voz; o app da pessoa troca de canal sozinho. Precisa do host (ou do servidor da VPS) na versão nova; sem isso, só dá para arrastar você mesmo.
 - **Lista ou Mapa:** os dois ícones ao lado do título (três linhas para a Lista, um planeta para o Mapa) trocam a visão (fica salva neste PC). No **Mapa**, cada canal é um sol e quem está nele orbita como planeta. Cada canal com gente fica numa nebulosa de fumaça com a cor dele, e embaixo do nome aparece quantos estão nele. Quem fala solta ondas verdes, quem transmite solta ondas na cor de destaque e o canal com música solta notinhas. Ao fundo, uma galáxia em espiral gira bem devagar. Com o mouse em cima de um canal, os anéis e a nebulosa dele acendem e o sol cresce; em cima de uma pessoa, o planeta cresce e aparece uma linha até o sol. Quem entra chega como cometa, quem sai escapa da órbita, quem muda de canal faz um arco até o outro sol, quem começa a transmitir solta um anel, e a subsala nova acende com uma onda (a que é apagada se apaga). Com o Tela P2P fora de foco, só as órbitas continuam se mexendo. Clicar no sol abre um cartão preso a ele: o nome do canal, com quantos estão nele e quantos ao vivo (clicar no nome entra no canal), a música (no seu canal sem música, a linha tracejada **Sem música · Pôr uma**) e, numa subsala, o **X** de apagar. Embaixo, quem está no canal: quem transmite tem **AO VIVO** e o olho de **Assistir**; clicar na pessoa abre o perfil dela (volume e amizade). Esc ou um clique no mapa fecha; arrastar o planeta até outro sol muda a pessoa de canal. A roda do mouse (ou **+** e **−**) aproxima até caber uma subsala e afasta até ver todas; arrastar o fundo anda pelo mapa.
-- **Mapa grande:** com o chat e a voz na barra da direita, deixe o mouse parado no mapa: o chat encolhe e o mapa ocupa a barra toda. Do chat fica uma faixa em cima, com as mensagens novas; clicar nela traz o chat de volta. Tirando o mouse do painel de voz, o chat volta sozinho (menos enquanto você põe uma música, mexe no volume de alguém ou está no perfil de alguém). O **alfinete** ao lado de Lista e Mapa fixa o mapa aberto até você soltar. Com o mouse chegando perto de um sol, a órbita dele vai desacelerando até parar; as outras seguem girando; com o Tela P2P fora de foco, o céu em cima da Lista não é desenhado (o Mapa continua girando).
-- **Pessoa no mapa:** clicar num planeta aproxima até a pessoa. Em volta dela ficam, só com o ícone (o nome aparece ao parar o mouse em cima), **Assistir**, **Perfil** (volume e amizade), **Silenciar para mim** e **Mudar de canal**, e embaixo o volume da voz dela. No seu planeta: microfone, fone e **Mudar de canal**. A setinha **‹**, Esc ou um clique fora dos botões volta para o mapa. Na **Lista**, clicar na linha de quem está na voz (foto, nome ou estado) abre esse mesmo perfil numa caixinha perto da linha (nela, no lugar de **Perfil**, fica **Voltar ao padrão**, que volta o volume da pessoa ao normal); o **X**, Esc, um clique fora ou de novo na linha fecha. Se a pessoa escolheu um **fundo do perfil**, ele aparece atrás.
+- **Mapa grande:** com o chat e a voz na barra da direita, deixe o mouse parado no mapa: o chat encolhe e o mapa ocupa a barra toda. Do chat fica uma faixa em cima, com as mensagens novas; clicar nela traz o chat de volta. Tirando o mouse do painel de voz, o chat volta sozinho (menos enquanto você põe uma música, mexe no volume de alguém ou está no perfil de alguém). O **alfinete** ao lado de Lista e Mapa fixa o mapa aberto até você soltar. Com o chat e a voz abertos juntos, arraste o puxador entre os dois para mudar o tamanho de cada um (ou use as setas com ela selecionada); o tamanho fica salvo, e o clique duplo na linha volta ao automático. A seta ao lado do título recolhe o chat ou a voz numa faixa (o chat recolhido mostra as mensagens novas) e o outro ocupa a coluna toda; clique na faixa ou na seta para abrir de novo. Com o mouse dentro da órbita mais de fora de um sol, as órbitas dele param; as outras seguem girando; com o Tela P2P fora de foco, o céu em cima da Lista não é desenhado (o Mapa continua girando).
+- **Pessoa no mapa:** clicar num planeta abre o mesmo cartão de perfil da lista, subindo do pé do painel de voz (o mapa continua à vista em cima). Em volta da foto ficam, só com o ícone (o nome aparece ao parar o mouse em cima), **Assistir**, **Perfil** (volume e amizade), **Silenciar para mim** e **Mudar de canal**, e ao lado o canal, o nome e o volume da voz dela. No seu planeta: microfone, fone e **Mudar de canal**. O **X**, Esc ou um clique fora da faixa fecha. Na **Lista**, clicar na linha de quem está na voz (foto, nome ou estado) transforma o painel de voz na página da pessoa: o fundo do perfil em cima (ou a cor dela), a foto grande, o nome, o canal e as ações com nome (**Adicionar como amigo**, **Silenciar para mim**, **Mudar de canal**; no seu, microfone e fone), mais o volume. O **X** ao lado do nome, Esc ou um clique fora do painel volta para a lista. Se a pessoa escolheu um **fundo do perfil**, ele aparece atrás, só dentro da faixa ou da caixinha.
 - **Céu na Lista:** na Lista, o céu pequeno em cima é só enfeite. Para escondê-lo ou mostrá-lo, use **Configurações › Aparência › Céu da voz em cima da lista**. O Mapa não muda.
 - **Troca de host:** as subsalas continuam, e cada um fica no canal em que estava.
 - **Modo Internet:** o servidor da VPS precisa estar atualizado para ter subsalas; sem isso, o painel mostra só a lista de sempre.
@@ -246,13 +251,56 @@ Uma música por canal (Voz geral ou subsala), que todo mundo ouve junto, no mesm
 
 - **Pôr:** no cabeçalho do canal em que você está (fora da voz, a Voz geral), clique na **nota musical** e cole o link de um vídeo do YouTube (`youtube.com/watch`, `youtu.be`, `shorts` ou `music.youtube.com`). A tela da música abre para você.
 - **Pelo chat:** escreva `/musica` e o link (ou `/tocar`). Antes de mandar, aparece a prévia do vídeo (capa e título) e onde ele vai tocar; **Enter** põe a música no seu canal, ou troca a que está tocando. Só `/` mostra os comandos; texto com `/` que não é comando vai como mensagem normal.
-- **Ouvir:** a música aparece embaixo do canal, no painel de voz (e no balão do sol, no Mapa), com **Ouvir**. Ela vira uma tela no palco, ao lado das transmissões: dá para pôr em destaque, tela cheia e arrastar. Os controles dela (tocar, pausar, o progresso, Trocar e Parar) ficam embaixo, por cima do vídeo, e somem junto com a barra de cima quando o mouse fica parado. As legendas do YouTube vêm desligadas; o botão **CC**, na barra de cima, liga e desliga (só para você, e fica salvo). Ao ligar, o player recarrega no mesmo ponto da música (1 a 2 s). Com **Configurações › Aparência › Luz ambiente** ligada, as barras em volta do vídeo pegam as cores dele, como nas transmissões; com o app fora de foco (no jogo), elas param de atualizar.
+- **Ouvir:** a música aparece no canal, depois de quem está nele, no painel de voz (e no balão do sol, no Mapa), com **Ouvir**. Ela vira uma tela no palco, ao lado das transmissões: dá para pôr em destaque, tela cheia e arrastar. Os controles dela (tocar, pausar, o progresso, Trocar e Parar) ficam embaixo, por cima do vídeo, e somem junto com a barra de cima quando o mouse fica parado. As legendas do YouTube vêm desligadas; o botão **CC**, na barra de cima, liga e desliga (só para você, e fica salvo). Ao ligar, o player recarrega no mesmo ponto da música (1 a 2 s). Com **Configurações › Aparência › Luz ambiente** ligada, as barras em volta do vídeo pegam as cores dele, como nas transmissões; com o app fora de foco (no jogo), elas param de atualizar.
+- **Música esquecida sai sozinha:** pausada por mais de 4 minutos, ou 1 minuto sem ninguém no canal dela e sem ninguém ouvindo (tocando ou não), a sala tira a música.
 - **Controles de todos:** tocar e pausar, o ponto da música, **Trocar** e **Parar a música** valem para todo mundo. Só quem está naquele canal (ou quem pôs a música) controla.
 - **Só seus:** o volume (fica salvo neste PC) e o **X**, que para de ouvir sem parar para os outros.
 - **Como funciona:** cada pessoa toca no player oficial do YouTube, no próprio PC; a sala só combina o que tocar e em que ponto. Cada um vê os próprios anúncios.
 - **Fim:** quando a música acaba, ela sai sozinha e o canal fica livre para outra.
+- **Live do YouTube:** o progresso e o contador dão lugar ao selo **Ao vivo** e cada um assiste na ponta da transmissão, sem pausas para acertar o ponto. Tocar, pausar, **Trocar** e **Parar** continuam valendo para todos; a live não sai sozinha.
 - **Vídeo que não toca:** quem publicou pode não deixar tocar fora do YouTube; a tela avisa para trocar por outro.
 - **Modo Internet:** o servidor da VPS precisa estar atualizado; sem isso, a nota musical não aparece.
+
+## Primeira entrada
+
+Na primeira vez que o app abre, uma tela de cada vez (três no máximo):
+
+1. **Como você quer usar?** *Com amigos* (conta, lista de amigos, ligar com um clique) ou *Sala rápida* (só um nome, sem conta).
+2. **Quem é você?** O nome (obrigatório) e a foto (opcional).
+3. **Sua conta** (só em *Com amigos*): entrar ou criar conta com e-mail e senha. **Continuar sem conta por enquanto** leva
+   direto ao Início. Se o servidor exigir aprovação da conta, o app avisa e você usa como sala rápida até ser aprovado.
+
+Quem já usava o app não vê essa tela. Quem escolheu *Com amigos* e ainda não entrou vê no Início uma faixa **Entrar na conta**.
+
+No **Início**, com conta: **Amigos online** (até 5, com **Mensagem** e **Ligar**), **Adicionar amigo** e **Ver todos** (abre o HUB).
+**Abrir minha sala** cria a sala em um clique (com senha gerada e visível para os amigos); **Opções da sala** abre a tela
+de antes, com porta, senha e visibilidade.
+
+## Senha e frase do perfil
+
+- **Entrar com Google:** no passo 3 da primeira entrada e em HUB › Rede, **Entrar com Google** abre o navegador, você escolhe a conta
+  e volta ao app. O botão só aparece se o servidor tiver o Google ligado. Se já existe uma conta com o mesmo e-mail e senha, o app avisa:
+  entre com a senha e use **Vincular Google** (HUB › Rede, na conta). **Desvincular Google** só funciona se a conta tiver senha;
+  quem entrou só pelo Google define a primeira senha em **Trocar senha**, sem precisar da atual.
+- **Trocar a senha:** HUB › Rede › **Trocar senha** (pede a senha atual; mínimo 8 caracteres).
+- **Esqueci a senha:** na tela de entrar (HUB › Rede ou o passo 3 da primeira entrada), **Esqueci a senha**. O servidor não
+  manda e-mail: peça um código ao **administrador**, que o gera no painel (botão **Código de senha**). Digite o e-mail, o
+  código (vale 1 hora e funciona uma vez) e a senha nova.
+- **Frase do perfil:** no seu perfil, **Frase** (até 128 caracteres). Os amigos veem embaixo do seu nome no Início, e quem está na sala vê no seu cartão (ao abrir o seu perfil na voz); ela só passa entre os dois, na hora em que o cartão abre. Sem conta,
+  ela fica salva neste PC e vai para o servidor quando você entrar.
+
+## Atividade no perfil
+
+Em **Seu perfil › Atividade**, cada coisa que os amigos podem ver é uma escolha sua, **desligada por padrão**:
+
+- **Mostrar o jogo que estou jogando:** o app reconhece o jogo pelo nome do programa aberto, numa lista de jogos conhecidos (Valorant,
+  Counter-Strike 2, League of Legends, Fortnite, GTA V e outros; a lista está em `main/atividade.js`). Programa que não está
+  na lista não aparece, e nenhum outro nome de programa sai do PC.
+- **Mostrar a música que estou ouvindo (Spotify):** lê o título da janela do Spotify, só quando ele está tocando.
+
+Embaixo das caixinhas, o app mostra **o que os amigos veem agora**. Só os amigos aceitos veem, no Início: "Jogando Valorant" ou
+"Ouvindo Metallica"; **clicar em "Ouvindo…" mostra a música**. Some em até 2 minutos depois que você para ou desliga. Precisa de
+conta e vale no Windows; sem conta nada é enviado.
 
 ## Amigos
 
@@ -260,6 +308,15 @@ No HUB (a barra fina na borda esquerda), aba **Amigos**. Precisa de conta Razze.
 
 - **Buscar:** o campo do topo filtra a lista pelo nome. Os chips **Todos**, **Online** e **Pedidos** mudam o que aparece; o número no **Pedidos** conta os pedidos recebidos e enviados.
 - **Adicionar:** clique em **Adicionar**, digite o nickname exato e **Enviar pedido** (ou Enter). Se der errado, o motivo aparece embaixo do campo. Quando der certo, o pedido vai para **Pedidos enviados**.
+- **Copiar meu link:** no Início (**Copiar meu link**) ou no formulário de **Adicionar** (**Copiar meu link de convite**). O app
+  copia uma mensagem pronta com o link e o código curto e avisa até quando vale (7 dias, 1 pessoa; até 5 links ativos).
+  Os links ativos aparecem no formulário de Adicionar, cada um com **Revogar**.
+- **Convite por link:** quem recebe o link (`https://…/a/…`, ou o `telap2p://amigo/…`) abre o app, vê "**Fulano quer ser
+  seu amigo. Aceitar?**" e, aceitando, os dois viram amigos na hora. Sem conta, o app leva para a tela de conta e retoma o
+  convite depois de entrar. Quem não tem o app instalado baixa pela página do link e depois **cola o link ou o código**
+  (`ABCD-EFGH-JK`, com os hífens) no campo de **Adicionar**. Cada link vale 7 dias e 1 pessoa. Se o servidor ainda não
+  tem links de amigo, o app avisa e o nickname continua funcionando.
+- **Ligar:** o **telefone** ao lado do balão (só com o amigo online). Veja [Ligar](#ligar).
 - **Convidar:** aparece só para quem está online, com você numa sala. Manda um **convite** nas mensagens diretas do
   amigo, que aparece como um cartão com **Entrar** (veja abaixo).
 - **Remover:** no **⋯** da linha, **Remover [nome]**. A própria linha pergunta se é isso mesmo; **Não** ou Esc desiste.
@@ -292,6 +349,22 @@ Conversa com um amigo (conta Razze), dentro ou fora da sala.
   - **Já numa sala:** pergunta se quer sair dela e entrar na do amigo.
   - **App antigo:** quem ainda não atualizou vê o convite como texto, com o código ou o endereço, e entra à mão.
 
+### Ligar
+
+O **telefone** no chip da conversa (ou ao lado do nome, no HUB › Amigos) liga para o amigo.
+
+- **A única escolha:** o modo de rede (Internet, Radmin ou rede local, Razze). Vem marcado o que você usa agora; o
+  que não está pronto (sem servidor, sem conta Razze, VPN desligada) aparece desativado, com o motivo.
+- **O app faz o resto:** passa a usar esse modo, cria uma sala **escondida** (fora da lista de sessões e da lista dos
+  amigos) com uma **senha gerada** (como `K7P-4MX-Q2R`), te põe na voz e manda a chamada pela mensagem privada. A
+  senha vai junto, porque a mensagem é criptografada de ponta a ponta. Já numa sala, pergunta antes de sair dela.
+- **Quem recebe:** o aviso "[nome] está te ligando" com **Atender** (e um som), mesmo com a conversa fechada, e o
+  cartão na conversa. Depois de 10 minutos o cartão vira "Chamada de [nome]", com **Entrar**.
+- **Atender:** entra com a senha da mensagem e vai direto para a voz. Se você estiver em outro modo, pergunta antes
+  de trocar. Na Razze, precisa estar com a mesma rede ligada.
+- **Os dois veem a senha** no Painel da sala (botão de pessoas), para passar a outra pessoa ou mudar.
+- **App antigo:** vê o convite comum, e o texto da mensagem traz o código ou o endereço e a senha.
+
 - **Abrir:** clique em **Mensagens**, na barra de baixo: a lista das conversas abre para cima, com busca, a última mensagem e as não lidas. Ou, no HUB, aba **Amigos**, no balão ao lado do nome.
 - **Barra de conversas:** fica embaixo da tela. Cada conversa aberta vira um chip. Clicar no chip abre a janela; o **—** minimiza de volta para o chip; o **X** tira da barra.
 - **Muitas conversas:** as que não cabem na largura vão para o **+N** no canto direito (fica destacado se alguma tem mensagem não lida). Clicar nele lista as escondidas; escolher uma traz ela de volta para a barra.
@@ -303,7 +376,7 @@ Conversa com um amigo (conta Razze), dentro ou fora da sala.
 
 ## Voz e atalhos
 
-O botão de controles na barra de voz.
+Fica nas **Configurações** (a engrenagem), no grupo **Voz e atalhos**, com as abas **Voz** e **Atalhos**. 
 
 - **Testar o microfone:** **Ouvir minha voz** toca no seu fone o som do seu microfone, do jeito que a sala ouve: depois da supressão de ruído e da sensibilidade. Funciona fora da voz (abre o microfone só para o teste) e dentro dela; na voz, desligue o microfone para testar sem os outros ouvirem. Dá para mexer nos filtros enquanto ouve. Use fone de ouvido: com caixa de som, o microfone pega o próprio som e apita. O teste para ao fechar a janela.
 - **Supressão de ruído:**
@@ -312,7 +385,8 @@ O botão de controles na barra de voz.
   - **Desligada.**
 - **Cancelamento de eco:** tira da sua voz o que sai das suas caixas (as vozes dos outros e o som das telas). Com fone, pode desligar. Dá para trocar este e o anterior no meio da conversa, sem sair da voz.
 - **Sensibilidade do microfone:** abaixo do limite, o microfone fica fechado, e o barulho baixo entre as falas não passa.
-  - **Automática** (padrão): mede o ruído de fundo e fica 12 dB acima dele.
+  - **Automática** (padrão): mede o ruído de fundo e fica 12 dB acima dele. O ruído vem das pausas entre as falas (os últimos ~4 s), então falar sem parar não faz o limite subir e cortar sílabas. Um barulho novo e constante (ventilador, ar-condicionado) passa a contar como ruído em uns 3 s. Ao abrir o microfone, ele se ajusta ao ambiente em meio segundo, começando do último ruído medido naquele microfone. Com a supressão por IA, o limite nunca fica abaixo de −60 dB, para que qualquer estalo não abra o microfone, e a IA também diz se o som é voz: barulho alto que não é voz não abre, e voz clara abre um pouco antes do limite, sem cortar a primeira sílaba. Embaixo do medidor aparece o **Ruído do ambiente** medido (o som antes da IA).
+  - O microfone abre no limite e só fecha 3 dB abaixo dele, depois de 300 ms: perto do limite ele não fica abrindo e fechando (vale também no manual).
   - **Manual:** desmarcando, você escolhe o limite, vendo a marca no medidor. A barra fica verde quando o microfone abre.
 - **Atenuação:** abaixa o som das transmissões enquanto alguém fala na voz, de 0 (desligada) a 100%, e volta suave meio segundo depois. Dá para abaixar também quando você fala. Não mexe em outros programas do PC.
 - **Como falar:**
@@ -331,7 +405,7 @@ O botão de controles na barra de voz.
 
 ## Estatísticas
 
-Na sala, o ícone de pulso na barra.
+Fica nas **Configurações**, no grupo **Estatísticas** (abas **Desempenho** e **Transmissão**). Os números só são medidos com o grupo à vista.
 
 - **Medição:** enquanto você está numa sala, o app mede tudo uma vez por segundo, com a janela aberta ou não, e guarda os últimos 10 minutos. Dá para jogar e abrir depois para ver como foi.
 Tem duas abas: **Desempenho** e **Transmissão**.
@@ -358,13 +432,13 @@ A configuração de outra pessoa só aparece se ela e o host estiverem na versã
 
 ## Tema
 
-Abra **Configurações gerais** pela engrenagem no pé da barrinha da direita. A barrinha fica na borda direita da janela, no início e dentro de uma sala.
+Abra **Configurações** pela engrenagem no pé da barrinha da direita. A barrinha fica na borda direita da janela, no início e dentro de uma sala. À esquerda da janela ficam os grupos (**Voz e atalhos**, **Aparência**, **Sons**, **Celular** e **Estatísticas**); em cima, as abas do grupo escolhido. Tema, **Janela e fonte** (transparência e fonte) e Cores ficam juntos em **Aparência**. Cada grupo lembra a última aba aberta.
 
 Prefere tudo do outro lado? **Configurações › Aparência › Espelhar a interface** troca os lados: a barrinha, o chat e a voz vão para a esquerda e o HUB para a direita. O resto continua igual, e a escolha fica salva (trocar de tema não desfaz).
 
 **Largura do chat e da voz:** passe o mouse no vão entre o painel e o vídeo até aparecer uma linha; arraste para alargar ou estreitar (de 300 px até pouco mais da metade da janela). O vídeo se ajusta e a largura fica salva. Dois cliques na linha voltam ao tamanho automático. Pelo teclado: Tab até a linha e as setas.
 
-O botão **Perfil** (no alto da barrinha) mostra seu nome salvo neste dispositivo; ele pode ser editado fora da sala. Nele também fica o **Fundo do perfil**: uma imagem (recortada em quadrado) ou um GIF de até 1 MB, que aparece atrás do seu perfil para quem clicar em você na voz; **Tirar fundo** volta ao normal. O GIF só se mexe com o perfil aberto. Dentro da sala, **Chat**, **Voz** e **Transmissão** ficam logo abaixo deles, num grupo separado, só com o ícone (o nome aparece ao parar o mouse em cima), e são alternadores independentes: clique para exibir ou ocultar cada painel. Chat e voz abrem se desdobrando ao lado da barrinha. Os selecionados permanecem visíveis juntos, dividindo o espaço. Perfil e configurações também podem ficar abertos ao mesmo tempo. Cada painel tem sua própria rolagem quando necessário. A seleção dos três painéis da sala é lembrada ao reabrir o app.
+O botão **Perfil** (no alto da barrinha) abre **Seu perfil**: em cima, uma prévia de como os outros te veem na voz (o fundo, a foto e o nome na fonte escolhida); clicar na foto troca a foto e **Trocar fundo** fica no canto do fundo. Embaixo, **Aparência** (foto, fundo e fonte do nome; a lixeira tira a foto ou o fundo) e **Nome**, que só pode ser editado fora da sala (na sala aparece com um cadeado). Nele também fica o **Fundo do perfil**: uma imagem (recortada em quadrado) ou um GIF de até 1 MB, que aparece atrás do seu perfil para quem clicar em você na voz; **Tirar fundo** volta ao normal. Ao escolher a foto ou uma imagem de fundo, abre o **editor de recorte**: arraste a imagem para enquadrar e use o zoom (roda do mouse, controle, setas e + / -); na foto a bolinha mostra o resultado, e no fundo a faixa tracejada é a parte que mais aparece no cartão. **Ajustar**, ao lado de Trocar, abre de novo o editor com o enquadramento anterior, sem escolher a imagem outra vez (GIF não corta, então não tem Ajustar). O GIF só se mexe com o perfil aberto. Dentro da sala, **Chat**, **Voz** e **Transmissão** ficam logo abaixo deles, num grupo separado, só com o ícone (o nome aparece ao parar o mouse em cima), e são alternadores independentes: clique para exibir ou ocultar cada painel. Chat e voz abrem se desdobrando ao lado da barrinha. Os selecionados permanecem visíveis juntos, dividindo o espaço. Perfil e configurações também podem ficar abertos ao mesmo tempo. Cada painel tem sua própria rolagem quando necessário. A seleção dos três painéis da sala é lembrada ao reabrir o app.
 
 O painel **Voz** mostra os participantes, seus controles de volume e botões para entrar, sair, mutar e silenciar as vozes. Mostrar ou ocultar esse painel não liga nem desliga o microfone. Da mesma forma, ocultar **Transmissão** não encerra uma transmissão em andamento; use o botão **Parar** para encerrá-la.
 
@@ -379,7 +453,7 @@ No tema **Du'Sol** (aba Tema), o fundo é o Sol: um pedaço gigante dele à esqu
 
 O tema **Di'Luna** é o irmão do Du'Sol, com a Lua cheia: um pedaço gigante dela à esquerda, com crateras e a borda acesa em ciano, e a noite com véus roxos e faíscas de luz no resto. As cores ficam entre o branco, o ciano, o azul e o roxo, e os letreiros têm serifa. O nome **Di'Luna** aparece nos mesmos lugares do Du'Sol, em pé do lado de fora da Lua no saguão.
 O tema **Renascença** transforma o app numa galeria: o fundo é uma pintura famosa da Renascença (A Escola de Atenas, A Anunciação, A Última Ceia e A Criação de Adão, uma a cada vez que o app abre), com o tom amarelado de verniz antigo e uma etiqueta de museu no canto dizendo qual é. O cartão do Início, o palco e cada transmissão ganham uma moldura dourada entalhada. Créditos das obras em `assets/temas/OBRAS.md`.
-O tema **Top Gun** é a cabine de um caça: cada painel vira um MFD, com fósforo verde no preto, moldura de bezel, colchetes nos cantos e letras de painel em caixa alta; o botão principal fica em inverso de vídeo, e os botões de entrar e sair da voz ganham as faixas amarelas e pretas do convés do porta-aviões. O fundo é uma foto real de caça em tom de visão noturna (F-14 Tomcat, F-22 Raptor, F/A-18 Super Hornet, F-35C e F-16, uma a cada vez que o app abre), com a placa de dados no canto do Início (avião, unidade, navio ou lugar, data e fotógrafo). As asas de piloto (três listras vermelhas de cada lado e a estrela) ficam no lugar da logo, "TOP GUN" fica em pé no Início com o caça da foto visto de cima (F-14, F-22, F/A-18, F-35C ou F-16, nas proporções reais), a barra de título mostra o painel de rádio, o palco sem transmissão vira o HUD e cada transmissão ganha a mira de travamento nos cantos. Na voz, o céu vira um **radar**: anéis de distância, rumos e a varredura girando em volta de você (o canal onde você está na voz; fora dela, a Voz geral); cada pessoa e cada subsala acende quando a varredura passa por ela e vai apagando até a próxima volta (você, quem fala e o seu canal ficam sempre acesos). A varredura gira mesmo com "reduzir movimento" do Windows e para com o app fora de foco e no modo gamer. O tema também troca os sons pelas chamadas de rádio, ditas por pilotos diferentes e com várias falas para cada aviso (o app sorteia uma e não repete a última): **"Bravo six, going dark."** quando você entra numa sala, **"Fox one/two/three!"** quando alguém entra, **"Splash one."** ou **"Good kill."** quando alguém sai, **"Radio check."** e **"R T B."** quando você começa e para de transmitir, **"Going hot."** e **"Going cold."** ao ligar e desligar o microfone, **"Radio silence."** e **"Loud and clear."** ou **"Five by five."** ao silenciar e voltar a ouvir as vozes, **"Tally ho!"** quando te mencionam e o clique do rádio nas mensagens do chat. Ao trocar para outro tema, os seus sons de antes voltam. Créditos das fotos em `assets/temas/OBRAS.md`.
+O tema **Top Gun** é a cabine de um caça: cada painel vira um MFD, com fósforo verde no preto, moldura de bezel, colchetes nos cantos e letras de painel em caixa alta; o botão principal fica em inverso de vídeo, e os botões de entrar e sair da voz ganham as faixas amarelas e pretas do convés do porta-aviões. Fora da sala, o fundo é preto com o blueprint técnico de um caça em verde (cortes da fuselagem do F-16, F-15 e A-10 e desenhos em 3 vistas do F/A-18 e do F-22; um a cada vez que o app abre), com o nome do avião no canto do Início. Dentro da sala, o fundo é só preto. Na voz, o céu vira um **radar**: anéis de distância, rumos e a varredura girando em volta de você (o canal onde você está na voz; fora dela, a Voz geral); cada pessoa e cada subsala acende quando a varredura passa por ela e vai apagando até a próxima volta (você, quem fala e o seu canal ficam sempre acesos). A varredura gira mesmo com "reduzir movimento" do Windows e para com o app fora de foco e no modo gamer. O tema também troca os sons pelas chamadas de rádio, ditas por pilotos diferentes, só a voz (sem chiado), e com várias falas para cada aviso (o app sorteia uma e não repete a última): **"Radio check"** quando você entra numa sala, **"Fox one/two/three!"** quando alguém entra, **"Splash one."** ou **"Good kill."** quando alguém sai, **"Radio check."** e **"R T B."** quando você começa e para de transmitir, **"Going hot."** e **"Going cold."** ao ligar e desligar o microfone, **"Radio silence."** e **"Loud and clear."** ou **"Five by five."** ao silenciar e voltar a ouvir as vozes, **"Tally ho!"** quando te mencionam e o clique do rádio nas mensagens do chat. Ao trocar para outro tema, os seus sons de antes voltam. Créditos das fotos em `assets/temas/OBRAS.md`.
 
 No tema Padrão, a tela inicial tem um céu ao fundo; de vez em quando (a cada 20 a 90 segundos, ao acaso) uma estrela cadente cruza esse céu. Ela só aparece com a janela do app em foco e não aparece se o Windows estiver com os efeitos de animação desligados.
 
@@ -407,12 +481,68 @@ enquanto o Tela P2P fica aberto. Ligado, o controle fica aceso e o app:
 Voz, chat, música, transmitir e assistir continuam funcionando. As suas escolhas de aparência não mudam: desligar
 devolve tudo como era. Fica salvo neste PC.
 
+## Comando de voz (recurso extra)
+
+Controle o app falando, até dentro do jogo. É um recurso extra: fica desligado até você ligar, e só então o app baixa o
+que precisa.
+
+- **Ligar:** Configurações gerais (a engrenagem) › **Recursos extras** › **Comando de voz**. O app pede para baixar o
+  reconhecimento de fala (Whisper), uns 70 MB no modo **Leve** ou 200 MB no **Preciso** (entende melhor, demora um
+  pouco mais). Depois disso funciona sem internet. Desligar não apaga o download; o botão **Apagar o download** apaga.
+- **Usar:** numa sala, segure **Ctrl+Shift+V** (dá para trocar em **Voz e atalhos**), fale e solte. Aparece
+  **Ouvindo…** em cima da janela e, depois de soltar, **Entendendo…** (cerca de 1 s). Enquanto você segura, a call não
+  ouve você. Um toque rápido na tecla (como o Ctrl+Shift+V de colar texto) não faz nada.
+  - **Na voz,** pode falar junto com a tecla: o microfone do comando já fica aberto e guarda o último meio segundo, só
+    na memória (nada vai para a call nem para o disco; entra no comando só quando você aperta a tecla).
+  - **Fora da voz,** o microfone abre quando você aperta (aparece **Abrindo o microfone…**): fale depois do toque.
+  - Em **Recursos extras** aparece o último comando que o app ouviu, para conferir o que ele entendeu.
+- **O que dá para pedir:**
+  - "assistir o Fulano", "abre a live do Fulano";
+  - "parar de assistir o Fulano", "fechar todas";
+  - "Fulano na janela flutuante no canto esquerdo de cima" (abre a transmissão, se precisar);
+  - "tirar o Fulano da janela flutuante";
+  - "entrar na voz", "sair da voz", "desligar o microfone", "ligar o microfone";
+  - "ir para a subsala 2", "voltar para a voz geral", "me leva pra sala da Débora" (o canal em que ela está);
+  - **música:** "toca Evidências", "põe aquela música do Coldplay", "pausa a música", "continua a música", "para a
+    música" (a do seu canal; "toca" busca no YouTube e põe o primeiro vídeo, ou troca a que estiver tocando);
+  - **som:** "abaixa o Mateus", "aumenta o volume da Ana", "silencia o Lucas" (a voz, só para você); "liga o som da
+    live da Ana", "desliga o som da tela do Mateus"; "silencia todo mundo", "volta a ouvir todo mundo" (o fone);
+  - **destaque e tela cheia:** "deixa a do Lucas grande", "tira o destaque", "tela cheia da Ana", "sai da tela cheia";
+  - **clipe:** "salva um clipe", "salva um clipe do Mateus";
+  - **a sua transmissão:** "deixa minha live só pro meu canal", "abre minha live pra todo mundo", "para a minha live".
+    Parar pergunta antes (dois toques iguais): segure a tecla de novo e diga "sim" (ou "não") em até 15 s.
+- **Resposta:** um aviso na tela e a **Confirmação** escolhida em Recursos extras:
+  - **Sons** (o padrão): um toque ao começar e ao terminar de gravar; depois, dois tons subindo quando o comando foi
+    feito, um som grave descendo (recusa) quando não deu ou não havia nada a fazer, e dois toques iguais quando o app
+    pergunta antes ("Parar a sua transmissão?");
+  - **Voz:** os toques e a voz do Windows dizendo o que foi feito ("Assistindo Fulano");
+  - **Nenhuma:** só o aviso na tela.
+  Escolher uma opção já toca um exemplo. Com dois nomes parecidos na sala, o app pergunta
+  ("Daniel ou Daniela?") em vez de chutar; sem entender, ele diz o que ouviu.
+- **Pedidos livres:** em Recursos extras › **Pedidos livres**, um modelo de linguagem entende o que as regras não
+  entendem, dito do seu jeito ("deixa o Mateus num cantinho pra eu ver", "fecha tudo e me leva pra sala do Lucas").
+  Ele escolhe entre as mesmas ações acima, uma ou várias em sequência, e o app confirma tudo num aviso só. Os pedidos
+  simples continuam pelas regras (instantâneo); só o que elas não entendem, ou o que tem mais de uma coisa, vai para o
+  modelo (aparece **Pensando…**).
+  - **Local:** um modelo no seu PC pelo Ollama (`http://localhost:11434`) ou LM Studio (`http://localhost:1234`).
+    Grátis e sem internet, mas usa o PC (a placa de vídeo, se tiver) enquanto pensa. O modelo precisa saber escolher
+    ações ("tools"): o recomendado é o `qwen2.5:7b` (no Ollama: `ollama pull qwen2.5:7b`, uns 4,7 GB; responde em
+    menos de 1 s numa RTX 3060). Modelos de raciocínio, como o `deepseek-r1`, não servem. O app pede para o Ollama
+    tirar o modelo da placa de vídeo 1 minuto depois do último comando (sozinho, ele deixaria 5 minutos).
+  - **Nuvem:** Claude, pela API da Anthropic, com a sua chave (cobrada na sua conta). Entende melhor e não pesa no PC.
+    A chave fica cifrada neste PC e não volta para a tela. Vai para a Anthropic só o texto do pedido, os nomes de quem
+    está na sala (e quem transmite) e dos canais; nunca o áudio. Precisa do instalador novo do Tela P2P.
+  - **Testar** manda um pedido de mentira e diz se o modelo escolheu a ação certa e em quanto tempo.
+- **Privacidade:** a voz é entendida neste PC. O áudio do comando não vai para o disco, para a sala nem para servidor
+  nenhum.
+- Por enquanto, só no Windows.
+
 ## Configurações no celular
 
 Guarde suas configurações no celular e traga de volta em qualquer PC. Funciona com Android e iPhone, sem instalar nada
 no celular, e nada passa pela internet: o celular precisa estar no mesmo Wi-Fi do PC.
 
-- **Guardar:** Configurações gerais (a engrenagem) › **Celular** › **Guardar no celular**. Escolha uma senha (ela não
+- **Guardar:** Configurações (a engrenagem) › **Celular** › **Guardar no celular**. Escolha uma senha (ela não
   fica guardada em lugar nenhum), leia o QR code com a câmera do celular e toque em **Baixar arquivo**. O celular
   guarda um arquivo `.tp2p` cifrado: sem a senha, ninguém abre.
 - **Trazer:** em outro PC, **Celular** › **Trazer do celular**, leia o QR e escolha o arquivo no celular. Digite a senha

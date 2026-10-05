@@ -3,6 +3,9 @@
 O que falta para fechar a fundação descrita em [Fluxo com IA](fluxo-com-ia.md). Riscar (ou apagar a linha) quando feito.
 
 ## Agora
+- [ ] **Entrar com Google** (código pronto, falta ligar): criar o cliente OAuth "App para computador" no Google Cloud e pôr
+      `RAZZE_GOOGLE_CLIENT_ID` e `RAZZE_GOOGLE_CLIENT_SECRET` no `.env` da VPS (passo a passo em `docs/razze-api.md`).
+- [ ] **Atualizar a RazzeAPI na VPS** com o código novo (links de amigo, conta, atividade e Google) e testar em dois PCs.
 - [ ] Acompanhar o **Windows smoke**, automático em PR e na `main` desde 01/10/2026. Na estreia achou um bug real
       (`renderer/lista.js`, PR #13). Se falhar sem motivo, anotar aqui qual teste e quando.
 - [ ] Primeiro PR usando o template e as regras novas, para ver o fluxo de ponta a ponta.
