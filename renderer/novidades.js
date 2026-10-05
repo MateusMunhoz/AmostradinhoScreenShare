@@ -3,6 +3,13 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.16.1",
+    "date": "2026-10-04",
+    "items": [
+      "Tema Top Gun: cabine do F-14, radar na voz e chamadas de rádio"
+    ]
+  },
+  {
     "version": "1.16.0",
     "date": "2026-10-04",
     "items": [
@@ -64,13 +71,6 @@ const NOVIDADES = [
     "date": "2026-10-03",
     "items": [
       "Modo Internet já vem com o servidor da equipe; Hyperswarm deixado de lado (#19)"
-    ]
-  },
-  {
-    "version": "1.15.1",
-    "date": "2026-10-03",
-    "items": [
-      "Mapa da voz: galáxia, nebulas, eventos e hover"
     ]
   }
 ];
