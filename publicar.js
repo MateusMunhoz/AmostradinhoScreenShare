@@ -206,16 +206,22 @@ function publish(requested, { notes = '', github = true } = {}) {
   console.log(`\nPronto. Os amigos recebem a ${version} ${onGithub ? 'pelo botão "Baixar atualização" do app ou ' : ''}pela sala, entrando numa sala com você.`);
 }
 
-module.exports = { buildPack, sign, newer, novidadesDoLog, gravarNovidades, KEY_FILE, PACK_FILES };
+// Os argumentos: a versão (X.Y.Z, opcional), --notas "texto" e --sem-github. O texto das notas nunca vira versão.
+function lerArgs(args) {
+  const notesAt = args.indexOf('--notas');
+  const notes = notesAt >= 0 ? args[notesAt + 1] || '' : '';
+  const version = args.find((a, i) => /^\d+\.\d+\.\d+$/.test(a) && (notesAt < 0 || i !== notesAt + 1));
+  return { version, notes, github: !args.includes('--sem-github') };
+}
+
+module.exports = { buildPack, sign, newer, novidadesDoLog, gravarNovidades, lerArgs, KEY_FILE, PACK_FILES };
 
 if (require.main === module) {
   const args = process.argv.slice(2);
   if (args[0] === '--gerar-chave') {
     generateKey();
   } else {
-    const notesAt = args.indexOf('--notas');
-    const notes = notesAt >= 0 ? args[notesAt + 1] || '' : '';
-    const version = args.find((a, i) => /^\d+\.\d+\.\d+$/.test(a) && i !== notesAt + 1);
-    publish(version, { notes, github: !args.includes('--sem-github') });
+    const { version, notes, github } = lerArgs(args);
+    publish(version, { notes, github });
   }
 }
