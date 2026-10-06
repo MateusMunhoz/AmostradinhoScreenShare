@@ -945,6 +945,22 @@ fieldset.group > legend { margin-bottom: 10px; }
 .session-info strong { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .session-meta { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); }
 .session-meta svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.session-live { align-self: flex-start; margin-bottom: 3px; padding: 1px 7px; border-radius: 999px; background: var(--live-fill); color: var(--live-ink); font-size: 10px; font-weight: 700; letter-spacing: .08em; }
+.session-game { font-size: 12px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.session-faces { display: flex; margin-top: 5px; }
+.session-faces .avatar { width: 22px; height: 22px; font-size: 10px; box-shadow: 0 0 0 2px var(--panel-2); }
+.session-faces .avatar + .avatar { margin-left: -7px; }
+/* Com sala aberta (de amigo ou na rede), entrar nela vira a ação principal: as salas sobem acima dos amigos, ganham o
+   destaque "ao vivo" e "Abrir minha sala" vira botão comum (renderSessoes em renderer/sessoes.js) */
+#home.tem-salas .home-main > #homeFriends { order: 1; }
+#home.tem-salas .home-main > #homeNews { order: 2; }
+#home.tem-salas .home-card { border-color: color-mix(in srgb, var(--live) 45%, var(--line)); }
+#home.tem-salas .session { padding: 14px 14px 14px 16px; border-color: color-mix(in srgb, var(--live) 35%, var(--line)); }
+#home.tem-salas .session > .avatar { width: 44px; height: 44px; font-size: 18px; }
+#home.tem-salas .session > .btn { height: 48px; padding: 0 24px; font-size: 15px; }
+#home.tem-salas #createBlockHint { display: none; }
+#home.tem-salas .home-friend .btn.primary { background: var(--panel-2); border-color: var(--line); color: var(--text); box-shadow: var(--lift); }
+.home-friend-sala { color: var(--live); }
 .check-line { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; cursor: pointer; }
 .check-line input { margin-top: 3px; width: 16px; height: 16px; accent-color: var(--accent); flex: none; }
 .check-line span { display: flex; flex-direction: column; gap: 3px; }
