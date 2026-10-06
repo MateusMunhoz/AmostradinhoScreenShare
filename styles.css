@@ -1301,8 +1301,11 @@ button.sky-card-info:hover:not(:disabled) .sky-card-go { color: var(--accent); }
 .pane-split:hover::after, .pane-split.dragging::after, .pane-split:focus-visible::after { left: 35%; width: 30%; background: var(--accent); }
 .pane-split:focus-visible { outline: none; }
 .workspace-in-room.has-workspace-pane:not(.workspace-wide) #chatTab:not([hidden]) + .pane-split:has(+ #voicePane:not([hidden])) { display: block; }
-/* Com tamanho escolhido: a voz fica com essa fração da coluna, na Lista e no Mapa */
-.workspace-in-room.has-workspace-pane:not(.workspace-wide) .voice-sized:not(.map-focus) #chatTab:not([hidden]) ~ #voicePane.workspace-pane { flex: 0 0 calc(var(--voice-split) * 100%); max-height: none; }
+/* Com tamanho escolhido: a voz fica com essa fração da coluna, na Lista e no Mapa. O chat nunca fica menor que o título,
+   um pouco da lista e o campo de escrever (--chat-min, o mesmo CHAT_MIN_PX de navegacao.js): a voz encolhe antes */
+.workspace-in-room.has-workspace-pane:not(.workspace-wide) .voice-sized:not(.map-focus) #chatTab:not([hidden]) ~ #voicePane.workspace-pane { flex: 0 1 calc(var(--voice-split) * 100%); max-height: none; }
+#workspacePanes { --chat-min: 220px; }
+.workspace-in-room.has-workspace-pane:not(.workspace-wide) .voice-sized:not(.fold-chat):not(.map-focus) #chatTab:not([hidden]):has(~ #voicePane:not([hidden])) { min-height: var(--chat-min); }
 /* Recolher (setPaneFold): a seta no título; recolhido, o painel vira só o título e o outro ocupa a coluna */
 .pane-fold { display: none; flex: none; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 5px; background: none; color: var(--muted); cursor: pointer; place-items: center; }
 .pane-fold:hover { background: var(--panel-2); color: var(--text); }

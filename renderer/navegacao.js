@@ -342,8 +342,9 @@ function renderVoicePane() {
 }
 // ---------- Divisória entre o chat e a voz ----------
 // Arrastar a linha entre os dois muda quanto da coluna é da voz (o chat fica com o resto). Setas também mexem, e o
-// clique duplo volta ao automático. O tamanho fica salvo neste PC (voiceSplit, fração da altura).
-const SPLIT_MIN = 0.15, SPLIT_MAX = 0.85;
+// clique duplo volta ao automático. O tamanho fica salvo neste PC (voiceSplit, fração da altura). Para cima, para quando
+// o chat chega ao mínimo (título, um pouco da lista e o campo de escrever: --chat-min no styles.css).
+const SPLIT_MIN = 0.15, SPLIT_MAX = 0.85, CHAT_MIN_PX = 220;
 function setupPaneSplit(host) {
   const bar = document.createElement('div');
   bar.className = 'pane-split';
@@ -357,7 +358,8 @@ function setupPaneSplit(host) {
   host.insertBefore(bar, $('voicePane'));
   const apply = (f) => {
     if (f == null) { host.style.removeProperty('--voice-split'); host.classList.remove('voice-sized'); bar.removeAttribute('aria-valuenow'); return; }
-    f = Math.min(SPLIT_MAX, Math.max(SPLIT_MIN, f));
+    const max = host.clientHeight ? Math.max(SPLIT_MIN, Math.min(SPLIT_MAX, 1 - (CHAT_MIN_PX + bar.offsetHeight) / host.clientHeight)) : SPLIT_MAX;
+    f = Math.min(max, Math.max(SPLIT_MIN, f));
     host.style.setProperty('--voice-split', String(f));
     host.classList.add('voice-sized');
     bar.setAttribute('aria-valuenow', String(Math.round(f * 100)));
