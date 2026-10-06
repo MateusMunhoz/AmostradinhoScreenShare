@@ -12,8 +12,18 @@ function cleanInternetRoom(v) {
   return { servidor: String(v.servidor), codigo: v.codigo, pessoas, passe };
 }
 
+// Em que sala estou, para os amigos (docs/spec/sala-do-amigo.md): o modo, o nome do host, quantas pessoas e se estou na
+// voz. Nada de endereço, código ou senha: confere o que vem da janela e corta o resto
+function cleanSalaAtual(v) {
+  if (!v || typeof v !== 'object' || !['radmin', 'razze', 'internet'].includes(v.modo)) return null;
+  const host = String(v.host ?? '').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 32);
+  if (!host) return null;
+  const pessoas = Number.isInteger(v.pessoas) ? Math.min(1000, Math.max(1, v.pessoas)) : 1;
+  return { modo: v.modo, host, pessoas, voz: v.voz === true };
+}
+
 // Heartbeat no processo principal: continua com a janela minimizada/oculta.
-function createPresence({ service, clientName = 'Tela P2P', getAppVersion = () => '', getRoom = () => null, getInternetRoom = () => null, publish = () => {}, setInterval: schedule = setInterval, clearInterval: cancel = clearInterval }) {
+function createPresence({ service, clientName = 'Tela P2P', getAppVersion = () => '', getRoom = () => null, getInternetRoom = () => null, getSalaAtual = () => null, publish = () => {}, setInterval: schedule = setInterval, clearInterval: cancel = clearInterval }) {
   const networks = new Set();
   let timer = null, running = null, queued = false, stopped = true;
   let snapshot = { friends: [], networks: [], rooms: [], internetRooms: [], updatedAt: null, error: '' };
@@ -44,8 +54,10 @@ function createPresence({ service, clientName = 'Tela P2P', getAppVersion = () =
         const room = advertised && connections.some(c => c.networkId === advertised.networkId) ? advertised : null;
         // Sala do modo Internet: vai para os amigos, sem precisar de rede Razze nem de VPN
         const internetRoom = getInternetRoom() || undefined;
+        // Em que sala estou (qualquer modo): só os amigos veem; servidor antigo ignora o campo
         const appVersion = String(getAppVersion() || '');
-        await api.heartbeat({ clientName, connections, room, ...(internetRoom ? { internetRoom } : {}), ...(appVersion ? { appVersion } : {}) });
+        const salaAtual = getSalaAtual() || undefined;
+        await api.heartbeat({ clientName, connections, room, ...(internetRoom ? { internetRoom } : {}), ...(salaAtual ? { salaAtual } : {}), ...(appVersion ? { appVersion } : {}) });
         const [friends, listed, rooms] = await Promise.all([api.listFriends(), api.listNetworks(), api.listRooms()]);
         if (!stopped) emit({ friends: friends.friends, networks: listed.networks, rooms: rooms.rooms, internetRooms: Array.isArray(rooms.internet) ? rooms.internet : [], updatedAt: Date.now(), error: '' });
       } catch (e) {
@@ -78,4 +90,4 @@ function createPresence({ service, clientName = 'Tela P2P', getAppVersion = () =
     async stop() { stopped = true; queued = false; if (timer) cancel(timer); timer = null; await reset(); },
   };
 }
-module.exports = { createPresence, cleanInternetRoom };
+module.exports = { createPresence, cleanInternetRoom, cleanSalaAtual };

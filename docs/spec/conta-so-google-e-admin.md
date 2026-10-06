@@ -14,7 +14,7 @@ Roadmap: fluxo, conta e perfil (`docs/spec/primeira-entrada-e-perfil.md`) · Rot
 
 ## Dá para fazer sem zerar o banco
 Dá. As mudanças do servidor só acrescentam tabelas e colunas (nada se migra à mão). Sem reset: ligue `googleOnly` (fecha o cadastro por
-senha) e deixe `legacyPasswordLogin` ligado: quem já tem conta continua entrando por senha e vincula o Google em HUB › Rede.
+senha) e deixe `legacyPasswordLogin` ligado: quem já tem conta continua entrando por senha e vincula o Google em Perfil › Conta Razze.
 Quando o painel mostrar que todos vincularam (`withGoogle` = contas ativas), desligue `legacyPasswordLogin`. O que **não** se resolve sem
 reset: contas duplicadas que já existem (a mesma pessoa em dois e-mails); elas ficam e você desativa a sobra em Pessoas.
 
@@ -94,7 +94,7 @@ Cada amigo: `-Body '{"email":"...","grupo":"amigo","label":"Nome"}'` (ou `"teste
 
 ### 5. Primeiro acesso
 Abra o app › **Entrar com Google** com `andrickneer@gmail.com`: a conta nasce **administradora e ativa**. Mesmo para o Cristian.
-A partir daí, tudo (pedidos, convidados, grupos, números) é no HUB › Admin; os `curl` acima só servem de reserva.
+A partir daí, tudo (pedidos, convidados, grupos, números) é no Perfil › Conta Razze › Administração; os `curl` acima só servem de reserva.
 
 ### 6. Voltar atrás
 O backup `razze-data-AAAA-MM-DD.tgz` restaura tudo (passo 9 de "Atualizar a VPS" em `docs/razze-api.md`). Para voltar a
@@ -104,7 +104,7 @@ aceitar senha: `Invoke-RestMethod -Method Patch ... -Body '{"googleOnly":false}'
 1. **Servidor** — **FEITA em 05/10/2026**: `googleOnly`, `onlyAllowlist`, lista de convidados (`/v1/admin/allowlist`),
    grupo (`amigo`/`teste`) em `PATCH /v1/admin/users/:id`, `GET /v1/admin/analytics`, `appVersion` no heartbeat; testes em
    `tests/razze-conta-google.test.js`. Falta o deploy na VPS (roteiro acima).
-2. **Painel no app** — **FEITA em 05/10/2026** (IPC `razze-admin` com lista fechada de rotas, `renderer/admin.js`, botão **Administração** em HUB › Rede só para administradores, `appVersion` no heartbeat; teste em `tests/razze-admin-cliente.test.js`). Falta teste manual com o servidor real.
+2. **Painel no app** — **FEITA em 05/10/2026** (IPC `razze-admin` com lista fechada de rotas, `renderer/admin.js`, botão **Administração** em Perfil › Conta Razze só para administradores, `appVersion` no heartbeat; teste em `tests/razze-admin-cliente.test.js`). Falta teste manual com o servidor real.
 3. **Primeira entrada só Google** — **FEITA em 05/10/2026** (a config do Google diz `googleOnly` e `passwordLogin`; com `googleOnly`, o formulário de senha some e fica **Tenho uma conta com e-mail e senha**). Conta apagada (401): o app já desloga sozinho (`main/razze-presence.js`); falta conferir na prática depois do reset.
 4. **Teste em dois PCs** (roteiro "Conta, amigos e perfil") e deploy.
 

@@ -229,6 +229,7 @@ function leaveRoom(reason, kind = 'info', endRoom = false) {
   perfStop();
   if (state.isOwner) window.api.stopServer(endRoom);
   retirarSalaInternet();
+  retirarSalaAtual();
   closeChatOverlay();
   closePersonCard();
   window.api.roomKeys(false).catch(() => {}); // solta também a tecla do comando de voz

@@ -1,5 +1,5 @@
 // Tela inicial no tema Padrão: o fundo é um céu estrelado parado (estrelas de vários tamanhos, a Via Láctea e
-// nebulosas leves), sem o antigo exemplo de sala. Também: nada de japonês no tema Padrão, e o HUB sem Mensagens.
+// nebulosas leves), sem o antigo exemplo de sala. Também: nada de japonês no tema Padrão, e o HUB (que saiu) não volta.
 const { openApp, check, sleep, run } = require('./ajuda');
 
 const CJK = '/[\\u3040-\\u30ff\\u4e00-\\u9fff]/';
@@ -21,5 +21,5 @@ run('Tela inicial: céu estrelado', 60000, async () => {
     return !${CJK}.test(t) && !${CJK}.test(e) && t.includes('CARTA ESTELAR');
   })()`));
   check('Em outro tema, o céu estrelado some', await A.eval(`(() => { document.documentElement.setAttribute('data-skin', 'arasaka'); const off = getComputedStyle(document.body, '::after').maskImage === 'none'; document.documentElement.removeAttribute('data-skin'); return off; })()`));
-  check('HUB sem a aba Mensagens (só Salas, Amigos e Rede)', await A.eval(`!$('hubTabMessages') && !$('hubMessages') && [...document.querySelectorAll('.hub-tabs button')].map((b) => b.textContent.trim().split(' ')[0]).join() === 'Salas,Amigos,Rede'`));
+  check('Sem o HUB: amigos e conversas no envelope', await A.eval(`!$('hubRail') && !document.querySelector('.hub-tabs') && $('dmPanel').contains($('dmFriends')) && $('dmPanel').contains($('dmConvs'))`));
 });

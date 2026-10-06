@@ -78,7 +78,7 @@ function createDmStore(baseDir, { storage = null, now = () => Date.now() } = {})
     try { names = fs.readdirSync(dirOf(account)); } catch { return []; }
     return names.filter((n) => n.endsWith('.json') && ID.test(n.replace(/\.json$/, ''))).map((n) => n.replace(/\.json$/, ''));
   }
-  // As conversas que existem neste PC, com a última mensagem de cada uma (para a lista do HUB)
+  // As conversas que existem neste PC, com a última mensagem de cada uma (para a lista do envelope)
   function list(account) {
     const out = [];
     for (const friend of friendsOf(account)) {

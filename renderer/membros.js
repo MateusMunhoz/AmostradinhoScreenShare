@@ -16,7 +16,7 @@ async function renderRoomAddress() {
     const preferred = provider === 'razze' ? ips.filter((i) => i.razze) : ips.filter((i) => i.radmin);
     $('noRadmin').hidden = preferred.length > 0;
     $('noRadmin').textContent = provider === 'razze'
-      ? 'Nenhum IP da VPN Razze foi encontrado. Conecte uma rede na aba Rede (no HUB, à esquerda).'
+      ? 'Nenhum IP da VPN Razze foi encontrado. Conecte uma rede em Configurações › Rede.'
       : 'Nenhum IP da Radmin VPN (26.x.x.x) encontrado. Ligue a Radmin e entre na rede.';
     const usable = provider === 'razze' ? preferred : (preferred.length ? preferred : ips);
     addrs = usable.map((i) => `${i.address}:${state.port}`);
@@ -145,6 +145,7 @@ function memberRow(id, name, sharing) {
 }
 
 function renderMembers() {
+  if (typeof publicarSalaAtual === 'function') publicarSalaAtual(); // em que sala estou, para os amigos (salas-amigos.js)
   const list = $('members');
   list.innerHTML = '';
   $('memberCount').textContent = $('memberTitleCount').textContent = state.members.size + 1;

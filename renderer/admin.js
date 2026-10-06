@@ -1,5 +1,5 @@
 'use strict';
-// Administração dentro do app (HUB › Rede › Administração): só para contas com papel de administrador.
+// Administração dentro do app (Perfil › Conta Razze › Administração): só para contas com papel de administrador.
 // Visão geral (números), Pedidos (contas pendentes), Convidados (lista de e-mails que entram direto), Pessoas
 // (filtro por grupo) e Servidor (interruptores). Tudo vai por window.api.razzeAdmin, que só aceita as rotas do painel
 // (main/razze-api-client.js); o servidor confere o papel em toda chamada. Plano: docs/spec/conta-so-google-e-admin.md.

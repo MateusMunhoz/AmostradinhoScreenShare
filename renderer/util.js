@@ -10,7 +10,7 @@ function show(id) {
   if (typeof renderUpdateBanner === 'function') renderUpdateBanner();
   if (id === 'home') renderHome();
   syncWorkspace();
-  if (typeof setSessionWatch === 'function') setSessionWatch(sessionWatchWanted()); // procura sessões só no início (ou com o HUB aberto)
+  if (typeof setSessionWatch === 'function') setSessionWatch(sessionWatchWanted()); // procura sessões só no início
 }
 
 let toastTimer;

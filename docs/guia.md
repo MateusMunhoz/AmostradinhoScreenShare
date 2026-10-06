@@ -44,7 +44,7 @@ Tudo o que dá para fazer no Nebula, com os detalhes. Para começar do zero, vej
 
 ### Como os PCs se conectam
 
-No HUB, aba **Rede**. O padrão é **Internet (servidor)**: sem VPN, a sala fica num servidor (VPS) e os amigos
+Em **Configurações › Rede**. O padrão é **Internet (servidor)**: sem VPN, a sala fica num servidor (VPS) e os amigos
 entram por código e senha, pela lista de salas dos amigos ou por um convite nas mensagens. Também dá para usar
 **Radmin ou rede local** e **Razze (WireGuard)**. Quem já usava o app antes do modo Internet virar o padrão, sem
 ter escolhido outro, continua na Radmin.
@@ -66,7 +66,7 @@ O dono pode copiar um link `telap2p://invite/...` na configuração da rede. No 
 o Nebula pelo link e entre na conta Razze para aceitar o convite. Também é possível colar o link no campo
 **Entrar por convite**.
 
-O **Mapa de conexões** fica na mesma aba **Rede** do HUB: este PC em cima e, embaixo, o servidor Razze e cada
+O **Mapa de conexões** fica no mesmo lugar, em **Configurações › Rede**: este PC em cima e, embaixo, o servidor Razze e cada
 rede, em verde (conectado), vermelho (sem conexão) ou cinza (indisponível). Atualiza sozinho a cada 5 segundos
 enquanto a aba está aberta. Transmitindo, o app sai da sua transmissão enquanto a aba está aberta, para os
 endereços não aparecerem para quem assiste.
@@ -97,7 +97,7 @@ quem está com ela, quantas pessoas estão dentro e um cadeado se tiver senha.
 ### Salas dos amigos (modo Internet)
 
 No modo Internet, a lista da tela inicial vira **Salas dos seus amigos**: as salas que os seus amigos do Razze
-abriram pela internet. Basta estar logado na conta Razze (aba Rede do HUB); a VPN Razze não precisa estar ligada.
+abriram pela internet. Basta estar logado na conta Razze (no seu **Perfil**, em **Conta Razze**); a VPN Razze não precisa estar ligada.
 
 - **Quem instala agora:** o app já começa no modo Internet, com o servidor da equipe e a conta Razze prontos. É só criar
   a conta na aba Rede, adicionar os amigos e criar ou entrar nas salas. Quem já usava o app continua na Radmin; para
@@ -273,20 +273,20 @@ Na primeira vez que o app abre, uma tela de cada vez (três no máximo):
 
 Quem já usava o app não vê essa tela. Quem escolheu *Com amigos* e ainda não entrou vê no Início uma faixa **Entrar na conta**.
 
-No **Início**, com conta: **Amigos online** (até 5, com **Mensagem** e **Ligar**), **Adicionar amigo** e **Ver todos** (abre o HUB).
+No **Início**, com conta: **Amigos online** (até 5, com **Mensagem** e **Ligar**), **Adicionar amigo** e **Ver todos** (abre o envelope na aba **Amigos**).
 **Abrir minha sala** cria a sala em um clique (com senha gerada e visível para os amigos); **Opções da sala** abre a tela
 de antes, com porta, senha e visibilidade.
 
 ## Senha e frase do perfil
 
-- **Entrar com Google:** no passo 3 da primeira entrada e em HUB › Rede, **Entrar com Google** abre o navegador, você escolhe a conta
+- **Entrar com Google:** no passo 3 da primeira entrada e no **Perfil**, em **Conta Razze**, **Entrar com Google** abre o navegador, você escolhe a conta
   e volta ao app. O botão só aparece se o servidor tiver o Google ligado. Se já existe uma conta com o mesmo e-mail e senha, o app avisa:
-  entre com a senha e use **Vincular Google** (HUB › Rede, na conta). **Desvincular Google** só funciona se a conta tiver senha;
+  entre com a senha e use **Vincular Google** (Perfil › Conta Razze). **Desvincular Google** só funciona se a conta tiver senha;
   quem entrou só pelo Google define a primeira senha em **Trocar senha**, sem precisar da atual.
-- **Servidor só com Google:** quando o administrador liga essa opção, o passo 3 e o HUB › Rede mostram só **Entrar com Google** (sem formulário de e-mail e senha, e sem **Criar conta**). Quem já tinha conta com senha toca em **Tenho uma conta com e-mail e senha** para entrar como antes. Conta nova de um e-mail que não está na lista de convidados fica **pendente**: avise o administrador e, depois que ele aprovar, toque em **Entrar com Google** de novo. Sem conta, o app continua funcionando por código e senha da sala.
-- **Administração (só administradores):** em HUB › Rede, na sua conta, o botão **Administração** abre uma tela com **Visão geral** (online agora, ativos em 1, 7 e 30 dias, pico, contas novas, quem voltou, amizades, mensagens, versões em uso e 14 dias de gráfico), **Pedidos** (aprovar ou recusar contas pendentes), **Convidados** (e-mails que entram direto, com grupo Amigo, Teste ou Administrador), **Pessoas** (filtro Todos, Amigos, Teste, Admin, Pendentes e Desativados; mudar grupo, tornar administrador, desativar) e **Servidor** (interruptores de só Google, senha antiga, aprovação e lista de convidados). Quem não é administrador não vê o botão, e o servidor recusa as chamadas dele.
-- **Trocar a senha:** HUB › Rede › **Trocar senha** (pede a senha atual; mínimo 8 caracteres).
-- **Esqueci a senha:** na tela de entrar (HUB › Rede ou o passo 3 da primeira entrada), **Esqueci a senha**. O servidor não
+- **Servidor só com Google:** quando o administrador liga essa opção, o passo 3 e o Perfil › Conta Razze mostram só **Entrar com Google** (sem formulário de e-mail e senha, e sem **Criar conta**). Quem já tinha conta com senha toca em **Tenho uma conta com e-mail e senha** para entrar como antes. Conta nova de um e-mail que não está na lista de convidados fica **pendente**: avise o administrador e, depois que ele aprovar, toque em **Entrar com Google** de novo. Sem conta, o app continua funcionando por código e senha da sala.
+- **Administração (só administradores):** em Perfil › Conta Razze, na sua conta, o botão **Administração** abre uma tela com **Visão geral** (online agora, ativos em 1, 7 e 30 dias, pico, contas novas, quem voltou, amizades, mensagens, versões em uso e 14 dias de gráfico), **Pedidos** (aprovar ou recusar contas pendentes), **Convidados** (e-mails que entram direto, com grupo Amigo, Teste ou Administrador), **Pessoas** (filtro Todos, Amigos, Teste, Admin, Pendentes e Desativados; mudar grupo, tornar administrador, desativar) e **Servidor** (interruptores de só Google, senha antiga, aprovação e lista de convidados). Quem não é administrador não vê o botão, e o servidor recusa as chamadas dele.
+- **Trocar a senha:** Perfil › Conta Razze › **Trocar senha** (pede a senha atual; mínimo 8 caracteres).
+- **Esqueci a senha:** na tela de entrar (Perfil › Conta Razze ou o passo 3 da primeira entrada), **Esqueci a senha**. O servidor não
   manda e-mail: peça um código ao **administrador**, que o gera no painel (botão **Código de senha**). Digite o e-mail, o
   código (vale 1 hora e funciona uma vez) e a senha nova.
 - **Frase do perfil:** no seu perfil, **Frase** (até 128 caracteres). Os amigos veem embaixo do seu nome no Início, e quem está na sala vê no seu cartão (ao abrir o seu perfil na voz); ela só passa entre os dois, na hora em que o cartão abre. Sem conta,
@@ -307,7 +307,9 @@ conta e vale no Windows; sem conta nada é enviado.
 
 ## Amigos
 
-No HUB (a barra fina na borda esquerda), aba **Amigos**. Precisa de conta Razze.
+No **envelope**, no começo da barra de baixo, aba **Amigos** (ao lado de **Conversas**). Precisa de conta Razze: sem ela,
+o envelope não aparece e a conta se faz no **Perfil**, em **Conta Razze**. Pedido de amizade que chegou aparece também em
+cima das conversas e no número do envelope; clicar leva para **Pedidos**. O **balão** ao lado do nome abre a conversa.
 
 - **Buscar:** o campo do topo filtra a lista pelo nome. Os chips **Todos**, **Online** e **Pedidos** mudam o que aparece; o número no **Pedidos** conta os pedidos recebidos e enviados.
 - **Adicionar:** clique em **Adicionar**, digite o nickname exato e **Enviar pedido** (ou Enter). Se der errado, o motivo aparece embaixo do campo. Quando der certo, o pedido vai para **Pedidos enviados**.
@@ -323,6 +325,8 @@ No HUB (a barra fina na borda esquerda), aba **Amigos**. Precisa de conta Razze.
 - **Convidar:** aparece só para quem está online, com você numa sala. Manda um **convite** nas mensagens diretas do
   amigo, que aparece como um cartão com **Entrar** (veja abaixo).
 - **Remover:** no **⋯** da linha, **Remover [nome]**. A própria linha pergunta se é isso mesmo; **Não** ou Esc desiste.
+  Remover desfaz a amizade dos dois lados: some também da lista do outro, sem precisar reabrir o app.
+- **Em que sala o amigo está:** no lugar de "Online", aparece "Na sala de Ciclano · Radmin · 4 pessoas" (ou "na voz"), em qualquer modo e mesmo que o amigo não seja o host; na mesma sala que você, "Na sua sala". Também nos **Amigos online** do Início. É só para saber onde ele está: não vai endereço, e para entrar continua o convite ou o endereço. Quem não quer mostrar desliga em **Perfil › Atividade › Mostrar aos amigos em que sala estou** (ligado por padrão). Salas escondidas e chamadas não aparecem.
 
 ## Mensagens diretas
 
@@ -348,13 +352,13 @@ Conversa com um amigo (conta Razze), dentro ou fora da sala.
   - **Radmin ou Razze:** preenche o endereço e entra; se a sala tiver senha, pede a senha (ela nunca vai no
     convite). Na Razze, precisa estar com a mesma rede ligada.
   - **Outro modo:** se você estiver em outro modo (por exemplo, na Radmin e o convite é pela internet), o cartão
-    avisa qual usar, em HUB › Rede. O app não troca o modo sozinho.
+    avisa qual usar, em Configurações › Rede. O app não troca o modo sozinho.
   - **Já numa sala:** pergunta se quer sair dela e entrar na do amigo.
   - **App antigo:** quem ainda não atualizou vê o convite como texto, com o código ou o endereço, e entra à mão.
 
 ### Ligar
 
-O **telefone** no chip da conversa (ou ao lado do nome, no HUB › Amigos) liga para o amigo.
+O **telefone** no chip da conversa (ou ao lado do nome, na aba **Amigos** do envelope) liga para o amigo.
 
 - **A única escolha:** o modo de rede (Internet, Radmin ou rede local, Razze). Vem marcado o que você usa agora; o
   que não está pronto (sem servidor, sem conta Razze, VPN desligada) aparece desativado, com o motivo.
@@ -368,7 +372,7 @@ O **telefone** no chip da conversa (ou ao lado do nome, no HUB › Amigos) liga 
 - **Os dois veem a senha** no Painel da sala (botão de pessoas), para passar a outra pessoa ou mudar.
 - **App antigo:** vê o convite comum, e o texto da mensagem traz o código ou o endereço e a senha.
 
-- **Abrir:** clique no **envelope** (mensagens privadas), no começo da barra de baixo: a lista das conversas abre para cima, com busca, a última mensagem e as não lidas. Ou, no HUB, aba **Amigos**, no balão ao lado do nome.
+- **Abrir:** clique no **envelope**, no começo da barra de baixo: o painel abre para cima na aba **Conversas**, com busca, a última mensagem e as não lidas. Ou, na aba **Amigos** do mesmo painel, no balão ao lado do nome.
 - **Barra de conversas:** fica embaixo da tela. Cada conversa aberta vira um chip. Clicar no chip abre a janela; o **—** minimiza de volta para o chip; o **X** tira da barra.
 - **Muitas conversas:** as que não cabem na largura vão para o **+N** no canto direito (fica destacado se alguma tem mensagem não lida). Clicar nele lista as escondidas; escolher uma traz ela de volta para a barra.
 - **Ordem:** arraste um chip para a esquerda ou para a direita de outro (ou **Alt+←** / **Alt+→** com ele selecionado). A ordem fica salva.
@@ -440,7 +444,7 @@ A configuração de outra pessoa só aparece se ela e o host estiverem na versã
 
 Abra **Configurações** pela engrenagem no pé da barrinha da direita. A barrinha fica na borda direita da janela, no início e dentro de uma sala. À esquerda da janela ficam os grupos (**Voz e atalhos**, **Aparência**, **Sons**, **Celular** e **Estatísticas**); em cima, as abas do grupo escolhido. Tema, **Janela e fonte** (transparência e fonte) e Cores ficam juntos em **Aparência**. Cada grupo lembra a última aba aberta.
 
-Prefere tudo do outro lado? **Configurações › Aparência › Espelhar a interface** troca os lados: a barrinha, o chat e a voz vão para a esquerda e o HUB para a direita. O resto continua igual, e a escolha fica salva (trocar de tema não desfaz).
+Prefere tudo do outro lado? **Configurações › Aparência › Espelhar a interface** troca os lados: a barrinha, o chat e a voz vão para a esquerda. O resto continua igual, e a escolha fica salva (trocar de tema não desfaz).
 
 **Largura do chat e da voz:** passe o mouse no vão entre o painel e o vídeo até aparecer uma linha; arraste para alargar ou estreitar (de 300 px até pouco mais da metade da janela). O vídeo se ajusta e a largura fica salva. Dois cliques na linha voltam ao tamanho automático. Pelo teclado: Tab até a linha e as setas.
 

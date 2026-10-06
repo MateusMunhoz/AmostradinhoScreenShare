@@ -45,7 +45,7 @@
 }
 
 /* ---------- Painéis: nogueira escura com um filete de ouro em cima ---------- */
-:root[data-skin="renascenca"] :is(.workspace-pane, .dock, .panel, .dialog, .hub-rail, .sky-focus.sky-pop, .rail-music-menu, #workspaceNav) {
+:root[data-skin="renascenca"] :is(.workspace-pane, .dock, .panel, .dialog, .sky-focus.sky-pop, .rail-music-menu, #workspaceNav) {
   box-shadow: inset 0 1px 0 rgba(232, 200, 115, .35), 0 12px 32px rgba(10, 6, 2, .5);
 }
 :root[data-skin="renascenca"] :is(.pane-head h2, .chat-title, .stream-pane-head h2, .dialog h2, .settings-section h3) {
@@ -97,10 +97,10 @@
   background: linear-gradient(170deg, #E9CF86, #C9A24A 55%, #A88232);
   box-shadow: inset 0 1px 0 rgba(255, 246, 216, .7), inset 0 -1px 0 rgba(60, 38, 8, .45), 0 0 0 1px #6B4A14, 0 4px 12px rgba(8, 5, 2, .6);
 }
-:root[data-skin="renascenca"] .home-screen::after { position: fixed; left: calc(var(--hub-w, 0px) + 22px); bottom: 64px; }
+:root[data-skin="renascenca"] .home-screen::after { position: fixed; left: 22px; bottom: 64px; }
 :root[data-skin="renascenca"] .empty-stage::after { position: absolute; left: 18px; bottom: 16px; }
 /* A primeira linha (o autor) é o nome gravado: a etiqueta inteira fica em itálico, só o tamanho muda o peso */
-:root[data-skin="renascenca"][data-mirror="on"] .home-screen::after { left: auto; right: calc(var(--hub-w, 0px) + 22px); }
+:root[data-skin="renascenca"][data-mirror="on"] .home-screen::after { left: auto; right: 22px; }
 @media (max-height: 640px), (max-width: 980px) { :root[data-skin="renascenca"] .home-screen::after { display: none; } }
 
 /* Céu da voz: o mesmo desenho, sobre um fundo de sépia */

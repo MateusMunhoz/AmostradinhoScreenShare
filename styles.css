@@ -966,11 +966,16 @@ fieldset.group > legend { margin-bottom: 10px; }
 .settings-section h3 { font-size: 15px; }
 .settings-section h4 { margin: 8px 0 0; font-size: 13px; }
 .razze-networks { display: grid; gap: 8px; }
-/* Janela Rede (ícone de servidor): resumo, escolha da rede e o Razze em passos numerados */
-.general-settings.network-settings { width: min(580px, 100%); }
-.network-settings input[type=url], .network-settings input[type=email], .network-settings input[type=password] {
+/* Configurações › Rede: resumo, escolha da rede e o Razze em passos numerados. A Conta Razze (Perfil) usa os mesmos campos */
+.network-settings :is(input[type=text], input[type=url], input[type=email], input[type=password]),
+.profile-account :is(input[type=text], input[type=email], input[type=password]) {
   color: var(--surface-text); background: var(--sunken); border: 1px solid var(--field-line); border-radius: 6px; padding: 8px 10px; font: inherit; min-width: 0; }
-.network-settings input:focus, .network-settings select:focus { border-color: var(--accent); outline: none; }
+.network-settings input:focus, .network-settings select:focus, .profile-account input:focus { border-color: var(--accent); outline: none; }
+.network-settings { display: grid; gap: 14px; }
+.settings-main .network-settings .settings-section { padding: 0; border: 0; background: none; overflow: visible; } /* com overflow, a linha da grade encolhia e o mapa passava por cima */
+.profile-account { display: grid; gap: 10px; }
+.profile-account > .btn { justify-self: start; }
+.profile-account .hint:empty { display: none; }
 .net-summary { margin: 0; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; background: var(--panel-2); font-size: 13px; }
 .net-seg label { flex: 1; justify-content: center; }
 .razze-steps { display: grid; gap: 12px; }
@@ -1039,7 +1044,7 @@ main { padding-top: var(--workspace-top); }
 .workspace-header { position: fixed; inset: 0 0 auto; height: var(--workspace-top); z-index: 10; background: var(--bg); }
 .workspace-brand { position: absolute; left: 24px; top: 28px; font-size: 15px; font-weight: 650; }
 #workspaceContext { margin-left: 12px; color: var(--muted); font-weight: 400; font-size: 12px; }
-/* Barrinha fixa na borda direita, espelho do HUB da esquerda: Chat, Voz e Transmissão em cima, perfil e engrenagem
+/* Barrinha fixa na borda direita: Chat, Voz e Transmissão em cima, perfil e engrenagem
    embaixo, só com os ícones (o nome fica na dica). Chat e voz abrem à esquerda dela. */
 :root { --rail-w: 48px; }
 main { margin-right: var(--rail-w); }
@@ -1296,8 +1301,11 @@ button.sky-card-info:hover:not(:disabled) .sky-card-go { color: var(--accent); }
 .pane-split:hover::after, .pane-split.dragging::after, .pane-split:focus-visible::after { left: 35%; width: 30%; background: var(--accent); }
 .pane-split:focus-visible { outline: none; }
 .workspace-in-room.has-workspace-pane:not(.workspace-wide) #chatTab:not([hidden]) + .pane-split:has(+ #voicePane:not([hidden])) { display: block; }
-/* Com tamanho escolhido: a voz fica com essa fração da coluna, na Lista e no Mapa */
-.workspace-in-room.has-workspace-pane:not(.workspace-wide) .voice-sized:not(.map-focus) #chatTab:not([hidden]) ~ #voicePane.workspace-pane { flex: 0 0 calc(var(--voice-split) * 100%); max-height: none; }
+/* Com tamanho escolhido: a voz fica com essa fração da coluna, na Lista e no Mapa. O chat nunca fica menor que o título,
+   um pouco da lista e o campo de escrever (--chat-min, o mesmo CHAT_MIN_PX de navegacao.js): a voz encolhe antes */
+.workspace-in-room.has-workspace-pane:not(.workspace-wide) .voice-sized:not(.map-focus) #chatTab:not([hidden]) ~ #voicePane.workspace-pane { flex: 0 1 calc(var(--voice-split) * 100%); max-height: none; }
+#workspacePanes { --chat-min: 220px; }
+.workspace-in-room.has-workspace-pane:not(.workspace-wide) .voice-sized:not(.fold-chat):not(.map-focus) #chatTab:not([hidden]):has(~ #voicePane:not([hidden])) { min-height: var(--chat-min); }
 /* Recolher (setPaneFold): a seta no título; recolhido, o painel vira só o título e o outro ocupa a coluna */
 .pane-fold { display: none; flex: none; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 5px; background: none; color: var(--muted); cursor: pointer; place-items: center; }
 .pane-fold:hover { background: var(--panel-2); color: var(--text); }
@@ -1698,7 +1706,7 @@ html[data-glass=liquid] .theme-swatches { border-radius: 10px; }
 .connection-legend .online { color: #15803d; }
 .connection-legend .offline { color: #dc2626; }
 .connection-legend .unknown { color: var(--surface-muted); }
-#connectionGraph { width: 100%; display: block; }
+#connectionGraph { width: 100%; max-width: 340px; display: block; } /* desenhado em pé, para uma coluna estreita */
 .connection-edge { fill: none; stroke-width: 2.5; }
 .connection-edge.online { stroke: #22c55e; }
 .connection-edge.offline { stroke: #ef4444; stroke-dasharray: 8 6; }
@@ -1737,35 +1745,14 @@ html[data-glass=liquid] .theme-swatches { border-radius: 10px; }
 .tile-body { overflow: hidden; } /* a luz ambiente é maior que o vídeo: não passa por cima da faixa do nome */
 
 
-/* HUB: barra fininha na borda esquerda (renderer/hub.js). Fechada, "HUB" em pé; aberta, fica por cima do conteúdo
-   (não empurra o vídeo), com "HUB" deitado e as abas Salas e Amigos */
-:root { --hub-w: 28px; --hub-open-w: 320px; }
-main { margin-left: var(--hub-w); }
-.workspace-brand { left: calc(24px + var(--hub-w)); }
-.workspace-wide #workspacePanes { left: calc(16px + var(--hub-w)); }
-.hub-rail { --text: var(--surface-text); --muted: var(--surface-muted); position: fixed; top: 0; bottom: 0; left: 0; z-index: 13; width: var(--hub-w);
-  display: flex; flex-direction: column; background: var(--panel); border-right: 1px solid var(--line); color: var(--text);
-  transition: width .16s ease, box-shadow .16s ease; overflow: hidden; }
-.hub-rail.open { width: var(--hub-open-w); box-shadow: 12px 0 40px rgba(0, 0, 0, .5); }
-.hub-toggle { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; padding: 0; border: 0; background: transparent;
-  color: var(--muted); font: inherit; font-size: 12px; font-weight: 700; letter-spacing: .3em; cursor: pointer; }
-.hub-toggle:hover, .hub-toggle:focus-visible { color: var(--accent); background: var(--panel-2); outline: none; }
-.hub-word { writing-mode: vertical-rl; text-orientation: upright; }
-.hub-rail.open .hub-toggle { flex: none; height: 48px; justify-content: flex-start; padding: 0 16px; color: var(--accent); font-size: 15px; border-bottom: 1px solid var(--line); }
-.hub-rail.open .hub-word { writing-mode: horizontal-tb; }
-/* Pedidos de amizade: número na faixa fechada e na aba Amigos */
-.hub-rail-badge, .hub-badge { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
+/* Listas de amigos e de conversas (painel do envelope: renderer/hub.js e renderer/mensagens.js). O HUB, a barra da
+   esquerda, saiu; as classes hub-* ficaram */
+/* Números: mensagens novas e pedidos de amizade */
+.hub-badge { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
   background: var(--accent); color: var(--bg); font-size: 11px; font-weight: 700; letter-spacing: 0; }
-.hub-rail-badge { position: absolute; top: calc(50% + 34px); left: 50%; transform: translateX(-50%); pointer-events: none; }
-.hub-rail.open .hub-rail-badge { display: none; }
-.hub-body { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 10px; padding: 12px 14px 14px; width: var(--hub-open-w); }
-.hub-tabs { flex: none; }
-.hub-tabs button, .hub-views button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
-.hub-pane { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+.hub-views button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
 .hub-section { margin: 6px 0 0; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-.hub-current, .hub-room { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); }
-.hub-current { margin-top: 6px; border-color: var(--accent); background: var(--accent-soft); }
-.hub-live { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px var(--panel); }
+.hub-room { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); }
 .hub-room-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .hub-room-info strong { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hub-room-meta { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1773,11 +1760,7 @@ main { margin-left: var(--hub-w); }
 .hub-room-meta svg { width: 12px; height: 12px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .hub-room .avatar { width: 30px; height: 30px; flex: none; font-size: 12px; background-color: var(--person, var(--primary)); color: var(--bg); }
 .hub-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-.hub-home { margin-top: auto; }
 /* Amigos */
-.hub-signed-out { display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px dashed var(--line-strong, var(--line)); border-radius: 8px; }
-.hub-signed-out .btn { align-self: flex-start; }
-.hub-friends-body { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
 /* Busca + Adicionar numa linha; o formulário de adicionar ocupa o lugar dela */
 .hub-search-row { display: flex; gap: 8px; }
 .hub-search-row[hidden], .hub-add-form[hidden] { display: none; }
@@ -1823,32 +1806,16 @@ main { margin-left: var(--hub-w); }
 .hub-confirm .hub-room-info strong, .hub-confirm .hub-room-meta { white-space: normal; }
 .hub-room .btn.hub-danger { background: var(--warn); border-color: var(--warn); color: var(--bg); font-weight: 600; }
 /* Adicionar, filtro e abas ficam fixos no topo; só a lista rola. Botões das linhas compactos para o nome caber */
-.hub-friends { overflow: hidden; }
-.hub-friends-body { flex: 1; }
 .hub-friend-list { flex: 1; min-height: 0; overflow-y: auto; padding-right: 2px; }
 .hub-room .btn.small { flex: none; padding: 5px 10px; font-size: 12px; }
 .hub-search-row, .hub-add-form, .hub-views, .hub-friends .razze-status { flex: none; }
 
-/* Confirmação no tema (appConfirm em renderer/util.js): por cima de tudo, até do HUB e das configurações */
+/* Confirmação no tema (appConfirm em renderer/util.js): por cima de tudo, até das configurações */
 .modal.app-confirm { z-index: 60; }
 .app-confirm .dialog { gap: 12px; }
 .app-confirm h2 { font-size: 16px; }
 .app-confirm-text { margin: 0; color: var(--text); font-size: 14px; line-height: 1.45; overflow-wrap: anywhere; }
 .app-confirm-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
-
-/* HUB, aba Rede: as seções da antiga janela de Rede numa coluna estreita */
-:root { --hub-open-w: 360px; }
-.hub-network { --text: var(--surface-text); --text-2: var(--surface-text-2); gap: 12px; padding-right: 2px; }
-.hub-network > * { flex: none; }
-.hub-network .net-seg { flex-direction: column; }
-.hub-network .net-seg label { justify-content: flex-start; }
-.hub-network .net-two { grid-template-columns: 1fr; }
-.hub-network .net-step { padding: 12px; }
-.hub-network .settings-section + .settings-section { padding-top: 12px; }
-.hub-network #profileAccount { display: grid; gap: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--line); } /* a conta vem primeiro na aba */
-.hub-network .razze-network-head { flex-wrap: wrap; }
-.hub-network .razze-row-actions, .hub-network .razze-actions { flex-wrap: wrap; }
-.hub-network .net-row > input[type=text], .hub-network .net-row > input[type=url] { padding: 8px 10px; font-size: 13px; border: 1px solid var(--field-line); border-radius: 6px; background: var(--bg); color: var(--text); }
 
 /* Subsalas de voz no painel de voz (renderer/subsalas.js): cabeçalho de cada canal e quem está nele, recuado */
 .voice-channel { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding: 6px 6px 6px 8px; border-radius: 6px; background: var(--panel-2); font-size: 13px; }
@@ -1879,14 +1846,14 @@ main { margin-left: var(--hub-w); }
 .voice-dragging .drop-target.voice-channel { outline: 2px solid var(--accent); background: var(--accent-soft); }
 .voice-dragging .drop-target.member { box-shadow: inset 2px 0 0 var(--accent); }
 
-/* Mensagens diretas (renderer/mensagens.js). Barra de conversas: uma faixa fina embaixo, entre o HUB e a barrinha
-   (não encosta no HUB: ele segue de cima a baixo e, aberto, fica por cima dela). O envelope abre a lista.
+/* Mensagens diretas (renderer/mensagens.js). Barra de conversas: uma faixa fina embaixo, até a barrinha. O envelope
+   abre o painel com as abas Conversas e Amigos.
    Cada conversa é um chip; aberta, o chip vira o rodapé de uma janela que sobe por cima do conteúdo */
 :root { --dm-h: 34px; }
 .has-dm-bar main { height: calc(100% - var(--dm-h)); }
 .has-dm-bar #workspacePanes { bottom: calc(16px + var(--dm-h)); }
 .has-dm-bar.workspace-wide #workspacePanes { bottom: calc(116px + var(--dm-h)); }
-.dm-bar { --text: var(--surface-text); --muted: var(--surface-muted); position: fixed; left: var(--hub-w); right: var(--rail-w); bottom: 0; z-index: 12; height: var(--dm-h);
+.dm-bar { --text: var(--surface-text); --muted: var(--surface-muted); position: fixed; left: 0; right: var(--rail-w); bottom: 0; z-index: 12; height: var(--dm-h);
   display: flex; align-items: stretch; gap: 6px; padding: 0 10px 0 0; background: var(--panel); border-top: 1px solid var(--line); color: var(--text); }
 .dm-bar-label { position: relative; flex: none; display: inline-flex; align-items: center; justify-content: center; width: 44px; padding: 0; border: 0; border-right: 1px solid var(--line); background: transparent;
   color: var(--muted); font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
@@ -1894,17 +1861,34 @@ main { margin-left: var(--hub-w); }
 .dm-bar-label .hub-badge { position: absolute; top: 2px; right: 2px; min-width: 15px; height: 15px; padding: 0 4px; font-size: 9.5px; pointer-events: none; }
 .dm-bar-label:hover, .dm-bar-label:focus-visible, .dm-bar-label.open { color: var(--accent); background: var(--panel-2); outline: none; }
 .dm-bar-label.open { box-shadow: inset 0 2px 0 var(--accent); }
-/* O painel das conversas: sobe a partir do "Mensagens", grudado na barra (como a janela de uma conversa) */
-.dm-panel { position: absolute; left: 0; bottom: 100%; width: 340px; max-width: calc(100vw - var(--hub-w) - var(--rail-w) - 20px); height: min(460px, calc(100vh - 180px));
+/* O painel do envelope: sobe grudado na barra (como a janela de uma conversa), com as abas Conversas e Amigos */
+.dm-panel { position: absolute; left: 0; bottom: 100%; width: 380px; max-width: calc(100vw - var(--rail-w) - 20px); height: min(520px, calc(100vh - 140px));
   display: flex; flex-direction: column; gap: 8px; padding: 10px 12px 12px; background: var(--panel); border: 1px solid var(--line); border-bottom: 0;
   border-radius: 0 10px 0 0; box-shadow: 0 -12px 36px rgba(0, 0, 0, .45); transform-origin: bottom; animation: dm-panel-up .16s ease-out; z-index: 1; }
 .dm-panel[hidden] { display: none; }
 @keyframes dm-panel-up { from { transform: scaleY(.6); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .dm-panel { animation: none; } }
-.dm-panel-head { flex: none; display: flex; align-items: center; justify-content: space-between; font-size: 13px; }
+.dm-panel-head { flex: none; display: flex; align-items: center; gap: 8px; font-size: 13px; }
+/* Conversas | Amigos: duas abas lado a lado, com o número de cada uma */
+.dm-panel-tabs { flex: 1; display: flex; gap: 4px; padding: 3px; border-radius: 10px; background: var(--sunken); border: 1px solid var(--line); }
+.dm-panel-tabs button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 30px; padding: 0 10px; border: 0; border-radius: 7px;
+  background: transparent; color: var(--muted); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.dm-panel-tabs button:hover { color: var(--text); }
+.dm-panel-tabs button[aria-selected="true"] { background: var(--panel-2); color: var(--text); box-shadow: inset 0 -2px 0 var(--accent); }
+.dm-panel-tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.dm-panel-tabs .hub-badge { min-width: 16px; height: 16px; font-size: 10px; }
+.dm-panel-pane { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
+.dm-panel-pane[hidden] { display: none; }
 .dm-panel .hub-filter, .dm-panel .warn, .dm-panel .razze-status, .dm-panel .hint { flex: none; margin: 0; }
 .dm-panel .razze-status:empty { display: none; }
 .dm-panel .hub-list { flex: 1; min-height: 0; overflow-y: auto; }
+.dm-panel .hub-search-row .hub-filter { flex: 1 1 auto; } /* a busca encolhe para o Adicionar caber */
+.dm-panel .hub-friend-list .hub-list { flex: none; overflow: visible; }
+/* Pedidos de amizade em cima das conversas: leva para Amigos › Pedidos */
+.dm-requests-banner { flex: none; display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--accent); border-radius: 8px;
+  background: var(--accent-soft); color: var(--text); font: inherit; font-size: 12.5px; text-align: left; cursor: pointer; }
+.dm-requests-banner[hidden] { display: none; }
+.dm-requests-banner:hover, .dm-requests-banner:focus-visible { background: color-mix(in srgb, var(--accent) 22%, var(--panel-2)); outline: none; }
 .dm-bar-hint { align-self: center; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dm-slots { display: flex; align-items: stretch; gap: 6px; min-width: 0; }
 .dm-slot { position: relative; flex: 0 1 210px; min-width: 120px; display: flex; }
@@ -1949,7 +1933,6 @@ main { margin-left: var(--hub-w); }
 .dm-invite-meta { grid-column: 1; font-size: 11.5px; color: var(--muted); }
 .dm-invite .btn { grid-column: 2; grid-row: 1 / span 2; }
 /* Lista das conversas (painel do "Mensagens", na barra de baixo): a prévia e a hora */
-.hub-tabs button { font-size: 13px; padding-left: 4px; padding-right: 4px; }
 .hub-conv { cursor: pointer; }
 .hub-conv:hover, .hub-conv:focus-visible { background: var(--panel-3); outline: none; }
 .hub-conv.has-unread .hub-room-info strong { color: var(--accent); }
@@ -2126,9 +2109,9 @@ html[data-tips="off"] .tip { display: none !important; }
 @media (prefers-reduced-motion: reduce) { .dock { transition: none; } }
 /* Voz e atalhos saiu da barrinha da direita: fica nas Configurações (a engrenagem) */
 #voiceSettingsBtn { display: none !important; }
-/* Com qualquer janela ou menu aberto (configurações, transmitir, HUB, perfil, mensagens, pessoas, música, imagem,
+/* Com qualquer janela ou menu aberto (configurações, transmitir, perfil, mensagens e amigos, pessoas, música, imagem,
    cartão de alguém, confirmações), a pílula sai da frente */
-body:has(.modal:not([hidden]), #hubBody:not([hidden]), #dmPanel:not([hidden]), #peoplePop:not([hidden]), #musicPop:not([hidden]),
+body:has(.modal:not([hidden]), #dmPanel:not([hidden]), #peoplePop:not([hidden]), #musicPop:not([hidden]),
   #imageViewer:not([hidden]), #personCard:not([hidden])) .dock { opacity: 0 !important; pointer-events: none !important; }
 /* Entrar na voz (fora dela): as bolinhas de quem já está na voz e "Entrar", numa pílula; a setinha ao lado abre os
    canais com gente (renderVoiceJoin em renderer/voz.js). As bolinhas soltas da barra só aparecem dentro da voz */
@@ -2244,19 +2227,17 @@ body:has(.modal:not([hidden]), #hubBody:not([hidden]), #dmPanel:not([hidden]), #
 #peoplePop > .sky-focus.sky-page, #peoplePop > .sky-focus.sky-page.has-bg { position: sticky; inset: auto; bottom: -12px; z-index: 3; flex: none;
   margin: auto -10px -12px; max-height: none; overflow: visible; }
 
-/* Interface espelhada (Aparência › Espelhar a interface; renderer/configuracoes.js põe data-mirror): o HUB vai para a
-   direita e a barrinha, o chat e a voz para a esquerda. Só troca os lados; tamanhos e ordem continuam os mesmos */
-:root[data-mirror="on"] main { margin-left: var(--rail-w); margin-right: var(--hub-w); }
+/* Interface espelhada (Aparência › Espelhar a interface; renderer/configuracoes.js põe data-mirror): a barrinha, o
+   chat e a voz vão para a esquerda. Só troca os lados; tamanhos e ordem continuam os mesmos */
+:root[data-mirror="on"] main { margin-left: var(--rail-w); }
 :root[data-mirror="on"] #workspaceNav { right: auto; left: 0; border-left: 0; border-right: 1px solid var(--line); }
 :root[data-mirror="on"] #workspacePanes { right: auto; left: calc(16px + var(--rail-w)); }
-:root[data-mirror="on"] .workspace-wide #workspacePanes { left: calc(16px + var(--rail-w)); right: calc(16px + var(--hub-w)); }
-:root[data-mirror="on"] .voice-side #voiceDialog { left: auto; right: calc(16px + var(--hub-w)); }
-:root[data-mirror="on"] .voice-side.workspace-wide #workspacePanes { left: calc(16px + var(--rail-w)); right: calc(var(--workspace-width) + 28px + var(--hub-w)); }
+:root[data-mirror="on"] .workspace-wide #workspacePanes { left: calc(16px + var(--rail-w)); right: 16px; }
+:root[data-mirror="on"] .voice-side #voiceDialog { left: auto; right: 16px; }
+:root[data-mirror="on"] .voice-side.workspace-wide #workspacePanes { left: calc(16px + var(--rail-w)); right: calc(var(--workspace-width) + 28px); }
 :root[data-mirror="on"] .workspace-brand { left: calc(24px + var(--rail-w)); }
-:root[data-mirror="on"] .update-banner { right: calc(16px + var(--hub-w)); }
-:root[data-mirror="on"] .hub-rail { left: auto; right: 0; border-right: 0; border-left: 1px solid var(--line); }
-:root[data-mirror="on"] .hub-rail.open { box-shadow: -12px 0 40px rgba(0, 0, 0, .5); }
-:root[data-mirror="on"] .dm-bar { left: var(--rail-w); right: var(--hub-w); }
+:root[data-mirror="on"] .update-banner { right: 16px; }
+:root[data-mirror="on"] .dm-bar { left: var(--rail-w); right: 0; }
 :root[data-mirror="on"] .theme-decor { left: var(--rail-w); }
 :root[data-mirror="on"] .has-workspace-pane:not(.workspace-wide) main { padding-right: 0; padding-left: calc(var(--workspace-width) + 12px); }
 :root[data-mirror="on"] .voice-side main { padding-left: 0; padding-right: calc(var(--workspace-width) + 12px); }

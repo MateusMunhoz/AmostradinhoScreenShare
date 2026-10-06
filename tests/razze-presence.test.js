@@ -47,11 +47,18 @@ test('remover dispositivo/rede encerra túnel e retira anúncio antes da próxim
   await presence.stop();
 });
 
-test('sala do modo Internet vai na batida e as salas dos amigos voltam na presença', async () => {
+test('sala do modo Internet e em que sala estou vão na batida; as salas dos amigos voltam na presença', async () => {
   const { cleanInternetRoom } = require('../main/razze-presence');
   const passe = 'A'.repeat(43);
   assert.deepEqual(cleanInternetRoom({ servidor: 'ws://1.2.3.4:8765', codigo: 'ABC234', pessoas: 2, passe }), { servidor: 'ws://1.2.3.4:8765', codigo: 'ABC234', pessoas: 2, passe });
   assert.equal(cleanInternetRoom({ servidor: 'https://x.com', codigo: 'ABC234' }), null);
+  // Em que sala estou: só modo, host, pessoas e voz; o resto (endereço, senha) fica de fora
+  const { cleanSalaAtual } = require('../main/razze-presence');
+  assert.deepEqual(cleanSalaAtual({ modo: 'radmin', host: '  Caio\n ', pessoas: 4, voz: true, endereco: '26.1.2.3', senha: 'x' }), { modo: 'radmin', host: 'Caio', pessoas: 4, voz: true });
+  assert.deepEqual(cleanSalaAtual({ modo: 'internet', host: 'x'.repeat(40), pessoas: 5000 }), { modo: 'internet', host: 'x'.repeat(32), pessoas: 1000, voz: false });
+  assert.equal(cleanSalaAtual({ modo: 'lan', host: 'Caio', pessoas: 1 }), null);
+  assert.equal(cleanSalaAtual({ modo: 'radmin', host: '   ', pessoas: 1 }), null);
+  assert.equal(cleanSalaAtual(null), null);
   assert.equal(cleanInternetRoom({ servidor: 'wss://x.com/?a=1', codigo: 'ABC234' }), null);
   assert.equal(cleanInternetRoom({ servidor: 'wss://x.com', codigo: 'ABC10O' }), null);
   assert.equal(cleanInternetRoom({ servidor: 'wss://x.com', codigo: 'ABC234', passe: 'curto' }).passe, null);
@@ -64,11 +71,14 @@ test('sala do modo Internet vai na batida e as salas dos amigos voltam na presen
   };
   const service = { state: () => ({ authenticated: true }), api: () => api, wireguard: { identity: () => ({ deviceId: 'd' }) } };
   let internetRoom = { servidor: 'wss://x.com', codigo: 'ABC234', pessoas: 1, passe };
-  const presence = createPresence({ service, getInternetRoom: () => internetRoom, setInterval: () => ({ unref() {} }), clearInterval: () => {} });
+  let salaAtual = { modo: 'radmin', host: 'Caio', pessoas: 3, voz: false };
+  const presence = createPresence({ service, getInternetRoom: () => internetRoom, getSalaAtual: () => salaAtual, setInterval: () => ({ unref() {} }), clearInterval: () => {} });
   presence.start(); await presence.tick();
   assert.equal(sent.at(-1).internetRoom.codigo, 'ABC234');
+  assert.deepEqual(sent.at(-1).salaAtual, salaAtual);
   assert.equal(presence.snapshot().internetRooms[0].host, 'Bia');
-  internetRoom = null; await presence.tick();
+  internetRoom = null; salaAtual = null; await presence.tick();
   assert.equal('internetRoom' in sent.at(-1), false);
+  assert.equal('salaAtual' in sent.at(-1), false);
   await presence.stop();
 });

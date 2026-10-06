@@ -1,10 +1,10 @@
 'use strict';
 // Salas dos amigos pelo modo Internet: quem cria uma sala pela internet (e deixou "Mostrar para meus amigos")
 // anuncia servidor, código e um passe de convite na RazzeAPI, junto da presença (main/razze-presence.js).
-// A API mostra só para os amigos aceitos. O amigo vê a sala na tela inicial e no HUB e entra com um clique,
+// A API mostra só para os amigos aceitos. O amigo vê a sala na tela inicial e entra com um clique,
 // pelo passe; se o passe não valer mais (ou o servidor for antigo, sem passe), o app pede a senha.
 // O passe só existe enquanto quem convidou está na sala; o servidor guarda só o HMAC dele.
-// Convite pelas mensagens diretas: o Convidar do HUB manda uma mensagem com um texto legível (para app antigo) e
+// Convite pelas mensagens diretas: o Convidar da aba Amigos manda uma mensagem com um texto legível (para app antigo) e
 // uma linha telap2p://sala?d=... que o app mostra como um cartão com Entrar (mensagens.js). Só entra com o clique.
 // Script clássico: divide o escopo global com os outros (ordem no index.html). Usa de: util, estado, sala, sessoes.
 
@@ -54,6 +54,40 @@ function retirarSalaInternet() {
   if (salasAmigos.enviado) window.api.razzeInternetRoom(null).catch(() => {});
   salasAmigos.enviado = '';
   salasAmigos.passe = '';
+}
+
+// ---------- Em que sala estou (docs/spec/sala-do-amigo.md) ----------
+// Em qualquer modo, mesmo sem ser o host: os amigos veem "Na sala de [host] · Radmin · 4 pessoas". Vai só o modo, o
+// nome do host, quantas pessoas e se estou na voz, nada de endereço. Sala escondida (a das chamadas, ou a que o host
+// tirou da lista) não vai; Perfil › Atividade desliga. Chamado a cada renderMembers (membros.js): só manda se mudou.
+const salaAtualLigada = () => load('atividadeSala', '1') === '1';
+let salaAtualEnviada = '';
+// paraComparar: a minha sala para o "Na sua sala", mesmo com o interruptor desligado
+function salaAtualResumo(paraComparar = false) {
+  if (!state.myId || !state.ws || state.sessao?.oculta || (!paraComparar && !salaAtualLigada())) return null;
+  const modo = state.cloud ? 'internet' : selectedNetworkProvider() === 'razze' ? 'razze' : 'radmin';
+  const host = state.hostId === state.myId ? getName() : nameOf(state.hostId);
+  return { modo, host, pessoas: state.members.size + 1, voz: !!voice.session };
+}
+function publicarSalaAtual() {
+  const sala = salaAtualResumo();
+  const assinatura = sala ? JSON.stringify(sala) : '';
+  if (assinatura === salaAtualEnviada) return;
+  salaAtualEnviada = assinatura;
+  window.api.razzeSalaAtual(sala).catch(() => {});
+}
+function retirarSalaAtual() {
+  if (salaAtualEnviada) window.api.razzeSalaAtual(null).catch(() => {});
+  salaAtualEnviada = '';
+}
+// O texto embaixo do nome do amigo (aba Amigos e Início): onde ele está; vazio se não anunciou (fica "Online")
+const SALA_MODO = { radmin: 'Radmin', razze: 'Razze', internet: 'Internet' };
+function textoSalaDoAmigo(f) {
+  const s = f?.sala;
+  if (!s || !f.online) return '';
+  const minha = salaAtualResumo(true);
+  if (minha && minha.modo === s.modo && minha.host === s.host && minha.pessoas === s.pessoas) return s.voz ? 'Na sua sala · na voz' : 'Na sua sala';
+  return `Na sala de ${s.host} · ${SALA_MODO[s.modo] || s.modo} · ${s.voz ? 'na voz' : s.pessoas === 1 ? '1 pessoa' : `${s.pessoas} pessoas`}`;
 }
 
 // Da presença (conectividade.js): as salas dos amigos no formato da lista de sessões
@@ -149,7 +183,7 @@ function lerConvite(text) {
   return { modo: cv.modo, endereco: cv.endereco, senha: !!cv.senha, pessoas, rede, ...chamadaInfo };
 }
 
-// Convidar (HUB › Amigos): manda o convite como mensagem direta
+// Convidar (envelope › Amigos): manda o convite como mensagem direta
 async function convidarPorMensagem(f) {
   const cv = conviteDaSala();
   if (!cv) return friendsStatus(`Entre numa sala primeiro para convidar ${f.displayName}.`);
@@ -171,9 +205,9 @@ const mesmaSala = (cv) => (cv.modo === 'internet' ? state.cloud?.code === cv.cod
 // Entrar pelo cartão do convite: só com o clique, no modo da sala (nunca troca o modo sozinho)
 async function aceitarConvite(cv, quem) {
   if (state.myId && mesmaSala(cv)) return toast('Você já está nessa sala.');
-  if (cv.modo !== selectedNetworkProvider()) return toast(`Esse convite é pelo modo ${MODO_NOME[cv.modo]}. Mude em HUB › Rede e clique em Entrar de novo.`, 'error');
+  if (cv.modo !== selectedNetworkProvider()) return toast(`Esse convite é pelo modo ${MODO_NOME[cv.modo]}. Mude em Configurações › Rede e clique em Entrar de novo.`, 'error');
   if (cv.modo === 'razze' && cv.rede && cv.rede !== networkPreferences().activeNetworkId) {
-    return toast(`Ligue a mesma rede Razze de ${quem} (HUB › Rede) e clique em Entrar de novo.`, 'error');
+    return toast(`Ligue a mesma rede Razze de ${quem} (Configurações › Rede) e clique em Entrar de novo.`, 'error');
   }
   if (state.myId) {
     if (!(await appConfirm(`Sair desta sala e entrar na sala de ${quem}?`, { title: 'Trocar de sala', ok: 'Trocar' }))) return;

@@ -46,4 +46,20 @@ run('Voz e atalhos nas Configurações', 60000, async () => {
   check('Clicar de novo no botão de ajustes fecha', await A.eval(`$('generalSettingsDialog').hidden`));
   const depois = await A.eval(R('#streamArea'));
   check('A transmissão continua do mesmo tamanho', depois.left === areaAntes.left && depois.width === areaAntes.width, JSON.stringify(depois));
+
+  // Divisória entre o chat e a voz: puxar tudo para cima para no mínimo do chat (o campo de escrever continua inteiro)
+  await A.eval(`(() => { if (!workspaceViews.chat) $('navChat').click(); if (!workspaceViews.voice) $('navVoice').click(); })()`);
+  await sleep(300);
+  await A.waitFor(`!!document.querySelector('.pane-split') && getComputedStyle(document.querySelector('.pane-split')).display !== 'none'`, 5000);
+  await A.eval(`(() => { const bar = document.querySelector('.pane-split'); for (let i = 0; i < 30; i++) bar.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true })); })()`);
+  await sleep(200);
+  const campoInteiro = `(() => { const f = $('chatForm').getBoundingClientRect(), v = $('voicePane').getBoundingClientRect(), c = $('chatTab').getBoundingClientRect(); return { ok: f.bottom <= v.top + 1 && f.top >= c.top, chat: Math.round(c.height), form: Math.round(f.bottom), voz: Math.round(v.top) }; })()`;
+  const g1 = await A.eval(campoInteiro);
+  check('Voz puxada até em cima: o chat fica no mínimo, com o campo de escrever inteiro', g1.ok && g1.chat >= 215, JSON.stringify(g1));
+  await A.eval(`$('workspacePanes').style.setProperty('--voice-split', '0.85')`); // tamanho salvo antes, numa janela maior
+  await sleep(200);
+  const g2 = await A.eval(campoInteiro);
+  check('Tamanho salvo grande demais para a janela: a voz encolhe, não o chat', g2.ok && g2.chat >= 215, JSON.stringify(g2));
+  await A.shot('voz-chat-divisoria.png');
+  await A.eval(`document.querySelector('.pane-split').dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))`);
 });

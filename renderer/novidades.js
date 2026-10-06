@@ -3,6 +3,17 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.18.1",
+    "date": "2026-10-06",
+    "items": [
+      "Amigos veem em que sala a pessoa está, em qualquer modo",
+      "Chat e voz: puxar a divisória para cima não corta mais o chat",
+      "Tira o HUB: conta no Perfil, rede nas Configurações, amigos no envelope",
+      "Desfazer a amizade vale na hora para os dois lados",
+      "Ctrl+V na conversa privada não cola também no chat da sala"
+    ]
+  },
+  {
     "version": "1.18.0",
     "date": "2026-10-05",
     "items": [
@@ -73,13 +84,6 @@ const NOVIDADES = [
     "date": "2026-10-03",
     "items": [
       "Clipes: som da transmissão, duração escolhida e modo uma por pessoa"
-    ]
-  },
-  {
-    "version": "1.15.6",
-    "date": "2026-10-03",
-    "items": [
-      "Clipes: salvar os últimos 30 s de uma transmissão em MP4"
     ]
   }
 ];

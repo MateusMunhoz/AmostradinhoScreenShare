@@ -42,8 +42,8 @@ function lembrarDaSala() {
   lembrarSessoes(addrs);
 }
 
-// Procura sessões com a tela inicial à vista ou com o HUB da sala aberto (renderer/hub.js)
-function sessionWatchWanted() { return !$('home').hidden || (typeof hub === 'object' && hub.open); }
+// Procura sessões com a tela inicial à vista
+function sessionWatchWanted() { return !$('home').hidden; }
 
 function setSessionWatch(on) {
   on = !!on;
@@ -116,11 +116,10 @@ function renderSessoes() {
   $('sessionsEmpty').textContent = sessoes.procurando
     ? 'Procurando sessões abertas na rede…'
     : selectedNetworkProvider() === 'internet'
-      ? (razzeLive.updatedAt ? 'Nenhum amigo com sala aberta pela internet agora.' : 'Entre na sua conta Razze (aba Rede do HUB) para ver as salas dos seus amigos aqui.')
+      ? (razzeLive.updatedAt ? 'Nenhum amigo com sala aberta pela internet agora.' : 'Entre na sua conta Razze (no seu Perfil) para ver as salas dos seus amigos aqui.')
     : selectedNetworkProvider() === 'razze'
       ? (razzeLive.error ? 'Não foi possível atualizar as salas: ' + razzeLive.error : networkPreferences().activeNetworkId ? 'Nenhuma sala aberta nesta rede agora.' : 'Conecte uma rede Razze para descobrir suas salas.')
       : 'Nenhuma sessão aberta na rede agora. Quando alguém criar uma, ela aparece aqui.';
-  if (typeof renderHub === 'function') renderHub();
 }
 
 function sessionRow(s) {

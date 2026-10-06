@@ -26,18 +26,20 @@ const { createDmStore } = require('./main/mensagens');
 let dmStore = null; // criado quando o app fica pronto (precisa da pasta do usuário)
 const { createDmE2E } = require('./main/mensagens-cripto');
 let dmE2E = null; // mensagens criptografadas de ponta a ponta (criado junto com o dmStore)
-const { createPresence, cleanInternetRoom } = require('./main/razze-presence');
+const { createPresence, cleanInternetRoom, cleanSalaAtual } = require('./main/razze-presence');
 const bandeja = require('./main/bandeja');
 const { createClipStore } = require('./main/clipes');
 let clips = null; // clipes salvos (criado quando o app fica pronto: precisa da pasta Vídeos)
 let activeRazzeNetwork = '', roomRazzeNetwork = '';
 let internetRoom = null; // sala do modo Internet em que estou, para os amigos (renderer/salas-amigos.js)
+let salaAtual = null; // em que sala estou, em qualquer modo, sem endereço: os amigos veem "Na sala de..." (renderer/salas-amigos.js)
 const razzePresence = createPresence({
   service: razze,
   clientName: os.hostname().slice(0, 80),
   getAppVersion: () => updater.version,
   getRoom: () => { const info = roomInfo(); return roomRazzeNetwork && info ? { ...info, networkId: roomRazzeNetwork } : null; },
   getInternetRoom: () => internetRoom,
+  getSalaAtual: () => salaAtual,
   publish: (value) => { if (janelas.main && !janelas.main.isDestroyed()) janelas.main.webContents.send('razze-presence', value); },
 });
 
@@ -420,6 +422,13 @@ if (hasSingleInstance) app.whenReady().then(() => {
     const changed = (next?.servidor + next?.codigo + next?.passe) !== (internetRoom?.servidor + internetRoom?.codigo + internetRoom?.passe);
     internetRoom = next;
     if (changed) void razzePresence.tick(); // abriu, fechou ou trocou o passe: avisa já; o número de pessoas vai na próxima batida
+    return !!next;
+  });
+  ipcMain.handle('razze-sala-atual', (_e, value) => {
+    const next = cleanSalaAtual(value);
+    const changed = !!next !== !!salaAtual || next?.modo !== salaAtual?.modo || next?.host !== salaAtual?.host;
+    salaAtual = next;
+    if (changed) void razzePresence.tick(); // entrou, saiu ou trocou de sala: avisa já; pessoas e voz vão na próxima batida
     return !!next;
   });
   ipcMain.handle('razze-list-networks', () => razze.listNetworks());

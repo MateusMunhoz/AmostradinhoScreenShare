@@ -136,13 +136,9 @@
 }
 :root[data-skin="arasaka"] .empty-stage p { position: relative; z-index: 1; color: var(--text); text-shadow: 0 0 6px #000, 0 0 2px #000; }
 
-/* HUB: cantos retos, colchete de mira no topo e o nome no vermelho do tema */
-:root[data-skin="arasaka"] :is(.hub-current, .hub-room, .hub-signed-out, .hub-badge, .hub-rail-badge) { border-radius: 0; }
+/* Listas de amigos e conversas (envelope): cantos retos e os títulos no vermelho do tema */
+:root[data-skin="arasaka"] :is(.hub-room, .hub-badge) { border-radius: 0; }
 :root[data-skin="arasaka"] .hub-section { color: var(--accent); letter-spacing: .24em; }
-:root[data-skin="arasaka"] .hub-rail { background: var(--bracket), var(--panel); }
-:root[data-skin="arasaka"] .hub-toggle { color: var(--accent); }
-:root[data-skin="arasaka"] .hub-current { background-image: var(--scan); }
-:root[data-skin="arasaka"] .hub-live { border-radius: 0; }
 :root[data-skin="arasaka"] .hub-room .btn.small { letter-spacing: .08em; }
 
 /* Chat como terminal: fonte fixa, tela preta com linhas de monitor, "[hh:mm] nome > texto", cursor piscando no fim

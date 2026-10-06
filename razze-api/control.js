@@ -26,6 +26,8 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
   `);
   // Sala do modo Internet anunciada para os amigos (servidor, código e o passe de convite)
   if (!db.prepare('PRAGMA table_info(live_presence)').all().some(c => c.name === 'internet_room')) db.exec('ALTER TABLE live_presence ADD COLUMN internet_room TEXT');
+  // Em que sala a pessoa está (qualquer modo, sem endereço): só os amigos veem, em /v1/friends (docs/spec/sala-do-amigo.md)
+  if (!db.prepare('PRAGMA table_info(live_presence)').all().some(c => c.name === 'sala_atual')) db.exec('ALTER TABLE live_presence ADD COLUMN sala_atual TEXT');
   // Após reiniciar, cada cliente precisa confirmar sua presença novamente.
   db.exec('DELETE FROM live_presence');
   // Mantém somente a sessão mais recente de cada conta.
@@ -72,8 +74,15 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
         return device ? { ...c, ...device } : null;
       }).filter(Boolean);
       return { userId: r.user_id, displayName: r.displayName, lastSeen: r.last_seen, connections, room: r.room ? JSON.parse(r.room) : null,
-        internetRoom: r.internet_room ? JSON.parse(r.internet_room) : null };
+        internetRoom: r.internet_room ? JSON.parse(r.internet_room) : null, salaAtual: r.sala_atual ? JSON.parse(r.sala_atual) : null };
     });
+  }
+  // A sala de cada conta online (a da sessão mais recente que anunciou uma). Só para a lista de amigos: os membros das
+  // redes e a administração não recebem
+  function salasAtuais(snapshot = presence()) {
+    const salas = new Map();
+    for (const p of snapshot) if (p.salaAtual && !salas.has(p.userId)) salas.set(p.userId, p.salaAtual);
+    return salas;
   }
   function rooms(viewerId, networkId, snapshot = presence()) {
     const listed = new Map();
@@ -146,13 +155,22 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
           (r.passe !== undefined && r.passe !== null && (typeof r.passe !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(r.passe)))) bad('Anúncio de sala inválido.');
       internetRoom = { servidor: r.servidor, codigo: r.codigo, pessoas: r.pessoas, passe: r.passe || null };
     }
+    let salaAtual = null;
+    if (body.salaAtual) {
+      const r = body.salaAtual;
+      const host = typeof r.host === 'string' ? r.host.trim() : '';
+      if (typeof r !== 'object' || Object.keys(r).some(k => !['modo', 'host', 'pessoas', 'voz'].includes(k)) ||
+          !['radmin', 'razze', 'internet'].includes(r.modo) || !host || host.length > 32 || /[\u0000-\u001f\u007f]/.test(host) ||
+          !Number.isInteger(r.pessoas) || r.pessoas < 1 || r.pessoas > 1000 || typeof r.voz !== 'boolean') bad('Anúncio de sala inválido.');
+      salaAtual = { modo: r.modo, host, pessoas: r.pessoas, voz: r.voz };
+    }
     db.prepare('DELETE FROM sessions WHERE expires_at <= ?').run(now());
     const appVersion = typeof body.appVersion === 'string' && /^\d{1,3}(\.\d{1,3}){1,3}$/.test(body.appVersion) ? body.appVersion : '';
     db.prepare('UPDATE sessions SET client_name=?, app_version=CASE WHEN length(?) > 0 THEN ? ELSE app_version END WHERE token_hash=?').run(clientName.trim(), appVersion, appVersion, tokenHash(req));
     db.prepare('DELETE FROM live_presence WHERE last_seen <= ?').run(now() - settings().presenceTimeoutSeconds * 1000);
-    db.prepare(`INSERT INTO live_presence(session_hash, user_id, last_seen, connections, room, internet_room) VALUES(?, ?, ?, ?, ?, ?)
-      ON CONFLICT(session_hash) DO UPDATE SET last_seen=excluded.last_seen, connections=excluded.connections, room=excluded.room, internet_room=excluded.internet_room`)
-      .run(tokenHash(req), userId, now(), JSON.stringify(cleaned), room ? JSON.stringify(room) : null, internetRoom ? JSON.stringify(internetRoom) : null);
+    db.prepare(`INSERT INTO live_presence(session_hash, user_id, last_seen, connections, room, internet_room, sala_atual) VALUES(?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(session_hash) DO UPDATE SET last_seen=excluded.last_seen, connections=excluded.connections, room=excluded.room, internet_room=excluded.internet_room, sala_atual=excluded.sala_atual`)
+      .run(tokenHash(req), userId, now(), JSON.stringify(cleaned), room ? JSON.stringify(room) : null, internetRoom ? JSON.stringify(internetRoom) : null, salaAtual ? JSON.stringify(salaAtual) : null);
     const today = dayOf(now());
     db.prepare('INSERT OR IGNORE INTO user_days(user_id, day) VALUES(?, ?)').run(userId, today);
     const onlineNow = db.prepare('SELECT COUNT(DISTINCT user_id) AS n FROM live_presence WHERE last_seen > ?').get(now() - settings().presenceTimeoutSeconds * 1000).n;
@@ -412,7 +430,7 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
     res.end(fs.readFileSync(path.join(__dirname, 'admin', file)));
     return true;
   }
-  return { settings, heartbeat, offline, rooms, friendRooms, enrichUsers, enrichNetworks, handleAdmin, serveAdmin, measure };
+  return { settings, heartbeat, offline, rooms, friendRooms, salasAtuais, enrichUsers, enrichNetworks, handleAdmin, serveAdmin, measure };
 }
 
 module.exports = { createControl };
