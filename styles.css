@@ -980,7 +980,10 @@ fieldset.group > legend { margin-bottom: 10px; }
 .net-auth { display: grid; gap: 10px; }
 .net-auth .seg label, .net-auth .seg button { flex: 1; }
 .net-account .avatar { width: 32px; height: 32px; }
-.net-account-text { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow-wrap: anywhere; }
+/* Conta no HUB estreito: o texto não pode encolher até uma letra por linha; sem espaço, os botões descem para a linha de baixo */
+.net-account { flex-wrap: wrap; }
+.net-account-text { flex: 1 1 140px; min-width: 0; display: flex; flex-direction: column; overflow-wrap: anywhere; }
+.net-account > .btn { flex: 0 1 auto; }
 .net-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media (max-width: 640px) { .net-two { grid-template-columns: 1fr; } }
 .razze-network-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
