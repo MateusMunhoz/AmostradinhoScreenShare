@@ -4,6 +4,7 @@
 const NOVIDADES = [
   {
 <<<<<<< HEAD
+<<<<<<< HEAD
     "version": "1.18.1",
     "date": "2026-10-06",
     "items": [
@@ -24,6 +25,15 @@ const NOVIDADES = [
       "HUB › Rede: cartão da conta organizado",
       "Instalador do Windows e licença como tarefa futura",
 =======
+=======
+    "version": "1.17.4",
+    "date": "2026-10-06",
+    "items": [
+      "Correções e melhorias"
+    ]
+  },
+  {
+>>>>>>> b12586b (Versão 1.17.4)
     "version": "1.17.3",
     "date": "2026-10-05",
     "items": [
@@ -92,6 +102,7 @@ const NOVIDADES = [
       "Clipes: som da transmissão, duração escolhida e modo uma por pessoa"
     ]
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
   },
   {
@@ -101,5 +112,7 @@ const NOVIDADES = [
       "Clipes: salvar os últimos 30 s de uma transmissão em MP4"
     ]
 >>>>>>> 6c9466b (Versão 1.17.3)
+=======
+>>>>>>> b12586b (Versão 1.17.4)
   }
 ];
