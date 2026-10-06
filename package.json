@@ -1,6 +1,10 @@
 {
   "name": "tela-p2p",
+<<<<<<< HEAD
   "version": "1.18.1",
+=======
+  "version": "1.17.3",
+>>>>>>> 6c9466b (Versão 1.17.3)
   "description": "Configurações e Personalização de Layout",
   "main": "boot.js",
   "scripts": {

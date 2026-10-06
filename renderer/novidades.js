@@ -3,6 +3,7 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+<<<<<<< HEAD
     "version": "1.18.1",
     "date": "2026-10-06",
     "items": [
@@ -22,6 +23,11 @@ const NOVIDADES = [
       "Nebula: o app passa a se chamar Nebula, com a logo nova",
       "HUB › Rede: cartão da conta organizado",
       "Instalador do Windows e licença como tarefa futura",
+=======
+    "version": "1.17.3",
+    "date": "2026-10-05",
+    "items": [
+>>>>>>> 6c9466b (Versão 1.17.3)
       "Corrige a conta no HUB estreito: nome e e-mail não quebram letra por letra",
       "Tema Top Gun: corte do Avro Lancaster (1943) de volta ao rodízio",
       "Tema Top Gun: blueprints de P-38, Hurricane e P-51 Mustang (CC0)",
@@ -85,5 +91,15 @@ const NOVIDADES = [
     "items": [
       "Clipes: som da transmissão, duração escolhida e modo uma por pessoa"
     ]
+<<<<<<< HEAD
+=======
+  },
+  {
+    "version": "1.15.6",
+    "date": "2026-10-03",
+    "items": [
+      "Clipes: salvar os últimos 30 s de uma transmissão em MP4"
+    ]
+>>>>>>> 6c9466b (Versão 1.17.3)
   }
 ];
