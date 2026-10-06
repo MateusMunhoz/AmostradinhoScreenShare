@@ -152,13 +152,22 @@ function setFriendsData(value) {
   friendsData.friends = value.friends || [];
   friendsData.incoming = value.incoming || [];
   friendsData.outgoing = value.outgoing || [];
+  if (typeof diretoSoAmigos === 'function') diretoSoAmigos(); // quem deixou de ser amigo perde a conexão direta das mensagens
   renderHub();
   if (typeof renderHomeAmigos === 'function') renderHomeAmigos();
 }
-// A presença chega a cada poucos segundos (conectividade.js): só troca o online de quem já está na lista
+// A presença chega a cada poucos segundos (conectividade.js) com a lista de amigos do servidor: troca o online
+// de quem está na lista e, se a lista mudou (o amigo desfez a amizade, ou aceitou um pedido seu), recarrega tudo.
+// Desfazer a amizade vale para os dois lados: some daqui também, sem precisar reabrir o app.
 function updateFriendsPresence(live) {
   const byId = new Map((live.friends || []).map((f) => [f.id, f]));
   friendsData.error = live.error || '';
+  const mudou = !live.error && !!live.updatedAt && Array.isArray(live.friends)
+    && (live.friends.length !== friendsData.friends.length || friendsData.friends.some((f) => !byId.has(f.id)));
+  if (mudou && typeof razzeUser !== 'undefined' && razzeUser) {
+    setFriendsData({ ...friendsData, friends: friendsData.friends.filter((f) => byId.has(f.id)) });
+    void refreshRazzeLists().catch(() => {}); // quem entrou na lista e os pedidos
+  }
   for (const f of friendsData.friends) if (byId.has(f.id)) f.online = !!byId.get(f.id).online;
   renderHub();
 }

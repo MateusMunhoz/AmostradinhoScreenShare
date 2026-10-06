@@ -202,6 +202,16 @@ function diretoLargar(p) {
   p.acks.clear();
   for (const [fid, dl] of direto.baixando) if (dl.from === p.id) diretoArquivoFalhou(fid, 'a conexão direta caiu, tente de novo');
 }
+// A amizade acabou (de qualquer lado): fecha a conexão direta com quem não está mais na lista de amigos
+function diretoSoAmigos() {
+  const amigos = new Set(friendsData.friends.map((f) => f.id));
+  for (const id of [...direto.peers.keys()]) {
+    if (amigos.has(id)) continue;
+    diretoFechar(id);
+    const c = dm.convs.get(id);
+    if (c?.el && typeof renderDiretoJanela === 'function') renderDiretoJanela(c);
+  }
+}
 function diretoParar() {
   clearTimeout(direto.timer);
   for (const id of [...direto.peers.keys()]) diretoFechar(id);

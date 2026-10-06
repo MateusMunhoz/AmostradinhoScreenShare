@@ -76,5 +76,19 @@ run('Mensagens privadas pela conexão direta', 120000, async () => {
   await B.eval(`(async () => { await diretoAnexar(dm.convs.get('${ANA}'), [new File(['x'], 'a.txt')]); })()`);
   check('Arquivo sem conexão direta não sai (e avisa)', await B.eval(`dm.convs.get('${ANA}').el.status.textContent.includes('conexão direta')`));
   await B.shot('mensagens-direto.png');
+
+  // A Ana desfaz a amizade: na próxima presença (lista do servidor sem ela), a Bia tira a Ana da lista e fecha a conexão direta
+  check('Amizade desfeita do outro lado: some da lista e a conexão direta fecha', await B.eval(`(() => {
+    razzeUser = { id: '${BIA}' };
+    window.refreshRazzeLists = async () => {};
+    direto.peers.set('${ANA}', { id: '${ANA}', enviando: new Set(), acks: new Map() });
+    updateFriendsPresence({ friends: [], networks: [], rooms: [], updatedAt: Date.now(), error: '' });
+    return friendsData.friends.length === 0 && !direto.peers.has('${ANA}');
+  })()`));
+  check('Presença com erro (sem rede) não apaga ninguém', await B.eval(`(() => {
+    friendsData.friends = [{ id: '${ANA}', displayName: 'Ana', online: true }];
+    updateFriendsPresence({ friends: [], updatedAt: null, error: 'sem rede' });
+    return friendsData.friends.length === 1;
+  })()`));
   for (const X of [A, B]) await X.eval(`dmStop()`);
 });
