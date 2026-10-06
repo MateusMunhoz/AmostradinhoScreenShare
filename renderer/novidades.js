@@ -3,6 +3,36 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.18.3",
+    "date": "2026-10-06",
+    "items": [
+      "Atualiza lockfile para 1.18.2"
+    ]
+  },
+  {
+    "version": "1.18.2",
+    "date": "2026-10-06",
+    "items": [
+      "Corrige conflito de merge no main"
+    ]
+  },
+  {
+    "version": "1.17.4",
+    "date": "2026-10-06",
+    "items": [
+      "Correções e melhorias"
+    ]
+  },
+  {
+    "version": "1.17.3",
+    "date": "2026-10-05",
+    "items": [
+      "App: painel de administração e primeira entrada só com Google",
+      "Barra de baixo não some mais no caminho da transmissão até ela",
+      "Servidor: conta só pelo Google, lista de convidados, grupos e números do painel"
+    ]
+  },
+  {
     "version": "1.18.1",
     "date": "2026-10-06",
     "items": [
@@ -55,35 +85,6 @@ const NOVIDADES = [
     "date": "2026-10-04",
     "items": [
       "Tema Top Gun: cabine do F-14, radar na voz e chamadas de rádio"
-    ]
-  },
-  {
-    "version": "1.16.0",
-    "date": "2026-10-04",
-    "items": [
-      "Ligar para um amigo pela mensagem privada e mudar a senha da sala",
-      "Comando de voz (recurso extra), transmissão só para o seu canal e músicas ao vivo do YouTube sem pausar"
-    ]
-  },
-  {
-    "version": "1.15.9",
-    "date": "2026-10-04",
-    "items": [
-      "Sensibilidade do microfone e ajustes na voz"
-    ]
-  },
-  {
-    "version": "1.15.8",
-    "date": "2026-10-03",
-    "items": [
-      "feat: adiciona tema Renascença"
-    ]
-  },
-  {
-    "version": "1.15.7",
-    "date": "2026-10-03",
-    "items": [
-      "Clipes: som da transmissão, duração escolhida e modo uma por pessoa"
     ]
   }
 ];
