@@ -184,19 +184,20 @@ function lerConvite(text) {
   return { modo: cv.modo, endereco: cv.endereco, senha: !!cv.senha, pessoas, rede, ...chamadaInfo };
 }
 
-// Convidar (envelope › Amigos): manda o convite como mensagem direta
-async function convidarPorMensagem(f) {
+// Convidar (envelope › Amigos; e "Chamar para minha sala" no Início, que avisa por toast): manda o convite como
+// mensagem direta
+async function convidarPorMensagem(f, avisar = friendsStatus) {
   const cv = conviteDaSala();
-  if (!cv) return friendsStatus(`Entre numa sala primeiro para convidar ${f.displayName}.`);
+  if (!cv) return avisar(`Entre numa sala primeiro para convidar ${f.displayName}.`);
   try {
     const res = await window.api.razzeSendMessage(f.id, textoConvite(cv));
     const c = dmConv(f.id);
     await dmLoadConv(c);
     if (res?.message && dmAdd(c, res.message)) dmSaveConv(c);
     renderDm();
-    friendsStatus(`Convite enviado para ${f.displayName} pelas mensagens.`);
+    avisar(`Convite enviado para ${f.displayName} pelas mensagens.`);
   } catch (error) {
-    friendsStatus('Não foi possível mandar o convite: ' + String(error?.message || 'erro desconhecido').replace(/^.*RazzeApiError: /, ''));
+    avisar('Não foi possível mandar o convite: ' + String(error?.message || 'erro desconhecido').replace(/^.*RazzeApiError: /, ''));
   }
 }
 

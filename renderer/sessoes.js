@@ -42,6 +42,14 @@ function lembrarDaSala() {
   lembrarSessoes(addrs);
 }
 
+// De quem é a sala em que você entrou, o modo e quando: o "Última sala" do Início (inicio.js › renderLastRoom). Só
+// para sala dos outros; vale enquanto o roomAddr guardado for o desta sala
+function lembrarUltimaSala() {
+  if (!state.hostId || state.hostId === state.myId) return;
+  const modo = state.cloud ? 'internet' : selectedNetworkProvider() === 'razze' ? 'razze' : 'radmin';
+  save('ultimaSala', JSON.stringify({ endereco: load('roomAddr'), host: nameOf(state.hostId).slice(0, 32), modo, quando: Date.now() }));
+}
+
 // Procura sessões com a tela inicial à vista
 function sessionWatchWanted() { return !$('home').hidden; }
 
@@ -119,6 +127,7 @@ function renderSessoes() {
   $('goQuick').classList.toggle('primary', !temSalas);
   for (const id of ['goQuick', 'goJoin']) $(id).classList.toggle('big', !temSalas);
   $('sessionsEmpty').hidden = temSalas;
+  if (typeof renderHomeTopo === 'function') renderHomeTopo(); // o resumo do topo fala da sala aberta
   $('sessionsEmpty').textContent = sessoes.procurando
     ? 'Procurando sessões abertas na rede…'
     : selectedNetworkProvider() === 'internet'

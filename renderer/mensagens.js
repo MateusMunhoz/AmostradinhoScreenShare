@@ -415,7 +415,32 @@ function renderDmBar() {
     if (slots.children[i] !== c.el.slot) slots.insertBefore(c.el.slot, slots.children[i] || null);
   });
   $('dmBarHint').hidden = dm.bar.length > 0;
+  renderDmBarHint();
   fitDmBar();
+}
+
+// Barra vazia: no lugar da instrução, a última conversa ("Flyleaf: bora jogar?"); clicar abre ela. Sem nenhuma, a dica
+function renderDmBarHint() {
+  const hint = $('dmBarHint');
+  const ultima = [...dm.convs.values()].filter((c) => c.last).sort((a, b) => (b.last.createdAt || 0) - (a.last.createdAt || 0))[0];
+  hint.textContent = '';
+  if (!ultima) {
+    hint.textContent = 'Clique no envelope para abrir uma conversa privada';
+    hint.onclick = () => $('dmBarLabel').click();
+    hint.title = '';
+    return;
+  }
+  const quem = document.createElement('strong');
+  quem.textContent = friendName(ultima.id) + ':';
+  hint.append(quem, ' ' + dmPreview(ultima.last));
+  if (ultima.unread) {
+    const n = document.createElement('span');
+    n.className = 'hub-badge';
+    n.textContent = ultima.unread > 99 ? '99+' : String(ultima.unread);
+    hint.append(n);
+  }
+  hint.title = `Abrir a conversa com ${friendName(ultima.id)}`;
+  hint.onclick = () => void openDm(ultima.id);
 }
 
 // ---------- Largura: o que não cabe vai para o "+N" ----------
@@ -522,6 +547,10 @@ function dmDraggable(slot, chip, id) {
 }
 
 // ---------- Lista das conversas (no painel da barra) ----------
+// Uma linha sobre a última mensagem: o texto, ou o que ela é (imagem, arquivo, convite, chamada)
+function dmPreview(last) {
+  return `${last.from === dm.account ? 'você: ' : ''}${last.locked ? 'Mensagem criptografada' : last.file && !last.text ? (CHAT_IMAGE_TYPES.includes(last.file.mime) ? 'Imagem' : `Arquivo: ${last.file.name}`) : lerConvite(last.text) ? (lerConvite(last.text).chamada ? 'Chamada' : 'Convite para a sala') : last.text.replace(/\s+/g, ' ')}`;
+}
 function fillDmList(prefix = 'dmPanel') {
   const box = $(prefix + 'ConvList');
   $(prefix + 'Unsupported').hidden = !dm.unsupported;
@@ -539,7 +568,7 @@ function fillDmList(prefix = 'dmPanel') {
     li.onclick = () => void openDm(id);
     li.onkeydown = (e) => { if (e.key === 'Enter') void openDm(id); };
     const last = c?.last;
-    const preview = last ? `${last.from === dm.account ? 'você: ' : ''}${last.locked ? 'Mensagem criptografada' : last.file && !last.text ? (CHAT_IMAGE_TYPES.includes(last.file.mime) ? 'Imagem' : `Arquivo: ${last.file.name}`) : lerConvite(last.text) ? (lerConvite(last.text).chamada ? 'Chamada' : 'Convite para a sala') : last.text.replace(/\s+/g, ' ')}` : friendsData.friends.some((f) => f.id === id) ? 'Nenhuma mensagem ainda' : '';
+    const preview = last ? dmPreview(last) : friendsData.friends.some((f) => f.id === id) ? 'Nenhuma mensagem ainda' : '';
     const info = hubInfo(name, preview);
     li.append(hubAvatar(name, friendOnline(id)), info);
     if (last) {

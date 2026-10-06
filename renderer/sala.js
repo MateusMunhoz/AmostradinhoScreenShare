@@ -187,6 +187,7 @@ function enterRoom(welcome, owner, host, port, cloud = null) {
   state.senhaOn = (welcome.features || []).includes('senha'); // o servidor sabe mudar a senha da sala
   state.order = [...welcome.members.map((m) => m.id), welcome.id];
   lembrarDaSala();
+  lembrarUltimaSala();
   voice.reset(welcome);
   setMusicas(state.musicaOn ? welcome.musicas : [], welcome.now, true); // as músicas que já estavam tocando na sala
   window.api.roomKeys(true).then(syncComandoVozTecla, () => {});
