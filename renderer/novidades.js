@@ -3,6 +3,13 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.18.4",
+    "date": "2026-10-06",
+    "items": [
+      "Desempenho: vídeo aparece mais rápido ao assistir; lista da voz mais leve"
+    ]
+  },
+  {
     "version": "1.18.3",
     "date": "2026-10-06",
     "items": [
@@ -78,13 +85,6 @@ const NOVIDADES = [
     "date": "2026-10-05",
     "items": [
       "Mensagens privadas: conexão direta com arquivos e imagens, prazo do histórico e backup no celular"
-    ]
-  },
-  {
-    "version": "1.16.1",
-    "date": "2026-10-04",
-    "items": [
-      "Tema Top Gun: cabine do F-14, radar na voz e chamadas de rádio"
     ]
   }
 ];
