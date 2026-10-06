@@ -153,3 +153,48 @@ test('números do painel: contas, uso por dia, pico, versões e quem nunca abriu
   assert.ok(a.usage.neverUsed >= 1, 'quem criou conta e nunca abriu aparece');
   assert.equal(JSON.stringify(a).includes('@'), false, 'nenhum e-mail nos números');
 });
+
+test('a lista de convidados não promove conta cujo e-mail o Google não confirmou', async () => {
+  await settings({ requireApproval: false, googleOnly: false });
+  zerarLimite();
+  const vincular = (token, email) => {
+    const code = 'codigo-vinculo-' + (++seq) + '-' + email;
+    contas.set(code, idToken({ sub: 'g-' + email, email, name: 'Pessoa' }));
+    return request('/v1/me/google', { method: 'POST', body: { code, codeVerifier: 'v'.repeat(64), redirectUri: 'http://127.0.0.1:53211/callback' } }, token);
+  };
+  // Alguém registra por senha o e-mail de um futuro administrador e ainda vincula o próprio Google (outro e-mail)
+  const pirata = await request('/v1/auth/register', { method: 'POST', body: { email: 'futuro-admin@gmail.com', password: 'senha-longa-123', displayName: 'Pirata' } });
+  assert.equal(pirata.status, 201);
+  assert.equal((await vincular(pirata.body.accessToken, 'pirata@gmail.com')).status, 200);
+  const add = await request('/v1/admin/allowlist', { method: 'POST', body: { email: 'futuro-admin@gmail.com', grupo: 'admin' } }, ADMIN);
+  assert.equal(add.status, 200);
+  assert.equal(add.body.semGoogle, true, 'o painel fica sabendo que a conta não foi promovida');
+  assert.equal((await request('/v1/admin/me', {}, pirata.body.accessToken)).status, 403);
+  assert.equal((await lista('/v1/admin/users')).users.find((u) => u.email === 'futuro-admin@gmail.com').role, 'user');
+
+  // Conta antiga com senha que vincula o Google do mesmo e-mail continua sendo promovida
+  const legado = await request('/v1/auth/register', { method: 'POST', body: { email: 'legado@gmail.com', password: 'senha-longa-123', displayName: 'Legado' } });
+  assert.equal((await vincular(legado.body.accessToken, 'legado@gmail.com')).status, 200);
+  const ok = await request('/v1/admin/allowlist', { method: 'POST', body: { email: 'legado@gmail.com', grupo: 'admin' } }, ADMIN);
+  assert.equal(ok.body.semGoogle, undefined);
+  assert.equal((await request('/v1/admin/me', {}, legado.body.accessToken)).status, 200);
+});
+
+test('painel mostra quem vinculou o Google; sem senha, o 409 não manda entrar com a senha', async () => {
+  await settings({ requireApproval: false, googleOnly: false, legacyPasswordLogin: true });
+  zerarLimite();
+  const semVinculo = await request('/v1/auth/register', { method: 'POST', body: { email: 'so-senha@gmail.com', password: 'senha-longa-123', displayName: 'Só senha' } });
+  assert.equal(semVinculo.status, 201);
+  const users = (await lista('/v1/admin/users')).users;
+  assert.equal(users.find((u) => u.email === 'so-senha@gmail.com').googleLinked, false);
+  assert.equal(users.find((u) => u.email === 'legado@gmail.com').googleLinked, true);
+
+  assert.match((await google('so-senha@gmail.com')).body.error.message, /Entre com a senha/);
+  await settings({ googleOnly: true, legacyPasswordLogin: false });
+  const travado = await google('so-senha@gmail.com');
+  assert.equal(travado.status, 409);
+  assert.equal(travado.body.error.code, 'account_exists');
+  assert.doesNotMatch(travado.body.error.message, /Entre com a senha/);
+  assert.match(travado.body.error.message, /administrador/);
+  await settings({ googleOnly: false, legacyPasswordLogin: true });
+});

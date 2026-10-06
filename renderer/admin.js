@@ -143,6 +143,8 @@ function admPessoaLinha(u, acoes) {
   chips.append(admEl('span', 'adm-chip' + (u.role === 'admin' ? ' adm-chip-admin' : ''), u.role === 'admin' ? 'Admin' : u.grupo === 'teste' ? 'Teste' : 'Amigo'));
   if (u.status === 'pending') chips.append(admEl('span', 'adm-chip adm-chip-warn', 'Pendente'));
   if (u.status === 'disabled') chips.append(admEl('span', 'adm-chip adm-chip-warn', 'Desativada'));
+  // Sem Google, a pessoa fica sem entrar quando a senha for desligada (legacyPasswordLogin)
+  if (u.status === 'active' && u.googleLinked === false) chips.append(admEl('span', 'adm-chip adm-chip-warn', 'Sem Google'));
   if (u.online) chips.append(admEl('span', 'adm-chip adm-chip-ok', 'Online'));
   const botoes = admEl('span', 'adm-actions');
   botoes.append(...acoes);
@@ -193,7 +195,11 @@ function admConvidados(corpo) {
     ev.preventDefault();
     if (grupo.value === 'admin' && !(await appConfirm(`Dar acesso de administrador a ${email.value}? A pessoa vê e muda tudo neste painel.`, { title: 'Novo administrador', ok: 'Dar acesso', danger: true }))) return;
     ok.disabled = true;
-    try { await admChamar('POST', '/v1/admin/allowlist', { email: email.value.trim(), grupo: grupo.value, label: nome.value.trim() }); toast('E-mail na lista de convidados.'); } catch { /* erro já mostrado */ }
+    try {
+      const r = await admChamar('POST', '/v1/admin/allowlist', { email: email.value.trim(), grupo: grupo.value, label: nome.value.trim() });
+      // Conta criada por senha com esse e-mail: o servidor não muda o grupo nem o papel dela até o Google confirmar o e-mail
+      toast(r?.semGoogle ? 'E-mail na lista, mas a conta que já existe com ele não foi alterada: o Google ainda não confirmou esse e-mail.' : 'E-mail na lista de convidados.');
+    } catch { /* erro já mostrado */ }
     await admCarregar();
   };
   corpo.append(admEl('p', 'hint', 'E-mails da lista entram já ativos, sem esperar aprovação, no grupo que você escolher.'), form);
