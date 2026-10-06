@@ -145,6 +145,7 @@ function memberRow(id, name, sharing) {
 }
 
 function renderMembers() {
+  if (typeof publicarSalaAtual === 'function') publicarSalaAtual(); // em que sala estou, para os amigos (salas-amigos.js)
   const list = $('members');
   list.innerHTML = '';
   $('memberCount').textContent = $('memberTitleCount').textContent = state.members.size + 1;

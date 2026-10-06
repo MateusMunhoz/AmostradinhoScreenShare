@@ -324,6 +324,7 @@ cima das conversas e no número do envelope; clicar leva para **Pedidos**. O **b
   amigo, que aparece como um cartão com **Entrar** (veja abaixo).
 - **Remover:** no **⋯** da linha, **Remover [nome]**. A própria linha pergunta se é isso mesmo; **Não** ou Esc desiste.
   Remover desfaz a amizade dos dois lados: some também da lista do outro, sem precisar reabrir o app.
+- **Em que sala o amigo está:** no lugar de "Online", aparece "Na sala de Ciclano · Radmin · 4 pessoas" (ou "na voz"), em qualquer modo e mesmo que o amigo não seja o host; na mesma sala que você, "Na sua sala". Também nos **Amigos online** do Início. É só para saber onde ele está: não vai endereço, e para entrar continua o convite ou o endereço. Quem não quer mostrar desliga em **Perfil › Atividade › Mostrar aos amigos em que sala estou** (ligado por padrão). Salas escondidas e chamadas não aparecem.
 
 ## Mensagens diretas
 

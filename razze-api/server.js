@@ -525,7 +525,8 @@ function createApiServer(options = {}) {
         const rows = db.prepare(
           "SELECT DISTINCT u.id, u.email, u.display_name AS displayName, u.bio AS bio, k.public_key AS dmKey FROM friend_requests f JOIN users u ON (u.id = f.sender_id AND f.receiver_id = ?) OR (u.id = f.receiver_id AND f.sender_id = ?) LEFT JOIN dm_keys k ON k.user_id = u.id WHERE f.status = 'accepted' ORDER BY u.display_name COLLATE NOCASE"
         ).all(userId, userId);
-        return send(res, 200, { friends: control.enrichUsers(rows.map((r) => ({ ...r, dmKey: r.dmKey || null, activity: activityOf(r.id) }))) });
+        const salas = control.salasAtuais(); // em que sala cada amigo online está (sem endereço; docs/spec/sala-do-amigo.md)
+        return send(res, 200, { friends: control.enrichUsers(rows.map((r) => ({ ...r, dmKey: r.dmKey || null, activity: activityOf(r.id), sala: salas.get(r.id) || null }))) });
       }
       // Chave pública das mensagens criptografadas (a privada nunca sai do PC); os amigos recebem em /v1/friends
       if (method === 'PUT' && pathname === '/v1/me/dm-key') {

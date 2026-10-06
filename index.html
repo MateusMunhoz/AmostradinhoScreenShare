@@ -98,12 +98,15 @@
       <h3 class="profile-sec">Frase</h3>
       <label class="field"><span>Uma frase no seu perfil <span id="bioCount" class="hint"></span></span><input id="profileBio" maxlength="128" autocomplete="off" placeholder="Ex.: jogo à noite e ouço rock"></label>
       <p id="profileBioHint" class="hint"></p>
-      <!-- Atividade: o que os amigos veem do que você faz; tudo desligado por padrão (renderer/conta.js) -->
+      <!-- Atividade: o que os amigos veem do que você faz; jogo e música desligados por padrão (renderer/conta.js) -->
       <h3 class="profile-sec">Atividade</h3>
       <label class="check-line"><input type="checkbox" id="atvJogo"><span>Mostrar o jogo que estou jogando</span></label>
       <label class="check-line"><input type="checkbox" id="atvMusica"><span>Mostrar a música que estou ouvindo (Spotify)</span></label>
       <p id="atvPreview" class="hint" role="status" aria-live="polite"></p>
       <p class="hint">Desligado por padrão. Só os seus amigos veem, e só o nome do jogo e a faixa: nenhum outro programa é lido. Precisa da conta e vale no Windows.</p>
+      <!-- Em que sala estou (renderer/salas-amigos.js, docs/spec/sala-do-amigo.md): ligado por padrão -->
+      <label class="check-line"><input type="checkbox" id="atvSala" aria-describedby="atvSalaHint"><span>Mostrar aos amigos em que sala estou</span></label>
+      <p id="atvSalaHint" class="hint">Ligado por padrão. Vai só o nome de quem hospeda a sala, o modo (Radmin, Razze ou Internet), quantas pessoas e se você está na voz: nenhum endereço. Salas escondidas e chamadas não aparecem.</p>
       <!-- Conta Razze: entrar ou criar conta, ou quem está conectado (renderer/conectividade.js). As redes ficam em
            Configurações › Rede; os amigos, no envelope das mensagens -->
       <h3 class="profile-sec" id="profileAccountTitle">Conta Razze</h3>

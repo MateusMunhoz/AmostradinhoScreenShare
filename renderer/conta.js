@@ -238,6 +238,9 @@ function setupConta() {
   for (const [id, k] of [['atvJogo', 'Jogo'], ['atvMusica', 'Musica']]) {
     $(id).onchange = () => { save('atividade' + k, $(id).checked ? '1' : '0'); atvAgendar(); };
   }
+  // Em que sala estou: ligado por padrão (salas-amigos.js); desligar tira na hora
+  $('atvSala').checked = salaAtualLigada();
+  $('atvSala').onchange = () => { save('atividadeSala', $('atvSala').checked ? '1' : '0'); publicarSalaAtual(); };
   atv.amigos = setInterval(() => void atvAtualizarAmigos(), ATV_CADA_MS);
   window.addEventListener('beforeunload', () => { if (atv.ultimo && atv.ultimo !== '{"game":"","artist":"","title":""}') window.api.razzeSetActivity({}).catch(() => {}); });
   void atvTick();

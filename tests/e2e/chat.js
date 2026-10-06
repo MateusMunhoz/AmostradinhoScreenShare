@@ -11,6 +11,18 @@ run('Chat', 170000, async () => {
   await joinRoom(B, { name: 'Bia', addr: '127.0.0.1:18793' });
   await B.eval('setPanelOpen(false)'); // painel recolhido: mensagens contam como novas
   check('Chat disponível', await B.eval(`chat.supported && !$('chatInput').disabled`));
+  // Em que sala estou (docs/spec/sala-do-amigo.md): a Bia, que não é host, anuncia a sala da Ana, sem endereço
+  await B.waitFor(`salaAtualEnviada !== ''`, 5000);
+  check('Convidada anuncia aos amigos: host, modo e pessoas, sem endereço', await B.eval(`(() => { const s = JSON.parse(salaAtualEnviada); return s.host === 'Ana' && s.modo === 'radmin' && s.pessoas === 2 && s.voz === false && !/127\\.0\\.0\\.1|18793/.test(salaAtualEnviada); })()`));
+  await B.eval(`(() => { $('atvSala').checked = false; $('atvSala').onchange(); })()`);
+  check('Desligar em Perfil › Atividade tira na hora', await B.eval(`salaAtualEnviada === '' && localStorage.getItem('atividadeSala') === '0'`));
+  await B.eval(`(() => { $('atvSala').checked = true; $('atvSala').onchange(); })()`);
+  check('O amigo aparece "Na sala de Ana" e, na mesma sala, "Na sua sala"', await B.eval(`(() => {
+    const longe = textoSalaDoAmigo({ online: true, sala: { modo: 'radmin', host: 'Caio', pessoas: 4, voz: true } });
+    const perto = textoSalaDoAmigo({ online: true, sala: JSON.parse(salaAtualEnviada) });
+    const offline = textoSalaDoAmigo({ online: false, sala: { modo: 'radmin', host: 'Caio', pessoas: 4, voz: false } });
+    return longe === 'Na sala de Caio · Radmin · na voz' && perto === 'Na sua sala' && offline === '';
+  })()`));
 
   await A.eval(`(() => { $('chatInput').value = 'Oi, bora jogar? https://osu.ppy.sh <b>negrito</b>'; sendChat(); })()`);
   await B.waitFor(`$('chatList').querySelectorAll('.msg').length === 1`, 5000);
@@ -127,4 +139,5 @@ run('Chat', 170000, async () => {
   await A.eval(`leaveRoom(null, 'info', true)`).catch(() => {});
   await sleep(1500);
   check('Encerrar para todos leva o chat junto', await C.eval(`$('room').hidden && $('chatList').children.length === 0`));
+  check('Fora da sala, ninguém anuncia sala nenhuma', await B.eval(`salaAtualEnviada === ''`) && await C.eval(`salaAtualEnviada === ''`));
 });

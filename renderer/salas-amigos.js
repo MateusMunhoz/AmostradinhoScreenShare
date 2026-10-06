@@ -56,6 +56,40 @@ function retirarSalaInternet() {
   salasAmigos.passe = '';
 }
 
+// ---------- Em que sala estou (docs/spec/sala-do-amigo.md) ----------
+// Em qualquer modo, mesmo sem ser o host: os amigos veem "Na sala de [host] · Radmin · 4 pessoas". Vai só o modo, o
+// nome do host, quantas pessoas e se estou na voz, nada de endereço. Sala escondida (a das chamadas, ou a que o host
+// tirou da lista) não vai; Perfil › Atividade desliga. Chamado a cada renderMembers (membros.js): só manda se mudou.
+const salaAtualLigada = () => load('atividadeSala', '1') === '1';
+let salaAtualEnviada = '';
+// paraComparar: a minha sala para o "Na sua sala", mesmo com o interruptor desligado
+function salaAtualResumo(paraComparar = false) {
+  if (!state.myId || !state.ws || state.sessao?.oculta || (!paraComparar && !salaAtualLigada())) return null;
+  const modo = state.cloud ? 'internet' : selectedNetworkProvider() === 'razze' ? 'razze' : 'radmin';
+  const host = state.hostId === state.myId ? getName() : nameOf(state.hostId);
+  return { modo, host, pessoas: state.members.size + 1, voz: !!voice.session };
+}
+function publicarSalaAtual() {
+  const sala = salaAtualResumo();
+  const assinatura = sala ? JSON.stringify(sala) : '';
+  if (assinatura === salaAtualEnviada) return;
+  salaAtualEnviada = assinatura;
+  window.api.razzeSalaAtual(sala).catch(() => {});
+}
+function retirarSalaAtual() {
+  if (salaAtualEnviada) window.api.razzeSalaAtual(null).catch(() => {});
+  salaAtualEnviada = '';
+}
+// O texto embaixo do nome do amigo (aba Amigos e Início): onde ele está; vazio se não anunciou (fica "Online")
+const SALA_MODO = { radmin: 'Radmin', razze: 'Razze', internet: 'Internet' };
+function textoSalaDoAmigo(f) {
+  const s = f?.sala;
+  if (!s || !f.online) return '';
+  const minha = salaAtualResumo(true);
+  if (minha && minha.modo === s.modo && minha.host === s.host && minha.pessoas === s.pessoas) return s.voz ? 'Na sua sala · na voz' : 'Na sua sala';
+  return `Na sala de ${s.host} · ${SALA_MODO[s.modo] || s.modo} · ${s.voz ? 'na voz' : s.pessoas === 1 ? '1 pessoa' : `${s.pessoas} pessoas`}`;
+}
+
 // Da presença (conectividade.js): as salas dos amigos no formato da lista de sessões
 function receberSalasAmigos(lista) {
   sessoes.amigos = (Array.isArray(lista) ? lista : []).filter((s) => s && typeof s.codigo === 'string' && typeof s.servidor === 'string')

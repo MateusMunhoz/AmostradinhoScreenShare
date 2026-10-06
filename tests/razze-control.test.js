@@ -158,6 +158,36 @@ test('sala do modo Internet: só os amigos aceitos veem, sem rede nem VPN, e som
   assert.doesNotMatch(JSON.stringify(page), new RegExp(passe));
 });
 
+test('em que sala a pessoa está: só os amigos veem, sem endereço; some ao sair, ao expirar e não vaza para os membros da rede', async t => {
+  const { req, register, advance } = await fixture(t);
+  const a = await register('Ana'), b = await register('Bia'), stranger = await register('Eve');
+  const friend = await req('friends/requests', 'POST', { email: b.user.email }, a.accessToken);
+  await req('friends/requests/' + friend.id + '/accept', 'POST', undefined, b.accessToken);
+  const salaAtual = { modo: 'radmin', host: 'Caio', pessoas: 4, voz: true };
+  assert.equal((await req('presence/heartbeat', 'POST', { salaAtual }, a.accessToken)).status, 200);
+  const ana = (await req('friends', 'GET', undefined, b.accessToken)).friends[0];
+  assert.deepEqual(ana.sala, salaAtual);
+  assert.equal((await req('friends', 'GET', undefined, stranger.accessToken)).friends.length, 0);
+  // Membros de uma rede (que não precisam ser amigos) e a administração não recebem
+  const { network } = await req('networks', 'POST', { name: 'Rede' }, a.accessToken);
+  const invitation = await req('networks/' + network.id + '/invites', 'POST', {}, a.accessToken);
+  await req('invites/accept', 'POST', { token: invitation.token }, stranger.accessToken);
+  const members = await req('networks/' + network.id + '/members', 'GET', undefined, stranger.accessToken);
+  assert.equal(members.status, 200);
+  assert.ok(members.members.every(m => m.sala === undefined));
+  assert.ok((await req('admin/users', 'GET', undefined, ROOT)).users.every(u => u.sala === undefined));
+  for (const bad of [{ ...salaAtual, modo: 'lan' }, { ...salaAtual, host: '' }, { ...salaAtual, host: 'x'.repeat(33) }, { ...salaAtual, host: 'a\nb' },
+    { ...salaAtual, pessoas: 0 }, { ...salaAtual, voz: 'sim' }, { ...salaAtual, endereco: '26.1.2.3' }]) {
+    assert.equal((await req('presence/heartbeat', 'POST', { salaAtual: bad }, a.accessToken)).status, 400);
+  }
+  await req('presence/heartbeat', 'POST', { salaAtual: null }, a.accessToken);
+  assert.equal((await req('friends', 'GET', undefined, b.accessToken)).friends[0].sala, null);
+  await req('presence/heartbeat', 'POST', { salaAtual }, a.accessToken);
+  advance(71000);
+  const depois = (await req('friends', 'GET', undefined, b.accessToken)).friends[0];
+  assert.equal(depois.online, false); assert.equal(depois.sala, null);
+});
+
 test('pedido de amizade pela conta (userId): acha pela id, mesmo com nickname repetido; id inexistente dá 404', async t => {
   const { req, register } = await fixture(t);
   const a = await register('Ana'), b = await register('Bia');

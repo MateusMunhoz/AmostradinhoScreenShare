@@ -43,6 +43,9 @@ run('Barra de mensagens abre para cima', 90000, async () => {
   await A.shot('mensagens-barra-amigos.png');
   await A.eval(`(() => { friendsFilter.view = 'all'; friendsData.incoming = []; renderAmigos(); })()`);
   check('Todos: Bia online com Mensagem, Caio offline', await A.eval(`(() => { const t = $('razzeFriends').textContent; return t.includes('Online · 1') && t.includes('Bia') && t.includes('Offline · 1') && !!$('razzeFriends').querySelector('[data-focus="talk:${BIA}"]'); })()`));
+  // Em que sala a Bia está (presença com o resumo, docs/spec/sala-do-amigo.md): no lugar de "Online"
+  await A.eval(`updateFriendsPresence({ friends: [{ id: '${BIA}', online: true, sala: { modo: 'radmin', host: 'Caio', pessoas: 3, voz: false } }, { id: '${CAIO}', online: false, sala: null }], updatedAt: Date.now(), error: '' })`);
+  check('Amigo numa sala da Radmin: "Na sala de Caio · Radmin · 3 pessoas"', await A.eval(`$('razzeFriends').querySelector('[data-friend-presence="${BIA}"]').textContent === 'Na sala de Caio · Radmin · 3 pessoas'`));
   await clickAt(A, await centerOf(A, '#dmTabConvs'));
   check('Clicar em Conversas volta para a lista das conversas', await A.eval(`!$('dmConvs').hidden && $('dmFriends').hidden && $('dmRequestsBanner').hidden`));
   await A.eval(`$('dmTabConvs').focus(); $('dmTabConvs').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))`);

@@ -97,8 +97,16 @@ function updateFriendsPresence(live) {
     setFriendsData({ ...friendsData, friends: friendsData.friends.filter((f) => byId.has(f.id)) });
     void refreshRazzeLists().catch(() => {}); // quem entrou na lista e os pedidos
   }
-  for (const f of friendsData.friends) if (byId.has(f.id)) f.online = !!byId.get(f.id).online;
+  let salaMudou = false;
+  for (const f of friendsData.friends) {
+    if (!byId.has(f.id)) continue;
+    const vivo = byId.get(f.id);
+    f.online = !!vivo.online;
+    const sala = vivo.sala || null; // em que sala o amigo está (salas-amigos.js: textoSalaDoAmigo)
+    if (JSON.stringify(sala) !== JSON.stringify(f.sala || null)) { f.sala = sala; salaMudou = true; }
+  }
   renderAmigos();
+  if (salaMudou && typeof renderHomeAmigos === 'function') renderHomeAmigos();
 }
 function friendsStatus(text) { $('razzeFriendsStatus').textContent = text; }
 const semAcento = (t) => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -200,7 +208,10 @@ function friendRow(f, isOnline) {
     li.append(hubInfo(`Remover ${f.displayName}?`, 'Precisa de um novo pedido para voltar.'), no, yes);
     return li;
   }
-  const info = hubInfo(f.displayName, isOnline ? 'Online' : friendsData.error ? 'Indisponível' : 'Offline');
+  // Online: em que sala o amigo está, se ele anunciou (salas-amigos.js: textoSalaDoAmigo)
+  const naSala = isOnline && typeof textoSalaDoAmigo === 'function' ? textoSalaDoAmigo(f) : '';
+  const info = hubInfo(f.displayName, naSala || (isOnline ? 'Online' : friendsData.error ? 'Indisponível' : 'Offline'));
+  if (naSala) info.lastChild.title = naSala; // cortado com "…" quando não cabe
   info.lastChild.dataset.friendPresence = f.id; // o teste da Razze confere o texto por aqui
   info.lastChild.classList.toggle('on', isOnline);
   li.append(hubAvatar(f.displayName, isOnline), info,

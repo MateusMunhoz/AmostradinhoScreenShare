@@ -116,6 +116,14 @@ function renderHomeAmigos() {
     const quem = document.createElement('strong');
     quem.textContent = f.displayName;
     nome.append(quem);
+    // Em que sala o amigo está, em qualquer modo (salas-amigos.js: textoSalaDoAmigo)
+    const naSala = typeof textoSalaDoAmigo === 'function' ? textoSalaDoAmigo(f) : '';
+    if (naSala) {
+      const sala = document.createElement('span');
+      sala.className = 'hint home-friend-bio home-friend-sala';
+      sala.textContent = naSala;
+      nome.append(sala);
+    }
     const atividade = f.activity;
     if (atividade?.game) {
       const jogo = document.createElement('span');
