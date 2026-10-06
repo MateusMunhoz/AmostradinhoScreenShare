@@ -8,7 +8,7 @@ const { createHash, randomBytes } = require('node:crypto');
 
 const AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const TEMPO_MS = 3 * 60 * 1000;
-const PAGINA = (titulo, texto) => `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tela P2P</title>`
+const PAGINA = (titulo, texto) => `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Nebula</title>`
   + `<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0B0D10;color:#D7DCE3;font:16px/1.5 system-ui,sans-serif}main{max-width:380px;padding:28px;text-align:center}h1{font-size:22px;margin:0 0 8px}p{color:#9A9EA4;margin:0}</style>`
   + `</head><body><main><h1>${titulo}</h1><p>${texto}</p></main></body></html>`;
 
@@ -44,15 +44,15 @@ function loginComGoogle({ clientId, abrir, tempoMs = TEMPO_MS }) {
       };
       const cabecalho = { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer', 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'" };
       if (url.searchParams.get('state') !== estado) {
-        res.writeHead(400, cabecalho).end(PAGINA('Pedido inválido', 'Volte ao Tela P2P e tente entrar de novo.'));
+        res.writeHead(400, cabecalho).end(PAGINA('Pedido inválido', 'Volte ao Nebula e tente entrar de novo.'));
         return fim(new Error('A resposta do Google não bateu com o pedido. Tente de novo.'));
       }
       const code = url.searchParams.get('code');
       if (url.searchParams.get('error') || !code) {
-        res.writeHead(200, cabecalho).end(PAGINA('Login cancelado', 'Você pode fechar esta aba e voltar ao Tela P2P.'));
+        res.writeHead(200, cabecalho).end(PAGINA('Login cancelado', 'Você pode fechar esta aba e voltar ao Nebula.'));
         return fim(new Error('O login com o Google foi cancelado.'));
       }
-      res.writeHead(200, cabecalho).end(PAGINA('Pronto', 'Você pode fechar esta aba e voltar ao Tela P2P.'));
+      res.writeHead(200, cabecalho).end(PAGINA('Pronto', 'Você pode fechar esta aba e voltar ao Nebula.'));
       fim(null, { code, codeVerifier: verificador, redirectUri: `http://127.0.0.1:${servidor.address().port}/callback` });
     });
     const timer = setTimeout(() => {

@@ -49,6 +49,8 @@
 /* ---------- O nome, como no Du'Sol ---------- */
 /* Barra de título: o símbolo da Lua no lugar da logo, "// DI'LUNA" depois do nome e a linha da Lua à direita */
 :root[data-skin="diluna"] .titlebar svg, :root[data-skin="diluna"] .brand-mark svg { display: none; }
+:root[data-skin="diluna"] :is(.titlebar, .brand-mark) .brand-n { position: static; width: auto; height: auto; overflow: visible; clip-path: none; } /* sem o N de constelação: o N em texto */
+:root[data-skin="diluna"] :is(.titlebar, .brand-mark) .brand-name { font-family: inherit; margin-left: 0; transform: none; }
 :root[data-skin="diluna"] .titlebar::before, :root[data-skin="diluna"] .brand-mark::before {
   content: ""; flex: none; width: 16px; height: 16px; background: var(--dl-glow);
   -webkit-mask: var(--dl-moon) center / contain no-repeat; mask: var(--dl-moon) center / contain no-repeat;

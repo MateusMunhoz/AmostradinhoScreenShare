@@ -54,11 +54,11 @@ document.getElementById('arquivo').addEventListener('change', async (e) => {
   status.textContent = 'Enviando…';
   try {
     const r = await fetch('${alvo}', { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: await f.text() });
-    status.textContent = r.ok ? 'Enviado. Agora digite a senha no PC.' : 'Esse arquivo não é uma configuração do Tela P2P.';
+    status.textContent = r.ok ? 'Enviado. Agora digite a senha no PC.' : 'Esse arquivo não é uma configuração do Nebula.';
   } catch { status.textContent = 'Não foi possível enviar. O PC fechou o código?'; }
 });</script>`;
   return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tela P2P</title><style>
+<title>Nebula</title><style>
 :root { color-scheme: light dark; --bg: #f4f6fa; --fg: #14161b; --muted: #5b6270; --accent: #0e7c8c; --ink: #fff; }
 @media (prefers-color-scheme: dark) { :root { --bg: #0b0c0e; --fg: #e3e7ee; --muted: #9aa3b2; --accent: #22e5fa; --ink: #0b0c0e; } }
 body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: var(--bg); color: var(--fg); font: 17px/1.5 system-ui, sans-serif; }
@@ -111,7 +111,7 @@ function atender(req, res) {
       const texto = Buffer.concat(partes).toString('utf8');
       let ok = false;
       try { ok = JSON.parse(texto)?.app === 'tela-p2p-config'; } catch {}
-      if (!ok) return responder(res, 400, 'text/plain; charset=utf-8', 'Não é uma configuração do Tela P2P.');
+      if (!ok) return responder(res, 400, 'text/plain; charset=utf-8', 'Não é uma configuração do Nebula.');
       sessao.usado = true;
       responder(res, 200, 'text/plain; charset=utf-8', 'ok');
       sessao.avisar({ tipo: 'recebido', texto });

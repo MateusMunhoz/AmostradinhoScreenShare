@@ -187,7 +187,7 @@ const CelularModelo = (() => {
       || o.kdf.name !== 'PBKDF2' || o.kdf.hash !== 'SHA-256' || o.cipher.name !== 'AES-GCM'
       || !Number.isInteger(o.kdf.iterations) || o.kdf.iterations < 100000 || o.kdf.iterations > 5000000
       || !b64(o.kdf.salt, 64) || !b64(o.cipher.iv, 64) || !b64(o.data, MAX)) {
-      throw erro('formato', 'Este arquivo não é uma configuração do Tela P2P.');
+      throw erro('formato', 'Este arquivo não é uma configuração do Nebula.');
     }
     let claro;
     try {
@@ -196,7 +196,7 @@ const CelularModelo = (() => {
     } catch { throw erro('senha', 'Senha errada (ou o arquivo foi alterado).'); }
     let conteudo;
     try { conteudo = JSON.parse(new TextDecoder().decode(claro)); } catch { conteudo = null; }
-    if (!objeto(conteudo) || !objeto(conteudo.items)) throw erro('formato', 'Este arquivo não é uma configuração do Tela P2P.');
+    if (!objeto(conteudo) || !objeto(conteudo.items)) throw erro('formato', 'Este arquivo não é uma configuração do Nebula.');
     return { items: conteudo.items, created: String(conteudo.created || ''), appVersion: String(conteudo.appVersion || ''), novo: o.v > VERSAO };
   }
 

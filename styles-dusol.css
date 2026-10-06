@@ -46,6 +46,8 @@
 /* ---------- O nome, como no Arasaka ---------- */
 /* Barra de título: o símbolo do Sol no lugar da logo, "// DU'SOL" depois do nome e a linha do Sol à direita */
 :root[data-skin="dusol"] .titlebar svg, :root[data-skin="dusol"] .brand-mark svg { display: none; }
+:root[data-skin="dusol"] :is(.titlebar, .brand-mark) .brand-n { position: static; width: auto; height: auto; overflow: visible; clip-path: none; } /* sem o N de constelação: o N em texto */
+:root[data-skin="dusol"] :is(.titlebar, .brand-mark) .brand-name { font-family: inherit; margin-left: 0; transform: none; }
 :root[data-skin="dusol"] .titlebar::before, :root[data-skin="dusol"] .brand-mark::before {
   content: ""; flex: none; width: 16px; height: 16px; background: var(--ds-fire);
   -webkit-mask: var(--ds-sun) center / contain no-repeat; mask: var(--ds-sun) center / contain no-repeat;

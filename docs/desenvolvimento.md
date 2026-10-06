@@ -11,7 +11,7 @@ npm install
 npm start
 ```
 
-Para gerar um `.exe` portátil sem publicar: `npm run dist`. O arquivo aparece em `dist\Tela P2P.exe`, sempre com esse nome, e cada geração troca o anterior. O instalador (NSIS, configurado em `build.nsis` do `package.json`): `npm run dist:instalador`, em `dist\Tela P2P Instalador.exe`. Os dois usam o mesmo pacote e as mesmas atualizações (em `%APPDATA%\Tela P2P`); a diferença é só o reinício, que no portátil passa pelo `PORTABLE_EXECUTABLE_FILE` (`boot.js`, `main.js`).
+Para gerar um `.exe` portátil sem publicar: `npm run dist`. O arquivo aparece em `dist\Nebula.exe`, sempre com esse nome, e cada geração troca o anterior. O instalador (NSIS, configurado em `build.nsis` do `package.json`): `npm run dist:instalador`, em `dist\Nebula Instalador.exe`. Os dois usam o mesmo pacote e as mesmas atualizações (em `%APPDATA%\Tela P2P`, a pasta de antes do nome Nebula, que o `boot.js` fixa); a diferença é só o reinício, que no portátil passa pelo `PORTABLE_EXECUTABLE_FILE` (`boot.js`, `main.js`).
 
 ## Como o app funciona
 
@@ -189,7 +189,7 @@ A chave fica em `C:\Users\<você>\.tela-p2p\chave-de-atualizacao.pem`, fora do p
 - **Faça uma cópia offline** (pendrive ou gerenciador de senhas). Sem ela, não dá mais para mandar atualizações para quem já tem o app.
 - **Nunca mande para ninguém:** quem tiver a chave publica no seu nome.
 
-Feche o `dist\Tela P2P.exe` se estiver aberto e rode:
+Feche o `dist\Nebula.exe` se estiver aberto e rode:
 
 ```
 npm run publicar
@@ -198,7 +198,7 @@ npm run publicar
 Isso:
 1. sobe a versão (ex.: 1.8.9 → 1.8.10);
 2. assina o pacote e deixa a versão pronta no seu app;
-3. gera o `.exe` portátil e o instalador (`Tela P2P Instalador.exe`);
+3. gera o `.exe` portátil e o instalador (`Nebula Instalador.exe`);
 4. manda para o GitHub: o commit, a tag e uma Release com o `.exe` e o pacote assinado.
 
 Opções:

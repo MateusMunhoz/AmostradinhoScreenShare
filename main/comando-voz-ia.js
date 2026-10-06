@@ -55,7 +55,7 @@ function criarIa(pastaDados, { storage, Anthropic, baseURL } = {}) {
 
   async function nuvem(texto, ctx, modelo) {
     const A = sdk();
-    if (!A) return { ok: false, erro: 'Esta instalação ainda não tem a parte da nuvem. Instale o Tela P2P pelo instalador novo.' };
+    if (!A) return { ok: false, erro: 'Esta instalação ainda não tem a parte da nuvem. Instale o Nebula pelo instalador novo.' };
     const apiKey = lerChave();
     if (!apiKey) return { ok: false, erro: 'Falta a chave da API da Anthropic (Recursos extras).' };
     if (!MODELOS_NUVEM.includes(modelo)) return { ok: false, erro: 'Modelo da nuvem desconhecido.' };

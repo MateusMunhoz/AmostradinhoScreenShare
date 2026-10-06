@@ -32,7 +32,7 @@ test('recusa link de outro tipo, caminho errado e segredo malformado', () => {
 });
 
 test('acha o link ou o código dentro da mensagem copiada pelo app', () => {
-  const msg = 'Me adiciona no Tela P2P: https://api.exemplo.com/a/' + TOKEN + '\n(ou cole o código ABCD-EFGH-JK em Adicionar amigo)';
+  const msg = 'Me adiciona no Nebula: https://api.exemplo.com/a/' + TOKEN + '\n(ou cole o código ABCD-EFGH-JK em Adicionar amigo)';
   assert.equal(amigoTokenDe(msg), TOKEN);
   assert.equal(amigoTokenDe('oi! me adiciona: abcd-efgh-jk valeu'), 'ABCD-EFGH-JK');
   assert.equal(amigoTokenDe('oi, sou o Cristian, me adiciona'), '');

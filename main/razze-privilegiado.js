@@ -31,7 +31,7 @@ function createPrivileged({ wireguard, wg, tunnels, destino = path.join(process.
   // continua valendo a que já está lá.
   function instalado(nome) {
     const src = fontes[nome];
-    if (!src || !fs.existsSync(src)) throw new Error(nome + ' não foi encontrado no pacote do Tela P2P.');
+    if (!src || !fs.existsSync(src)) throw new Error(nome + ' não foi encontrado no pacote do Nebula.');
     const dst = path.join(destino, nome);
     try {
       if (!fs.existsSync(dst) || hash(dst) !== hash(src)) {

@@ -1,11 +1,13 @@
-# Tela P2P (AmostradinhoScreenShare)
+# Nebula (AmostradinhoScreenShare)
+
+Antes chamado **Tela P2P**: quem já usa continua com as configurações, o histórico e os convites de antes ([o que mudou](docs/spec/nebula.md)).
 
 Transmita a tela e converse por voz com os amigos, de PC para PC, pela Radmin VPN, pela VPN WireGuard Razze ou pelo modo Internet (sem VPN, com um servidor numa VPS). No modo Radmin, não precisa de servidor pago: o app de quem cria a sala apresenta as pessoas, e o vídeo, o áudio e a voz vão direto de um PC para o outro.
 
 **Baixar:** pegue o arquivo da versão mais nova em [Releases](https://github.com/MateusMunhoz/AmostradinhoScreenShare/releases/latest). Depois disso, o próprio app avisa quando sair uma versão nova, e um botão atualiza.
 
-- **Windows, instalado:** `Tela.P2P.Instalador.exe`. Instala só para você (sem pedir administrador) ou para todos do PC, cria atalhos na área de trabalho e no menu Iniciar e aparece em Aplicativos instalados para desinstalar. Desinstalar não apaga suas configurações nem o histórico das mensagens.
-- **Windows, portátil:** `Tela.P2P.exe`. Não instala nada: é só abrir (pode ficar num pendrive).
+- **Windows, instalado:** `Nebula.Instalador.exe`. Instala só para você (sem pedir administrador) ou para todos do PC, cria atalhos na área de trabalho e no menu Iniciar e aparece em Aplicativos instalados para desinstalar. Desinstalar não apaga suas configurações nem o histórico das mensagens.
+- **Windows, portátil:** `Nebula.exe`. Não instala nada: é só abrir (pode ficar num pendrive).
 - **Linux (Ubuntu, Mint, com X11):** `Tela-P2P.AppImage`. Veja [Linux](#linux).
 
 ## Começar

@@ -55,7 +55,7 @@ test('mensagem vai cifrada: o servidor só vê e2e1, a Bia lê, a Ana lê a pró
 test('amigo sem chave: a mensagem não sai e o erro pede para atualizar', async (t) => {
   const srv = fakeServer();
   const ana = createDmE2E({ baseDir: dir(t), storage, service: srv.serviceFor(ANA) });
-  await assert.rejects(ana.send(BIA, 'oi'), /Bia precisa atualizar o Tela P2P/);
+  await assert.rejects(ana.send(BIA, 'oi'), /Bia precisa atualizar o Nebula/);
   assert.equal(srv.msgs.length, 0);
 });
 

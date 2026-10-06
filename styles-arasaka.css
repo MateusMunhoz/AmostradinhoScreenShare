@@ -95,6 +95,8 @@
 
 /* Barra de título e logo do saguão: o emblema no lugar das duas telas */
 :root[data-skin="arasaka"] .titlebar svg, :root[data-skin="arasaka"] .brand-mark svg { display: none; }
+:root[data-skin="arasaka"] :is(.titlebar, .brand-mark) .brand-n { position: static; width: auto; height: auto; overflow: visible; clip-path: none; } /* sem o N de constelação: o N em texto */
+:root[data-skin="arasaka"] :is(.titlebar, .brand-mark) .brand-name { font-family: inherit; margin-left: 0; transform: none; }
 :root[data-skin="arasaka"] .titlebar::before, :root[data-skin="arasaka"] .brand-mark::before {
   content: ""; flex: none; width: 16px; height: 16px; background: var(--accent);
   -webkit-mask: var(--ak-emblem) center / contain no-repeat; mask: var(--ak-emblem) center / contain no-repeat;

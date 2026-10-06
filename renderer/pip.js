@@ -199,7 +199,7 @@ function setPipStream(id) {
   refreshTileStream(link);
   p.name.textContent = link.tile.name;
   p.lockTag.textContent = link.tile.name;
-  p.win.document.title = `${link.tile.name} · Tela P2P`;
+  p.win.document.title = `${link.tile.name} · Nebula`;
   syncIncomingVideo();
   renderPipButtons();
 }

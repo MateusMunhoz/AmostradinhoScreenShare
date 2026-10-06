@@ -70,7 +70,7 @@ function showPhoneQr(urls, hint) {
   // Sem o celular abrir a página em 30 s: quase sempre é outra rede (4G, outro Wi-Fi) ou o firewall
   clearTimeout(phone.semAcesso);
   phone.semAcesso = setTimeout(() => {
-    if (!phone.aberto && phone.modo) phoneStatus('O celular precisa estar no mesmo Wi-Fi deste PC. Se mesmo assim a página não abrir, confira se o Windows deixa o Tela P2P receber conexões na rede privada.', 'warn');
+    if (!phone.aberto && phone.modo) phoneStatus('O celular precisa estar no mesmo Wi-Fi deste PC. Se mesmo assim a página não abrir, confira se o Windows deixa o Nebula receber conexões na rede privada.', 'warn');
   }, 30000);
 }
 function renderPhoneQr(i) {

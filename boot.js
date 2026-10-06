@@ -13,6 +13,11 @@ const PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
 MCowBQYDK2VwAyEAvitBDfmcU8rG/PCKWq8QG03uT1nSoPT/MQ9BldYkbgA=
 -----END PUBLIC KEY-----`;
 
+// O app virou Nebula (productName), mas a pasta de dados continua a de antes: configurações, histórico das
+// mensagens, login Razze e atualizações de quem já usa ficam onde estão (docs/spec/nebula.md). Antes de tudo,
+// porque a trava de uma janela só e as atualizações abaixo usam essa pasta.
+if (app.isPackaged) app.setPath('userData', path.join(app.getPath('appData'), 'Tela P2P'));
+
 // `npm run dev:teste`: outra pasta de dados, para abrir o código desta pasta junto com o app instalado, sem
 // fechar ele (a trava de uma janela só é por pasta de dados). Só fora do .exe.
 if (!app.isPackaged && process.argv.includes('--perfil-teste')) app.setPath('userData', path.join(app.getPath('appData'), 'tela-p2p-teste'));

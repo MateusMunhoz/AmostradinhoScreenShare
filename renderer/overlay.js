@@ -72,7 +72,7 @@ function buildChatOverlay(win) {
     margin: '0', height: '100%', overflow: 'hidden', background: 'transparent', color: THEME.text,
     fontFamily: THEME.font, fontSize: '14px',
   });
-  d.title = 'Chat da sala · Tela P2P';
+  d.title = 'Chat da sala · Nebula';
   const frame = d.createElement('div');
   Object.assign(frame.style, {
     position: 'fixed', inset: '0', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '8px', padding: '8px',

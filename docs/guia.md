@@ -1,9 +1,9 @@
 # Guia de uso
 
-Tudo o que dá para fazer no Tela P2P, com os detalhes. Para começar do zero, veja o [README](../README.md).
+Tudo o que dá para fazer no Nebula, com os detalhes. Para começar do zero, veja o [README](../README.md).
 
 - [Sala](#sala)
-- [VPN Tela P2P](#vpn-tela-p2p)
+- [VPN Nebula](#vpn-nebula)
 - [Sessões abertas](#sessões-abertas)
 - [Transmitir](#transmitir)
 - [Assistir](#assistir)
@@ -49,7 +49,7 @@ entram por código e senha, pela lista de salas dos amigos ou por um convite nas
 **Radmin ou rede local** e **Razze (WireGuard)**. Quem já usava o app antes do modo Internet virar o padrão, sem
 ter escolhido outro, continua na Radmin.
 
-### VPN Tela P2P
+### VPN Nebula
 
 Para usar uma rede virtual sem Radmin, todos precisam usar a mesma instalação da RazzeAPI. O administrador
 hospeda a API, configura a aprovação de contas e fornece o endereço HTTPS do servidor.
@@ -63,7 +63,7 @@ hospeda a API, configura a aprovação de contas e fornece o endereço HTTPS do 
    junto do endereço Radmin. A descoberta de salas pela lista inicial continua disponível apenas em LAN/Radmin.
 
 O dono pode copiar um link `telap2p://invite/...` na configuração da rede. No PC que receber o link, abra
-o Tela P2P pelo link e entre na conta Razze para aceitar o convite. Também é possível colar o link no campo
+o Nebula pelo link e entre na conta Razze para aceitar o convite. Também é possível colar o link no campo
 **Entrar por convite**.
 
 O **Mapa de conexões** fica na mesma aba **Rede** do HUB: este PC em cima e, embaixo, o servidor Razze e cada
@@ -73,7 +73,7 @@ endereços não aparecerem para quem assiste.
 
 A conexão P2P WireGuard depende dos NATs dos dois lados permitirem hole punching. Redes com CGNAT restritivo
   podem não conectar nesta versão; um relay WireGuard ainda não está incluído. Com o app aberto, a lista de peers
-  sincroniza a cada 30 segundos; depois de reabrir o Tela P2P, clique em **Atualizar peers** para sincronizar de novo.
+  sincroniza a cada 30 segundos; depois de reabrir o Nebula, clique em **Atualizar peers** para sincronizar de novo.
   A senha da sala continua sendo independente das permissões da VPN.
 
 ### Sessões abertas
@@ -238,8 +238,8 @@ No painel **Chat de voz**, a voz fica dividida em canais: a **Voz geral** e as s
 - **Quem ouve quem:** só quem está no mesmo canal se ouve. O chat de texto e as transmissões continuam valendo para a sala toda.
 - **Apagar:** o **X** ao lado da subsala. Quem estava nela volta para a Voz geral.
 - **Mudar alguém de canal:** arraste a pessoa (ou você) até outro canal. Qualquer um pode mover quem está na voz; o app da pessoa troca de canal sozinho. Precisa do host (ou do servidor da VPS) na versão nova; sem isso, só dá para arrastar você mesmo.
-- **Lista ou Mapa:** os dois ícones ao lado do título (três linhas para a Lista, um planeta para o Mapa) trocam a visão (fica salva neste PC). No **Mapa**, cada canal é um sol e quem está nele orbita como planeta. Cada canal com gente fica numa nebulosa de fumaça com a cor dele, e embaixo do nome aparece quantos estão nele. Quem fala solta ondas verdes, quem transmite solta ondas na cor de destaque e o canal com música solta notinhas. Ao fundo, uma galáxia em espiral gira bem devagar. Com o mouse em cima de um canal, os anéis e a nebulosa dele acendem e o sol cresce; em cima de uma pessoa, o planeta cresce e aparece uma linha até o sol. Quem entra chega como cometa, quem sai escapa da órbita, quem muda de canal faz um arco até o outro sol, quem começa a transmitir solta um anel, e a subsala nova acende com uma onda (a que é apagada se apaga). Com o Tela P2P fora de foco, só as órbitas continuam se mexendo. Clicar no sol abre um cartão preso a ele: o nome do canal, com quantos estão nele e quantos ao vivo (clicar no nome entra no canal), a música (no seu canal sem música, a linha tracejada **Sem música · Pôr uma**) e, numa subsala, o **X** de apagar. Embaixo, quem está no canal: quem transmite tem **AO VIVO** e o olho de **Assistir**; clicar na pessoa abre o perfil dela (volume e amizade). Esc ou um clique no mapa fecha; arrastar o planeta até outro sol muda a pessoa de canal. A roda do mouse (ou **+** e **−**) aproxima até caber uma subsala e afasta até ver todas; arrastar o fundo anda pelo mapa.
-- **Mapa grande:** com o chat e a voz na barra da direita, deixe o mouse parado no mapa: o chat encolhe e o mapa ocupa a barra toda. Do chat fica uma faixa em cima, com as mensagens novas; clicar nela traz o chat de volta. Tirando o mouse do painel de voz, o chat volta sozinho (menos enquanto você põe uma música, mexe no volume de alguém ou está no perfil de alguém). O **alfinete** ao lado de Lista e Mapa fixa o mapa aberto até você soltar. Com o chat e a voz abertos juntos, arraste o puxador entre os dois para mudar o tamanho de cada um (ou use as setas com ela selecionada); o tamanho fica salvo, e o clique duplo na linha volta ao automático. A seta ao lado do título recolhe o chat ou a voz numa faixa (o chat recolhido mostra as mensagens novas) e o outro ocupa a coluna toda; clique na faixa ou na seta para abrir de novo. Com o mouse dentro da órbita mais de fora de um sol, as órbitas dele param; as outras seguem girando; com o Tela P2P fora de foco, o céu em cima da Lista não é desenhado (o Mapa continua girando).
+- **Lista ou Mapa:** os dois ícones ao lado do título (três linhas para a Lista, um planeta para o Mapa) trocam a visão (fica salva neste PC). No **Mapa**, cada canal é um sol e quem está nele orbita como planeta. Cada canal com gente fica numa nebulosa de fumaça com a cor dele, e embaixo do nome aparece quantos estão nele. Quem fala solta ondas verdes, quem transmite solta ondas na cor de destaque e o canal com música solta notinhas. Ao fundo, uma galáxia em espiral gira bem devagar. Com o mouse em cima de um canal, os anéis e a nebulosa dele acendem e o sol cresce; em cima de uma pessoa, o planeta cresce e aparece uma linha até o sol. Quem entra chega como cometa, quem sai escapa da órbita, quem muda de canal faz um arco até o outro sol, quem começa a transmitir solta um anel, e a subsala nova acende com uma onda (a que é apagada se apaga). Com o Nebula fora de foco, só as órbitas continuam se mexendo. Clicar no sol abre um cartão preso a ele: o nome do canal, com quantos estão nele e quantos ao vivo (clicar no nome entra no canal), a música (no seu canal sem música, a linha tracejada **Sem música · Pôr uma**) e, numa subsala, o **X** de apagar. Embaixo, quem está no canal: quem transmite tem **AO VIVO** e o olho de **Assistir**; clicar na pessoa abre o perfil dela (volume e amizade). Esc ou um clique no mapa fecha; arrastar o planeta até outro sol muda a pessoa de canal. A roda do mouse (ou **+** e **−**) aproxima até caber uma subsala e afasta até ver todas; arrastar o fundo anda pelo mapa.
+- **Mapa grande:** com o chat e a voz na barra da direita, deixe o mouse parado no mapa: o chat encolhe e o mapa ocupa a barra toda. Do chat fica uma faixa em cima, com as mensagens novas; clicar nela traz o chat de volta. Tirando o mouse do painel de voz, o chat volta sozinho (menos enquanto você põe uma música, mexe no volume de alguém ou está no perfil de alguém). O **alfinete** ao lado de Lista e Mapa fixa o mapa aberto até você soltar. Com o chat e a voz abertos juntos, arraste o puxador entre os dois para mudar o tamanho de cada um (ou use as setas com ela selecionada); o tamanho fica salvo, e o clique duplo na linha volta ao automático. A seta ao lado do título recolhe o chat ou a voz numa faixa (o chat recolhido mostra as mensagens novas) e o outro ocupa a coluna toda; clique na faixa ou na seta para abrir de novo. Com o mouse dentro da órbita mais de fora de um sol, as órbitas dele param; as outras seguem girando; com o Nebula fora de foco, o céu em cima da Lista não é desenhado (o Mapa continua girando).
 - **Pessoa no mapa:** clicar num planeta abre o mesmo cartão de perfil da lista, subindo do pé do painel de voz (o mapa continua à vista em cima). Em volta da foto ficam, só com o ícone (o nome aparece ao parar o mouse em cima), **Assistir**, **Perfil** (volume e amizade), **Silenciar para mim** e **Mudar de canal**, e ao lado o canal, o nome e o volume da voz dela. No seu planeta: microfone, fone e **Mudar de canal**. O **X**, Esc ou um clique fora da faixa fecha. Na **Lista**, clicar na linha de quem está na voz (foto, nome ou estado) transforma o painel de voz na página da pessoa: o fundo do perfil em cima (ou a cor dela), a foto grande, o nome, o canal e as ações com nome (**Adicionar como amigo**, **Silenciar para mim**, **Mudar de canal**; no seu, microfone e fone), mais o volume. O **X** ao lado do nome, Esc ou um clique fora do painel volta para a lista. Se a pessoa escolheu um **fundo do perfil**, ele aparece atrás, só dentro da faixa ou da caixinha.
 - **Céu na Lista:** na Lista, o céu pequeno em cima é só enfeite. Para escondê-lo ou mostrá-lo, use **Configurações › Aparência › Céu da voz em cima da lista**. O Mapa não muda.
 - **Troca de host:** as subsalas continuam, e cada um fica no canal em que estava.
@@ -328,7 +328,7 @@ Conversa com um amigo (conta Razze), dentro ou fora da sala.
 - **Criptografadas de ponta a ponta:** só você e o amigo leem. O servidor Razze (e quem cuida dele) vê só texto
   embaralhado. Cada PC tem a própria chave, guardada com a proteção da sua conta do Windows; o histórico neste PC
   também fica protegido.
-  - **Amigo numa versão antiga:** a mensagem não sai. A janela avisa que ele precisa atualizar o Tela P2P, e o texto
+  - **Amigo numa versão antiga:** a mensagem não sai. A janela avisa que ele precisa atualizar o Nebula, e o texto
     volta para o campo.
   - **Chave trocada:** quando o amigo troca de PC ou reinstala o app, a conversa avisa "A chave de segurança de
     [nome] mudou". Se não foi isso, confirme com ele por outro meio.
@@ -473,7 +473,7 @@ Fontes do próprio Windows: Segoe UI Variable no app e Tahoma no chat.
 ## Modo gamer
 
 O controle na barrinha da direita (logo acima da engrenagem) liga o **modo gamer**, para o jogo ter o máximo do PC
-enquanto o Tela P2P fica aberto. Ligado, o controle fica aceso e o app:
+enquanto o Nebula fica aberto. Ligado, o controle fica aceso e o app:
 
 - baixa a própria prioridade para **normal** (a escolhida em Transmissão volta ao desligar);
 - fica **opaco**, sem o vidro e o desfoque;
@@ -534,7 +534,7 @@ que precisa.
     tirar o modelo da placa de vídeo 1 minuto depois do último comando (sozinho, ele deixaria 5 minutos).
   - **Nuvem:** Claude, pela API da Anthropic, com a sua chave (cobrada na sua conta). Entende melhor e não pesa no PC.
     A chave fica cifrada neste PC e não volta para a tela. Vai para a Anthropic só o texto do pedido, os nomes de quem
-    está na sala (e quem transmite) e dos canais; nunca o áudio. Precisa do instalador novo do Tela P2P.
+    está na sala (e quem transmite) e dos canais; nunca o áudio. Precisa do instalador novo do Nebula.
   - **Testar** manda um pedido de mentira e diz se o modelo escolheu a ação certa e em quanto tempo.
 - **Privacidade:** a voz é entendida neste PC. O áudio do comando não vai para o disco, para a sala nem para servidor
   nenhum.
@@ -555,16 +555,16 @@ no celular, e nada passa pela internet: o celular precisa estar no mesmo Wi-Fi d
   os atalhos de teclado. **Não vai:** a conta Razze (entre nela de novo; os amigos voltam sozinhos), as mensagens
   diretas e o endereço das salas.
 - O código vale por 5 minutos e serve uma vez. Sem câmera, digite no navegador do celular o endereço que aparece ao
-  lado do QR. Se a página não abrir, confira se o celular está no mesmo Wi-Fi e se o Windows deixa o Tela P2P
+  lado do QR. Se a página não abrir, confira se o celular está no mesmo Wi-Fi e se o Windows deixa o Nebula
   receber conexões na rede privada.
 
 ## Ícone na bandeja
 
-O Tela P2P fica com um ícone na bandeja do Windows (perto do relógio), na cor do tema.
+O Nebula fica com um ícone na bandeja do Windows (perto do relógio), na cor do tema.
 
 - **O X da janela esconde, não fecha:** a call, a transmissão e as janelas flutuantes continuam. Na primeira vez, um aviso lembra onde o app ficou.
 - **Clique no ícone:** abre a janela de novo.
-- **Botão direito no ícone:** **Abrir o Tela P2P**, **Procurar atualização…**, **Mutar / desmutar microfone** e **Ensurdecer / voltar a ouvir** (só na sala), **Reiniciar o Tela P2P** e **Sair do Tela P2P**, que fecha de vez.
+- **Botão direito no ícone:** **Abrir o Nebula**, **Procurar atualização…**, **Mutar / desmutar microfone** e **Ensurdecer / voltar a ouvir** (só na sala), **Reiniciar o Nebula** e **Sair do Nebula**, que fecha de vez.
 
 ## Atualizações
 

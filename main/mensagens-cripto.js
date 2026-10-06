@@ -151,7 +151,7 @@ function createDmE2E({ baseDir, storage, service }) {
     if (!f?.dmKey || !KEY_RE.test(f.dmKey)) {
       throw new RazzeApiError(0, 'no_dm_key', serverOld
         ? 'O servidor Razze ainda não tem mensagens criptografadas. Peça para quem cuida dele atualizar.'
-        : `${f?.displayName || 'Esse amigo'} precisa atualizar o Tela P2P para receber mensagens criptografadas.`);
+        : `${f?.displayName || 'Esse amigo'} precisa atualizar o Nebula para receber mensagens criptografadas.`);
     }
     const keyChanged = keys.pin(acct, to, f.dmKey);
     const payload = seal({ privateKey: k.privateKey, myRaw: k.myRaw, toRaw: Buffer.from(f.dmKey, 'base64'), from: acct, to, text });

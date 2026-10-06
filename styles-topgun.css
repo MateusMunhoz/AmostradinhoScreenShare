@@ -110,6 +110,8 @@
 
 /* ---------- Barra de título e marca: as asas no lugar da logo e o painel de rádio ---------- */
 :root[data-skin="topgun"] .titlebar svg, :root[data-skin="topgun"] .brand-mark svg { display: none; }
+:root[data-skin="topgun"] :is(.titlebar, .brand-mark) .brand-n { position: static; width: auto; height: auto; overflow: visible; clip-path: none; } /* sem o N de constelação: o N em texto */
+:root[data-skin="topgun"] :is(.titlebar, .brand-mark) .brand-name { font-family: inherit; margin-left: 0; transform: none; }
 :root[data-skin="topgun"] .titlebar::before, :root[data-skin="topgun"] .brand-mark::before {
   content: ""; flex: none; width: 24px; height: 16px; background: var(--tg-wings-paint);
   -webkit-mask: var(--tg-wings) center / contain no-repeat; mask: var(--tg-wings) center / contain no-repeat;

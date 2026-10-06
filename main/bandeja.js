@@ -16,17 +16,17 @@ let actions = { restart: () => app.quit() };
 // O menu, separado do Electron para dar para testar. Cada item tem um `id` que vira ação em buildMenu.
 function menuModel({ version, call }) {
   return [
-    { id: 'header', label: `Tela P2P ${version}`, enabled: false },
+    { id: 'header', label: `Nebula ${version}`, enabled: false },
     { type: 'separator' },
-    { id: 'open', label: 'Abrir o Tela P2P' },
+    { id: 'open', label: 'Abrir o Nebula' },
     { id: 'update', label: 'Procurar atualização…' },
     { type: 'separator' },
     { id: 'mute', label: 'Mutar / desmutar microfone', enabled: call },
     { id: 'deafen', label: 'Ensurdecer / voltar a ouvir', enabled: call },
     { id: 'clip', label: 'Salvar clipe da transmissão', enabled: call },
     { type: 'separator' },
-    { id: 'restart', label: 'Reiniciar o Tela P2P' },
-    { id: 'quit', label: 'Sair do Tela P2P' },
+    { id: 'restart', label: 'Reiniciar o Nebula' },
+    { id: 'quit', label: 'Sair do Nebula' },
   ];
 }
 
@@ -84,7 +84,7 @@ function createTray(opts = {}) {
     tray = null;
     return null;
   }
-  tray.setToolTip('Tela P2P');
+  tray.setToolTip('Nebula');
   tray.on('click', showMain);
   tray.on('double-click', showMain);
   buildMenu();
@@ -117,7 +117,7 @@ function hideOnClose(win) {
       hideWarned = true;
       tray.displayBalloon({
         iconType: 'info',
-        title: 'O Tela P2P continua aberto',
+        title: 'O Nebula continua aberto',
         content: 'Ele ficou aqui na bandeja. Para fechar de vez, clique com o botão direito no ícone e escolha Sair.',
       });
     }

@@ -35,7 +35,7 @@
   },
   "build": {
     "appId": "com.telap2p.app",
-    "productName": "Tela P2P",
+    "productName": "Nebula",
     "afterPack": "./icone-exe.js",
     "protocols": [
       {
@@ -95,8 +95,8 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Tela P2P",
-      "uninstallDisplayName": "Tela P2P",
+      "shortcutName": "Nebula",
+      "uninstallDisplayName": "Nebula",
       "runAfterFinish": true,
       "deleteAppDataOnUninstall": false,
       "installerIcon": "assets/icone/tela-p2p.ico",

@@ -169,7 +169,7 @@ function conviteChamada(senha) {
 // O texto legível vai junto (app antigo mostra o convite comum: com ele, dá para digitar a senha)
 function textoChamada(cv) {
   const onde = cv.modo === 'internet' ? `código ${cv.codigo}, no servidor ${cv.servidor} (modo Internet)` : `endereço ${cv.endereco} (${MODO_NOME[cv.modo]})`;
-  return `Te liguei pelo Tela P2P: ${onde}, senha ${cv.chave}.\ntelap2p://sala?d=${b64url(JSON.stringify(cv))}`;
+  return `Te liguei pelo Nebula: ${onde}, senha ${cv.chave}.\ntelap2p://sala?d=${b64url(JSON.stringify(cv))}`;
 }
 
 async function ligarPara(id) {

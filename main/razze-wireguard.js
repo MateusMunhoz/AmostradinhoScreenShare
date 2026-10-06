@@ -166,7 +166,7 @@ function createWireGuardManager(options = {}) {
   const TUNNEL_NAME = linux ? /^rz[a-f0-9]{12}$/ : /^Razze[a-f0-9]{12}$/;
   const semWireGuard = linux
     ? 'O WireGuard não está instalado. No terminal: sudo apt install wireguard-tools'
-    : 'WireGuard não foi encontrado no pacote do Tela P2P.';
+    : 'WireGuard não foi encontrado no pacote do Nebula.';
   // Instalar, remover e atualizar o túnel precisam de administrador: direto, se o app já estiver como
   // administrador, ou pelo ajudante que pede a permissão do Windows (main/razze-elevacao.js). Nos testes,
   // options.exec simula os comandos.
@@ -300,7 +300,7 @@ function createWireGuardManager(options = {}) {
     } catch (error) {
       if (linux) throw new Error('Não foi possível ligar o túnel WireGuard: ' + error.message);
       throw new Error(/access is denied|acesso negado|administrator|administrador|elevat/i.test(error.message)
-        ? 'O Windows exige permissão de administrador para criar a interface VPN. Execute o Tela P2P como administrador e tente novamente.'
+        ? 'O Windows exige permissão de administrador para criar a interface VPN. Execute o Nebula como administrador e tente novamente.'
         : 'Não foi possível iniciar o túnel WireGuard: ' + error.message);
     }
     let tunnelStatus = await status(networkId);

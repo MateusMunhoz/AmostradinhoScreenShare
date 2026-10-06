@@ -252,7 +252,7 @@ function createWindow() {
     // minimizar, maximizar e fechar, nas cores que a página manda (setTitleBar)
     titleBarStyle: 'hidden',
     titleBarOverlay: { color: '#22271E', symbolColor: '#FFFFFF', height: TITLEBAR_HEIGHT },
-    title: 'Tela P2P',
+    title: 'Nebula',
     // Até a página mandar o da cor do tema: o mesmo desenho na cor padrão (npm run icone)
     icon: path.join(__dirname, 'assets', 'icone', process.platform === 'win32' ? 'tela-p2p.ico' : 'tela-p2p.png'),
     webPreferences: {
@@ -279,7 +279,7 @@ function createWindow() {
           ...chatBounds(), minWidth: 240, minHeight: 140,
           frame: false, transparent: true, backgroundColor: '#00000000', alwaysOnTop: true, skipTaskbar: true,
           focusable: false, resizable: true, minimizable: false, maximizable: false, fullscreenable: false, hasShadow: false,
-          title: 'Tela P2P · chat da sala',
+          title: 'Nebula · chat da sala',
         },
       };
     }
@@ -293,7 +293,7 @@ function createWindow() {
         ...pipBounds(slot), minWidth: 192, minHeight: 108,
         frame: false, alwaysOnTop: true, skipTaskbar: true, focusable: false, resizable: true,
         minimizable: false, maximizable: false, fullscreenable: false, hasShadow: false,
-        backgroundColor: '#000000', title: 'Tela P2P · janela flutuante',
+        backgroundColor: '#000000', title: 'Nebula · janela flutuante',
       },
     };
   });

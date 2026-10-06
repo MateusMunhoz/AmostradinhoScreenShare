@@ -273,7 +273,7 @@ async function copiarMeuLink() {
   try {
     const l = await window.api.razzeFriendLinkCreate();
     const endereco = l.url || l.appLink;
-    await copiar('Me adiciona no Tela P2P: ' + endereco + '\n(ou cole o código ' + l.code + ' em Adicionar amigo)');
+    await copiar('Me adiciona no Nebula: ' + endereco + '\n(ou cole o código ' + l.code + ' em Adicionar amigo)');
     toast('Link copiado. Código ' + l.code + ' · vale até ' + validadeCurta(l.expiresAt) + ' e para 1 pessoa.');
     void renderLinksAmigo();
   } catch (err) {

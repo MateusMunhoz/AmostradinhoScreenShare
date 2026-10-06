@@ -488,7 +488,7 @@ function renderComandoVozConfig() {
     r.checked = r.value === ia.provedor;
     if (r.value === 'nuvem') {
       r.disabled = !comandoVoz.iaEstado.nuvem;
-      r.parentElement.title = comandoVoz.iaEstado.nuvem ? 'Claude, pela API da Anthropic: entende melhor e não pesa no PC; precisa de internet e da sua chave' : 'Esta instalação ainda não tem a parte da nuvem: instale o Tela P2P pelo instalador novo';
+      r.parentElement.title = comandoVoz.iaEstado.nuvem ? 'Claude, pela API da Anthropic: entende melhor e não pesa no PC; precisa de internet e da sua chave' : 'Esta instalação ainda não tem a parte da nuvem: instale o Nebula pelo instalador novo';
     }
   }
   $('vozIaLocal').hidden = ia.provedor !== 'local';

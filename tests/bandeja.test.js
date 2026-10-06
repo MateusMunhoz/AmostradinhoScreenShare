@@ -8,9 +8,9 @@ const ids = (items) => items.filter((i) => i.id).map((i) => i.id);
 test('menu tem as ações em português, com sair por último', () => {
   const items = menuModel({ version: '1.2.3', call: false });
   assert.deepStrictEqual(ids(items), ['header', 'open', 'update', 'mute', 'deafen', 'clip', 'restart', 'quit']);
-  assert.strictEqual(items[0].label, 'Tela P2P 1.2.3');
+  assert.strictEqual(items[0].label, 'Nebula 1.2.3');
   assert.strictEqual(items[0].enabled, false);
-  assert.strictEqual(items.at(-1).label, 'Sair do Tela P2P');
+  assert.strictEqual(items.at(-1).label, 'Sair do Nebula');
   assert.match(items.find((i) => i.id === 'update').label, /^Procurar atualização/);
 });
 

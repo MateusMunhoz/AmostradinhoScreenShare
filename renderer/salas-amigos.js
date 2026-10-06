@@ -121,7 +121,7 @@ function conviteDaSala() {
 
 function textoConvite(cv) {
   const onde = cv.modo === 'internet' ? `código ${cv.codigo}, no servidor ${cv.servidor} (modo Internet)` : `endereço ${cv.endereco} (${MODO_NOME[cv.modo]})`;
-  return `Te convidei para a minha sala no Tela P2P: ${onde}.\ntelap2p://sala?d=${b64url(JSON.stringify(cv))}`;
+  return `Te convidei para a minha sala no Nebula: ${onde}.\ntelap2p://sala?d=${b64url(JSON.stringify(cv))}`;
 }
 
 // Lê o convite de uma mensagem; null se não é convite ou se algo não está no formato certo

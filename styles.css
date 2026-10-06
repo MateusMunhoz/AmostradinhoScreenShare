@@ -66,10 +66,17 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 .app-logo .logo-c3 { fill: var(--logo-3); }
 .app-logo .logo-c12 { fill: color-mix(in srgb, var(--logo-1), var(--logo-2)); }
 .app-logo .logo-c23 { fill: color-mix(in srgb, var(--logo-2), var(--logo-3)); }
-.brand-mark { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-size: 18px; font-weight: 800; letter-spacing: -0.02em; color: var(--text); }
+.app-logo .logo-c13 { fill: color-mix(in srgb, var(--logo-1), var(--logo-3)); }
+.app-logo .logo-dots-p { display: none; } /* os pontos grandes, para a logo pequena (barra de título) */
+/* O nome: "ebula" em Sora logo depois do N de constelação, com a linha de base na altura das estrelas de baixo e um
+   respiro do tamanho de um ponto (docs/spec/nebula.md). O N em texto fica escondido; nos temas que trocam a logo
+   pelo próprio ícone, aparece (cada styles-<tema>.css) */
+@font-face { font-family: "Sora"; font-weight: 100 800; font-display: swap; src: url(assets/fontes/sora-variavel.woff2) format("woff2"); }
+.brand-name { font-family: "Sora", var(--font-display); }
+.brand-n { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.brand-mark { display: flex; align-items: center; gap: 0; font-family: var(--font-display); font-size: 20px; font-weight: 800; letter-spacing: -0.01em; color: var(--text); }
 .brand-mark svg { width: 46px; height: 46px; }
-.brand-mark span .logo-you { color: var(--logo-1); }
-.brand-mark span .logo-friend { color: var(--logo-3); }
+.brand-mark svg + .brand-name { margin-left: -3px; transform: translateY(9px); }
 /* O saguão: uma coluna no meio da janela */
 .home-main { flex: 1; width: min(720px, 100%); margin: 0 auto; display: flex; flex-direction: column; justify-content: center; gap: 22px; padding: 28px 0; }
 .home-hello { display: flex; align-items: center; gap: 18px; }
@@ -1640,7 +1647,10 @@ body { height: calc(100% - var(--titlebar)); margin-top: var(--titlebar); contai
   background: var(--bg); color: var(--muted); font-size: 12px; font-weight: 600; user-select: none; -webkit-app-region: drag;
 }
 .titlebar svg { width: 20px; height: 20px; }
-.titlebar .logo-dots { display: none; } /* em 18 px os pontilhados somem: ficam só as três estrelas */
+.titlebar .logo-dots { display: none; } /* em 20 px os pontilhados finos somem: vão os pontos grandes */
+.titlebar .logo-dots-p { display: inline; }
+.titlebar { gap: 0; }
+.titlebar svg + .brand-name { margin-left: -1px; transform: translateY(4px); font-weight: 700; }
 :is(html[data-glass=clear], html[data-glass=liquid]) .titlebar { background: transparent; }
 
 /* Temas prontos (Aparência) */
