@@ -4,7 +4,7 @@ const net = require('node:net');
 const { WebSocket } = require('ws');
 const { startServer, stopServer, roomInfo } = require('../signaling');
 
-async function client(port) {
+async function client(port, hello = {}) {
   const ws = new WebSocket(`ws://127.0.0.1:${port}`);
   const messages = [];
   ws.on('message', raw => messages.push(JSON.parse(raw)));
@@ -19,7 +19,7 @@ async function client(port) {
     }
     throw new Error('Mensagem não recebida');
   };
-  send({ type: 'hello', name: 'Teste' });
+  send({ type: 'hello', name: 'Teste', ...hello });
   const welcome = await wait(m => m.type === 'welcome');
   return { ws, send, wait, messages, welcome };
 }
@@ -126,6 +126,25 @@ test('fonte do nome: vai no welcome e na troca; texto livre não passa', async t
   assert.equal(c.welcome.members.find(m => m.id === a.welcome.id).nameFont, 'segoeScript');
   a.send({ type: 'name-font', font: 'x"; } body{' });
   assert.equal((await b.wait(m => m.type === 'name-font-state')).font, '');
+});
+
+test('conta Razze: vai no hello, no welcome e na troca; id ou nome fora do formato não passam', async t => {
+  const probe = net.createServer();
+  await new Promise(r => probe.listen(0, '127.0.0.1', r));
+  const port = probe.address().port;
+  await new Promise(r => probe.close(r));
+  assert.equal((await startServer(port)).ok, true);
+  t.after(stopServer);
+  const conta = { id: 'a'.repeat(32), nome: 'Naitsi' };
+  const a = await client(port, { razze: conta }); t.after(() => a.ws.terminate());
+  const b = await client(port, { razze: { id: 'curto', nome: 'Eve' } }); t.after(() => b.ws.terminate());
+  assert.deepEqual(b.welcome.members.find(m => m.id === a.welcome.id).razze, conta);
+  assert.equal((await a.wait(m => m.type === 'member-joined' && m.id === b.welcome.id)).razze, null);
+  // Saiu da conta no meio da sala; depois entrou de novo, com um nome cheio de controle (limpo)
+  a.send({ type: 'razze', conta: null });
+  assert.deepEqual(await b.wait(m => m.type === 'razze-state'), { type: 'razze-state', id: a.welcome.id, conta: null });
+  a.send({ type: 'razze', conta: { id: 'b'.repeat(32), nome: ' Cris ' } });
+  assert.deepEqual((await b.wait(m => m.type === 'razze-state')).conta, { id: 'b'.repeat(32), nome: 'Cris' });
 });
 
 // Sala criada no modo Razze: o servidor escuta em todas as redes do PC, mas só aceita o próprio PC e o túnel da Razze

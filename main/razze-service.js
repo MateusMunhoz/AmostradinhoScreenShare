@@ -148,6 +148,12 @@ function createRazzeService(options = {}) {
     listFriends: () => requireClient().listFriends(),
     friendRequests: () => requireClient().friendRequests(),
     requestFriend: (nickname) => requireClient().requestFriend(nickname),
+    // Pela conta (o Adicionar do perfil na sala). RazzeAPI antiga não conhece userId e responde 400: vai pelo nome do servidor
+    requestFriendById: async (userId, nome) => {
+      const client = requireClient();
+      try { return await client.requestFriendById(userId); }
+      catch (error) { if (error.status === 400 && nome) return client.requestFriend(nome); throw error; }
+    },
     acceptFriendRequest: (id) => requireClient().acceptFriendRequest(id),
     cancelFriendRequest: (id) => requireClient().cancelFriendRequest(id),
     removeFriend: (id) => requireClient().removeFriend(id),

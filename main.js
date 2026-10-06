@@ -432,6 +432,10 @@ if (hasSingleInstance) app.whenReady().then(() => {
   ipcMain.handle('razze-friends', () => razze.listFriends());
   ipcMain.handle('razze-friend-requests', () => razze.friendRequests());
   ipcMain.handle('razze-request-friend', (_e, nickname) => razze.requestFriend(String(nickname || '')));
+  ipcMain.handle('razze-request-friend-id', (_e, userId, nome) => {
+    if (!/^[a-f0-9]{32}$/.test(String(userId))) throw new Error('Conta inválida.');
+    return razze.requestFriendById(String(userId), String(nome || '').slice(0, 60));
+  });
   ipcMain.handle('razze-accept-friend', (_e, id) => razze.acceptFriendRequest(String(id || '')));
   ipcMain.handle('razze-cancel-friend-request', (_e, id) => razze.cancelFriendRequest(String(id || '')));
   ipcMain.handle('razze-remove-friend', (_e, id) => razze.removeFriend(String(id || '')));

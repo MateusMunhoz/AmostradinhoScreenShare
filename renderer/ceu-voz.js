@@ -1152,7 +1152,7 @@ function renderSkyProfile() {
   const here = voiceChannelOf(pid);
   const canMove = channels.length > 1 && canDragVoice(pid);
   const bg = profileBgOf(pid); // o fundo do perfil da pessoa (renderer/fundo-perfil.js), se já chegou
-  const key = JSON.stringify([skyFocusFrom, voiceNow, id, name, sharing, state.in.has(id), micOff, deafOn, v?.muted, v?.voice, v?.screen, bg.length, bg.slice(-40), here, canMove, channels.map(channelName), photoHashOf(pid), bioDe(pid), typeof friendsData === 'object' ? [friendsData.friends.length, friendsData.outgoing.length, friendsData.incoming.length] : 0]);
+  const key = JSON.stringify([skyFocusFrom, voiceNow, id, name, sharing, state.in.has(id), micOff, deafOn, v?.muted, v?.voice, v?.screen, bg.length, bg.slice(-40), here, canMove, channels.map(channelName), photoHashOf(pid), bioDe(pid), contaDe(id), typeof friendsData === 'object' ? [friendsData.friends.length, friendsData.outgoing.length, friendsData.incoming.length] : 0]);
   if (key === skyFocusKey && !box.hidden) return placeSkyProfile();
   skyFocusKey = key;
   box.replaceChildren();
@@ -1291,6 +1291,8 @@ function renderSkyPage(box, { id, me, pid, name, sharing, micOff, deafOn, v, cha
   tags.append(where);
   if (sharing) tags.append(el('span', 'live-pill', 'Ao vivo'));
   who.append(title, tags);
+  const nomes = nomesDe(id); // o nome da sala e o da conta Razze (voz.js)
+  if (nomes) who.append(nomes);
   if (bioDe(pid)) who.append(el('p', 'sky-focus-bio', bioDe(pid)));
   if (states.length) who.append(el('span', 'sky-page-state', states.join(' · ')));
   head.append(who, back);
@@ -1323,9 +1325,8 @@ function renderSkyPage(box, { id, me, pid, name, sharing, micOff, deafOn, v, cha
       renderSkyProfile();
     }, { disabled: done });
     add.title = fb.title;
-    // Já são amigos: Mandar mensagem abre a conversa direta (mensagens.js)
-    const key = nameOf(id).trim().toLowerCase();
-    const friend = typeof friendsData === 'object' && friendsData.friends.find((f) => String(f.displayName || '').trim().toLowerCase() === key);
+    // Já são amigos: Mandar mensagem abre a conversa direta (mensagens.js); o amigo é achado pela conta (voz.js)
+    const friend = amigoDe(id);
     if (friend && typeof openDm === 'function') act('chat', 'Mandar mensagem', () => { closeSkyProfile(); void openDm(friend.id); });
     if (voiceNow) act(v.muted ? 'muted' : 'volume', v.muted ? 'Ouvir de novo' : 'Silenciar para mim', () => setVol(id, { muted: !v.muted }), { pressed: v.muted });
   }

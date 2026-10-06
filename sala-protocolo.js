@@ -38,6 +38,13 @@ function cleanShareInfo(i) {
 function cleanHash(h) { return typeof h === 'string' && /^[0-9a-f]{64}$/.test(h) ? h : ''; }
 // Fonte do nome: só o id da lista de fontes do app (letras); cada app confere de novo se conhece o id
 function cleanNameFont(f) { return typeof f === 'string' && /^[A-Za-z]{1,32}$/.test(f) ? f : ''; }
+// Conta Razze que a pessoa diz ter (o nome do servidor e a id), para o perfil e o Adicionar. Declarada pelo app dela:
+// quem recebe confere pela própria lista de amigos. Sem conta: null
+function cleanRazze(c) {
+  if (!c || typeof c !== 'object' || typeof c.id !== 'string' || !/^[a-f0-9]{32}$/.test(c.id)) return null;
+  const nome = typeof c.nome === 'string' ? c.nome.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 60) : '';
+  return nome ? { id: c.id, nome } : null;
+}
 
 // Endereços IPv4 que a pessoa diz ter (para os outros acharem ela se ela virar o host)
 function cleanAddrs(list) {
@@ -139,13 +146,13 @@ function newMember(ws, msg, resume, subsalas = null) {
     ws, client: cleanClient(msg.client), name: String(msg.name || 'Anônimo').slice(0, 32), sharing: !!(resume && msg.sharing),
     version: /^\d+\.\d+\.\d+$/.test(msg.version) ? msg.version : '', addrs: cleanAddrs(msg.addrs),
     voiceSession, voiceChannel, muted: !!voiceSession && msg.muted === true, deafened: !!voiceSession && msg.deafened === true, shareInfo,
-    avatar: cleanHash(msg.avatar), avatarFull: cleanHash(msg.avatarFull), nameFont: cleanNameFont(msg.nameFont),
+    avatar: cleanHash(msg.avatar), avatarFull: cleanHash(msg.avatarFull), nameFont: cleanNameFont(msg.nameFont), razze: cleanRazze(msg.razze),
   };
 }
 
 // O que os outros ficam sabendo de cada pessoa
 function memberInfo(id, m) {
-  return { id, name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs, voiceSession: m.voiceSession, voiceChannel: m.voiceChannel || '', muted: m.muted, deafened: m.deafened, shareInfo: m.shareInfo, avatar: m.avatar, avatarFull: m.avatarFull, nameFont: m.nameFont };
+  return { id, name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs, voiceSession: m.voiceSession, voiceChannel: m.voiceChannel || '', muted: m.muted, deafened: m.deafened, shareInfo: m.shareInfo, avatar: m.avatar, avatarFull: m.avatarFull, nameFont: m.nameFont, razze: m.razze || null };
 }
 
 // Conversa da sala: guarda as últimas mensagens e numera as novas
@@ -237,6 +244,10 @@ function handleMemberMessage({ members, broadcast, chat, subsalas = null, musica
     me.avatar = cleanHash(msg.hash);
     me.avatarFull = me.avatar ? cleanHash(msg.full) : ''; // a foto inteira (sem o corte), para o perfil
     broadcast({ type: 'avatar-state', id, hash: me.avatar, full: me.avatarFull }, id);
+  } else if (msg.type === 'razze') {
+    // Entrou ou saiu da conta Razze no meio da sala
+    me.razze = cleanRazze(msg.conta);
+    broadcast({ type: 'razze-state', id, conta: me.razze }, id);
   } else if (msg.type === 'name-font') {
     me.nameFont = cleanNameFont(msg.font);
     broadcast({ type: 'name-font-state', id, font: me.nameFont }, id);
@@ -262,6 +273,6 @@ function handleMemberMessage({ members, broadcast, chat, subsalas = null, musica
 }
 
 module.exports = {
-  MAX_MEMBERS, CHAT_KEEP, SUBSALAS_MAX, send, cleanShareInfo, cleanHash, cleanNameFont, cleanAddrs, cleanSessao, cleanClient, cleanSenha,
+  MAX_MEMBERS, CHAT_KEEP, SUBSALAS_MAX, send, cleanShareInfo, cleanHash, cleanNameFont, cleanRazze, cleanAddrs, cleanSessao, cleanClient, cleanSenha,
   cleanChannel, createSubsalas, cleanVideoId, createMusicas, limparMusicas, newMember, memberInfo, createChat, handleMemberMessage,
 };

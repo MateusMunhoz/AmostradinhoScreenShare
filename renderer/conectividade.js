@@ -11,6 +11,26 @@ const NETWORK_PREF_KEY = 'connectivity.v1';
 // A RazzeAPI padrão (conta e amigos) fica no processo principal (main/razze-service.js).
 const INTERNET_URL_PADRAO = 'ws://2.25.253.140:8765';
 let razzeUser = null;
+// A conta Razze vai para a sala (perfil e Adicionar dos outros; sala-protocolo.js › cleanRazze): a id e o nome do servidor
+function contaSala() {
+  const nome = String(razzeUser?.displayName || '').trim().slice(0, 60);
+  return /^[a-f0-9]{32}$/.test(String(razzeUser?.id || '')) && nome ? { id: razzeUser.id, nome } : null;
+}
+// A conta de outra pessoa como veio da sala (o servidor da sala pode ser antigo ou não ser confiável): limpa de novo
+function limparContaSala(c) {
+  if (!c || typeof c !== 'object' || !/^[a-f0-9]{32}$/.test(String(c.id)) || typeof c.nome !== 'string') return null;
+  const nome = c.nome.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 60);
+  return nome ? { id: c.id, nome } : null;
+}
+// Entrou ou saiu da conta (ou trocou o nome) com a sala aberta: avisa a sala
+let contaAnunciada = '';
+function anunciarContaNaSala() {
+  const conta = contaSala();
+  const chave = JSON.stringify(conta);
+  if (!state.myId || chave === contaAnunciada) return;
+  contaAnunciada = chave;
+  send({ type: 'razze', conta });
+}
 let networkReturnFocus = null;
 let razzeLive = { friends: [], networks: [], rooms: [], updatedAt: null, error: '' };
 const VISIBILITY = { private: 'Privada', friends: 'Só amigos', public: 'Pública' };
@@ -188,7 +208,7 @@ async function loadRazzeState() {
     $('razzeStepNetworks').hidden = !on;
     $('razzeStepFriends').hidden = !on;
     $('friendsSignedOut').hidden = on;
-    if (!on) { setFriendsData({}); dmStop(); }
+    if (!on) { setFriendsData({}); dmStop(); razzeUser = null; anunciarContaNaSala(); }
   };
   account(state.authenticated);
   $('profileAccountHint').textContent = state.configured ? 'Entre na sua conta para gerenciar redes e amigos.' : 'Para entrar, escolha Razze (WireGuard) em "Como os PCs se conectam", logo abaixo, e salve o endereço do servidor.';
@@ -205,6 +225,7 @@ async function loadRazzeState() {
     if (!state.authenticated) { if (selectedNetworkProvider() === 'razze') setNetSummary(false, 'Razze: servidor ok. Entre ou crie sua conta logo abaixo.'); return; }
     const { user } = await window.api.razzeMe();
     razzeUser = user;
+    anunciarContaNaSala();
     if (typeof syncBioComConta === 'function') syncBioComConta(user); // a frase do perfil (renderer/conta.js)
     if (user?.id) void dmStart(user.id); // mensagens diretas desta conta (renderer/mensagens.js)
     $('razzeAccountName').textContent = user?.displayName || user?.email || 'Conta Razze';
@@ -488,6 +509,7 @@ function receiveRazzePresence(value) {
   renderSessoes();
   if (razzeLive.authenticated === false && selectedNetworkProvider() === 'razze') {
     razzeUser = null;
+    anunciarContaNaSala();
     setRazzeStatus(razzeLive.error || 'Entre novamente na sua conta.');
     void refreshRazzeState();
   }

@@ -536,25 +536,66 @@ function closePersonCard() {
   card.hidden = true;
   delete card.dataset.for;
 }
-// Amizade (conta Razze): o nome na sala é o nickname. Já amigos ou pedido enviado: o botão só informa;
-// pedido recebido: aceita; senão, manda o pedido (sem conta, abre a aba Amigos do HUB para entrar)
+// ---------- Os nomes de quem está na sala ----------
+// Cada pessoa tem o nome que escolheu no app (o da sala) e, se entrou na conta Razze, o nome da conta no servidor,
+// que vem junto pela sala (sala-protocolo.js › cleanRazze). A conta é declarada pelo app da pessoa: só a sua lista de
+// amigos (pela id) confirma. Sala ou servidor antigos não repassam a conta: aí vale o nome da sala, como antes.
+function contaDe(id) { return id === state.myId ? contaSala() : state.members.get(id)?.razze || null; }
+const mesmoNome = (a, b) => String(a || '').trim().toLowerCase() === String(b || '').trim().toLowerCase();
+// O amigo (da sua lista) que é essa pessoa: pela conta; sem conta na sala, pelo nome, como antes
+function amigoDe(id) {
+  if (typeof friendsData !== 'object') return null;
+  const conta = contaDe(id);
+  return friendsData.friends.find((f) => (conta ? f.id === conta.id : mesmoNome(f.displayName, nameOf(id)))) || null;
+}
+// "Na sala" e "Conta Razze" no perfil (null sem conta)
+function nomesDe(id) {
+  const conta = contaDe(id);
+  if (!conta) return null;
+  const eu = id === state.myId, amigo = !eu && amigoDe(id);
+  const linha = (rotulo, valor, nota) => {
+    const row = document.createElement('div');
+    const dt = document.createElement('dt');
+    dt.textContent = rotulo;
+    const dd = document.createElement('dd');
+    dd.textContent = valor;
+    row.append(dt, dd);
+    if (!nota) return row;
+    const n = document.createElement('div'); // a nota numa linha só dela, embaixo do nome
+    n.className = 'nomes-nota';
+    const ndd = document.createElement('dd');
+    ndd.textContent = nota;
+    n.append(ndd);
+    return [row, n];
+  };
+  const dl = document.createElement('dl');
+  dl.className = 'nomes-pessoa';
+  dl.append(linha('Nome na sala', eu ? getName() : nameOf(id)),
+    ...[].concat(linha('Nome da conta', amigo ? amigo.displayName : conta.nome, eu || amigo ? '' : 'informado pelo app da pessoa')));
+  return dl;
+}
+
+// Amizade (conta Razze). Já amigos ou pedido enviado: o botão só informa; pedido recebido: aceita; senão, manda o
+// pedido pela conta da pessoa (o nome do servidor, não o da sala); sem conta na sala, pelo nome da sala, como antes.
+// Sem conta sua, abre a aba Amigos do HUB para entrar.
 function friendButton(id, name) {
   const b = document.createElement('button');
   b.type = 'button';
   b.className = 'btn small icon pc-friend';
-  const key = name.trim().toLowerCase();
-  const find = (list) => list.find((x) => String(x.displayName || '').trim().toLowerCase() === key);
-  const friend = find(friendsData.friends), sent = find(friendsData.outgoing), got = find(friendsData.incoming);
+  const conta = contaDe(id);
+  const nome = conta?.nome || name;
+  const find = (list) => list.find((x) => (conta ? x.userId === conta.id : mesmoNome(x.displayName, name)));
+  const friend = amigoDe(id), sent = find(friendsData.outgoing), got = find(friendsData.incoming);
   if (friend || sent) {
-    setIcon(b, friend ? 'userCheck' : 'userPlus', friend ? `Você e ${name} já são amigos` : `Pedido de amizade enviado para ${name}`);
+    setIcon(b, friend ? 'userCheck' : 'userPlus', friend ? `Você e ${friend.displayName} já são amigos` : `Pedido de amizade enviado para ${nome}`);
     b.setAttribute('aria-disabled', 'true');
     b.classList.add('done');
     return b;
   }
-  setIcon(b, 'userPlus', got ? `Aceitar o pedido de amizade de ${name}` : `Adicionar ${name} como amigo`);
+  setIcon(b, 'userPlus', got ? `Aceitar o pedido de amizade de ${got.displayName || nome}` : `Adicionar ${nome} como amigo`);
   if (got) b.classList.add('accent');
   b.onclick = async () => {
-    if (got) { await acceptFriend(got); toast(`Agora você e ${name} são amigos.`); return renderPersonCard(); }
+    if (got) { await acceptFriend(got); toast(`Agora você e ${got.displayName || nome} são amigos.`); return renderPersonCard(); }
     const account = await window.api.razzeState().catch(() => null);
     if (!account?.authenticated) {
       toast('Entre na sua conta Razze para adicionar amigos (HUB, aba Amigos).');
@@ -562,11 +603,11 @@ function friendButton(id, name) {
     }
     b.disabled = true;
     try {
-      const result = await window.api.razzeRequestFriend(name.trim());
-      toast(result.status === 'accepted' ? `Agora você e ${name} são amigos.` : `Pedido de amizade enviado para ${name}.`);
+      const result = conta ? await window.api.razzeRequestFriendId(conta.id, conta.nome) : await window.api.razzeRequestFriend(name.trim());
+      toast(result.status === 'accepted' ? `Agora você e ${nome} são amigos.` : `Pedido de amizade enviado para ${nome}.`);
       await refreshRazzeLists();
     } catch (error) {
-      toast(`Não deu para adicionar ${name}: ${error.message}`, 'error');
+      toast(`Não deu para adicionar ${nome}: ${error.message}`, 'error');
     }
     renderPersonCard();
   };
@@ -590,6 +631,8 @@ function renderPersonCard() {
   const sub = document.createElement('span');
   sub.textContent = v.muted ? 'Silenciada para você' : [inVoice(id) && 'Na voz', state.members.get(id)?.sharing && 'Transmitindo'].filter(Boolean).join(' · ') || 'Na sala';
   who.append(strong, sub);
+  const nomes = nomesDe(id);
+  if (nomes) who.append(nomes);
   const av = avatar(name, id);
   av.dataset.person = id;
   av.classList.add('pc-photo');

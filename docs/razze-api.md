@@ -65,7 +65,7 @@ Todas as respostas usam JSON. Erros seguem `{ "error": { "code": "...", "message
 | `POST /v1/admin/users/:id/approve` | Aprovar conta pendente com `RAZZE_ADMIN_TOKEN` |
 | `GET /v1/friends`, `GET /v1/friends/requests` | Listar amizades e solicitações; cada amigo vem com `dmKey` (a chave pública das mensagens criptografadas, ou `null`) |
 | `PUT /v1/me/dm-key` (`{ publicKey }`) | Publicar a chave pública X25519 (32 bytes em base64) das mensagens criptografadas desta conta; vale a do último PC que publicou |
-| `POST /v1/friends/requests`, `POST /v1/friends/requests/:id/accept`, `DELETE /v1/friends/:userId` | Gerenciar amizades |
+| `POST /v1/friends/requests`, `POST /v1/friends/requests/:id/accept`, `DELETE /v1/friends/:userId` | Gerenciar amizades. O pedido acha a pessoa por `userId` (a conta, usada pelo perfil de quem está na sala), `nickname` ou `email` |
 | `POST /v1/friends/links`, `GET /v1/friends/links`, `DELETE /v1/friends/links/:id` | Links de amigo: criar (devolve `token`, `code` curto `ABCD-EFGH-JK`, `url` e `appLink`; vale 7 dias e 1 pessoa; até 5 ativos por conta), listar os ativos e revogar |
 | `GET /v1/friends/links/preview?token=`, `POST /v1/friends/links/accept` (`{ token }`) | Ver quem convidou (`displayName`) e aceitar: os dois viram amigos na hora. `token` aceita o segredo ou o código curto. Recusa o próprio link, expirado, usado ou revogado (`link_invalid`, `own_link`); 30 tentativas a cada 10 min por IP |
 | `GET /a/<token>` | Página pública de abertura do convite (sem login, sem script, sem consultar o banco): "Abrir no Tela P2P" (`telap2p://amigo/<token>`) e "Baixar" |

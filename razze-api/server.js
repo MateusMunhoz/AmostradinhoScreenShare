@@ -546,14 +546,18 @@ function createApiServer(options = {}) {
       }
       if (method === 'POST' && pathname === '/v1/friends/requests') {
         const body = await readBody(req);
-        const nickname = String(body.nickname || '').trim();
-        const targetName = nickname
+        // Pela conta (userId: o Adicionar do perfil de quem está na sala), pelo nickname ou pelo e-mail
+        const byId = typeof body.userId === 'string' && /^[a-f0-9]{32}$/.test(body.userId) ? body.userId : '';
+        const nickname = byId ? '' : String(body.nickname || '').trim();
+        const targetName = byId || (nickname
           ? assertText(nickname, 'Nickname', 1, 60)
-          : assertText(body.email, 'E-mail', 3, 254).toLowerCase();
-        const matches = nickname
-          ? db.prepare('SELECT id FROM users WHERE display_name = ? COLLATE NOCASE AND status = \'active\'').all(targetName)
-          : [db.prepare('SELECT id FROM users WHERE email = ? AND status = \'active\'').get(targetName)].filter(Boolean);
-        if (!matches.length) throw new ApiError(404, 'user_not_found', `Não existe uma conta ativa com o nickname “${targetName}”.`);
+          : assertText(body.email, 'E-mail', 3, 254).toLowerCase());
+        const matches = byId
+          ? [db.prepare('SELECT id FROM users WHERE id = ? AND status = \'active\'').get(byId)].filter(Boolean)
+          : nickname
+            ? db.prepare('SELECT id FROM users WHERE display_name = ? COLLATE NOCASE AND status = \'active\'').all(targetName)
+            : [db.prepare('SELECT id FROM users WHERE email = ? AND status = \'active\'').get(targetName)].filter(Boolean);
+        if (!matches.length) throw new ApiError(404, 'user_not_found', byId ? 'Essa conta não existe mais ou está desativada.' : `Não existe uma conta ativa com o nickname “${targetName}”.`);
         if (matches.length > 1) throw new ApiError(409, 'nickname_ambiguous', 'Esse nickname pertence a mais de uma conta. Peça à pessoa para escolher um nickname único.');
         const target = matches[0];
         if (target.id === userId) throw new ApiError(400, 'invalid_friend', 'Você não pode adicionar a própria conta.');

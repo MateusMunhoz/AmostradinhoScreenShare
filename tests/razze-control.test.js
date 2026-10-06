@@ -158,6 +158,20 @@ test('sala do modo Internet: só os amigos aceitos veem, sem rede nem VPN, e som
   assert.doesNotMatch(JSON.stringify(page), new RegExp(passe));
 });
 
+test('pedido de amizade pela conta (userId): acha pela id, mesmo com nickname repetido; id inexistente dá 404', async t => {
+  const { req, register } = await fixture(t);
+  const a = await register('Ana'), b = await register('Bia');
+  const b2 = await req('auth/register', 'POST', { email: 'outra-bia@test.example', displayName: 'Bia', password: 'correct-password-123' });
+  assert.equal((await req('friends/requests', 'POST', { nickname: 'Bia' }, a.accessToken)).status, 409);
+  const pedido = await req('friends/requests', 'POST', { userId: b2.user.id }, a.accessToken);
+  assert.equal(pedido.status, 201);
+  const recebidos = await req('friends/requests', 'GET', undefined, b2.accessToken);
+  assert.equal(recebidos.incoming[0].userId, a.user.id);
+  assert.equal((await req('friends/requests', 'GET', undefined, b.accessToken)).incoming.length, 0);
+  assert.equal((await req('friends/requests', 'POST', { userId: 'f'.repeat(32) }, a.accessToken)).status, 404);
+  assert.equal((await req('friends/requests', 'POST', { userId: a.user.id }, a.accessToken)).status, 400);
+});
+
 test('mensagens criptografadas: chave pública por conta, entregue só aos amigos; texto cifrado longo aceito', async t => {
   const { req, register } = await fixture(t);
   const a = await register('Ana'), b = await register('Bia'), stranger = await register('Eve');

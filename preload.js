@@ -91,6 +91,7 @@ contextBridge.exposeInMainWorld('api', {
   razzeFriends: () => ipcRenderer.invoke('razze-friends'),
   razzeFriendRequests: () => ipcRenderer.invoke('razze-friend-requests'),
   razzeRequestFriend: (nickname) => ipcRenderer.invoke('razze-request-friend', String(nickname || '')),
+  razzeRequestFriendId: (userId, nome) => ipcRenderer.invoke('razze-request-friend-id', String(userId || ''), String(nome || '')),
   razzeAcceptFriend: (id) => ipcRenderer.invoke('razze-accept-friend', String(id || '')),
   razzeCancelFriendRequest: (id) => ipcRenderer.invoke('razze-cancel-friend-request', String(id || '')),
   razzeRemoveFriend: (id) => ipcRenderer.invoke('razze-remove-friend', String(id || '')),
