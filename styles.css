@@ -979,8 +979,13 @@ fieldset.group > legend { margin-bottom: 10px; }
 .net-row > input { flex: 1; }
 .net-auth { display: grid; gap: 10px; }
 .net-auth .seg label, .net-auth .seg button { flex: 1; }
-.net-account .avatar { width: 32px; height: 32px; }
-.net-account-text { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow-wrap: anywhere; }
+.net-account .avatar { flex: none; width: 36px; height: 36px; }
+/* Conta: avatar, nome e e-mail numa linha; os botões embaixo (na mesma linha, o texto ficava com a largura de uma letra) */
+.net-account { flex-wrap: wrap; row-gap: 10px; }
+.net-account-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.net-account-text > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.net-account-actions { flex: 1 1 100%; display: flex; flex-wrap: wrap; gap: 6px; }
+.net-account-actions .btn { flex: 1 1 auto; }
 .net-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media (max-width: 640px) { .net-two { grid-template-columns: 1fr; } }
 .razze-network-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }

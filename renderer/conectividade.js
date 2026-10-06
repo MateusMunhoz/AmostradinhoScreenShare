@@ -209,6 +209,8 @@ async function loadRazzeState() {
     if (user?.id) void dmStart(user.id); // mensagens diretas desta conta (renderer/mensagens.js)
     $('razzeAccountName').textContent = user?.displayName || user?.email || 'Conta Razze';
     $('razzeAccountEmail').textContent = user?.displayName ? user.email || '' : '';
+    $('razzeAccountName').title = $('razzeAccountName').textContent; // cortado com "…" quando não cabe
+    $('razzeAccountEmail').title = $('razzeAccountEmail').textContent;
     $('razzeAccountAvatar').textContent = ((user?.displayName || user?.email || '?').trim()[0] || '?').toUpperCase();
     await refreshRazzeLists();
   } catch (error) {
