@@ -96,6 +96,7 @@ function receberSalasAmigos(lista) {
     .map((s) => ({
       id: `${s.servidor}#${s.codigo}`, host: String(s.host || 'amigo').slice(0, 60), pessoas: Number.isInteger(s.pessoas) ? s.pessoas : 1,
       senha: !s.passe, codigo: s.codigo, servidor: s.servidor, passe: s.passe || '',
+      userId: typeof s.userId === 'string' ? s.userId : '', // o dono, para o cartão mostrar o jogo dele (sessoes.js)
     }));
 }
 
