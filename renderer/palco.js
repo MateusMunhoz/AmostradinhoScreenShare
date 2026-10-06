@@ -232,6 +232,13 @@ function swapTiles(a, b) {
 // Mouse parado em cima da tela (ou fora dela): a faixa do nome e os controles da música somem (.ui-idle, CSS);
 // mexer o mouse traz de volta. Com o mouse em cima de uma das faixas, elas ficam
 const TILE_IDLE_MS = 2500;
+// O mouse está em cima da pílula da sala, ou perto dela (a área é a da pílula mesmo escondida, mais uma folga)
+function pointerNearDock(x, y, slack = 28) {
+  const dock = document.getElementById('dock') || document.querySelector('.dock');
+  if (!dock) return false;
+  const r = dock.getBoundingClientRect();
+  return x >= r.left - slack && x <= r.right + slack && y >= r.top - slack && y <= r.bottom + slack;
+}
 function setupTileIdle(el) {
   let timer = 0, x = 0, y = 0;
   // Pela posição do mouse (escondida, a faixa não recebe o mouse, então :hover não serve)
@@ -248,9 +255,15 @@ function setupTileIdle(el) {
     timer = setTimeout(idle, TILE_IDLE_MS);
   });
   // Indo para a pílula da sala (que fica por cima das telas), a tela continua à vista: as duas somem juntas depois
+  // Ir da tela até a pílula passa por um vão (a faixa 'Em pausa', a borda da grade): a pílula, escondida, não recebe
+  // o mouse, então o destino se descobre pela posição (pointerNearDock) e as duas ficam à vista
   el.addEventListener('pointerleave', (e) => {
     clearTimeout(timer);
-    if (!e.relatedTarget?.closest?.('.dock')) el.classList.add('ui-idle');
+    if (e.relatedTarget?.closest?.('.dock') || pointerNearDock(e.clientX, e.clientY)) {
+      timer = setTimeout(idle, TILE_IDLE_MS);
+      return;
+    }
+    el.classList.add('ui-idle');
   });
 }
 
