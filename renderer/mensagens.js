@@ -273,7 +273,7 @@ function dmElements(c) {
   picker.hidden = true;
   attach.onclick = () => picker.click();
   picker.onchange = () => { const files = [...picker.files]; picker.value = ''; void diretoAnexar(c, files); };
-  input.addEventListener('paste', (e) => {
+  win.addEventListener('paste', (e) => {
     const files = [...(e.clipboardData?.files || [])];
     if (!files.length) return;
     e.preventDefault();

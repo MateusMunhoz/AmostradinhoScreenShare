@@ -110,6 +110,19 @@ run('Chat', 170000, async () => {
   await B.waitFor(`$('chatList').querySelectorAll('.file-card').length === ${antes} + 2`, 5000);
   const nomes = await B.eval(`[...$('chatList').querySelectorAll('.file-card .file-name')].slice(-2).map((n) => n.textContent)`);
   check('Bia recebe o print com nome da hora e o arquivo com o nome dele', /^imagem-colada-\d\d-\d\d-\d\d\.png$/.test(nomes[0]) && nomes[1] === 'relatorio.txt', nomes.join(', '));
+  // Colado numa conversa privada fica nela: não vai também para a bandeja do chat da sala
+  check('Ctrl+V na conversa privada não cola no chat da sala', await A.eval(`(() => {
+    const win = document.createElement('div');
+    win.className = 'dm-window';
+    const input = document.createElement('textarea');
+    win.append(input);
+    document.body.append(win);
+    const dt = new DataTransfer();
+    dt.items.add(colado);
+    input.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+    win.remove();
+    return chat.staged.length === 0;
+  })()`));
 
   await A.eval(`leaveRoom(null, 'info', true)`).catch(() => {});
   await sleep(1500);

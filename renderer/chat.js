@@ -492,6 +492,8 @@ async function attachFiles(list) {
 // continua colando normal. Print chega sem nome ("image.png"): ganha um nome com a hora.
 function onChatPaste(e) {
   if ($('room').hidden || !chat.supported) return;
+  // Colado numa conversa privada: é dela (mensagens.js), não do chat da sala
+  if (e.defaultPrevented || e.target?.closest?.('.dm-window')) return;
   const files = [...(e.clipboardData?.files || [])];
   if (!files.length) return;
   e.preventDefault();
