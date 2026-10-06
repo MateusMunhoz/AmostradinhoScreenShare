@@ -36,6 +36,7 @@ let salaAtual = null; // em que sala estou, em qualquer modo, sem endereço: os 
 const razzePresence = createPresence({
   service: razze,
   clientName: os.hostname().slice(0, 80),
+  getAppVersion: () => updater.version,
   getRoom: () => { const info = roomInfo(); return roomRazzeNetwork && info ? { ...info, networkId: roomRazzeNetwork } : null; },
   getInternetRoom: () => internetRoom,
   getSalaAtual: () => salaAtual,
@@ -464,6 +465,8 @@ if (hasSingleInstance) app.whenReady().then(() => {
   ipcMain.handle('razze-friend-link-revoke', (_e, id) => razze.friendLinkRevoke(String(id || '')));
   ipcMain.handle('razze-friend-link-preview', (_e, token) => razze.friendLinkPreview(String(token || '').slice(0, 200)));
   ipcMain.handle('razze-friend-link-accept', (_e, token) => razze.friendLinkAccept(String(token || '').slice(0, 200)));
+  // Painel de administração (renderer/admin.js): a lista de rotas permitidas fica em main/razze-api-client.js
+  ipcMain.handle('razze-admin', (_e, method, endpoint, body) => razze.admin(String(method || '').slice(0, 8), String(endpoint || '').slice(0, 300), body));
   // Mensagens diretas: cifradas aqui antes de ir para a RazzeAPI e decifradas ao chegar (main/mensagens-cripto.js)
   ipcMain.handle('razze-send-message', (_e, to, text) => dmE2E.send(String(to || ''), String(text || '')));
   ipcMain.handle('razze-messages', (_e, after) => dmE2E.messages(Number(after) || 0));

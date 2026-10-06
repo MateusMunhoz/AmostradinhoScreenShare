@@ -280,6 +280,7 @@ window.addEventListener('focus', checkGithubSoon);
 $('goCreate').onclick = () => show('create-room');
 setupRecorte(); // editor de recorte da foto e do fundo (renderer/recorte.js)
 setupConta(); // senha e frase do perfil (renderer/conta.js)
+setupAdmin(); // administração, só para administradores (renderer/admin.js)
 setupPrimeiraEntrada(); // primeira entrada e amigos no Início (renderer/primeira-entrada.js)
 $('goJoin').onclick = () => setJoinOpen(true);
 $('cancelJoin').onclick = () => setJoinOpen(false);

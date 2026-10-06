@@ -23,7 +23,7 @@ function cleanSalaAtual(v) {
 }
 
 // Heartbeat no processo principal: continua com a janela minimizada/oculta.
-function createPresence({ service, clientName = 'Tela P2P', getRoom = () => null, getInternetRoom = () => null, getSalaAtual = () => null, publish = () => {}, setInterval: schedule = setInterval, clearInterval: cancel = clearInterval }) {
+function createPresence({ service, clientName = 'Tela P2P', getAppVersion = () => '', getRoom = () => null, getInternetRoom = () => null, getSalaAtual = () => null, publish = () => {}, setInterval: schedule = setInterval, clearInterval: cancel = clearInterval }) {
   const networks = new Set();
   let timer = null, running = null, queued = false, stopped = true;
   let snapshot = { friends: [], networks: [], rooms: [], internetRooms: [], updatedAt: null, error: '' };
@@ -55,8 +55,9 @@ function createPresence({ service, clientName = 'Tela P2P', getRoom = () => null
         // Sala do modo Internet: vai para os amigos, sem precisar de rede Razze nem de VPN
         const internetRoom = getInternetRoom() || undefined;
         // Em que sala estou (qualquer modo): só os amigos veem; servidor antigo ignora o campo
+        const appVersion = String(getAppVersion() || '');
         const salaAtual = getSalaAtual() || undefined;
-        await api.heartbeat({ clientName, connections, room, ...(internetRoom ? { internetRoom } : {}), ...(salaAtual ? { salaAtual } : {}) });
+        await api.heartbeat({ clientName, connections, room, ...(internetRoom ? { internetRoom } : {}), ...(salaAtual ? { salaAtual } : {}), ...(appVersion ? { appVersion } : {}) });
         const [friends, listed, rooms] = await Promise.all([api.listFriends(), api.listNetworks(), api.listRooms()]);
         if (!stopped) emit({ friends: friends.friends, networks: listed.networks, rooms: rooms.rooms, internetRooms: Array.isArray(rooms.internet) ? rooms.internet : [], updatedAt: Date.now(), error: '' });
       } catch (e) {

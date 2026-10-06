@@ -204,8 +204,15 @@ function watchDock() {
   let sleepTimer = 0;
   const sleepSoon = (ms) => { clearTimeout(sleepTimer); sleepTimer = setTimeout(() => { if (held()) return sleepSoon(TILE_IDLE_MS); dock.classList.add('dock-sleep'); }, ms); };
   const stage = dock.closest('.stage-col') || dock.parentElement;
-  stage.addEventListener('pointermove', () => {
-    if (tiles().length) return;
+  stage.addEventListener('pointermove', (e) => {
+    // Com telas no palco, o mouse chegando perto da pílula (escondida, sem receber o mouse) traz as telas e ela de volta
+    if (tiles().length) {
+      if (dock.classList.contains('dock-sleep') && pointerNearDock(e.clientX, e.clientY)) {
+        for (const t of tiles()) t.classList.remove('ui-idle');
+        dock.classList.remove('dock-sleep');
+      }
+      return;
+    }
     dock.classList.remove('dock-sleep');
     sleepSoon(TILE_IDLE_MS);
   }, { passive: true });

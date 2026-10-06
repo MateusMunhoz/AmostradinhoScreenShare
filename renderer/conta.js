@@ -63,11 +63,30 @@ async function enviarSenha() {
 }
 
 // ---------- Entrar com Google ----------
-const google = { ligado: false, ocupado: false };
+const google = { ligado: false, ocupado: false, soGoogle: false, senhaAntiga: false, comSenha: false };
+
+// Servidor só com Google: o formulário de e-mail e senha some (CSS .so-google .legacy-login) e o Google vira o botão principal.
+// Quem ainda tem conta com senha abre o formulário por "Tenho uma conta com e-mail e senha" (só entrar; criar não existe mais).
+function googleAplicarModo() {
+  const so = google.ligado && google.soGoogle;
+  for (const [caixa, google_, legado] of [['onboarding', 'obGoogle', 'obLegacy'], ['razzeAuth', 'razzeGoogle', 'razzeLegacy']]) {
+    $(caixa).classList.toggle('so-google', so);
+    $(caixa).classList.toggle('com-senha', so && google.comSenha);
+    $(google_).classList.toggle('primary', so);
+    $(legado).hidden = !(so && google.senhaAntiga && !google.comSenha);
+  }
+  $('obGoogleHint').hidden = !so;
+}
 
 // O servidor diz se o Google está ligado; só então os botões aparecem
 async function googleAtualizar() {
-  try { google.ligado = !!(await window.api.razzeGoogleConfig())?.enabled; } catch { google.ligado = false; }
+  try {
+    const cfg = await window.api.razzeGoogleConfig();
+    google.ligado = !!cfg?.enabled;
+    google.soGoogle = !!cfg?.googleOnly;
+    google.senhaAntiga = cfg?.passwordLogin !== false;
+  } catch { google.ligado = false; google.soGoogle = false; }
+  googleAplicarModo();
   $('obGoogle').hidden = !google.ligado;
   $('razzeGoogle').hidden = !google.ligado;
   const logado = typeof razzeUser !== 'undefined' && !!razzeUser;
@@ -82,7 +101,7 @@ async function googleEntrar(statusEl, depois) {
   try {
     const r = await window.api.razzeGoogleLogin();
     if (r.status === 'pending_approval') {
-      statusEl.textContent = 'Conta criada. O administrador do servidor ainda precisa aprovar; enquanto isso, use como sala rápida.';
+      statusEl.textContent = 'Pedido enviado. Avise o administrador para aprovar; quando ele aprovar, toque em Entrar com Google de novo. Enquanto isso, use sem conta.';
       return;
     }
     razzeUser = r.user;
@@ -253,6 +272,7 @@ function setupConta() {
   $('obGoogle').onclick = () => void googleEntrar($('obStatus'), fecharPrimeiraEntrada);
   $('razzeGoogle').onclick = () => void googleEntrar($('razzeAccountStatus'), () => {});
   $('razzeGoogleLink').onclick = () => void googleVincular();
+  for (const id of ['obLegacy', 'razzeLegacy']) $(id).onclick = () => { google.comSenha = true; googleAplicarModo(); };
   void googleAtualizar();
   $('razzeChangePassword').onclick = () => abrirSenha('trocar');
   $('razzeForgot').onclick = () => abrirSenha('esqueci', $('razzeEmail').value.trim());

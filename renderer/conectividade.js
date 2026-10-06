@@ -223,6 +223,7 @@ async function loadRazzeState() {
     if (!state.authenticated) { if (selectedNetworkProvider() === 'razze') setNetSummary(false, 'Razze: servidor ok. Entre ou crie sua conta logo abaixo.'); return; }
     const { user } = await window.api.razzeMe();
     razzeUser = user;
+    if (typeof admAtualizarBotao === 'function') admAtualizarBotao(); // Administração: só para administradores (renderer/admin.js)
     anunciarContaNaSala();
     if (typeof syncBioComConta === 'function') syncBioComConta(user); // a frase do perfil (renderer/conta.js)
     if (user?.id) void dmStart(user.id); // mensagens diretas desta conta (renderer/mensagens.js)

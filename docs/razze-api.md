@@ -189,8 +189,10 @@ Online confirma contato recente com a API; não prova conectividade P2P. As sala
 | `DELETE /v1/presence` | Retirar a presença da sessão atual |
 | `GET /v1/rooms?networkId=ID` | `rooms`: salas visíveis das redes de que o usuário é membro; `internet`: salas do modo Internet dos amigos aceitos |
 | `GET /v1/admin/me`, `GET /v1/admin/overview` | Identidade administrativa e resumo |
-| `GET/PATCH /v1/admin/settings` | `requireApproval`, `registrationOpen`, `presenceTimeoutSeconds` persistentes |
-| `PATCH /v1/admin/users/:id` | Papel `user/admin`, status `pending/active/disabled` e `banReason` |
+| `GET/PATCH /v1/admin/settings` | `requireApproval`, `registrationOpen`, `presenceTimeoutSeconds`, `googleOnly` (ninguém cria conta por senha; o administrador mantém a senha), `legacyPasswordLogin` (padrão ligado: com `googleOnly`, quem já tinha conta com senha ainda entra por ela; desligue quando todos tiverem vinculado o Google) e `onlyAllowlist` (só e-mails da lista de convidados criam conta) persistentes |
+| `GET/POST /v1/admin/allowlist` (`{ email, grupo: amigo|teste|admin, label? }`), `DELETE /v1/admin/allowlist/:email` | Lista de convidados: quem está nela entra já ativo (sem aprovação) com o grupo ou papel combinado; pôr na lista alguém que já criou conta (pendente) libera e ajusta. Tirar da lista não apaga a conta. Até 500 e-mails |
+| `GET /v1/admin/analytics` | Só contagens: contas por situação e grupo, online agora, ativos hoje/7/30 dias, pico do dia, voltaram na semana, nunca abriram, amizades, mensagens dos últimos 7 dias, versões do app em uso e 14 dias de ativos, pico e cadastros. Nenhum e-mail |
+| `PATCH /v1/admin/users/:id` | Papel `user/admin`, grupo `amigo/teste`, status `pending/active/disabled` e `banReason` |
 | `POST /v1/admin/users/:id/revoke-sessions` | Revogar todas as sessões e dispositivos do usuário |
 | `GET /v1/admin/clients`, `DELETE /v1/admin/clients/:id` | Consumo por sessão e desconexão individual |
 | `DELETE /v1/admin/networks/:id` | Excluir rede como administrador |
