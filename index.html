@@ -224,7 +224,8 @@
       </section>
     </div>
     <div id="dmSlots" class="dm-slots"></div>
-    <span id="dmBarHint" class="dm-bar-hint">Clique no envelope para abrir uma conversa privada</span>
+    <!-- Sem conversas na barra: a última conversa (clicar abre) ou a dica (renderDmBarHint em renderer/mensagens.js) -->
+    <button id="dmBarHint" type="button" class="dm-bar-hint">Clique no envelope para abrir uma conversa privada</button>
     <!-- As conversas que não cabem na largura: o "+N" lista e traz de volta para a barra -->
     <button id="dmMore" type="button" class="dm-more" aria-haspopup="menu" aria-expanded="false" aria-controls="dmMoreMenu" hidden></button>
     <div id="dmMoreMenu" class="dm-more-menu" role="menu" aria-label="Outras conversas" hidden></div>
@@ -259,13 +260,21 @@
         </div>
         <div class="home-hello">
           <span id="homeAvatar" class="avatar home-avatar" aria-hidden="true"></span>
+          <!-- Com nome: "Boa noite, Naitsi" e o lápis abre o campo; sem nome, o slogan e o campo à vista. Embaixo, o
+               resumo dos amigos (renderHomeTopo em renderer/primeira-entrada.js) -->
           <div class="home-hello-text">
-            <h1 class="home-title">Sua tela, direto no PC dos amigos.</h1>
-            <label class="home-name">
+            <div class="home-title-row">
+              <h1 class="home-title" id="homeTitle">Sua tela, direto no PC dos amigos.</h1>
+              <button class="btn icon small ghost" id="homeNameEdit" type="button" hidden></button>
+            </div>
+            <p id="homeResumo" class="home-resumo" hidden></p>
+            <label class="home-name" id="homeNameLabel">
               <span>Você entra como</span>
               <input id="name" maxlength="32" placeholder="Seu nome" autocomplete="off" spellcheck="false">
             </label>
           </div>
+          <!-- Constelação: você e os amigos online, parada (sem animação) -->
+          <svg id="homeCeu" class="home-ceu" viewBox="0 0 220 84" role="img" hidden></svg>
         </div>
 
         <section id="homeSignin" class="home-signin" hidden>
@@ -276,9 +285,14 @@
           <div class="home-friends-head">
             <h2 class="sessions-title" id="homeFriendsTitle">Amigos</h2>
             <span class="home-friends-actions">
-              <button class="btn small" id="homeFriendsLink" type="button" title="Copia um link de convite: quem abrir vira seu amigo">Copiar meu link</button>
-              <button class="btn small" id="homeFriendsAdd" type="button">Adicionar amigo</button>
               <button class="link-btn" id="homeFriendsAll" type="button" hidden>Ver todos</button>
+              <span class="home-menu-wrap">
+                <button class="btn small home-convidar" id="homeConvidar" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="homeConvidarMenu">Convidar</button>
+                <span id="homeConvidarMenu" class="home-menu" role="menu" aria-label="Convidar" hidden>
+                  <button id="homeFriendsLink" type="button" role="menuitem">Copiar meu link<small>Quem abrir vira seu amigo</small></button>
+                  <button id="homeFriendsAdd" type="button" role="menuitem">Adicionar amigo<small>Pelo nickname ou e-mail</small></button>
+                </span>
+              </span>
             </span>
           </div>
           <ul id="homeFriendsList" class="home-friends-list"></ul>
@@ -293,9 +307,9 @@
           </section>
           <div class="home-cta">
             <div class="create-block">
-              <button class="btn primary big" id="goQuick" type="button">Abrir minha sala</button>
+              <button class="btn primary big" id="goQuick" type="button">Abrir minha sala<small id="goQuickSub" class="go-quick-sub"></small></button>
+              <button class="btn big icon" id="goCreate" type="button"></button>
               <span class="hint center" id="createBlockHint">Os amigos entram pelo seu endereço</span>
-              <button class="link-btn" id="goCreate" type="button">Opções da sala</button>
             </div>
             <button class="btn big" id="goJoin" type="button" aria-expanded="false" aria-controls="joinPanel">Entrar com endereço</button>
           </div>
@@ -316,8 +330,9 @@
           </div>
           <div id="lastRoom" class="last-room" hidden>
             <div class="last-room-info">
-              <span class="hint">Última sala</span>
-              <code id="lastRoomAddr"></code>
+              <strong id="lastRoomName"></strong>
+              <span class="hint" id="lastRoomMeta">Última sala</span>
+              <code id="lastRoomAddr" hidden></code>
             </div>
             <button class="btn" id="rejoinBtn" type="button">Entrar de novo</button>
           </div>

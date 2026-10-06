@@ -276,7 +276,16 @@ Na primeira vez que o app abre, uma tela de cada vez (três no máximo):
 
 Quem já usava o app não vê essa tela. Quem escolheu *Com amigos* e ainda não entrou vê no Início uma faixa **Entrar na conta**.
 
-No **Início**, com conta: **Amigos online** (até 5, com **Mensagem** e **Ligar**), **Adicionar amigo** e **Ver todos** (abre o envelope na aba **Amigos**).
+No **Início**, com conta: **Amigos online** (até 5, com **Mensagem** e **Ligar** em ícones), **Convidar** (um menu com **Copiar meu link** e **Adicionar amigo**) e **Ver todos** (abre o envelope na aba **Amigos**).
+Cada amigo mostra em etiquetas onde está, o jogo e a música (clique na música para ver a faixa). Passando o mouse na linha
+aparece **Chamar para minha sala**: manda o convite da sala em que você está pelas mensagens; fora de sala, abre a sua antes.
+
+O topo diz **Bom dia/Boa tarde/Boa noite** e o seu nome (o lápis ao lado muda o nome; sem nome, aparece o campo), com um
+resumo do momento: quantos amigos estão online, quem está jogando ou quem abriu uma sala. Ao lado, numa janela larga,
+uma constelação parada: você no meio e os amigos online em volta; quem está numa sala brilha na cor de "ao vivo".
+No modo Internet, **Abrir minha sala** diz quais amigos online vão ver a sala; as opções da sala ficam no ícone ao lado.
+**Última sala** mostra de quem era, quando e o modo (o endereço fica na dica), e a barra de baixo mostra a última conversa:
+clicar abre ela.
 **Abrir minha sala** cria a sala em um clique (com senha gerada e visível para os amigos); **Opções da sala** abre a tela
 de antes, com porta, senha e visibilidade.
 

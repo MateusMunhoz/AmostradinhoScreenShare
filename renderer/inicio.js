@@ -205,9 +205,12 @@ async function renderRadmin() {
     const url = internetServerUrl();
     $('radminDot').className = 'dot ' + (url ? 'ok' : 'warn');
     $('radminTitle').textContent = url ? 'Modo Internet' : 'Modo Internet sem servidor';
-    $('radminDetail').textContent = url ? url : 'Coloque o endereço do servidor em Configurações › Rede';
+    // O endereço do servidor fica na dica: na linha, só o que a pessoa precisa fazer
+    $('radminDetail').textContent = url ? '' : 'Coloque o endereço do servidor em Configurações › Rede';
+    $('radminTitle').title = url ? `Servidor: ${url}` : '';
     return;
   }
+  $('radminTitle').title = '';
   if (selectedNetworkProvider() === 'razze') {
     let status;
     const prefs = networkPreferences();
@@ -234,10 +237,26 @@ async function renderRadmin() {
   $('radminDetail').textContent = r ? r.address : 'Ligue a Radmin e entre na rede';
 }
 
+// "Sala de Flyleaf · Última sala · ontem às 22h · Radmin" (sessoes.js › lembrarUltimaSala); o endereço ou o código
+// vão na dica. Sem o nome guardado (sala antiga), mostra o endereço, como antes.
+function quandoFoi(t) {
+  const d = new Date(t), hoje = new Date();
+  const ontem = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() - 1);
+  const hora = `${d.getHours()}h${d.getMinutes() ? String(d.getMinutes()).padStart(2, '0') : ''}`;
+  if (d.toDateString() === hoje.toDateString()) return `hoje às ${hora}`;
+  if (d.toDateString() === ontem.toDateString()) return `ontem às ${hora}`;
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
 function renderLastRoom() {
   const last = load('roomAddr');
   $('lastRoom').hidden = !last;
   $('lastRoomAddr').textContent = last;
+  let info = null;
+  try { info = JSON.parse(load('ultimaSala', 'null')); } catch {}
+  if (!info || info.endereco !== last || typeof info.host !== 'string' || !info.host) info = null;
+  $('lastRoomName').textContent = info ? `Sala de ${info.host}` : 'Última sala';
+  $('lastRoomMeta').textContent = info ? ['Última sala', Number.isFinite(info.quando) ? quandoFoi(info.quando) : '', SALA_MODO[info.modo] || ''].filter(Boolean).join(' · ') : last;
+  $('lastRoom').title = last;
 }
 
 function renderHome() {
