@@ -6,7 +6,7 @@ const { spawn } = require('child_process');
 const { openApp, createRoom, joinRoom, winStyle, foreground, keys, check, sleep, run } = require('./ajuda');
 
 const GAME = 'Jogo de teste Tela P2P';
-const CHAT = 'Chat da sala · Tela P2P';
+const CHAT = 'Chat da sala · Nebula';
 const press = (seq) => keys(seq, [GAME, CHAT]);
 
 run('Ctrl+Enter no jogo', 150000, async () => {

@@ -147,6 +147,7 @@ const mixer = {
     const gain = ctx.createGain();
     src.connect(gain);
     gain.connect(ctx.destination);
+    if (this.clipDest) gain.connect(this.clipDest);
     this.nodes.set(id, { src, gain, an: this.meter(src) });
     this.apply(id);
     startSpeakLoop();
@@ -164,8 +165,28 @@ const mixer = {
     if (!stream) return;
     const ctx = this.ensure();
     const src = ctx.createMediaStreamSource(stream);
+    if (this.clipDest) src.connect(this.clipDest);
     this.localNode = { src, an: this.meter(src) };
     startSpeakLoop();
+  },
+  // A voz da call para o clipe (renderer/clipes.js): o que você ouve (cada um no volume que você deu) mais o seu
+  // microfone (mutado = silêncio). Só existe enquanto o clipe pede; on=false desliga.
+  clipDest: null,
+  clipTrack(on) {
+    if (!on) {
+      if (this.clipDest) {
+        for (const n of this.nodes.values()) try { n.gain.disconnect(this.clipDest); } catch {}
+        try { this.localNode?.src.disconnect(this.clipDest); } catch {}
+        this.clipDest = null;
+      }
+      return null;
+    }
+    if (!this.clipDest) {
+      this.clipDest = this.ensure().createMediaStreamDestination();
+      for (const n of this.nodes.values()) n.gain.connect(this.clipDest);
+      this.localNode?.src.connect(this.clipDest);
+    }
+    return this.clipDest.stream.getAudioTracks()[0] || null;
   },
   deafen(on) {
     this.deafened = !!on;
@@ -264,11 +285,26 @@ function renderVoice() {
   renderVoiceMe();
   syncMicTest();
   if (voiceSettingsOpen()) renderVoiceDialog();
-  renderVoiceAvatars();
-  if (state.myId) renderMembers();
+  scheduleVoiceLists();
   if (!$('personCard').hidden) renderPersonCard();
   syncMuteSound();
+}
+
+// A lista de pessoas é refeita inteira: entrar na voz muda o estado várias vezes seguidas (pendente, sessão, cada
+// conexão), então junta tudo num redesenho só, na próxima tarefa. MessageChannel e não setTimeout: com o app
+// atrás do jogo o Chromium segura os timers por até 1 s, e a mensagem não.
+let voiceListsQueued = false;
+const voiceListsChannel = new MessageChannel();
+voiceListsChannel.port1.onmessage = () => {
+  voiceListsQueued = false;
+  renderVoiceAvatars();
+  if (state.myId) renderMembers();
   if (typeof renderHomeCall === 'function') renderHomeCall(); // a faixa do início mostra a sua voz
+};
+function scheduleVoiceLists() {
+  if (voiceListsQueued) return;
+  voiceListsQueued = true;
+  voiceListsChannel.port2.postMessage(0);
 }
 
 // Painel recolhido: quem está na voz fica na barra; clicar abre o volume da pessoa.
@@ -438,6 +474,7 @@ function openVoiceStackPop() {
   renderVoiceStackPop();
 }
 function closeVoiceStackPop() {
+  if (typeof skyFocusFrom !== 'undefined' && skyFocusFrom === 'pilula') closeSkyProfile();
   $('voiceStackPop')?.remove();
   $('voiceAvatars').querySelector('.voice-stack')?.setAttribute('aria-expanded', 'false');
 }
@@ -471,7 +508,8 @@ function renderVoiceStackPop() {
       row.append(s);
     }
     row.title = `${nameOf(id)}: volume (a roda do mouse em cima também muda)`;
-    row.onclick = (e) => openPersonCard(id, row, e.detail === 0);
+    // O mesmo perfil das outras listas, aberto dentro desta; a mesma pessoa de novo fecha
+    row.onclick = (e) => (skyFocusId === id && skyFocusFrom === 'pilula' ? closeSkyProfile() : openSkyProfile(id, e.detail === 0 ? row : e, 'pilula'));
     onWheelVolume(row, id, 'voice');
     list.append(row);
   }
@@ -489,6 +527,7 @@ function renderVoiceStackPop() {
   panel.onclick = () => { closeVoiceStackPop(); workspaceViews.voice = true; saveWorkspaceViews(); setPanelOpen(true); syncWorkspace(); };
   actions.append(panel);
   pop.append(head, list, actions);
+  if (skyFocusFrom === 'pilula' && skyFocusId) pop.append($('skyFocus')); // o perfil aberto continua na lista redesenhada
   // Sobe a partir do botão, alinhado à esquerda dele (sem passar da janela)
   const r = $('voiceAvatars').getBoundingClientRect();
   pop.style.left = `${Math.max(8, Math.min(r.left, window.innerWidth - pop.offsetWidth - 8))}px`;

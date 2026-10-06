@@ -98,15 +98,10 @@
       <h3 class="profile-sec">Frase</h3>
       <label class="field"><span>Uma frase no seu perfil <span id="bioCount" class="hint"></span></span><input id="profileBio" maxlength="128" autocomplete="off" placeholder="Ex.: jogo à noite e ouço rock"></label>
       <p id="profileBioHint" class="hint"></p>
-      <!-- Atividade: o que os amigos veem do que você faz; jogo e música desligados por padrão (renderer/conta.js) -->
+      <!-- Atividade: o que aparece no perfil fica no perfil; as escolhas, em Configurações › Atividade (renderer/conta.js) -->
       <h3 class="profile-sec">Atividade</h3>
-      <label class="check-line"><input type="checkbox" id="atvJogo"><span>Mostrar o jogo que estou jogando</span></label>
-      <label class="check-line"><input type="checkbox" id="atvMusica"><span>Mostrar a música que estou ouvindo (Spotify)</span></label>
-      <p id="atvPreview" class="hint" role="status" aria-live="polite"></p>
-      <p class="hint">Desligado por padrão. Só os seus amigos veem, e só o nome do jogo e a faixa: nenhum outro programa é lido. Precisa da conta e vale no Windows.</p>
-      <!-- Em que sala estou (renderer/salas-amigos.js, docs/spec/sala-do-amigo.md): ligado por padrão -->
-      <label class="check-line"><input type="checkbox" id="atvSala" aria-describedby="atvSalaHint"><span>Mostrar aos amigos em que sala estou</span></label>
-      <p id="atvSalaHint" class="hint">Ligado por padrão. Vai só o nome de quem hospeda a sala, o modo (Radmin, Razze ou Internet), quantas pessoas e se você está na voz: nenhum endereço. Salas escondidas e chamadas não aparecem.</p>
+      <p class="hint">O jogo e a música que você escolher mostrar aparecem no seu perfil.</p>
+      <button id="atvConfigurar" class="btn small" type="button">Configurar a atividade</button>
       <!-- Conta Razze: entrar ou criar conta, ou quem está conectado (renderer/conectividade.js). As redes ficam em
            Configurações › Rede; os amigos, no envelope das mensagens -->
       <h3 class="profile-sec" id="profileAccountTitle">Conta Razze</h3>
@@ -547,7 +542,7 @@
               <!-- A miniatura do que você transmite é o "Me ver" (abre a sua tela no palco); ao lado, o que é e quem assiste -->
               <button class="live-thumb" id="selfViewBtn" type="button" aria-pressed="false"><img id="liveThumb" alt=""><span class="live-pill">Ao vivo</span></button>
               <span class="live-info"><strong id="liveSource"></strong><span id="liveText"></span></span>
-              <button class="btn small" id="shareOpenBtn" type="button">Para todos</button>
+              <button class="btn small icon" id="shareOpenBtn" type="button" aria-haspopup="menu" aria-expanded="false"></button>
               <button class="btn small icon" id="switchShareBtn" type="button"></button>
               <button class="btn small icon danger" id="stopShareBtn" type="button"></button>
             </div>
@@ -697,6 +692,7 @@
           <button type="button" data-group="voz">Voz e atalhos<small>Voz · Atalhos</small></button>
           <button type="button" data-group="aparencia">Aparência<small>Tema · Janela e fonte · Cores</small></button>
           <button type="button" data-group="sons">Sons<small>Avisos sonoros</small></button>
+          <button type="button" data-group="atividade">Atividade<small>Jogos · Música</small></button>
           <button type="button" data-group="celular">Celular<small>Mudar as configurações pelo celular</small></button>
           <button type="button" data-group="mensagens">Mensagens privadas<small>Histórico · Backup no celular</small></button>
           <button type="button" data-group="rede">Rede<small>Conexão · Servidores · Redes Razze</small></button>
@@ -712,6 +708,7 @@
           <button id="settingsTab-appearance" type="button" role="tab" data-group="aparencia" data-tab="appearance" aria-controls="settingsPanel-appearance">Janela e fonte</button>
           <button id="settingsTab-colors" type="button" role="tab" data-group="aparencia" data-tab="colors" aria-controls="settingsPanel-colors">Cores</button>
           <button id="settingsTab-sounds" type="button" role="tab" data-group="sons" data-tab="sounds" aria-controls="settingsPanel-sounds">Sons</button>
+          <button id="settingsTab-activity" type="button" role="tab" data-group="atividade" data-tab="activity" aria-controls="settingsPanel-activity">Atividade</button>
           <button id="settingsTab-phone" type="button" role="tab" data-group="celular" data-tab="phone" aria-controls="settingsPanel-phone">Celular</button>
           <button id="settingsTab-dms" type="button" role="tab" data-group="mensagens" data-tab="dms" aria-controls="settingsPanel-dms">Mensagens privadas</button>
           <button id="settingsTab-network" type="button" role="tab" data-group="rede" data-tab="network" aria-controls="settingsPanel-network">Rede</button>
@@ -798,6 +795,7 @@
               <label><input type="radio" name="clipSeconds" value="120"><span>2 min</span></label>
             </div>
             <p class="hint">Mais tempo usa mais memória: 2 min de uma transmissão em 1080p ficam em uns 100 a 200 MB.</p>
+            <label class="check-line"><input type="checkbox" id="clipVoice"><span>Gravar a voz da call nos clipes<small class="hint">O que você ouve na voz e o seu microfone. Avise quem está na call. Fica desligado no modo gamer.</small></span></label>
           </section>
         </section>
         <section id="settingsPanel-skin" class="settings-section" role="tabpanel" aria-labelledby="settingsTab-skin" hidden>
@@ -980,36 +978,80 @@
         <section id="settingsPanel-stats" class="settings-section stats" role="tabpanel" aria-labelledby="statsTabPerf" hidden>
         <!-- Desempenho: quanto o app usa do PC e o que entra e sai pela rede -->
         <div id="statsPerf" class="stats-panel">
-        <h3 class="stat-group">Uso do app</h3>
+        <!-- À vista só o essencial; o resto (vídeo, quadros, codificador e a tabela de processos) fica em Mais detalhes -->
         <div class="stat-cards">
-          <div class="stat-card"><span class="stat-label">Processador</span><strong id="stCpu">–</strong><span id="stCpuAvg" class="stat-avg"></span><span id="stCpuPC" class="stat-sub"></span><svg id="stCpuChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
-          <div class="stat-card"><span class="stat-label">Placa de vídeo 3D</span><strong id="stGpu">–</strong><span id="stGpuAvg" class="stat-avg"></span><span id="stGpuPC" class="stat-sub"></span><svg id="stGpuChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
-          <div class="stat-card"><span class="stat-label">Codificação de vídeo</span><strong id="stEnc">–</strong><span id="stEncAvg" class="stat-avg"></span><span id="stEncPC" class="stat-sub"></span><svg id="stEncChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
-          <div class="stat-card"><span class="stat-label">Decodificação de vídeo</span><strong id="stDec">–</strong><span id="stDecAvg" class="stat-avg"></span><span id="stDecPC" class="stat-sub"></span><svg id="stDecChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
-        </div>
-        <h3 class="stat-group">Rede</h3>
-        <div class="stat-cards">
-          <div class="stat-card"><span class="stat-label">Quadros capturados</span><strong id="stCap">–</strong><span id="stCapAvg" class="stat-avg"></span><svg id="stCapChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
-          <div class="stat-card"><span class="stat-label">Quadros enviados</span><strong id="stSent">–</strong><span id="stSentAvg" class="stat-avg"></span><svg id="stSentChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
+          <div class="stat-card"><span class="stat-label">Processador</span><strong id="stCpu">–</strong><span id="stCpuAvg" class="stat-avg"></span><span id="stCpuPC" class="stat-sub" hidden></span><svg id="stCpuChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
+          <div class="stat-card"><span class="stat-label">Placa de vídeo</span><strong id="stGpu">–</strong><span id="stGpuAvg" class="stat-avg"></span><span id="stGpuPC" class="stat-sub" hidden></span><svg id="stGpuChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
           <div class="stat-card"><span class="stat-label">Enviando</span><strong id="stUp">–</strong><span id="stUpAvg" class="stat-avg"></span><svg id="stUpChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
           <div class="stat-card"><span class="stat-label">Recebendo</span><strong id="stDown">–</strong><span id="stDownAvg" class="stat-avg"></span><svg id="stDownChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
         </div>
-        <p id="stCodec" class="hint"></p>
-        <div class="stat-scroll">
-          <table class="stat-table">
-            <thead>
-              <tr><th>Processo</th><th>Processador</th><th>Placa 3D</th><th>Codif. vídeo</th><th>Decodif. vídeo</th><th>Memória de vídeo</th></tr>
-            </thead>
-            <tbody id="stRows"></tbody>
-          </table>
-        </div>
         <p id="stNote" class="hint"></p>
+        <details class="stat-more">
+          <summary>Mais detalhes</summary>
+          <div class="stat-cards">
+            <div class="stat-card"><span class="stat-label">Codificação de vídeo</span><strong id="stEnc">–</strong><span id="stEncAvg" class="stat-avg"></span><span id="stEncPC" class="stat-sub"></span><svg id="stEncChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
+            <div class="stat-card"><span class="stat-label">Decodificação de vídeo</span><strong id="stDec">–</strong><span id="stDecAvg" class="stat-avg"></span><span id="stDecPC" class="stat-sub"></span><svg id="stDecChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
+            <div class="stat-card"><span class="stat-label">Quadros capturados</span><strong id="stCap">–</strong><span id="stCapAvg" class="stat-avg"></span><svg id="stCapChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
+            <div class="stat-card"><span class="stat-label">Quadros enviados</span><strong id="stSent">–</strong><span id="stSentAvg" class="stat-avg"></span><svg id="stSentChart" class="spark" viewBox="0 0 600 60" preserveAspectRatio="none" role="img"></svg></div>
+          </div>
+          <p id="stCodec" class="hint"></p>
+          <div class="stat-scroll">
+            <table class="stat-table">
+              <thead>
+                <tr><th>Processo</th><th>Processador</th><th>Placa 3D</th><th>Codif. vídeo</th><th>Decodif. vídeo</th><th>Memória de vídeo</th></tr>
+              </thead>
+              <tbody id="stRows"></tbody>
+            </table>
+          </div>
+        </details>
         </div>
         <!-- Transmissão: a configuração de cada pessoa que está transmitindo e como chega até você -->
         <div id="statsStream" class="stats-panel" hidden>
           <div id="streamRows" class="stream-list"></div>
           <p id="streamEmpty" class="hint">Ninguém está transmitindo agora.</p>
         </div>
+        </section>
+        <!-- Atividade: o que aparece no seu perfil (jogo, música, em que sala está) e os jogos da Steam que podem aparecer
+             (renderer/conta.js; main/atividade.js) -->
+        <section id="settingsPanel-activity" class="settings-section activity-panel" role="tabpanel" aria-labelledby="settingsTab-activity" hidden>
+          <h3>Atividade</h3>
+          <p class="hint">O que aparece no seu perfil para quem está na mesma sala e para os seus amigos (com a conta).</p>
+          <div class="extra-card">
+            <label class="check-line"><input type="checkbox" id="atvJogo"><span>Mostrar o jogo que estou jogando</span></label>
+            <label class="check-line"><input type="checkbox" id="atvMusica"><span>Mostrar a música que estou ouvindo (Spotify e outros players)</span></label>
+            <p id="atvPreview" class="hint" role="status" aria-live="polite"></p>
+            <p class="hint">Desligado por padrão. Vai só o nome do jogo e a imagem dele, e a faixa com a capa: nenhum outro programa é lido, nem o que toca no navegador. Vale no Windows.</p>
+          </div>
+          <div class="extra-card">
+            <div class="group-head">
+              <span class="group-title" id="steamTitle">Jogos da Steam</span>
+              <button id="steamProcurar" class="btn small" type="button">Procurar de novo</button>
+            </div>
+            <p class="hint">Só aparece o jogo que você marcar, quando aberto pela Steam, com a imagem da sua biblioteca. Os jogos mais conhecidos (Valorant, LoL, Minecraft…) aparecem sem precisar marcar.</p>
+            <p id="steamStatus" class="hint" role="status" aria-live="polite"></p>
+            <div id="steamNovosBox" class="steam-box" hidden>
+              <span class="steam-sub" id="steamNovosTitle">Novos encontrados: escolha quais mostrar</span>
+              <ul id="steamNovos" class="steam-list" aria-labelledby="steamNovosTitle"></ul>
+              <div class="steam-actions">
+                <button id="steamNovosTodos" class="btn small" type="button">Marcar todos</button>
+                <button id="steamNovosMostrar" class="btn small primary" type="button">Mostrar os marcados</button>
+                <button id="steamNovosNao" class="btn small" type="button">Não mostrar nenhum</button>
+              </div>
+            </div>
+            <div id="steamSeusBox" class="steam-box" hidden>
+              <span class="steam-sub" id="steamSeusTitle">Seus jogos</span>
+              <ul id="steamSeus" class="steam-list" aria-labelledby="steamSeusTitle"></ul>
+              <div class="steam-actions">
+                <button id="steamSeusTodos" class="btn small" type="button">Marcar todos</button>
+                <button id="steamSeusNenhum" class="btn small" type="button">Desmarcar todos</button>
+              </div>
+            </div>
+          </div>
+          <div class="extra-card">
+            <!-- Em que sala estou (renderer/salas-amigos.js, docs/spec/sala-do-amigo.md): ligado por padrão -->
+            <label class="check-line"><input type="checkbox" id="atvSala" aria-describedby="atvSalaHint"><span>Mostrar aos amigos em que sala estou</span></label>
+            <p id="atvSalaHint" class="hint">Ligado por padrão. Vai só o nome de quem hospeda a sala, o modo (Radmin, Razze ou Internet), quantas pessoas e se você está na voz: nenhum endereço. Salas escondidas e chamadas não aparecem.</p>
+          </div>
         </section>
         <!-- Recursos extras: só funcionam para quem liga; nada é baixado antes (renderer/comando-voz.js) -->
         <section id="settingsPanel-extras" class="settings-section extras-panel" role="tabpanel" aria-labelledby="settingsTab-extras" hidden>

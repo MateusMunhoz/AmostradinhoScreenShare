@@ -902,12 +902,22 @@ function skyCard(ch, sub) {
   // A música: tocando, a linha dela (Ouvir); sem música, no seu canal, a mesma linha tracejada com "Pôr uma"
   const song = musicRow(ch);
   if (song) { const ul = el('ul', 'members sky-card-music'); ul.append(song); card.append(ul); }
-  else if (musicHeadButton(ch)) {
-    const put = button('voice-music sky-card-nomusic', () => (musicPopFor?.ch === ch ? closeMusicPop() : openMusicPop(ch, put, 'por')));
-    put.title = `Pôr uma música do YouTube em ${channelName(ch)} (todos ouvem junto)`;
+  else if (state.musicaOn && !state.musicas.has(ch)) {
+    // A música vai sempre para o canal de quem põe (sala-protocolo.js): no seu canal, "Pôr uma"; em outro, o botão leva
+    // você para lá (entra na voz, se estiver fora) e já abre a escolha da música
+    const mine = ch === myVoiceChannel();
+    const canGo = mine || (voice.supported && !voice.pending);
+    const put = button('voice-music sky-card-nomusic', () => {
+      if (musicPopFor?.ch === ch) return closeMusicPop();
+      if (!mine) voice.setChannel(ch);
+      openMusicPop(ch, put, 'por');
+    });
+    put.disabled = !canGo;
+    put.title = mine ? `Pôr uma música do YouTube em ${channelName(ch)} (todos ouvem junto)`
+      : `Entrar em ${channelName(ch)} e pôr uma música do YouTube (a música fica no canal de quem põe)`;
     const icon = el('span', 'voice-music-icon');
     icon.innerHTML = ICON.music;
-    put.append(icon, el('span', 'sky-card-nomusic-text', 'Sem música'), el('span', 'sky-card-nomusic-go', 'Pôr uma'));
+    put.append(icon, el('span', 'sky-card-nomusic-text', 'Sem música'), el('span', 'sky-card-nomusic-go', mine ? 'Pôr uma' : 'Entrar e pôr uma'));
     const wrap = el('div', 'sky-card-music');
     wrap.append(put);
     card.append(wrap);
@@ -1061,7 +1071,8 @@ window.addEventListener('focus', () => {
 // arrastando não perde o foco); quem fala acende sozinho pelo data-person (voz.js).
 let skyJustClosed = null; // quem teve o perfil fechado por este clique (pointerdown); vale até o próximo clique
 let skyProfileBack = null; // o canal do cartão de onde o perfil foi aberto: sair do perfil volta para ele
-let skyFocusFrom = null; // 'pessoas': aberto pela lista de Pessoas da sala (o cartão sobe do pé dela)
+let skyFocusFrom = null; // 'pessoas': pela lista de Pessoas da sala; 'pilula': pela lista "Na voz" da pílula (o cartão fica nela)
+const SKY_HOMES = { pessoas: 'peoplePop', pilula: 'voiceStackPop' };
 function openSkyProfile(id, at, from = null) {
   closeSkyPop();
   skyProfileBack = null;
@@ -1092,6 +1103,7 @@ $('voicePaneMembers').addEventListener('click', (e) => {
 document.addEventListener('pointerdown', (e) => {
   // no mapa, qualquer clique fora da faixa fecha (num planeta, o perfil dele abre logo depois)
   const keep = skyFocusFrom === 'pessoas' ? '#skyFocus, #personCard, #peoplePop [data-profile]'
+    : skyFocusFrom === 'pilula' ? '#skyFocus, #personCard, #voiceStackPop .vs-row'
     : voiceMapOn() ? '#skyFocus, #personCard, #voiceMapPop' : '#skyFocus, #personCard, #voicePaneMembers li.member.in-voice';
   skyJustClosed = null;
   if (!skyFocusId || e.target.closest?.(keep)) return;
@@ -1130,14 +1142,42 @@ function leaveSkyProfile() {
   const sun = ch !== null && [...$('voiceSky').querySelectorAll('.sky-sun')].find((el) => el.dataset.channel === ch);
   if (sun) openSkyPop({ kind: 'channel', ch }, sun);
 }
+// A música no perfil: um vinil que sai de dentro da capa e gira (com a capa no selo); pausada, ele volta para dentro e
+// para. É a única animação contínua do perfil: só enquanto ele está aberto, só transform (CSS) e parada no modo gamer e
+// com "reduzir movimento" do Windows
+let atvVinilVisto = { id: '', pausada: false }; // de quem é a música do perfil aberto e se estava pausada
+function atvVinil(el, capa, icone) {
+  const caixa = el('span', 'atv-icon atv-vinil');
+  const sai = el('span', 'vinil-sai');
+  const disco = el('span', 'vinil-disco');
+  const selo = el('span', 'vinil-selo');
+  const frente = el('span', 'vinil-capa');
+  if (capa) {
+    for (const alvo of [selo, frente]) { const img = el('img'); img.src = capa; img.alt = ''; alvo.append(img); }
+  } else frente.innerHTML = ICON[icone];
+  disco.append(selo);
+  sai.append(disco, el('span', 'vinil-brilho'));
+  caixa.append(sai, frente);
+  return caixa;
+}
+// O "há 40 min" do jogo no perfil: acerta o texto a cada 30 s enquanto houver um à vista, e para sozinho quando some
+let atvHaTimer = 0;
+function atvHaRelogio() {
+  if (atvHaTimer) return;
+  atvHaTimer = setInterval(() => {
+    const els = document.querySelectorAll('.atv-ha[data-desde]');
+    if (!els.length) { clearInterval(atvHaTimer); atvHaTimer = 0; return; }
+    for (const e of els) e.lastElementChild.textContent = atvHa(Number(e.dataset.desde));
+  }, 30000);
+}
 function renderSkyProfile() {
   const box = $('skyFocus'), id = skyFocusId, me = id === state.myId, pid = me ? null : id;
-  const fromPeople = skyFocusFrom === 'pessoas', voiceNow = inVoice(id);
-  if (!id || (!me && !state.members.has(id)) || (fromPeople ? $('peoplePop').hidden : $('voiceSkyBox').hidden || !voiceNow)) return closeSkyProfile();
+  const homeId = SKY_HOMES[skyFocusFrom], voiceNow = inVoice(id);
+  if (!id || (!me && !state.members.has(id)) || (homeId ? !$(homeId) || $(homeId).hidden : $('voiceSkyBox').hidden || !voiceNow)) return closeSkyProfile();
   // O mesmo cartão de perfil em todo lugar (.sky-page, renderSkyPage): sobe do pé do painel onde a pessoa foi clicada,
   // a lista de Pessoas da sala ou o painel de voz (na lista e no mapa), com o resto ainda à vista em cima
   const list = true;
-  const home = fromPeople ? $('peoplePop') : $('voicePane');
+  const home = homeId ? $(homeId) : $('voicePane');
   if (box.parentElement !== home) home.append(box);
   box.style.left = box.style.top = '';
   box.classList.remove('sky-head');
@@ -1152,7 +1192,7 @@ function renderSkyProfile() {
   const here = voiceChannelOf(pid);
   const canMove = channels.length > 1 && canDragVoice(pid);
   const bg = profileBgOf(pid); // o fundo do perfil da pessoa (renderer/fundo-perfil.js), se já chegou
-  const key = JSON.stringify([skyFocusFrom, voiceNow, id, name, sharing, state.in.has(id), micOff, deafOn, v?.muted, v?.voice, v?.screen, bg.length, bg.slice(-40), here, canMove, channels.map(channelName), photoHashOf(pid), bioDe(pid), contaDe(id), typeof friendsData === 'object' ? [friendsData.friends.length, friendsData.outgoing.length, friendsData.incoming.length] : 0]);
+  const key = JSON.stringify([skyFocusFrom, voiceNow, id, name, sharing, state.in.has(id), micOff, deafOn, v?.muted, v?.voice, v?.screen, bg.length, bg.slice(-40), here, canMove, channels.map(channelName), photoHashOf(pid), bioDe(pid), atvDe(pid), contaDe(id), typeof friendsData === 'object' ? [friendsData.friends.length, friendsData.outgoing.length, friendsData.incoming.length] : 0]);
   if (key === skyFocusKey && !box.hidden) return placeSkyProfile();
   skyFocusKey = key;
   box.replaceChildren();
@@ -1280,21 +1320,44 @@ function renderSkyPage(box, { id, me, pid, name, sharing, micOff, deafOn, v, cha
   av.classList.add('sky-page-avatar');
   av.classList.toggle('speaking', speaking.has(id));
   av.classList.toggle('live', sharing);
+  // Transmitindo (os outros): o selo "Ao vivo" embaixo da foto e a barra de Assistir no pé do perfil
+  const liveOther = sharing && !me;
+  let face = av;
+  if (liveOther) {
+    face = el('span', 'sky-page-face');
+    face.append(av, el('span', 'sky-page-live-tag', 'Ao vivo'));
+  }
   const head = el('div', 'sky-page-head');
   const title = el('h3', 'sky-focus-name', name);
   title.id = 'skyFocusName';
   paintName(title, pid);
   const where = el('span', 'sky-focus-where', !voiceNow ? 'Na sala' : subsalasOn() ? channelName(here) : 'Na voz');
-  const states = voiceNow ? [micOff && 'Microfone desligado', deafOn && 'Fone silenciado', v?.muted && 'Silenciada para você'].filter(Boolean) : [];
+  // O estado da voz dos outros vira ícones ao lado do nome; no seu perfil não aparece (os botões de baixo já mostram).
+  // Silenciada para você é escolha sua, não da pessoa: fica cinza, não laranja
+  const states = voiceNow && !me ? [micOff && ['micOff', 'Microfone desligado', 'warn'], deafOn && ['headphonesOff', 'Fone silenciado', 'warn'],
+    v?.muted && ['muted', 'Silenciada para você', '']].filter(Boolean) : [];
   const who = el('div', 'sky-page-who');
   const tags = el('div', 'sky-page-tags');
   tags.append(where);
-  if (sharing) tags.append(el('span', 'live-pill', 'Ao vivo'));
-  who.append(title, tags);
+  if (sharing && me) tags.append(el('span', 'live-pill', 'Ao vivo'));
+  const nameRow = el('div', 'sky-page-namerow');
+  nameRow.append(title);
+  if (states.length) {
+    const ics = el('span', 'sky-page-states');
+    for (const [icon, label, cls] of states) {
+      const s = el('span', 'sky-page-st' + (cls ? ' ' + cls : ''));
+      s.innerHTML = ICON[icon];
+      s.title = label;
+      s.setAttribute('role', 'img');
+      s.setAttribute('aria-label', label);
+      ics.append(s);
+    }
+    nameRow.append(ics);
+  }
+  who.append(nameRow, tags);
   const nomes = nomesDe(id); // o nome da sala e o da conta Razze (voz.js)
   if (nomes) who.append(nomes);
   if (bioDe(pid)) who.append(el('p', 'sky-focus-bio', bioDe(pid)));
-  if (states.length) who.append(el('span', 'sky-page-state', states.join(' · ')));
   head.append(who, back);
   const list = el('div', 'sky-page-actions');
   const act = (icon, label, onclick, { pressed, disabled } = {}) => {
@@ -1309,11 +1372,27 @@ function renderSkyPage(box, { id, me, pid, name, sharing, micOff, deafOn, v, cha
     return b;
   };
   if (me) {
-    act(micOff ? 'micOff' : 'mic', micOff ? 'Ligar o microfone' : 'Desligar o microfone', () => $('voiceMute').click(), { pressed: micOff });
-    act(deafOn ? 'headphonesOff' : 'headphones', deafOn ? 'Ouvir as vozes' : 'Silenciar as vozes', () => $('voiceDeafen').click(), { pressed: deafOn });
+    // Microfone e fone: dois botões lado a lado; desligado fica laranja (cuidado) e diz o estado embaixo
+    const pares = el('div', 'sky-page-toggles');
+    const tog = (icon, nome, estado, acao, onclick, off) => {
+      const b = el('button', 'sky-page-tog');
+      b.type = 'button';
+      b.title = acao;
+      b.setAttribute('aria-label', estado ? `${acao} (${nome.toLowerCase()} ${estado.toLowerCase()})` : acao);
+      b.setAttribute('aria-pressed', String(off));
+      const ic = el('span', 'tog-icon');
+      ic.innerHTML = ICON[icon];
+      const txt = el('span', 'tog-text');
+      txt.append(el('span', 'tog-name', nome));
+      if (estado) txt.append(el('span', 'tog-state', estado));
+      b.append(ic, txt);
+      b.onclick = onclick;
+      pares.append(b);
+    };
+    tog(micOff ? 'micOff' : 'mic', 'Microfone', micOff ? 'Desligado' : '', micOff ? 'Ligar o microfone' : 'Desligar o microfone', () => $('voiceMute').click(), micOff);
+    tog(deafOn ? 'headphonesOff' : 'headphones', 'Fone', deafOn ? 'Silenciado' : '', deafOn ? 'Ouvir as vozes' : 'Silenciar as vozes', () => $('voiceDeafen').click(), deafOn);
+    list.append(pares);
   } else {
-    const watching = state.in.has(id);
-    if (sharing) act('eye', watching ? 'Parar de assistir' : 'Assistir a tela', () => (watching ? stopWatching(id) : watch(id)));
     const fb = friendButton(id, nameOf(id));
     const done = fb.getAttribute('aria-disabled') === 'true';
     const label = fb.title.startsWith('Você e') ? 'Vocês já são amigos' : fb.title.startsWith('Pedido') ? 'Pedido de amizade enviado'
@@ -1334,9 +1413,86 @@ function renderSkyPage(box, { id, me, pid, name, sharing, micOff, deafOn, v, cha
     const move = act('moveTo', 'Mudar de canal', () => toggleSkyMoveMenu(move, pid, channels, here));
     move.setAttribute('aria-haspopup', 'menu');
   }
-  banner.append(av); // a foto fica dentro do fundo, no canto de baixo
-  box.append(banner, head, list);
+  banner.append(face); // a foto fica dentro do fundo, no canto de baixo
+  box.append(banner, head);
+  // O que a pessoa está ouvindo e jogando (conta.js), numa caixa entre os nomes e as ações
+  const atv = atvDe(pid);
+  if (atv) {
+    const caixa = el('div', 'sky-page-atv');
+    // O perfil é redesenhado do zero (microfone, fone...): o disco e as barrinhas seguem o relógio da página, e não
+    // recomeçam a cada desenho (o CSS usa --atv-t como atraso negativo)
+    caixa.style.setProperty('--atv-t', (performance.now() / 1000).toFixed(3));
+    const item = (icone, rotulo, titulo, cls, capa = '') => {
+      // A música é um botão: abre a busca dela no Spotify (no navegador, pelo open-link, que só aceita https)
+      const linha = el(cls.startsWith('musica') ? 'button' : 'div', 'atv-item ' + cls);
+      let ic;
+      if (cls.startsWith('musica')) ic = atvVinil(el, capa, icone); // o disco que sai da capa e gira (CSS: .atv-vinil)
+      else {
+        ic = el('span', 'atv-icon' + (capa ? ' capa' : ''));
+        if (capa) { const img = el('img'); img.src = capa; img.alt = ''; ic.append(img); } // a imagem do jogo (Steam)
+        else ic.innerHTML = ICON[icone];
+      }
+      const label = el('span', 'atv-label');
+      if (cls.startsWith('musica')) { // as barrinhas: sobem e descem tocando, baixas e paradas na pausa
+        const eq = el('span', 'atv-eq');
+        eq.setAttribute('aria-hidden', 'true');
+        eq.append(el('span'), el('span'), el('span'));
+        label.append(eq);
+      }
+      label.append(rotulo);
+      const txt = el('div', 'atv-text');
+      txt.append(label, el('strong', 'atv-title', titulo));
+      linha.append(ic, txt);
+      caixa.append(linha);
+      return txt;
+    };
+    if (atv.artista) {
+      // O perfil é redesenhado do zero: desenha como estava antes e troca um quadro depois, para o disco deslizar
+      const antes = atvVinilVisto.id === id ? atvVinilVisto.pausada : !!atv.pausada;
+      atvVinilVisto = { id, pausada: !!atv.pausada };
+      const txt = item('music', atv.pausada ? 'Pausada' : 'Ouvindo agora', atv.faixa || atv.artista, antes ? 'musica pausada' : 'musica', atv.capa);
+      const linha = txt.parentElement;
+      if (antes !== !!atv.pausada) requestAnimationFrame(() => requestAnimationFrame(() => linha.classList.toggle('pausada', !!atv.pausada)));
+      // O nome inteiro no mouse (a linha corta com reticências) e o clique leva à música no Spotify
+      const busca = [atv.faixa, atv.artista].filter(Boolean).join(' ');
+      linha.type = 'button';
+      linha.title = [atv.faixa ? `${atv.faixa} — ${atv.artista}` : atv.artista, atv.album].filter(Boolean).join(' · ') + '\nAbrir no Spotify';
+      linha.onclick = () => window.api?.openLink?.('https://open.spotify.com/search/' + encodeURIComponent(busca));
+      const partes = [atv.faixa ? atv.artista : '', atv.album].filter(Boolean);
+      if (partes.length) {
+        const sub = el('span', 'atv-sub');
+        partes.forEach((p, i) => { if (i) sub.append(el('span', 'atv-sep', ' · ')); sub.append(p); });
+        txt.append(sub);
+      }
+    }
+    if (atv.jogo) {
+      const txt = item('game', 'Jogando', atv.jogo, 'jogo', atv.jogoImagem); // a imagem da biblioteca da Steam, se tem
+      txt.parentElement.title = atv.jogo; // o nome inteiro no mouse
+      if (atv.jogoDesde) {
+        const sub = el('span', 'atv-sub atv-ha');
+        sub.innerHTML = ICON.clock;
+        sub.append(el('span', '', atvHa(atv.jogoDesde)));
+        sub.dataset.desde = String(atv.jogoDesde);
+        txt.append(sub);
+        atvHaRelogio();
+      }
+    }
+    box.append(caixa);
+  }
+  box.append(list);
   if (v && voiceNow) box.append(el('span', 'sky-page-label', 'Volume da voz'), skyVolumeRow(id, name, v));
+  if (liveOther) {
+    const watching = state.in.has(id);
+    const bar = el('div', 'sky-page-livebar');
+    const ic = el('span', 'slb-icon');
+    ic.innerHTML = ICON.monitor;
+    const go = el('button', watching ? 'btn small' : 'btn small primary', watching ? 'Parar' : 'Assistir');
+    go.type = 'button';
+    go.title = watching ? 'Parar de assistir a tela' : 'Assistir a tela';
+    go.onclick = () => (watching ? stopWatching(id) : watch(id));
+    bar.append(ic, el('strong', 'slb-title', watching ? 'Você está assistindo' : `${name} está transmitindo`), go);
+    box.append(bar);
+  }
   box.hidden = false;
 }
 // A caixinha da lista: a foto de dentro dela fica centrada em cima da foto da linha (sem sair da janela). As linhas são

@@ -81,6 +81,28 @@ function memberRow(id, name, sharing) {
   status.textContent = parts.join(' · ') || (voiceOn ? '' : 'Na sala');
   status.hidden = !status.textContent;
   info.append(nameEl, status);
+  // O jogo ou a música (conta.js): uma linha só; com os dois, a música, e o jogo vira um controle junto dos ícones de
+  // microfone e fone (com o nome no mouse). O jogo aparece sempre como o controle, sem a imagem da Steam
+  if (id) pedirAtv(id);
+  const atv = atvDe(id);
+  if (atv) {
+    const linha = document.createElement('span');
+    linha.className = 'matv';
+    // a capa do álbum ou a imagem do jogo (Steam), pequenas; sem elas, a nota ou o controle
+    const marca = (jogo, imagem) => {
+      const s = document.createElement('span');
+      s.className = 'matv-icon' + (jogo ? ' jogo' : '') + (imagem ? ' capa' : '');
+      if (imagem) { const img = document.createElement('img'); img.src = imagem; img.alt = ''; s.append(img); }
+      else s.innerHTML = jogo ? ICON.game : ICON.music;
+      return s;
+    };
+    const icone = atv.artista ? marca(false, atv.capa) : marca(true, '');
+    const texto = document.createElement('span');
+    texto.className = 'matv-text';
+    texto.textContent = atv.artista ? (atv.faixa ? `${atv.faixa} — ${atv.artista}` : atv.artista) : `Jogando ${atv.jogo}`;
+    linha.append(icone, texto);
+    info.append(linha);
+  }
   // Host: uma coroinha no canto do avatar; com o mouse em cima, aparece "Host" (CSS)
   let face = dot;
   if (who === state.hostId) {
@@ -94,6 +116,15 @@ function memberRow(id, name, sharing) {
     face.append(dot, crown);
   }
   li.append(face, info);
+  if (atv?.artista && atv.jogo) {
+    const jogo = document.createElement('span');
+    jogo.className = 'mic-off-icon jogo';
+    jogo.innerHTML = ICON.game;
+    jogo.title = `Jogando ${atv.jogo}`;
+    jogo.setAttribute('role', 'img');
+    jogo.setAttribute('aria-label', `Jogando ${atv.jogo}`);
+    li.append(jogo);
+  }
   for (const [on, icon, title] of [[micOff, 'micOff', 'Microfone desligado'], [deafOn, 'headphonesOff', 'Fone silenciado: não está ouvindo a voz']]) {
     if (!on) continue;
     const mo = document.createElement('span');

@@ -2,7 +2,7 @@
 // app escondido) e o fechamento. Confere os estilos de verdade da janela no Windows.
 const { openApp, createRoom, joinRoom, share, frames, winStyle, check, sleep, run } = require('./ajuda');
 
-const TITLE = 'Ana · Tela P2P';
+const TITLE = 'Ana · Nebula';
 const pipVideo = '[...state.pips.values()][0].video';
 
 run('Janela flutuante', 150000, async () => {

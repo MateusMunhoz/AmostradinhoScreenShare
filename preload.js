@@ -102,7 +102,9 @@ contextBridge.exposeInMainWorld('api', {
   razzeGoogleUnlink: () => ipcRenderer.invoke('razze-google-unlink'),
   razzeChangePassword: (current, next) => ipcRenderer.invoke('razze-change-password', String(current || ''), String(next || '')),
   razzeResetPassword: (email, code, password) => ipcRenderer.invoke('razze-reset-password', String(email || ''), String(code || ''), String(password || '')),
-  atividadeLer: (opcoes) => ipcRenderer.invoke('atividade-ler', { jogos: !!opcoes?.jogos, musica: !!opcoes?.musica }),
+  atividadeLer: (opcoes) => ipcRenderer.invoke('atividade-ler', { jogos: !!opcoes?.jogos, musica: !!opcoes?.musica, steam: Array.isArray(opcoes?.steam) ? opcoes.steam.slice(0, 500).map(String) : [] }),
+  atividadeSteamJogos: (recarregar) => ipcRenderer.invoke('atividade-steam-jogos', !!recarregar),
+  aoMudarMusica: (cb) => ipcRenderer.on('atividade-musica', (_e, m) => cb(m)), // só recebe: a música nova (ou null)
   razzeSetActivity: (activity) => ipcRenderer.invoke('razze-set-activity', { game: String(activity?.game || ''), artist: String(activity?.artist || ''), title: String(activity?.title || '') }),
   razzeSetBio: (bio) => ipcRenderer.invoke('razze-set-bio', String(bio || '')),
   razzeFriendLinkCreate: () => ipcRenderer.invoke('razze-friend-link-create'),

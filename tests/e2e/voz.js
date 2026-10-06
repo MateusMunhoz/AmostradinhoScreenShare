@@ -4,7 +4,7 @@ const { openApp, createRoom, joinRoom, attach, winStyle, check, sleep, run } = r
 
 // O microfone falso do Chrome só dá bipes (que o filtro de ruído corta); um tom contínuo faz as vezes da voz
 const TONE = `(() => { window.tctx = new AudioContext(); const o = tctx.createOscillator(); const g = tctx.createGain(); g.gain.value = 0.3; const dst = tctx.createMediaStreamDestination(); o.connect(g); g.connect(dst); o.start(); voice.media = { getUserMedia: async () => dst.stream }; })()`;
-const OVERLAY = 'Chat da sala · Tela P2P';
+const OVERLAY = 'Chat da sala · Nebula';
 
 run('Voz, volume e chat por cima do jogo', 150000, async () => {
   const A = await openApp('vozA', 9481, { fake: true });
@@ -105,8 +105,8 @@ run('Voz, volume e chat por cima do jogo', 150000, async () => {
   await B.eval(`setVol('${anaId}', { voice: 100 })`);
   await B.eval(`$('voiceStackPop').querySelector('.vs-row').click()`);
   await sleep(200);
-  check('Clicar na Ana da lista abre o volume', await B.eval(`!$('personCard').hidden && $('personCard').dataset.for === '${anaId}'`));
-  await B.eval(`closePersonCard(); [...$('voiceStackPop').querySelectorAll('button')].find((b) => b.textContent === 'Abrir o painel da voz').click()`);
+  check('Clicar na Ana da lista abre o perfil dela na lista', await B.eval(`skyFocusId === '${anaId}' && skyFocusFrom === 'pilula' && !$('skyFocus').hidden`));
+  await B.eval(`closeSkyProfile(); [...$('voiceStackPop').querySelectorAll('button')].find((b) => b.textContent === 'Abrir o painel da voz').click()`);
   await sleep(200);
   check('"Abrir o painel da voz" abre o painel e fecha a lista', await B.eval(`chat.open && workspaceViews.voice && !$('voiceStackPop')`));
   await B.eval(`setPanelOpen(true)`);

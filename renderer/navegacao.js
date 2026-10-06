@@ -196,9 +196,9 @@ function watchDock() {
   document.addEventListener('mousedown', (e) => { if (!$('dockMoreWrap').contains(e.target)) closeDockMore(); });
   // A pílula aparece e some junto com as faixas das telas e os controles do YouTube (.ui-idle, setupTileIdle em
   // palco.js): com telas no palco, ela só segue o estado delas; sem telas, usa o mesmo tempo (TILE_IDLE_MS) sozinha.
-  // Com o mouse em cima dela, o foco nela (Tab) ou o menu da setinha aberto, fica
+  // Com o mouse em cima dela, o foco nela (Tab) ou um menu dela aberto (setinha, entrar na voz, quem pode assistir), fica
   const tiles = () => [...$('tiles').querySelectorAll('.tile')];
-  const held = () => dock.matches(':hover, :focus-within') || !$('dockMoreMenu').hidden || !!$('voiceJoinPop');
+  const held = () => dock.matches(':hover, :focus-within') || !$('dockMoreMenu').hidden || !!$('voiceJoinPop') || !!$('shareOpenMenu');
   const sync = () => { if (tiles().length) dock.classList.toggle('dock-sleep', !held() && tiles().every((t) => t.classList.contains('ui-idle'))); };
   new MutationObserver(sync).observe($('tiles'), { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
   let sleepTimer = 0;

@@ -16,7 +16,8 @@ if /i "%ONE%"=="todos" goto audiocap
 if /i "%ONE%"=="audiocap" goto audiocap
 if /i "%ONE%"=="videocap" goto videocap
 if /i "%ONE%"=="teclas" goto teclas
-echo Uso: build.cmd [audiocap^|videocap^|teclas]
+if /i "%ONE%"=="midia" goto midia
+echo Uso: build.cmd [audiocap^|videocap^|teclas^|midia]
 exit /b 1
 :audiocap
 cl %FLAGS% audiocap.cpp /Fe..\bin\audiocap.exe ole32.lib shell32.lib version.lib || exit /b 1
@@ -26,3 +27,6 @@ cl %FLAGS% videocap.cpp /Fe..\bin\videocap.exe d3d11.lib dxgi.lib windowsapp.lib
 if /i not "%ONE%"=="todos" exit /b 0
 :teclas
 cl %FLAGS% teclas.cpp /Fe..\bin\teclas.exe user32.lib winmm.lib || exit /b 1
+if /i not "%ONE%"=="todos" exit /b 0
+:midia
+cl %FLAGS% midia.cpp /Fe..\bin\midia.exe windowsapp.lib || exit /b 1

@@ -348,7 +348,9 @@ $('startBtn').onclick = () => (state.shareSwitching ? switchSource() : startShar
 $('switchShareBtn').onclick = () => openShareDialog(true);
 setIcon($('switchShareBtn'), 'swap', 'Trocar a tela ou janela transmitida, sem parar');
 setIcon($('stopShareBtn'), 'stop', 'Parar de transmitir');
-$('shareOpenBtn').onclick = () => setShareOpen(state.shareOpen === false);
+$('shareOpenBtn').onclick = () => toggleShareOpenMenu();
+document.addEventListener('pointerdown', (e) => { if ($('shareOpenMenu') && !e.target.closest('#shareOpenMenu, #shareOpenBtn')) toggleShareOpenMenu(false); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && $('shareOpenMenu')) { toggleShareOpenMenu(false); $('shareOpenBtn').focus(); } });
 $('refreshSources').onclick = loadSources;
 $('refreshApps').onclick = loadAudioApps;
 // Ícone das Estatísticas, na sala ao lado de Sair da sala

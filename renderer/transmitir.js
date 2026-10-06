@@ -648,14 +648,57 @@ function setShareOpen(open) {
   syncShareOpen();
   toast(open ? 'Transmissão aberta: qualquer um da sala pode assistir.' : `Agora só quem está em ${channelName(myVoiceChannel())} pode assistir.`);
 }
+// Menu "Quem pode assistir", sobe do ícone da barra Ao vivo: a sala toda ou só o seu canal (só nesta transmissão)
+function toggleShareOpenMenu(force) {
+  const open = force ?? !$('shareOpenMenu');
+  $('shareOpenBtn').setAttribute('aria-expanded', String(open));
+  if (!open) return $('shareOpenMenu')?.remove();
+  const menu = document.createElement('div');
+  menu.id = 'shareOpenMenu';
+  menu.className = 'share-open-menu';
+  menu.setAttribute('role', 'menu');
+  menu.setAttribute('aria-label', 'Quem pode assistir');
+  document.body.append(menu);
+  renderShareOpenMenu();
+  menu.querySelector('[aria-checked="true"]')?.focus();
+}
+function renderShareOpenMenu() {
+  const menu = $('shareOpenMenu');
+  if (!menu) return;
+  const open = state.shareOpen !== false;
+  menu.replaceChildren();
+  const head = document.createElement('div');
+  head.className = 'som-head';
+  head.textContent = 'Quem pode assistir';
+  menu.append(head);
+  for (const [value, icon, label, sub] of [[true, 'globe', 'A sala toda', 'Qualquer canal'], [false, 'lock', 'Só o meu canal', channelName(myVoiceChannel())]]) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.setAttribute('role', 'menuitemradio');
+    b.setAttribute('aria-checked', String(open === value));
+    b.innerHTML = ICON[icon];
+    const t = document.createElement('span');
+    t.className = 'som-text';
+    const strong = document.createElement('strong');
+    strong.textContent = label;
+    const small = document.createElement('small');
+    small.textContent = sub;
+    t.append(strong, small);
+    b.append(t);
+    b.onclick = () => { toggleShareOpenMenu(false); if (open !== value) setShareOpen(value); };
+    menu.append(b);
+  }
+  const r = $('shareOpenBtn').getBoundingClientRect();
+  menu.style.left = `${Math.max(8, Math.min(r.left + r.width / 2 - menu.offsetWidth / 2, innerWidth - menu.offsetWidth - 8))}px`;
+  menu.style.bottom = `${innerHeight - r.top + 8}px`;
+}
 // Fechou, ou alguém (ou você) mudou de canal: quem ficou de fora para de assistir. E o botão da barra acompanha
 function syncShareOpen() {
   const btn = $('shareOpenBtn');
   const open = state.shareOpen !== false;
-  btn.textContent = open ? 'Para todos' : 'Só meu canal';
-  btn.title = open
-    ? 'Qualquer um da sala pode assistir. Clique para deixar só quem está no seu canal (só nesta transmissão)'
-    : `Só quem está em ${channelName(myVoiceChannel())} pode assistir. Clique para abrir para a sala toda (só nesta transmissão)`;
+  // Só o ícone: globo = a sala toda; cadeado = só o seu canal. Clicar abre as duas opções (toggleShareOpenMenu)
+  setIcon(btn, open ? 'globe' : 'lock', open ? 'Quem pode assistir: a sala toda' : `Quem pode assistir: só ${channelName(myVoiceChannel())}`);
+  renderShareOpenMenu();
   if (!state.sharing) return;
   for (const id of [...state.out.keys()]) {
     if (mayWatchMe(id)) continue;

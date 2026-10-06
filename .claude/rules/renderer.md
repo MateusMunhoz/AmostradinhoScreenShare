@@ -20,6 +20,8 @@ paths:
 - Cores só por `var(--...)`: tokens em `styles.css` (`:root`) e `palette()` em `renderer/preferencias-modelo.js`.
   Semântica: amarelo = você/ao vivo, verde = falando, laranja = cuidado. Sem vermelho.
 - Sem animação contínua: o app roda junto com jogos. Só transições curtas em resposta a uma ação.
+  Exceção aprovada: o vinil e as barrinhas do "Ouvindo agora" no perfil (`atvVinil`, `ceu-voz.js`), só com o perfil
+  aberto, só `transform`, parados no modo gamer e com "reduzir movimento". Não abra outras sem pedir.
 - Preferência nova: validar em `normalize()` (`renderer/preferencias-modelo.js`) e cobrir em `tests/preferencias.test.js`.
 - A página só fala com o processo principal por `window.api` (`preload.js`). Precisa de algo novo do main? Veja a regra
   de `main.js`/`preload.js` e apresente o plano antes.

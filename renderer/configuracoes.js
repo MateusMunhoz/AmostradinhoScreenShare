@@ -163,7 +163,7 @@ function renderGeneralSettings() {
   $('notificationVolume').value = appPreferences.sounds.volume;
   $('notificationVolumeValue').textContent = `${appPreferences.sounds.volume}%`;
 }
-// tab: a aba que abre (voice, shortcuts, skin, appearance, colors, sounds, phone, dms, network, extras, perf, stream); sem ela, a última
+// tab: a aba que abre (voice, shortcuts, skin, appearance, colors, sounds, activity, phone, dms, network, extras, perf, stream); sem ela, a última
 function openGeneralSettings(tab) {
   if (typeof tab !== 'string') tab = null; // pelo onclick chega o evento
   if (!$('profilePane').hidden) closeProfilePopup();
@@ -466,6 +466,7 @@ function settingsGroupChanged(before, now) {
   if (now === 'voz') enterVoiceSettings();
   if (now === 'stats') enterStats();
   if (now === 'rede') renderConnectivitySettings(); // Rede: o estado da conexão e da conta na hora
+  if (now === 'atividade') void renderSteamJogos(); // Atividade: os jogos da Steam deste PC (conta.js)
   syncConnectionMap(); // o mapa de conexões (grupo Rede) só atualiza com ele à vista
 }
 function setupSettingsTabs() {

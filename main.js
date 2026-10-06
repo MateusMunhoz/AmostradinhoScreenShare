@@ -10,7 +10,7 @@ const {
   videoCapCommand, startAppAudio, stopAppAudio,
 } = require('./main/nativos');
 const { janelas } = require('./main/contexto');
-const { lerAtividade } = require('./main/atividade');
+const { lerAtividade, pararMidia, aoMudarMusica, jogosDaSteam, limparIdsSteam } = require('./main/atividade');
 const { pips, livePip, freeSlot, pipBounds, setPipSize, setPipGroup, setPipOpacity, setPipEdit, setupPip } = require('./main/janela-flutuante');
 const { chatBounds, setupChatOverlay, chatComposeRequest } = require('./main/chat-jogo');
 const { keys, setShortcut, setRoomKeys, setPtt, setVoiceCmdKey } = require('./main/atalhos');
@@ -457,7 +457,11 @@ if (hasSingleInstance) app.whenReady().then(() => {
   ipcMain.handle('razze-change-password', (_e, current, next) => razze.changePassword(String(current || '').slice(0, 200), String(next || '').slice(0, 200)));
   ipcMain.handle('razze-reset-password', (_e, email, code, password) => razze.resetPassword(String(email || '').slice(0, 254), String(code || '').slice(0, 20), String(password || '').slice(0, 200)));
   // Atividade no perfil: só lê o que a página pediu (jogo e/ou Spotify) e devolve o nome do jogo e a faixa
-  ipcMain.handle('atividade-ler', (_e, opcoes) => lerAtividade({ jogos: !!opcoes?.jogos, musica: !!opcoes?.musica }));
+  ipcMain.handle('atividade-ler', (_e, opcoes) => lerAtividade({ jogos: !!opcoes?.jogos, musica: !!opcoes?.musica, steam: limparIdsSteam(opcoes?.steam) }));
+  // Configurações › Atividade: os jogos instalados na Steam, com nome e imagem (lidos dos arquivos da Steam neste PC)
+  ipcMain.handle('atividade-steam-jogos', (_e, recarregar) => jogosDaSteam({ recarregar: !!recarregar }));
+  // A música mudou (midia.exe): avisa a página na hora, sem esperar a próxima leitura
+  aoMudarMusica((m) => { if (janelas.main && !janelas.main.isDestroyed()) janelas.main.webContents.send('atividade-musica', m); });
   ipcMain.handle('razze-set-activity', (_e, a) => razze.setActivity({ game: String(a?.game || '').slice(0, 200), artist: String(a?.artist || '').slice(0, 200), title: String(a?.title || '').slice(0, 200) }));
   ipcMain.handle('razze-set-bio', (_e, bio) => razze.setBio(String(bio || '').slice(0, 400)));
   ipcMain.handle('razze-friend-link-create', () => razze.friendLinkCreate());
@@ -589,7 +593,7 @@ app.on('before-quit', (event) => {
   Promise.race([razzePresence.stop().catch(() => {}), new Promise(resolve => setTimeout(resolve, 1500))]).finally(() => app.quit());
 });
 
-app.on('will-quit', () => { globalShortcut.unregisterAll(); setPtt(0); });
+app.on('will-quit', () => { globalShortcut.unregisterAll(); setPtt(0); pararMidia(); });
 
 app.on('window-all-closed', () => {
   celular.fechar();

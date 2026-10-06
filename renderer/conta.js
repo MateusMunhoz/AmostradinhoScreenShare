@@ -163,7 +163,7 @@ async function salvarBio() {
 // ---------- Atividade (jogo e música) ----------
 const ATV_CADA_MS = 30 * 1000;
 const ATV_RENOVAR_MS = 60 * 1000;
-const atv = { leitura: 0, amigos: 0, ultimo: '', enviadoEm: 0 };
+const atv = { leitura: 0, amigos: 0, ultimo: '', enviadoEm: 0, jogo: '', jogoImagem: '', jogoDesde: 0 };
 const atvLigada = (k) => load('atividade' + k, '0') === '1';
 
 function atvTexto(jogo, musica) {
@@ -173,21 +173,29 @@ function atvTexto(jogo, musica) {
   return p.join(' · ');
 }
 
-// Lê o que está ligado, mostra a prévia (o que os amigos veem) e manda ao servidor quando muda ou a cada minuto
-async function atvTick() {
+// Lê o que está ligado, mostra a prévia (o que os amigos veem), passa para quem está na sala quando muda e manda ao
+// servidor quando muda ou a cada minuto. Sem conta e fora da sala não lê (só a prévia, quando forcar)
+async function atvTick(forcar = false) {
   const jogos = atvLigada('Jogo'), musica = atvLigada('Musica');
-  let r = { jogo: '', musica: null };
-  if ((jogos || musica) && window.api?.atividadeLer) { try { r = await window.api.atividadeLer({ jogos, musica }); } catch { /* sem leitura: manda vazio */ } }
+  const logado = typeof razzeUser !== 'undefined' && !!razzeUser;
+  if (!forcar && !logado && !state.myId) return;
+  let r = { jogo: '', jogoImagem: '', musica: null };
+  if ((jogos || musica) && window.api?.atividadeLer) { try { r = await window.api.atividadeLer({ jogos, musica, steam: steamMarcados() }); } catch { /* sem leitura: manda vazio */ } }
   const jogo = jogos ? r.jogo || '' : '';
+  if (jogo !== atv.jogo) atv.jogoDesde = jogo ? Date.now() : 0; // desde quando joga: "há 40 min" no perfil
+  atv.jogo = jogo; // para a música que chega na hora (atvMusicaChegou) não apagar o jogo
+  atv.jogoImagem = jogo ? r.jogoImagem || '' : '';
   const faixa = musica ? r.musica : null;
-  const texto = atvTexto(jogo, faixa);
-  $('atvPreview').textContent = !jogos && !musica ? 'Nada aparece para os amigos.'
-    : texto ? 'Os amigos veem agora: ' + texto : 'Agora não há nada para mostrar (jogo não reconhecido ou música pausada).';
-  if (typeof razzeUser === 'undefined' || !razzeUser) return;
-  const payload = { game: jogo, artist: faixa ? faixa.artista : '', title: faixa ? faixa.faixa : '' };
+  const tocando = faixa && !faixa.pausada ? faixa : null; // os amigos (e a prévia) só veem a que está tocando
+  const texto = atvTexto(jogo, tocando);
+  $('atvPreview').textContent = !jogos && !musica ? 'Nada aparece no seu perfil.'
+    : texto ? 'Aparece agora: ' + texto : 'Agora não há nada para mostrar (jogo não reconhecido ou música pausada).';
+  atvMudou(limparAtividade({ jogo, jogoImagem: atv.jogoImagem, jogoDesde: atv.jogoDesde, artista: faixa ? faixa.artista : '', faixa: faixa ? faixa.faixa : '', album: faixa?.album, capa: faixa?.capa, pausada: faixa?.pausada }));
+  if (!logado) return;
+  const payload = { game: jogo, artist: tocando ? tocando.artista : '', title: tocando ? tocando.faixa : '' };
   const chave = JSON.stringify(payload);
   if (chave === atv.ultimo && Date.now() - atv.enviadoEm < ATV_RENOVAR_MS) return;
-  if (chave === atv.ultimo && !jogo && !faixa) return; // vazio e já avisado: não renova
+  if (chave === atv.ultimo && !jogo && !tocando) return; // vazio e já avisado: não renova
   try { await window.api.razzeSetActivity(payload); atv.ultimo = chave; atv.enviadoEm = Date.now(); } catch { /* tenta no próximo */ }
 }
 
@@ -195,10 +203,174 @@ async function atvTick() {
 function atvAgendar() {
   clearInterval(atv.leitura);
   atv.leitura = 0;
-  const logado = typeof razzeUser !== 'undefined' && !!razzeUser;
-  if (logado && (atvLigada('Jogo') || atvLigada('Musica'))) atv.leitura = setInterval(() => void atvTick(), ATV_CADA_MS);
-  void atvTick(); // também manda o vazio quando acabou de desligar
+  // Lê com a conta ou numa sala (atvTick confere a cada vez: entrar ou sair da sala não precisa reagendar)
+  if (atvLigada('Jogo') || atvLigada('Musica')) atv.leitura = setInterval(() => void atvTick(), ATV_CADA_MS);
+  void atvTick(true); // também manda o vazio quando acabou de desligar
 }
+
+// ---------- Jogos da Steam (Configurações › Atividade) ----------
+// Os jogos instalados na Steam só aparecem no perfil se a pessoa marcar. A escolha fica neste PC:
+// atividadeSteam = { "<número do jogo>": true (mostrar) | false (não mostrar) }; jogo que não está ali é novo (ainda não
+// escolhido) e não aparece. Achou jogo novo: um aviso leva para a escolha (atvProcurarNovos).
+const STEAM_NOVOS_CADA_MS = 10 * 60 * 1000;
+const steamUi = { jogos: [], avisados: new Set(), timer: 0, novosMarcados: new Set() };
+function steamEscolhas() {
+  try {
+    const o = JSON.parse(load('atividadeSteam', '{}'));
+    const r = {};
+    if (o && typeof o === 'object' && !Array.isArray(o)) for (const [id, v] of Object.entries(o)) if (/^\d{1,10}$/.test(id) && typeof v === 'boolean') r[id] = v;
+    return r;
+  } catch { return {}; }
+}
+function steamEscolher(mudancas) { save('atividadeSteam', JSON.stringify({ ...steamEscolhas(), ...mudancas })); }
+const steamMarcados = () => Object.entries(steamEscolhas()).filter(([, v]) => v).map(([id]) => id).slice(0, 500);
+
+function steamLinha(j, marcado, onchange) {
+  const li = document.createElement('li');
+  const label = document.createElement('label');
+  label.className = 'steam-game';
+  const cb = document.createElement('input');
+  cb.type = 'checkbox';
+  cb.checked = marcado;
+  cb.onchange = () => onchange(cb.checked);
+  const img = document.createElement(j.imagem ? 'img' : 'span');
+  img.className = 'steam-img';
+  if (j.imagem) { img.src = j.imagem; img.alt = ''; } else img.innerHTML = ICON.game;
+  const nome = document.createElement('span');
+  nome.className = 'steam-nome';
+  nome.textContent = j.nome;
+  label.append(cb, img, nome);
+  li.append(label);
+  return li;
+}
+
+// Desenha as duas listas: os novos (a escolher, vários de uma vez) e os já escolhidos (cada um muda na hora)
+async function renderSteamJogos(recarregar = false) {
+  if (!window.api?.atividadeSteamJogos) return;
+  $('steamStatus').textContent = 'Procurando os jogos da Steam…';
+  try { steamUi.jogos = await window.api.atividadeSteamJogos(recarregar); } catch { steamUi.jogos = []; }
+  const e = steamEscolhas();
+  const novos = steamUi.jogos.filter((j) => !(j.id in e));
+  const seus = steamUi.jogos.filter((j) => j.id in e);
+  for (const id of [...steamUi.novosMarcados]) if (!novos.some((j) => j.id === id)) steamUi.novosMarcados.delete(id);
+  $('steamStatus').textContent = !steamUi.jogos.length ? 'Nenhum jogo da Steam encontrado neste PC.'
+    : novos.length ? `${novos.length === 1 ? '1 jogo novo' : novos.length + ' jogos novos'} para escolher.` : '';
+  $('steamNovosBox').hidden = !novos.length;
+  $('steamNovos').replaceChildren(...novos.map((j) => steamLinha(j, steamUi.novosMarcados.has(j.id), (on) => {
+    if (on) steamUi.novosMarcados.add(j.id); else steamUi.novosMarcados.delete(j.id);
+  })));
+  $('steamSeusBox').hidden = !seus.length;
+  $('steamSeus').replaceChildren(...seus.map((j) => steamLinha(j, e[j.id], (on) => { steamEscolher({ [j.id]: on }); void atvTick(true); })));
+}
+// Os novos viram escolhidos: os marcados aparecem, os outros não
+function steamDecidirNovos(mostrarMarcados) {
+  const e = steamEscolhas();
+  const mudancas = {};
+  for (const j of steamUi.jogos) if (!(j.id in e)) mudancas[j.id] = mostrarMarcados && steamUi.novosMarcados.has(j.id);
+  steamUi.novosMarcados.clear();
+  steamEscolher(mudancas);
+  void renderSteamJogos();
+  void atvTick(true);
+}
+function steamMarcarSeus(on) {
+  const mudancas = {};
+  for (const id of Object.keys(steamEscolhas())) mudancas[id] = on;
+  steamEscolher(mudancas);
+  void renderSteamJogos();
+  void atvTick(true);
+}
+
+// Com o jogo ligado, procura jogos novos na Steam (ao abrir e a cada 10 min) e avisa uma vez por jogo
+async function atvProcurarNovos() {
+  if (!atvLigada('Jogo') || !window.api?.atividadeSteamJogos) return;
+  let jogos = [];
+  try { jogos = await window.api.atividadeSteamJogos(false); } catch { return; }
+  const e = steamEscolhas();
+  const novos = jogos.filter((j) => !(j.id in e) && !steamUi.avisados.has(j.id));
+  if (!novos.length) return;
+  for (const j of novos) steamUi.avisados.add(j.id);
+  if (!$('generalSettingsDialog').hidden && !$('settingsPanel-activity').hidden) return void renderSteamJogos(); // já está na tela
+  const texto = novos.length === 1 ? `Achamos ${novos[0].nome} na sua Steam. Quer mostrar no seu perfil quando jogar?`
+    : `Achamos ${novos.length} jogos novos na sua Steam. Escolha quais mostrar no seu perfil.`;
+  toast(texto, 'info', { label: 'Escolher', run: () => openGeneralSettings('activity') });
+}
+function atvAgendarProcura() {
+  clearInterval(steamUi.timer);
+  steamUi.timer = 0;
+  if (!atvLigada('Jogo')) return;
+  steamUi.timer = setInterval(() => void atvProcurarNovos(), STEAM_NOVOS_CADA_MS);
+  setTimeout(() => void atvProcurarNovos(), 5000); // depois que o app abriu
+}
+
+// ---------- A atividade na sala ----------
+// O jogo e a música aparecem no perfil e na linha de quem está na sala. Passa de PC para PC como a frase: quem vê a
+// linha de alguém pergunta uma vez ({ side: 'atv', want: true }) e cada um avisa todos quando a sua muda
+// ({ side: 'atv', jogo, jogoDesde, artista, faixa, album, capa, pausada }). Pausada: o perfil mostra a música parada. Nada muda no protocolo da sala; só na memória, só desta sala.
+// A capa é um JPEG 96x96 em data: URL (main/atividade.js), uns 5 KB: vai só quando a faixa muda ou alguém pergunta.
+const ATV_TEXTO_MAX = 80;
+const ATV_CAPA_MAX = 28100;
+const ATV_DESDE_MAX_MS = 48 * 3600 * 1000;
+const atvDaSala = new Map(); // id -> { jogo, artista, faixa }
+const atvPedidas = new Set(); // ids a quem já perguntei nesta sala
+let atvMinha = null; // a minha, como os outros veem (null: nada)
+
+// Vem de outro PC: só texto, sem caracteres de controle e curto. Nada para mostrar -> null
+function limparAtividade(d) {
+  const t = (v) => (typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f-\u009f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, ATV_TEXTO_MAX) : '');
+  const imagem = (v) => (typeof v === 'string' && v.length <= ATV_CAPA_MAX && /^data:image\/jpeg;base64,\/9j\/[A-Za-z0-9+/]+={0,2}$/.test(v) ? v : '');
+  // Desde quando joga (ms, relógio de quem joga): só um instante das últimas 48 h, com folga de 5 min para relógio adiantado
+  const agora = Date.now();
+  const desde = Number.isInteger(d?.jogoDesde) && d.jogoDesde >= agora - ATV_DESDE_MAX_MS && d.jogoDesde <= agora + 5 * 60000 ? Math.min(d.jogoDesde, agora) : 0;
+  const a = { jogo: t(d?.jogo), jogoImagem: imagem(d?.jogoImagem), jogoDesde: desde, artista: t(d?.artista), faixa: t(d?.faixa), album: t(d?.album), capa: imagem(d?.capa) };
+  if (!a.artista && a.faixa) { a.artista = a.faixa; a.faixa = ''; }
+  a.pausada = !!a.artista && d?.pausada === true;
+  if (!a.artista) a.album = a.capa = ''; // sem música, sem capa
+  if (!a.jogo) { a.jogoImagem = ''; a.jogoDesde = 0; } // sem jogo, sem imagem nem tempo
+  return a.jogo || a.artista ? a : null;
+}
+// "há 40 min", "há 1 h 20 min" ('' sem tempo)
+function atvHa(desde, agora = Date.now()) {
+  if (!desde) return '';
+  const min = Math.max(0, Math.floor((agora - desde) / 60000));
+  if (min < 1) return 'agora há pouco';
+  if (min < 60) return `há ${min} min`;
+  const h = Math.floor(min / 60), m = min % 60;
+  return m ? `há ${h} h ${m} min` : `há ${h} h`;
+}
+function atvDe(id) {
+  if (!id || id === 'me' || id === state.myId) return atvMinha;
+  return atvDaSala.get(id) || null;
+}
+function atvRedesenhar(id) {
+  if (state.myId) renderMembers();
+  if (typeof skyFocusId !== 'undefined' && skyFocusId && (skyFocusId === id || (!id && skyFocusId === state.myId))) { skyFocusKey = ''; renderSkyProfile(); }
+}
+function atvMudou(nova) {
+  if (JSON.stringify(nova) === JSON.stringify(atvMinha)) return;
+  atvMinha = nova;
+  if (!state.myId) return;
+  for (const id of state.members.keys()) sendSignal(id, { side: 'atv', ...(atvMinha || {}) });
+  atvRedesenhar(null);
+}
+// A música mudou agora (main/atividade.js pelo midia.exe): a sala vê na hora; os amigos da conta, na próxima leitura
+function atvMusicaChegou(m) {
+  if (!atvLigada('Musica')) return;
+  atvMudou(limparAtividade({ jogo: atvLigada('Jogo') ? atv.jogo : '', jogoImagem: atvLigada('Jogo') ? atv.jogoImagem : '', jogoDesde: atvLigada('Jogo') ? atv.jogoDesde : 0, artista: m?.artista, faixa: m?.faixa, album: m?.album, capa: m?.capa, pausada: m?.pausada }));
+}
+function pedirAtv(id) {
+  if (!id || id === state.myId || atvPedidas.has(id) || !state.members.has(id)) return;
+  atvPedidas.add(id);
+  sendSignal(id, { side: 'atv', want: true });
+}
+function onAtvSignal(from, data) {
+  if (!state.members.has(from)) return; // só quem está na sala
+  if (data.want === true) return sendSignal(from, { side: 'atv', ...(atvMinha || {}) });
+  const nova = limparAtividade(data);
+  if (JSON.stringify(nova) === JSON.stringify(atvDaSala.get(from) || null)) return;
+  if (nova) atvDaSala.set(from, nova); else atvDaSala.delete(from);
+  atvRedesenhar(from);
+}
+function resetAtvDaSala() { atvDaSala.clear(); atvPedidas.clear(); }
 
 // Os amigos no Início: recarrega só a atividade deles, sem mexer no resto da lista
 async function atvAtualizarAmigos() {
@@ -255,14 +427,23 @@ function setupConta() {
   $('atvJogo').checked = atvLigada('Jogo');
   $('atvMusica').checked = atvLigada('Musica');
   for (const [id, k] of [['atvJogo', 'Jogo'], ['atvMusica', 'Musica']]) {
-    $(id).onchange = () => { save('atividade' + k, $(id).checked ? '1' : '0'); atvAgendar(); };
+    $(id).onchange = () => { save('atividade' + k, $(id).checked ? '1' : '0'); atvAgendar(); if (k === 'Jogo') atvAgendarProcura(); };
   }
+  $('atvConfigurar').onclick = () => openGeneralSettings('activity');
+  $('steamProcurar').onclick = () => void renderSteamJogos(true);
+  $('steamNovosTodos').onclick = () => { for (const cb of $('steamNovos').querySelectorAll('input')) { cb.checked = true; cb.onchange(); } };
+  $('steamNovosMostrar').onclick = () => steamDecidirNovos(true);
+  $('steamNovosNao').onclick = () => steamDecidirNovos(false);
+  $('steamSeusTodos').onclick = () => steamMarcarSeus(true);
+  $('steamSeusNenhum').onclick = () => steamMarcarSeus(false);
+  atvAgendarProcura();
   // Em que sala estou: ligado por padrão (salas-amigos.js); desligar tira na hora
   $('atvSala').checked = salaAtualLigada();
   $('atvSala').onchange = () => { save('atividadeSala', $('atvSala').checked ? '1' : '0'); publicarSalaAtual(); };
   atv.amigos = setInterval(() => void atvAtualizarAmigos(), ATV_CADA_MS);
   window.addEventListener('beforeunload', () => { if (atv.ultimo && atv.ultimo !== '{"game":"","artist":"","title":""}') window.api.razzeSetActivity({}).catch(() => {}); });
-  void atvTick();
+  window.api?.aoMudarMusica?.(atvMusicaChegou);
+  atvAgendar();
   $('senhaCancel').onclick = fecharSenha;
   $('senhaSubmit').onclick = enviarSenha;
   $('senhaDialog').addEventListener('keydown', (e) => {
@@ -282,4 +463,4 @@ function setupConta() {
   renderBio();
 }
 
-if (typeof module !== 'undefined') module.exports = { limparBio, atvTexto };
+if (typeof module !== 'undefined') module.exports = { limparBio, atvTexto, limparAtividade, atvHa };

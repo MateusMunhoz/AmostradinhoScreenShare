@@ -125,3 +125,14 @@ test('Som: buffer guarda a janela mais uma folga e recomeça se o tempo voltar',
   a.push({ ts: 5e6, data: new Uint8Array(1), duration: 1 });
   assert.equal(a.chunks.length, 1);
 });
+test('mixPcm: soma no tempo certo, mono nos dois lados, outra taxa e limite em -1..1', () => {
+  const mono = { ts: 1e6, sampleRate: 1000, channels: [new Float32Array([0.5, 0.5])] };
+  const est = { ts: 1e6 + 1000, sampleRate: 1000, channels: [new Float32Array([0.8, 0.8]), new Float32Array([-0.2, -0.2])] };
+  const [l, r] = ClipMp4.mixPcm([mono, est], { from: 1e6, sampleRate: 1000, frames: 4 });
+  assert.deepEqual([...l].map((x) => +x.toFixed(2)), [0.5, 1, 0.8, 0]);
+  assert.deepEqual([...r].map((x) => +x.toFixed(2)), [0.5, 0.3, -0.2, 0]);
+  // 500 Hz numa saída de 1000 Hz: cada ponto vale dois; antes de `from` fica de fora
+  const lento = { ts: 0, sampleRate: 500, channels: [new Float32Array([0.1, 0.2, 0.3])] };
+  const [l2] = ClipMp4.mixPcm([lento], { from: 2000, sampleRate: 1000, frames: 6 });
+  assert.deepEqual([...l2].map((x) => +x.toFixed(2)), [0.2, 0.2, 0.3, 0.3, 0, 0]);
+});

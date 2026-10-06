@@ -129,7 +129,7 @@ Se o host sai, ou se o app dele fecha ou trava, a sala não acaba.
 - **Várias ao mesmo tempo:** qualquer pessoa pode clicar em **Transmitir minha tela**, e várias podem transmitir juntas.
 - **O que transmitir:** na janela de transmitir, escolha a tela inteira ou uma janela, a qualidade e o áudio.
 - **Sem prévia:** a prévia da sua própria tela não aparece na sala. Você vê o que escolheu ao começar.
-- **Só para o seu canal:** na janela de transmitir, **Outros canais podem assistir** diz se quem está em outra subsala (ou na Voz geral, se você está numa subsala) pode assistir. Vem ligado e fica salvo. Durante a transmissão, o botão ao lado de **Trocar** (**Para todos** ou **Só meu canal**) muda só a transmissão atual; a próxima começa como está na janela. Fechada, quem está fora do seu canal vê o **Assistir** desligado, e quem já assistia de fora para de ver (também quando você ou a pessoa muda de canal).
+- **Só para o seu canal:** na janela de transmitir, **Outros canais podem assistir** diz se quem está em outra subsala (ou na Voz geral, se você está numa subsala) pode assistir. Vem ligado e fica salvo. Durante a transmissão, o ícone ao lado de **Trocar** (globo = a sala toda, cadeado = só o seu canal) abre **Quem pode assistir**, com as duas opções; a escolha muda só a transmissão atual; a próxima começa como está na janela. Fechada, quem está fora do seu canal vê o **Assistir** desligado, e quem já assistia de fora para de ver (também quando você ou a pessoa muda de canal).
 - **Trocar sem parar:** enquanto transmite, clique em **Trocar**, ao lado de "Ao vivo", e escolha outra tela ou janela (por exemplo, de uma janela do Chrome para a do Firefox, ou de uma janela para a tela inteira). Quem assiste passa a ver a fonte nova em um instante, sem reconectar. A qualidade, o som e a codificação continuam os mesmos. Funciona nos três modos (normal, WebCodecs e NVENC direto).
 - **Firewall:** na primeira vez, o Windows pergunta se o app pode acessar a rede. Marque **redes privadas e públicas**.
 
@@ -167,7 +167,7 @@ Salva os últimos segundos de uma transmissão, com o som dela, num arquivo de v
 - **Quanto tempo:** 15 s, 30 s (padrão), 1 min ou 2 min, em **Voz e atalhos › Clipe**. Mais tempo usa mais memória (2 min em 1080p: uns 100 a 200 MB por transmissão).
 - **Qual transmissão:** a que está em destaque; sem destaque, a que você assiste. A sua própria transmissão também vale: transmitindo seu jogo, o atalho salva a sua jogada (com placa NVIDIA, mesmo sem ninguém assistindo; nas outras, só com alguém assistindo).
 - **Onde fica:** `Vídeos\Tela P2P\Clipes`, em MP4, com o nome de quem transmitia e a hora. O aviso tem **Mostrar na pasta**.
-- **Som:** o som da transmissão (o jogo, a música) vai junto. A voz da call fica de fora.
+- **Som:** o som da transmissão (o jogo, a música) vai junto. A voz da call só entra com **Gravar a voz da call nos clipes** ligado (em **Voz e atalhos › Clipe**, desligado por padrão): aí vai o que você ouve na voz, no volume que você deu a cada um, e o seu microfone (mutado não entra). Avise quem está na call. No [modo gamer](#modo-gamer) a voz não é gravada.
 - **Qualidade:** no modo **Uma vez só** (o padrão), a mesma que chegou para você, sem perder nada. No modo **Uma por pessoa**, o app codifica o vídeo de novo só para o clipe: pela placa de vídeo no tamanho que chega ou, sem ela, pelo processador em até 720p a 30 quadros, para pesar pouco. O clipe começa no último quadro inteiro antes do tempo escolhido: pode ter alguns segundos a mais.
 - **Vídeo pausado não entra:** com o app minimizado ou coberto pelo jogo, o vídeo de quem você assiste para de chegar, e o clipe recomeça quando ele volta. Para clipar alguém enquanto joga, deixe a transmissão numa [janela flutuante](#janela-flutuante).
 ## Janela flutuante
@@ -215,6 +215,12 @@ Clique em **Entrar na voz**, na barra de baixo, para ligar o microfone padrão d
   - **microfone** (liga e desliga);
   - **silenciar as vozes** (só o que você ouve, sem mexer no seu microfone nem no som das telas);
   - **sair da voz**.
+- **No seu perfil** (clique no seu nome na voz), **Microfone** e **Fone** ficam lado a lado; desligado ou silenciado, o botão
+  fica laranja e mostra "Desligado" ou "Silenciado" embaixo.
+- **No perfil dos outros**, ao lado do nome aparecem ícones: microfone riscado (microfone desligado) e fone riscado (fone
+  silenciado), em laranja, e um alto-falante com X, em cinza, se você silenciou a pessoa. Passe o mouse para ver o que é.
+- **Quem está transmitindo**, no perfil, ganha um anel azul e o selo **Ao vivo** na foto, e uma barra no pé do perfil
+  ("Rafa está transmitindo") com o botão **Assistir** (ou **Parar**, se você já está assistindo).
 - **Quem está falando** ganha 3 barrinhas verdes que mexem ao lado do nome, sem texto. Isso aparece na lista de pessoas, na tela dessa pessoa (a borda pisca em verde), nas janelas flutuantes e no chat por cima do jogo. Microfone desligado aparece com um ícone laranja.
 - **Volume de cada pessoa:** o botão de volume ao lado do nome abre um cartão com:
   - **Voz** (0 a 200%, para ouvir quem tem o microfone baixo);
@@ -294,16 +300,28 @@ de antes, com porta, senha e visibilidade.
 
 ## Atividade no perfil
 
-Em **Seu perfil › Atividade**, cada coisa que os amigos podem ver é uma escolha sua, **desligada por padrão**:
+Em **Configurações › Atividade** (ou pelo botão **Configurar a atividade** em Seu perfil), cada coisa que aparece no seu perfil é
+uma escolha sua, **desligada por padrão**:
 
 - **Mostrar o jogo que estou jogando:** o app reconhece o jogo pelo nome do programa aberto, numa lista de jogos conhecidos (Valorant,
   Counter-Strike 2, League of Legends, Fortnite, GTA V e outros; a lista está em `main/atividade.js`). Programa que não está
   na lista não aparece, e nenhum outro nome de programa sai do PC.
-- **Mostrar a música que estou ouvindo (Spotify):** lê o título da janela do Spotify, só quando ele está tocando.
+- **Jogos da Steam:** o app lê os jogos instalados na sua Steam e mostra cada um com a imagem da sua biblioteca. Você marca quais
+  podem aparecer, vários de uma vez (**Marcar todos**, **Mostrar os marcados**, **Não mostrar nenhum**), e muda quando quiser em
+  **Seus jogos**. Jogo que você não marcou não aparece. Quando o app acha um jogo novo, um aviso pergunta se você quer mostrar
+  (**Escolher** abre essa tela). Vale para jogo aberto pela Steam; no perfil, ele aparece com a imagem dele. Ferramentas da
+  Steam que não são jogos (redistribuíveis, Proton) ficam de fora.
+- **Mostrar a música que estou ouvindo (Spotify e outros players):** lê o que está tocando nos controles de mídia do Windows (os
+  mesmos da tela de volume), com a capa do álbum, só quando está tocando. Vale para Spotify, Apple Music, Deezer, TIDAL, Amazon
+  Music, Windows Media Player, foobar2000, MusicBee, AIMP e outros players de música; o que toca no navegador não aparece.
 
 Embaixo das caixinhas, o app mostra **o que os amigos veem agora**. Só os amigos aceitos veem, no Início: "Jogando Valorant" ou
-"Ouvindo Metallica"; **clicar em "Ouvindo…" mostra a música**. Some em até 2 minutos depois que você para ou desliga. Precisa de
-conta e vale no Windows; sem conta nada é enviado.
+"Ouvindo Metallica"; **clicar em "Ouvindo…" mostra a música**. Some em até 2 minutos depois que você para ou desliga. Para os
+amigos precisa de conta; sem conta nada vai ao servidor. Vale no Windows.
+
+Numa sala, quem está nela também vê (com ou sem conta): no seu perfil aparece a caixa **Ouvindo agora** (a capa, com um disco de vinil saindo dela e girando, a faixa, o artista e o álbum; pausou, o disco volta para dentro da capa, a caixa diz **Pausada** e some depois de 3 minutos; no modo gamer e com "reduzir movimento" do Windows o disco fica parado; com o mouse em cima aparece o nome inteiro, e clicar abre a música no Spotify, pelo navegador) e
+**Jogando** (o nome do jogo, há quanto tempo você joga e, se a Steam estiver rodando esse jogo, a imagem dele, mesmo sem marcar o jogo na lista da Steam), e na sua linha da lista vem a música (com a capinha) ou o jogo embaixo do nome; com os dois, a linha mostra a música
+e um controle azul, junto dos ícones de microfone e fone, avisa que você está jogando (o nome do jogo aparece com o mouse em cima). Passa direto de PC para PC, não fica guardado e atualiza em até 30 s.
 
 ## Amigos
 
@@ -326,7 +344,7 @@ cima das conversas e no número do envelope; clicar leva para **Pedidos**. O **b
   amigo, que aparece como um cartão com **Entrar** (veja abaixo).
 - **Remover:** no **⋯** da linha, **Remover [nome]**. A própria linha pergunta se é isso mesmo; **Não** ou Esc desiste.
   Remover desfaz a amizade dos dois lados: some também da lista do outro, sem precisar reabrir o app.
-- **Em que sala o amigo está:** no lugar de "Online", aparece "Na sala de Ciclano · Radmin · 4 pessoas" (ou "na voz"), em qualquer modo e mesmo que o amigo não seja o host; na mesma sala que você, "Na sua sala". Também nos **Amigos online** do Início. É só para saber onde ele está: não vai endereço, e para entrar continua o convite ou o endereço. Quem não quer mostrar desliga em **Perfil › Atividade › Mostrar aos amigos em que sala estou** (ligado por padrão). Salas escondidas e chamadas não aparecem.
+- **Em que sala o amigo está:** no lugar de "Online", aparece "Na sala de Ciclano · Radmin · 4 pessoas" (ou "na voz"), em qualquer modo e mesmo que o amigo não seja o host; na mesma sala que você, "Na sua sala". Também nos **Amigos online** do Início. É só para saber onde ele está: não vai endereço, e para entrar continua o convite ou o endereço. Quem não quer mostrar desliga em **Configurações › Atividade › Mostrar aos amigos em que sala estou** (ligado por padrão). Salas escondidas e chamadas não aparecem.
 
 ## Mensagens diretas
 
@@ -423,12 +441,10 @@ Tem duas abas: **Desempenho** e **Transmissão**.
 ### Desempenho
 
 - **Cada cartão** mostra o número de agora, a **média dos últimos 30 s** com mínimo e pico, e um **gráfico dos últimos 10 minutos**. A faixa no fim do gráfico marca os 30 s da média.
-- **Uso do app:** processador, placa de vídeo 3D, codificação e decodificação. Mostra quanto o app usa e, embaixo, a média do PC inteiro (inclui o jogo). São os mesmos números do Gerenciador de Tarefas.
-- **Rede:** quadros capturados, quadros enviados, Mbps enviando e recebendo.
+- **À vista:** quanto o app usa do **processador** e da **placa de vídeo**, e quanto está **enviando** e **recebendo** pela rede (Mbps). São os mesmos números do Gerenciador de Tarefas.
+- **Mais detalhes** (fechado, clique para abrir): codificação e decodificação de vídeo (com a média do PC inteiro, que inclui o jogo), quadros capturados e enviados, o codificador de verdade (por exemplo, "H.264 com OpenH264 (processador)"; para quem só assiste, o Chromium não diz qual é o decodificador) e cada processo do app com a memória de vídeo.
   - Se "capturados" cai durante o jogo, a placa de vídeo estava ocupada.
   - Se "enviados" cai e "capturados" não, o problema é a internet ou a codificação.
-- **Cada processo do app:** captura, codificação, decodificação, rede e os ajudantes, com a memória de vídeo de cada um.
-- **O codificador de verdade:** por exemplo, "H.264 com OpenH264 (processador)". Para quem só assiste, o Chromium não diz qual é o decodificador.
 - **Codificação alta com o app parado:** se "Codificação de vídeo, PC inteiro" estiver alta, é outro programa usando o codificador da placa (ex.: o Replay Instantâneo da NVIDIA ou uma live do Discord).
 
 ### Transmissão

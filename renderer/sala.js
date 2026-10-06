@@ -176,6 +176,7 @@ function enterRoom(welcome, owner, host, port, cloud = null) {
   state.port = port;
   state.members.clear();
   resetBiosDaSala();
+  resetAtvDaSala();
   resetProfileBgs(); // os ids são da sala: o que sabia do fundo de cada um não vale na próxima (fundo-perfil.js)
   for (const m of welcome.members) state.members.set(m.id, { name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs || [], shareInfo: m.shareInfo || null, avatar: m.avatar || '', avatarFull: m.avatarFull || '', nameFont: AppPreferences.cleanNameFont(m.nameFont), razze: limparContaSala(m.razze) });
   state.hostId = welcome.hostId || null;
@@ -529,6 +530,8 @@ function handleSignal(from, data) {
     onProfileBgSignal(from, data).catch(console.error);
   } else if (data.side === 'bio') {
     onBioSignal(from, data);
+  } else if (data.side === 'atv') {
+    onAtvSignal(from, data); // o jogo e a música do perfil (conta.js)
   } else if (data.side === 'sharer') {
     // Mensagem de quem transmite uma tela que eu pedi para assistir
     const link = state.in.get(from);

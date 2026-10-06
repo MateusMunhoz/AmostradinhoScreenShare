@@ -450,15 +450,23 @@ function setupOnceReceiver(link, dc) {
   dc.onclose = () => closeOnceReceiver(link);
 }
 
+// Resposta do isConfigSupported por codec e aceleração: a partir da segunda vez que assiste, configura na hora
+const decoderSupport = new Map();
+async function decoderSupported(config) {
+  const k = `${config.codec}|${config.hardwareAcceleration}`;
+  if (!decoderSupport.has(k)) {
+    decoderSupport.set(k, VideoDecoder.isConfigSupported(config).then((res) => !!res.supported, () => false));
+  }
+  return decoderSupport.get(k);
+}
+
 async function configureDecoder(link, codec) {
   const r = link.once;
   if (!r || (r.codec === codec && r.decoder && r.decoder.state === 'configured')) return;
   r.codec = codec;
   for (const hardwareAcceleration of ['prefer-hardware', 'no-preference']) {
     const config = { codec, hardwareAcceleration, optimizeForLatency: true };
-    try {
-      if (!(await VideoDecoder.isConfigSupported(config)).supported) continue;
-    } catch { continue; }
+    if (!(await decoderSupported(config))) continue;
     if (link.once !== r) return;
     if (r.decoder && r.decoder.state !== 'closed') r.decoder.close();
     r.decoder = new VideoDecoder({ output: (f) => onDecoded(link, f), error: (e) => onDecoderError(link, e) });
@@ -467,7 +475,12 @@ async function configureDecoder(link, codec) {
     } catch (e) { console.warn(e); continue; }
     r.hardware = hardwareAcceleration === 'prefer-hardware';
     r.waitKey = true;
-    askKeyFrom(r);
+    // O quadro-chave que veio junto com a configuração chegou antes do decodificador: usa o que foi guardado
+    // em vez de pedir outro (economiza uma ida e volta e a espera do próximo quadro de quem transmite)
+    const pend = r.pend || [];
+    r.pend = null;
+    if (pend.length) for (const f of pend) decodeFrame(link, f);
+    else askKeyFrom(r);
     return;
   }
   console.warn('[1x] este PC não decodifica', codec);
@@ -516,7 +529,14 @@ function joinParts(f) {
 function decodeFrame(link, f) {
   const r = link.once;
   const dec = r.decoder;
-  if (!dec || dec.state !== 'configured') return;
+  if (!dec || dec.state !== 'configured') {
+    // Decodificador ainda sendo configurado: guarda do último quadro-chave em diante (no máximo 30 quadros)
+    if (!dec) {
+      if (f.key) r.pend = [f];
+      else if (r.pend && r.pend.length < 30) r.pend.push(f);
+    }
+    return;
+  }
   if (r.waitKey && !f.key) return;
   // Decodificação atrasada: descarta até o próximo quadro-chave
   if (dec.decodeQueueSize > 6) { r.waitKey = true; askKeyFrom(r); return; }

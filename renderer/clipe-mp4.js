@@ -155,6 +155,26 @@ const ClipMp4 = (() => {
     }
   }
 
+  // Soma pedaços de som (já decodificados) numa faixa estéreo só. Pedaços: { ts (µs, relógio deste PC), sampleRate,
+  // channels: [Float32Array, ...] } (mono vai para os dois lados; outra taxa é ajustada pelo ponto mais próximo).
+  // Saída: [esquerda, direita] com `frames` pontos a partir de `from` (µs), limitada a -1..1.
+  function mixPcm(parts, { from, sampleRate, frames }) {
+    const out = [new Float32Array(frames), new Float32Array(frames)];
+    for (const p of parts) {
+      const start = Math.round(((p.ts - from) / 1e6) * sampleRate);
+      const ratio = sampleRate / p.sampleRate;
+      const n = p.channels[0]?.length || 0;
+      const left = p.channels[0], right = p.channels[1] || left;
+      for (let j = Math.max(0, start), end = Math.min(frames, start + Math.floor(n * ratio)); j < end; j++) {
+        const k = Math.min(n - 1, Math.floor((j - start) / ratio));
+        out[0][j] += left[k];
+        out[1][j] += right[k];
+      }
+    }
+    for (const ch of out) for (let j = 0; j < frames; j++) ch[j] = Math.max(-1, Math.min(1, ch[j]));
+    return out;
+  }
+
   // Diferença entre o relógio deste PC e o do vídeo: a menor (o quadro que chegou com menos atraso)
   function videoOffset(frames) {
     let best = Infinity;
@@ -198,6 +218,6 @@ const ClipMp4 = (() => {
     return { bytes: new Uint8Array(target.buffer), seconds: end / 1e6, audio: sound.length > 0 };
   }
 
-  return { splitNals, toAvcc, avcC, codecString, ClipBuffer, ClipAudioBuffer, videoOffset, buildMp4 };
+  return { splitNals, toAvcc, avcC, codecString, ClipBuffer, ClipAudioBuffer, mixPcm, videoOffset, buildMp4 };
 })();
 if (typeof module !== 'undefined') module.exports = ClipMp4;

@@ -5,6 +5,8 @@
 // - Vídeo no modo "uma por pessoa": a faixa WebRTC é codificada de novo aqui, só para o clipe: pela placa de vídeo
 //   (WebCodecs) no tamanho que chega; sem a placa, pelo processador em até 720p a 30 quadros, para pesar pouco.
 // - Som: a faixa de som da transmissão (o jogo, não a voz da call) é codificada em AAC ou Opus num buffer ao lado.
+// - Voz da call (opção em Voz e atalhos, desligada por padrão e no modo gamer): um buffer só, de todas as transmissões
+//   (`clipVoice`, a mistura de mixer.clipTrack em voz.js). Ao salvar, ela e o som da transmissão viram uma faixa só.
 // Duração: 15 s, 30 s, 1 min ou 2 min (Voz e atalhos). Atalho (Ctrl+Shift+C), tesoura em cada transmissão e item no
 // ícone da bandeja. Buffers ficam no próprio link (o de quem você assiste) ou em `once` (a sua transmissão).
 // Script clássico: divide o escopo global com os outros (ordem no index.html). Usa de: util, estado, encode-once,
@@ -16,6 +18,8 @@ const CLIP_OWN_NVENC = true; // o NVENC não pausa sem ninguém assistindo: dá 
 const CLIP_REC_KEY_MS = 2000; // quadro-chave do codificador do clipe (modo "uma por pessoa"): o clipe começa no máximo 2 s antes
 const CLIP_MAX_BYTES = 400 * 1024 * 1024;
 const clipState = { saving: false, timer: 0 };
+const clipVoice = {}; // o buffer da voz da call: { clipAudioRec, clipAudio }, como um link
+const clipVoiceOn = () => load('clipVoice', '0') === '1';
 
 function clipSeconds() {
   const s = Number(load('clipSeconds', '30'));
@@ -186,6 +190,81 @@ function stopClipAudio(target) {
   target.clipAudioRec = null;
 }
 
+// Junta os sons (o da transmissão e a voz da call) numa faixa só: decodifica, soma (ClipMp4.mixPcm) e codifica de
+// novo. Só na hora de salvar; o resultado tem o mesmo formato de um ClipAudioBuffer ({ config, chunks }).
+const CLIP_MIX_RATE = 48000;
+async function decodeClipAudio(buf, from) {
+  const parts = [];
+  let failure = null;
+  const decoder = new AudioDecoder({
+    output: (d) => {
+      const channels = [];
+      for (let p = 0; p < d.numberOfChannels; p++) {
+        const ch = new Float32Array(d.numberOfFrames);
+        d.copyTo(ch, { planeIndex: p, format: 'f32-planar' });
+        channels.push(ch);
+      }
+      parts.push({ ts: d.timestamp, sampleRate: d.sampleRate, channels });
+      d.close();
+    },
+    error: (e) => { failure = e; },
+  });
+  const c = buf.config;
+  decoder.configure({ codec: c.codec === 'aac' ? 'mp4a.40.2' : 'opus', sampleRate: c.sampleRate, numberOfChannels: c.numberOfChannels,
+    ...(c.description ? { description: c.description } : {}) });
+  for (const k of buf.chunks) {
+    if (k.ts < from) continue;
+    decoder.decode(new EncodedAudioChunk({ type: 'key', timestamp: k.ts, duration: k.duration || undefined, data: k.data }));
+  }
+  await decoder.flush();
+  decoder.close();
+  if (failure) throw failure;
+  return parts;
+}
+async function mixClipAudio(bufs) {
+  const list = bufs.filter((b) => b?.config && b.chunks.length);
+  if (list.length < 2) return list[0] || null;
+  const to = Math.max(...list.map((b) => b.chunks[b.chunks.length - 1].ts));
+  const from = Math.max(Math.min(...list.map((b) => b.chunks[0].ts)), to - (clipSeconds() + 12) * 1e6);
+  const parts = (await Promise.all(list.map((b) => decodeClipAudio(b, from)))).flat();
+  const frames = Math.ceil(((to - from) / 1e6) * CLIP_MIX_RATE);
+  const [left, right] = ClipMp4.mixPcm(parts, { from, sampleRate: CLIP_MIX_RATE, frames });
+  const config = await clipAudioConfig(CLIP_MIX_RATE, 2);
+  if (!config) throw new Error('sem codificador de som');
+  const out = { config: null, chunks: [] };
+  let failure = null;
+  const encoder = new AudioEncoder({
+    output: (chunk, meta) => {
+      if (meta?.decoderConfig) {
+        const d = meta.decoderConfig.description;
+        out.config = { codec: config.codec === 'opus' ? 'opus' : 'aac', sampleRate: CLIP_MIX_RATE, numberOfChannels: 2,
+          description: d ? new Uint8Array(ArrayBuffer.isView(d) ? d.buffer.slice(d.byteOffset, d.byteOffset + d.byteLength) : d.slice(0)) : null };
+      }
+      const bytes = new Uint8Array(chunk.byteLength);
+      chunk.copyTo(bytes);
+      out.chunks.push({ ts: chunk.timestamp, data: bytes, duration: chunk.duration || 0 });
+    },
+    error: (e) => { failure = e; },
+  });
+  encoder.configure(config);
+  const BLOCK = CLIP_MIX_RATE / 10; // 100 ms por pedaço
+  for (let at = 0; at < frames; at += BLOCK) {
+    const n = Math.min(BLOCK, frames - at);
+    const data = new Float32Array(n * 2);
+    data.set(left.subarray(at, at + n), 0);
+    data.set(right.subarray(at, at + n), n);
+    const a = new AudioData({ format: 'f32-planar', sampleRate: CLIP_MIX_RATE, numberOfFrames: n, numberOfChannels: 2,
+      timestamp: from + Math.round((at / CLIP_MIX_RATE) * 1e6), data });
+    encoder.encode(a);
+    a.close();
+  }
+  await encoder.flush();
+  encoder.close();
+  if (failure) throw failure;
+  if (!out.config) throw new Error('o codificador de som não deu a configuração');
+  return out;
+}
+
 // ---------- Quem grava o quê ----------
 // A cada 2 s: liga e desliga os gravadores conforme as transmissões abertas (a sua e as que você assiste)
 function clipTargets() {
@@ -211,6 +290,11 @@ function syncClips() {
   }
   for (const t of clipKnown) if (!now.has(t)) clipDrop(t);
   clipKnown = now;
+  // Voz da call: só com a opção ligada, alguma transmissão para clipar e você na voz
+  const inVoice = !!state.myId && (mixer.nodes.size > 0 || !!mixer.localNode);
+  const voiceTrack = mixer.clipTrack(clipVoiceOn() && !gamerOn() && now.size > 0 && inVoice);
+  if ((clipVoice.clipAudioRec?.track || null) !== voiceTrack) { stopClipAudio(clipVoice); if (voiceTrack) startClipAudio(clipVoice, voiceTrack); }
+  if (!voiceTrack) clipVoice.clipAudio = null;
 }
 function startClips() {
   clearInterval(clipState.timer);
@@ -219,11 +303,13 @@ function startClips() {
     input.checked = Number(input.value) === clipSeconds();
     input.onchange = () => { if (input.checked) setClipSeconds(Number(input.value)); };
   }
+  $('clipVoice').checked = clipVoiceOn();
+  $('clipVoice').onchange = (e) => { save('clipVoice', e.target.checked ? '1' : '0'); syncClips(); };
 }
 function setClipSeconds(s) {
   if (!CLIP_DURATIONS.includes(s)) return;
   save('clipSeconds', String(s));
-  for (const t of [...clipKnown, once]) {
+  for (const t of [...clipKnown, once, clipVoice]) {
     if (t.clip) t.clip.seconds = s + 1;
     if (t.clipAudio) t.clipAudio.seconds = s + 1;
   }
@@ -266,7 +352,12 @@ async function saveClip(id = clipTargetId()) {
   }
   clipState.saving = true;
   try {
-    const { bytes, seconds, audio } = ClipMp4.buildMp4(src.buffer.take(clipSeconds()), src, Mp4Muxer, src.audio);
+    let sound = src.audio;
+    if (clipVoice.clipAudio?.config && clipVoice.clipAudio.chunks.length) {
+      try { sound = await mixClipAudio([src.audio, clipVoice.clipAudio]); }
+      catch (e) { console.warn('[clipe] voz:', e); } // sem a mistura, vai só o som da transmissão
+    }
+    const { bytes, seconds, audio } = ClipMp4.buildMp4(src.buffer.take(clipSeconds()), src, Mp4Muxer, sound);
     const res = await window.api.clipSave(bytes, clipLabel(id));
     if (!res.ok) return toast(res.error, 'error');
     toast(`Clipe salvo (${Math.round(seconds)} s${audio ? '' : ', sem som'}): ${res.name}`, 'info', { label: 'Mostrar na pasta', run: () => window.api.clipShow(res.id) });
