@@ -93,6 +93,13 @@ function createApiServer(options = {}) {
   if (!userColumns.includes('google_sub')) db.exec('ALTER TABLE users ADD COLUMN google_sub TEXT');
   if (!userColumns.includes('password_set')) db.exec('ALTER TABLE users ADD COLUMN password_set INTEGER NOT NULL DEFAULT 1');
   db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_sub ON users(google_sub) WHERE google_sub IS NOT NULL');
+  // O Google confirmou que o e-mail da conta é da pessoa (o cadastro por senha não confere). A lista de convidados só
+  // promove conta existente com isso. Contas antigas: vale para as criadas pelo Google (sem senha definida); as demais
+  // ganham ao entrar com um Google do mesmo e-mail.
+  if (!userColumns.includes('email_verificado')) {
+    db.exec('ALTER TABLE users ADD COLUMN email_verificado INTEGER NOT NULL DEFAULT 0');
+    db.exec('UPDATE users SET email_verificado = 1 WHERE google_sub IS NOT NULL AND password_set = 0');
+  }
   // Grupo da pessoa no painel (amigo ou teste); o administrador é o papel (role), não um grupo
   if (!userColumns.includes('grupo')) db.exec("ALTER TABLE users ADD COLUMN grupo TEXT NOT NULL DEFAULT 'amigo' CHECK(grupo IN ('amigo', 'teste'))");
   // Lista de convidados: quem está aqui entra já ativo (sem esperar aprovação) e com o grupo/papel combinado
@@ -387,8 +394,12 @@ function createApiServer(options = {}) {
         let user = db.prepare('SELECT id, status FROM users WHERE google_sub = ?').get(identity.sub);
         if (!user) {
           if (db.prepare('SELECT 1 AS yes FROM users WHERE email = ?').get(identity.email)) {
-            // Não junta sozinho: quem criou a conta com esse e-mail pode não ser o dono dele. Entra com a senha e vincula.
-            throw new ApiError(409, 'account_exists', 'Já existe uma conta com o e-mail ' + identity.email + '. Entre com a senha e vincule o Google em Conta.');
+            // Não junta sozinho: quem criou a conta com esse e-mail pode não ser o dono dele. Entra com a senha e vincula;
+            // com a senha desligada (googleOnly sem legacyPasswordLogin) só o administrador destrava.
+            const semSenha = control.settings().googleOnly && !control.settings().legacyPasswordLogin;
+            throw new ApiError(409, 'account_exists', 'Já existe uma conta com o e-mail ' + identity.email + '. ' + (semSenha
+              ? 'Ela ainda não foi ligada ao Google. Peça ao administrador para liberar a entrada por senha; aí você entra com ela e vincula o Google em Conta.'
+              : 'Entre com a senha e vincule o Google em Conta.'));
           }
           const convidado = db.prepare('SELECT grupo FROM allowed_emails WHERE email = ?').get(identity.email);
           if (!convidado && control.settings().onlyAllowlist) throw new ApiError(403, 'not_allowed', 'Este e-mail não está na lista de convidados. Peça ao administrador para te adicionar.');
@@ -398,12 +409,13 @@ function createApiServer(options = {}) {
           const unusable = randomBytes(32).toString('hex'); // senha que ninguém conhece: a conta só entra pelo Google até definir uma
           const displayName = (identity.name.replace(/\s+/g, ' ').trim() || identity.email.split('@')[0]).slice(0, 60) || 'Usuário';
           const requiresApproval = control.settings().requireApproval && !convidado; // quem está na lista de convidados entra direto
-          db.prepare('INSERT INTO users(id, email, display_name, password_salt, password_hash, status, google_sub, password_set, role, grupo, created_at) VALUES(?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)')
+          db.prepare('INSERT INTO users(id, email, display_name, password_salt, password_hash, status, google_sub, password_set, email_verificado, role, grupo, created_at) VALUES(?, ?, ?, ?, ?, ?, ?, 0, 1, ?, ?, ?)')
             .run(id, identity.email, displayName, salt, await hashPassword(unusable, salt), requiresApproval ? 'pending' : 'active', identity.sub,
               convidado?.grupo === 'admin' ? 'admin' : 'user', convidado && convidado.grupo !== 'admin' ? convidado.grupo : 'amigo', now());
           if (requiresApproval) return send(res, 202, { user: publicUser(id), status: 'pending_approval' });
           return send(res, 201, { user: publicUser(id), status: 'active', accessToken: issueToken(id) });
         }
+        db.prepare('UPDATE users SET email_verificado = 1 WHERE id = ? AND email = ?').run(user.id, identity.email);
         if (user.status === 'pending') throw new ApiError(403, 'account_pending', 'Sua conta aguarda aprovação do servidor.');
         if (user.status !== 'active') throw new ApiError(403, 'account_disabled', 'Esta conta está desativada.');
         return send(res, 200, { user: publicUser(user.id), accessToken: issueToken(user.id) });
@@ -499,7 +511,8 @@ function createApiServer(options = {}) {
         try { identity = await googleIdentity(body); } catch (error) { if (error.status !== 503) failed(); throw error; }
         const other = db.prepare('SELECT id FROM users WHERE google_sub = ? AND id <> ?').get(identity.sub, userId);
         if (other) throw new ApiError(409, 'google_taken', 'Essa conta do Google já está ligada a outra conta.');
-        db.prepare('UPDATE users SET google_sub = ? WHERE id = ?').run(identity.sub, userId);
+        // Vincular um Google de outro e-mail não confirma o e-mail da conta
+        db.prepare('UPDATE users SET google_sub = ?, email_verificado = CASE WHEN email = ? THEN 1 ELSE email_verificado END WHERE id = ?').run(identity.sub, identity.email, userId);
         return send(res, 200, { user: publicUser(userId) });
       }
       if (method === 'DELETE' && pathname === '/v1/me/google') {
