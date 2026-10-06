@@ -13,6 +13,7 @@
     "test:clipe": "electron tests/e2e/clipe.cjs && electron tests/e2e/clipe-faixa.cjs",
     "test:e2e": "node tests/e2e/rodar.js",
     "dist": "electron-builder --win portable",
+    "dist:instalador": "electron-builder --win nsis",
     "dist:eva": "electron-builder --win portable -c.win.icon=assets/icone/tela-p2p-eva.ico",
     "publicar": "node publicar.js",
     "razze-api": "node razze-api/server.js",
@@ -86,6 +87,22 @@
     },
     "portable": {
       "artifactName": "${productName}.${ext}"
+    },
+    "nsis": {
+      "artifactName": "${productName} Instalador.${ext}",
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Tela P2P",
+      "uninstallDisplayName": "Tela P2P",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false,
+      "installerIcon": "assets/icone/tela-p2p.ico",
+      "uninstallerIcon": "assets/icone/tela-p2p.ico",
+      "installerLanguages": ["pt_BR"],
+      "language": "1046"
     },
     "extraResources": [
       {

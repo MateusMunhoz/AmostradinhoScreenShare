@@ -400,3 +400,4 @@ validar como em `sala-protocolo.js`) e de ver se o tema Top Gun pega com o grupo
 
 - **Fluxo, conta e perfil** (auditoria feita; primeira entrada enxuta, convite por link, esqueci a senha, bio, foto e fundo do perfil, atividade opcional, Google): `docs/auditoria-fluxo.md` e `docs/spec/primeira-entrada-e-perfil.md`.
 - **Convite de amigo por link** (plano aguardando aprovação): `docs/spec/convite-por-link.md`.
+- **Licença do projeto** (tarefa futura; rascunho pronto, falta o ok dos três titulares e preencher nomes e foro): `docs/spec/licenca.md`.

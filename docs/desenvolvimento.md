@@ -11,7 +11,7 @@ npm install
 npm start
 ```
 
-Para gerar um `.exe` portátil sem publicar: `npm run dist`. O arquivo aparece em `dist\Tela P2P.exe`, sempre com esse nome, e cada geração troca o anterior.
+Para gerar um `.exe` portátil sem publicar: `npm run dist`. O arquivo aparece em `dist\Tela P2P.exe`, sempre com esse nome, e cada geração troca o anterior. O instalador (NSIS, configurado em `build.nsis` do `package.json`): `npm run dist:instalador`, em `dist\Tela P2P Instalador.exe`. Os dois usam o mesmo pacote e as mesmas atualizações (em `%APPDATA%\Tela P2P`); a diferença é só o reinício, que no portátil passa pelo `PORTABLE_EXECUTABLE_FILE` (`boot.js`, `main.js`).
 
 ## Como o app funciona
 
@@ -34,7 +34,7 @@ Para gerar um `.exe` portátil sem publicar: `npm run dist`. O arquivo aparece e
   | `main/razze-service.js` | Sessão da RazzeAPI e persistência protegida do token. |
   | `main/razze-wireguard.js` | Chaves locais, STUN, configuração e serviço WireGuard no Windows. |
   | `razze-api/server.js` | API central HTTP/SQLite e serviço STUN UDP. |
-  | `publicar.js` | Assina, gera o `.exe` e publica. |
+  | `publicar.js` | Assina, gera o `.exe` portátil e o instalador e publica. |
   | `native/` | Código dos ajudantes nativos em C++. |
   | `bin/` | Os ajudantes compilados: `audiocap.exe` (som), `videocap.exe` (captura e NVENC), `teclas.exe` (apertar para falar). |
   | `vendor/` | Arquivos de terceiros usados pelo app: a IA de ruído (RNNoise). |
@@ -198,7 +198,7 @@ npm run publicar
 Isso:
 1. sobe a versão (ex.: 1.8.9 → 1.8.10);
 2. assina o pacote e deixa a versão pronta no seu app;
-3. gera o `.exe`;
+3. gera o `.exe` portátil e o instalador (`Tela P2P Instalador.exe`);
 4. manda para o GitHub: o commit, a tag e uma Release com o `.exe` e o pacote assinado.
 
 Opções:

@@ -1,8 +1,8 @@
 // Publica uma versão nova do Tela P2P.
 //
 //   node publicar.js --gerar-chave         uma vez só: cria a chave de assinatura (fica fora do projeto)
-//   npm run publicar                       sobe a versão (1.1.0 -> 1.1.1), assina, gera o .exe e
-//                                          manda tudo para o GitHub (commit, tag e Release)
+//   npm run publicar                       sobe a versão (1.1.0 -> 1.1.1), assina, gera o .exe portátil e o
+//                                          instalador e manda tudo para o GitHub (commit, tag e Release)
 //   npm run publicar -- 1.2.0              o mesmo, escolhendo a versão
 //   npm run publicar -- --notas "texto"    texto da Release (sem ele, o GitHub lista os commits)
 //   npm run publicar -- --sem-github       só assina e gera o .exe, sem mandar nada
@@ -74,6 +74,7 @@ function publishGithub(version, productName, notes) {
     return false;
   }
   const exe = path.join(ROOT, 'dist', `${productName}.exe`);
+  const instalador = path.join(ROOT, 'dist', `${productName} Instalador.exe`);
   const appImage = path.join(ROOT, 'dist', 'Tela-P2P.AppImage');
   const steps = [
     ['git', ['add', '-u']], // só o que o git já acompanha: arquivo novo (ex.: protótipos) nunca entra sozinho
@@ -81,7 +82,7 @@ function publishGithub(version, productName, notes) {
     ['git', ['tag', '-a', `v${version}`, '-m', `Versão ${version}`]],
     ['git', ['push', 'origin', 'HEAD']],
     ['git', ['push', 'origin', `v${version}`]],
-    ['gh', ['release', 'create', `v${version}`, exe, ...(fs.existsSync(appImage) ? [appImage] : []), path.join(ROOT, 'pack', 'pack.json'), path.join(ROOT, 'pack', 'pack.sig'),
+    ['gh', ['release', 'create', `v${version}`, exe, ...(fs.existsSync(instalador) ? [instalador] : []), ...(fs.existsSync(appImage) ? [appImage] : []), path.join(ROOT, 'pack', 'pack.json'), path.join(ROOT, 'pack', 'pack.sig'),
       '--title', `${productName} ${version}`, ...(notes ? ['--notes', notes] : ['--generate-notes'])]],
   ];
   for (const [cmd, args] of steps) {
@@ -193,13 +194,13 @@ function publish(requested, { notes = '', github = true } = {}) {
   }
   console.log(`Versão ${version} assinada (${Math.round(pack.length / 1024)} KB). O app deste PC já usa ela na próxima vez que abrir.`);
 
-  // O .exe tem sempre o mesmo nome: o da versão anterior (e os antigos, com a versão no nome) saem
+  // O .exe e o instalador têm sempre o mesmo nome: os da versão anterior (e os antigos, com a versão no nome) saem
   for (const f of fs.existsSync(dist) ? fs.readdirSync(dist) : []) {
-    if (f.startsWith(pkg.build.productName) && f.endsWith('.exe')) fs.rmSync(path.join(dist, f), { force: true });
+    if (f.startsWith(pkg.build.productName) && (f.endsWith('.exe') || f.endsWith('.exe.blockmap'))) fs.rmSync(path.join(dist, f), { force: true });
   }
-  console.log('Gerando o .exe para quem ainda não tem o app...');
-  const r = spawnSync('npx electron-builder --win portable', { cwd: ROOT, stdio: 'inherit', shell: true });
-  if (r.status !== 0) fail('O .exe não foi gerado, mas a atualização pela sala já funciona.');
+  console.log('Gerando o .exe portátil e o instalador para quem ainda não tem o app...');
+  const r = spawnSync('npx electron-builder --win portable nsis', { cwd: ROOT, stdio: 'inherit', shell: true });
+  if (r.status !== 0) fail('O .exe e o instalador não foram gerados, mas a atualização pela sala já funciona.');
   buildLinux();
 
   const onGithub = github && publishGithub(version, pkg.build.productName, notes);
