@@ -10,6 +10,7 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
   if (!columns.includes('role')) db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user' CHECK(role IN ('user', 'admin'))");
   if (!columns.includes('ban_reason')) db.exec("ALTER TABLE users ADD COLUMN ban_reason TEXT NOT NULL DEFAULT ''");
   if (!db.prepare('PRAGMA table_info(sessions)').all().some(c => c.name === 'client_id')) db.exec('ALTER TABLE sessions ADD COLUMN client_id TEXT');
+  if (!db.prepare('PRAGMA table_info(sessions)').all().some(c => c.name === 'app_version')) db.exec("ALTER TABLE sessions ADD COLUMN app_version TEXT NOT NULL DEFAULT ''");
   if (!db.prepare('PRAGMA table_info(sessions)').all().some(c => c.name === 'client_name')) db.exec("ALTER TABLE sessions ADD COLUMN client_name TEXT NOT NULL DEFAULT 'Tela P2P'");
   db.exec(`
     CREATE TABLE IF NOT EXISTS server_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -33,10 +34,16 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
     FROM sessions
     GROUP BY user_id
   )`);
-  const defaults = { requireApproval: options.requireApproval !== false, registrationOpen: true, presenceTimeoutSeconds: 70 };
+  // googleOnly: só entra e cria conta pelo Google (o administrador continua podendo entrar com senha).
+  // legacyPasswordLogin: com googleOnly ligado, quem já tinha conta com senha ainda entra por ela (desligue quando todos tiverem vinculado o Google).
+  // onlyAllowlist: só e-mails da lista de convidados criam conta; quem está na lista entra já ativo.
+  const defaults = { requireApproval: options.requireApproval !== false, registrationOpen: true, presenceTimeoutSeconds: 70, googleOnly: false, onlyAllowlist: false, legacyPasswordLogin: true };
   const settings = () => Object.assign({}, defaults, Object.fromEntries(db.prepare('SELECT key, value FROM server_settings').all().map(r => [r.key, JSON.parse(r.value)])));
   const tokenHash = req => hash(String(req.headers.authorization || '').replace(/^Bearer /, ''));
-  const user = id => db.prepare('SELECT id, email, display_name AS displayName, status, role, ban_reason AS banReason, created_at AS createdAt FROM users WHERE id = ?').get(id);
+  const user = id => db.prepare('SELECT id, email, display_name AS displayName, status, role, grupo, ban_reason AS banReason, created_at AS createdAt FROM users WHERE id = ?').get(id);
+  const DAY_OFFSET_MS = 3 * 60 * 60 * 1000; // o dia das estatísticas vira à meia-noite de Brasília
+  const dayOf = t => new Date(t - DAY_OFFSET_MS).toISOString().slice(0, 10);
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const audit = (actor, action, target, detail = {}) => db.prepare('INSERT INTO audit_log(actor, action, target, detail, created_at) VALUES(?, ?, ?, ?, ?)').run(actor, action, target, JSON.stringify(detail), now());
   const bad = message => { throw new ApiError(400, 'invalid_input', message); };
   const transaction = fn => {
@@ -140,11 +147,16 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
       internetRoom = { servidor: r.servidor, codigo: r.codigo, pessoas: r.pessoas, passe: r.passe || null };
     }
     db.prepare('DELETE FROM sessions WHERE expires_at <= ?').run(now());
-    db.prepare('UPDATE sessions SET client_name=? WHERE token_hash=?').run(clientName.trim(), tokenHash(req));
+    const appVersion = typeof body.appVersion === 'string' && /^\d{1,3}(\.\d{1,3}){1,3}$/.test(body.appVersion) ? body.appVersion : '';
+    db.prepare('UPDATE sessions SET client_name=?, app_version=CASE WHEN length(?) > 0 THEN ? ELSE app_version END WHERE token_hash=?').run(clientName.trim(), appVersion, appVersion, tokenHash(req));
     db.prepare('DELETE FROM live_presence WHERE last_seen <= ?').run(now() - settings().presenceTimeoutSeconds * 1000);
     db.prepare(`INSERT INTO live_presence(session_hash, user_id, last_seen, connections, room, internet_room) VALUES(?, ?, ?, ?, ?, ?)
       ON CONFLICT(session_hash) DO UPDATE SET last_seen=excluded.last_seen, connections=excluded.connections, room=excluded.room, internet_room=excluded.internet_room`)
       .run(tokenHash(req), userId, now(), JSON.stringify(cleaned), room ? JSON.stringify(room) : null, internetRoom ? JSON.stringify(internetRoom) : null);
+    const today = dayOf(now());
+    db.prepare('INSERT OR IGNORE INTO user_days(user_id, day) VALUES(?, ?)').run(userId, today);
+    const onlineNow = db.prepare('SELECT COUNT(DISTINCT user_id) AS n FROM live_presence WHERE last_seen > ?').get(now() - settings().presenceTimeoutSeconds * 1000).n;
+    db.prepare('INSERT INTO daily_peak(day, peak) VALUES(?, ?) ON CONFLICT(day) DO UPDATE SET peak = MAX(peak, excluded.peak)').run(today, onlineNow);
     return { ok: true, heartbeatSeconds: 20, timeoutSeconds: settings().presenceTimeoutSeconds };
   }
   function offline(req) { db.prepare('DELETE FROM live_presence WHERE session_hash = ?').run(tokenHash(req)); }
@@ -183,7 +195,8 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
 
   // Consultas fixas: nunca expõem hashes de senhas/tokens nem executam SQL recebido pela API.
   const views = {
-    users: 'SELECT id, email, display_name, status, role, ban_reason, created_at FROM users',
+    users: 'SELECT id, email, display_name, status, role, grupo, ban_reason, created_at FROM users',
+    allowed_emails: 'SELECT email, grupo, label, added_by, created_at FROM allowed_emails',
     networks: 'SELECT * FROM networks', network_members: 'SELECT * FROM network_members',
     wireguard_devices: 'SELECT network_id, device_id, user_id, name, assigned_ip, updated_at FROM wireguard_devices',
     friend_requests: 'SELECT * FROM friend_requests',
@@ -192,6 +205,46 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
     server_settings: 'SELECT * FROM server_settings', audit_log: 'SELECT * FROM audit_log',
     live_presence: 'SELECT user_id, last_seen FROM live_presence',
   };
+  // Números do painel. Só contagens: nada de e-mail, mensagem ou nome de sala.
+  function analytics() {
+    const t = now(), today = dayOf(t), DAY = 86_400_000;
+    const range = Array.from({ length: 14 }, (_, i) => dayOf(t - (13 - i) * DAY));
+    const one = (sql, ...a) => db.prepare(sql).get(...a).n;
+    const activeByDay = new Map(db.prepare('SELECT day, COUNT(*) AS n FROM user_days WHERE day >= ? GROUP BY day').all(range[0]).map(r => [r.day, r.n]));
+    const peakByDay = new Map(db.prepare('SELECT day, peak FROM daily_peak WHERE day >= ?').all(range[0]).map(r => [r.day, r.peak]));
+    const signups = new Map();
+    for (const r of db.prepare('SELECT created_at AS at FROM users WHERE created_at >= ?').all(t - 15 * DAY)) signups.set(dayOf(r.at), (signups.get(dayOf(r.at)) || 0) + 1);
+    const since = n => dayOf(t - (n - 1) * DAY);
+    const online = new Set(presence().map(p => p.userId)).size;
+    const grupos = Object.fromEntries(db.prepare("SELECT grupo, COUNT(*) AS n FROM users WHERE status = 'active' AND role <> 'admin' GROUP BY grupo").all().map(r => [r.grupo, r.n]));
+    return {
+      generatedAt: t,
+      accounts: {
+        total: one('SELECT COUNT(*) AS n FROM users'), active: one("SELECT COUNT(*) AS n FROM users WHERE status = 'active'"),
+        pending: one("SELECT COUNT(*) AS n FROM users WHERE status = 'pending'"), disabled: one("SELECT COUNT(*) AS n FROM users WHERE status = 'disabled'"),
+        admins: one("SELECT COUNT(*) AS n FROM users WHERE role = 'admin'"), amigos: grupos.amigo || 0, teste: grupos.teste || 0,
+        withGoogle: one('SELECT COUNT(*) AS n FROM users WHERE google_sub IS NOT NULL'), allowlist: one('SELECT COUNT(*) AS n FROM allowed_emails'),
+        allowlistJoined: one('SELECT COUNT(*) AS n FROM allowed_emails a JOIN users u ON u.email = a.email'),
+      },
+      usage: {
+        online, today: one('SELECT COUNT(*) AS n FROM user_days WHERE day = ?', today),
+        last7: one('SELECT COUNT(DISTINCT user_id) AS n FROM user_days WHERE day >= ?', since(7)),
+        last30: one('SELECT COUNT(DISTINCT user_id) AS n FROM user_days WHERE day >= ?', since(30)),
+        peakToday: peakByDay.get(today) || 0, newLast7: one('SELECT COUNT(*) AS n FROM users WHERE created_at >= ?', t - 7 * DAY),
+        // Voltaram nesta semana contas criadas há mais de 7 dias: o sinal de que o app virou hábito
+        returning: one('SELECT COUNT(DISTINCT d.user_id) AS n FROM user_days d JOIN users u ON u.id = d.user_id WHERE d.day >= ? AND u.created_at < ?', since(7), t - 7 * DAY),
+        neverUsed: one("SELECT COUNT(*) AS n FROM users u WHERE u.status = 'active' AND NOT EXISTS (SELECT 1 FROM user_days d WHERE d.user_id = u.id)"),
+      },
+      social: {
+        friendships: one("SELECT COUNT(*) AS n FROM friend_requests WHERE status = 'accepted'"),
+        withoutFriends: one("SELECT COUNT(*) AS n FROM users u WHERE u.status = 'active' AND NOT EXISTS (SELECT 1 FROM friend_requests f WHERE f.status = 'accepted' AND (f.sender_id = u.id OR f.receiver_id = u.id))"),
+        messagesLast7: one('SELECT COUNT(*) AS n FROM direct_messages WHERE created_at >= ?', t - 7 * DAY),
+        openRooms: rooms(null).length + friendRooms(null).length, networks: one('SELECT COUNT(*) AS n FROM networks'),
+      },
+      versions: db.prepare("SELECT app_version AS version, COUNT(*) AS n FROM sessions WHERE expires_at > ? AND app_version <> '' GROUP BY app_version ORDER BY n DESC LIMIT 12").all(t),
+      daily: range.map(day => ({ day, active: activeByDay.get(day) || 0, peak: peakByDay.get(day) || 0, signups: signups.get(day) || 0 })),
+    };
+  }
   async function handleAdmin(req, res, pathname) {
     const actor = adminActor(req);
     const method = req.method;
@@ -235,7 +288,7 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
         return result({ settings: settings() });
       }
     }
-    if (method === 'GET' && pathname === '/v1/admin/users') return result({ users: enrichUsers(db.prepare('SELECT id, email, display_name AS displayName, status, role, ban_reason AS banReason, created_at AS createdAt FROM users ORDER BY created_at DESC').all()) });
+    if (method === 'GET' && pathname === '/v1/admin/users') return result({ users: enrichUsers(db.prepare('SELECT id, email, display_name AS displayName, status, role, grupo, ban_reason AS banReason, created_at AS createdAt FROM users ORDER BY created_at DESC').all()) });
     const target = /^\/v1\/admin\/users\/([a-f0-9]{32})(?:\/(approve|revoke-sessions|reset-code))?$/.exec(pathname);
     if (target) {
       const previous = user(target[1]);
@@ -268,20 +321,20 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
       if (method === 'PATCH' && !target[2]) {
         const body = await readBody(req);
         adminActor(req);
-        if (!Object.keys(body).length || Object.keys(body).some(k => !['role', 'status', 'banReason'].includes(k))) bad('Alteração de usuário inválida.');
-        const role = body.role ?? previous.role, status = body.status ?? previous.status;
-        if (!['user', 'admin'].includes(role) || !['active', 'pending', 'disabled'].includes(status)) bad('Papel ou status inválido.');
+        if (!Object.keys(body).length || Object.keys(body).some(k => !['role', 'status', 'banReason', 'grupo'].includes(k))) bad('Alteração de usuário inválida.');
+        const role = body.role ?? previous.role, status = body.status ?? previous.status, grupo = body.grupo ?? previous.grupo;
+        if (!['user', 'admin'].includes(role) || !['active', 'pending', 'disabled'].includes(status) || !['amigo', 'teste'].includes(grupo)) bad('Papel, grupo ou status inválido.');
         if (body.banReason !== undefined && (typeof body.banReason !== 'string' || body.banReason.length > 500)) bad('Motivo de banimento inválido.');
         if (previous.id === actor && (role !== 'admin' || status !== 'active')) bad('Use outro administrador para alterar seu próprio acesso.');
         if (previous.role === 'admin' && previous.status === 'active' && (role !== 'admin' || status !== 'active') &&
             db.prepare("SELECT COUNT(*) AS n FROM users WHERE role='admin' AND status='active'").get().n <= 1) bad('Mantenha pelo menos um administrador ativo.');
         transaction(() => {
-          db.prepare('UPDATE users SET role=?, status=?, ban_reason=? WHERE id=?').run(role, status, status === 'disabled' ? (body.banReason ?? previous.banReason) : '', previous.id);
+          db.prepare('UPDATE users SET role=?, status=?, grupo=?, ban_reason=? WHERE id=?').run(role, status, grupo, status === 'disabled' ? (body.banReason ?? previous.banReason) : '', previous.id);
           if (status !== 'active') {
             db.prepare('DELETE FROM sessions WHERE user_id=?').run(previous.id);
             db.prepare('DELETE FROM wireguard_devices WHERE user_id=?').run(previous.id);
           }
-          audit(actor, 'user.update', previous.id, { role, status, banReason: status === 'disabled' ? (body.banReason ?? previous.banReason) : '' });
+          audit(actor, 'user.update', previous.id, { role, status, grupo, banReason: status === 'disabled' ? (body.banReason ?? previous.banReason) : '' });
         });
         return result({ user: user(previous.id) });
       }
@@ -296,6 +349,46 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
       });
       return result({ ok: true });
     }
+    // Lista de convidados: e-mails que entram direto (sem esperar aprovação) com o grupo ou papel combinado
+    if (pathname === '/v1/admin/allowlist') {
+      if (method === 'GET') {
+        return result({ allowlist: db.prepare('SELECT a.email, a.grupo, a.label, a.created_at AS createdAt, u.id IS NOT NULL AS joined FROM allowed_emails a LEFT JOIN users u ON u.email = a.email ORDER BY a.created_at DESC')
+          .all().map(r => ({ ...r, joined: !!r.joined })) });
+      }
+      if (method === 'POST') {
+        const body = await readBody(req);
+        const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+        const grupo = body.grupo ?? 'amigo';
+        const label = body.label === undefined ? '' : body.label;
+        if (!EMAIL_RE.test(email) || email.length > 254) bad('E-mail inválido.');
+        if (!['amigo', 'teste', 'admin'].includes(grupo)) bad('Grupo inválido.');
+        if (typeof label !== 'string' || label.length > 60 || /[\u0000-\u001f\u007f]/.test(label)) bad('Nome ou observação inválido (até 60 caracteres).');
+        if (db.prepare('SELECT COUNT(*) AS n FROM allowed_emails').get().n >= 500 && !db.prepare('SELECT 1 FROM allowed_emails WHERE email = ?').get(email)) bad('A lista de convidados chegou ao limite de 500.');
+        transaction(() => {
+          db.prepare('INSERT INTO allowed_emails(email, grupo, label, added_by, created_at) VALUES(?, ?, ?, ?, ?) ON CONFLICT(email) DO UPDATE SET grupo=excluded.grupo, label=excluded.label')
+            .run(email, grupo, label.trim(), actor, now());
+          // Quem já criou a conta (pendente ou não) passa a valer como convidado
+          const existing = db.prepare('SELECT id, status FROM users WHERE email = ?').get(email);
+          if (existing) {
+            db.prepare('UPDATE users SET role=?, grupo=?, status=? WHERE id=?')
+              .run(grupo === 'admin' ? 'admin' : 'user', grupo === 'admin' ? 'amigo' : grupo, existing.status === 'pending' ? 'active' : existing.status, existing.id);
+          }
+          audit(actor, 'allowlist.add', email, { grupo });
+        });
+        return result({ ok: true });
+      }
+    }
+    const allowed = /^\/v1\/admin\/allowlist\/([^/]{3,254})$/.exec(pathname);
+    if (method === 'DELETE' && allowed) {
+      let email = '';
+      try { email = decodeURIComponent(allowed[1]).toLowerCase(); } catch { bad('E-mail inválido.'); }
+      transaction(() => {
+        if (!db.prepare('DELETE FROM allowed_emails WHERE email = ?').run(email).changes) throw new ApiError(404, 'not_found', 'E-mail não está na lista.');
+        audit(actor, 'allowlist.remove', email);
+      });
+      return result({ ok: true });
+    }
+    if (method === 'GET' && pathname === '/v1/admin/analytics') return result(analytics());
     if (method === 'GET' && pathname === '/v1/admin/database') return result({ tables: Object.keys(views) });
     const table = /^\/v1\/admin\/database\/([a-z_]+)$/.exec(pathname);
     if (method === 'GET' && table && Object.hasOwn(views, table[1])) {

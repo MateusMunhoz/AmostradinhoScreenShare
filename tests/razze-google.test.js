@@ -44,7 +44,7 @@ const zerarLimite = () => { clock += 11 * 60 * 1000; };
 
 test('a configuração diz se o Google está ligado e qual é o cliente', async () => {
   const cfg = await request('/v1/auth/google/config');
-  assert.deepEqual(cfg.body, { enabled: true, clientId: CLIENT_ID });
+  assert.deepEqual(cfg.body, { enabled: true, clientId: CLIENT_ID, googleOnly: false, passwordLogin: true });
 });
 
 test('conta nova pelo Google: cria, entra e a troca leva o verificador e o retorno do PC', async () => {
@@ -148,7 +148,7 @@ test('sem cliente configurado o Google fica desligado', async () => {
   const address = await off.listen(0, '127.0.0.1');
   try {
     const url = 'http://127.0.0.1:' + address.port;
-    assert.deepEqual(await (await fetch(url + '/v1/auth/google/config')).json(), { enabled: false, clientId: '' });
+    assert.deepEqual(await (await fetch(url + '/v1/auth/google/config')).json(), { enabled: false, clientId: '', googleOnly: false, passwordLogin: true });
     const r = await fetch(url + '/v1/auth/google', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(pedido('codigo-ana-123')) });
     assert.equal(r.status, 503);
   } finally { await off.close(); }

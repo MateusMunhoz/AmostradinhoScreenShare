@@ -93,6 +93,13 @@ function createApiServer(options = {}) {
   if (!userColumns.includes('google_sub')) db.exec('ALTER TABLE users ADD COLUMN google_sub TEXT');
   if (!userColumns.includes('password_set')) db.exec('ALTER TABLE users ADD COLUMN password_set INTEGER NOT NULL DEFAULT 1');
   db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_sub ON users(google_sub) WHERE google_sub IS NOT NULL');
+  // Grupo da pessoa no painel (amigo ou teste); o administrador é o papel (role), não um grupo
+  if (!userColumns.includes('grupo')) db.exec("ALTER TABLE users ADD COLUMN grupo TEXT NOT NULL DEFAULT 'amigo' CHECK(grupo IN ('amigo', 'teste'))");
+  // Lista de convidados: quem está aqui entra já ativo (sem esperar aprovação) e com o grupo/papel combinado
+  db.exec("CREATE TABLE IF NOT EXISTS allowed_emails (email TEXT PRIMARY KEY, grupo TEXT NOT NULL CHECK(grupo IN ('amigo', 'teste', 'admin')), label TEXT NOT NULL DEFAULT '', added_by TEXT NOT NULL, created_at INTEGER NOT NULL)");
+  // Para as estatísticas do painel: em que dias cada conta usou o app e o maior número de pessoas online por dia
+  db.exec('CREATE TABLE IF NOT EXISTS user_days (user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, day TEXT NOT NULL, PRIMARY KEY(user_id, day))');
+  db.exec('CREATE TABLE IF NOT EXISTS daily_peak (day TEXT PRIMARY KEY, peak INTEGER NOT NULL)');
   if (!userColumns.includes('bio')) db.exec("ALTER TABLE users ADD COLUMN bio TEXT NOT NULL DEFAULT ''");
   if (!userColumns.includes('status')) db.exec("ALTER TABLE users ADD COLUMN status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('pending', 'active', 'disabled'))");
 
@@ -328,6 +335,7 @@ function createApiServer(options = {}) {
       if (method === 'GET' && pathname === '/v1/health') return send(res, 200, { ok: true, service: 'razze-api', stun: stunServer?.address() ? { port: stunServer.address().port, protocol: 'udp' } : null });
 
       if (method === 'POST' && pathname === '/v1/auth/register') {
+        if (control.settings().googleOnly) throw new ApiError(403, 'google_only', 'Este servidor só aceita conta pelo Google. Use "Entrar com Google".');
         if (!control.settings().registrationOpen) throw new ApiError(403, 'registration_closed', 'Novos cadastros estão desativados.');
         enforceAuthLimit(req, 'register', 20, 60 * 60 * 1000)();
         const body = await readBody(req);
@@ -356,7 +364,9 @@ function createApiServer(options = {}) {
         const body = await readBody(req);
         const email = assertText(body.email, 'E-mail', 3, 254).toLowerCase();
         const password = assertText(body.password, 'Senha', 1, 200);
-        const user = db.prepare('SELECT id, status, password_salt AS salt, password_hash AS passwordHash FROM users WHERE email = ?').get(email);
+        const user = db.prepare('SELECT id, status, role, password_salt AS salt, password_hash AS passwordHash FROM users WHERE email = ?').get(email);
+        // Só Google: a senha continua valendo para o administrador (o painel /admin/ entra por ela)
+        if (control.settings().googleOnly && !control.settings().legacyPasswordLogin && user?.role !== 'admin') throw new ApiError(403, 'google_only', 'Este servidor só aceita entrar pelo Google. Use "Entrar com Google".');
         const candidate = await scryptAsync(password, user?.salt || 'razze-invalid-user-salt', 64);
         const stored = user ? Buffer.from(user.passwordHash, 'hex') : Buffer.alloc(64);
         if (!user || stored.length !== candidate.length || !timingSafeEqual(stored, candidate)) {
@@ -368,7 +378,7 @@ function createApiServer(options = {}) {
         return send(res, 200, { user: publicUser(user.id), accessToken: issueToken(user.id) });
       }
 
-      if (method === 'GET' && pathname === '/v1/auth/google/config') return send(res, 200, { enabled: !!googleClientId(), clientId: googleClientId() });
+      if (method === 'GET' && pathname === '/v1/auth/google/config') return send(res, 200, { enabled: !!googleClientId(), clientId: googleClientId(), googleOnly: !!control.settings().googleOnly, passwordLogin: !!control.settings().legacyPasswordLogin });
       if (method === 'POST' && pathname === '/v1/auth/google') {
         const failed = enforceAuthLimit(req, 'google', 10, 10 * 60 * 1000);
         const body = await readBody(req);
@@ -380,14 +390,17 @@ function createApiServer(options = {}) {
             // Não junta sozinho: quem criou a conta com esse e-mail pode não ser o dono dele. Entra com a senha e vincula.
             throw new ApiError(409, 'account_exists', 'Já existe uma conta com o e-mail ' + identity.email + '. Entre com a senha e vincule o Google em Conta.');
           }
-          if (!control.settings().registrationOpen) throw new ApiError(403, 'registration_closed', 'Novos cadastros estão desativados.');
+          const convidado = db.prepare('SELECT grupo FROM allowed_emails WHERE email = ?').get(identity.email);
+          if (!convidado && control.settings().onlyAllowlist) throw new ApiError(403, 'not_allowed', 'Este e-mail não está na lista de convidados. Peça ao administrador para te adicionar.');
+          if (!convidado && !control.settings().registrationOpen) throw new ApiError(403, 'registration_closed', 'Novos cadastros estão desativados.');
           const id = newId();
           const salt = randomBytes(16).toString('hex');
           const unusable = randomBytes(32).toString('hex'); // senha que ninguém conhece: a conta só entra pelo Google até definir uma
           const displayName = (identity.name.replace(/\s+/g, ' ').trim() || identity.email.split('@')[0]).slice(0, 60) || 'Usuário';
-          const requiresApproval = control.settings().requireApproval;
-          db.prepare('INSERT INTO users(id, email, display_name, password_salt, password_hash, status, google_sub, password_set, created_at) VALUES(?, ?, ?, ?, ?, ?, ?, 0, ?)')
-            .run(id, identity.email, displayName, salt, await hashPassword(unusable, salt), requiresApproval ? 'pending' : 'active', identity.sub, now());
+          const requiresApproval = control.settings().requireApproval && !convidado; // quem está na lista de convidados entra direto
+          db.prepare('INSERT INTO users(id, email, display_name, password_salt, password_hash, status, google_sub, password_set, role, grupo, created_at) VALUES(?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)')
+            .run(id, identity.email, displayName, salt, await hashPassword(unusable, salt), requiresApproval ? 'pending' : 'active', identity.sub,
+              convidado?.grupo === 'admin' ? 'admin' : 'user', convidado && convidado.grupo !== 'admin' ? convidado.grupo : 'amigo', now());
           if (requiresApproval) return send(res, 202, { user: publicUser(id), status: 'pending_approval' });
           return send(res, 201, { user: publicUser(id), status: 'active', accessToken: issueToken(id) });
         }
