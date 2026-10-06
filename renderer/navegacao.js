@@ -13,10 +13,8 @@ function setUtilityBackground(inert) {
   for (const el of [document.querySelector('main'), document.querySelector('.workspace-header'), $('workspacePanes')]) el.inert = inert;
 }
 function openProfilePopup() {
-  if (!$('friendsDialog').hidden) closeFriendsDialog();
   renderConnectivitySettings();
   if (!$('generalSettingsDialog').hidden) closeGeneralSettings();
-  if (!$('networkDialog').hidden) closeNetworkDialog();
   profileReturnFocus = document.activeElement;
   $('profilePane').hidden = false;
   syncWorkspace();
@@ -108,7 +106,7 @@ function syncWorkspace() {
   $('profileHint').textContent = state.myId ? 'Fica travado enquanto você está numa sala. Saia para trocar.' : 'Aparece para todo mundo na sala e nas mensagens.';
   renderVoicePane();
   renderHomeCall();
-  renderHub();
+  renderAmigos();
 }
 // Barra de baixo numa linha só: sem espaço, enxuga em etapas até caber (o que some continua na tela em outro
 // lugar): 1) o texto "2 assistindo" do Ao vivo; 2) os textos "Na voz" e "Convidar" (ficam os ícones);

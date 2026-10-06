@@ -27,7 +27,7 @@
 :root[data-skin="diluna"] body::after { background: linear-gradient(90deg, transparent 18%, rgba(2, 3, 12, .25) 45%, rgba(2, 3, 12, .1) 100%); }
 
 /* ---------- Painéis: um fio de luar em cima ---------- */
-:root[data-skin="diluna"] :is(.workspace-pane, .dock, .panel, .home-card, .dialog, .hub-rail, .sky-focus.sky-pop, .rail-music-menu) {
+:root[data-skin="diluna"] :is(.workspace-pane, .dock, .panel, .home-card, .dialog, .sky-focus.sky-pop, .rail-music-menu) {
   box-shadow: inset 0 1px 0 rgba(111, 227, 255, .26), 0 10px 30px rgba(0, 0, 0, .35);
 }
 :root[data-skin="diluna"] :is(.pane-head h2, .chat-title, .stream-pane-head h2, .dialog h2, .settings-section h3) {

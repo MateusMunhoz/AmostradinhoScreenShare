@@ -1,98 +1,46 @@
 'use strict';
-// HUB: a barra fininha na borda esquerda. Fechada, mostra "HUB" em pé (e quantos pedidos de amizade chegaram); aberta,
-// "HUB" deitado e três abas:
-// - Salas: a sala em que você está (em destaque), as outras salas abertas na rede e o botão do menu inicial.
-// - Amigos: buscar (texto + Todos/Online/Pedidos), adicionar pelo nickname (formulário no lugar da busca), convidar
-//   para a sua sala, aceitar e cancelar pedidos, remover pelo menu "⋯" (confirma na própria linha). Os dados vêm da
-//   RazzeAPI (refreshRazzeLists e a presença em conectividade.js).
-// - Rede: como os PCs se conectam (Radmin, Razze, Internet), servidores, redes Razze e a conta (entrar, criar, sair).
-// As abas Amigos e Rede têm os ids friendsDialog e networkDialog: quem pergunta "estão à vista?" continua usando .hidden.
-// Aberto, procura sessões mesmo fora da tela inicial (sessionWatchWanted em sessoes.js).
-// Script clássico: divide o escopo global com os outros (ordem no index.html). Usa de: util, estado, sessoes, navegacao.
+// Amigos (o HUB, a barra da esquerda, saiu; o arquivo ficou com o nome). Moram no painel do envelope, na barra de
+// baixo, como a aba Amigos ao lado de Conversas (renderer/mensagens.js: setDmPanel): buscar (texto +
+// Todos/Online/Pedidos), adicionar pelo nickname (formulário no lugar da busca), mandar mensagem, ligar, convidar
+// para a sua sala, aceitar e cancelar pedidos, remover pelo menu "⋯" (confirma na própria linha). Os dados vêm da
+// RazzeAPI (refreshRazzeLists e a presença em conectividade.js).
+// A conta Razze fica no Perfil (openRazzeLogin) e a rede em Configurações › Rede (openNetworkDialog).
+// Os ajudantes hubAvatar, hubInfo e hubButton (e as classes hub-*) servem às linhas das listas de amigos e de conversas.
+// Script clássico: divide o escopo global com os outros (ordem no index.html). Usa de: util, estado, navegacao, mensagens.
 
-const HUB_TABS = ['rooms', 'friends', 'network']; // as mensagens diretas ficam só na barra de baixo (mensagens.js)
-const hub = { open: false, tab: HUB_TABS.includes(load('hubTab', 'rooms')) ? load('hubTab', 'rooms') : 'rooms' };
 const friendsData = { friends: [], incoming: [], outgoing: [], error: '' };
 const friendsFilter = { text: '', view: 'all' }; // view: all | online | requests
 const friendsUi = { menu: null, confirm: null }; // id do amigo com o menu "⋯" aberto / com a remoção para confirmar
 
-function setHubOpen(on, tab) {
-  hub.open = !!on;
-  if (tab) { hub.tab = tab; save('hubTab', tab); }
-  $('hubRail').classList.toggle('open', hub.open);
-  $('hubToggle').setAttribute('aria-expanded', String(hub.open));
-  $('hubToggle').title = hub.open ? 'Fechar o HUB' : 'Abrir o HUB: salas e amigos';
-  $('hubBody').hidden = !hub.open;
-  setSessionWatch(sessionWatchWanted());
-  renderHub();
-  if (typeof syncWorkspace === 'function') syncWorkspace();
-  if (hub.open && hub.tab === 'friends' && !$('razzeStepFriends').hidden) $($('friendsAddForm').hidden ? 'friendsFilter' : 'razzeFriendNickname').focus();
-  else if (hub.open && hub.tab !== 'network') $('hubToggle').focus();
-}
-function setHubTab(tab) { setHubOpen(true, tab); }
-
-// Os amigos agora moram no HUB: abrir e fechar "a janela de amigos" é abrir o HUB na aba Amigos
+// "Abrir os amigos": a aba Amigos no painel do envelope. Sem conta, o envelope não aparece: vai para o login no Perfil
 function openFriendsDialog() {
-  if (!$('profilePane').hidden) closeProfilePopup();
-  if (!$('networkDialog').hidden) closeNetworkDialog();
   if (!$('generalSettingsDialog').hidden) closeGeneralSettings();
-  renderConnectivitySettings();
-  setHubOpen(true, 'friends');
+  if (!dm.account) { openRazzeLogin(); return false; }
+  if (!$('profilePane').hidden) closeProfilePopup();
+  setDmPanel(true, 'friends');
+  return true;
 }
-function closeFriendsDialog() { if (hub.open) setHubOpen(false); }
+// Configurações › Rede: como os PCs se conectam, servidores, redes Razze e o mapa de conexões
 function openNetworkDialog() {
   if (!$('profilePane').hidden) closeProfilePopup();
-  if (!$('generalSettingsDialog').hidden) closeGeneralSettings();
-  renderConnectivitySettings();
-  setHubOpen(true, 'network');
+  if ($('generalSettingsDialog').hidden) openGeneralSettings('network');
+  else showSettingsTab('network');
 }
-function closeNetworkDialog() { if (hub.open) setHubOpen(false); }
-// "Entrar na conta" (aba Amigos, sem conta): vai para a aba Rede, no login
+// Entrar na conta: no Perfil, na parte Conta Razze
 function openRazzeLogin() {
-  openNetworkDialog();
+  if ($('profilePane').hidden) openProfilePopup();
   $('profileAccount').scrollIntoView({ block: 'start' });
-  if (!$('razzeAuth').hidden) $('razzeEmail').focus();
+  if (!$('razzeAuth').hidden && !$('razzeLogin').disabled) $('razzeEmail').focus();
 }
 
-function renderHub() {
-  const rail = $('hubRail');
-  if (!rail) return;
-  const inRoom = !!state.myId;
+// Os números de pedidos (aba Amigos e envelope) e a lista, se a aba Amigos está à vista
+function renderAmigos() {
   const pending = friendsData.incoming.length;
-  $('hubRailBadge').hidden = !pending; // mensagens novas aparecem no envelope da barra de baixo
-  $('hubRailBadge').textContent = pending > 9 ? '9+' : String(pending);
-  $('hubRailBadge').title = `${pending} ${pending === 1 ? 'pedido' : 'pedidos'} de amizade`;
-  $('hubFriendsBadge').hidden = !pending;
-  $('hubFriendsBadge').textContent = String(pending);
-  $('hubTabRooms').setAttribute('aria-selected', String(hub.tab === 'rooms'));
-  $('hubTabFriends').setAttribute('aria-selected', String(hub.tab === 'friends'));
-  $('hubTabNetwork').setAttribute('aria-selected', String(hub.tab === 'network'));
-  $('networkDialog').hidden = !hub.open || hub.tab !== 'network';
-  $('hubRooms').hidden = !hub.open || hub.tab !== 'rooms';
-  $('friendsDialog').hidden = !hub.open || hub.tab !== 'friends';
-  syncConnectionMap(); // o mapa de conexões fica na aba Rede e só atualiza com ela à vista
-  if (!hub.open) return;
-  if (hub.tab === 'friends') { renderFriends(); return; }
-  // A sala em que você está
-  $('hubCurrentBox').hidden = !inRoom;
-  $('hubHome').hidden = !inRoom || !$('home').hidden;
-  if (inRoom) {
-    const host = state.hostId === state.myId ? 'você' : nameOf(state.hostId);
-    const people = state.members.size + 1;
-    $('hubCurrentName').textContent = host === 'você' ? 'Sua sala' : `Sala de ${host}`;
-    $('hubCurrentMeta').textContent = [people === 1 ? 'só você' : `${people} pessoas`,
-      state.cloud ? `código ${state.cloud.code}` : state.isOwner ? `porta ${state.port}` : `${state.host}:${state.port}`].join(' · ');
-  }
-  // As outras salas abertas (a sua some da lista pelo id da sessão ou pelo endereço)
-  const myId = state.sessao?.id;
-  const mine = (s) => inRoom && ((myId && s.id === myId) || (state.cloud ? s.codigo === state.cloud.code : s.endereco === state.host && s.porta === state.port));
-  const others = sessoes.observando ? listaSessoes().filter((s) => !mine(s)) : [];
-  $('hubList').replaceChildren(...others.map(hubRow));
-  $('hubEmpty').hidden = others.length > 0;
-  $('hubEmpty').textContent = sessoes.procurando ? 'Procurando salas abertas na rede…'
-    : state.cloud || selectedNetworkProvider() === 'internet'
-      ? (razzeLive.updatedAt ? 'Nenhum amigo com outra sala aberta pela internet agora.' : 'Entre na sua conta Razze (aba Rede) para ver as salas dos amigos.')
-    : inRoom ? 'Nenhuma outra sala aberta na rede agora.' : 'Nenhuma sala aberta na rede agora.';
+  $('dmTabFriendsBadge').hidden = !pending;
+  $('dmTabFriendsBadge').textContent = String(pending);
+  $('dmTabFriendsBadge').title = `${pending} ${pending === 1 ? 'pedido' : 'pedidos'} de amizade`;
+  if (typeof renderDmBadge === 'function') renderDmBadge();
+  if (!$('dmFriends').hidden && !$('dmPanel').hidden) renderFriends();
 }
 
 function hubAvatar(name, online) {
@@ -128,32 +76,13 @@ function hubButton(text, onclick, cls = 'btn small', title = '') {
   return b;
 }
 
-function hubRow(s) {
-  const li = document.createElement('li');
-  li.className = 'hub-room';
-  const info = hubInfo(`Sala de ${s.host}`, `${s.pessoas} ${s.pessoas === 1 ? 'pessoa' : 'pessoas'}${s.senha ? ', com senha' : ''}`);
-  if (s.senha) info.lastChild.insertAdjacentHTML('afterbegin', ICON.lock);
-  const inRoom = !!state.myId;
-  li.append(hubAvatar(s.host), info, hubButton(inRoom ? 'Trocar' : 'Entrar', () => (inRoom ? switchToSession(s) : (setHubOpen(false), enterSession(s))),
-    inRoom ? 'btn small' : 'btn small primary', inRoom ? `Sair desta sala e entrar na sala de ${s.host}` : `Entrar na sala de ${s.host}`));
-  return li;
-}
-
-// Trocar de sala: sai desta (passando a sala adiante, se você for o host) e entra na outra
-async function switchToSession(s) {
-  if (!(await appConfirm(`Sair desta sala e entrar na sala de ${s.host}?`, { title: 'Trocar de sala', ok: 'Trocar' }))) return;
-  setHubOpen(false);
-  leaveRoom();
-  enterSession(s);
-}
-
 // ---------- Amigos ----------
 function setFriendsData(value) {
   friendsData.friends = value.friends || [];
   friendsData.incoming = value.incoming || [];
   friendsData.outgoing = value.outgoing || [];
   if (typeof diretoSoAmigos === 'function') diretoSoAmigos(); // quem deixou de ser amigo perde a conexão direta das mensagens
-  renderHub();
+  renderAmigos();
   if (typeof renderHomeAmigos === 'function') renderHomeAmigos();
 }
 // A presença chega a cada poucos segundos (conectividade.js) com a lista de amigos do servidor: troca o online
@@ -169,7 +98,7 @@ function updateFriendsPresence(live) {
     void refreshRazzeLists().catch(() => {}); // quem entrou na lista e os pedidos
   }
   for (const f of friendsData.friends) if (byId.has(f.id)) f.online = !!byId.get(f.id).online;
-  renderHub();
+  renderAmigos();
 }
 function friendsStatus(text) { $('razzeFriendsStatus').textContent = text; }
 const semAcento = (t) => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -217,7 +146,7 @@ function renderFriends() {
   const on = friendsData.friends.filter((f) => online(f) && match(f)), off = friendsData.friends.filter((f) => !online(f) && match(f));
   if (view !== 'online' && incoming.length) groups.push([`Pedidos recebidos · ${incoming.length}`, incoming.map(incomingRow)]);
   if (view !== 'requests' && on.length) groups.push([`Online · ${on.length}`, on.map((f) => friendRow(f, true))]);
-  else if (view === 'all' && !needle && off.length) groups.push(['Online · 0', [friendsEmptyRow('Ninguém online agora. Crie uma sala em Salas e convide quando alguém chegar.')]]);
+  else if (view === 'all' && !needle && off.length) groups.push(['Online · 0', [friendsEmptyRow('Ninguém online agora. Crie uma sala no Início e convide quando alguém chegar.')]]);
   if (view === 'all' && off.length) groups.push([`Offline · ${off.length}`, off.map((f) => friendRow(f, false))]);
   if (view !== 'online' && outgoing.length) groups.push([`Pedidos enviados · ${outgoing.length}`, outgoing.map(outgoingRow)]);
   box.replaceChildren();
@@ -341,30 +270,22 @@ async function removeFriend(f) {
   catch (error) { friendsStatus('Não foi possível remover: ' + error.message); }
 }
 
-function setupHub() {
-  $('hubToggle').onclick = () => setHubOpen(!hub.open);
-  $('hubHome').onclick = () => { setHubOpen(false); goHomeKeepCall(); };
-  $('hubTabRooms').onclick = () => setHubTab('rooms');
-  $('hubTabFriends').onclick = () => setHubTab('friends');
-  $('hubTabNetwork').onclick = () => { renderConnectivitySettings(); setHubTab('network'); };
+function setupAmigos() {
   $('friendsFilter').oninput = () => { friendsFilter.text = $('friendsFilter').value; renderFriends(); };
   for (const b of $('friendsViews').querySelectorAll('button')) b.onclick = () => { friendsFilter.view = b.dataset.view; renderFriends(); };
   $('friendsAddOpen').onclick = () => setFriendsAddOpen(true);
   $('friendsAddCancel').onclick = () => setFriendsAddOpen(false);
   $('razzeFriendNickname').addEventListener('input', () => { if ($('friendsAddHint').classList.contains('erro')) showFriendsAddError(''); });
-  // Esc fecha primeiro o que estiver aberto dentro do HUB (menu, pergunta, formulário), depois o HUB
-  $('hubRail').addEventListener('keydown', (e) => {
-    if (e.key !== 'Escape' || !hub.open) return;
-    e.stopPropagation();
+  // Esc fecha primeiro o que estiver aberto na aba Amigos (menu, pergunta, formulário); sem nada, fecha o painel (mensagens.js)
+  $('dmFriends').addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
     const id = friendsUi.menu || friendsUi.confirm;
-    if (id) { setFriendMenu(null); focusFriendControl('more:' + id); }
-    else if (!$('friendsAddForm').hidden && $('friendsAddForm').contains(e.target)) setFriendsAddOpen(false);
-    else setHubOpen(false);
+    if (id) { e.stopPropagation(); setFriendMenu(null); focusFriendControl('more:' + id); }
+    else if (!$('friendsAddForm').hidden && $('friendsAddForm').contains(e.target)) { e.stopPropagation(); setFriendsAddOpen(false); }
   });
-  // Clique fora do HUB aberto fecha (ele fica por cima das telas); clique fora do menu "⋯" fecha o menu
+  // Clique fora do menu "⋯" fecha o menu
   document.addEventListener('mousedown', (e) => {
-    if (hub.open && !$('hubRail').contains(e.target) && !e.target.closest('.app-confirm, #dmBar')) setHubOpen(false);
-    else if (friendsUi.menu && !e.target.closest('.hub-menu, .hub-more')) closeFriendMenuQuietly();
+    if (friendsUi.menu && !e.target.closest('.hub-menu, .hub-more')) closeFriendMenuQuietly();
   });
 }
 // Fecha o menu sem redesenhar a lista: o clique que fechou pode ser num botão de outra linha e precisa chegar nele

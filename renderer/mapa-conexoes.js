@@ -38,8 +38,9 @@ function connectionMapLocalNodes(tunnels, interfaces, selectedStatus) {
   return [...nodes.values()];
 }
 
-// O mapa mora na aba Rede do HUB: enquanto ela está à vista, atualiza a cada 5 segundos
-function connectionMapVisible() { return !$('networkDialog').hidden; }
+// O mapa mora em Configurações › Rede: enquanto ela está à vista, atualiza a cada 5 segundos (configuracoes.js chama
+// syncConnectionMap ao entrar e sair do grupo e ao fechar as Configurações)
+function connectionMapVisible() { return !$('generalSettingsDialog').hidden && settingsTabNow === 'network'; }
 function syncConnectionMap() {
   const on = connectionMapVisible();
   if (on === !!connectionMapTimer) return;
@@ -54,7 +55,7 @@ function graphElement(tag, attributes, text) {
   if (text !== undefined) node.textContent = text;
   return node;
 }
-// Em pé, na largura do HUB: este PC em cima e, embaixo, o servidor e cada rede, presos a um tronco à esquerda
+// Em pé, numa coluna estreita: este PC em cima e, embaixo, o servidor e cada rede, presos a um tronco à esquerda
 function renderConnectionGraph(server, networks) {
   const svg = $('connectionGraph');
   svg.replaceChildren();

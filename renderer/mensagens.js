@@ -5,13 +5,14 @@
 // (Configurações › Mensagens privadas). O servidor guarda só 30 dias.
 // Criptografadas de ponta a ponta no processo principal (main/mensagens-cripto.js): aqui chega texto normal, com
 // as marcas e2e, plain (de antes, sem criptografia), locked (não abre neste PC) e keyChanged (a chave do amigo mudou).
-// - Barra de conversas, embaixo: o envelope abre para cima a lista das conversas (amigos e quem já conversou com
-//   você, com a última mensagem e as não lidas); um chip por conversa aberta. Arrastar um chip (ou Alt+←/→) muda a
+// - Barra de conversas, embaixo: o envelope abre para cima o painel com duas abas, Conversas (amigos e quem já
+//   conversou com você, com a última mensagem e as não lidas, e os pedidos de amizade que chegaram) e Amigos
+//   (renderer/hub.js: adicionar, pedidos, remover); um chip por conversa aberta. Arrastar um chip (ou Alt+←/→) muda a
 //   ordem; as que não cabem na largura vão para o "+N" no fim da barra, que lista e traz de volta. Clicar abre a janela (o mesmo desenho do chat da
 //   sala); o "—" minimiza de volta para o chip; o X tira da barra (o histórico continua no arquivo).
 //   Clicar fora da janela minimiza; o alfinete trava a janela aberta (fica salvo com a barra).
 // Mensagem nova de alguém fora da barra: a conversa entra na barra, minimizada, com o número de não lidas.
-// Script clássico: divide o escopo global com os outros (ordem no index.html). Usa de: util, tema, chat, conectividade, hub,
+// Script clássico: divide o escopo global com os outros (ordem no index.html). Usa de: util, tema, chat, conectividade, hub (amigos),
 // mensagens-direto.
 
 const DM_POLL_MS = 4000;
@@ -19,6 +20,7 @@ const dm = {
   account: '', convs: new Map(), bar: [], cursor: 0, timer: null, polling: false,
   unsupported: false, error: '', filter: '',
 };
+let dmPanelTab = 'convs'; // a aba do painel do envelope: convs | friends (vale também depois de sair e entrar na conta)
 
 const dmKey = (k) => `${k}.${dm.account}`;
 // Configurações › Mensagens privadas: por quanto tempo o histórico fica neste PC (0 = para sempre)
@@ -173,7 +175,6 @@ async function openDm(id) {
   c.unread = 0;
   dmSaveBar();
   diretoGarantir(id);
-  if (typeof hub === 'object' && hub.open) setHubOpen(false);
   setDmPanel(false);
   renderDm();
   c.el?.input.focus();
@@ -404,9 +405,7 @@ function renderDmBar() {
   bar.hidden = !on;
   document.body.classList.toggle('has-dm-bar', on);
   if (!on) return;
-  const total = dmUnreadTotal();
-  $('dmBarBadge').hidden = !total;
-  $('dmBarBadge').textContent = total > 99 ? '99+' : String(total);
+  renderDmBadge();
   const slots = $('dmSlots');
   // Na ordem da barra, mexendo só no que está fora do lugar: mover um elemento (mesmo para o mesmo lugar) tira o
   // foco do campo de escrever, e isto roda a cada busca de mensagens
@@ -555,26 +554,58 @@ function fillDmList(prefix = 'dmPanel') {
   }));
   $(prefix + 'ConvEmpty').hidden = rows.length > 0;
   $(prefix + 'ConvEmpty').textContent = needle ? `Ninguém com “${dm.filter.trim()}”.` : 'Adicione amigos na aba Amigos para conversar com eles.';
+  // Pedidos de amizade que chegaram: um aviso em cima das conversas, que leva para a aba Amigos
+  const pedidos = friendsData.incoming.length;
+  $('dmRequestsBanner').hidden = !pedidos || !!needle;
+  $('dmRequestsBanner').textContent = pedidos === 1 ? `${friendsData.incoming[0].displayName} quer ser seu amigo · Ver` : `${pedidos} pedidos de amizade · Ver`;
+}
+// O envelope: mensagens não lidas mais pedidos de amizade; a aba Conversas, só as não lidas
+function renderDmBadge() {
+  const unread = dmUnreadTotal(), pedidos = friendsData.incoming.length, total = unread + pedidos;
+  $('dmBarBadge').hidden = !total;
+  $('dmBarBadge').textContent = total > 99 ? '99+' : String(total);
+  const partes = [unread && `${unread} ${unread === 1 ? 'mensagem nova' : 'mensagens novas'}`, pedidos && `${pedidos} ${pedidos === 1 ? 'pedido' : 'pedidos'} de amizade`].filter(Boolean);
+  $('dmBarLabel').title = 'Mensagens e amigos' + (partes.length ? ': ' + partes.join(', ') : '');
+  $('dmTabConvsBadge').hidden = !unread;
+  $('dmTabConvsBadge').textContent = unread > 99 ? '99+' : String(unread);
 }
 
-// ---------- Painel da barra: o envelope abre a lista para cima, em cima da barra ----------
-function setDmPanel(open) {
+// ---------- Painel da barra: o envelope abre para cima as abas Conversas e Amigos ----------
+// tab: convs | friends; sem ela, a última aberta
+function setDmPanel(open, tab) {
   open = open && !!dm.account;
   const was = !$('dmPanel').hidden;
+  const trocou = !!tab && tab !== dmPanelTab;
+  if (tab === 'convs' || tab === 'friends') dmPanelTab = tab;
   $('dmPanel').hidden = !open;
   $('dmBarLabel').setAttribute('aria-expanded', String(open));
   $('dmBarLabel').classList.toggle('open', open);
-  if (!open) return;
+  if (!open) {
+    if (friendsUi.menu || friendsUi.confirm) { friendsUi.menu = friendsUi.confirm = null; }
+    return;
+  }
+  const amigos = dmPanelTab === 'friends';
+  $('dmTabConvs').setAttribute('aria-selected', String(!amigos));
+  $('dmTabFriends').setAttribute('aria-selected', String(amigos));
+  $('dmTabConvs').tabIndex = amigos ? -1 : 0;
+  $('dmTabFriends').tabIndex = amigos ? 0 : -1;
+  $('dmConvs').hidden = amigos;
+  $('dmFriends').hidden = !amigos;
   renderDmPanel();
-  if (!was) { $('dmPanelFilter').value = dm.filter; $('dmPanelFilter').focus(); }
+  if (was && !trocou) return;
+  if (amigos) $($('friendsAddForm').hidden ? 'friendsFilter' : 'razzeFriendNickname').focus();
+  else { $('dmPanelFilter').value = dm.filter; $('dmPanelFilter').focus(); }
 }
-function renderDmPanel() { if (!$('dmPanel').hidden) fillDmList('dmPanel'); }
+function renderDmPanel() {
+  if ($('dmPanel').hidden) return;
+  if (dmPanelTab === 'friends') renderFriends();
+  else fillDmList('dmPanel');
+}
 
 function renderDm() {
   renderDmBar();
   if (!dm.account) setDmPanel(false);
   renderDmPanel();
-  if (typeof renderHub === 'function') renderHub();
 }
 
 // ---------- Configurações › Mensagens privadas ----------
@@ -605,13 +636,24 @@ function setupDm() {
   renderDmConfig();
   $('dmBarLabel').onclick = () => setDmPanel($('dmPanel').hidden);
   $('dmPanelClose').onclick = () => { setDmPanel(false); $('dmBarLabel').focus(); };
+  $('dmTabConvs').onclick = () => setDmPanel(true, 'convs');
+  $('dmTabFriends').onclick = () => setDmPanel(true, 'friends');
+  $('dmRequestsBanner').onclick = () => { friendsFilter.view = 'requests'; setDmPanel(true, 'friends'); };
+  // Setas trocam de aba (como nas Configurações); Esc fecha o painel (a aba Amigos fecha antes o que tiver aberto nela)
+  $('dmPanel').addEventListener('keydown', (e) => {
+    if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && e.target.closest?.('.dm-panel-tabs')) {
+      e.preventDefault();
+      setDmPanel(true, dmPanelTab === 'friends' ? 'convs' : 'friends');
+      $(dmPanelTab === 'friends' ? 'dmTabFriends' : 'dmTabConvs').focus();
+    } else if (e.key === 'Escape') { e.stopPropagation(); setDmPanel(false); $('dmBarLabel').focus(); }
+  });
   $('dmPanelFilter').oninput = () => { dm.filter = $('dmPanelFilter').value; renderDmPanel(); };
   $('dmMore').onclick = () => setDmMore($('dmMoreMenu').hidden);
   new ResizeObserver(() => { if (dm.account) fitDmBar(); }).observe($('dmBar'));
   // Clicar fora do painel (e fora do botão que abre) fecha
   document.addEventListener('pointerdown', (e) => {
     minimizeDmOutside(e.target);
-    if (!$('dmPanel').hidden && !e.target.closest?.('#dmPanel, #dmBarLabel')) setDmPanel(false);
+    if (!$('dmPanel').hidden && !e.target.closest?.('#dmPanel, #dmBarLabel, .app-confirm')) setDmPanel(false);
     if (!$('dmMoreMenu').hidden && !e.target.closest?.('#dmMoreMenu, #dmMore')) setDmMore(false);
   });
   // Voltando para o app: busca na hora (sem esperar os 4 s)

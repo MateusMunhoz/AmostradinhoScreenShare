@@ -3,8 +3,8 @@
 // da VPS: salas por código + senha, STUN e TURN, sem VPN nenhuma).
 // Script clássico: divide o escopo global com os outros (ordem no index.html). Usa de: util, estado, navegacao.
 //
-// Fica no HUB, aba Rede (renderer/hub.js), separada das Configurações. O Razze
-// reúne servidor e redes. A conta fica no Perfil e os amigos na aba Amigos.
+// Fica em Configurações › Rede (openNetworkDialog em renderer/hub.js). O Razze reúne servidor e redes. A conta fica
+// no Perfil (Conta Razze) e os amigos na aba Amigos do envelope das mensagens.
 
 const NETWORK_PREF_KEY = 'connectivity.v1';
 // Servidor do modo Internet da equipe: quem instala agora já entra pela internet, sem configurar nada.
@@ -135,21 +135,21 @@ function selectedNetworkProvider() { return networkPreferences().provider; }
 
 async function requireSelectedNetwork() {
   if (selectedNetworkProvider() === 'internet') {
-    if (!internetServerUrl()) throw new Error('Coloque o endereço do servidor na aba Rede (no HUB, à esquerda).');
+    if (!internetServerUrl()) throw new Error('Coloque o endereço do servidor em Configurações › Rede.');
     return;
   }
   if (selectedNetworkProvider() !== 'razze') return;
   const prefs = networkPreferences();
   const state = await window.api.razzeState();
-  if (!state.configured || !state.authenticated) throw new Error('Configure o servidor Razze e entre na sua conta na aba Rede do HUB.');
-  if (!prefs.activeNetworkId) throw new Error('Conecte uma rede Razze na aba Rede (no HUB, à esquerda).');
+  if (!state.configured || !state.authenticated) throw new Error('Configure o servidor Razze em Configurações › Rede e entre na sua conta no Perfil.');
+  if (!prefs.activeNetworkId) throw new Error('Conecte uma rede Razze em Configurações › Rede.');
   const tunnel = await window.api.razzeWireGuardStatus(prefs.activeNetworkId);
   if (!tunnel.connected) throw new Error('Conecte a rede Razze escolhida na aba Rede antes de criar ou entrar numa sala.');
 }
 
 // ---------- A janela ----------
-// Rede e conta: moram no HUB, aba Rede (renderer/hub.js: openNetworkDialog, closeNetworkDialog)
-// Amigos: moram no HUB (renderer/hub.js: openFriendsDialog, closeFriendsDialog, renderFriends)
+// Rede: Configurações › Rede (renderer/hub.js: openNetworkDialog). Conta: Perfil (openRazzeLogin).
+// Amigos: aba Amigos do envelope das mensagens (renderer/hub.js: openFriendsDialog, renderFriends)
 function setRazzeStatus(text) {
   for (const id of ['razzeStatus', 'razzeAccountStatus', 'razzeFriendsStatus']) $(id).textContent = text;
 }
@@ -206,13 +206,11 @@ async function loadRazzeState() {
     $('razzeAuth').hidden = on;
     $('razzeAccount').hidden = !on;
     $('razzeStepNetworks').hidden = !on;
-    $('razzeStepFriends').hidden = !on;
-    $('friendsSignedOut').hidden = on;
     if (!on) { setFriendsData({}); dmStop(); razzeUser = null; anunciarContaNaSala(); }
   };
   account(state.authenticated);
-  $('profileAccountHint').textContent = state.configured ? 'Entre na sua conta para gerenciar redes e amigos.' : 'Para entrar, escolha Razze (WireGuard) em "Como os PCs se conectam", logo abaixo, e salve o endereço do servidor.';
-  $('friendsHint').textContent = state.configured ? 'Entre na sua conta Razze para ver quem está online, adicionar amigos e convidar para a sua sala.' : 'Os amigos usam uma conta Razze: configure o servidor e entre na conta na aba Rede.';
+  $('profileAccountHint').textContent = state.authenticated ? '' : state.configured ? 'Entre na sua conta para ter amigos, mensagens privadas e redes Razze.' : 'Para entrar, escolha Razze (WireGuard) em Configurações › Rede e salve o endereço do servidor.';
+  $('profileOpenNetwork').hidden = state.configured;
   $('razzeLogin').disabled = $('razzeRegister').disabled = !state.configured;
   if (!state.configured) {
     setStepDone('razzeStepServerNum', false, 1);
@@ -518,7 +516,7 @@ function receiveRazzePresence(value) {
 function setupConnectivitySettings() {
   window.api.onRazzePresence(receiveRazzePresence);
   window.api.razzePresence().then(receiveRazzePresence).catch(() => {});
-  $('friendsOpenProfile').onclick = openRazzeLogin;
+  $('profileOpenNetwork').onclick = openNetworkDialog;
   document.querySelectorAll('input[name="networkProvider"]').forEach((r) => {
     r.onchange = () => {
       saveNetworkPreferences({ provider: r.value });
@@ -640,14 +638,14 @@ function setupConnectivitySettings() {
     const id = profile?.dataset.person;
     if (!id || id === state.myId || !state.members.has(id)) return;
     event.preventDefault();
-    if ($('friendsDialog').hidden) openFriendsDialog();
+    if (!openFriendsDialog()) return; // sem conta: foi para o login no Perfil
     await addFriendByNickname(nameOf(id));
   });
   $('razzePassword').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); ($('razzeLogin').hidden ? $('razzeRegister') : $('razzeLogin')).click(); } });
   const acceptInviteLink = async (token) => {
     $('razzeInviteToken').value = token;
     saveNetworkPreferences({ provider: 'razze' });
-    if ($('networkDialog').hidden) openNetworkDialog();
+    openNetworkDialog();
     const state = await window.api.razzeState();
     if (!state.authenticated) {
       setRazzeStatus('Entre na sua conta Razze para aceitar o convite que chegou pelo link.');

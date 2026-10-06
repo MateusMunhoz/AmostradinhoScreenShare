@@ -586,7 +586,7 @@ function nomesDe(id) {
 
 // Amizade (conta Razze). Já amigos ou pedido enviado: o botão só informa; pedido recebido: aceita; senão, manda o
 // pedido pela conta da pessoa (o nome do servidor, não o da sala); sem conta na sala, pelo nome da sala, como antes.
-// Sem conta sua, abre a aba Amigos do HUB para entrar.
+// Sem conta sua, abre o Perfil, na Conta Razze, para entrar.
 function friendButton(id, name) {
   const b = document.createElement('button');
   b.type = 'button';
@@ -607,8 +607,8 @@ function friendButton(id, name) {
     if (got) { await acceptFriend(got); toast(`Agora você e ${got.displayName || nome} são amigos.`); return renderPersonCard(); }
     const account = await window.api.razzeState().catch(() => null);
     if (!account?.authenticated) {
-      toast('Entre na sua conta Razze para adicionar amigos (HUB, aba Amigos).');
-      return openFriendsDialog();
+      toast('Entre na sua conta Razze (no seu Perfil) para adicionar amigos.');
+      return openRazzeLogin();
     }
     b.disabled = true;
     try {

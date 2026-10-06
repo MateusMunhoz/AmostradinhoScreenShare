@@ -1,4 +1,4 @@
-// Barra de mensagens: o envelope (mensagens privadas) abre a lista das conversas para cima, em cima da própria barra (não no HUB).
+// Barra de mensagens: o envelope abre para cima, em cima da própria barra, o painel com as abas Conversas e Amigos (o HUB saiu).
 // Sem servidor Razze: a conta e as conversas são de mentira, só no app (nada é enviado).
 const { openApp, check, sleep, run } = require('./ajuda');
 
@@ -22,8 +22,8 @@ run('Barra de mensagens abre para cima', 90000, async () => {
   await clickAt(A, await centerOf(A, '#dmBarLabel'));
   const geo = await A.eval(`(() => { const p = $('dmPanel').getBoundingClientRect(), b = $('dmBar').getBoundingClientRect(), l = $('dmBarLabel').getBoundingClientRect(); return { pBottom: p.bottom, bTop: b.top, pLeft: p.left, lLeft: l.left, h: p.height }; })()`);
   check('Clicar em Mensagens abre o painel para cima, colado na barra', await A.eval(`!$('dmPanel').hidden`) && Math.abs(geo.pBottom - geo.bTop) < 2 && Math.abs(geo.pLeft - geo.lLeft) < 2 && geo.h > 150, JSON.stringify(geo));
-  check('O HUB não abre', await A.eval(`!hub.open`));
-  check('A barra não invade o HUB, que vai de cima a baixo', await A.eval(`(() => { const h = $('hubRail').getBoundingClientRect(), b = $('dmBar').getBoundingClientRect(); return b.left >= h.right - 1 && h.bottom >= innerHeight - 1; })()`));
+  check('Sem o HUB: a barra começa na borda esquerda da janela', await A.eval(`!$('hubRail') && $('dmBar').getBoundingClientRect().left === 0`));
+  check('Abre na aba Conversas', await A.eval(`$('dmTabConvs').getAttribute('aria-selected') === 'true' && !$('dmConvs').hidden && $('dmFriends').hidden`));
   check('Lista: Bia (com a prévia e 2 não lidas) antes do Caio', await A.eval(`(() => {
     const rows = [...$('dmPanelConvList').children];
     return rows.length === 2 && rows[0].textContent.includes('Bia') && rows[0].textContent.includes('oi, bora jogar?') && rows[0].querySelector('.hub-badge')?.textContent === '2' && rows[1].textContent.includes('Caio');
@@ -33,6 +33,21 @@ run('Barra de mensagens abre para cima', 90000, async () => {
   check('Buscar filtra a lista', await A.eval(`$('dmPanelConvList').children.length === 1 && $('dmPanelConvList').textContent.includes('Caio')`));
   await A.eval(`(() => { const f = $('dmPanelFilter'); f.value = ''; f.dispatchEvent(new Event('input')); })()`);
   await A.shot('mensagens-barra.png');
+
+  // Amigos no mesmo painel: um pedido que chegou aparece em cima das conversas, no envelope e na aba Amigos
+  await A.eval(`(() => { friendsData.incoming = [{ id: '${'1'.repeat(32)}', userId: '${'d'.repeat(32)}', displayName: 'Duda' }]; renderAmigos(); renderDmPanel(); })()`);
+  check('Pedido de amizade: aviso nas Conversas, número no envelope (2 + 1) e na aba Amigos', await A.eval(`!$('dmRequestsBanner').hidden && $('dmRequestsBanner').textContent.includes('Duda') && $('dmBarBadge').textContent === '3' && $('dmTabFriendsBadge').textContent === '1' && $('dmTabConvsBadge').textContent === '2'`));
+  await clickAt(A, await centerOf(A, '#dmRequestsBanner'));
+  check('O aviso leva para Amigos › Pedidos, com Aceitar', await A.eval(`!$('dmPanel').hidden && !$('dmFriends').hidden && $('dmConvs').hidden && $('dmTabFriends').getAttribute('aria-selected') === 'true'
+    && friendsFilter.view === 'requests' && [...$('razzeFriends').querySelectorAll('.hub-request')].some((li) => li.textContent.includes('Duda') && li.textContent.includes('Aceitar'))`));
+  await A.shot('mensagens-barra-amigos.png');
+  await A.eval(`(() => { friendsFilter.view = 'all'; friendsData.incoming = []; renderAmigos(); })()`);
+  check('Todos: Bia online com Mensagem, Caio offline', await A.eval(`(() => { const t = $('razzeFriends').textContent; return t.includes('Online · 1') && t.includes('Bia') && t.includes('Offline · 1') && !!$('razzeFriends').querySelector('[data-focus="talk:${BIA}"]'); })()`));
+  await clickAt(A, await centerOf(A, '#dmTabConvs'));
+  check('Clicar em Conversas volta para a lista das conversas', await A.eval(`!$('dmConvs').hidden && $('dmFriends').hidden && $('dmRequestsBanner').hidden`));
+  await A.eval(`$('dmTabConvs').focus(); $('dmTabConvs').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))`);
+  check('Seta troca de aba', await A.eval(`!$('dmFriends').hidden && document.activeElement === $('dmTabFriends')`));
+  await A.eval(`setDmPanel(true, 'convs')`);
 
   await clickAt(A, await centerOf(A, '#dmBarLabel'));
   check('Clicar de novo fecha', await A.eval(`$('dmPanel').hidden && $('dmBarLabel').getAttribute('aria-expanded') === 'false'`));

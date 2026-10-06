@@ -1,10 +1,10 @@
 'use strict';
 // Salas dos amigos pelo modo Internet: quem cria uma sala pela internet (e deixou "Mostrar para meus amigos")
 // anuncia servidor, código e um passe de convite na RazzeAPI, junto da presença (main/razze-presence.js).
-// A API mostra só para os amigos aceitos. O amigo vê a sala na tela inicial e no HUB e entra com um clique,
+// A API mostra só para os amigos aceitos. O amigo vê a sala na tela inicial e entra com um clique,
 // pelo passe; se o passe não valer mais (ou o servidor for antigo, sem passe), o app pede a senha.
 // O passe só existe enquanto quem convidou está na sala; o servidor guarda só o HMAC dele.
-// Convite pelas mensagens diretas: o Convidar do HUB manda uma mensagem com um texto legível (para app antigo) e
+// Convite pelas mensagens diretas: o Convidar da aba Amigos manda uma mensagem com um texto legível (para app antigo) e
 // uma linha telap2p://sala?d=... que o app mostra como um cartão com Entrar (mensagens.js). Só entra com o clique.
 // Script clássico: divide o escopo global com os outros (ordem no index.html). Usa de: util, estado, sala, sessoes.
 
@@ -149,7 +149,7 @@ function lerConvite(text) {
   return { modo: cv.modo, endereco: cv.endereco, senha: !!cv.senha, pessoas, rede, ...chamadaInfo };
 }
 
-// Convidar (HUB › Amigos): manda o convite como mensagem direta
+// Convidar (envelope › Amigos): manda o convite como mensagem direta
 async function convidarPorMensagem(f) {
   const cv = conviteDaSala();
   if (!cv) return friendsStatus(`Entre numa sala primeiro para convidar ${f.displayName}.`);
@@ -171,9 +171,9 @@ const mesmaSala = (cv) => (cv.modo === 'internet' ? state.cloud?.code === cv.cod
 // Entrar pelo cartão do convite: só com o clique, no modo da sala (nunca troca o modo sozinho)
 async function aceitarConvite(cv, quem) {
   if (state.myId && mesmaSala(cv)) return toast('Você já está nessa sala.');
-  if (cv.modo !== selectedNetworkProvider()) return toast(`Esse convite é pelo modo ${MODO_NOME[cv.modo]}. Mude em HUB › Rede e clique em Entrar de novo.`, 'error');
+  if (cv.modo !== selectedNetworkProvider()) return toast(`Esse convite é pelo modo ${MODO_NOME[cv.modo]}. Mude em Configurações › Rede e clique em Entrar de novo.`, 'error');
   if (cv.modo === 'razze' && cv.rede && cv.rede !== networkPreferences().activeNetworkId) {
-    return toast(`Ligue a mesma rede Razze de ${quem} (HUB › Rede) e clique em Entrar de novo.`, 'error');
+    return toast(`Ligue a mesma rede Razze de ${quem} (Configurações › Rede) e clique em Entrar de novo.`, 'error');
   }
   if (state.myId) {
     if (!(await appConfirm(`Sair desta sala e entrar na sala de ${quem}?`, { title: 'Trocar de sala', ok: 'Trocar' }))) return;

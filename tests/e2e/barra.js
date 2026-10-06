@@ -53,7 +53,7 @@ run('Barra de baixo numa linha', 90000, async () => {
   await sleep(300);
   check('No menu, com a sala aberta: os botões da sala continuam, e o Voltar fica na altura do Início', await A.eval(`!$('navBackToRoom').hidden && $('dockHome').hidden && !$('leaveBtn').hidden && !$('navChat').hidden && !$('peopleBtn').hidden && !$('chatTab').hidden && Math.round($('navBackToRoom').getBoundingClientRect().top) === ${alturaInicio}`)
     && await A.eval(`(() => { $('navBackToRoom').click(); return !$('room').hidden && $('navBackToRoom').hidden && !$('dockHome').hidden; })()`));
-  check('O mapa de conexões saiu da barra (mora na aba Rede do HUB)', await A.eval(`!$('navConnectionMap') && $('networkDialog').contains($('connectionMap'))`));
+  check('O mapa de conexões saiu da barra (mora em Configurações › Rede)', await A.eval(`!$('navConnectionMap') && $('settingsPanel-network').contains($('connectionMap'))`));
 
   // Clique de mouse de verdade (o .click() por código passa até por cima do que não recebe clique)
   const mouse = async (sel) => {

@@ -152,7 +152,7 @@ nenhuma credencial: o client ID vem de `GET /v1/auth/google/config`. Sem as vari
 3. No `.env` da VPS: `RAZZE_GOOGLE_CLIENT_ID=...` e `RAZZE_GOOGLE_CLIENT_SECRET=...` (o segredo de app para computador não é secreto de
    verdade, mas o Google exige no pedido). Suba de novo: `docker compose up -d`.
 4. Conta: e-mail novo cria a conta (respeita a aprovação do administrador, se estiver ligada); e-mail que já tem conta com senha pede
-   entrar com a senha e **Vincular Google** no HUB › Rede.
+   entrar com a senha e **Vincular Google** no Perfil › Conta Razze.
 
 ## WireGuard e limites atuais
 

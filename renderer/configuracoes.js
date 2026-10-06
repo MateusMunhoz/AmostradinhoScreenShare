@@ -119,7 +119,7 @@ function applyAppTheme(d = document) {
   const glass = AppPreferences.glass(appPreferences.colors, { ...appPreferences.appearance, glass: glassMode() });
   for (const [key, value] of Object.entries(glass || {})) root.style.setProperty(key, value);
   root.dataset.glass = glassMode();
-  // Interface espelhada: HUB na direita, barrinha e painéis de chat e voz na esquerda (styles.css)
+  // Interface espelhada: barrinha e painéis de chat e voz na esquerda (styles.css)
   root.dataset.mirror = appPreferences.appearance.mirror ? 'on' : 'off';
   if (skin === 'renascenca' && !root.dataset.obra) root.dataset.obra = nextRenaissanceWork();
   if (skin === 'topgun' && !root.dataset.foto) root.dataset.foto = nextTopGunPhoto();
@@ -163,12 +163,10 @@ function renderGeneralSettings() {
   $('notificationVolume').value = appPreferences.sounds.volume;
   $('notificationVolumeValue').textContent = `${appPreferences.sounds.volume}%`;
 }
-// tab: a aba que abre (voice, shortcuts, skin, appearance, colors, sounds, phone, perf, stream); sem ela, a última
+// tab: a aba que abre (voice, shortcuts, skin, appearance, colors, sounds, phone, dms, network, extras, perf, stream); sem ela, a última
 function openGeneralSettings(tab) {
   if (typeof tab !== 'string') tab = null; // pelo onclick chega o evento
-  if (!$('friendsDialog').hidden) closeFriendsDialog();
   if (!$('profilePane').hidden) closeProfilePopup();
-  if (!$('networkDialog').hidden) closeNetworkDialog();
   settingsReturnFocus = document.activeElement;
   renderGeneralSettings();
   $('generalSettingsDialog').hidden = false;
@@ -182,6 +180,7 @@ function openGeneralSettings(tab) {
 function closeGeneralSettings() {
   settingsGroupChanged(settingsGroupOf(settingsTabNow), null);
   $('generalSettingsDialog').hidden = true;
+  syncConnectionMap();
   if (phone.modo) cancelPhone(); // o servidor da rede local do Celular não fica aberto com as configurações fechadas
   syncWorkspace();
   appSounds.stop('preview');
@@ -466,6 +465,8 @@ function settingsGroupChanged(before, now) {
   if (before === 'stats') leaveStats();
   if (now === 'voz') enterVoiceSettings();
   if (now === 'stats') enterStats();
+  if (now === 'rede') renderConnectivitySettings(); // Rede: o estado da conexão e da conta na hora
+  syncConnectionMap(); // o mapa de conexões (grupo Rede) só atualiza com ele à vista
 }
 function setupSettingsTabs() {
   const tabs = settingsTabs();

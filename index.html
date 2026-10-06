@@ -104,6 +104,36 @@
       <label class="check-line"><input type="checkbox" id="atvMusica"><span>Mostrar a música que estou ouvindo (Spotify)</span></label>
       <p id="atvPreview" class="hint" role="status" aria-live="polite"></p>
       <p class="hint">Desligado por padrão. Só os seus amigos veem, e só o nome do jogo e a faixa: nenhum outro programa é lido. Precisa da conta e vale no Windows.</p>
+      <!-- Conta Razze: entrar ou criar conta, ou quem está conectado (renderer/conectividade.js). As redes ficam em
+           Configurações › Rede; os amigos, no envelope das mensagens -->
+      <h3 class="profile-sec" id="profileAccountTitle">Conta Razze</h3>
+      <div id="profileAccount" class="profile-account" role="group" aria-labelledby="profileAccountTitle">
+        <p id="razzeAccountStatus" class="razze-status" role="status" aria-live="polite"></p>
+        <p id="profileAccountHint" class="hint"></p>
+        <button id="profileOpenNetwork" class="btn small" type="button" hidden>Abrir Configurações › Rede</button>
+        <div id="razzeAuth" class="net-auth">
+          <div class="seg" role="tablist" aria-label="Entrar ou criar conta">
+            <button id="razzeTabLogin" type="button" role="tab" aria-selected="true">Entrar</button>
+            <button id="razzeTabRegister" type="button" role="tab" aria-selected="false">Criar conta</button>
+          </div>
+          <label class="field" id="razzeNameField" hidden><span>Seu nome na rede</span><input id="razzeDisplayName" type="text" maxlength="60" autocomplete="name"></label>
+          <label class="field"><span>E-mail</span><input id="razzeEmail" type="email" autocomplete="username"></label>
+          <label class="field"><span>Senha</span><input id="razzePassword" type="password" autocomplete="current-password"></label>
+          <button id="razzeLogin" class="btn primary" type="button">Entrar</button>
+          <button id="razzeRegister" class="btn primary" type="button" hidden>Criar conta</button>
+          <button id="razzeGoogle" class="btn" type="button" hidden>Entrar com Google</button>
+          <button id="razzeForgot" class="link-btn" type="button">Esqueci a senha</button>
+        </div>
+        <div id="razzeAccount" class="net-row net-account" hidden>
+          <span class="avatar" id="razzeAccountAvatar" aria-hidden="true"></span>
+          <span class="net-account-text"><strong id="razzeAccountName"></strong><span class="hint" id="razzeAccountEmail"></span></span>
+          <div class="net-account-actions">
+            <button id="razzeGoogleLink" class="btn small" type="button" hidden>Vincular Google</button>
+            <button id="razzeChangePassword" class="btn small" type="button">Trocar senha</button>
+            <button id="razzeLogout" class="btn small" type="button">Sair da conta</button>
+          </div>
+        </div>
+      </div>
       </div>
     </section>
     <!-- Mapa em foco (renderer/ceu-voz.js): o chat encolhe e fica só esta faixa; clicar traz o chat de volta -->
@@ -128,150 +158,6 @@
       <div class="pane-voice-actions"><button id="paneVoiceSettings" class="btn small icon" type="button" hidden></button><button id="paneVoiceMute" class="btn small icon pane-toggle" type="button" hidden></button><button id="paneVoiceDeafen" class="btn small icon pane-toggle" type="button" hidden></button><button id="paneVoiceJoin" class="btn primary small" type="button">Entrar na voz</button><button id="paneVoiceSubsala" class="btn small pane-subsala" type="button" title="Criar uma subsala e entrar nela" hidden></button></div>
     </section>
   </aside>
-  <!-- HUB: barra fininha na borda esquerda (renderer/hub.js). Aberta: abas Salas e Amigos -->
-  <aside id="hubRail" class="hub-rail" aria-label="HUB: salas e amigos">
-    <button id="hubToggle" type="button" class="hub-toggle" aria-expanded="false" aria-controls="hubBody" title="Abrir o HUB: salas e amigos"><span class="hub-word">HUB</span></button>
-    <span id="hubRailBadge" class="hub-rail-badge" title="Pedidos de amizade" hidden></span>
-    <div id="hubBody" class="hub-body" hidden>
-      <div class="seg hub-tabs" role="tablist" aria-label="O que ver no HUB">
-        <button id="hubTabRooms" type="button" role="tab" aria-selected="true" aria-controls="hubRooms">Salas</button>
-        <button id="hubTabFriends" type="button" role="tab" aria-selected="false" aria-controls="friendsDialog">Amigos <span id="hubFriendsBadge" class="hub-badge" hidden></span></button>
-        <button id="hubTabNetwork" type="button" role="tab" aria-selected="false" aria-controls="networkDialog">Rede</button>
-      </div>
-      <section id="hubRooms" class="hub-pane" role="tabpanel" aria-labelledby="hubTabRooms">
-        <div id="hubCurrentBox" hidden>
-          <h3 class="hub-section">Você está em</h3>
-          <div class="hub-current" aria-current="true">
-            <span class="hub-live" aria-hidden="true"></span>
-            <div class="hub-room-info"><strong id="hubCurrentName"></strong><span id="hubCurrentMeta" class="hub-room-meta"></span></div>
-          </div>
-        </div>
-        <h3 class="hub-section">Salas abertas</h3>
-        <ul id="hubList" class="hub-list"></ul>
-        <p id="hubEmpty" class="hint"></p>
-        <button id="hubHome" type="button" class="btn small hub-home">Menu inicial</button>
-      </section>
-      <!-- Amigos (dados em renderer/conectividade.js, lista em renderer/hub.js) -->
-      <section id="friendsDialog" class="hub-pane hub-friends" role="tabpanel" aria-labelledby="hubTabFriends" hidden>
-        <div id="friendsSignedOut" class="hub-signed-out">
-          <p id="friendsHint" class="hint"></p>
-          <button id="friendsOpenProfile" class="btn small primary" type="button">Entrar na conta</button>
-        </div>
-        <div id="razzeStepFriends" class="hub-friends-body" hidden>
-          <!-- Uma busca só; adicionar abre um formulário no lugar dela (hub.js: setFriendsAddOpen) -->
-          <div id="friendsSearchRow" class="hub-search-row">
-            <input id="friendsFilter" class="hub-filter" type="search" placeholder="Buscar amigos" aria-label="Buscar amigos pelo nome" autocomplete="off">
-            <button id="friendsAddOpen" class="btn small primary hub-add-open" type="button" aria-expanded="false" aria-controls="friendsAddForm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 20a6 6 0 0 0-12 0M9 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M16 11h6"/></svg>Adicionar</button>
-          </div>
-          <div id="friendsAddForm" class="hub-add-form" hidden>
-            <label for="razzeFriendNickname">Adicionar amigo</label>
-            <input id="razzeFriendNickname" class="hub-filter" type="text" maxlength="300" autocomplete="off" aria-describedby="friendsAddHint">
-            <p id="friendsAddHint" class="hub-add-hint">Digite o nickname exato, ou cole um link ou código de convite (ABCD-EFGH-JK). A pessoa recebe um pedido e aparece aqui quando aceitar.</p>
-            <div class="hub-add-link">
-              <button id="friendsLinkCopy" class="btn small" type="button">Copiar meu link de convite</button>
-              <ul id="friendsLinks" class="hub-links" aria-label="Seus links de convite ativos"></ul>
-            </div>
-            <div class="hub-add-actions">
-              <button id="friendsAddCancel" class="btn small" type="button">Cancelar</button>
-              <button id="razzeAddFriend" class="btn small primary" type="button">Enviar pedido</button>
-            </div>
-          </div>
-          <div id="friendsViews" class="hub-views" role="tablist" aria-label="Mostrar">
-            <button type="button" role="tab" data-view="all" aria-selected="true">Todos</button>
-            <button type="button" role="tab" data-view="online" aria-selected="false">Online</button>
-            <button type="button" role="tab" data-view="requests" aria-selected="false">Pedidos <span id="friendsRequestsBadge" class="hub-badge" hidden></span></button>
-          </div>
-          <p id="razzeFriendsStatus" class="razze-status" role="status" aria-live="polite"></p>
-          <div id="razzeFriends" class="hub-friend-list"></div>
-          <p id="friendsEmpty" class="hint" hidden></p>
-        </div>
-      </section>
-      <!-- Rede e conta: como os PCs se conectam, servidores, redes Razze e o login (lógica em renderer/conectividade.js) -->
-      <section id="networkDialog" class="hub-pane hub-network network-settings" role="tabpanel" aria-labelledby="hubTabNetwork" hidden>
-        <!-- A conta Razze vem primeiro: entrar ou criar conta, ou quem está conectado -->
-        <div id="profileAccount">
-          <p id="razzeAccountStatus" class="razze-status" role="status" aria-live="polite"></p>
-          <p id="profileAccountHint" class="hint"></p>
-          <section class="net-step hub-account" aria-labelledby="razzeStepAccountTitle">
-            <div class="net-step-head"><h3 id="razzeStepAccountTitle">Conta Razze</h3></div>
-            <div id="razzeAuth" class="net-auth">
-              <div class="seg" role="tablist" aria-label="Entrar ou criar conta">
-                <button id="razzeTabLogin" type="button" role="tab" aria-selected="true">Entrar</button>
-                <button id="razzeTabRegister" type="button" role="tab" aria-selected="false">Criar conta</button>
-              </div>
-              <label class="field" id="razzeNameField" hidden><span>Seu nome na rede</span><input id="razzeDisplayName" type="text" maxlength="60" autocomplete="name"></label>
-              <label class="field"><span>E-mail</span><input id="razzeEmail" type="email" autocomplete="username"></label>
-              <label class="field"><span>Senha</span><input id="razzePassword" type="password" autocomplete="current-password"></label>
-              <button id="razzeLogin" class="btn primary" type="button">Entrar</button>
-              <button id="razzeRegister" class="btn primary" type="button" hidden>Criar conta</button>
-              <button id="razzeGoogle" class="btn" type="button" hidden>Entrar com Google</button>
-              <button id="razzeForgot" class="link-btn" type="button">Esqueci a senha</button>
-            </div>
-            <div id="razzeAccount" class="net-row net-account" hidden>
-              <span class="avatar" id="razzeAccountAvatar" aria-hidden="true"></span>
-              <span class="net-account-text"><strong id="razzeAccountName"></strong><span class="hint" id="razzeAccountEmail"></span></span>
-              <div class="net-account-actions">
-                <button id="razzeGoogleLink" class="btn small" type="button" hidden>Vincular Google</button>
-                <button id="razzeChangePassword" class="btn small" type="button">Trocar senha</button>
-                <button id="razzeLogout" class="btn small" type="button">Sair da conta</button>
-              </div>
-            </div>
-          </section>
-        </div>
-        <p class="net-summary" role="status"><span id="netSummaryDot" class="dot"></span><span id="netSummaryText"></span></p>
-        <section class="settings-section" aria-labelledby="networkTitle">
-          <h3 id="networkTitle">Como os PCs se conectam</h3>
-          <div class="seg net-seg" role="radiogroup" aria-labelledby="networkTitle">
-            <label><input type="radio" name="networkProvider" value="internet"><span>Internet (servidor)</span></label>
-            <label><input type="radio" name="networkProvider" value="radmin"><span>Radmin ou rede local</span></label>
-            <label><input type="radio" name="networkProvider" value="razze"><span>Razze (WireGuard)</span></label>
-          </div>
-          <p class="hint" id="networkHint"></p>
-        </section>
-        <section id="internetSettings" class="settings-section" aria-labelledby="internetTitle" hidden>
-          <h3 id="internetTitle">Servidor</h3>
-          <div class="net-row">
-            <input id="internetUrl" type="text" class="mono" placeholder="ws://IP-DA-VPS:8765" autocomplete="url" spellcheck="false" aria-label="Endereço do servidor do modo Internet">
-            <button id="internetSaveServer" class="btn small" type="button">Testar e salvar</button>
-          </div>
-          <p class="hint" id="internetStatus" role="status" aria-live="polite"></p>
-        </section>
-        <div id="razzeSettings" class="razze-steps" hidden>
-          <p class="razze-status" id="razzeStatus" role="status" aria-live="polite"></p>
-          <section class="net-step" aria-labelledby="razzeStepServerTitle">
-            <div class="net-step-head"><span class="net-step-num" id="razzeStepServerNum">1</span><h3 id="razzeStepServerTitle">Servidor</h3></div>
-            <div class="net-row">
-              <input id="razzeApiUrl" type="url" placeholder="https://api.seudominio.com" autocomplete="url" aria-label="Endereço do servidor Razze">
-              <button id="razzeSaveServer" class="btn small" type="button">Testar e salvar</button>
-            </div>
-          </section>
-
-          <section class="net-step" id="razzeStepNetworks" aria-labelledby="razzeStepNetworksTitle" hidden>
-            <div class="net-step-head"><span class="net-step-num" id="razzeStepNetworksNum">2</span><h3 id="razzeStepNetworksTitle">Redes</h3></div>
-            <div id="razzeNetworks" class="razze-networks"></div>
-            <p class="sessions-empty" id="razzeNetworksEmpty" hidden>Você ainda não está em nenhuma rede. Crie uma ou entre com um convite.</p>
-            <div class="net-two">
-              <label class="field"><span>Criar uma rede</span>
-                <span class="net-row"><input id="razzeNetworkName" type="text" maxlength="80" placeholder="Nome da rede"><button id="razzeCreateNetwork" class="btn small" type="button">Criar</button></span></label>
-              <label class="field"><span>Entrar com convite</span>
-                <span class="net-row"><input id="razzeInviteToken" type="text" placeholder="telap2p://invite/…"><button id="razzeJoinInvite" class="btn small" type="button">Entrar</button></span></label>
-            </div>
-          </section>
-
-        </div>
-        <!-- Mapa de conexões (renderer/mapa-conexoes.js): atualiza sozinho enquanto esta aba está à vista -->
-        <section id="connectionMap" class="settings-section connection-map" aria-labelledby="connectionMapTitle">
-          <h3 id="connectionMapTitle">Mapa de conexões</h3>
-          <p class="hint" id="connectionMapServer"></p>
-          <div class="connection-legend"><span class="online">● Conectado</span><span class="offline">● Sem conexão</span><span class="unknown">● Indisponível</span></div>
-          <svg id="connectionGraph" role="img" aria-label="Grafo de conexões do PC, servidor e redes"></svg>
-          <p id="connectionMapEmpty" class="hint">Nenhuma conexão local ou sala ativa foi encontrada.</p>
-          <ul id="connectionMapDetails" class="connection-map-details"></ul>
-          <div class="net-row"><p id="connectionMapStatus" class="hint" role="status" aria-live="polite"></p><button id="refreshConnectionMap" class="btn small" type="button">Atualizar</button></div>
-        </section>
-      </section>
-    </div>
-  </aside>
   <!-- Música junto: colar o link do YouTube para pôr (ou trocar) a música de um canal (renderer/musica.js) -->
   <div id="musicPop" class="music-pop" role="dialog" aria-labelledby="musicPopTitle" hidden>
     <form id="musicPopForm">
@@ -282,17 +168,55 @@
       <div class="music-pop-actions"><button id="musicPopCancel" type="button" class="btn small">Cancelar</button><button id="musicPopGo" type="submit" class="btn small primary">Tocar</button></div>
     </form>
   </div>
-  <!-- Barra de conversas: embaixo, entre o HUB e a barrinha; o envelope (mensagens privadas) abre a lista para cima, e um chip por conversa aberta, que também abre para cima (renderer/mensagens.js) -->
+  <!-- Barra de conversas: embaixo, até a barrinha; o envelope (mensagens e amigos) abre o painel para cima, e um chip por conversa aberta, que também abre para cima (renderer/mensagens.js) -->
   <footer id="dmBar" class="dm-bar" aria-label="Conversas" hidden>
-    <button id="dmBarLabel" type="button" class="dm-bar-label" title="Mensagens privadas: abrir a lista de conversas" aria-label="Mensagens privadas" aria-expanded="false" aria-controls="dmPanel"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg><span id="dmBarBadge" class="hub-badge" hidden></span></button>
-    <!-- O envelope abre para cima a lista das conversas -->
-    <div id="dmPanel" class="dm-panel" role="dialog" aria-label="Conversas" hidden>
-      <div class="dm-panel-head"><strong>Mensagens privadas</strong><button id="dmPanelClose" type="button" class="dm-chip-btn" title="Fechar" aria-label="Fechar a lista de conversas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
-      <input id="dmPanelFilter" class="hub-filter" type="search" placeholder="Buscar conversa" aria-label="Buscar conversa pelo nome" autocomplete="off">
-      <p id="dmPanelUnsupported" class="warn" hidden>O servidor Razze ainda não tem mensagens diretas. Quem cuida do servidor precisa atualizar a RazzeAPI.</p>
-      <p id="dmPanelError" class="razze-status" role="status"></p>
-      <ul id="dmPanelConvList" class="hub-list"></ul>
-      <p id="dmPanelConvEmpty" class="hint" hidden></p>
+    <button id="dmBarLabel" type="button" class="dm-bar-label" title="Mensagens e amigos" aria-label="Mensagens e amigos" aria-expanded="false" aria-controls="dmPanel"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg><span id="dmBarBadge" class="hub-badge" hidden></span></button>
+    <!-- O envelope abre para cima as mensagens e os amigos: duas abas no mesmo painel. Conversas mostra os pedidos de
+         amizade que chegaram; cada amigo tem Mensagem, que abre a conversa (renderer/mensagens.js e renderer/hub.js) -->
+    <div id="dmPanel" class="dm-panel" role="dialog" aria-label="Mensagens e amigos" hidden>
+      <div class="dm-panel-head">
+        <div class="dm-panel-tabs" role="tablist" aria-label="Mensagens e amigos">
+          <button id="dmTabConvs" type="button" role="tab" aria-selected="true" aria-controls="dmConvs">Conversas <span id="dmTabConvsBadge" class="hub-badge" hidden></span></button>
+          <button id="dmTabFriends" type="button" role="tab" aria-selected="false" aria-controls="dmFriends">Amigos <span id="dmTabFriendsBadge" class="hub-badge" hidden></span></button>
+        </div>
+        <button id="dmPanelClose" type="button" class="dm-chip-btn" title="Fechar" aria-label="Fechar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      </div>
+      <section id="dmConvs" class="dm-panel-pane" role="tabpanel" aria-labelledby="dmTabConvs">
+        <input id="dmPanelFilter" class="hub-filter" type="search" placeholder="Buscar conversa" aria-label="Buscar conversa pelo nome" autocomplete="off">
+        <button id="dmRequestsBanner" type="button" class="dm-requests-banner" hidden></button>
+        <p id="dmPanelUnsupported" class="warn" hidden>O servidor Razze ainda não tem mensagens diretas. Quem cuida do servidor precisa atualizar a RazzeAPI.</p>
+        <p id="dmPanelError" class="razze-status" role="status"></p>
+        <ul id="dmPanelConvList" class="hub-list"></ul>
+        <p id="dmPanelConvEmpty" class="hint" hidden></p>
+      </section>
+      <section id="dmFriends" class="dm-panel-pane hub-friends" role="tabpanel" aria-labelledby="dmTabFriends" hidden>
+        <!-- Uma busca só; adicionar abre um formulário no lugar dela (hub.js: setFriendsAddOpen) -->
+        <div id="friendsSearchRow" class="hub-search-row">
+          <input id="friendsFilter" class="hub-filter" type="search" placeholder="Buscar amigos" aria-label="Buscar amigos pelo nome" autocomplete="off">
+          <button id="friendsAddOpen" class="btn small primary hub-add-open" type="button" aria-expanded="false" aria-controls="friendsAddForm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 20a6 6 0 0 0-12 0M9 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M16 11h6"/></svg>Adicionar</button>
+        </div>
+        <div id="friendsAddForm" class="hub-add-form" hidden>
+          <label for="razzeFriendNickname">Adicionar amigo</label>
+          <input id="razzeFriendNickname" class="hub-filter" type="text" maxlength="300" autocomplete="off" aria-describedby="friendsAddHint">
+          <p id="friendsAddHint" class="hub-add-hint">Digite o nickname exato, ou cole um link ou código de convite (ABCD-EFGH-JK). A pessoa recebe um pedido e aparece aqui quando aceitar.</p>
+          <div class="hub-add-link">
+            <button id="friendsLinkCopy" class="btn small" type="button">Copiar meu link de convite</button>
+            <ul id="friendsLinks" class="hub-links" aria-label="Seus links de convite ativos"></ul>
+          </div>
+          <div class="hub-add-actions">
+            <button id="friendsAddCancel" class="btn small" type="button">Cancelar</button>
+            <button id="razzeAddFriend" class="btn small primary" type="button">Enviar pedido</button>
+          </div>
+        </div>
+        <div id="friendsViews" class="hub-views" role="tablist" aria-label="Mostrar">
+          <button type="button" role="tab" data-view="all" aria-selected="true">Todos</button>
+          <button type="button" role="tab" data-view="online" aria-selected="false">Online</button>
+          <button type="button" role="tab" data-view="requests" aria-selected="false">Pedidos <span id="friendsRequestsBadge" class="hub-badge" hidden></span></button>
+        </div>
+        <p id="razzeFriendsStatus" class="razze-status" role="status" aria-live="polite"></p>
+        <div id="razzeFriends" class="hub-friend-list"></div>
+        <p id="friendsEmpty" class="hint" hidden></p>
+      </section>
     </div>
     <div id="dmSlots" class="dm-slots"></div>
     <span id="dmBarHint" class="dm-bar-hint">Clique no envelope para abrir uma conversa privada</span>
@@ -770,6 +694,7 @@
           <button type="button" data-group="sons">Sons<small>Avisos sonoros</small></button>
           <button type="button" data-group="celular">Celular<small>Mudar as configurações pelo celular</small></button>
           <button type="button" data-group="mensagens">Mensagens privadas<small>Histórico · Backup no celular</small></button>
+          <button type="button" data-group="rede">Rede<small>Conexão · Servidores · Redes Razze</small></button>
           <button type="button" data-group="extras">Recursos extras<small>Comando de voz</small></button>
           <button type="button" data-group="stats">Estatísticas<small>Desempenho · Transmissão</small></button>
         </nav>
@@ -784,6 +709,7 @@
           <button id="settingsTab-sounds" type="button" role="tab" data-group="sons" data-tab="sounds" aria-controls="settingsPanel-sounds">Sons</button>
           <button id="settingsTab-phone" type="button" role="tab" data-group="celular" data-tab="phone" aria-controls="settingsPanel-phone">Celular</button>
           <button id="settingsTab-dms" type="button" role="tab" data-group="mensagens" data-tab="dms" aria-controls="settingsPanel-dms">Mensagens privadas</button>
+          <button id="settingsTab-network" type="button" role="tab" data-group="rede" data-tab="network" aria-controls="settingsPanel-network">Rede</button>
           <button id="settingsTab-extras" type="button" role="tab" data-group="extras" data-tab="extras" aria-controls="settingsPanel-extras">Recursos extras</button>
           <button id="statsTabPerf" type="button" role="tab" data-group="stats" data-tab="perf" data-panel="stats" aria-controls="settingsPanel-stats">Desempenho</button>
           <button id="statsTabStream" type="button" role="tab" data-group="stats" data-tab="stream" data-panel="stats" aria-controls="settingsPanel-stats">Transmissão</button>
@@ -894,7 +820,7 @@
           </div>
           <label class="vd-check"><input type="checkbox" id="ambientLight"> Luz ambiente nos vídeos: as barras pretas pegam as cores da transmissão e da música</label>
           <label class="vd-check"><input type="checkbox" id="voiceSkyOn"> Céu da voz em cima da lista: canais como sóis e quem está neles como planetas</label>
-          <label class="vd-check"><input type="checkbox" id="mirrorOn"> Espelhar a interface: HUB na direita, barrinha, chat e voz na esquerda</label>
+          <label class="vd-check"><input type="checkbox" id="mirrorOn"> Espelhar a interface: barrinha, chat e voz na esquerda</label>
           <div class="settings-row"><label for="fontFamily">Fonte</label>
             <div class="font-pick"><select id="fontFamily"></select><button id="loadLocalFonts" class="btn small" type="button">Fontes deste PC</button></div>
           </div>
@@ -990,6 +916,61 @@
             </div>
             <p id="dmBackupHint" class="hint">Ligado, o Guardar no celular (Configurações › Celular) leva também o texto das conversas da sua conta Razze, cifrado com a mesma senha. Imagens e arquivos não vão. Ao trazer de volta, junta com o histórico do PC, sem apagar nada.</p>
           </div>
+        </section>
+        <!-- Rede: como os PCs se conectam, servidores, redes Razze e o mapa de conexões (renderer/conectividade.js).
+             A conta Razze fica no Perfil -->
+        <section id="settingsPanel-network" class="settings-section network-settings" role="tabpanel" aria-labelledby="settingsTab-network" hidden>
+          <p class="net-summary" role="status"><span id="netSummaryDot" class="dot"></span><span id="netSummaryText"></span></p>
+          <section class="settings-section" aria-labelledby="networkTitle">
+            <h3 id="networkTitle">Como os PCs se conectam</h3>
+            <div class="seg net-seg" role="radiogroup" aria-labelledby="networkTitle">
+              <label><input type="radio" name="networkProvider" value="internet"><span>Internet (servidor)</span></label>
+              <label><input type="radio" name="networkProvider" value="radmin"><span>Radmin ou rede local</span></label>
+              <label><input type="radio" name="networkProvider" value="razze"><span>Razze (WireGuard)</span></label>
+            </div>
+            <p class="hint" id="networkHint"></p>
+          </section>
+          <section id="internetSettings" class="settings-section" aria-labelledby="internetTitle" hidden>
+            <h3 id="internetTitle">Servidor</h3>
+            <div class="net-row">
+              <input id="internetUrl" type="text" class="mono" placeholder="ws://IP-DA-VPS:8765" autocomplete="url" spellcheck="false" aria-label="Endereço do servidor do modo Internet">
+              <button id="internetSaveServer" class="btn small" type="button">Testar e salvar</button>
+            </div>
+            <p class="hint" id="internetStatus" role="status" aria-live="polite"></p>
+          </section>
+          <div id="razzeSettings" class="razze-steps" hidden>
+            <p class="razze-status" id="razzeStatus" role="status" aria-live="polite"></p>
+            <section class="net-step" aria-labelledby="razzeStepServerTitle">
+              <div class="net-step-head"><span class="net-step-num" id="razzeStepServerNum">1</span><h3 id="razzeStepServerTitle">Servidor</h3></div>
+              <div class="net-row">
+                <input id="razzeApiUrl" type="url" placeholder="https://api.seudominio.com" autocomplete="url" aria-label="Endereço do servidor Razze">
+                <button id="razzeSaveServer" class="btn small" type="button">Testar e salvar</button>
+              </div>
+            </section>
+
+            <section class="net-step" id="razzeStepNetworks" aria-labelledby="razzeStepNetworksTitle" hidden>
+              <div class="net-step-head"><span class="net-step-num" id="razzeStepNetworksNum">2</span><h3 id="razzeStepNetworksTitle">Redes</h3></div>
+              <div id="razzeNetworks" class="razze-networks"></div>
+              <p class="sessions-empty" id="razzeNetworksEmpty" hidden>Você ainda não está em nenhuma rede. Crie uma ou entre com um convite.</p>
+              <div class="net-two">
+                <label class="field"><span>Criar uma rede</span>
+                  <span class="net-row"><input id="razzeNetworkName" type="text" maxlength="80" placeholder="Nome da rede"><button id="razzeCreateNetwork" class="btn small" type="button">Criar</button></span></label>
+                <label class="field"><span>Entrar com convite</span>
+                  <span class="net-row"><input id="razzeInviteToken" type="text" placeholder="telap2p://invite/…"><button id="razzeJoinInvite" class="btn small" type="button">Entrar</button></span></label>
+              </div>
+            </section>
+
+          </div>
+          <!-- Mapa de conexões (renderer/mapa-conexoes.js): atualiza sozinho enquanto esta aba está à vista -->
+          <section id="connectionMap" class="settings-section connection-map" aria-labelledby="connectionMapTitle">
+            <h3 id="connectionMapTitle">Mapa de conexões</h3>
+            <p class="hint" id="connectionMapServer"></p>
+            <div class="connection-legend"><span class="online">● Conectado</span><span class="offline">● Sem conexão</span><span class="unknown">● Indisponível</span></div>
+            <svg id="connectionGraph" role="img" aria-label="Grafo de conexões do PC, servidor e redes"></svg>
+            <p id="connectionMapEmpty" class="hint">Nenhuma conexão local ou sala ativa foi encontrada.</p>
+            <ul id="connectionMapDetails" class="connection-map-details"></ul>
+            <div class="net-row"><p id="connectionMapStatus" class="hint" role="status" aria-live="polite"></p><button id="refreshConnectionMap" class="btn small" type="button">Atualizar</button></div>
+          </section>
         </section>
         <section id="settingsPanel-stats" class="settings-section stats" role="tabpanel" aria-labelledby="statsTabPerf" hidden>
         <!-- Desempenho: quanto o app usa do PC e o que entra e sai pela rede -->

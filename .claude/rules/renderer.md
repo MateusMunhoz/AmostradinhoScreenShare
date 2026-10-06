@@ -26,7 +26,7 @@ paths:
 - Textos da interface em pt-BR, curtos e no tom do resto do app.
 
 ## Layout (não há mais barra de cima)
-- `#workspaceNav` é a **barrinha da direita** (em pé, `--rail-w`, espelho do HUB da esquerda), só com ícones. De cima
+- `#workspaceNav` é a **barrinha da direita** (em pé, `--rail-w`), só com ícones. De cima
   para baixo: perfil · linha · `peopleBtn` (pessoas), Chat, Voz, Transmissão, `navMusicWrap` (música que você ouve) ·
   espaço · `dockHome` (Início) ou `navBackToRoom` (no menu), `leaveBtn` (Sair) · linha · `navGamer` (modo gamer) · engrenagem. Início e Sair
   **não** estão mais na barra de baixo (`.dock`) nem em `DOCK_OVERFLOW`. Chat e voz abrem à esquerda dela
@@ -34,9 +34,10 @@ paths:
 - `syncWorkspace()` (`navegacao.js`) separa `inCall` (`state.myId`, mesmo no menu inicial) de `inRoom` (a tela da sala
   à vista). No menu, com a sala aberta, a barrinha e os painéis de chat e voz continuam; só as telas ficam na sala
   (Transmissão volta para ela). A classe `workspace-in-room` do body segue `inCall`.
-- O Mapa de conexões mora na aba **Rede** do HUB (`#connectionMap` dentro de `#networkDialog`); atualiza a cada 5 s só
-  com a aba à vista (`syncConnectionMap`, chamado por `renderHub`). Na aba Rede, a conta Razze (`#profileAccount`) vem
-  primeiro.
+- Não há mais HUB (a barra da esquerda). A rede mora em **Configurações › Rede** (`#settingsPanel-network`, grupo `rede`),
+  com o Mapa de conexões (`#connectionMap`), que atualiza a cada 5 s só com o grupo à vista (`syncConnectionMap`, chamado
+  por `settingsGroupChanged` e `closeGeneralSettings`). A conta Razze (`#profileAccount`) fica no fim do Perfil; os
+  amigos, na aba **Amigos** do envelope (`#dmFriends`, ao lado de `#dmConvs`; `setDmPanel(open, 'convs'|'friends')`).
 
 - **Modo gamer** (`renderer/modo-gamer.js`, `:root[data-gamer="on"]`): prioridade normal, vidro opaco (`glassMode()` em
   `configuracoes.js`; nunca grave isso em `appPreferences`), sem animação/transição/`backdrop-filter`, sem o céu do fundo,

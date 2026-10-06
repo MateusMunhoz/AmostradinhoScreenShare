@@ -95,7 +95,7 @@ async function googleEntrar(statusEl, depois) {
   } finally { google.ocupado = false; }
 }
 
-// Vincular e desvincular, na conta do HUB
+// Vincular e desvincular, na Conta Razze do Perfil
 async function googleVincular() {
   if (google.ocupado || typeof razzeUser === 'undefined' || !razzeUser) return;
   google.ocupado = true;

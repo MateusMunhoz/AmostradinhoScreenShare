@@ -24,19 +24,19 @@ function novaSenhaSala() {
 
 // Por que um modo não dá para usar agora ('' se dá)
 async function motivoModoIndisponivel(modo) {
-  if (modo === 'internet') return internetServerUrl() ? '' : 'falta o endereço do servidor (HUB › Rede)';
+  if (modo === 'internet') return internetServerUrl() ? '' : 'falta o endereço do servidor (Configurações › Rede)';
   if (modo !== 'razze') return '';
   try {
     const st = await window.api.razzeState();
-    if (!st.configured || !st.authenticated) return 'entre na conta Razze (HUB › Rede)';
+    if (!st.configured || !st.authenticated) return 'entre na conta Razze (no Perfil)';
     const rede = networkPreferences().activeNetworkId;
-    if (!rede) return 'conecte uma rede Razze (HUB › Rede)';
-    if (!(await window.api.razzeWireGuardStatus(rede)).connected) return 'a rede Razze está desligada (HUB › Rede)';
+    if (!rede) return 'conecte uma rede Razze (Configurações › Rede)';
+    if (!(await window.api.razzeWireGuardStatus(rede)).connected) return 'a rede Razze está desligada (Configurações › Rede)';
   } catch { return 'não deu para conferir a Razze'; }
   return '';
 }
 
-// Passa a usar o modo, como trocar em HUB › Rede
+// Passa a usar o modo, como trocar em Configurações › Rede
 function usarModoRede(modo) {
   if (selectedNetworkProvider() === modo) return;
   saveNetworkPreferences({ provider: modo });
@@ -125,7 +125,7 @@ async function escolherModoChamada(nome, online) {
     titulo: `Ligar para ${nome}`, corpo: [p, grupo], ok: 'Ligar',
     ler() {
       const modo = grupo.querySelector('input:checked')?.value;
-      if (!modo) throw new Error('Nenhum modo está pronto. Configure um em HUB › Rede.');
+      if (!modo) throw new Error('Nenhum modo está pronto. Configure um em Configurações › Rede.');
       mixer.ensure(); // o clique libera o áudio da voz (a sala leva um tempo para abrir)
       return modo;
     },
@@ -220,7 +220,7 @@ async function atenderChamada(cv, quem) {
   const motivo = cv.modo === 'razze' ? await motivoModoIndisponivel('razze') : '';
   if (motivo) return toast(`Não dá para atender pelo modo Razze: ${motivo}.`, 'error');
   if (cv.modo === 'razze' && cv.rede && cv.rede !== networkPreferences().activeNetworkId) {
-    return toast(`Ligue a mesma rede Razze de ${quem} (HUB › Rede) e atenda de novo.`, 'error');
+    return toast(`Ligue a mesma rede Razze de ${quem} (Configurações › Rede) e atenda de novo.`, 'error');
   }
   if (state.myId) {
     if (!(await appConfirm(`Sair desta sala e atender ${quem}?`, { title: 'Atender', ok: 'Sair e atender' }))) return;
