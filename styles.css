@@ -75,8 +75,8 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 .brand-name { font-family: "Sora", var(--font-display); }
 .brand-n { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .brand-mark { display: flex; align-items: center; gap: 0; font-family: var(--font-display); font-size: 20px; font-weight: 800; letter-spacing: -0.01em; color: var(--text); }
-.brand-mark svg { width: 46px; height: 46px; }
-.brand-mark svg + .brand-name { margin-left: -3px; transform: translateY(9px); }
+.brand-mark svg { width: 56px; height: 56px; }
+.brand-mark svg + .brand-name { margin-left: -5px; transform: translateY(11px); font-size: 18px; font-weight: 700; }
 /* O saguão: uma coluna no meio da janela */
 .home-main { flex: 1; width: min(720px, 100%); margin: 0 auto; display: flex; flex-direction: column; justify-content: center; gap: 22px; padding: 28px 0; }
 .home-hello { display: flex; align-items: center; gap: 18px; }
@@ -1670,11 +1670,12 @@ body { height: calc(100% - var(--titlebar)); margin-top: var(--titlebar); contai
   display: flex; align-items: center; gap: 8px; padding: 0 12px; box-sizing: border-box;
   background: var(--bg); color: var(--muted); font-size: 12px; font-weight: 600; user-select: none; -webkit-app-region: drag;
 }
-.titlebar svg { width: 20px; height: 20px; }
-.titlebar .logo-dots { display: none; } /* em 20 px os pontilhados finos somem: vão os pontos grandes */
+/* O N de constelação é feito de pontos: precisa ser bem maior que o "ebula", senão a palavra parece "ebula" */
+.titlebar svg { width: 28px; height: 28px; }
+.titlebar .logo-dots { display: none; } /* em tamanho pequeno os pontilhados finos somem: vão os pontos grandes */
 .titlebar .logo-dots-p { display: inline; }
 .titlebar { gap: 0; }
-.titlebar svg + .brand-name { margin-left: -1px; transform: translateY(4px); font-weight: 700; }
+.titlebar svg + .brand-name { margin-left: -3px; transform: translateY(5px); font-size: 11px; font-weight: 600; }
 :is(html[data-glass=clear], html[data-glass=liquid]) .titlebar { background: transparent; }
 
 /* Temas prontos (Aparência) */
