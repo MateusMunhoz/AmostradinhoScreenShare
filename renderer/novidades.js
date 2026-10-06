@@ -3,10 +3,26 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.18.0",
+    "date": "2026-10-05",
+    "items": [
+      "Volume de cada pessoa guardado pela conta Razze",
+      "Perfil: o nome da sala e o da conta Razze; Adicionar pela conta",
+      "Nebula: o app passa a se chamar Nebula, com a logo nova",
+      "HUB › Rede: cartão da conta organizado",
+      "Instalador do Windows e licença como tarefa futura",
+      "Corrige a conta no HUB estreito: nome e e-mail não quebram letra por letra",
+      "Tema Top Gun: corte do Avro Lancaster (1943) de volta ao rodízio",
+      "Tema Top Gun: blueprints de P-38, Hurricane e P-51 Mustang (CC0)",
+      "docs: estado do roadmap em 05/10/2026 (versão 1.17.2)",
+      "Ícone do .exe do tema Top Gun (asas de piloto) e npm run dist:topgun"
+    ]
+  },
+  {
     "version": "1.17.2",
     "date": "2026-10-05",
     "items": [
-      "Correções e melhorias"
+      "docs: passo a passo para atualizar a VPS e contexto de handoff"
     ]
   },
   {
@@ -64,13 +80,6 @@ const NOVIDADES = [
     "date": "2026-10-03",
     "items": [
       "Clipes: salvar os últimos 30 s de uma transmissão em MP4"
-    ]
-  },
-  {
-    "version": "1.15.5",
-    "date": "2026-10-03",
-    "items": [
-      "Chat e voz: arrastar a borda para mudar a largura do painel"
     ]
   }
 ];

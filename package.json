@@ -1,6 +1,6 @@
 {
   "name": "tela-p2p",
-  "version": "1.17.2",
+  "version": "1.18.0",
   "description": "Configurações e Personalização de Layout",
   "main": "boot.js",
   "scripts": {
@@ -102,7 +102,9 @@
       "deleteAppDataOnUninstall": false,
       "installerIcon": "assets/icone/tela-p2p.ico",
       "uninstallerIcon": "assets/icone/tela-p2p.ico",
-      "installerLanguages": ["pt_BR"],
+      "installerLanguages": [
+        "pt_BR"
+      ],
       "language": "1046"
     },
     "extraResources": [
