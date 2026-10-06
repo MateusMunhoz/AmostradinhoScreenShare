@@ -78,7 +78,7 @@ async function attach(port, match = (t) => t.type === 'page' && !t.url.startsWit
 const profileDir = (tag) => path.join(TMP, `perfil-${tag}`);
 
 // Abre uma cópia do app com um perfil novo (cada "pessoa" tem o seu) e o DevTools numa porta
-async function openApp(tag, port, { fake = false, size = true } = {}) {
+async function openApp(tag, port, { fake = false, size = true, primeiraEntrada = false } = {}) {
   const dir = profileDir(tag);
   fs.rmSync(dir, { recursive: true, force: true });
   // Sem a RazzeAPI da equipe: o teste não fala com o servidor de verdade
@@ -95,6 +95,9 @@ async function openApp(tag, port, { fake = false, size = true } = {}) {
   })()`);
   // O padrão do app é o modo Internet; os testes de sala usam a Radmin/rede local (internet.js troca depois)
   await X.eval(`(() => { saveNetworkPreferences({ provider: 'radmin' }); renderConnectivitySettings(); setSessionWatch(sessionWatchWanted()); })()`);
+  // Perfil novo abre a primeira entrada (renderer/primeira-entrada.js) por cima de tudo: os testes pulam, como quem
+  // já configurou o app (o modo "sala rápida", sem conta). Para testar a primeira entrada: { primeiraEntrada: true }
+  if (!primeiraEntrada) await X.eval(`(() => { if (!load('modoUso', '')) save('modoUso', 'rapida'); if (typeof fecharPrimeiraEntrada === 'function' && !$('onboarding').hidden) fecharPrimeiraEntrada(); })()`);
   return X;
 }
 
