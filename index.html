@@ -195,22 +195,24 @@
           <section class="net-step hub-account" aria-labelledby="razzeStepAccountTitle">
             <div class="net-step-head"><h3 id="razzeStepAccountTitle">Conta Razze</h3></div>
             <div id="razzeAuth" class="net-auth">
-              <div class="seg" role="tablist" aria-label="Entrar ou criar conta">
+              <div class="seg legacy-login" role="tablist" aria-label="Entrar ou criar conta">
                 <button id="razzeTabLogin" type="button" role="tab" aria-selected="true">Entrar</button>
                 <button id="razzeTabRegister" type="button" role="tab" aria-selected="false">Criar conta</button>
               </div>
               <label class="field" id="razzeNameField" hidden><span>Seu nome na rede</span><input id="razzeDisplayName" type="text" maxlength="60" autocomplete="name"></label>
-              <label class="field"><span>E-mail</span><input id="razzeEmail" type="email" autocomplete="username"></label>
-              <label class="field"><span>Senha</span><input id="razzePassword" type="password" autocomplete="current-password"></label>
-              <button id="razzeLogin" class="btn primary" type="button">Entrar</button>
-              <button id="razzeRegister" class="btn primary" type="button" hidden>Criar conta</button>
+              <label class="field legacy-login"><span>E-mail</span><input id="razzeEmail" type="email" autocomplete="username"></label>
+              <label class="field legacy-login"><span>Senha</span><input id="razzePassword" type="password" autocomplete="current-password"></label>
+              <button id="razzeLogin" class="btn primary legacy-login" type="button">Entrar</button>
+              <button id="razzeRegister" class="btn primary legacy-login" type="button" hidden>Criar conta</button>
               <button id="razzeGoogle" class="btn" type="button" hidden>Entrar com Google</button>
-              <button id="razzeForgot" class="link-btn" type="button">Esqueci a senha</button>
+              <button id="razzeForgot" class="link-btn legacy-login" type="button">Esqueci a senha</button>
+              <button id="razzeLegacy" class="link-btn" type="button" hidden>Tenho uma conta com e-mail e senha</button>
             </div>
             <div id="razzeAccount" class="net-row net-account" hidden>
               <span class="avatar" id="razzeAccountAvatar" aria-hidden="true"></span>
               <span class="net-account-text"><strong id="razzeAccountName"></strong><span class="hint" id="razzeAccountEmail"></span></span>
               <div class="net-account-actions">
+                <button id="razzeAdminOpen" class="btn small primary" type="button" hidden>Administração</button>
                 <button id="razzeGoogleLink" class="btn small" type="button" hidden>Vincular Google</button>
                 <button id="razzeChangePassword" class="btn small" type="button">Trocar senha</button>
                 <button id="razzeLogout" class="btn small" type="button">Sair da conta</button>
@@ -1135,21 +1137,37 @@
       </section>
       <section data-ob="3" hidden>
         <h2>Sua conta</h2>
-        <div class="seg" role="tablist" aria-label="Entrar ou criar conta">
+        <p id="obGoogleHint" class="hint" hidden>Entre com o Google para ter amigos, mensagens e salas deles no Início. É um clique, sem senha para guardar. Sem conta, o app continua funcionando por código e senha da sala.</p>
+        <div class="seg legacy-login" role="tablist" aria-label="Entrar ou criar conta">
           <button id="obTabLogin" type="button" role="tab" aria-selected="true">Entrar</button>
           <button id="obTabRegister" type="button" role="tab" aria-selected="false">Criar conta</button>
         </div>
-        <label class="field"><span>E-mail</span><input id="obEmail" type="email" autocomplete="username"></label>
-        <label class="field"><span>Senha</span><input id="obPassword" type="password" autocomplete="current-password"></label>
+        <label class="field legacy-login"><span>E-mail</span><input id="obEmail" type="email" autocomplete="username"></label>
+        <label class="field legacy-login"><span>Senha</span><input id="obPassword" type="password" autocomplete="current-password"></label>
         <p id="obStatus" class="hint" role="status" aria-live="polite"></p>
         <div class="actions">
           <button class="btn ghost" id="obBack3" type="button">Voltar</button>
-          <button class="btn primary" id="obSubmit" type="button">Entrar</button>
+          <button class="btn primary legacy-login" id="obSubmit" type="button">Entrar</button>
         </div>
         <button class="btn" id="obGoogle" type="button" hidden>Entrar com Google</button>
-        <button class="link-btn" id="obForgot" type="button">Esqueci a senha</button>
+        <button class="link-btn legacy-login" id="obForgot" type="button">Esqueci a senha</button>
+        <button class="link-btn" id="obLegacy" type="button" hidden>Tenho uma conta com e-mail e senha</button>
         <button class="link-btn" id="obSkip" type="button">Continuar sem conta por enquanto</button>
       </section>
+    </div>
+  </div>
+
+  <!-- Administração (só contas de administrador): números, pedidos, convidados, pessoas e servidor (renderer/admin.js) -->
+  <div id="adminDialog" class="ob-modal adm-modal" hidden>
+    <div class="adm-dialog" role="dialog" aria-modal="true" aria-labelledby="adminTitle">
+      <header class="adm-head">
+        <h2 id="adminTitle">Administração</h2>
+        <span id="adminStatus" class="hint" role="status" aria-live="polite"></span>
+        <button id="adminRefresh" class="btn small" type="button">Atualizar</button>
+        <button id="adminClose" class="btn small" type="button">Fechar</button>
+      </header>
+      <div id="adminTabs" class="seg adm-tabs" role="tablist" aria-label="Seções da administração"></div>
+      <div id="adminBody" class="adm-body"></div>
     </div>
   </div>
 
@@ -1237,6 +1255,7 @@
   <script src="renderer/mensagens-direto.js"></script>
   <script src="renderer/primeira-entrada.js"></script>
   <script src="renderer/conta.js"></script>
+  <script src="renderer/admin.js"></script>
   <script src="renderer/recorte.js"></script>
   <script src="renderer/navegacao.js"></script>
   <script src="renderer/inicio.js"></script>

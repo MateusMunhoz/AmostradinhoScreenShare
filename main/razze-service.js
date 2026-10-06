@@ -166,6 +166,7 @@ function createRazzeService(options = {}) {
     friendLinkRevoke: (id) => requireClient().friendLinkRevoke(id),
     friendLinkPreview: (token) => requireClient().friendLinkPreview(token),
     friendLinkAccept: (token) => requireClient().friendLinkAccept(token),
+    admin: (method, endpoint, body) => requireClient().admin(method, endpoint, body),
     sendMessage: (to, text) => requireClient().sendMessage(to, text),
     messages: (after) => requireClient().messages(after),
     wireguard,

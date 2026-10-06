@@ -109,6 +109,7 @@ contextBridge.exposeInMainWorld('api', {
   razzeFriendLinkRevoke: (id) => ipcRenderer.invoke('razze-friend-link-revoke', String(id || '')),
   razzeFriendLinkPreview: (token) => ipcRenderer.invoke('razze-friend-link-preview', String(token || '')),
   razzeFriendLinkAccept: (token) => ipcRenderer.invoke('razze-friend-link-accept', String(token || '')),
+  razzeAdmin: (method, endpoint, body) => ipcRenderer.invoke('razze-admin', String(method || ''), String(endpoint || ''), body),
   razzePendingFriendLink: () => ipcRenderer.invoke('razze-pending-friend-link'),
   onFriendLink: (callback) => {
     ipcRenderer.removeAllListeners('razze-friend-link');
