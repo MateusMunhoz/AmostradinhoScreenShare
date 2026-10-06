@@ -1,5 +1,6 @@
 // Gera assets/icone/tela-p2p.ico (o ícone do .exe) com a logo (o mesmo desenho da barra de título, nas cores
-// dela), e assets/icone/tela-p2p-eva.ico (o do build E.V.A, npm run dist:eva) com o rosto do EVA-01.
+// dela), e assets/icone/tela-p2p-eva.ico (o do build E.V.A, npm run dist:eva) com o rosto do EVA-01, e
+// assets/icone/tela-p2p-topgun.ico (o do build Top Gun, npm run dist:topgun) com as asas de piloto.
 // Roda pelo Electron para desenhar num canvas de verdade: npm run icone
 // O .ico leva PNGs de 16 a 256 px; o Windows escolhe o tamanho certo para cada lugar.
 const { app, BrowserWindow } = require('electron');
@@ -30,9 +31,9 @@ app.whenReady().then(async () => {
   const win = new BrowserWindow({ show: false, webPreferences: { offscreen: true } });
   await win.loadURL('data:text/html,<canvas></canvas>');
   const draw = fs.readFileSync(path.join(__dirname, 'renderer', 'icone-app.js'), 'utf8');
-  await win.webContents.executeJavaScript(draw.replace("'use strict';", '') + '; window.drawAppIcon = drawAppIcon; window.drawEvaIcon = drawEvaIcon; 1');
+  await win.webContents.executeJavaScript(draw.replace("'use strict';", '') + '; window.drawAppIcon = drawAppIcon; window.drawEvaIcon = drawEvaIcon; window.drawTopGunIcon = drawTopGunIcon; 1');
   fs.mkdirSync(OUT, { recursive: true });
-  for (const [name, call] of [['tela-p2p', `drawAppIcon(ctx, size, ${JSON.stringify(COLOR)})`], ['tela-p2p-eva', 'drawEvaIcon(ctx, size)']]) {
+  for (const [name, call] of [['tela-p2p', `drawAppIcon(ctx, size, ${JSON.stringify(COLOR)})`], ['tela-p2p-eva', 'drawEvaIcon(ctx, size)'], ['tela-p2p-topgun', 'drawTopGunIcon(ctx, size)']]) {
     const pngs = [];
     for (const size of SIZES) {
       const url = await win.webContents.executeJavaScript(`(() => { const size = ${size}, c = document.createElement('canvas'); c.width = c.height = size;

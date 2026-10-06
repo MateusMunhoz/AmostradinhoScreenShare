@@ -63,7 +63,7 @@ function nextRenaissanceWork() {
   return work;
 }
 // Tema Top Gun: o blueprint de caça do fundo (styles-topgun.css › data-foto), também uma a cada vez que o app abre
-const TOPGUN_PHOTOS = ['f16', 'f22', 'a10', 'f15', 'f18'];
+const TOPGUN_PHOTOS = ['f16', 'mustang', 'f22', 'p38', 'a10', 'lancaster', 'f15', 'hurricane', 'f18'];
 function nextTopGunPhoto() {
   const last = TOPGUN_PHOTOS.indexOf(load('fotoTopGun', ''));
   const photo = TOPGUN_PHOTOS[(last + 1) % TOPGUN_PHOTOS.length];

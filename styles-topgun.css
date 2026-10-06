@@ -57,6 +57,10 @@
 :root[data-skin="topgun"][data-foto="a10"] body::before { --tg-foto: url(assets/temas/topgun-bp-a10.webp); }
 :root[data-skin="topgun"][data-foto="f16"] body::before { --tg-foto: url(assets/temas/topgun-bp-f16.webp); }
 :root[data-skin="topgun"][data-foto="f15"] body::before { --tg-foto: url(assets/temas/topgun-bp-f15.webp); }
+:root[data-skin="topgun"][data-foto="p38"] body::before { --tg-foto: url(assets/temas/topgun-bp-p38.webp); }
+:root[data-skin="topgun"][data-foto="hurricane"] body::before { --tg-foto: url(assets/temas/topgun-bp-hurricane.webp); }
+:root[data-skin="topgun"][data-foto="mustang"] body::before { --tg-foto: url(assets/temas/topgun-bp-mustang.webp); }
+:root[data-skin="topgun"][data-foto="lancaster"] body::before { --tg-foto: url(assets/temas/topgun-bp-lancaster.webp); }
 :root[data-skin="topgun"] body::after {
   background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, .28) 0 1px, transparent 1px 3px),
     radial-gradient(ellipse 80% 75% at 50% 45%, transparent 35%, rgba(0, 0, 0, .78) 100%);
@@ -142,6 +146,10 @@
 :root[data-skin="topgun"][data-foto="a10"] { --tg-placa: "A-10 Thunderbolt II\A Desenho: Fairchild Republic"; }
 :root[data-skin="topgun"][data-foto="f16"] { --tg-placa: "F-16 Fighting Falcon\A Desenho: Cristian Ibarra Santillan (CC0)"; }
 :root[data-skin="topgun"][data-foto="f15"] { --tg-placa: "F-15 Eagle\A Desenho: Wikimedia Commons (CC0)"; }
+:root[data-skin="topgun"][data-foto="p38"] { --tg-placa: "P-38 LightningA Desenho: Wikimedia Commons (CC0)"; }
+:root[data-skin="topgun"][data-foto="hurricane"] { --tg-placa: "Hawker HurricaneA Desenho: Wikimedia Commons (CC0)"; }
+:root[data-skin="topgun"][data-foto="mustang"] { --tg-placa: "P-51 Mustang (Mk III)A Desenho: Wikimedia Commons (CC0)"; }
+:root[data-skin="topgun"][data-foto="lancaster"] { --tg-placa: "Avro LancasterA Desenho: UK Ministry of Aircraft Production, 1943"; }
 :root[data-skin="topgun"] .home-screen::after {
   content: var(--tg-placa); white-space: pre; pointer-events: none; z-index: 1; text-align: left;
   position: fixed; left: calc(var(--hub-w, 0px) + 54px); bottom: 64px;

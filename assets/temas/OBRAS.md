@@ -29,8 +29,15 @@ míssil desmontado onde existe desenho livre. Só entram desenhos limpos e reais
 | `topgun-bp-f15.webp` | F-15, corte da fuselagem + AIM-9L | `McDonnell Douglas F-15 Eagle cutaway drawing.svg` | CC0 |
 | `topgun-bp-a10.webp` | A-10, corte da fuselagem + AIM-9L | `Fairchild Republic A-10 Thunderbolt II cutaway.jpg` | Domínio público |
 | `topgun-bp-f18.webp` | F/A-18, 3 vistas + AIM-9L | `McDonnell Douglas F-A-18 Hornet 3-view line drawing.png` | Domínio público |
+| `topgun-bp-p38.webp` | P-38 Lightning, 3 vistas | `Lockheed P-38 Lightning 3-view.svg` | CC0 |
+| `topgun-bp-hurricane.webp` | Hawker Hurricane, 3 vistas | `Hawker Hurricane 3-view.svg` | CC0 |
+| `topgun-bp-mustang.webp` | P-51 Mustang (Mk III), 3 vistas | `Mustang Mk. III 3-view drawing.svg` | CC0 |
+| `topgun-bp-lancaster.webp` | Avro Lancaster B.I, corte, c. 1943 (UK Ministry of Aircraft Production, via U.S. Office of War Information / National Archives; o desenho traz o aviso "Copyright The Aeroplane", mas o Commons o marca como domínio público) | `Avro Lancaster B.I cutaway drawing, circa 1943 (44266126).png` | Domínio público (Commons) |
 | `topgun-bp-f22.webp` | F-22, 3 vistas | `Lockheed Martin F-22A Raptor 3-view.png` | CC BY-SA 2.0 |
 
 O AIM-9L desmontado (`Breakout of the AIM-9L.svg`, domínio público, U.S. Navy) vai ao lado de F-16, F-15, A-10 e F/A-18.
+Os desenhos clássicos (P-38, Hurricane, Mustang, Lancaster) vêm do Commons em alta resolução, viram verde sobre transparente
+(a linha escura vira a opacidade), são recortados no desenho e reduzidos a 2000 px no lado maior (WebP 0,7). Cortes coloridos, pôsteres e
+artes de marketing (Lockheed Martin, Airframe, revistas) **não** entram: têm direito autoral, e o app é distribuído em público.
 Su-57 e AC-130 pedem crédito (a placa já cita). Desenho novo: só real e com licença livre; entra aqui, em `TOPGUN_PHOTOS`
 (`renderer/configuracoes.js`), num `data-foto` com a placa em `styles-topgun.css` e em `PACK_FILES` (`publicar.js`).
