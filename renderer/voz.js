@@ -4,20 +4,29 @@
 
 // ---------- Volume por pessoa e quem está falando ----------
 // Cada pessoa tem um volume de voz (0 a 200%), um da transmissão (0 a 100%) e "silenciar para mim".
-// Fica guardado pelo nome, então vale de novo na próxima sala. O som da transmissão começa em 0%: a tela
-// chega sem som, e você aumenta de quem quiser ouvir (no controle ou com a roda do mouse em cima da tela).
+// Fica guardado pela conta Razze da pessoa (a id da conta, o nick oficial: continua valendo se ela trocar o nome na
+// sala ou o nick da conta), então vale de novo na próxima sala. Sem conta na sala (ou sala antiga), pelo nome da
+// sala, como antes; o volume que estava pelo nome passa para a conta na primeira vez que a pessoa aparece com ela.
+// O som da transmissão começa em 0%: a tela chega sem som, e você aumenta de quem quiser ouvir (no controle ou com a
+// roda do mouse em cima da tela).
 const DEFAULT_VOICE = 100;
 const DEFAULT_SCREEN = 0;
 let volumes = {};
 try { volumes = JSON.parse(load('volumes', '{}')) || {}; } catch { volumes = {}; }
+function volKey(id) {
+  const conta = contaDe(id);
+  return conta ? 'razze:' + conta.id : nameOf(id);
+}
 function volOf(id) {
-  return { voice: DEFAULT_VOICE, screen: DEFAULT_SCREEN, muted: false, ...(volumes[nameOf(id)] || {}) };
+  const key = volKey(id);
+  return { voice: DEFAULT_VOICE, screen: DEFAULT_SCREEN, muted: false, ...(volumes[key] || (key !== nameOf(id) && volumes[nameOf(id)]) || {}) };
 }
 function setVol(id, patch) {
-  const name = nameOf(id);
+  const key = volKey(id);
   const v = { ...volOf(id), ...patch };
-  if (v.voice === DEFAULT_VOICE && v.screen === DEFAULT_SCREEN && !v.muted) delete volumes[name];
-  else volumes[name] = v;
+  if (key !== nameOf(id)) delete volumes[nameOf(id)]; // o de antes, pelo nome, passou para a conta
+  if (v.voice === DEFAULT_VOICE && v.screen === DEFAULT_SCREEN && !v.muted) delete volumes[key];
+  else volumes[key] = v;
   save('volumes', JSON.stringify(volumes));
   mixer.apply(id);
   applyScreenVolume(id);
@@ -674,7 +683,7 @@ function renderPersonCard() {
     input.oninput = () => {
       val.textContent = `${input.value}%`;
       const next = { ...volOf(id), [key]: Number(input.value), muted: false };
-      volumes[name] = next;
+      volumes[volKey(id)] = next;
       mixer.apply(id);
       applyScreenVolume(id);
     };

@@ -49,7 +49,7 @@ const CelularModelo = (() => {
     }
     return r;
   };
-  // Volume de cada pessoa, pelo nome (renderer/voz.js)
+  // Volume de cada pessoa, pela conta Razze ("razze:<id>") ou pelo nome da sala (renderer/voz.js)
   const volumes = (o) => {
     if (!objeto(o)) return null;
     const r = {};

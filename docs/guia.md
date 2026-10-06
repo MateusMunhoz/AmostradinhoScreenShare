@@ -221,7 +221,7 @@ Clique em **Entrar na voz**, na barra de baixo, para ligar o microfone padrão d
   - **Som da transmissão** (0 a 100%, começa em 0%);
   - **Silenciar para mim** e **Voltar ao padrão** (voz em 100% e a transmissão sem som).
 
-  Só muda o que você ouve. O botão mostra o valor quando não está no padrão. O app lembra o volume de cada pessoa pelo nome, para a próxima sala.
+  Só muda o que você ouve. O botão mostra o valor quando não está no padrão. O app lembra o volume de cada pessoa para a próxima sala: pela conta Razze dela (vale mesmo se ela trocar o nome na sala ou o nick da conta); sem conta, pelo nome da sala.
 - **Painel recolhido:** na barra de baixo, ao lado de **Entrar na voz**, ficam até três fotos de quem está na voz (quem fala acende em verde) e quantos são ("6 na voz"). Clicar abre uma lista para cima com cada pessoa (clicar nela abre o volume; a roda do mouse em cima também muda), **Entrar na voz** (se você está fora) e **Abrir o painel da voz**. Esc ou um clique fora fecha.
 - **Roda do mouse:** em cima do nome na barra da voz ou do botão de volume na lista, muda a voz da pessoa (ou o som da tela, se ela não estiver na voz), de 5 em 5%. Em cima da tela da pessoa ou da janela flutuante (no modo de ajuste), muda o som da tela. Um balãozinho mostra o valor.
 - **Sons da voz:** dois tons subindo quando alguém entra na voz (ou você), dois descendo quando sai, e um toque curto quando você muta ou desmuta o microfone. Os de quem entra e sai só tocam enquanto você está na voz; quem muta do outro lado e o apertar para falar não tocam. O som e o volume de cada um ficam em **Configurações** (a engrenagem no topo).

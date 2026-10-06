@@ -448,6 +448,8 @@ function onRoomMessage(m) {
       const mem = state.members.get(m.id);
       if (!mem) break;
       mem.razze = limparContaSala(m.conta);
+      mixer.apply(m.id); // o volume é guardado pela conta (voz.js › volKey): pode ter mudado
+      applyScreenVolume(m.id);
       renderMembers();
       if (typeof renderPersonCard === 'function') renderPersonCard();
       if (typeof skyFocusKey !== 'undefined') { skyFocusKey = ''; if (typeof renderSkyProfile === 'function') renderSkyProfile(); }

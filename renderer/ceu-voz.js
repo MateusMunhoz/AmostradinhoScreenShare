@@ -1259,7 +1259,7 @@ function skyVolumeRow(id, name, v) {
   out.textContent = v.muted ? 'mudo' : `${v.voice}%`;
   input.oninput = () => {
     out.textContent = `${input.value}%`;
-    volumes[name] = { ...volOf(id), voice: Number(input.value), muted: false };
+    volumes[volKey(id)] = { ...volOf(id), voice: Number(input.value), muted: false };
     mixer.apply(id);
   };
   input.onchange = () => setVol(id, { voice: Number(input.value), muted: false });
