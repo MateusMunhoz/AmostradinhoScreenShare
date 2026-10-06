@@ -1,6 +1,6 @@
 {
   "name": "tela-p2p",
-  "version": "1.17.0",
+  "version": "1.17.2",
   "description": "Configurações e Personalização de Layout",
   "main": "boot.js",
   "scripts": {
@@ -15,6 +15,7 @@
     "dist": "electron-builder --win portable",
     "dist:instalador": "electron-builder --win nsis",
     "dist:eva": "electron-builder --win portable -c.win.icon=assets/icone/tela-p2p-eva.ico",
+    "dist:topgun": "electron-builder --win portable -c.win.icon=assets/icone/tela-p2p-topgun.ico",
     "publicar": "node publicar.js",
     "razze-api": "node razze-api/server.js",
     "test:razze-api": "node --test tests/razze-*.test.js",

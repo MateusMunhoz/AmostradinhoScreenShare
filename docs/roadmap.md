@@ -12,6 +12,28 @@
 - **O que não muda:** sem servidor central obrigatório, sem conta, sem coleta de dados. Toda peça nova precisa caber
   nisso (servidor só como opção de reserva).
 
+## Estado em 05/10/2026 (versão 1.17.2)
+
+Última release: **1.17.2** (GitHub › Releases). O texto abaixo é de 28/09 a 03/10 e ainda não foi revisado; onde ele
+diz "sem conta" ou fala em Hyperswarm, vale o que está aqui.
+
+**Já saiu (1.15 a 1.17):**
+- Clipes dos últimos 30 s, com som e duração escolhida (P4).
+- Voz e microfone; temas Renascença e Top Gun (cabine do F-14, radar na voz, chamadas de rádio).
+- Primeira entrada em 3 telas e Início com amigos online, Ligar e **Abrir minha sala** em 1 clique.
+- **Conta na RazzeAPI** (servidor próprio na VPS): amigos por link ou código curto, trocar senha e "Esqueci a senha"
+  por código do administrador, frase no perfil, foto e fundo com editor de recorte, atividade (jogo e Spotify) e **Entrar com Google**.
+- A VPS foi atualizada para esse servidor em 05/10/2026 (passo a passo em [razze-api.md](razze-api.md)).
+
+**Mudou de rumo:**
+- O protótipo Hyperswarm foi abandonado; amigos e salas passam pela RazzeAPI (veja P1).
+- A premissa "sem conta" não vale mais para amigos: a conta na RazzeAPI existe e é o caminho dos links de amigo.
+
+**Em andamento:** blueprints de aviões clássicos para o tema Top Gun (só desenhos reais com licença livre, em
+`assets/temas/OBRAS.md`) e ícone do `.exe` do Top Gun.
+
+**Teste manual pendente:** roteiro "Conta, amigos e perfil" em 2 PCs ([roteiro-de-teste.md](roteiro-de-teste.md)).
+
 ## Visão geral
 
 | Tema | Por quê |

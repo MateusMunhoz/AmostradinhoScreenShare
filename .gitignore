@@ -40,3 +40,4 @@ CLAUDE.local.md
 prototipo-ui/
 .idea/
 dist-*/
+.aider*

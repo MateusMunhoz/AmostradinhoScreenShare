@@ -95,6 +95,51 @@ Redes podem ser `private`, `friends` ou `public`; para entrar, use um convite. O
 
 O cliente HTTP fica em `main/razze-api-client.js`; `main/razze-service.js` persiste a sessão e protege o token com `safeStorage` do Electron. O cliente exige HTTPS fora de localhost e rejeita redirecionamentos. Nas Configurações, o app permite criar/entrar na conta, criar redes, aceitar convites, administrar redes próprias e iniciar o WireGuard.
 
+## Atualizar a VPS (passo a passo)
+
+Vale para a VPS que já roda a RazzeAPI com Docker Compose (hoje `https://srv2015370.hstgr.cloud`). O servidor novo continua
+funcionando com apps antigos; atualize **antes** de publicar o app novo.
+
+1. **Entrar na VPS** (no PowerShell do seu PC): `ssh root@srv2015370.hstgr.cloud` (ou o usuário que você usa).
+2. **Achar a pasta do servidor**: `cd ~/AmostradinhoScreenShare/razze-api`. Se não for esse o caminho:
+   `find / -name compose.yaml -path "*razze-api*" 2>/dev/null`. Confira que o `.env` está nela: `ls -la`.
+3. **Ver o que está rodando e a versão atual**:
+   `docker compose ps` e `curl -s https://srv2015370.hstgr.cloud/v1/auth/google/config` (antes da atualização dá erro 401: normal).
+4. **Backup do banco** (contas, amigos e redes ficam no volume `razze-data`; o banco usa WAL, então pare o servidor um instante):
+   ```sh
+   docker volume ls | grep razze-data          # anote o nome inteiro, por exemplo razze-api_razze-data
+   docker compose stop razze-api
+   docker run --rm -v razze-api_razze-data:/data -v "$PWD":/backup busybox tar czf /backup/razze-data-$(date +%F).tgz -C /data .
+   ls -lh razze-data-*.tgz
+   docker compose start razze-api
+   ```
+   Guarde esse `.tgz` também fora da VPS (`scp` para o seu PC).
+5. **Trazer o código novo** (depois do merge do PR na `main`): `git pull`. Se a pasta não for um clone do repositório, copie a
+   pasta `razze-api` do projeto para a VPS (`scp -r razze-api root@srv2015370.hstgr.cloud:~/`), **sem apagar o `.env`**.
+6. **Conferir o `.env`**: `API_DOMAIN` e `RAZZE_ADMIN_TOKEN` já existentes. As linhas `RAZZE_GOOGLE_CLIENT_ID` e
+   `RAZZE_GOOGLE_CLIENT_SECRET` são opcionais (veja "Entrar com Google"); vazias, o botão do Google fica escondido. O
+   `RAZZE_PUBLIC_URL` já vem do Compose (`https://$API_DOMAIN`).
+7. **Subir a versão nova**: `docker compose up -d --build`, depois `docker compose logs --tail=50 razze-api`. Não deve haver erro;
+   a primeira subida cria as tabelas e colunas novas sozinha (nada precisa ser migrado à mão).
+8. **Conferir**:
+   ```sh
+   curl -s https://srv2015370.hstgr.cloud/v1/health
+   curl -s https://srv2015370.hstgr.cloud/v1/auth/google/config     # {"enabled":false,"clientId":""} (ou true com o Google ligado)
+   curl -s -o /dev/null -w "%{http_code}\n" https://srv2015370.hstgr.cloud/a/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA   # 200
+   ```
+   Abra também `https://srv2015370.hstgr.cloud/admin/`: o painel deve entrar e, na lista de usuários, cada conta tem o botão
+   **Código de senha**.
+9. **Se algo der errado, voltar** (o banco antigo não perde dados, só ganha colunas):
+   ```sh
+   git log --oneline -5                         # veja o commit anterior
+   git checkout <commit-anterior> -- .          # ou: git revert
+   docker compose up -d --build
+   ```
+   Para restaurar o backup: `docker compose stop razze-api`, apague o conteúdo do volume e extraia o `.tgz` nele
+   (`docker run --rm -v razze-api_razze-data:/data -v "$PWD":/backup busybox sh -c "rm -rf /data/* && tar xzf /backup/razze-data-AAAA-MM-DD.tgz -C /data"`), depois `docker compose start razze-api`.
+
+Depois da VPS atualizada: faça o teste "Conta, amigos e perfil" do `docs/roteiro-de-teste.md` e só então publique o app.
+
 ## Entrar com Google (opcional)
 
 O app abre o navegador do sistema, o Google devolve um código para uma porta local (`http://127.0.0.1:<porta>/callback`) e a
