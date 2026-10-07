@@ -3,6 +3,13 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.18.6",
+    "date": "2026-10-07",
+    "items": [
+      "Atividade: jogo e música ligados por padrão, escolha na primeira entrada; Apex em DirectX 12"
+    ]
+  },
+  {
     "version": "1.18.5",
     "date": "2026-10-07",
     "items": [
@@ -14,7 +21,14 @@ const NOVIDADES = [
     "date": "2026-10-07",
     "items": [
       "Admin: gerar código de senha dentro do app",
-      "Feedback e bugs: janela no app, rota na RazzeAPI e aba na Administração",
+      "Feedback e bugs: janela no app, rota na RazzeAPI e aba na Administração"
+    ]
+  },
+  {
+    "version": "1.18.4",
+    "date": "2026-10-06",
+    "items": [
+      "Desempenho: vídeo aparece mais rápido ao assistir; lista da voz mais leve",
       "Voz: cantos de cima arredondados quando o chat está escondido",
       "Início no visual Carta Estelar: saudação, constelação e amigos com etiquetas",
       "Início: sala aberta de amigo sobe e vira a ação principal",
@@ -76,20 +90,6 @@ const NOVIDADES = [
       "Tema Top Gun: blueprints de P-38, Hurricane e P-51 Mustang (CC0)",
       "docs: estado do roadmap em 05/10/2026 (versão 1.17.2)",
       "Ícone do .exe do tema Top Gun (asas de piloto) e npm run dist:topgun"
-    ]
-  },
-  {
-    "version": "1.17.2",
-    "date": "2026-10-05",
-    "items": [
-      "docs: passo a passo para atualizar a VPS e contexto de handoff"
-    ]
-  },
-  {
-    "version": "1.17.0",
-    "date": "2026-10-05",
-    "items": [
-      "Correções e melhorias"
     ]
   }
 ];
