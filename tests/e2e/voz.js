@@ -109,6 +109,7 @@ run('Voz, volume e chat por cima do jogo', 150000, async () => {
   await B.eval(`closeSkyProfile(); [...$('voiceStackPop').querySelectorAll('button')].find((b) => b.textContent === 'Abrir o painel da voz').click()`);
   await sleep(200);
   check('"Abrir o painel da voz" abre o painel e fecha a lista', await B.eval(`chat.open && workspaceViews.voice && !$('voiceStackPop')`));
+  check('Fechar a lista com o perfil aberto nela não some com o perfil (os outros continuam abrindo)', await B.eval(`!!$('skyFocus') && document.body.contains($('skyFocus'))`));
   await B.eval(`setPanelOpen(true)`);
 
   // Chat por cima do jogo

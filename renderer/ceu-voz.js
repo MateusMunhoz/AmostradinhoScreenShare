@@ -1073,6 +1073,14 @@ let skyJustClosed = null; // quem teve o perfil fechado por este clique (pointer
 let skyProfileBack = null; // o canal do cartão de onde o perfil foi aberto: sair do perfil volta para ele
 let skyFocusFrom = null; // 'pessoas': pela lista de Pessoas da sala; 'pilula': pela lista "Na voz" da pílula (o cartão fica nela)
 const SKY_HOMES = { pessoas: 'peoplePop', pilula: 'voiceStackPop' };
+// O perfil é um só (#skyFocus) e muda de casa. A lista "Na voz" é apagada ao fechar e redesenhada a toda hora: antes
+// disso ele volta para o painel de voz, senão sai do documento junto com ela e nenhum perfil abre mais ($ dá null)
+function guardarSkyFocus(de) {
+  const box = $('skyFocus');
+  if (!box || !de?.contains(box)) return;
+  if (!skyFocusId) box.hidden = true; // fechando: não aparece no painel durante a transição
+  $('voicePane').append(box);
+}
 function openSkyProfile(id, at, from = null) {
   closeSkyPop();
   skyProfileBack = null;

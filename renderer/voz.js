@@ -475,6 +475,7 @@ function openVoiceStackPop() {
 }
 function closeVoiceStackPop() {
   if (typeof skyFocusFrom !== 'undefined' && skyFocusFrom === 'pilula') closeSkyProfile();
+  guardarSkyFocus($('voiceStackPop'));
   $('voiceStackPop')?.remove();
   $('voiceAvatars').querySelector('.voice-stack')?.setAttribute('aria-expanded', 'false');
 }
@@ -484,6 +485,7 @@ function renderVoiceStackPop() {
   const { all } = dockVoicePick();
   if ($('voiceAvatars').hidden || !all.length) return closeVoiceStackPop();
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text) e.textContent = text; return e; };
+  guardarSkyFocus(pop); // volta no fim, se o perfil continua aberto
   pop.replaceChildren();
   const head = el('div', 'vsp-head');
   head.append(el('strong', '', 'Na voz'), el('span', '', String(all.length)));
