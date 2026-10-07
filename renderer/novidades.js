@@ -3,6 +3,13 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.18.7",
+    "date": "2026-10-07",
+    "items": [
+      "Perfil: abrir pela lista Na voz não trava mais os outros perfis"
+    ]
+  },
+  {
     "version": "1.18.6",
     "date": "2026-10-07",
     "items": [
@@ -74,22 +81,6 @@ const NOVIDADES = [
       "Tira o HUB: conta no Perfil, rede nas Configurações, amigos no envelope",
       "Desfazer a amizade vale na hora para os dois lados",
       "Ctrl+V na conversa privada não cola também no chat da sala"
-    ]
-  },
-  {
-    "version": "1.18.0",
-    "date": "2026-10-05",
-    "items": [
-      "Volume de cada pessoa guardado pela conta Razze",
-      "Perfil: o nome da sala e o da conta Razze; Adicionar pela conta",
-      "Nebula: o app passa a se chamar Nebula, com a logo nova",
-      "HUB › Rede: cartão da conta organizado",
-      "Instalador do Windows e licença como tarefa futura",
-      "Corrige a conta no HUB estreito: nome e e-mail não quebram letra por letra",
-      "Tema Top Gun: corte do Avro Lancaster (1943) de volta ao rodízio",
-      "Tema Top Gun: blueprints de P-38, Hurricane e P-51 Mustang (CC0)",
-      "docs: estado do roadmap em 05/10/2026 (versão 1.17.2)",
-      "Ícone do .exe do tema Top Gun (asas de piloto) e npm run dist:topgun"
     ]
   }
 ];
