@@ -241,3 +241,49 @@ test('sinais da conexão direta: só entre amigos, só cifrados, entregues uma v
   advance(2 * 60 * 1000 + 1);
   assert.equal((await req('signals', 'GET', undefined, b.accessToken)).signals.length, 0);
 });
+
+test('feedback e bugs: valida, limita por hora e o administrador lista, vê o print, marca e apaga', async t => {
+  const { req, register, advance } = await fixture(t);
+  const a = await register('fbalice'), b = await register('fbbob');
+  // Sem login, não
+  assert.equal((await req('feedback', 'POST', { tipo: 'nota', nota: 9 })).status, 401);
+  // Campos inválidos ou faltando
+  for (const ruim of [{ tipo: 'outro' }, { tipo: 'bug', titulo: 'Sem área' }, { tipo: 'bug', area: 'cozinha', titulo: 'x' }, { tipo: 'nota', nota: 11 },
+    { tipo: 'nota', nota: 5, usa: ['voz', 'pizza'] }, { tipo: 'nota', nota: 5, extra: 1 }, { tipo: 'ideia', titulo: 'x'.repeat(141) },
+    { tipo: 'nota', nota: 5, tecnico: { senha: 'x' } }, { tipo: 'nota', nota: 5, imagem: 'data:image/png;base64,' + Buffer.from('nao e png').toString('base64') }]) {
+    assert.equal((await req('feedback', 'POST', ruim, a.accessToken)).status, 400, JSON.stringify(ruim));
+  }
+  // Um PNG mínimo (só a assinatura conta para o servidor)
+  const png = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(32)]);
+  const bug = await req('feedback', 'POST', {
+    tipo: 'bug', area: 'voz', titulo: '  Áudio sumiu  ', passos: '1. Entrei\r\n2. Saí\u0007', frequencia: 'as-vezes', impacto: 'bastante', contato: true,
+    tecnico: { versao: '1.9.0', sistema: 'Windows 11', tema: 'estelar', naSala: true }, imagem: 'data:image/png;base64,' + png.toString('base64'),
+  }, a.accessToken);
+  assert.equal(bug.status, 201);
+  assert.equal((await req('feedback', 'POST', { tipo: 'nota', nota: 9, usa: ['voz', 'voz', 'chat'], gosta: 'Transmissão' }, b.accessToken)).status, 201);
+  // Limite: 5 por hora por conta
+  for (let i = 0; i < 4; i++) assert.equal((await req('feedback', 'POST', { tipo: 'ideia', titulo: 'Ideia ' + i }, a.accessToken)).status, 201);
+  assert.equal((await req('feedback', 'POST', { tipo: 'ideia', titulo: 'Demais' }, a.accessToken)).status, 429);
+  advance(60 * 60 * 1000 + 1);
+  assert.equal((await req('feedback', 'POST', { tipo: 'ideia', titulo: 'Depois de uma hora' }, a.accessToken)).status, 201);
+  // Só administrador lista
+  assert.equal((await req('admin/feedback', 'GET', undefined, a.accessToken)).status, 403);
+  const lista = (await req('admin/feedback', 'GET', undefined, ROOT)).feedback;
+  assert.equal(lista.length, 7);
+  const item = lista.find(f => f.id === bug.id);
+  assert.equal(item.respostas.titulo, 'Áudio sumiu');
+  assert.equal(item.respostas.passos, '1. Entrei\n2. Saí');
+  assert.equal(item.nome, 'fbalice'); assert.equal(item.status, 'novo'); assert.equal(item.temImagem, true); assert.equal(item.contato, true);
+  assert.deepEqual(item.tecnico, { versao: '1.9.0', sistema: 'Windows 11', tema: 'estelar', naSala: true });
+  assert.ok(!('imagem' in item));
+  assert.deepEqual(lista.find(f => f.tipo === 'nota').respostas.usa, ['voz', 'chat']);
+  const imagem = await req('admin/feedback/' + bug.id + '/imagem', 'GET', undefined, ROOT);
+  assert.equal(imagem.tipo, 'image/png'); assert.ok(Buffer.from(imagem.dados, 'base64').equals(png));
+  assert.equal((await req('admin/feedback/' + bug.id, 'PATCH', { status: 'arquivado' }, ROOT)).status, 400);
+  assert.equal((await req('admin/feedback/' + bug.id, 'PATCH', { status: 'resolvido' }, ROOT)).status, 200);
+  assert.equal((await req('admin/feedback', 'GET', undefined, ROOT)).feedback.find(f => f.id === bug.id).status, 'resolvido');
+  assert.equal((await req('admin/feedback/' + bug.id, 'DELETE', undefined, ROOT)).status, 200);
+  assert.equal((await req('admin/feedback/' + bug.id + '/imagem', 'GET', undefined, ROOT)).status, 404);
+  const tabela = await req('admin/database/feedback?limit=5', 'GET', undefined, ROOT);
+  assert.equal(tabela.status, 200); assert.equal(tabela.total, 6);
+});

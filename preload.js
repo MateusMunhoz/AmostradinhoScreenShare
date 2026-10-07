@@ -105,6 +105,7 @@ contextBridge.exposeInMainWorld('api', {
   atividadeLer: (opcoes) => ipcRenderer.invoke('atividade-ler', { jogos: !!opcoes?.jogos, musica: !!opcoes?.musica }),
   razzeSetActivity: (activity) => ipcRenderer.invoke('razze-set-activity', { game: String(activity?.game || ''), artist: String(activity?.artist || ''), title: String(activity?.title || '') }),
   razzeSetBio: (bio) => ipcRenderer.invoke('razze-set-bio', String(bio || '')),
+  razzeFeedback: (feedback) => ipcRenderer.invoke('razze-feedback', feedback && typeof feedback === 'object' ? feedback : {}),
   razzeFriendLinkCreate: () => ipcRenderer.invoke('razze-friend-link-create'),
   razzeFriendLinkList: () => ipcRenderer.invoke('razze-friend-link-list'),
   razzeFriendLinkRevoke: (id) => ipcRenderer.invoke('razze-friend-link-revoke', String(id || '')),

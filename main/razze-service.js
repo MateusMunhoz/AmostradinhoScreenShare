@@ -160,6 +160,7 @@ function createRazzeService(options = {}) {
     changePassword: (current, next) => requireClient().changePassword(current, next),
     resetPassword: (email, code, password) => requireClient().resetPassword(email, code, password),
     setBio: (bio) => requireClient().setBio(bio),
+    sendFeedback: (feedback) => requireClient().sendFeedback(feedback),
     setActivity: (activity) => requireClient().setActivity(activity),
     friendLinkCreate: () => requireClient().friendLinkCreate(),
     friendLinkList: () => requireClient().friendLinkList(),

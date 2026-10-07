@@ -506,7 +506,8 @@ kbd { font-family: Consolas, monospace; font-size: 11px; color: var(--muted); bo
 .chat-head { display: flex; align-items: center; justify-content: space-between; }
 .chat-head h3 { margin: 0; }
 .chat-head .btn.icon { width: 30px; height: 30px; }
-.chat-list { flex: 1; min-height: 0; overflow-y: auto; list-style: none; margin: 0 -8px 0 0; padding: 0 8px 0 2px; display: flex; flex-direction: column; gap: 2px; }
+.chat-list { flex: 1; min-height: 0; overflow-y: auto; list-style: none; margin: 0; padding: 2px 4px 8px 8px; display: flex; flex-direction: column; gap: 2px;
+  border: 1px solid var(--line); border-radius: var(--radius); }
 /* Barra fina que some: invisível parada, 4 px ao rolar ou com o mouse, 8 px com o mouse na barra */
 .chat-list::-webkit-scrollbar { width: 8px; }
 .chat-list::-webkit-scrollbar-track { background: transparent; }
@@ -2469,3 +2470,55 @@ button.home-chip:hover { color: var(--text); }
 .so-google:not(.com-senha) .legacy-login { display: none !important; }
 .so-google #obTabRegister, .so-google #razzeTabRegister, .so-google #razzeRegister { display: none !important; }
 #onboarding.so-google section[data-ob="3"] .actions { order: 9; justify-content: center; }
+
+/* Feedback e bugs (renderer/feedback.js): janela com três abas de perguntas curtas */
+.fb-dialog { width: min(560px, 100%); gap: 14px; }
+.fb-dialog .dialog-head { align-items: flex-start; }
+.fb-dialog .dialog-head .hint { margin: 4px 0 0; font-size: 12px; }
+.fb-login { margin: 0; padding: 10px 12px; border: 1px solid var(--warn); border-radius: 8px; color: var(--warn); font-size: 13px; }
+.fb-tabs { background: var(--sunken); border: 1px solid var(--line); }
+.fb-tabs button { font-size: 13px; padding: 0 8px; }
+.fb-tabs button[aria-selected="true"] { color: var(--accent); }
+.fb-tabs svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.fb-pane { display: flex; flex-direction: column; gap: 14px; }
+.fb-pane[hidden] { display: none; }
+.fb-q { display: flex; flex-direction: column; gap: 6px; min-width: 0; margin: 0; padding: 0; border: 0; font-size: 13px; color: var(--text); }
+.fb-q legend { padding: 0; margin-bottom: 6px; }
+.fb-q small { color: var(--muted); font-size: 12px; }
+.fb-text { height: auto; min-height: 64px; padding: 8px 10px; resize: vertical; line-height: 1.45; }
+.fb-q .hub-filter[aria-invalid="true"] { border-color: var(--warn); }
+.fb-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+/* Opções em pílulas: rádio ou caixa de marcar escondidos, a pílula acende quando marcada */
+.fb-chips { display: flex; flex-wrap: wrap; gap: 6px; border-radius: 8px; }
+.fb-chips[aria-invalid="true"] { outline: 1px solid var(--warn); outline-offset: 4px; }
+.fb-chips label { position: relative; padding: 5px 11px; border: 1px solid var(--line); border-radius: 999px; font-size: 12px; color: var(--muted); cursor: pointer; transition: border-color .12s, color .12s, background .12s; }
+.fb-chips label:hover { color: var(--text); border-color: var(--field-line); }
+.fb-chips label:has(input:checked) { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.fb-chips label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.fb-chips input { position: absolute; opacity: 0; pointer-events: none; }
+.fb-nps { display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); gap: 4px; }
+.fb-nps label { padding: 7px 0; border-radius: 6px; text-align: center; }
+.fb-nps-legenda { display: flex; justify-content: space-between; margin: 4px 0 0; font-size: 11px; }
+/* Print: clicar, colar ou arrastar */
+.fb-drop { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 8px 12px; border: 1px dashed var(--field-line); border-radius: 8px; color: var(--muted); font-size: 12px; cursor: pointer; }
+.fb-drop:hover, .fb-drop.over, .fb-drop:focus-visible { border-color: var(--accent); color: var(--text); outline: none; }
+.fb-drop > svg { flex: none; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.fb-drop > span { flex: 1; min-width: 0; }
+.fb-drop img { width: 72px; height: 44px; object-fit: cover; border-radius: 4px; border: 1px solid var(--line); }
+.fb-status { margin: 0; min-height: 18px; font-size: 13px; color: var(--muted); }
+.fb-status.warn { color: var(--warn); }
+.fb-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-top: 14px; border-top: 1px solid var(--line); }
+.fb-checks { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--muted); }
+.fb-checks label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.fb-actions { display: flex; gap: 8px; margin-left: auto; }
+@media (max-width: 560px) { .fb-grid { grid-template-columns: 1fr; } .fb-tabs button svg { display: none; } }
+
+/* Aba Feedback da Administração (renderer/admin.js) */
+.adm-fb-item { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; }
+.adm-fb-item[data-status="resolvido"] { opacity: .6; }
+.adm-fb-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.adm-fb-top strong { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.adm-fb-dados { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 12px; margin: 0; font-size: 13px; }
+.adm-fb-dados dt { color: var(--muted); }
+.adm-fb-dados dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.adm-fb-img { max-width: 100%; max-height: 360px; align-self: flex-start; border-radius: 6px; border: 1px solid var(--line); }

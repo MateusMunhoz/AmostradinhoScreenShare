@@ -222,6 +222,7 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
     invites: 'SELECT network_id, created_by, created_at, expires_at, max_uses, uses FROM invites',
     server_settings: 'SELECT * FROM server_settings', audit_log: 'SELECT * FROM audit_log',
     live_presence: 'SELECT user_id, last_seen FROM live_presence',
+    feedback: 'SELECT id, user_id, tipo, status, respostas, tecnico, contato, imagem IS NOT NULL AS tem_imagem, created_at FROM feedback',
   };
   // Números do painel. Só contagens: nada de e-mail, mensagem ou nome de sala.
   function analytics() {
@@ -409,6 +410,30 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
         audit(actor, 'allowlist.remove', email);
       });
       return result({ ok: true });
+    }
+    // Feedback e bugs mandados pelo app: a lista vem sem o print (que vem à parte, um por vez)
+    if (method === 'GET' && pathname === '/v1/admin/feedback') {
+      const rows = db.prepare('SELECT f.id, f.tipo, f.respostas, f.tecnico, f.contato, f.status, f.created_at AS createdAt, f.imagem IS NOT NULL AS temImagem, u.id AS userId, u.display_name AS nome, u.email FROM feedback f JOIN users u ON u.id = f.user_id ORDER BY f.created_at DESC LIMIT 300').all();
+      return result({ feedback: rows.map(r => ({ ...r, respostas: JSON.parse(r.respostas), tecnico: JSON.parse(r.tecnico), contato: !!r.contato, temImagem: !!r.temImagem })) });
+    }
+    const feedback = /^\/v1\/admin\/feedback\/([a-f0-9]{32})(\/imagem)?$/.exec(pathname);
+    if (feedback) {
+      const row = db.prepare('SELECT id, imagem, imagem_tipo AS imagemTipo FROM feedback WHERE id=?').get(feedback[1]);
+      if (!row) throw new ApiError(404, 'not_found', 'Feedback não encontrado.');
+      if (feedback[2]) {
+        if (method !== 'GET' || !row.imagem) throw new ApiError(404, 'not_found', 'Este feedback não tem print.');
+        return result({ tipo: row.imagemTipo, dados: Buffer.from(row.imagem).toString('base64') });
+      }
+      if (method === 'PATCH') {
+        const body = await readBody(req);
+        if (Object.keys(body).some(k => k !== 'status') || !['novo', 'visto', 'resolvido'].includes(body.status)) bad('Situação do feedback inválida.');
+        db.prepare('UPDATE feedback SET status=? WHERE id=?').run(body.status, row.id);
+        return result({ ok: true });
+      }
+      if (method === 'DELETE') {
+        transaction(() => { db.prepare('DELETE FROM feedback WHERE id=?').run(row.id); audit(actor, 'feedback.delete', row.id); });
+        return result({ ok: true });
+      }
     }
     if (method === 'GET' && pathname === '/v1/admin/analytics') return result(analytics());
     if (method === 'GET' && pathname === '/v1/admin/database') return result({ tables: Object.keys(views) });
