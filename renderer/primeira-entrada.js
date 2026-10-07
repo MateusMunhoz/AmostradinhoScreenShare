@@ -106,15 +106,119 @@ async function abrirMinhaSala() {
 }
 
 // ---------- Início de quem tem conta ----------
+// Topo: com nome, "Boa noite, Naitsi" (o lápis abre o campo); sem nome, o slogan e o campo à vista. Embaixo, o resumo
+// do que está acontecendo (sala de amigo aberta, quem está online, quem está jogando) e a constelação dos amigos.
+const SLOGAN = 'Sua tela, direto no PC dos amigos.';
+const saudacao = (h) => (h < 5 ? 'Boa noite' : h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite');
+
+function renderHomeTopo() {
+  const nome = $('name').value.trim();
+  const editando = $('home').classList.contains('editando-nome');
+  $('homeTitle').textContent = nome ? `${saudacao(new Date().getHours())}, ${nome}` : SLOGAN;
+  $('homeNameLabel').hidden = !!nome && !editando;
+  $('homeNameEdit').hidden = !nome || editando;
+
+  const logado = !!razzeUser;
+  const online = logado ? friendsData.friends.filter((f) => f.online) : [];
+  const salas = typeof listaSessoes === 'function' && sessoes.observando ? listaSessoes() : [];
+  const resumo = $('homeResumo');
+  resumo.textContent = '';
+  if (salas.length) {
+    const vivo = document.createElement('span');
+    vivo.className = 'home-resumo-vivo';
+    vivo.textContent = salas.length === 1 ? `${salas[0].host} abriu uma sala` : `${salas.length} salas abertas agora`;
+    resumo.append(vivo);
+    if (salas.length === 1) resumo.append(` · ${salas[0].pessoas} ${salas[0].pessoas === 1 ? 'pessoa' : 'pessoas'}`);
+  } else if (logado) {
+    const jogando = online.find((f) => f.activity?.game);
+    resumo.textContent = !online.length ? 'Nenhum amigo online agora.'
+      : `${online.length} ${online.length === 1 ? 'amigo online' : 'amigos online'}${jogando ? ` · ${jogando.displayName} está jogando ${jogando.activity.game}` : ''}`;
+  }
+  resumo.hidden = !resumo.textContent;
+  renderHomeCeu(logado, online);
+
+  // Quem vê a sala que você abrir (só no modo Internet a lista é dos amigos da conta)
+  const visivel = selectedNetworkProvider() === 'internet' && logado && load('sessaoVisivel', '1') !== '0';
+  const nomes = online.map((f) => f.displayName);
+  $('goQuickSub').textContent = !visivel || !nomes.length ? ''
+    : nomes.length === 1 ? `${nomes[0]} vê a sua sala` : nomes.length === 2 ? `${nomes[0]} e ${nomes[1]} veem a sua sala` : `${nomes.length} amigos online veem a sua sala`;
+}
+
+// A constelação do topo: você no meio e até 5 amigos online em volta, ligados por pontilhados. Quem está numa sala
+// brilha na cor de "ao vivo". Parada: nada se mexe (pode estar com jogo aberto)
+const CEU_POS = [[30, 56], [190, 50], [62, 16], [160, 76], [204, 14]];
+function renderHomeCeu(logado, online) {
+  const ceu = $('homeCeu');
+  ceu.toggleAttribute('hidden', !logado); // SVG não tem a propriedade .hidden: só o atributo
+  if (!logado) return;
+  const NS = 'http://www.w3.org/2000/svg';
+  const novo = (tag, attrs, cls) => {
+    const e = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+    if (cls) e.setAttribute('class', cls);
+    return e;
+  };
+  const eu = [110, 30];
+  const nomeCurto = (n) => (n.length > 12 ? n.slice(0, 11) + '…' : n);
+  ceu.replaceChildren();
+  const amigos = online.slice(0, CEU_POS.length);
+  amigos.forEach((f, i) => {
+    const [x, y] = CEU_POS[i];
+    ceu.append(novo('line', { x1: eu[0], y1: eu[1], x2: x, y2: y }, 'ceu-linha'));
+  });
+  amigos.forEach((f, i) => {
+    const [x, y] = CEU_POS[i];
+    const vivo = !!f.sala;
+    if (vivo) ceu.append(novo('circle', { cx: x, cy: y, r: 9 }, 'ceu-anel'));
+    ceu.append(novo('circle', { cx: x, cy: y, r: 4 }, vivo ? 'ceu-estrela vivo' : 'ceu-estrela'));
+    const t = novo('text', { x, y: y > 40 ? y + 16 : y - 9 }, vivo ? 'ceu-nome vivo' : 'ceu-nome');
+    t.textContent = nomeCurto(f.displayName);
+    ceu.append(t);
+  });
+  ceu.append(novo('circle', { cx: eu[0], cy: eu[1], r: 10 }, 'ceu-anel eu'), novo('circle', { cx: eu[0], cy: eu[1], r: 5 }, 'ceu-estrela eu'));
+  const voce = novo('text', { x: eu[0], y: eu[1] - 15 }, 'ceu-nome eu');
+  voce.textContent = 'você';
+  ceu.append(voce);
+  ceu.setAttribute('aria-label', amigos.length ? `Você e ${amigos.map((f) => f.displayName).join(', ')} online` : 'Nenhum amigo online agora');
+}
+
+// Etiqueta com ícone (jogo, música, sala) na linha do amigo
+function homeChip(icone, texto, cls = '') {
+  const chip = document.createElement('span');
+  chip.className = 'home-chip' + (cls ? ' ' + cls : '');
+  if (icone) chip.innerHTML = ICON[icone];
+  chip.append(document.createTextNode(texto));
+  return chip;
+}
+
+function homeIconBtn(icone, label, onclick, cls = '') {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'btn icon small' + (cls ? ' ' + cls : '');
+  setIcon(b, icone, label);
+  b.onclick = onclick;
+  return b;
+}
+
+// "Chamar para minha sala": manda o convite da sala em que você está; fora de sala, abre a sua antes
+async function chamarParaMinhaSala(f) {
+  if (!state.myId) {
+    await abrirMinhaSala();
+    if (!state.myId) return; // não abriu: o erro já apareceu
+  }
+  await convidarPorMensagem(f, toast);
+}
+
 function renderHomeAmigos() {
   if (!$('homeFriends')) return;
+  renderHomeTopo();
   const logado = !!razzeUser;
   $('homeSignin').hidden = logado || modoDeUso() !== 'amigos';
   $('homeFriends').hidden = !logado;
   if (!logado) return;
   const online = friendsData.friends.filter((f) => f.online);
   const total = friendsData.friends.length;
-  $('homeFriendsTitle').textContent = online.length ? `Amigos online (${online.length})` : 'Amigos';
+  $('homeFriendsTitle').textContent = online.length ? `Amigos online · ${online.length}` : 'Amigos';
   const lista = $('homeFriendsList');
   lista.textContent = '';
   for (const f of online.slice(0, 5)) {
@@ -124,57 +228,59 @@ function renderHomeAmigos() {
     nome.className = 'home-friend-name';
     const quem = document.createElement('strong');
     quem.textContent = f.displayName;
-    nome.append(quem);
+    const chips = document.createElement('span');
+    chips.className = 'home-friend-chips';
     // Em que sala o amigo está, em qualquer modo (salas-amigos.js: textoSalaDoAmigo)
     const naSala = typeof textoSalaDoAmigo === 'function' ? textoSalaDoAmigo(f) : '';
-    if (naSala) {
-      const sala = document.createElement('span');
-      sala.className = 'hint home-friend-bio home-friend-sala';
-      sala.textContent = naSala;
-      nome.append(sala);
-    }
+    if (naSala) chips.append(homeChip('', naSala, 'home-friend-sala'));
     const atividade = f.activity;
-    if (atividade?.game) {
-      const jogo = document.createElement('span');
-      jogo.className = 'hint home-friend-bio';
-      jogo.textContent = 'Jogando ' + atividade.game;
-      nome.append(jogo);
-    }
+    if (atividade?.game) chips.append(homeChip('game', atividade.game));
     if (atividade?.artist) {
-      // "Ouvindo <artista>"; clicar mostra a faixa
+      // A música: clicar mostra a faixa
       const musica = document.createElement('button');
       musica.type = 'button';
-      musica.className = 'link-btn home-friend-music';
-      const fechado = 'Ouvindo ' + atividade.artist;
-      musica.textContent = fechado;
+      musica.className = 'home-chip home-friend-music';
+      musica.innerHTML = ICON.music;
+      const texto = document.createTextNode(atividade.artist);
+      const completo = atividade.title ? atividade.title + ' — ' + atividade.artist : atividade.artist;
+      musica.append(texto);
       musica.title = 'Clique para ver a música';
-      musica.onclick = () => { musica.textContent = musica.textContent === fechado ? (atividade.title ? atividade.title + ' — ' + atividade.artist : fechado) : fechado; };
-      nome.append(musica);
+      musica.onclick = () => { texto.textContent = texto.textContent === atividade.artist ? completo : atividade.artist; };
+      chips.append(musica);
     }
-    if (f.bio && !atividade?.game && !atividade?.artist) {
+    if (f.bio && !naSala && !atividade?.game && !atividade?.artist) {
       const frase = document.createElement('span');
       frase.className = 'hint home-friend-bio';
       frase.textContent = f.bio;
-      nome.append(frase);
+      chips.append(frase);
     }
-    const chat = document.createElement('button');
-    chat.type = 'button';
-    chat.className = 'btn small';
-    chat.textContent = 'Mensagem';
-    chat.onclick = () => openDm(f.id);
-    const ligar = document.createElement('button');
-    ligar.type = 'button';
-    ligar.className = 'btn small primary';
-    ligar.textContent = 'Ligar';
-    ligar.title = 'Cria uma sala só para vocês e entra na voz';
-    ligar.onclick = () => void ligarPara(f.id);
-    li.append(hubAvatar(f.displayName, true), nome, chat, ligar);
+    nome.append(quem);
+    if (chips.childNodes.length) nome.append(chips);
+    const acoes = document.createElement('span');
+    acoes.className = 'home-friend-actions';
+    const chamar = document.createElement('button');
+    chamar.type = 'button';
+    chamar.className = 'btn small home-friend-chamar';
+    chamar.textContent = 'Chamar para minha sala';
+    chamar.title = state.myId ? `Manda o convite da sua sala para ${f.displayName}` : `Abre a sua sala e manda o convite para ${f.displayName}`;
+    chamar.onclick = () => void chamarParaMinhaSala(f);
+    acoes.append(chamar,
+      homeIconBtn('chat', `Mensagem para ${f.displayName}`, () => openDm(f.id)),
+      homeIconBtn('phone', `Ligar para ${f.displayName}: cria uma sala só para vocês e entra na voz`, () => void ligarPara(f.id), 'home-friend-ligar'));
+    li.append(hubAvatar(f.displayName, true), nome, acoes);
     lista.append(li);
   }
   $('homeFriendsEmpty').textContent = !total ? 'Você ainda não tem amigos aqui. Adicione o primeiro.'
     : !online.length ? 'Ninguém online agora.'
     : online.length > 5 ? `e mais ${online.length - 5} online` : '';
   $('homeFriendsAll').hidden = !total;
+}
+
+// Menu "Convidar": copiar o seu link de amigo ou adicionar alguém
+function setHomeConvidarOpen(open) {
+  $('homeConvidarMenu').hidden = !open;
+  $('homeConvidar').setAttribute('aria-expanded', String(open));
+  if (open) $('homeFriendsLink').focus();
 }
 
 function setupPrimeiraEntrada() {
@@ -204,9 +310,28 @@ function setupPrimeiraEntrada() {
   $('goQuick').onclick = abrirMinhaSala;
   $('homeSigninBtn').onclick = () => abrirPrimeiraEntrada(3);
   $('homeFriendsAll').onclick = () => openFriendsDialog();
-  $('homeFriendsLink').onclick = copiarMeuLink;
+  $('homeFriendsLink').onclick = () => { setHomeConvidarOpen(false); copiarMeuLink(); };
   $('friendsLinkCopy').onclick = copiarMeuLink;
-  $('homeFriendsAdd').onclick = () => { openFriendsDialog(); if (typeof setFriendsAddOpen === 'function') setFriendsAddOpen(true); };
+  $('homeFriendsAdd').onclick = () => { setHomeConvidarOpen(false); openFriendsDialog(); if (typeof setFriendsAddOpen === 'function') setFriendsAddOpen(true); };
+  $('homeConvidar').insertAdjacentHTML('afterbegin', ICON.plus);
+  $('homeConvidar').onclick = () => setHomeConvidarOpen($('homeConvidarMenu').hidden);
+  $('homeConvidarMenu').addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { setHomeConvidarOpen(false); $('homeConvidar').focus(); }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const itens = [...$('homeConvidarMenu').querySelectorAll('[role=menuitem]')];
+      itens[(itens.indexOf(document.activeElement) + (e.key === 'ArrowDown' ? 1 : itens.length - 1)) % itens.length].focus();
+    }
+  });
+  document.addEventListener('click', (e) => { if (!$('homeConvidarMenu').hidden && !e.target.closest('.home-menu-wrap')) setHomeConvidarOpen(false); });
+  // O nome: o lápis abre o campo; Enter ou sair do campo fecha
+  setIcon($('homeNameEdit'), 'edit', 'Mudar seu nome');
+  setIcon($('goCreate'), 'sliders', 'Opções da sala');
+  $('homeNameEdit').onclick = () => { $('home').classList.add('editando-nome'); renderHomeTopo(); $('name').focus(); $('name').select(); };
+  const pararDeEditar = () => { if (!$('home').classList.contains('editando-nome')) return; $('home').classList.remove('editando-nome'); renderHomeTopo(); };
+  $('name').addEventListener('input', renderHomeTopo);
+  $('name').addEventListener('blur', pararDeEditar);
+  $('name').addEventListener('keydown', (e) => { if (e.key === 'Enter') { pararDeEditar(); $('homeNameEdit').focus(); } });
   entradaAba(false);
   if (load('primeiraEntrada') !== '1') abrirPrimeiraEntrada();
   renderHomeAmigos();

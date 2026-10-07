@@ -3,10 +3,22 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
-    "version": "1.18.4",
-    "date": "2026-10-06",
+    "version": "1.18.5",
+    "date": "2026-10-07",
     "items": [
-      "Desempenho: vídeo aparece mais rápido ao assistir; lista da voz mais leve"
+      "Admin: excluir conta e entrar sozinho depois do código de senha"
+    ]
+  },
+  {
+    "version": "1.18.4",
+    "date": "2026-10-07",
+    "items": [
+      "Admin: gerar código de senha dentro do app",
+      "Feedback e bugs: janela no app, rota na RazzeAPI e aba na Administração",
+      "Voz: cantos de cima arredondados quando o chat está escondido",
+      "Início no visual Carta Estelar: saudação, constelação e amigos com etiquetas",
+      "Início: sala aberta de amigo sobe e vira a ação principal",
+      "Corrige promoção a admin pela lista de convidados e mostra quem vinculou o Google"
     ]
   },
   {
@@ -78,13 +90,6 @@ const NOVIDADES = [
     "date": "2026-10-05",
     "items": [
       "Correções e melhorias"
-    ]
-  },
-  {
-    "version": "1.16.1",
-    "date": "2026-10-05",
-    "items": [
-      "Mensagens privadas: conexão direta com arquivos e imagens, prazo do histórico e backup no celular"
     ]
   }
 ];

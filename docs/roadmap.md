@@ -1,139 +1,78 @@
-# Roadmap: o que falta para competir com Discord e TeamSpeak
+# Roadmap
 
-*Criado em 28/09/2026, a partir da análise de concorrência da mesma data. Revisar todo mês; a concorrência muda rápido
-(TeamSpeak 6 ainda em beta, Discord mudando preço e verificação de idade).*
+*Reorganizado em 07/10/2026 (versão 1.18.3). Revisar todo mês; a concorrência muda rápido (TeamSpeak 6 ainda em beta,
+Discord mudando preço e verificação de idade). Os códigos dos itens (A, P, D) vêm da análise de concorrência de 28/09:
+**A**gora, **P**róximo e **D**epois; o B0 é a meta que puxa tudo. Os números não indicam ordem: a ordem está em
+"Ordem de trabalho".*
 
 ## Premissas
-
-- **Equipe:** 3 pessoas em meio período (Mateus, Cristian e Andrick) + agente de código. As estimativas foram feitas
-  quando a equipe tinha 2 pessoas; estão em **semanas de uma pessoa** e são aproximadas; o que está em "Depois" é direção, não compromisso.
+- **Equipe:** 3 pessoas em meio período (Mateus, Cristian e Andrick) + agente de código. Estimativas em semanas de uma
+  pessoa, aproximadas; o que está em "Depois" é direção, não compromisso.
 - **Cadência:** versões pequenas e frequentes (o app se atualiza pela sala), cada item atrás de testes de ponta a ponta.
 - **Divisão do tempo:** ~70% roadmap, ~20% saúde do código e testes, ~10% bugs e pedidos dos amigos.
-- **O que não muda:** sem servidor central obrigatório, sem conta, sem coleta de dados. Toda peça nova precisa caber
-  nisso (servidor só como opção de reserva).
+- **O que vale hoje:** código e senha da sala seguem funcionando sem conta; a **conta é opcional e só pelo Google**, para
+  amigos, mensagens e salas deles; a VPS (RazzeAPI + sala por Internet + TURN) é o caminho padrão para quem instala.
+  Nada de coleta de dados.
 
-## Estado em 05/10/2026 (versão 1.17.2)
+## Estado em 07/10/2026
 
-Última release: **1.17.2** (GitHub › Releases). O texto abaixo é de 28/09 a 03/10 e ainda não foi revisado; onde ele
-diz "sem conta" ou fala em Hyperswarm, vale o que está aqui.
+**Já saiu (1.14 a 1.18.3):**
+- **P1 Entrar sem VPN:** modo Internet por VPS com TURN é o padrão desde 03/10/2026. O protótipo Hyperswarm foi abandonado
+  (está no histórico do Git).
+- **P4 Clipes** dos últimos 30 s, com som, duração escolhida e uma por pessoa.
+- **A3 Peso no PC e modo jogo** (`renderer/modo-gamer.js`).
+- **Mensagens diretas criptografadas** de ponta a ponta (1.14.0).
+- **Conta só pelo Google**, lista de convidados, grupos e **painel de administração** dentro do app (1.18.0). O login por
+  senha segue aceito para contas antigas (`legacyPasswordLogin`).
+- Amigos por link ou código, perfil com foto e fundo, atividade (jogo e Spotify), salas dos amigos, Ligar e **Abrir minha
+  sala** em 1 clique, temas (Renascença, Top Gun, E.V.A, Estelar), app renomeado para **Nebula**, HUB removido.
+- VPS atualizada em 05 e 06/10/2026 (passo a passo em [razze-api.md](razze-api.md)); release **1.18.3** publicada.
 
-**Já saiu (1.15 a 1.17):**
-- Clipes dos últimos 30 s, com som e duração escolhida (P4).
-- Voz e microfone; temas Renascença e Top Gun (cabine do F-14, radar na voz, chamadas de rádio).
-- Primeira entrada em 3 telas e Início com amigos online, Ligar e **Abrir minha sala** em 1 clique.
-- **Conta na RazzeAPI** (servidor próprio na VPS): amigos por link ou código curto, trocar senha e "Esqueci a senha"
-  por código do administrador, frase no perfil, foto e fundo com editor de recorte, atividade (jogo e Spotify) e **Entrar com Google**.
-- A VPS foi atualizada para esse servidor em 05/10/2026 (passo a passo em [razze-api.md](razze-api.md)).
+## Ordem de trabalho
 
-**Mudou de rumo:**
-- O protótipo Hyperswarm foi abandonado; amigos e salas passam pela RazzeAPI (veja P1).
-- A premissa "sem conta" não vale mais para amigos: a conta na RazzeAPI existe e é o caminho dos links de amigo.
+| # | Item | Por quê | Estado |
+|---|---|---|---|
+| 1 | **Limpeza do Git e do PC** (branches mergeadas, stashes, backups) | Ninguém mais trabalha nelas | Comandos entregues; o humano roda |
+| 2 | **Subir o que só existe no PC** (PR de `docs/roteiro-administracao`, a spec nova e este roadmap) | A equipe não vê o que está só local | Pronto para PR |
+| 3 | **Conta: excluir pelo painel e mensagem de conta desativada** | Hoje uma conta desativada prende a pessoa: o Google responde "já existe conta", a senha responde "desativada" e não existe excluir | Não começado (mexe em `razze-api/`) |
+| 4 | **HTTPS (wss) na VPS**, Caddy na frente da porta 8765 | Destrava o A1 e o D2 | Não começado (precisa de quem tem SSH) |
+| 5 | **A1 revisado:** o app passa a usar `wss://` no modo Internet | Chat e senha da sala hoje vão em `ws://` puro | Depende do 4 |
+| 6 | **D2 Assistir pelo navegador** (celular, só assistir) | Convidar sem pedir download; porta de entrada do B0 | Spec em [spec/assistir-no-navegador.md](spec/assistir-no-navegador.md) |
+| 7 | **A2 Atraso medido** | Dá o número para comparar com o Discord e serve de régua para o B0 e o D1 | Não começado |
+| 8 | **P2 Histórico** | O chat não some quando a sala fecha | Não começado |
+| 9 | **B0 Briefing 50+** (com P3, espectadores repassando) | Meta maior; ainda vai ser testado | Spec pronta; testes pendentes |
+| 10 | **Manutenção:** e2e antigos (9 falhas de 03/10), docs, CI | Saúde do código | Em aberto |
 
-**Em andamento:** blueprints de aviões clássicos para o tema Top Gun (só desenhos reais com licença livre, em
-`assets/temas/OBRAS.md`) e ícone do `.exe` do Top Gun.
-
-**Teste manual pendente:** roteiro "Conta, amigos e perfil" em 2 PCs ([roteiro-de-teste.md](roteiro-de-teste.md)).
-
-## Visão geral
-
-| Tema | Por quê |
-|---|---|
-| **Confiança e prova** | A privacidade é o maior diferencial contra o Discord; hoje o chat e a senha passam sem criptografia, o que contradiz essa mensagem. E "menos atraso que o Discord" ainda não tem número. |
-| **Entrar sem VPN** | É onde o Discord mais ganha: "manda o link e entra". A dependência da Radmin é a barreira nº 1. |
-| **Mais gente assistindo** | Hoje cada espectador puxa vídeo do PC de quem transmite; com 5+ pessoas o upload vira o limite (Discord: 50). |
-| **Jogar junto** | Nenhum dos dois tem: quem assiste controlar o jogo de quem transmite (hoje só Parsec/Steam Remote Play). É o diferencial para um app com foco em tela. |
-| **Alcance** | Celular e Linux: o Discord está em tudo; o Tela P2P só no Windows. |
-
-### Prioridade (ICE: impacto × confiança × facilidade, de 1 a 10)
-
-| Item | Impacto | Confiança | Facilidade | ICE |
-|---|---|---|---|---|
-| A1. Chat e senha criptografados | 6 | 9 | 8 | 432 |
-| A2. Atraso da tela medido e à vista | 5 | 8 | 8 | 320 |
-| P2. Histórico e "desde a sua última visita" | 6 | 8 | 6 | 288 |
-| P4. Clipe dos últimos 30 s | 6 | 7 | 6 | 252 |
-| P1. Entrar pela internet sem VPN | 10 | 7 | 3 | 210 |
-| A3. Peso no PC à vista + modo jogo | 4 | 6 | 7 | 168 |
-| P3. Espectadores repassando o vídeo | 7 | 6 | 3 | 126 |
-| D2. Assistir pelo celular | 6 | 6 | 3 | 108 |
-| D1. Jogar junto (controle remoto) | 9 | 5 | 2 | 90 |
-| D3. Linux | 5 | 5 | 2 | 50 |
-
-A ordem abaixo não segue só o ICE: **P1 vem antes dos outros "Próximos"** porque destrava quase tudo (celular fora de casa,
-espectadores de fora, convidar amigo novo), e **A1 tem que vir antes de P1** (abrir a sala para a internet sem criptografia
-seria um passo atrás).
+**Futuro (mantido, sem data):**
+- Desligar o `legacyPasswordLogin` quando todas as contas tiverem vinculado o Google (`withGoogle` igual às contas ativas
+  no painel). Até lá, quem tem conta antiga entra por senha.
+- Instalador do Windows e licença do projeto ([spec/licenca.md](spec/licenca.md)).
+- D1 Jogar junto e D3 Linux (abaixo): ficam no plano, fora da fila.
+- Red Room, constelação de amigos, estrela cadente e enquete (abaixo).
 
 ## B0. Briefing para 50+ pessoas
 
 **Prioridade máxima. É a meta que puxa todo o resto.** Uma pessoa passa o briefing de missão do DCS (mapa, kneeboard,
 slides) e fala; 50+ assistem, sem Radmin e sem servidor obrigatório (a VPS só como último recurso). Plano, camadas,
 números e teste de carga (primeiro forjado com robôs, depois com gente) em [spec/briefing-50.md](spec/briefing-50.md).
+Ainda será testado; segue como meta.
 
-## Ordem combinada em 01/10/2026 (rumo ao B0)
+## Ideias de tela inicial
+- **Constelação = amigos online.** O fundo é o céu estrelado (`--st-sky` em `styles-estelar.css`). Passa a mostrar só os
+  amigos adicionados que estão online: cada um é uma estrela com foto e nome; quem está numa sala aparece ligado ao "sol"
+  da sala, que se clica para entrar. Sem amigos online, o céu fica vazio, com um convite discreto para "Adicionar amigo".
+  A presença vem da RazzeAPI.
+- **Estrela cadente:** uma de vez em quando (20–90 s), traço curto e fino nas cores do tema. Respeitar "reduzir movimento"
+  e a opção de esconder o céu. Sem animação contínua. A branch `ui/estrela-cadente` já tem uma versão.
+- **Enquete de próximos temas:** cartão abaixo de "Criar sala"/"Entrar com código", com opções fixas da versão e 1 voto
+  por conta Razze. Sem campo de texto.
+- **Ordem visual sugerida:** Criar sala → Salas dos amigos → Entrar com código (secundário) → Enquete → Novidades.
 
-Entrar de forma fluida, sem Hamachi/Radmin: adicionar amigo, ver no lobby a sala dele, entrar com um clique.
-
-| # | Item | Depende de | Observação |
-|---|---|---|---|
-| 0 | **Protótipo Hyperswarm no Electron (2 dias)** + medir o bitrate de um briefing real | nada | Tira o maior risco cedo; a medição já orienta o B0 |
-| 1 | **A1. Cripto da sala** | nada | Pré-requisito para abrir a sala para a internet |
-| 2 | **Identidade e amigos sem servidor** | 0 | Cada PC gera um par de chaves (sem conta); "Adicionar amigo" por código curto; presença pela DHT (tópico = hash da chave). Conta Razze vira opcional |
-| 3 | **Lobby: salas dos amigos** | 2 | Na tela inicial, a sala aberta de um amigo adicionado aparece com "Entrar"; amigo entra sem código e senha (a chave já prova quem é) |
-| 4 | **Túnel invisível (P1 fase 2)** | 0, 1 | Deixado de lado em 03/10/2026 (ver P1). A ponte Hyperswarm faria o papel do Hamachi sem instalar nada |
-| 5 | **Constelação de amigos + estrela cadente** | 2 (constelação); nada (estrela) | A estrela cadente pode sair já. Ver "Tela inicial" abaixo |
-| 6 | **Enquete de próximos temas** | 2 | Só votar nas opções da lista, sem sugerir tema |
-| 7 | **Razze: decidir o destino** | 2, 3, 4 provados | **Não remover antes.** Ver "Razze e WireGuard" abaixo |
-| 8 | **B0: Modo Briefing, voz palco, corrente (P3), teste forjado → teste real** | 1–4 | Ver a spec |
-
-### Tela inicial
-- **Constelação = amigos online.** Hoje o fundo é só o céu estrelado (`--st-sky` em `styles-estelar.css`); o antigo exemplo de sala saiu.
-  Passa a mostrar só os amigos adicionados que estão online: cada um é uma estrela com a foto/nome no balão; quem está
-  numa sala aparece ligado ao "sol" da sala, que se clica para entrar. Sem amigos online, o céu fica vazio e calmo, com
-  um convite discreto para "Adicionar amigo".
-- **Estrela cadente:** uma de vez em quando, em intervalo aleatório (ex.: 20–90 s), traço curto e fino nas cores do
-  tema atual. Respeitar "reduzir movimento" do sistema e a opção de esconder o céu. Sem animação contínua: só CSS ou um
-  frame por vez enquanto a estrela cai.
-- **Enquete:** cartão abaixo de "Criar sala"/"Entrar com código", no mesmo estilo do cartão de Novidades. As opções vêm
-  junto com a versão do app (lista fixa); 1 voto por pessoa (assinado pela chave do item 2), que pode trocar enquanto
-  a enquete estiver aberta; os votos se espalham entre os PCs pela DHT e cada um soma localmente. Sem campo de texto.
-- **Ordem visual sugerida:** Criar sala → Salas dos amigos (quando houver) → Entrar com código (vira secundário,
-  recolhido) → Enquete → Novidades.
-
-### Razze e WireGuard
-- Hoje a Razze faz **contas, amigos, presença, salas dos amigos, mensagens diretas e a VPN WireGuard**
-  (`main/razze-*.js`, `razze-api/`). Tirar a Razze sem substituto apaga amigos e mensagens.
-- **WireGuard como está não compensa** (Radmin/Hamachi já resolvem e ele pede administrador e um adaptador de rede).
-  Só vale se ficar **invisível**: túnel no próprio app, sem adaptador e sem elevação. É o que a ponte Hyperswarm (item
-  4) faz, então o mais provável é o túnel substituir o WireGuard.
-- Caminho sugerido: (1) amigos e presença sem servidor funcionando lado a lado com a Razze; (2) "Importar meus amigos
-  da Razze" (pareia as chaves novas por quem já é amigo lá), para ninguém refazer a lista; (3) quando o túnel provar
-  casa↔4G, desligar o WireGuard; (4) decidir se a RazzeAPI some ou fica como reserva opcional (mensagens para quem
-  está offline, por exemplo).
-
-## Agora (próximas 4 semanas): Confiança e prova
-
-| Item | Status | Esforço | Depende de |
-|---|---|---|---|
-| A1. Chat e senha criptografados | Não começado | 1–1,5 sem | nada |
-| A2. Atraso da tela medido e à vista | Não começado | 1 sem | nada |
-| A3. Peso no PC à vista + modo jogo | Não começado | 1 sem | nada |
-
-## Próximo (1 a 3 meses): Entrar sem VPN e mais gente assistindo
-
-| Item | Status | Esforço | Depende de |
-|---|---|---|---|
-| P1. Entrar pela internet sem VPN (3 fases) | Em andamento: o modo Internet por VPS ([servidor-internet](../servidor-internet/README.md)) é o padrão para quem instala desde 03/10/2026. A fase 2 (Hyperswarm) foi deixada de lado | 4–6 sem | A1 |
-| P2. Histórico e "desde a sua última visita" | Não começado | 2 sem | nada |
-| P3. Espectadores repassando o vídeo | Não começado | 3–4 sem | melhor depois de P1 |
-| P4. Clipe dos últimos 30 s | Não começado | 1–2 sem | nada |
-
-## Depois (3 a 6+ meses): Jogar junto e alcance
-
-| Item | Status | Esforço | Depende de |
-|---|---|---|---|
-| D1. Jogar junto (teclado, mouse e controle) | Não começado | 4–6 sem | A2 (medir atraso), P1 ajuda |
-| D2. Assistir pelo celular (navegador) | Não começado | 3–4 sem | P1 para fora de casa |
-| D3. Linux | Em andamento: AppImage para X11 já sai nas Releases ([README](../README.md#linux)) | 6+ sem | nada, mas é grande |
+## Razze e WireGuard
+- A RazzeAPI faz **contas, amigos, presença, salas dos amigos, mensagens diretas, painel de administração e a VPN
+  WireGuard** (`main/razze-*.js`, `razze-api/`). Hoje é a base de conta e amigos: **não remover**.
+- O caminho de entrada para quem instala passou a ser o modo Internet (VPS + TURN). O WireGuard só se justifica se ficar
+  invisível (sem adaptador e sem administrador); decidir o destino dele depois de uma temporada de uso do modo Internet.
 
 ## Fora do plano (de propósito)
 
@@ -144,37 +83,28 @@ Discord; o público do Tela P2P é o grupo de amigos. Reavaliar só se aparecer 
 
 # Plano detalhado
 
-Cada item: o objetivo, como fazer (com os arquivos do projeto), como testar, riscos e quando está pronto.
+## A1. Chat e senha da sala sem texto puro (revisado em 07/10/2026)
 
-## A1. Chat e senha criptografados
+**Objetivo:** ninguém na mesma rede consegue ler o chat, a senha da sala ou a sinalização. O vídeo e a voz já vão
+criptografados pelo WebRTC (DTLS-SRTP) e as mensagens diretas já são de ponta a ponta. O que falta é a conexão com o
+servidor da sala: no modo Internet o app fala `ws://2.25.253.140:8765` (texto puro). Nos modos Radmin e rede local
+também, mas ali o túnel já é cifrado.
 
-**Objetivo:** ninguém na mesma rede (Radmin, Wi-Fi, e no futuro a internet) consegue ler o chat, a senha ou a sinalização.
-O vídeo e a voz já vão criptografados pelo WebRTC; o que falta é a conexão com o servidor da sala (`ws://`, texto puro).
-
-**Como hoje:** `renderer/sala.js` manda o `hello` com `password` em texto; `signaling.js` compara `msg.password !== password`.
+**Mudança de plano:** o desenho original (troca de chaves ECDH dentro do protocolo, em `signaling.js` e
+`renderer/sala.js`) é grande e mexe no protocolo da sala. Com o Caddy na VPS, o **TLS resolve o caso da internet**:
+`wss://` cifra tudo entre o app e a VPS, sem mexer em `sala-protocolo.js`.
 
 **Como fazer:**
-1. **Troca de chaves ao conectar.** O servidor (`signaling.js`, Node `crypto`) manda `{ type: 'key', pub }` (X25519 ou
-   ECDH P-256) assim que o socket abre. O app (`renderer/sala.js`, WebCrypto) responde com a própria chave pública. Os
-   dois derivam uma chave AES-256-GCM com HKDF.
-2. **A senha entra na derivação.** `HKDF(segredo_ECDH, sal = id da sessão, info = PBKDF2(senha))`. Quem não sabe a senha
-   não consegue ficar "no meio" da conexão; sem senha, a proteção é contra quem só escuta a rede (o que já resolve o caso
-   comum).
-3. **Senha vira prova, não texto.** Com a chave derivada, o `hello` vai criptografado; se a senha estiver errada, a
-   mensagem nem abre, e o servidor responde "senha errada". A senha nunca sai do PC.
-4. **Todo o resto vai dentro de envelopes** `{ iv, data }` (AES-GCM com contador no IV). Um só lugar para cifrar e decifrar:
-   `send()` em `renderer/util.js` e `send()`/`broadcast()` em `signaling.js`.
-5. **Compatibilidade:** o servidor anuncia `features: ['cripto']`. App novo em sala de host antigo: mostra "Conexão sem
-   criptografia (o host está numa versão antiga)" e segue. App antigo em host novo: o host aceita por uma versão, depois
-   recusa com "atualize".
-6. **Troca de host:** o novo host gera a própria chave; quem volta refaz a troca (o `rejoin` já passa por `connectRoom`).
+1. Caddy na VPS faz `reverse_proxy` da porta 8765 para um caminho do domínio que a RazzeAPI já usa; no env do servidor,
+   `TRUST_PROXY=1`. Documentar em `servidor-internet/README.md` e em `docs/razze-api.md`.
+2. O app passa a usar `wss://` como endereço padrão do modo Internet (`INTERNET_URL_PADRAO`, `renderer/conectividade.js`).
+   A porta 8765 aberta continua valendo para apps antigos até o fim da transição.
+3. Aviso no app quando a conexão for `ws://` fora de VPN: "Conexão sem criptografia".
+4. Criptografia por cima do TLS (para nem a VPS ler o chat da sala) fica como evolução, só se a equipe quiser. O desenho
+   antigo (ECDH + AES-GCM) está no histórico do Git deste arquivo.
 
-**Como testar:** e2e novo `tests/e2e/cripto.js`: pelo DevTools (`Network.webSocketFrameReceived/Sent`), nenhum quadro
-contém o texto de uma mensagem de chat nem a senha; senha errada recusa; troca de host continua funcionando; host antigo
-(simulado sem `cripto`) mostra o aviso. Teste de unidade da derivação no Node.
-
-**Riscos:** mensagens grandes (pedaços de arquivo, 48 KB) custam CPU para cifrar; medir no teste do chat (5 MB hoje leva
-0,2 s). **Pronto quando:** nenhum texto legível no tráfego da sala e todos os testes antigos passam.
+**Como testar:** teste do servidor atrás de proxy (`TRUST_PROXY=1`), e2e do app em `wss://` e conferência pelo DevTools
+de que nenhum quadro contém texto legível. **Pronto quando:** o modo Internet padrão só usa `wss://`.
 
 ## A2. Atraso da tela medido e à vista
 
@@ -196,61 +126,6 @@ horário local (mesmo PC, então sem diferença de relógio): o número mostrado
 
 **Pronto quando:** o número aparece nos dois modos e bate com a medição do teste.
 
-## A3. Peso no PC à vista + modo jogo
-
-**Objetivo:** mostrar quanto o Tela P2P gasta (processador e memória) e gastar menos durante o jogo, antes que o
-"Game Mode" do Discord vire argumento.
-
-**Como fazer:**
-1. `app.getAppMetrics()` no processo principal (`main/`) → nova linha nas Estatísticas: "Tela P2P: X% do processador,
-   Y MB".
-2. **Modo jogo automático:** quando um app em tela cheia está na frente (a mesma checagem do `tests/e2e/ajuda.js`,
-   `fullscreenApps`, movida para `main/`), o app tira animações, para o medidor da voz no painel e reduz o intervalo dos
-   timers de interface. As telas escondidas já não baixam vídeo.
-3. Medir antes e depois num roteiro fixo (sala com 3 pessoas, 1 transmitindo, 10 min) e anotar em `docs/`.
-
-**Pronto quando:** existe uma medição publicada e o modo jogo reduz o uso medido.
-
-## P1. Entrar pela internet sem VPN
-
-**Objetivo:** "Convidar" gera um código ou link; o amigo cola e entra, sem Radmin, sem abrir porta no roteador.
-
-**Por que é difícil:** duas coisas precisam atravessar a internet. (a) A **sinalização**: o amigo precisa chegar ao
-servidor da sala, que roda no PC do host, atrás do roteador. (b) A **mídia**: o WebRTC precisa de um caminho entre os
-PCs. Hoje o `RTC_CONFIG` (`renderer/estado.js`) e o `voice.js` usam `iceServers: []`, então só funcionam endereços da
-VPN ou da rede local.
-
-**Fase 1 (1 semana): STUN e UPnP.**
-- Acrescentar STUN público (`stun:stun.l.google.com:19302` e um segundo de reserva) em `RTC_CONFIG` e no `makePeer` do
-  `voice.js`. Com isso a mídia atravessa a maioria dos roteadores de casa.
-- No host, pedir ao roteador para abrir a porta da sala por UPnP/NAT-PMP (módulo pequeno em `main/`, sem dependência
-  pesada) e descobrir o IP público. "Convidar" passa a copiar o endereço público quando der certo.
-- Resolve casas com roteador comum; **não resolve CGNAT** (comum em fibra e 4G no Brasil). Por isso a fase 2.
-
-**Fase 2 (2–3 semanas): código de convite sem servidor nosso.** *Deixada de lado em 03/10/2026: o caminho é o modo Internet
-(VPS + TURN) com as salas dos amigos da Razze. O protótipo (PR #17) entrou casa ↔ 4G em 7,7 s e foi removido; está no histórico do Git.*
-- Usar o **Hyperswarm** (DHT pública da Holepunch, com furo de NAT por UDP e canal criptografado Noise). O host entra num
-  "tópico" = hash do código de convite; o convidado entra no mesmo tópico e os dois se acham, sem servidor do projeto.
-- **Túnel da sinalização:** no PC do convidado, `main/` abre uma porta local (`127.0.0.1:porta`) e liga cada conexão
-  nela ao canal do Hyperswarm, que no host termina no servidor da sala. O renderer continua conectando em
-  `ws://127.0.0.1:...` e **quase nada muda no app**; a criptografia do A1 continua valendo por cima.
-- **Código de convite:** 16 caracteres fáceis de ditar (≥ 80 bits), válido enquanto a sala existir; o botão "Convidar"
-  copia um link `telap2p://entrar/<código>` (registrar o protocolo no Windows) e o código puro.
-- A mídia continua pelo WebRTC com STUN; quando o Hyperswarm consegue furar o NAT, o STUN quase sempre também consegue.
-
-**Fase 3 (1–2 semanas): reserva para os casos impossíveis.**
-- Campo opcional "servidor de retransmissão (TURN)" nas Configurações gerais, ao lado do NetBird: quem quiser aponta para
-  um `coturn` (o Cristian já tem um VPS). Sem configurar, o app avisa "não deu para conectar direto com Fulano" com a
-  sugestão.
-- Nas Estatísticas, mostrar o caminho de cada conexão: "direto", "pela VPN" ou "retransmitido".
-
-**Como testar:** unidade do túnel (dois processos Node, um fingindo host); e2e com dois apps usando o túnel em
-`127.0.0.1`; teste manual em matriz: casa↔casa, casa↔4G (CGNAT), 4G↔4G, com e sem TURN. Registrar em
-`docs/roteiro-de-teste.md`.
-
-**Riscos:** o Hyperswarm é dependência nativa (UDP) no Electron: validar empacotamento no `.exe` e na atualização pela
-sala antes de construir em cima. A DHT pública é de terceiros (Holepunch): ter o TURN como plano B. **Pronto quando:** dois
-amigos em redes diferentes, sem Radmin, entram pelo código e assistem a uma transmissão.
 
 ## P2. Histórico e "desde a sua última visita"
 
@@ -298,24 +173,6 @@ ver os filhos voltarem em < 2 s.
 **Riscos:** cada salto soma atraso de rede (medir com o A2). **Pronto quando:** 10 espectadores com o upload de quem
 transmite em ~4× a taxa do vídeo, não 10×.
 
-## P4. Clipe dos últimos 30 s
-
-**Objetivo:** "Salvar clipe" (botão na tela e atalho Ctrl+Shift+C) grava os últimos 30 s de quem você está assistindo.
-
-**Como fazer:**
-1. **Modo "uma vez só":** guardar num buffer circular os pedaços H.264 que chegam (a partir do último quadro-chave com
-   pelo menos 30 s) e, ao salvar, montar um MP4 com um muxer pequeno (ex.: `mp4-muxer`, sem dependência nativa). Sem
-   recodificar: rápido e sem perda.
-2. **Modo por pessoa:** dois `MediaRecorder` se revezando a cada 15 s sobre a faixa recebida; ao salvar, junta o anterior e
-   o atual (WebM).
-3. Som: incluir a faixa de áudio da transmissão; a voz da sala fica de fora (opção futura).
-4. Ao salvar, oferecer "Mandar no chat" (passa pela limpeza de metadados do `renderer/metadados.js`).
-
-**Como testar:** e2e: assistir 40 s de um contador desenhado, salvar, abrir o arquivo num `<video>` e conferir duração
-≈ 30 s e o último número.
-
-**Pronto quando:** o clipe abre em qualquer player e tem os últimos 30 s.
-
 ## D1. Jogar junto (quem assiste controla o jogo)
 
 **Objetivo:** transformar "assistir" em "jogar junto" em jogos cooperativos locais: quem assiste usa teclado, mouse ou
@@ -341,19 +198,11 @@ sem permissão nada chega; o atalho de pânico corta; ao parar de transmitir, co
 listar jogos testados); segurança (a permissão e o pânico têm que ser à prova de erro); atraso de ida e volta.
 **Pronto quando:** dois amigos jogam um cooperativo local (ex.: jogos de sofá no PC) um na tela do outro.
 
-## D2. Assistir pelo celular
+## D2. Assistir pelo navegador (celular, só assistir)
 
-**Objetivo:** abrir um link no navegador do celular e assistir, sem instalar nada.
-
-**Como fazer:**
-1. O host serve uma página de espectador (HTML e JS estáticos, porta da sala + 1) só com o necessário: lista de quem
-   transmite, vídeo e volume.
-2. O celular entra como um membro "só assiste" (sem voz na primeira versão) e recebe pelo modo por pessoa (WebRTC comum,
-   H.264, que todo celular decodifica).
-3. Fora de casa, usa o caminho do P1 (código de convite → túnel; no celular, a fase 1 com IP público/UPnP ou o TURN).
-4. Mostrar um QR code no "Convidar" para abrir no celular.
-
-**Riscos:** o túnel do Hyperswarm não roda no navegador do celular; fora de casa, o celular depende de UPnP ou TURN.
+Spec completa em [spec/assistir-no-navegador.md](spec/assistir-no-navegador.md). Resumo: página estática na VPS, por
+HTTPS, onde o celular entra por código e senha (ou link com passe) e assiste a uma transmissão em WebRTC comum (H.264).
+Sem voz, sem chat e sem login na primeira versão. Depende do item 4 (HTTPS na VPS).
 
 ## D3. Linux
 
@@ -366,7 +215,6 @@ listar jogos testados); segurança (a permissão e o pânico têm que ser à pro
 apertar para falar pelo portal de atalhos globais; "uma vez só" pelo WebCodecs (já existe no `encode-once.js`) em vez do
 `videocap.exe`. O macOS fica fora (captura de som do sistema é bem mais restrita).
 
----
 
 ## Ideia: Red Room (sala de briefing do tema Top Gun)
 
@@ -392,17 +240,18 @@ apertar para falar pelo portal de atalhos globais; "uma vez só" pelo WebCodecs 
 **Por que esperar:** depende de sinalização nova na sala (estado de missão, quadro e prontidão vêm de outros PCs:
 validar como em `sala-protocolo.js`) e de ver se o tema Top Gun pega com o grupo.
 
+
 ---
 
 ## Riscos e dependências
 
 | Risco | Onde | Plano |
 |---|---|---|
-| Hyperswarm (UDP nativo) não empacota bem no Electron ou na atualização pela sala | P1 | Validar com um protótipo de 2 dias antes de começar a fase 2; plano B: TURN + UPnP |
-| DHT pública de terceiros cai ou muda | P1 | TURN opcional (fase 3); o código de convite pode, no futuro, apontar para um ponto de encontro próprio |
+| Só uma pessoa tem SSH na VPS | A1, D2, painel | Documentar o passo a passo (já está em `razze-api.md`) e dividir o acesso |
 | Antitrapaça bloquear ou punir entrada injetada | D1 | Lista de jogos testados, aviso claro, só janela, desligado por padrão |
+| O upload de quem transmite limita os espectadores (o navegador não repassa) | D2, B0 | P3 entre apps; no navegador, limite de espectadores por sala |
 | Uma pessoa só conhece cada parte do código | todos | Cada item termina com teste de ponta a ponta e uma linha em `docs/desenvolvimento.md` |
-| O Discord liberar 1080p60 de graça | posicionamento | Ter A1, P1 e D1 prontos: a diferença passa a ser privacidade, sem servidor e jogar junto |
+| O Discord liberar 1080p60 de graça | posicionamento | A diferença passa a ser privacidade, poucos servidores e jogar junto |
 
 ## Como saber se deu certo (sem coletar dados de ninguém)
 
@@ -412,14 +261,11 @@ validar como em `sala-protocolo.js`) e de ver se o tema Top Gun pega com o grupo
 - **Espectadores:** maior sala que funcionou sem travar.
 - **Baixadas:** downloads das Releases no GitHub, versão a versão.
 
-## Próximos passos
-
-1. Começar pelo **A1** (1–1,5 semana), que é pré-requisito do P1.
-2. Em paralelo, um **protótipo de 2 dias do Hyperswarm dentro do Electron** para tirar o maior risco do P1 cedo.
-3. Revisar este documento no fim de outubro.
 
 ## Em planejamento
 
-- **Fluxo, conta e perfil** (auditoria feita; primeira entrada enxuta, convite por link, esqueci a senha, bio, foto e fundo do perfil, atividade opcional, Google): `docs/auditoria-fluxo.md` e `docs/spec/primeira-entrada-e-perfil.md`.
-- **Convite de amigo por link** (plano aguardando aprovação): `docs/spec/convite-por-link.md`.
+- **Fluxo, conta e perfil:** `docs/auditoria-fluxo.md` e `docs/spec/primeira-entrada-e-perfil.md`.
+- **Conta só pelo Google e painel de administração:** `docs/spec/conta-so-google-e-admin.md`.
+- **Convite de amigo por link:** `docs/spec/convite-por-link.md`.
+- **Assistir pelo navegador:** `docs/spec/assistir-no-navegador.md`.
 - **Licença do projeto** (tarefa futura; rascunho pronto, falta o ok dos três titulares e preencher nomes e foro): `docs/spec/licenca.md`.

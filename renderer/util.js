@@ -103,6 +103,9 @@ const ICON = {
   swap: svg('M4 7h13l-3-3M20 17H7l3 3'),
   stop: svg('M7 7h10v10H7z'),
   scissors: svg('M6 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12'), // tesoura: salvar clipe
+  edit: svg('M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z'),                 // lápis: mudar o nome
+  plus: svg('M12 5v14M5 12h14'),
+  game: svg('M7 7h10a5 5 0 0 1 0 10H7A5 5 0 0 1 7 7zM7 11v3M5.5 12.5h3M16 12h.01M18 14h.01'), // controle: jogando
 };
 
 // Botão só com ícone: a dica (title) e o nome lido pelo leitor de tela são o mesmo texto

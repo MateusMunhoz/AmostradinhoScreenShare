@@ -42,6 +42,14 @@ function lembrarDaSala() {
   lembrarSessoes(addrs);
 }
 
+// De quem é a sala em que você entrou, o modo e quando: o "Última sala" do Início (inicio.js › renderLastRoom). Só
+// para sala dos outros; vale enquanto o roomAddr guardado for o desta sala
+function lembrarUltimaSala() {
+  if (!state.hostId || state.hostId === state.myId) return;
+  const modo = state.cloud ? 'internet' : selectedNetworkProvider() === 'razze' ? 'razze' : 'radmin';
+  save('ultimaSala', JSON.stringify({ endereco: load('roomAddr'), host: nameOf(state.hostId).slice(0, 32), modo, quando: Date.now() }));
+}
+
 // Procura sessões com a tela inicial à vista
 function sessionWatchWanted() { return !$('home').hidden; }
 
@@ -112,7 +120,14 @@ function renderSessoes() {
   if (!list) return;
   const all = sessoes.observando ? listaSessoes() : [];
   list.replaceChildren(...all.map(sessionRow));
-  $('sessionsEmpty').hidden = all.length > 0;
+  // Com sala aberta, entrar nela vira a ação principal: as salas sobem acima dos amigos (styles.css, #home.tem-salas)
+  // e "Abrir minha sala" e "Entrar com código" viram botões comuns
+  const temSalas = all.length > 0;
+  $('home').classList.toggle('tem-salas', temSalas);
+  $('goQuick').classList.toggle('primary', !temSalas);
+  for (const id of ['goQuick', 'goJoin']) $(id).classList.toggle('big', !temSalas);
+  $('sessionsEmpty').hidden = temSalas;
+  if (typeof renderHomeTopo === 'function') renderHomeTopo(); // o resumo do topo fala da sala aberta
   $('sessionsEmpty').textContent = sessoes.procurando
     ? 'Procurando sessões abertas na rede…'
     : selectedNetworkProvider() === 'internet'
@@ -122,27 +137,61 @@ function renderSessoes() {
       : 'Nenhuma sessão aberta na rede agora. Quando alguém criar uma, ela aparece aqui.';
 }
 
+// O amigo dono da sala (modo Internet, pela conta) e os seus amigos que estão nela: o cartão mostra o jogo, a voz e os rostos
+function amigosDaSala(s) {
+  const amigos = typeof friendsData === 'object' ? friendsData.friends : [];
+  const dono = s.userId ? amigos.find((f) => f.id === s.userId) || null : null;
+  const dentro = amigos.filter((f) => f !== dono && f.online && f.sala && f.sala.host === s.host && (f.sala.modo === 'internet') === !!s.codigo);
+  return { dono, dentro };
+}
+
+function rostoDe(nome) {
+  const r = document.createElement('span');
+  r.className = 'avatar';
+  r.textContent = (String(nome).trim()[0] || '?').toUpperCase();
+  r.style.setProperty('--person', personColor(nome));
+  r.title = nome;
+  return r;
+}
+
 function sessionRow(s) {
+  const { dono, dentro } = amigosDaSala(s);
   const li = document.createElement('li');
   li.className = 'session';
-  const dot = document.createElement('span');
-  dot.className = 'avatar';
-  dot.textContent = (s.host.trim()[0] || '?').toUpperCase();
-  dot.style.setProperty('--person', personColor(s.host));
+  const dot = rostoDe(s.host);
+  dot.removeAttribute('title');
   dot.setAttribute('aria-hidden', 'true');
   const info = document.createElement('div');
   info.className = 'session-info';
+  const vivo = document.createElement('span');
+  vivo.className = 'session-live';
+  vivo.textContent = 'AO VIVO';
   const name = document.createElement('strong');
   name.textContent = s.codigo ? `Sala de ${s.host}` : `Sessão de ${s.host}`;
   const meta = document.createElement('span');
   meta.className = 'session-meta';
-  meta.textContent = `${s.pessoas} ${s.pessoas === 1 ? 'pessoa' : 'pessoas'}${s.codigo ? ' · pela internet' : ''}${s.senha ? ', com senha' : ''}`;
+  const voz = dono?.sala?.voz || dentro.some((f) => f.sala.voz) ? ' · voz ligada' : '';
+  // dentro: os outros amigos na sala (o dono já é o rosto grande do cartão)
+  meta.textContent = `${s.pessoas} ${s.pessoas === 1 ? 'pessoa' : 'pessoas'}${s.codigo ? ' · pela internet' : ''}${voz}${s.senha ? ', com senha' : ''}`;
   if (s.senha) meta.insertAdjacentHTML('afterbegin', ICON.lock);
-  info.append(name, meta);
+  info.append(vivo, name, meta);
+  if (dono?.activity?.game) {
+    const jogo = document.createElement('span');
+    jogo.className = 'session-game';
+    jogo.textContent = 'Jogando ' + dono.activity.game;
+    info.append(jogo);
+  }
+  if (dentro.length) {
+    const rostos = document.createElement('span');
+    rostos.className = 'session-faces';
+    rostos.setAttribute('aria-label', 'Amigos na sala: ' + dentro.map((f) => f.displayName).join(', '));
+    rostos.append(...dentro.slice(0, 4).map((f) => rostoDe(f.displayName)));
+    info.append(rostos);
+  }
   const btn = document.createElement('button');
   btn.type = 'button';
-  btn.className = 'btn small primary';
-  btn.textContent = 'Entrar';
+  btn.className = 'btn primary';
+  btn.textContent = 'Entrar na sala';
   btn.title = s.codigo ? `Entrar na sala de ${s.host} (código ${s.codigo})` : `Entrar na sessão de ${s.host} (${s.endereco}:${s.porta})`;
   btn.onclick = () => enterSession(s);
   li.append(dot, info, btn);

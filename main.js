@@ -464,6 +464,19 @@ if (hasSingleInstance) app.whenReady().then(() => {
   aoMudarMusica((m) => { if (janelas.main && !janelas.main.isDestroyed()) janelas.main.webContents.send('atividade-musica', m); });
   ipcMain.handle('razze-set-activity', (_e, a) => razze.setActivity({ game: String(a?.game || '').slice(0, 200), artist: String(a?.artist || '').slice(0, 200), title: String(a?.title || '').slice(0, 200) }));
   ipcMain.handle('razze-set-bio', (_e, bio) => razze.setBio(String(bio || '').slice(0, 400)));
+  // Feedback e bugs (renderer/feedback.js): só os campos conhecidos, com tamanho limitado; a RazzeAPI valida de novo.
+  // Versão e sistema saem daqui (não da página), e só se a pessoa deixou enviar os dados técnicos
+  ipcMain.handle('razze-feedback', (_e, f) => {
+    const texto = (v, max) => (typeof v === 'string' ? v.slice(0, max) : undefined);
+    const escolha = (v) => (typeof v === 'string' && /^[a-z-]{1,20}$/.test(v) ? v : undefined);
+    const tecnico = f?.tecnico ? { versao: String(updater.version || '').slice(0, 40), sistema: (os.type() + ' ' + os.release() + ' ' + os.arch()).slice(0, 120), tema: texto(f.tecnico.tema, 40) || 'padrao', naSala: !!f.tecnico.naSala } : undefined;
+    return razze.sendFeedback({
+      tipo: escolha(f?.tipo), area: escolha(f?.area), frequencia: escolha(f?.frequencia), impacto: escolha(f?.impacto), uso: escolha(f?.uso),
+      titulo: texto(f?.titulo, 200), detalhes: texto(f?.detalhes, 2200), passos: texto(f?.passos, 2200), gosta: texto(f?.gosta, 600), incomoda: texto(f?.incomoda, 600),
+      nota: Number.isInteger(f?.nota) ? f.nota : undefined, usa: Array.isArray(f?.usa) ? f.usa.slice(0, 8).map((u) => String(u).slice(0, 20)) : undefined,
+      contato: !!f?.contato, tecnico, imagem: texto(f?.imagem, 700 * 1024) || undefined,
+    });
+  });
   ipcMain.handle('razze-friend-link-create', () => razze.friendLinkCreate());
   ipcMain.handle('razze-friend-link-list', () => razze.friendLinkList());
   ipcMain.handle('razze-friend-link-revoke', (_e, id) => razze.friendLinkRevoke(String(id || '')));

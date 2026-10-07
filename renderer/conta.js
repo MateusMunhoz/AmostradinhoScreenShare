@@ -48,7 +48,17 @@ async function enviarSenha() {
       await window.api.razzeResetPassword(email, $('senhaCode').value.trim(), nova);
       for (const id of ['razzeEmail', 'obEmail']) if ($(id)) $(id).value = email;
       fecharSenha();
-      toast('Senha redefinida. Entre com a senha nova.');
+      // Entra sozinho com a senha nova: a pessoa acabou de digitar e não precisa pedir e-mail e senha de novo
+      try {
+        const r = await window.api.razzeLogin(email, nova);
+        razzeUser = r.user;
+        await refreshRazzeState();
+        if (!$('onboarding').hidden) fecharPrimeiraEntrada();
+        else void retomarConviteAmigo();
+        toast('Senha redefinida. Você já está dentro.');
+      } catch {
+        toast('Senha redefinida. Entre com a senha nova.');
+      }
     } else {
       await window.api.razzeChangePassword(senha.semSenha ? '' : $('senhaCurrent').value, nova);
       fecharSenha();

@@ -507,7 +507,8 @@ kbd { font-family: Consolas, monospace; font-size: 11px; color: var(--muted); bo
 .chat-head { display: flex; align-items: center; justify-content: space-between; }
 .chat-head h3 { margin: 0; }
 .chat-head .btn.icon { width: 30px; height: 30px; }
-.chat-list { flex: 1; min-height: 0; overflow-y: auto; list-style: none; margin: 0 -8px 0 0; padding: 0 8px 0 2px; display: flex; flex-direction: column; gap: 2px; }
+.chat-list { flex: 1; min-height: 0; overflow-y: auto; list-style: none; margin: 0; padding: 2px 4px 8px 8px; display: flex; flex-direction: column; gap: 2px;
+  border: 1px solid var(--line); border-radius: var(--radius); }
 /* Barra fina que some: invisível parada, 4 px ao rolar ou com o mouse, 8 px com o mouse na barra */
 .chat-list::-webkit-scrollbar { width: 8px; }
 .chat-list::-webkit-scrollbar-track { background: transparent; }
@@ -958,6 +959,21 @@ fieldset.group > legend { margin-bottom: 10px; }
 .session-info strong { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .session-meta { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); }
 .session-meta svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.session-live { align-self: flex-start; margin-bottom: 3px; padding: 1px 7px; border-radius: 999px; background: var(--live-fill); color: var(--live-ink); font-size: 10px; font-weight: 700; letter-spacing: .08em; }
+.session-game { font-size: 12px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.session-faces { display: flex; margin-top: 5px; }
+.session-faces .avatar { width: 22px; height: 22px; font-size: 10px; box-shadow: 0 0 0 2px var(--panel-2); }
+.session-faces .avatar + .avatar { margin-left: -7px; }
+/* Com sala aberta (de amigo ou na rede), entrar nela vira a ação principal: as salas sobem acima dos amigos, ganham o
+   destaque "ao vivo" e "Abrir minha sala" vira botão comum (renderSessoes em renderer/sessoes.js) */
+#home.tem-salas .home-main > #homeFriends { order: 1; }
+#home.tem-salas .home-main > #homeNews { order: 2; }
+#home.tem-salas .home-card { border-color: color-mix(in srgb, var(--live) 45%, var(--line)); }
+#home.tem-salas .session { padding: 14px 14px 14px 16px; border-color: color-mix(in srgb, var(--live) 35%, var(--line)); }
+#home.tem-salas .session > .avatar { width: 44px; height: 44px; font-size: 18px; }
+#home.tem-salas .session > .btn { height: 48px; padding: 0 24px; font-size: 15px; }
+#home.tem-salas #createBlockHint { display: none; }
+.home-friend-sala { color: var(--live); }
 .check-line { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; cursor: pointer; }
 .check-line input { margin-top: 3px; width: 16px; height: 16px; accent-color: var(--accent); flex: none; }
 .check-line span { display: flex; flex-direction: column; gap: 3px; }
@@ -1430,10 +1446,11 @@ button.sky-card-info:hover:not(:disabled) .sky-card-go { color: var(--accent); }
    não fica solta por cima do vídeo */
 .workspace-in-room:not(.has-workspace-pane) #room { padding-top: var(--workspace-top); }
 /* Chat + voz: um bloco só, dividido por linhas (sem espaço entre eles). O primeiro à vista fecha o bloco com os
-   cantos de cima; o último (pane-last), com os de baixo */
+   cantos de cima; o último (pane-last), com os de baixo. Entre o chat e a voz fica a divisória de arrastar
+   (.pane-split): com o chat escondido, a voz vem depois dela, não logo depois do chat */
 .workspace-in-room.has-workspace-pane:not(.workspace-wide) #workspacePanes { gap: 0; }
 .workspace-in-room.has-workspace-pane:not(.workspace-wide) .workspace-pane { border-radius: 0; border-top-width: 0; }
-.workspace-in-room.has-workspace-pane:not(.workspace-wide) :is(#chatTab, #chatTab[hidden] + #voicePane, #workspacePanes.map-focus > .map-chat-strip) {
+.workspace-in-room.has-workspace-pane:not(.workspace-wide) :is(#chatTab, #chatTab[hidden] + #voicePane, #chatTab[hidden] + .pane-split + #voicePane, #workspacePanes.map-focus > .map-chat-strip) {
   border-top-width: 1px; border-top-left-radius: 10px; border-top-right-radius: 10px; }
 .workspace-in-room.has-workspace-pane:not(.workspace-wide) #workspacePanes.map-focus > #chatTab { border-top-width: 0; border-radius: 0; }
 .workspace-in-room.has-workspace-pane:not(.workspace-wide) .workspace-pane.pane-last { border-bottom-left-radius: 10px; border-bottom-right-radius: 10px; }
@@ -1906,7 +1923,12 @@ html[data-glass=liquid] .theme-swatches { border-radius: 10px; }
   background: var(--accent-soft); color: var(--text); font: inherit; font-size: 12.5px; text-align: left; cursor: pointer; }
 .dm-requests-banner[hidden] { display: none; }
 .dm-requests-banner:hover, .dm-requests-banner:focus-visible { background: color-mix(in srgb, var(--accent) 22%, var(--panel-2)); outline: none; }
-.dm-bar-hint { align-self: center; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dm-bar-hint { align-self: center; min-width: 0; padding: 4px 6px; border: 0; border-radius: 6px; background: transparent; font: inherit; font-size: 12px; color: var(--muted);
+  text-align: left; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dm-bar-hint:hover { color: var(--text); background: color-mix(in srgb, var(--text) 5%, transparent); }
+.dm-bar-hint strong { color: var(--text); font-weight: 600; }
+.dm-bar-hint .hub-badge { margin-left: 8px; }
+.dm-bar-hint[hidden] { display: none; }
 .dm-slots { display: flex; align-items: stretch; gap: 6px; min-width: 0; }
 .dm-slot { position: relative; flex: 0 1 210px; min-width: 120px; display: flex; }
 .dm-slot.open { flex: 0 0 340px; }
@@ -2422,7 +2444,75 @@ body:has(.modal:not([hidden]), #dmPanel:not([hidden]), #peoplePop:not([hidden]),
 .home-friend { display: flex; align-items: center; gap: 10px; }
 .home-friend-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
 .home-friends .hint:empty { display: none; }
-.create-block .link-btn { align-self: center; margin-top: 2px; }
+
+/* ---------- Início: topo, amigos e "Sua sala" (renderHomeTopo e renderHomeAmigos em renderer/primeira-entrada.js) ---------- */
+.home-hello-text { flex: 1; }
+.home-title-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.home-title-row .home-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.home-resumo { margin: 0; font-size: 15px; color: var(--muted); }
+.home-resumo-vivo { color: var(--live); font-weight: 600; }
+.home-name[hidden] { display: none; }
+/* A constelação: você (cor de "ao vivo") no meio, os amigos em volta; quem está numa sala brilha na mesma cor */
+.home-ceu { flex: none; width: 220px; height: 84px; overflow: visible; }
+.home-ceu .ceu-linha { stroke: var(--accent); stroke-opacity: .45; stroke-width: 1; stroke-dasharray: 3 4; }
+.home-ceu .ceu-estrela { fill: var(--accent); }
+.home-ceu .ceu-estrela.vivo, .home-ceu .ceu-estrela.eu { fill: var(--live); }
+.home-ceu .ceu-anel { fill: none; stroke: var(--live); stroke-opacity: .4; stroke-dasharray: 2 3; }
+.home-ceu .ceu-anel.eu { stroke-dasharray: none; stroke-opacity: .35; }
+.home-ceu .ceu-nome { fill: var(--muted); font-size: 10px; font-weight: 500; text-anchor: middle; }
+.home-ceu .ceu-nome.vivo, .home-ceu .ceu-nome.eu { fill: var(--live); }
+@media (max-width: 900px) { .home-ceu { display: none; } }
+
+/* Convidar: um botão com menu (copiar o link de amigo ou adicionar alguém) */
+.home-ceu[hidden] { display: none; }
+.home-friends-actions .link-btn { color: var(--muted); text-decoration: none; font-size: 13px; }
+.home-friends-actions .link-btn:hover { color: var(--text); text-decoration: underline; }
+.home-menu-wrap { position: relative; display: inline-flex; }
+.home-convidar { display: inline-flex; align-items: center; gap: 6px; }
+.home-convidar svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
+.home-menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; min-width: 230px; display: flex; flex-direction: column; padding: 6px;
+  background: var(--panel-2); border: 1px solid var(--line-strong); border-radius: 10px; box-shadow: 0 12px 32px rgba(0, 0, 0, .45); }
+.home-menu[hidden] { display: none; }
+.home-menu button { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border: 0; border-radius: 7px; background: transparent; color: var(--text);
+  font: inherit; font-size: 13px; font-weight: 600; text-align: left; cursor: pointer; }
+.home-menu button:hover, .home-menu button:focus-visible { background: var(--panel-3); outline: none; }
+.home-menu small { font-size: 12px; font-weight: 400; color: var(--muted); }
+
+/* Linha do amigo: etiquetas com ícone; Mensagem e Ligar viram ícones; "Chamar para minha sala" aparece no mouse ou no foco */
+.home-friend { padding: 6px 8px; margin: 0 -8px; border-radius: 10px; }
+.home-friend:hover, .home-friend:focus-within { background: color-mix(in srgb, var(--text) 4%, transparent); }
+.home-friend-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 3px; }
+.home-chip { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; padding: 2px 8px; border: 0; border-radius: 999px; background: var(--panel-2);
+  color: var(--text-2); font: inherit; font-size: 12px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.home-chip svg { flex: none; width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+button.home-chip { cursor: pointer; }
+button.home-chip:hover { color: var(--text); }
+.home-friend-actions { flex: none; display: flex; align-items: center; gap: 6px; }
+.home-friend-chamar { opacity: 0; transition: opacity .12s; }
+.home-friend:hover .home-friend-chamar, .home-friend:focus-within .home-friend-chamar { opacity: 1; }
+.btn.icon.home-friend-ligar { border-color: var(--accent); color: var(--accent); background: transparent; }
+@media (max-width: 760px) { .home-friend-chamar { display: none; } }
+@media (prefers-reduced-motion: reduce) { .home-friend-chamar { transition: none; } }
+
+/* Sua sala: "Abrir minha sala" grande com quem vai ver, as opções num ícone ao lado e "Entrar com código" menor */
+.home-cta { grid-template-columns: 1fr minmax(170px, 30%); }
+@media (max-width: 700px) { .home-cta { grid-template-columns: 1fr; } }
+.create-block { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.create-block .hint { grid-column: 1 / -1; }
+#goQuick { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; height: auto; min-height: 52px; padding-block: 8px; }
+.go-quick-sub { font-size: 12px; font-weight: 500; opacity: .8; }
+.go-quick-sub:empty, #home.tem-salas .go-quick-sub { display: none; }
+#goCreate { width: 52px; height: auto; min-height: 52px; }
+/* Com sala de amigo aberta, os três viram botões comuns, da mesma altura */
+#home.tem-salas #goQuick, #home.tem-salas #goCreate, #home.tem-salas #goJoin { min-height: 44px; height: 44px; padding-block: 0; }
+/* Ninguém com sala aberta: uma linha, sem a caixa tracejada */
+.sessions-empty { padding: 0; border: 0; text-align: left; }
+.last-room-info strong { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Rodapé: os links em cinza; sublinham só no mouse */
+.status-line.version .link-btn { color: var(--muted); text-decoration: none; }
+.status-line.version .link-btn:hover:not(:disabled) { color: var(--text); text-decoration: underline; }
+/* Carta Estelar: a marca já está na barra de título; aqui ela repetia */
+:root:not([data-skin]) .home-top .brand-mark { visibility: hidden; }
 
 /* ---------- Links de convite de amigo ---------- */
 .hub-add-link { display: flex; flex-direction: column; gap: 8px; }
@@ -2445,7 +2535,6 @@ body:has(.modal:not([hidden]), #dmPanel:not([hidden]), #peoplePop:not([hidden]),
 .recorte-area canvas { display: block; width: 100%; height: 100%; }
 .recorte-zoom input { width: 100%; }
 
-.home-friend-music { align-self: flex-start; font-size: 12px; text-align: left; padding: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .sky-focus-bio { margin: 4px 0 0; font-size: 13px; line-height: 1.35; color: var(--text-2); overflow-wrap: anywhere; }
 
@@ -2541,3 +2630,55 @@ body:has(.modal:not([hidden]), #dmPanel:not([hidden]), #peoplePop:not([hidden]),
   border-color: color-mix(in srgb, var(--warn) 70%, transparent) !important; }
 .voice-channel-delete:hover:not(:disabled) svg { stroke-width: 2.4; }
 .voice-channel-delete { border: 1px solid transparent; }
+
+/* Feedback e bugs (renderer/feedback.js): janela com três abas de perguntas curtas */
+.fb-dialog { width: min(560px, 100%); gap: 14px; }
+.fb-dialog .dialog-head { align-items: flex-start; }
+.fb-dialog .dialog-head .hint { margin: 4px 0 0; font-size: 12px; }
+.fb-login { margin: 0; padding: 10px 12px; border: 1px solid var(--warn); border-radius: 8px; color: var(--warn); font-size: 13px; }
+.fb-tabs { background: var(--sunken); border: 1px solid var(--line); }
+.fb-tabs button { font-size: 13px; padding: 0 8px; }
+.fb-tabs button[aria-selected="true"] { color: var(--accent); }
+.fb-tabs svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.fb-pane { display: flex; flex-direction: column; gap: 14px; }
+.fb-pane[hidden] { display: none; }
+.fb-q { display: flex; flex-direction: column; gap: 6px; min-width: 0; margin: 0; padding: 0; border: 0; font-size: 13px; color: var(--text); }
+.fb-q legend { padding: 0; margin-bottom: 6px; }
+.fb-q small { color: var(--muted); font-size: 12px; }
+.fb-text { height: auto; min-height: 64px; padding: 8px 10px; resize: vertical; line-height: 1.45; }
+.fb-q .hub-filter[aria-invalid="true"] { border-color: var(--warn); }
+.fb-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+/* Opções em pílulas: rádio ou caixa de marcar escondidos, a pílula acende quando marcada */
+.fb-chips { display: flex; flex-wrap: wrap; gap: 6px; border-radius: 8px; }
+.fb-chips[aria-invalid="true"] { outline: 1px solid var(--warn); outline-offset: 4px; }
+.fb-chips label { position: relative; padding: 5px 11px; border: 1px solid var(--line); border-radius: 999px; font-size: 12px; color: var(--muted); cursor: pointer; transition: border-color .12s, color .12s, background .12s; }
+.fb-chips label:hover { color: var(--text); border-color: var(--field-line); }
+.fb-chips label:has(input:checked) { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.fb-chips label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.fb-chips input { position: absolute; opacity: 0; pointer-events: none; }
+.fb-nps { display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); gap: 4px; }
+.fb-nps label { padding: 7px 0; border-radius: 6px; text-align: center; }
+.fb-nps-legenda { display: flex; justify-content: space-between; margin: 4px 0 0; font-size: 11px; }
+/* Print: clicar, colar ou arrastar */
+.fb-drop { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 8px 12px; border: 1px dashed var(--field-line); border-radius: 8px; color: var(--muted); font-size: 12px; cursor: pointer; }
+.fb-drop:hover, .fb-drop.over, .fb-drop:focus-visible { border-color: var(--accent); color: var(--text); outline: none; }
+.fb-drop > svg { flex: none; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.fb-drop > span { flex: 1; min-width: 0; }
+.fb-drop img { width: 72px; height: 44px; object-fit: cover; border-radius: 4px; border: 1px solid var(--line); }
+.fb-status { margin: 0; min-height: 18px; font-size: 13px; color: var(--muted); }
+.fb-status.warn { color: var(--warn); }
+.fb-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-top: 14px; border-top: 1px solid var(--line); }
+.fb-checks { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--muted); }
+.fb-checks label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.fb-actions { display: flex; gap: 8px; margin-left: auto; }
+@media (max-width: 560px) { .fb-grid { grid-template-columns: 1fr; } .fb-tabs button svg { display: none; } }
+
+/* Aba Feedback da Administração (renderer/admin.js) */
+.adm-fb-item { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; }
+.adm-fb-item[data-status="resolvido"] { opacity: .6; }
+.adm-fb-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.adm-fb-top strong { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.adm-fb-dados { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 12px; margin: 0; font-size: 13px; }
+.adm-fb-dados dt { color: var(--muted); }
+.adm-fb-dados dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.adm-fb-img { max-width: 100%; max-height: 360px; align-self: flex-start; border-radius: 6px; border: 1px solid var(--line); }
