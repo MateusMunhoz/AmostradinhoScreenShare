@@ -287,3 +287,23 @@ test('feedback e bugs: valida, limita por hora e o administrador lista, vê o pr
   const tabela = await req('admin/database/feedback?limit=5', 'GET', undefined, ROOT);
   assert.equal(tabela.status, 200); assert.equal(tabela.total, 6);
 });
+test('excluir conta: só desativada, nunca a própria; apaga em cascata e fica no histórico', async t => {
+  const { req, register } = await fixture(t);
+  const admin = await register('Admin'), calopsita = await register('Calopsita'), amiga = await register('Amiga');
+  await req('admin/users/' + admin.user.id, 'PATCH', { role: 'admin' }, ROOT);
+  const pedido = await req('friends/requests', 'POST', { email: amiga.user.email }, calopsita.accessToken);
+  await req('friends/requests/' + pedido.id + '/accept', 'POST', undefined, amiga.accessToken);
+  await req('networks', 'POST', { name: 'Da Calopsita' }, calopsita.accessToken);
+  assert.equal((await req('admin/users/' + calopsita.user.id, 'DELETE', undefined, calopsita.accessToken)).status, 403); // quem não é admin
+  assert.equal((await req('admin/users/' + calopsita.user.id, 'DELETE', undefined, admin.accessToken)).status, 409); // ativa: desative antes
+  assert.equal((await req('admin/users/' + admin.user.id, 'DELETE', undefined, admin.accessToken)).status, 400); // a própria
+  await req('admin/users/' + calopsita.user.id, 'PATCH', { status: 'disabled', banReason: 'Duplicada' }, admin.accessToken);
+  assert.equal((await req('admin/users/' + calopsita.user.id, 'DELETE', undefined, admin.accessToken)).status, 200);
+  assert.equal((await req('admin/users/' + calopsita.user.id, 'DELETE', undefined, admin.accessToken)).status, 404);
+  assert.equal((await req('auth/login', 'POST', { email: calopsita.user.email, password: 'correct-password-123' })).status, 401);
+  assert.equal((await req('friends', 'GET', undefined, amiga.accessToken)).friends.length, 0);
+  const lista = (await req('admin/users', 'GET', undefined, admin.accessToken)).users;
+  assert.ok(!lista.some(u => u.id === calopsita.user.id));
+  const historico = await req('admin/database/audit_log?limit=50', 'GET', undefined, admin.accessToken);
+  assert.match(JSON.stringify(historico), /user\.delete/);
+});

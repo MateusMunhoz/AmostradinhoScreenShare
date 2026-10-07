@@ -300,7 +300,10 @@ de antes, com porta, senha e visibilidade.
 - **Trocar a senha:** Perfil › Conta Razze › **Trocar senha** (pede a senha atual; mínimo 8 caracteres).
 - **Esqueci a senha:** na tela de entrar (Perfil › Conta Razze ou o passo 3 da primeira entrada), **Esqueci a senha**. O servidor não
   manda e-mail: peça um código ao **administrador**, que o gera em Perfil › Conta Razze › **Administração › Pessoas** (botão **Código de senha**; também no painel web `/admin/`). Digite o e-mail, o
-  código (vale 1 hora e funciona uma vez) e a senha nova.
+  código (vale 1 hora e funciona uma vez) e a senha nova. Depois de redefinir, o app já entra na conta sozinho.
+- **Excluir uma conta (administrador):** Administração › Pessoas › **Desativar** e, na linha da conta desativada, **Excluir**. Apaga também
+  as amizades, mensagens e salas dela e não dá para desfazer. O app pergunta se o e-mail sai da lista de convidados; sem isso, a pessoa
+  cria a conta de novo ao entrar com o Google. Cada pessoa mostra **Google** ou **Só senha**, para ver quem ainda não vinculou.
 - **Frase do perfil:** no seu perfil, **Frase** (até 128 caracteres). Os amigos veem embaixo do seu nome no Início, e quem está na sala vê no seu cartão (ao abrir o seu perfil na voz); ela só passa entre os dois, na hora em que o cartão abre. Sem conta,
   ela fica salva neste PC e vai para o servidor quando você entrar.
 
