@@ -3,9 +3,6 @@
 O que falta para fechar a fundação descrita em [Fluxo com IA](fluxo-com-ia.md). Riscar (ou apagar a linha) quando feito.
 
 ## Agora
-- [ ] **Entrar com Google** (código pronto, falta ligar): criar o cliente OAuth "App para computador" no Google Cloud e pôr
-      `RAZZE_GOOGLE_CLIENT_ID` e `RAZZE_GOOGLE_CLIENT_SECRET` no `.env` da VPS (passo a passo em `docs/razze-api.md`).
-- [ ] **Atualizar a RazzeAPI na VPS** com o código novo (links de amigo, conta, atividade e Google) e testar em dois PCs.
 - [ ] Acompanhar o **Windows smoke**, automático em PR e na `main` desde 01/10/2026. Na estreia achou um bug real
       (`renderer/lista.js`, PR #13). Se falhar sem motivo, anotar aqui qual teste e quando.
 - [ ] Primeiro PR usando o template e as regras novas, para ver o fluxo de ponta a ponta.
@@ -14,11 +11,10 @@ O que falta para fechar a fundação descrita em [Fluxo com IA](fluxo-com-ia.md)
 - [ ] CI no Linux (`npm test`): 1ª execução falhou porque o CI pulava o download do Electron e
       `main/razze-service.js` faz `require('electron')`. Corrigido; conferir a próxima execução.
 - [ ] `docs/desenvolvimento.md`: a tabela do processo principal (`main/`) não lista `fontes.js`, `linux.js` e os `razze-*`.
-- [ ] Roadmap P1: reescrever com a ideia atual da equipe. A fase 2 (Hyperswarm) foi deixada de lado em 03/10/2026; o modo
-      Internet virou o padrão.
-- [ ] RazzeAPI: **não remover ainda** (decisão de 01/10/2026). Destino no [roadmap](roadmap.md#razze-e-wireguard): só
-      sai depois que amigos, lobby e túnel sem servidor estiverem provados, com importação dos amigos. Até lá, não
-      mexer nos testes `razze-*` nem em `razze-api/`.
+- [ ] **Migração para só Google:** desligar o `legacyPasswordLogin` no painel quando todas as contas ativas tiverem
+      vinculado o Google (`withGoogle` igual às contas ativas). Até lá, quem tem conta antiga entra por senha.
+- [ ] RazzeAPI: **não remover** (hoje é a base de conta, amigos e painel; veja o [roadmap](roadmap.md#razze-e-wireguard)).
+      Mexer em `razze-api/` e nos testes `razze-*` só com aprovação (AGENTS.md).
 - [ ] CODEOWNERS: quando a equipe dividir áreas (hoje todos mexem em tudo).
 - [ ] Proteção da `main` (PR obrigatório, CI obrigatório): só depois do CI estável e combinando com o `publicar.js`,
       que faz push direto na `main`.
