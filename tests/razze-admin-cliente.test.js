@@ -20,10 +20,11 @@ test('admin: as rotas do painel passam, com método e corpo', async () => {
   await c.admin('PATCH', '/v1/admin/users/' + ID, { grupo: 'teste' });
   await c.admin('POST', '/v1/admin/users/' + ID + '/approve');
   await c.admin('POST', '/v1/admin/users/' + ID + '/revoke-sessions');
+  await c.admin('POST', '/v1/admin/users/' + ID + '/reset-code');
   await c.admin('POST', '/v1/admin/allowlist', { email: 'a@b.com', grupo: 'amigo' });
   await c.admin('DELETE', '/v1/admin/allowlist/' + encodeURIComponent('a@b.com'));
   await c.admin('PATCH', '/v1/admin/settings', { googleOnly: true });
-  assert.equal(chamadas.length, 8);
+  assert.equal(chamadas.length, 9);
   assert.equal(chamadas[2].url, 'http://127.0.0.1:8787/v1/admin/users/' + ID);
   assert.equal(chamadas[2].body, '{"grupo":"teste"}');
 });
@@ -35,7 +36,7 @@ test('admin: o que não é do painel não sai do app', async () => {
   await recusa('GET', '/v1/admin/database/users');
   await recusa('GET', '/v1/admin/clients');
   await recusa('DELETE', '/v1/admin/networks/' + ID);
-  await recusa('POST', '/v1/admin/users/' + ID + '/reset-code');
+  await recusa('POST', '/v1/admin/users/' + ID + '/password');
   await recusa('GET', '/v1/me');
   await recusa('GET', '/v1/admin/users/../../me');
   await recusa('GET', '/v1/admin/users?x=1');

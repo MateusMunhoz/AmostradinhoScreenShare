@@ -155,6 +155,22 @@ async function admAlterar(id, corpo, aviso) {
   await admCarregar();
 }
 
+// Código de uso único (1 h) para quem esqueceu a senha: a pessoa usa em "Esqueci a senha". Só serve a conta que ainda entra por senha.
+async function admCodigoSenha(u) {
+  const s = adm.dados?.settings;
+  if (s?.googleOnly && !s.legacyPasswordLogin && u.role !== 'admin') {
+    await appConfirm(`Este servidor só aceita entrar pelo Google, então ${u.displayName} não usaria a senha. Peça para entrar com "Entrar com Google", ou ligue "Contas antigas ainda entram por senha" em Servidor.`, { title: 'Só Google', ok: 'Entendi', cancel: 'Fechar' });
+    return;
+  }
+  if (!(await appConfirm(`Gerar um código para ${u.displayName} redefinir a senha? Vale por 1 hora, uma vez só, e um código novo troca o anterior.`, { title: 'Código de senha', ok: 'Gerar' }))) return;
+  let r;
+  try { r = await admChamar('POST', '/v1/admin/users/' + u.id + '/reset-code'); } catch { return; }
+  const copiar = await appConfirm(`Passe este código a ${u.displayName} (vale 1 hora):\n\n${r.code}\n\nEla abre "Esqueci a senha" na tela de entrada e digita o e-mail ${u.email}, o código e a senha nova.`, { title: 'Código de senha', ok: 'Copiar código', cancel: 'Fechar' });
+  if (copiar) {
+    try { await navigator.clipboard.writeText(r.code); toast('Código copiado.'); } catch { toast('Não deu para copiar. Anote o código.', 'error'); }
+  }
+}
+
 function admPedidos(corpo) {
   const fila = adm.dados.users.filter((u) => u.status === 'pending');
   corpo.append(admEl('p', 'hint', 'Quem entrou com o Google e não estava na lista de convidados espera aqui. Aprovar libera a conta na hora.'));
@@ -275,6 +291,7 @@ function admLista() {
           if (!(await appConfirm(virar ? `Dar acesso de administrador a ${u.displayName}?` : `Tirar o acesso de administrador de ${u.displayName}?`, { title: 'Administrador', ok: virar ? 'Dar acesso' : 'Tirar', danger: true }))) return;
           await admAlterar(u.id, { role: virar ? 'admin' : 'user' }, virar ? u.displayName + ' agora é administradora.' : 'Acesso retirado.');
         }));
+        acoes.push(admBtn('Código de senha', () => void admCodigoSenha(u)));
         acoes.push(admBtn('Desativar', async () => {
           if (!(await appConfirm(`Desativar ${u.displayName}? Ela sai de todos os PCs e não consegue entrar.`, { title: 'Desativar', ok: 'Desativar', danger: true }))) return;
           await admAlterar(u.id, { status: 'disabled', banReason: 'Desativada pelo administrador' }, u.displayName + ' foi desativada.');

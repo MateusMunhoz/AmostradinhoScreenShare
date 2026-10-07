@@ -93,9 +93,9 @@ class RazzeApiClient {
   createInvite(id, options = {}) { return this.request('POST', '/v1/networks/' + encodeURIComponent(id) + '/invites', options); }
   acceptInvite(token) { return this.request('POST', '/v1/invites/accept', { token }); }
   // Painel de administração do app: só as rotas do painel (lista fechada), com a sessão da própria conta; o servidor
-  // confere o papel de administrador em toda chamada. Nada de banco, rede, cliente nem código de senha.
+  // confere o papel de administrador em toda chamada. Nada de banco, rede nem cliente; código de senha só o de uso único (reset-code).
   admin(method, endpoint, body) {
-    const rota = /^\/v1\/admin\/(?:analytics|overview|settings|allowlist|allowlist\/[^/?#\s]{3,254}|users|users\/[a-f0-9]{32}|users\/[a-f0-9]{32}\/(?:approve|revoke-sessions))$/;
+    const rota = /^\/v1\/admin\/(?:analytics|overview|settings|allowlist|allowlist\/[^/?#\s]{3,254}|users|users\/[a-f0-9]{32}|users\/[a-f0-9]{32}\/(?:approve|revoke-sessions|reset-code))$/;
     if (!['GET', 'POST', 'PATCH', 'DELETE'].includes(method) || typeof endpoint !== 'string' || !rota.test(endpoint)) throw new RazzeApiError(0, 'admin_route', 'Rota de administração não permitida.');
     if (body !== undefined && (body === null || typeof body !== 'object' || Array.isArray(body) || JSON.stringify(body).length > 2000)) throw new RazzeApiError(0, 'admin_body', 'Pedido de administração inválido.');
     return this.request(method, endpoint, body);
