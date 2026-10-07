@@ -20,6 +20,7 @@ test('lê o CSV do tasklist e acha o jogo da lista, sem ligar para a caixa das l
   assert.ok(nomes.has('chrome.exe'));
   assert.equal(jogoAberto(nomes), 'Valorant');
   assert.equal(jogoAberto(nomesDeProcessos('"chrome.exe","1","Console","1","1 K"')), ''); // programa comum não aparece
+  assert.equal(jogoAberto(nomesDeProcessos('"r5apex_dx12.exe","1","Console","1","1 K"')), 'Apex Legends'); // o Apex em DirectX 12
 });
 
 test('só os jogos da lista aparecem; a lista tem nome para cada executável', () => {

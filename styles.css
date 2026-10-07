@@ -2405,6 +2405,8 @@ body:has(.modal:not([hidden]), #dmPanel:not([hidden]), #peoplePop:not([hidden]),
 .ob-card span { color: var(--muted); font-size: 13px; line-height: 1.4; }
 .ob-card:hover, .ob-card:focus-visible { border-color: var(--accent); background: var(--panel-2); }
 .ob-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.ob-atv { display: flex; flex-direction: column; gap: 8px; }
+.ob-atv .hint { margin: 0; }
 .ob-dialog .actions { display: flex; justify-content: flex-end; gap: 10px; }
 .ob-dialog .link-btn { align-self: center; }
 

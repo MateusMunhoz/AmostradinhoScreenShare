@@ -3,7 +3,7 @@
 // Mensagem, e "Abrir minha sala" em um clique. Plano e motivos: docs/auditoria-fluxo.md.
 // Script clássico: só declara; quem liga é renderer/inicio.js (setupPrimeiraEntrada). Usa: util, conectividade
 // (razzeUser, refreshRazzeState), hub (friendsData, hubAvatar, openFriendsDialog), chamada (ligarPara, novaSenhaSala),
-// mensagens (openDm), fotos (setMyPhoto), sala (createRoom).
+// mensagens (openDm), fotos (setMyPhoto), sala (createRoom), conta (atvLigada, atvAgendar).
 
 const entrada = { passo: 1, modo: '', registrar: false, ocupado: false };
 
@@ -18,6 +18,8 @@ function entradaIrPara(n) {
 
 function abrirPrimeiraEntrada(passo = 1) {
   $('obName').value = $('name').value || '';
+  $('obAtvJogo').checked = atvLigada('Jogo');
+  $('obAtvMusica').checked = atvLigada('Musica');
   $('onboarding').hidden = false;
   entradaIrPara(passo);
 }
@@ -44,6 +46,13 @@ function entradaContinuarNome() {
   }
   $('name').value = nome;
   save('name', nome);
+  // A atividade do perfil (conta.js): a mesma escolha de Configurações › Atividade
+  for (const [id, k] of [['obAtvJogo', 'Jogo'], ['obAtvMusica', 'Musica']]) {
+    save('atividade' + k, $(id).checked ? '1' : '0');
+    $('atv' + k).checked = $(id).checked;
+  }
+  atvAgendar();
+  atvAgendarProcura();
   if (entrada.modo === 'amigos' && !razzeUser) return entradaIrPara(3);
   fecharPrimeiraEntrada();
 }

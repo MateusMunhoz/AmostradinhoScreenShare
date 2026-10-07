@@ -273,7 +273,7 @@ Uma música por canal (Voz geral ou subsala), que todo mundo ouve junto, no mesm
 Na primeira vez que o app abre, uma tela de cada vez (três no máximo):
 
 1. **Como você quer usar?** *Com amigos* (conta, lista de amigos, ligar com um clique) ou *Sala rápida* (só um nome, sem conta).
-2. **Quem é você?** O nome (obrigatório) e a foto (opcional).
+2. **Quem é você?** O nome (obrigatório), a foto (opcional) e se o perfil mostra o jogo e a música (os dois vêm marcados).
 3. **Sua conta** (só em *Com amigos*): entrar ou criar conta com e-mail e senha. **Continuar sem conta por enquanto** leva
    direto ao Início. Se o servidor exigir aprovação da conta, o app avisa e você usa como sala rápida até ser aprovado.
 
@@ -301,7 +301,8 @@ de antes, com porta, senha e visibilidade.
 ## Atividade no perfil
 
 Em **Configurações › Atividade** (ou pelo botão **Configurar a atividade** em Seu perfil), cada coisa que aparece no seu perfil é
-uma escolha sua, **desligada por padrão**:
+uma escolha sua. O jogo e a música vêm **ligados por padrão** (dá para desligar já na primeira entrada, no passo **Quem é você?**,
+ou aqui a qualquer hora); os jogos da Steam só aparecem depois que você marca cada um:
 
 - **Mostrar o jogo que estou jogando:** o app reconhece o jogo pelo nome do programa aberto, numa lista de jogos conhecidos (Valorant,
   Counter-Strike 2, League of Legends, Fortnite, GTA V e outros; a lista está em `main/atividade.js`). Programa que não está

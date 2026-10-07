@@ -164,7 +164,8 @@ async function salvarBio() {
 const ATV_CADA_MS = 30 * 1000;
 const ATV_RENOVAR_MS = 60 * 1000;
 const atv = { leitura: 0, amigos: 0, ultimo: '', enviadoEm: 0, jogo: '', jogoImagem: '', jogoDesde: 0 };
-const atvLigada = (k) => load('atividade' + k, '0') === '1';
+// Jogo e música: ligados por padrão (quem nunca mexeu); desligar fica salvo como '0'
+const atvLigada = (k) => load('atividade' + k, '1') === '1';
 
 function atvTexto(jogo, musica) {
   const p = [];

@@ -12,7 +12,7 @@ const path = require('node:path');
 const JOGOS = {
   'valorant-win64-shipping.exe': 'Valorant', 'cs2.exe': 'Counter-Strike 2', 'csgo.exe': 'Counter-Strike: GO',
   'league of legends.exe': 'League of Legends', 'dota2.exe': 'Dota 2', 'fortniteclient-win64-shipping.exe': 'Fortnite',
-  'overwatch.exe': 'Overwatch 2', 'r5apex.exe': 'Apex Legends', 'rocketleague.exe': 'Rocket League', 'gta5.exe': 'GTA V',
+  'overwatch.exe': 'Overwatch 2', 'r5apex.exe': 'Apex Legends', 'r5apex_dx12.exe': 'Apex Legends', 'rocketleague.exe': 'Rocket League', 'gta5.exe': 'GTA V',
   'gta_sa.exe': 'GTA San Andreas', 'fivem.exe': 'FiveM', 'minecraft.windows.exe': 'Minecraft', 'rainbowsix.exe': 'Rainbow Six Siege',
   'rainbowsix_vulkan.exe': 'Rainbow Six Siege', 'eldenring.exe': 'Elden Ring', 'darksoulsiii.exe': 'Dark Souls III',
   'sekiro.exe': 'Sekiro', 'cyberpunk2077.exe': 'Cyberpunk 2077', 'witcher3.exe': 'The Witcher 3', 'bf6.exe': 'Battlefield 6',
