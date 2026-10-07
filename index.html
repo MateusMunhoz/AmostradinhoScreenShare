@@ -60,6 +60,8 @@
       <button id="navGamer" type="button" class="workspace-tab rail-gamer" aria-label="Modo gamer" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 11h4M8 9v4M15 12h.01M18 10h.01M17.3 5H6.7a4 4 0 0 0-4 3.6l-.9 7.8A2.5 2.5 0 0 0 6.2 18l1.6-1.6a2 2 0 0 1 1.4-.4h5.6a2 2 0 0 1 1.4.4l1.6 1.6a2.5 2.5 0 0 0 4.4-1.6l-.9-7.8a4 4 0 0 0-4-3.6z"/></svg></button>
       <!-- Voz e atalhos (microfone, supressão de ruído, teclas): ícone ao lado da engrenagem (renderer/voz.js) -->
       <button id="voiceSettingsBtn" type="button" class="workspace-tab"></button>
+      <!-- Feedback e bugs (renderer/feedback.js): abre a janela de perguntas, que vai para a RazzeAPI -->
+      <button id="navFeedback" type="button" class="workspace-tab" aria-label="Feedback e bugs" title="Feedback e bugs" aria-haspopup="dialog" aria-expanded="false" aria-controls="feedbackDialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M12 7v4M12 14h.01"/></svg></button>
       <button id="navSettings" type="button" class="workspace-tab settings-tab" aria-label="Configurações" title="Configurações" aria-haspopup="dialog" aria-expanded="false" aria-controls="generalSettingsDialog"><span class="nav-icon" aria-hidden="true"></span></button>
       <!-- Sair da sala: por último, separado do Início e dos ajustes, em vermelho -->
       <span class="nav-sep rail-leave-sep" aria-hidden="true"></span>
@@ -1170,6 +1172,70 @@
     </div>
   </div>
 
+  <!-- Feedback e bugs (renderer/feedback.js): três abas de perguntas curtas; vai para a RazzeAPI (POST /v1/feedback) -->
+  <div id="feedbackDialog" class="modal global utility-popup" hidden>
+    <form class="dialog fb-dialog" id="feedbackForm" role="dialog" aria-modal="true" aria-labelledby="feedbackTitle" novalidate>
+      <div class="dialog-head">
+        <div><h2 id="feedbackTitle">Fale com a gente</h2><p class="hint">Leva menos de 2 minutos. A gente lê tudo.</p></div>
+        <button id="feedbackClose" class="btn icon" type="button"></button>
+      </div>
+      <p id="feedbackLogin" class="fb-login" hidden>Entre na sua conta Razze (Perfil › Conta) para mandar feedback.</p>
+      <div id="feedbackTabs" class="seg fb-tabs" role="tablist" aria-label="Tipo de feedback">
+        <button type="button" role="tab" data-tipo="bug" aria-selected="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 8V6a4 4 0 0 1 8 0v2M6 10h12v4a6 6 0 0 1-12 0zM12 12v8M3 13h3M18 13h3M4 7l3 3M20 7l-3 3M4 20l3-3M20 20l-3-3"/></svg>Reportar bug</button>
+        <button type="button" role="tab" data-tipo="ideia" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z"/></svg>Sugestão</button>
+        <button type="button" role="tab" data-tipo="nota" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.6 6.2.9-4.5 4.4 1 6.1L12 17.1 6.5 20l1-6.1L3 9.5l6.2-.9z"/></svg>Avaliar o app</button>
+      </div>
+
+      <section class="fb-pane" data-tipo="bug">
+        <fieldset class="fb-q"><legend>Onde aconteceu?</legend>
+          <div class="fb-chips" data-campo="area" data-tipo-campo="bug"></div></fieldset>
+        <label class="fb-q"><span>O que deu errado?</span><input class="hub-filter" data-campo="titulo" maxlength="140" placeholder="O áudio de alguém sumiu depois de mudar de subsala"></label>
+        <label class="fb-q"><span>Como fazer acontecer de novo? <small>(opcional)</small></span><textarea class="hub-filter fb-text" data-campo="passos" maxlength="2000" rows="3" placeholder="1. Entrei na voz geral&#10;2. Criei uma subsala&#10;3. Voltei para a geral"></textarea></label>
+        <div class="fb-grid">
+          <fieldset class="fb-q"><legend>Com que frequência?</legend><div class="fb-chips" data-campo="frequencia"></div></fieldset>
+          <fieldset class="fb-q"><legend>Quanto atrapalha?</legend><div class="fb-chips" data-campo="impacto"></div></fieldset>
+        </div>
+        <div class="fb-q"><span>Print <small>(opcional)</small></span>
+          <div id="feedbackDrop" class="fb-drop" tabindex="0" role="button" aria-label="Escolher print: clique, cole com Ctrl+V ou arraste uma imagem">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg>
+            <span id="feedbackDropText">Cole com Ctrl+V, arraste aqui ou clique para escolher</span>
+            <img id="feedbackPreview" alt="Prévia do print" hidden>
+            <button id="feedbackImageRemove" class="btn small" type="button" hidden>Tirar</button>
+          </div>
+          <input id="feedbackFile" type="file" accept="image/*" hidden>
+        </div>
+      </section>
+
+      <section class="fb-pane" data-tipo="ideia" hidden>
+        <label class="fb-q"><span>Qual é a ideia?</span><input class="hub-filter" data-campo="titulo" maxlength="140" placeholder="Poder fixar uma mensagem no chat da sala"></label>
+        <label class="fb-q"><span>Que problema isso resolve para você? <small>(opcional)</small></span><textarea class="hub-filter fb-text" data-campo="detalhes" maxlength="2000" rows="3" placeholder="O link do jogo some no meio da conversa e todo mundo pergunta de novo"></textarea></label>
+        <fieldset class="fb-q"><legend>Parte do app <small>(opcional)</small></legend><div class="fb-chips" data-campo="area" data-tipo-campo="ideia"></div></fieldset>
+        <fieldset class="fb-q"><legend>Quanto você usaria? <small>(opcional)</small></legend><div class="fb-chips" data-campo="uso"></div></fieldset>
+      </section>
+
+      <section class="fb-pane" data-tipo="nota" hidden>
+        <fieldset class="fb-q"><legend>De 0 a 10, quanto você indicaria o Nebula para um amigo?</legend>
+          <div class="fb-chips fb-nps" data-campo="nota"></div>
+          <div class="fb-nps-legenda hint"><span>Nada provável</span><span>Com certeza</span></div></fieldset>
+        <fieldset class="fb-q"><legend>O que você mais usa? <small>(pode marcar vários)</small></legend><div class="fb-chips" data-campo="usa"></div></fieldset>
+        <label class="fb-q"><span>O que você mais gosta? <small>(opcional)</small></span><input class="hub-filter" data-campo="gosta" maxlength="500" placeholder="A qualidade da transmissão"></label>
+        <label class="fb-q"><span>O que mais te incomoda? <small>(opcional)</small></span><input class="hub-filter" data-campo="incomoda" maxlength="500" placeholder="Demora para entrar na sala"></label>
+      </section>
+
+      <p id="feedbackStatus" class="fb-status" role="status" aria-live="polite"></p>
+      <div class="fb-foot">
+        <div class="fb-checks">
+          <label><input id="feedbackTecnico" type="checkbox" checked> Enviar dados técnicos (versão, sistema e tema)</label>
+          <label><input id="feedbackContato" type="checkbox" checked> Pode me chamar para tirar dúvidas</label>
+        </div>
+        <div class="fb-actions">
+          <button id="feedbackCancel" class="btn ghost" type="button">Cancelar</button>
+          <button id="feedbackSubmit" class="btn primary" type="submit">Enviar</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
   <!-- Trocar a senha (logado) e esqueci a senha (com o código do administrador): renderer/conta.js -->
   <div id="senhaDialog" class="ob-modal" hidden>
     <div class="ob-dialog" role="dialog" aria-modal="true" aria-labelledby="senhaTitle">
@@ -1255,6 +1321,7 @@
   <script src="renderer/primeira-entrada.js"></script>
   <script src="renderer/conta.js"></script>
   <script src="renderer/admin.js"></script>
+  <script src="renderer/feedback.js"></script>
   <script src="renderer/recorte.js"></script>
   <script src="renderer/navegacao.js"></script>
   <script src="renderer/inicio.js"></script>
