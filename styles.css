@@ -1433,10 +1433,11 @@ button.sky-card-info:hover:not(:disabled) .sky-card-go { color: var(--accent); }
    não fica solta por cima do vídeo */
 .workspace-in-room:not(.has-workspace-pane) #room { padding-top: var(--workspace-top); }
 /* Chat + voz: um bloco só, dividido por linhas (sem espaço entre eles). O primeiro à vista fecha o bloco com os
-   cantos de cima; o último (pane-last), com os de baixo */
+   cantos de cima; o último (pane-last), com os de baixo. Entre o chat e a voz fica a divisória de arrastar
+   (.pane-split): com o chat escondido, a voz vem depois dela, não logo depois do chat */
 .workspace-in-room.has-workspace-pane:not(.workspace-wide) #workspacePanes { gap: 0; }
 .workspace-in-room.has-workspace-pane:not(.workspace-wide) .workspace-pane { border-radius: 0; border-top-width: 0; }
-.workspace-in-room.has-workspace-pane:not(.workspace-wide) :is(#chatTab, #chatTab[hidden] ~ #voicePane, #workspacePanes.map-focus > .map-chat-strip) {
+.workspace-in-room.has-workspace-pane:not(.workspace-wide) :is(#chatTab, #chatTab[hidden] + #voicePane, #chatTab[hidden] + .pane-split + #voicePane, #workspacePanes.map-focus > .map-chat-strip) {
   border-top-width: 1px; border-top-left-radius: 10px; border-top-right-radius: 10px; }
 .workspace-in-room.has-workspace-pane:not(.workspace-wide) #workspacePanes.map-focus > #chatTab { border-top-width: 0; border-radius: 0; }
 .workspace-in-room.has-workspace-pane:not(.workspace-wide) .workspace-pane.pane-last { border-bottom-left-radius: 10px; border-bottom-right-radius: 10px; }
