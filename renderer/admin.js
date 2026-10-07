@@ -149,6 +149,8 @@ function admPessoaLinha(u, acoes) {
   if (u.status === 'disabled') chips.append(admEl('span', 'adm-chip adm-chip-warn', 'Desativada'));
   // Sem Google, a pessoa fica sem entrar quando a senha for desligada (legacyPasswordLogin)
   if (u.status === 'active' && u.googleLinked === false) chips.append(admEl('span', 'adm-chip adm-chip-warn', 'Sem Google'));
+  // Quem já vinculou o Google dispensa senha; quem só tem senha ainda precisa vincular (ou receber um código de senha)
+  if (u.status === 'active') chips.append(admEl('span', 'adm-chip', u.googleLinked ? 'Google' : 'Só senha'));
   if (u.online) chips.append(admEl('span', 'adm-chip adm-chip-ok', 'Online'));
   const botoes = admEl('span', 'adm-actions');
   botoes.append(...acoes);
@@ -175,6 +177,20 @@ async function admCodigoSenha(u) {
   if (copiar) {
     try { await navigator.clipboard.writeText(r.code); toast('Código copiado.'); } catch { toast('Não deu para copiar. Anote o código.', 'error'); }
   }
+}
+
+// Excluir conta (só desativada): apaga a conta e o que ela criou. O e-mail pode continuar na lista de convidados; sem tirar de lá,
+// a pessoa cria a conta de novo ao entrar com o Google, por isso a segunda pergunta.
+async function admExcluir(u) {
+  if (!(await appConfirm(`Excluir ${u.displayName} (${u.email}) de vez? Some também as amizades, mensagens e salas que ela criou. Não dá para desfazer.`, { title: 'Excluir conta', ok: 'Excluir', danger: true }))) return;
+  try { await admChamar('DELETE', '/v1/admin/users/' + u.id); } catch { return; }
+  toast(u.displayName + ' foi excluída.');
+  const email = String(u.email || '').toLowerCase();
+  const convidada = (adm.dados?.allow || []).some((c) => String(c.email || '').toLowerCase() === email);
+  if (convidada && (await appConfirm(`${u.email} continua na lista de convidados, então a pessoa pode criar a conta de novo ao entrar com o Google. Tirar da lista também?`, { title: 'Lista de convidados', ok: 'Tirar da lista', cancel: 'Manter' }))) {
+    try { await admChamar('DELETE', '/v1/admin/allowlist/' + encodeURIComponent(email)); toast('E-mail tirado da lista de convidados.'); } catch { /* erro já mostrado */ }
+  }
+  await admCarregar();
 }
 
 function admPedidos(corpo) {
@@ -306,7 +322,10 @@ function admLista() {
           if (!(await appConfirm(`Desativar ${u.displayName}? Ela sai de todos os PCs e não consegue entrar.`, { title: 'Desativar', ok: 'Desativar', danger: true }))) return;
           await admAlterar(u.id, { status: 'disabled', banReason: 'Desativada pelo administrador' }, u.displayName + ' foi desativada.');
         }, 'btn small danger'));
-      } else if (u.status === 'disabled') acoes.push(admBtn('Reativar', () => void admAlterar(u.id, { status: 'active' }, u.displayName + ' foi reativada.')));
+      } else if (u.status === 'disabled') {
+        acoes.push(admBtn('Reativar', () => void admAlterar(u.id, { status: 'active' }, u.displayName + ' foi reativada.')));
+        acoes.push(admBtn('Excluir', () => void admExcluir(u), 'btn small danger'));
+      }
       else if (u.status === 'pending') acoes.push(admBtn('Aprovar', () => void admAlterar(u.id, { status: 'active' }, u.displayName + ' foi aprovada.'), 'btn small primary'));
     } else acoes.push(admEl('span', 'hint', 'Você'));
     ul.append(admPessoaLinha(u, acoes));

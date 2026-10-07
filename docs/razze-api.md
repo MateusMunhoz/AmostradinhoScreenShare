@@ -194,6 +194,7 @@ Online confirma contato recente com a API; não prova conectividade P2P. As sala
 | `GET/POST /v1/admin/allowlist` (`{ email, grupo: amigo|teste|admin, label? }`), `DELETE /v1/admin/allowlist/:email` | Lista de convidados: quem está nela entra já ativo (sem aprovação) com o grupo ou papel combinado; pôr na lista alguém que já criou conta (pendente) libera e ajusta, **só se o Google confirmou o e-mail dessa conta** (criada pelo Google ou que entrou/vinculou um Google do mesmo e-mail); senão a conta fica como está e a resposta traz `semGoogle: true`. Tirar da lista não apaga a conta. Até 500 e-mails |
 | `GET /v1/admin/analytics` | Só contagens: contas por situação e grupo, online agora, ativos hoje/7/30 dias, pico do dia, voltaram na semana, nunca abriram, amizades, mensagens dos últimos 7 dias, versões do app em uso e 14 dias de ativos, pico e cadastros. Nenhum e-mail |
 | `PATCH /v1/admin/users/:id` | Papel `user/admin`, grupo `amigo/teste`, status `pending/active/disabled` e `banReason` |
+| `DELETE /v1/admin/users/:id` | Excluir conta: só **desativada** (409 `user_not_disabled`) e nunca a própria (400). Apaga em cascata sessões, amizades, mensagens, chaves, feedback e as redes que ela criou; grava `user.delete` no histórico. O e-mail continua na lista de convidados |
 | `POST /v1/admin/users/:id/revoke-sessions` | Revogar todas as sessões e dispositivos do usuário |
 | `GET /v1/admin/clients`, `DELETE /v1/admin/clients/:id` | Consumo por sessão e desconexão individual |
 | `DELETE /v1/admin/networks/:id` | Excluir rede como administrador |

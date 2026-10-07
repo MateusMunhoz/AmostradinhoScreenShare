@@ -338,6 +338,17 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
         });
         return result({ ok: true });
       }
+      // Excluir conta: só depois de desativar (dois passos de propósito). O banco apaga em cascata sessões, amizades, mensagens,
+      // chaves, feedback e as redes que a pessoa criou. O e-mail continua na lista de convidados (quem decide é o administrador).
+      if (method === 'DELETE' && !target[2]) {
+        if (previous.id === actor) bad('Você não pode excluir a própria conta.');
+        if (previous.status !== 'disabled') throw new ApiError(409, 'user_not_disabled', 'Desative a conta antes de excluir.');
+        transaction(() => {
+          db.prepare('DELETE FROM users WHERE id=?').run(previous.id);
+          audit(actor, 'user.delete', previous.id, { email: previous.email, displayName: previous.displayName, role: previous.role });
+        });
+        return result({ ok: true });
+      }
       if (method === 'PATCH' && !target[2]) {
         const body = await readBody(req);
         adminActor(req);
