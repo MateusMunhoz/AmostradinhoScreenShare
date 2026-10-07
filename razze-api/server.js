@@ -46,6 +46,22 @@ const DEFAULT_DOWNLOAD_URL = 'https://github.com/MateusMunhoz/AmostradinhoScreen
 const SIGNAL_TTL_MS = 2 * 60 * 1000;
 const SIGNAL_MAX = 16000;
 const SIGNAL_QUEUE = 50; // sinais esperando por conta
+// Feedback e bugs (docs/razze-api.md): respostas curtas de escolher, textos limitados e um print opcional (JPEG ou PNG,
+// já reduzido no app). Só esta rota aceita corpo maior que MAX_BODY_BYTES
+const FEEDBACK_BODY_BYTES = 700 * 1024;
+const FEEDBACK_IMAGE_BYTES = 450 * 1024;
+const FEEDBACK_POR_HORA = 5;
+const FEEDBACK_POR_DIA = 20;
+const FEEDBACK_ESCOLHAS = {
+  area: ['chat', 'voz', 'transmissao', 'musica', 'mapa', 'conta', 'temas', 'outro'],
+  frequencia: ['sempre', 'as-vezes', 'uma-vez'],
+  impacto: ['pouco', 'bastante', 'bloqueia'],
+  uso: ['as-vezes', 'semana', 'dia'],
+};
+const FEEDBACK_USA = ['voz', 'transmissao', 'chat', 'musica', 'mapa', 'gamer'];
+const FEEDBACK_TEXTOS = { titulo: 140, detalhes: 2000, passos: 2000, gosta: 500, incomoda: 500 };
+// O que é obrigatório em cada tipo: bug (onde e o que deu errado), ideia (a ideia), nota (a nota de 0 a 10)
+const FEEDBACK_OBRIGATORIO = { bug: ['area', 'titulo'], ideia: ['titulo'], nota: ['nota'] };
 
 class ApiError extends Error {
   constructor(status, code, message) { super(message); this.status = status; this.code = code; }
@@ -93,6 +109,13 @@ function createApiServer(options = {}) {
   if (!userColumns.includes('google_sub')) db.exec('ALTER TABLE users ADD COLUMN google_sub TEXT');
   if (!userColumns.includes('password_set')) db.exec('ALTER TABLE users ADD COLUMN password_set INTEGER NOT NULL DEFAULT 1');
   db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_sub ON users(google_sub) WHERE google_sub IS NOT NULL');
+  // O Google confirmou que o e-mail da conta é da pessoa (o cadastro por senha não confere). A lista de convidados só
+  // promove conta existente com isso. Contas antigas: vale para as criadas pelo Google (sem senha definida); as demais
+  // ganham ao entrar com um Google do mesmo e-mail.
+  if (!userColumns.includes('email_verificado')) {
+    db.exec('ALTER TABLE users ADD COLUMN email_verificado INTEGER NOT NULL DEFAULT 0');
+    db.exec('UPDATE users SET email_verificado = 1 WHERE google_sub IS NOT NULL AND password_set = 0');
+  }
   // Grupo da pessoa no painel (amigo ou teste); o administrador é o papel (role), não um grupo
   if (!userColumns.includes('grupo')) db.exec("ALTER TABLE users ADD COLUMN grupo TEXT NOT NULL DEFAULT 'amigo' CHECK(grupo IN ('amigo', 'teste'))");
   // Lista de convidados: quem está aqui entra já ativo (sem esperar aprovação) e com o grupo/papel combinado
@@ -100,6 +123,9 @@ function createApiServer(options = {}) {
   // Para as estatísticas do painel: em que dias cada conta usou o app e o maior número de pessoas online por dia
   db.exec('CREATE TABLE IF NOT EXISTS user_days (user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, day TEXT NOT NULL, PRIMARY KEY(user_id, day))');
   db.exec('CREATE TABLE IF NOT EXISTS daily_peak (day TEXT PRIMARY KEY, peak INTEGER NOT NULL)');
+  // Feedback e bugs mandados pelo app: respostas e dados técnicos em JSON (já validados), print opcional
+  db.exec("CREATE TABLE IF NOT EXISTS feedback (id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, tipo TEXT NOT NULL CHECK(tipo IN ('bug', 'ideia', 'nota')), respostas TEXT NOT NULL, tecnico TEXT NOT NULL DEFAULT '{}', contato INTEGER NOT NULL DEFAULT 0, imagem BLOB, imagem_tipo TEXT, status TEXT NOT NULL DEFAULT 'novo' CHECK(status IN ('novo', 'visto', 'resolvido')), created_at INTEGER NOT NULL)");
+  db.exec('CREATE INDEX IF NOT EXISTS idx_feedback_user ON feedback(user_id, created_at)');
   if (!userColumns.includes('bio')) db.exec("ALTER TABLE users ADD COLUMN bio TEXT NOT NULL DEFAULT ''");
   if (!userColumns.includes('status')) db.exec("ALTER TABLE users ADD COLUMN status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('pending', 'active', 'disabled'))");
 
@@ -165,6 +191,66 @@ function createApiServer(options = {}) {
     return { ...rest, googleLinked: !!googleSub, hasPassword: !!passwordSet };
   };
   const newId = () => randomBytes(16).toString('hex');
+  const feedbackTexto = (value, field, max) => {
+    if (value === undefined || value === null) return '';
+    if (typeof value !== 'string') throw new ApiError(400, 'invalid_input', field + ' precisa ser um texto.');
+    // Mantém as quebras de linha (passos numerados); tira os outros caracteres de controle
+    const text = value.replace(/\r\n?/g, '\n').replace(/[\u0000-\u0009\u000b-\u001f\u007f]/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+    if (Array.from(text).length > max) throw new ApiError(400, 'invalid_input', field + ' pode ter até ' + max + ' caracteres.');
+    return text;
+  };
+  // Confere cada campo do feedback e devolve só o que vale para o tipo; campo desconhecido é recusado
+  const cleanFeedback = (body) => {
+    const bad = (m) => { throw new ApiError(400, 'invalid_input', m); };
+    const known = ['tipo', 'contato', 'tecnico', 'imagem', 'nota', 'usa', ...Object.keys(FEEDBACK_ESCOLHAS), ...Object.keys(FEEDBACK_TEXTOS)];
+    if (Object.keys(body).some((k) => !known.includes(k))) bad('Campo de feedback desconhecido.');
+    const tipo = body.tipo;
+    if (typeof tipo !== 'string' || !Object.hasOwn(FEEDBACK_OBRIGATORIO, tipo)) bad('Tipo de feedback inválido.');
+    const respostas = {};
+    for (const [campo, opcoes] of Object.entries(FEEDBACK_ESCOLHAS)) {
+      if (body[campo] === undefined || body[campo] === null || body[campo] === '') continue;
+      if (!opcoes.includes(body[campo])) bad('Opção inválida em ' + campo + '.');
+      respostas[campo] = body[campo];
+    }
+    for (const [campo, max] of Object.entries(FEEDBACK_TEXTOS)) {
+      const text = feedbackTexto(body[campo], campo, max);
+      if (text) respostas[campo] = text;
+    }
+    if (body.nota !== undefined && body.nota !== null) {
+      if (!Number.isInteger(body.nota) || body.nota < 0 || body.nota > 10) bad('A nota vai de 0 a 10.');
+      respostas.nota = body.nota;
+    }
+    if (body.usa !== undefined) {
+      if (!Array.isArray(body.usa) || body.usa.length > FEEDBACK_USA.length || body.usa.some((u) => !FEEDBACK_USA.includes(u))) bad('Lista do que você usa inválida.');
+      if (body.usa.length) respostas.usa = [...new Set(body.usa)];
+    }
+    for (const campo of FEEDBACK_OBRIGATORIO[tipo]) if (respostas[campo] === undefined) bad('Falta responder ' + campo + '.');
+    // Dados técnicos: só texto curto, poucas chaves conhecidas
+    const tecnico = {};
+    if (body.tecnico !== undefined && body.tecnico !== null) {
+      if (typeof body.tecnico !== 'object' || Array.isArray(body.tecnico)) bad('Dados técnicos inválidos.');
+      for (const [k, v] of Object.entries(body.tecnico)) {
+        if (!['versao', 'sistema', 'tema', 'naSala'].includes(k)) bad('Dado técnico desconhecido.');
+        if (k === 'naSala') { if (typeof v !== 'boolean') bad('Dado técnico inválido.'); tecnico.naSala = v; continue; }
+        const text = feedbackTexto(v, k, 120).replace(/\n/g, ' ');
+        if (text) tecnico[k] = text;
+      }
+    }
+    if (body.contato !== undefined && typeof body.contato !== 'boolean') bad('Contato inválido.');
+    let imagem = null, imagemTipo = null;
+    if (body.imagem !== undefined && body.imagem !== null && body.imagem !== '') {
+      const m = typeof body.imagem === 'string' ? /^data:(image\/(?:jpeg|png));base64,([A-Za-z0-9+/]+={0,2})$/.exec(body.imagem) : null;
+      if (!m) bad('O print precisa ser uma imagem JPEG ou PNG.');
+      imagem = Buffer.from(m[2], 'base64');
+      if (!imagem.length || imagem.length > FEEDBACK_IMAGE_BYTES) bad('O print pode ter até ' + Math.round(FEEDBACK_IMAGE_BYTES / 1024) + ' KB.');
+      // Confere a assinatura do arquivo, não só o que o pedido diz
+      const jpeg = imagem[0] === 0xff && imagem[1] === 0xd8 && imagem[2] === 0xff;
+      const png = imagem.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+      if ((m[1] === 'image/jpeg' && !jpeg) || (m[1] === 'image/png' && !png)) bad('O print precisa ser uma imagem JPEG ou PNG.');
+      imagemTipo = m[1];
+    }
+    return { tipo, respostas, tecnico, contato: body.contato === true, imagem, imagemTipo };
+  };
   const hash = (value) => createHash('sha256').update(value).digest('hex');
   const now = options.now || (() => Date.now());
   const authAttempts = new Map();
@@ -222,13 +308,13 @@ function createApiServer(options = {}) {
     req.authSessionHash = tokenHash;
     return session.userId;
   };
-  const readBody = async (req) => {
+  const readBody = async (req, max = MAX_BODY_BYTES) => {
     const chunks = [];
     let size = 0;
     for await (const chunk of req) {
       size += chunk.length;
       req.bodyBytes = size;
-      if (size > MAX_BODY_BYTES) throw new ApiError(413, 'body_too_large', 'A requisição excede o limite permitido.');
+      if (size > max) throw new ApiError(413, 'body_too_large', 'A requisição excede o limite permitido.');
       chunks.push(chunk);
     }
     if (!chunks.length) return {};
@@ -387,8 +473,12 @@ function createApiServer(options = {}) {
         let user = db.prepare('SELECT id, status FROM users WHERE google_sub = ?').get(identity.sub);
         if (!user) {
           if (db.prepare('SELECT 1 AS yes FROM users WHERE email = ?').get(identity.email)) {
-            // Não junta sozinho: quem criou a conta com esse e-mail pode não ser o dono dele. Entra com a senha e vincula.
-            throw new ApiError(409, 'account_exists', 'Já existe uma conta com o e-mail ' + identity.email + '. Entre com a senha e vincule o Google em Conta.');
+            // Não junta sozinho: quem criou a conta com esse e-mail pode não ser o dono dele. Entra com a senha e vincula;
+            // com a senha desligada (googleOnly sem legacyPasswordLogin) só o administrador destrava.
+            const semSenha = control.settings().googleOnly && !control.settings().legacyPasswordLogin;
+            throw new ApiError(409, 'account_exists', 'Já existe uma conta com o e-mail ' + identity.email + '. ' + (semSenha
+              ? 'Ela ainda não foi ligada ao Google. Peça ao administrador para liberar a entrada por senha; aí você entra com ela e vincula o Google em Conta.'
+              : 'Entre com a senha e vincule o Google em Conta.'));
           }
           const convidado = db.prepare('SELECT grupo FROM allowed_emails WHERE email = ?').get(identity.email);
           if (!convidado && control.settings().onlyAllowlist) throw new ApiError(403, 'not_allowed', 'Este e-mail não está na lista de convidados. Peça ao administrador para te adicionar.');
@@ -398,12 +488,13 @@ function createApiServer(options = {}) {
           const unusable = randomBytes(32).toString('hex'); // senha que ninguém conhece: a conta só entra pelo Google até definir uma
           const displayName = (identity.name.replace(/\s+/g, ' ').trim() || identity.email.split('@')[0]).slice(0, 60) || 'Usuário';
           const requiresApproval = control.settings().requireApproval && !convidado; // quem está na lista de convidados entra direto
-          db.prepare('INSERT INTO users(id, email, display_name, password_salt, password_hash, status, google_sub, password_set, role, grupo, created_at) VALUES(?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)')
+          db.prepare('INSERT INTO users(id, email, display_name, password_salt, password_hash, status, google_sub, password_set, email_verificado, role, grupo, created_at) VALUES(?, ?, ?, ?, ?, ?, ?, 0, 1, ?, ?, ?)')
             .run(id, identity.email, displayName, salt, await hashPassword(unusable, salt), requiresApproval ? 'pending' : 'active', identity.sub,
               convidado?.grupo === 'admin' ? 'admin' : 'user', convidado && convidado.grupo !== 'admin' ? convidado.grupo : 'amigo', now());
           if (requiresApproval) return send(res, 202, { user: publicUser(id), status: 'pending_approval' });
           return send(res, 201, { user: publicUser(id), status: 'active', accessToken: issueToken(id) });
         }
+        db.prepare('UPDATE users SET email_verificado = 1 WHERE id = ? AND email = ?').run(user.id, identity.email);
         if (user.status === 'pending') throw new ApiError(403, 'account_pending', 'Sua conta aguarda aprovação do servidor.');
         if (user.status !== 'active') throw new ApiError(403, 'account_disabled', 'Esta conta está desativada.');
         return send(res, 200, { user: publicUser(user.id), accessToken: issueToken(user.id) });
@@ -499,7 +590,8 @@ function createApiServer(options = {}) {
         try { identity = await googleIdentity(body); } catch (error) { if (error.status !== 503) failed(); throw error; }
         const other = db.prepare('SELECT id FROM users WHERE google_sub = ? AND id <> ?').get(identity.sub, userId);
         if (other) throw new ApiError(409, 'google_taken', 'Essa conta do Google já está ligada a outra conta.');
-        db.prepare('UPDATE users SET google_sub = ? WHERE id = ?').run(identity.sub, userId);
+        // Vincular um Google de outro e-mail não confirma o e-mail da conta
+        db.prepare('UPDATE users SET google_sub = ?, email_verificado = CASE WHEN email = ? THEN 1 ELSE email_verificado END WHERE id = ?').run(identity.sub, identity.email, userId);
         return send(res, 200, { user: publicUser(userId) });
       }
       if (method === 'DELETE' && pathname === '/v1/me/google') {
@@ -532,6 +624,20 @@ function createApiServer(options = {}) {
         const token = /^Bearer ([A-Za-z0-9_-]{30,})$/.exec(String(req.headers.authorization || ''))?.[1];
         if (token) db.prepare('DELETE FROM sessions WHERE token_hash = ?').run(hash(token));
         return send(res, 200, { ok: true });
+      }
+
+      // Feedback e bugs: precisa estar logado; até 5 por hora e 20 por dia por conta (contado no banco)
+      if (method === 'POST' && pathname === '/v1/feedback') {
+        const timestamp = now();
+        const enviados = (desde) => db.prepare('SELECT COUNT(*) AS n FROM feedback WHERE user_id = ? AND created_at > ?').get(userId, timestamp - desde).n;
+        if (enviados(60 * 60 * 1000) >= FEEDBACK_POR_HORA || enviados(24 * 60 * 60 * 1000) >= FEEDBACK_POR_DIA) {
+          throw new ApiError(429, 'rate_limited', 'Você já mandou bastante feedback por agora. Tente de novo mais tarde.');
+        }
+        const f = cleanFeedback(await readBody(req, FEEDBACK_BODY_BYTES));
+        const id = newId();
+        db.prepare('INSERT INTO feedback(id, user_id, tipo, respostas, tecnico, contato, imagem, imagem_tipo, created_at) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)')
+          .run(id, userId, f.tipo, JSON.stringify(f.respostas), JSON.stringify(f.tecnico), f.contato ? 1 : 0, f.imagem, f.imagemTipo, timestamp);
+        return send(res, 201, { ok: true, id });
       }
 
       if (method === 'GET' && pathname === '/v1/friends') {

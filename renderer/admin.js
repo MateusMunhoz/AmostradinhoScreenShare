@@ -1,12 +1,12 @@
 'use strict';
 // Administração dentro do app (Perfil › Conta Razze › Administração): só para contas com papel de administrador.
 // Visão geral (números), Pedidos (contas pendentes), Convidados (lista de e-mails que entram direto), Pessoas
-// (filtro por grupo) e Servidor (interruptores). Tudo vai por window.api.razzeAdmin, que só aceita as rotas do painel
+// (filtro por grupo), Feedback (bugs, sugestões e notas mandados pelo app: renderer/feedback.js) e Servidor (interruptores). Tudo vai por window.api.razzeAdmin, que só aceita as rotas do painel
 // (main/razze-api-client.js); o servidor confere o papel em toda chamada. Plano: docs/spec/conta-so-google-e-admin.md.
 // Script clássico: só declara; quem liga é renderer/inicio.js (setupAdmin). Usa: util ($, toast, appConfirm), conectividade (razzeUser).
 
-const adm = { aba: 'geral', filtro: 'todos', busca: '', dados: null, ocupado: false };
-const ADM_ABAS = [['geral', 'Visão geral'], ['pedidos', 'Pedidos'], ['convidados', 'Convidados'], ['pessoas', 'Pessoas'], ['servidor', 'Servidor']];
+const adm = { aba: 'geral', filtro: 'todos', busca: '', fbFiltro: 'abertos', dados: null, ocupado: false };
+const ADM_ABAS = [['geral', 'Visão geral'], ['pedidos', 'Pedidos'], ['convidados', 'Convidados'], ['pessoas', 'Pessoas'], ['feedback', 'Feedback'], ['servidor', 'Servidor']];
 const ADM_FILTROS = [['todos', 'Todos'], ['amigo', 'Amigos'], ['teste', 'Teste'], ['admin', 'Admin'], ['pendente', 'Pendentes'], ['desativado', 'Desativados']];
 const ADM_SERVIDOR = [
   ['googleOnly', 'Só Google para criar conta', 'Ninguém cria conta por e-mail e senha. O administrador continua entrando por senha.'],
@@ -50,11 +50,13 @@ async function admCarregar() {
   adm.ocupado = true;
   $('adminStatus').textContent = 'Atualizando…';
   try {
-    const [analytics, users, allow, settings] = await Promise.all([
+    const [analytics, users, allow, settings, feedback] = await Promise.all([
       window.api.razzeAdmin('GET', '/v1/admin/analytics'), window.api.razzeAdmin('GET', '/v1/admin/users'),
       window.api.razzeAdmin('GET', '/v1/admin/allowlist'), window.api.razzeAdmin('GET', '/v1/admin/settings'),
+      // Servidor sem a rota de feedback (RazzeAPI antiga): o resto do painel continua
+      window.api.razzeAdmin('GET', '/v1/admin/feedback').catch(() => ({ feedback: null })),
     ]);
-    adm.dados = { analytics, users: users.users, allow: allow.allowlist, settings: settings.settings };
+    adm.dados = { analytics, users: users.users, allow: allow.allowlist, settings: settings.settings, feedback: feedback.feedback };
     $('adminStatus').textContent = 'Atualizado às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   } catch (e) {
     adm.dados = null;
@@ -73,13 +75,15 @@ function admDesenhar() {
     b.setAttribute('role', 'tab');
     b.setAttribute('aria-selected', String(adm.aba === id));
     if (id === 'pedidos' && pendentes) b.append(' ', admEl('span', 'hub-badge', String(pendentes)));
+    const novos = adm.dados?.feedback ? adm.dados.feedback.filter((f) => f.status === 'novo').length : 0;
+    if (id === 'feedback' && novos) b.append(' ', admEl('span', 'hub-badge', String(novos)));
     b.onclick = () => { adm.aba = id; admDesenhar(); };
     tabs.append(b);
   }
   const corpo = $('adminBody');
   corpo.textContent = '';
   if (!adm.dados) return;
-  ({ geral: admGeral, pedidos: admPedidos, convidados: admConvidados, pessoas: admPessoas, servidor: admServidor })[adm.aba](corpo);
+  ({ geral: admGeral, pedidos: admPedidos, convidados: admConvidados, pessoas: admPessoas, feedback: admFeedback, servidor: admServidor })[adm.aba](corpo);
 }
 
 function admCartao(titulo, valor, dica) {
@@ -143,6 +147,8 @@ function admPessoaLinha(u, acoes) {
   chips.append(admEl('span', 'adm-chip' + (u.role === 'admin' ? ' adm-chip-admin' : ''), u.role === 'admin' ? 'Admin' : u.grupo === 'teste' ? 'Teste' : 'Amigo'));
   if (u.status === 'pending') chips.append(admEl('span', 'adm-chip adm-chip-warn', 'Pendente'));
   if (u.status === 'disabled') chips.append(admEl('span', 'adm-chip adm-chip-warn', 'Desativada'));
+  // Sem Google, a pessoa fica sem entrar quando a senha for desligada (legacyPasswordLogin)
+  if (u.status === 'active' && u.googleLinked === false) chips.append(admEl('span', 'adm-chip adm-chip-warn', 'Sem Google'));
   if (u.online) chips.append(admEl('span', 'adm-chip adm-chip-ok', 'Online'));
   const botoes = admEl('span', 'adm-actions');
   botoes.append(...acoes);
@@ -209,7 +215,11 @@ function admConvidados(corpo) {
     ev.preventDefault();
     if (grupo.value === 'admin' && !(await appConfirm(`Dar acesso de administrador a ${email.value}? A pessoa vê e muda tudo neste painel.`, { title: 'Novo administrador', ok: 'Dar acesso', danger: true }))) return;
     ok.disabled = true;
-    try { await admChamar('POST', '/v1/admin/allowlist', { email: email.value.trim(), grupo: grupo.value, label: nome.value.trim() }); toast('E-mail na lista de convidados.'); } catch { /* erro já mostrado */ }
+    try {
+      const r = await admChamar('POST', '/v1/admin/allowlist', { email: email.value.trim(), grupo: grupo.value, label: nome.value.trim() });
+      // Conta criada por senha com esse e-mail: o servidor não muda o grupo nem o papel dela até o Google confirmar o e-mail
+      toast(r?.semGoogle ? 'E-mail na lista, mas a conta que já existe com ele não foi alterada: o Google ainda não confirmou esse e-mail.' : 'E-mail na lista de convidados.');
+    } catch { /* erro já mostrado */ }
     await admCarregar();
   };
   corpo.append(admEl('p', 'hint', 'E-mails da lista entram já ativos, sem esperar aprovação, no grupo que você escolher.'), form);
@@ -302,6 +312,101 @@ function admLista() {
     ul.append(admPessoaLinha(u, acoes));
   }
   alvo.append(ul);
+}
+
+const ADM_FB_TIPOS = { bug: 'Bug', ideia: 'Sugestão', nota: 'Avaliação' };
+const ADM_FB_STATUS = [['novo', 'Novo'], ['visto', 'Visto'], ['resolvido', 'Resolvido']];
+const ADM_FB_FILTROS = [['abertos', 'Abertos'], ['bug', 'Bugs'], ['ideia', 'Sugestões'], ['nota', 'Avaliações'], ['resolvido', 'Resolvidos'], ['todos', 'Todos']];
+const ADM_FB_CAMPOS = [['area', 'Onde'], ['passos', 'Como reproduzir'], ['frequencia', 'Frequência'], ['impacto', 'Quanto atrapalha'], ['detalhes', 'Problema que resolve'],
+  ['uso', 'Usaria'], ['nota', 'Nota'], ['usa', 'Mais usa'], ['gosta', 'Mais gosta'], ['incomoda', 'Mais incomoda']];
+function admFbFiltra(f, filtro) {
+  if (filtro === 'todos') return true;
+  if (filtro === 'resolvido') return f.status === 'resolvido';
+  if (filtro === 'abertos') return f.status !== 'resolvido';
+  return f.tipo === filtro && f.status !== 'resolvido';
+}
+// Texto de uma resposta: a opção pelo nome que a pessoa viu (FB_NOMES, renderer/feedback.js)
+function admFbValor(campo, v) {
+  const nomes = typeof FB_NOMES !== 'undefined' ? FB_NOMES[campo] : null;
+  if (Array.isArray(v)) return v.map((x) => nomes?.[x] || x).join(', ');
+  if (campo === 'nota') return v + ' de 10';
+  return nomes?.[v] || String(v);
+}
+
+function admFeedback(corpo) {
+  const lista = adm.dados.feedback;
+  if (!lista) { corpo.append(admEl('p', 'adm-empty', 'Este servidor ainda não recebe feedback. Atualize a RazzeAPI.')); return; }
+  const seg = admEl('div', 'seg');
+  seg.setAttribute('role', 'tablist');
+  for (const [id, nome] of ADM_FB_FILTROS) {
+    const b = admEl('button', '', nome);
+    b.type = 'button';
+    b.setAttribute('role', 'tab');
+    b.setAttribute('aria-selected', String(adm.fbFiltro === id));
+    b.append(' ', admEl('span', 'count', String(lista.filter((f) => admFbFiltra(f, id)).length)));
+    b.onclick = () => { adm.fbFiltro = id; admDesenhar(); };
+    seg.append(b);
+  }
+  const barra = admEl('div', 'adm-filter');
+  barra.append(seg);
+  corpo.append(admEl('p', 'hint', 'Bugs, sugestões e notas mandados pelo ícone de feedback do app. Os mais novos primeiro.'), barra);
+  const itens = lista.filter((f) => admFbFiltra(f, adm.fbFiltro));
+  if (!itens.length) { corpo.append(admEl('p', 'adm-empty', 'Nada neste filtro.')); return; }
+  const ul = admEl('ul', 'adm-rows');
+  for (const f of itens) {
+    const r = f.respostas || {};
+    const li = admEl('li', 'adm-fb-item');
+    li.dataset.status = f.status;
+    const topo = admEl('div', 'adm-fb-top');
+    topo.append(admEl('span', 'adm-chip' + (f.tipo === 'bug' ? ' adm-chip-warn' : ''), ADM_FB_TIPOS[f.tipo] || f.tipo),
+      admEl('strong', '', r.titulo || (r.nota !== undefined ? 'Nota ' + r.nota : 'Avaliação')));
+    if (f.status === 'novo') topo.append(admEl('span', 'adm-chip adm-chip-ok', 'Novo'));
+    const quando = new Date(f.createdAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    topo.append(admEl('span', 'hint', f.nome + ' · ' + quando));
+    li.append(topo);
+    const dl = admEl('dl', 'adm-fb-dados');
+    for (const [campo, nome] of ADM_FB_CAMPOS) {
+      if (r[campo] === undefined) continue;
+      dl.append(admEl('dt', '', nome), admEl('dd', '', admFbValor(campo, r[campo])));
+    }
+    const t = f.tecnico || {};
+    if (Object.keys(t).length) dl.append(admEl('dt', '', 'Técnico'), admEl('dd', '', [t.versao && 'v' + t.versao, t.sistema, t.tema && 'tema ' + t.tema, t.naSala !== undefined && (t.naSala ? 'numa sala' : 'fora de sala')].filter(Boolean).join(' · ')));
+    dl.append(admEl('dt', '', 'Contato'), admEl('dd', '', f.contato ? 'Pode chamar (' + f.email + ')' : 'Prefere não ser chamada'));
+    li.append(dl);
+    const acoes = admEl('div', 'adm-actions');
+    if (f.temImagem) {
+      acoes.append(admBtn('Ver print', async (ev) => {
+        const botao = ev.currentTarget;
+        botao.disabled = true;
+        try {
+          const img = await admChamar('GET', '/v1/admin/feedback/' + f.id + '/imagem');
+          if (!/^image\/(jpeg|png)$/.test(img?.tipo) || typeof img.dados !== 'string') throw new Error('print inválido');
+          const el = admEl('img', 'adm-fb-img');
+          el.alt = 'Print do feedback de ' + f.nome;
+          el.src = 'data:' + img.tipo + ';base64,' + img.dados;
+          li.insertBefore(el, acoes);
+          botao.remove();
+        } catch { botao.disabled = false; }
+      }));
+    }
+    const status = admEl('select', 'adm-select');
+    status.setAttribute('aria-label', 'Situação do feedback');
+    for (const [v, n] of ADM_FB_STATUS) status.append(new Option(n, v));
+    status.value = f.status;
+    status.onchange = async () => {
+      try { await admChamar('PATCH', '/v1/admin/feedback/' + f.id, { status: status.value }); } catch { /* erro já mostrado */ }
+      await admCarregar();
+    };
+    const apagar = admBtn('Apagar', async () => {
+      if (!(await appConfirm('Apagar este feedback de vez?', { title: 'Apagar feedback', ok: 'Apagar', danger: true }))) return;
+      try { await admChamar('DELETE', '/v1/admin/feedback/' + f.id); } catch { /* erro já mostrado */ }
+      await admCarregar();
+    }, 'btn small danger');
+    acoes.append(status, apagar);
+    li.append(acoes);
+    ul.append(li);
+  }
+  corpo.append(ul);
 }
 
 function admServidor(corpo) {

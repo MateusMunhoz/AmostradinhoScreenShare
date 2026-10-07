@@ -39,7 +39,7 @@ Tudo o que dá para fazer no Nebula, com os detalhes. Para começar do zero, vej
   - a voz: dentro dela, microfone, fone e sair no meio e, no fim, as bolinhas de quem está na chamada com você; fora dela, as bolinhas de quem já está conversando e **Entrar** (entra no canal com mais gente; sem ninguém, o botão diz **Voz**). Com gente em mais de uma subsala, a setinha ao lado abre a lista desses canais para escolher onde entrar;
   - as janelas flutuantes abertas.
   As **Estatísticas** ficam nas Configurações, e o chat abre pela barrinha da direita.
-- **Barrinha da direita:** em cima, o perfil; logo abaixo, separados por uma linha, o **botão de pessoas** (o total e uma bolinha verde quando alguém fala; abre a lista de quem está na sala), **Chat**, **Voz** e **Transmissão**. Ouvindo uma música, aparece também o botão de **música**: clicar mostra **Pausar** ou **Continuar** (para todos, se você pode controlar) e **Sair da música** (a música continua para os outros). No pé, **Início** (vai para o saguão sem sair da sala) e, depois de uma linha, o **chat por cima do jogo**, o **modo gamer** (o controle), **Voz e atalhos** e a engrenagem; por último, depois de outra linha, **Sair**, em vermelho. No saguão, com a sala aberta, o pé mostra **Voltar para a sala**, com o número de mensagens novas.
+- **Barrinha da direita:** em cima, o perfil; logo abaixo, separados por uma linha, o **botão de pessoas** (o total e uma bolinha verde quando alguém fala; abre a lista de quem está na sala), **Chat**, **Voz** e **Transmissão**. Ouvindo uma música, aparece também o botão de **música**: clicar mostra **Pausar** ou **Continuar** (para todos, se você pode controlar) e **Sair da música** (a música continua para os outros). No pé, **Início** (vai para o saguão sem sair da sala) e, depois de uma linha, o **chat por cima do jogo**, o **modo gamer** (o controle), **Voz e atalhos**, **Feedback e bugs** (o balão com exclamação) e a engrenagem; por último, depois de outra linha, **Sair**, em vermelho. No saguão, com a sala aberta, o pé mostra **Voltar para a sala**, com o número de mensagens novas.
 - **Recolher o painel:** o balão do chat recolhe o painel, e os vídeos ocupam a largura toda. Recolhido, ele mostra quantas mensagens chegaram, e o endereço da sala passa para a barra.
 
 ### Como os PCs se conectam
@@ -98,6 +98,9 @@ quem está com ela, quantas pessoas estão dentro e um cadeado se tiver senha.
 
 No modo Internet, a lista da tela inicial vira **Salas dos seus amigos**: as salas que os seus amigos do Razze
 abriram pela internet. Basta estar logado na conta Razze (no seu **Perfil**, em **Conta Razze**); a VPN Razze não precisa estar ligada.
+Quando há uma sala aberta (de amigo ou, nos outros modos, na sua rede), ela sobe para cima dos amigos com o selo
+**AO VIVO**, quantas pessoas, se a voz está ligada, o jogo do dono e os rostos dos seus amigos que já estão dentro.
+**Entrar na sala** vira o botão principal; **Abrir minha sala** e **Entrar com código** ficam como botões comuns.
 
 - **Quem instala agora:** o app já começa no modo Internet, com o servidor da equipe e a conta Razze prontos. É só criar
   a conta na aba Rede, adicionar os amigos e criar ou entrar nas salas. Quem já usava o app continua na Radmin; para
@@ -273,7 +276,16 @@ Na primeira vez que o app abre, uma tela de cada vez (três no máximo):
 
 Quem já usava o app não vê essa tela. Quem escolheu *Com amigos* e ainda não entrou vê no Início uma faixa **Entrar na conta**.
 
-No **Início**, com conta: **Amigos online** (até 5, com **Mensagem** e **Ligar**), **Adicionar amigo** e **Ver todos** (abre o envelope na aba **Amigos**).
+No **Início**, com conta: **Amigos online** (até 5, com **Mensagem** e **Ligar** em ícones), **Convidar** (um menu com **Copiar meu link** e **Adicionar amigo**) e **Ver todos** (abre o envelope na aba **Amigos**).
+Cada amigo mostra em etiquetas onde está, o jogo e a música (clique na música para ver a faixa). Passando o mouse na linha
+aparece **Chamar para minha sala**: manda o convite da sala em que você está pelas mensagens; fora de sala, abre a sua antes.
+
+O topo diz **Bom dia/Boa tarde/Boa noite** e o seu nome (o lápis ao lado muda o nome; sem nome, aparece o campo), com um
+resumo do momento: quantos amigos estão online, quem está jogando ou quem abriu uma sala. Ao lado, numa janela larga,
+uma constelação parada: você no meio e os amigos online em volta; quem está numa sala brilha na cor de "ao vivo".
+No modo Internet, **Abrir minha sala** diz quais amigos online vão ver a sala; as opções da sala ficam no ícone ao lado.
+**Última sala** mostra de quem era, quando e o modo (o endereço fica na dica), e a barra de baixo mostra a última conversa:
+clicar abre ela.
 **Abrir minha sala** cria a sala em um clique (com senha gerada e visível para os amigos); **Opções da sala** abre a tela
 de antes, com porta, senha e visibilidade.
 
@@ -284,13 +296,23 @@ de antes, com porta, senha e visibilidade.
   entre com a senha e use **Vincular Google** (Perfil › Conta Razze). **Desvincular Google** só funciona se a conta tiver senha;
   quem entrou só pelo Google define a primeira senha em **Trocar senha**, sem precisar da atual.
 - **Servidor só com Google:** quando o administrador liga essa opção, o passo 3 e o Perfil › Conta Razze mostram só **Entrar com Google** (sem formulário de e-mail e senha, e sem **Criar conta**). Quem já tinha conta com senha toca em **Tenho uma conta com e-mail e senha** para entrar como antes. Conta nova de um e-mail que não está na lista de convidados fica **pendente**: avise o administrador e, depois que ele aprovar, toque em **Entrar com Google** de novo. Sem conta, o app continua funcionando por código e senha da sala.
-- **Administração (só administradores):** em Perfil › Conta Razze, na sua conta, o botão **Administração** abre uma tela com **Visão geral** (online agora, ativos em 1, 7 e 30 dias, pico, contas novas, quem voltou, amizades, mensagens, versões em uso e 14 dias de gráfico), **Pedidos** (aprovar ou recusar contas pendentes), **Convidados** (e-mails que entram direto, com grupo Amigo, Teste ou Administrador), **Pessoas** (filtro Todos, Amigos, Teste, Admin, Pendentes e Desativados; mudar grupo, tornar administrador, desativar) e **Servidor** (interruptores de só Google, senha antiga, aprovação e lista de convidados). Quem não é administrador não vê o botão, e o servidor recusa as chamadas dele.
+- **Administração (só administradores):** em Perfil › Conta Razze, na sua conta, o botão **Administração** abre uma tela com **Visão geral** (online agora, ativos em 1, 7 e 30 dias, pico, contas novas, quem voltou, amizades, mensagens, versões em uso e 14 dias de gráfico), **Pedidos** (aprovar ou recusar contas pendentes), **Convidados** (e-mails que entram direto, com grupo Amigo, Teste ou Administrador), **Pessoas** (filtro Todos, Amigos, Teste, Admin, Pendentes e Desativados; mudar grupo, tornar administrador, desativar; quem ainda não vinculou o Google aparece com **Sem Google**: vincule todos antes de desligar a senha antiga), **Feedback** (o que chegou pelo ícone de feedback: filtro Abertos, Bugs, Sugestões, Avaliações, Resolvidos e Todos; ver o print, marcar como Novo, Visto ou Resolvido e apagar; o número na aba conta os novos) e **Servidor** (interruptores de só Google, senha antiga, aprovação e lista de convidados). Quem não é administrador não vê o botão, e o servidor recusa as chamadas dele.
 - **Trocar a senha:** Perfil › Conta Razze › **Trocar senha** (pede a senha atual; mínimo 8 caracteres).
 - **Esqueci a senha:** na tela de entrar (Perfil › Conta Razze ou o passo 3 da primeira entrada), **Esqueci a senha**. O servidor não
   manda e-mail: peça um código ao **administrador**, que o gera em Perfil › Conta Razze › **Administração › Pessoas** (botão **Código de senha**; também no painel web `/admin/`). Digite o e-mail, o
   código (vale 1 hora e funciona uma vez) e a senha nova.
 - **Frase do perfil:** no seu perfil, **Frase** (até 128 caracteres). Os amigos veem embaixo do seu nome no Início, e quem está na sala vê no seu cartão (ao abrir o seu perfil na voz); ela só passa entre os dois, na hora em que o cartão abre. Sem conta,
   ela fica salva neste PC e vai para o servidor quando você entrar.
+
+## Feedback e bugs
+
+O balão com exclamação na barrinha da direita, logo acima da engrenagem, abre **Fale com a gente**. Precisa estar com a conta Razze entrada (Perfil › Conta). São três abas:
+
+- **Reportar bug:** onde aconteceu (Chat, Voz, Transmissão, Música, Mapa, Conta e login ou Outro), o que deu errado, como fazer acontecer de novo (opcional), com que frequência e quanto atrapalha. Dá para anexar um **print**: cole com Ctrl+V, arraste para a caixa ou clique para escolher. O app reduz a imagem antes de mandar.
+- **Sugestão:** qual é a ideia, que problema ela resolve, a parte do app e quanto você usaria.
+- **Avaliar o app:** a nota de 0 a 10 (quanto você indicaria para um amigo), o que você mais usa, o que mais gosta e o que mais incomoda.
+
+No rodapé, **Enviar dados técnicos** (marcado) manda a versão do app, o sistema, o tema e se você estava numa sala; **Pode me chamar para tirar dúvidas** avisa o administrador que ele pode falar com você sobre isso. Clicar de novo numa opção marcada desmarca. Dá para mandar até 5 por hora. Quem lê é o administrador, na aba **Feedback** da Administração.
 
 ## Atividade no perfil
 

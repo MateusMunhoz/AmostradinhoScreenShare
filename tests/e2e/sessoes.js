@@ -20,7 +20,8 @@ run('Sessões abertas na rede', 150000, async () => {
   let l = await lista(O);
   const ana = l.find((s) => s.host === 'Ana');
   check('A sessão da Ana aparece, com senha e 1 pessoa', ana && ana.senha === true && ana.pessoas === 1 && ana.porta === P.ana, JSON.stringify(ana));
-  check('Na tela: "Sessão de Ana", cadeado e Entrar', await O.eval(`(() => { const li = [...$('sessionList').querySelectorAll('.session')].find((x) => x.textContent.includes('Sessão de Ana')); return li && !!li.querySelector('.session-meta svg') && li.querySelector('button').textContent === 'Entrar'; })()`));
+  check('Na tela: "Sessão de Ana", cadeado e Entrar na sala', await O.eval(`(() => { const li = [...$('sessionList').querySelectorAll('.session')].find((x) => x.textContent.includes('Sessão de Ana')); return li && !!li.querySelector('.session-meta svg') && li.querySelector('button').textContent === 'Entrar na sala'; })()`));
+  check('Com sala aberta, ela vira a ação principal', await O.eval(`$('home').classList.contains('tem-salas') && !$('goQuick').classList.contains('primary')`));
   check('Quem está na sala não procura sessões', await A.eval(`!sessoes.observando`));
 
   const C = await openApp('sessC', 9513);

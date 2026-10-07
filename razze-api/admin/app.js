@@ -71,7 +71,7 @@ async function render() {
     const { users } = await api('admin/users');
     fragment.append(el('h2', 'Usuários'), el('p', 'Aprovação automática vale para novos cadastros. Contas pendentes existentes devem ser aprovadas aqui.', 'muted'));
     const search = el('input'); search.placeholder = 'Buscar nome ou e-mail'; search.setAttribute('aria-label', 'Buscar usuário'); const box = el('div');
-    const draw = () => box.replaceChildren(table(['Nome / e-mail', 'Presença', 'Acesso', 'Ações'], users.filter(u => (u.displayName + u.email).toLowerCase().includes(search.value.toLowerCase())).map(u => {
+    const draw = () => box.replaceChildren(table(['Nome / e-mail', 'Presença', 'Acesso', 'Google vinculado', 'Ações'], users.filter(u => (u.displayName + u.email).toLowerCase().includes(search.value.toLowerCase())).map(u => {
       const actions = el('div', undefined, 'actions');
       if (u.status === 'pending') actions.append(action('Aprovar', () => api('admin/users/' + u.id + '/approve', 'POST')));
       actions.append(action(u.role === 'admin' ? 'Remover administração' : 'Tornar administrador', async () => {
@@ -90,7 +90,7 @@ async function render() {
         prompt('Passe este código a ' + u.displayName + ' (vale 1 hora):', r.code);
       }));
       actions.append(action('Revogar sessões', async () => { if (!confirm('Desconectar todas as sessões de ' + u.displayName + '?')) return false; await api('admin/users/' + u.id + '/revoke-sessions', 'POST'); }, true));
-      return [u.displayName + ' · ' + u.email, badge(u.online), (u.role === 'admin' ? 'Administrador' : 'Usuário') + ' / ' + ({ active: 'Ativo', pending: 'Pendente', disabled: 'Banido' }[u.status]) + (u.banReason ? ' · ' + u.banReason : ''), actions];
+      return [u.displayName + ' · ' + u.email, badge(u.online), (u.role === 'admin' ? 'Administrador' : 'Usuário') + ' / ' + ({ active: 'Ativo', pending: 'Pendente', disabled: 'Banido' }[u.status]) + (u.banReason ? ' · ' + u.banReason : ''), u.googleLinked ? 'Sim' : 'Não', actions];
     })));
     search.oninput = draw; draw(); fragment.append(search, box);
   } else if (view === 'networks') {
