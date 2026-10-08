@@ -72,6 +72,7 @@ Todas as respostas usam JSON. Erros seguem `{ "error": { "code": "...", "message
 | `PATCH /v1/me` (`{ bio }`), `POST /v1/me/password` (`{ currentPassword, newPassword }`) | A frase do perfil (até 128 caracteres; os amigos recebem em `/v1/friends` como `bio`) e a troca de senha (pede a atual; mínimo 8 caracteres; 10 tentativas a cada 15 min por IP) |
 | `POST /v1/feedback` | Feedback e bugs mandados pelo app (ícone na barrinha). `tipo`: `bug` (obrigatórios `area` e `titulo`), `ideia` (`titulo`) ou `nota` (`nota` de 0 a 10). Opcionais: `area`, `frequencia`, `impacto`, `uso` (opções fixas), `titulo` (140), `detalhes`/`passos` (2000), `gosta`/`incomoda` (500), `usa` (lista de opções), `contato` (booleano), `tecnico` (`versao`, `sistema`, `tema`, `naSala`) e `imagem` (`data:image/jpeg` ou `png` em base64, até 450 KB, conferida pela assinatura do arquivo). Campo desconhecido é recusado. Só esta rota aceita corpo de até 700 KB. Até 5 por hora e 20 por dia por conta |
 | `PUT /v1/me/activity` (`{ game, artist, title }`) | Atividade no perfil: o jogo e a música que a pessoa deixou ligados (cada campo até 80 caracteres; tudo vazio apaga; 12 envios por minuto). Só os amigos veem, em `/v1/friends` como `activity` (`null` sem nada); some 2 minutos depois do último envio |
+| `GET /v1/auth/google/nonce`, `POST /v1/auth/google/android` (`{ idToken, nonce }`) | Entrar com Google **no Android** (veja "Entrar com Google no Android"): o nonce (43 caracteres, vale 5 min e uma vez só; 30 por IP a cada 10 min) e o ID token do Credential Manager. O servidor confere a assinatura com as chaves públicas do Google, o emissor, `aud` = `RAZZE_GOOGLE_WEB_CLIENT_ID`, a validade, o e-mail confirmado e o nonce, e daí segue a mesma lógica de conta do login do PC (mesmas respostas: 200, 201, 202 `pending_approval`, 403, 409 `account_exists`). Campo desconhecido é recusado; corpo até 8 KB; o mesmo limite de 10 erros a cada 10 min por IP. Sem a variável: 503 `google_disabled` |
 | `GET /v1/auth/google/config`, `POST /v1/auth/google` (`{ code, codeVerifier, redirectUri }`) | Entrar com Google: a config diz se está ligado e o client ID; o login troca o código do Google (que voltou para `127.0.0.1` no PC) pela conta. Cria a conta se o e-mail (confirmado pelo Google) é novo; se já existe conta com esse e-mail, responde `account_exists` (409) e **não junta sozinho** (com `googleOnly` e sem `legacyPasswordLogin`, a mensagem pede ao administrador para liberar a senha, já que entrar com ela está bloqueado). 10 tentativas erradas a cada 10 min por IP |
 | `POST /v1/me/google`, `DELETE /v1/me/google` | Vincular o Google à conta logada e desvincular (só quem tem senha desvincula; quem entrou só pelo Google define a primeira senha em `POST /v1/me/password` sem a atual) |
 | `POST /v1/admin/users/:id/reset-code`, `POST /v1/auth/reset` (`{ email, code, password }`) | Esqueci a senha **sem e-mail**: o administrador gera um código (`ABCD-EFGH`, vale 1 hora, uso único, só o hash fica no banco; botão **Código de senha** em Administração › Pessoas, no app, e no painel web) e passa para a pessoa, que redefine a senha. 5 erros queimam o código; redefinir derruba as sessões da conta |
@@ -154,6 +155,27 @@ nenhuma credencial: o client ID vem de `GET /v1/auth/google/config`. Sem as vari
    verdade, mas o Google exige no pedido). Suba de novo: `docker compose up -d`.
 4. Conta: e-mail novo cria a conta (respeita a aprovação do administrador, se estiver ligada); e-mail que já tem conta com senha pede
    entrar com a senha e **Vincular Google** no Perfil › Conta Razze.
+
+## Entrar com Google no Android
+
+O app de Android (repositório `nebula_app_android`, `docs/spec/login-google.md`) não tem a porta local do PC: o Credential Manager
+do Android devolve um **ID token** assinado pelo Google. O app pede `GET /v1/auth/google/nonce`, abre a folha de contas com esse
+nonce e manda o token para `POST /v1/auth/google/android`. A conta é a mesma do PC: o Google dá o mesmo `sub` para a mesma pessoa em
+todos os clientes do projeto.
+
+1. No mesmo projeto do Google Cloud do PC: **Credenciais** › **Criar credenciais** › **ID do cliente OAuth** › tipo **Aplicativo da
+   web** (sem origem nem redirecionamento). Esse é o `webClientId`; não precisa do segredo.
+2. Também um **ID do cliente OAuth** do tipo **Android**: pacote `app.nebula.android` e o SHA-1 da chave que assina o APK (um para a
+   chave de debug de quem testa e um para a de release). O app não usa esse ID diretamente, mas o Google só entrega o token a um app
+   cadastrado assim.
+3. No `.env` da VPS: `RAZZE_GOOGLE_WEB_CLIENT_ID=...` e suba de novo (`docker compose up -d`). `GET /v1/auth/google/config` passa a
+   mandar `webClientId`.
+4. As chaves públicas do Google (`https://www.googleapis.com/oauth2/v3/certs`) são buscadas pela VPS e guardadas pelo tempo que o
+   Google diz; a VPS precisa de saída HTTPS para o Google (a mesma que o login do PC já usa).
+
+**Sessões:** cada conta tem **uma sessão de PC e uma de Android** (coluna `plataforma` da tabela `sessions`). Entrar no PC derruba só
+a sessão de PC anterior; entrar no celular, só a do celular. Trocar ou redefinir a senha e "revogar sessões" no painel continuam
+derrubando todas.
 
 ## WireGuard e limites atuais
 
