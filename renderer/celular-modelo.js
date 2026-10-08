@@ -36,7 +36,7 @@ const CelularModelo = (() => {
   // vozConfig: só os campos conhecidos, cada um no tipo e na faixa certos (renderer/microfone.js › voiceCfg)
   const VOZ = {
     micId: texto(300), micLabel: texto(300), ns: texto(20, /^[a-z]+$/), mode: texto(20, /^[a-z]+$/), pttLabel: texto(60),
-    echo: 'b', gateAuto: 'b', duckSelf: 'b', pttVk: [0, 255], gateDb: [-100, 0], duck: [0, 100],
+    echo: 'b', gateAuto: 'b', duckSelf: 'b', pttVk: [0, 255], gateDb: [-100, 0], duck: [0, 100], vozes: [0, 200],
   };
   const voz = (o) => {
     if (!objeto(o)) return null;

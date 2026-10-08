@@ -8,8 +8,10 @@
 // gateAuto/gateDb: sensibilidade (abaixo do limite, o microfone fica fechado). duck: quanto o som das
 // transmissões abaixa enquanto alguém fala (0 = não abaixa); duckSelf: abaixa também quando eu falo.
 // micId: microfone escolhido em Voz e atalhos ('' = o padrão do Windows); micLabel: o nome dele, para a lista
-const voiceCfg = { micId: '', micLabel: '', ns: 'ia', echo: true, mode: 'voz', pttVk: 0, pttLabel: '', gateAuto: true, gateDb: -50, duck: 0, duckSelf: false };
+// vozes: volume de todas as vozes de uma vez (0 a 200%), multiplicado pelo volume de cada pessoa (renderer/voz.js)
+const voiceCfg = { micId: '', micLabel: '', ns: 'ia', echo: true, mode: 'voz', pttVk: 0, pttLabel: '', gateAuto: true, gateDb: -50, duck: 0, duckSelf: false, vozes: 100 };
 try { Object.assign(voiceCfg, JSON.parse(load('vozConfig', '{}')) || {}); } catch {}
+voiceCfg.vozes = Number.isFinite(voiceCfg.vozes) ? Math.max(0, Math.min(200, Math.round(voiceCfg.vozes))) : 100;
 function saveVoiceCfg() { save('vozConfig', JSON.stringify(voiceCfg)); }
 
 const RNNOISE_ID = '@sapphi-red/web-noise-suppressor/rnnoise';
@@ -374,6 +376,8 @@ function renderVoiceDialog() {
   $('gateHint').textContent = voice.session || micTest.own
     ? 'Barulho abaixo da marca não passa.'
     : 'O medidor aparece na voz ou no teste.';
+  $('vozesVolume').value = String(voiceCfg.vozes);
+  $('vozesValue').textContent = voiceCfg.vozes ? `${voiceCfg.vozes}%` : 'Sem som';
   $('duckAmount').value = String(voiceCfg.duck);
   $('duckValue').textContent = voiceCfg.duck ? `${voiceCfg.duck}%` : 'Desligada';
   $('duckSelf').checked = voiceCfg.duckSelf;
