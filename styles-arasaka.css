@@ -104,7 +104,7 @@
 :root[data-skin="arasaka"] .brand-mark::before { width: 30px; height: 30px; }
 
 /* Enfeites em japonês: barra de título, logo, títulos dos painéis e avisos */
-:root[data-skin="arasaka"] .titlebar span::after { content: " // ARASAKA"; color: var(--muted); }
+:root[data-skin="arasaka"] .titlebar .brand-name::after { content: " // ARASAKA"; color: var(--muted); }
 :root[data-skin="arasaka"] .titlebar::after {
   content: "荒坂  ·  REDE SEGURA  ·  接続中"; position: absolute; right: 160px; font: 400 11px/1 var(--font-console);
   letter-spacing: .25em; color: var(--ok); opacity: .8;

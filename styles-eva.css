@@ -189,7 +189,7 @@
 }
 :root[data-skin="eva"] .brand-mark::before { width: 34px; height: 34px; }
 :root[data-skin="eva"] .titlebar span { font-family: var(--eva-mono); font-weight: 400; letter-spacing: .2em; text-transform: uppercase; color: var(--text); }
-:root[data-skin="eva"] .titlebar span::after { content: "  //  EVANGELION 初号機"; color: var(--accent); }
+:root[data-skin="eva"] .titlebar .brand-name::after { content: "  //  EVANGELION 初号機"; color: var(--accent); }
 :root[data-skin="eva"] .titlebar::after {
   content: "ENTRY PLUG 挿入  ·  LCL 注水  ·  シンクロ率 41.3%"; position: absolute; right: 160px;
   font: 400 11px/1 var(--eva-mono); letter-spacing: .2em; color: var(--ok); opacity: .85;
