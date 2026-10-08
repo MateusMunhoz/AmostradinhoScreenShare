@@ -103,6 +103,10 @@ $('gateAuto').onchange = () => {
   renderVoiceDialog();
 };
 $('gateDb').oninput = () => { voiceCfg.gateDb = Number($('gateDb').value); saveVoiceCfg(); renderVoiceDialog(); };
+// Volume das vozes: vale na hora para todo mundo na voz; clique duplo volta para 100%
+const setVozes = (n) => { voiceCfg.vozes = n; saveVoiceCfg(); renderVoiceDialog(); for (const id of mixer.nodes.keys()) mixer.apply(id); };
+$('vozesVolume').oninput = () => setVozes(Number($('vozesVolume').value));
+$('vozesVolume').ondblclick = () => setVozes(100);
 $('duckAmount').oninput = () => { voiceCfg.duck = Number($('duckAmount').value); saveVoiceCfg(); renderVoiceDialog(); updateDuck(); };
 $('duckSelf').onchange = () => { voiceCfg.duckSelf = $('duckSelf').checked; saveVoiceCfg(); updateDuck(); };
 $('shortcutReset').onclick = async () => {
