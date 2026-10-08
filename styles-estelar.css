@@ -49,12 +49,10 @@
 :root:not([data-skin]) :is(.pane-head h2, .chat-title, .stream-pane-head h2)::before {
   content: "✦"; margin-right: 8px; font-size: 11px; vertical-align: 2px; color: var(--accent);
 }
-/* Barra de título: a legenda da carta, discreta, à direita */
-:root:not([data-skin]) .titlebar::after {
-  content: "CARTA ESTELAR"; position: absolute; right: 160px; font: 400 11px/1 var(--st-mono);
-  letter-spacing: .22em; color: var(--muted); opacity: .7;
+/* Barra de título: o nome do tema logo depois de "Nebula", como nos outros temas */
+:root:not([data-skin]) .titlebar .brand-name::after {
+  content: " // CARTA ESTELAR"; font: 400 11px/1 var(--st-mono); letter-spacing: .22em; color: var(--muted); opacity: .7;
 }
-@media (max-width: 900px) { :root:not([data-skin]) .titlebar::after { display: none; } }
 
 /* Chat: horário em fonte fixa, como um registro */
 :root:not([data-skin]) .msg-time { font-family: var(--st-mono); letter-spacing: 0; }
