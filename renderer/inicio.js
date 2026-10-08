@@ -301,6 +301,12 @@ setupRecorte(); // editor de recorte da foto e do fundo (renderer/recorte.js)
 setupConta(); // senha e frase do perfil (renderer/conta.js)
 setupAdmin(); // administração, só para administradores (renderer/admin.js)
 setupFeedback(); // feedback e bugs, ícone na barrinha (renderer/feedback.js)
+// Tela de carregando ao entrar na sala (renderer/sala.js): Cancelar ou Esc fecham a conexão que está esperando
+$('entradaCancelar').onclick = cancelarEntrada;
+$('entradaCarregando').addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cancelarEntrada(); }
+  else if (e.key === 'Tab') { e.preventDefault(); $('entradaCancelar').focus(); } // só tem o Cancelar
+});
 setupPrimeiraEntrada(); // primeira entrada e amigos no Início (renderer/primeira-entrada.js)
 $('goJoin').onclick = () => setJoinOpen(true);
 $('cancelJoin').onclick = () => setJoinOpen(false);

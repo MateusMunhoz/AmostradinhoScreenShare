@@ -20,6 +20,7 @@ Tudo o que dá para fazer no Nebula, com os detalhes. Para começar do zero, vej
 
 - **Criar:** clique em **Criar sala**, escolha a porta e, se quiser, uma senha. O app mostra um endereço tipo `26.12.34.56:8765`. Mande para os amigos. Quem cria é o **host**, e aparece "Host" ao lado do nome.
 - **Entrar:** clique em **Entrar numa sala**, cole o endereço e clique em **Entrar**.
+- **Carregando:** criando ou entrando (pelo endereço, pelo código, na sala de um amigo, por um convite ou numa chamada), aparece **Entrando na sala…** com o passo da conexão até a sala abrir. Enquanto isso, clicar de novo não abre outra conexão. **Cancelar** (ou Esc) desiste da entrada.
 - **Tamanho:** até 12 pessoas.
 - **Senha:** é opcional, mas recomendada se a rede da Radmin tiver mais gente.
 - **Painel à direita:** só o chat. O **botão de pessoas**, na barrinha da direita, mostra o total e acende uma bolinha verde quando alguém fala. Ele abre a lista por cima do chat, com:
