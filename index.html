@@ -1283,6 +1283,16 @@
     </form>
   </div>
 
+  <!-- Entrando na sala (renderer/sala.js: comCarregando): por cima de tudo até a sala abrir ou dar erro -->
+  <div id="entradaCarregando" class="entrada-carregando" hidden>
+    <div class="entrada-caixa" role="alertdialog" aria-modal="true" aria-labelledby="entradaTitulo" aria-describedby="entradaDetalhe" aria-busy="true">
+      <span class="entrada-roda" aria-hidden="true"></span>
+      <h2 id="entradaTitulo">Entrando na sala…</h2>
+      <p id="entradaDetalhe" class="hint" aria-live="polite"></p>
+      <button id="entradaCancelar" class="btn small ghost" type="button">Cancelar</button>
+    </div>
+  </div>
+
   <!-- Trocar a senha (logado) e esqueci a senha (com o código do administrador): renderer/conta.js -->
   <div id="senhaDialog" class="ob-modal" hidden>
     <div class="ob-dialog" role="dialog" aria-modal="true" aria-labelledby="senhaTitle">
