@@ -50,7 +50,7 @@ Idioma de tudo (código, comentários, docs, commits, textos da interface): **po
 - No bash (msys) `>nul` vira `/dev/null` e `/v` é reescrito; para `cmd`/`tasklist` use PowerShell ou arquivo `.js`.
 - Processos `electron.exe` presos: `taskkill //F //IM electron.exe`.
 - Captura de tela dos testes: copiar `tests/e2e/carga.cjs` até `await sleep(800);` e acrescentar passos (`win.webContents.capturePage()`); o perfil de teste persiste `localStorage` entre execuções (`primeiraEntrada`), então abra telas com funções (`abrirPrimeiraEntrada(3)`), não por clique. Apague o arquivo temporário depois.
-- O servidor só aceita 1 sessão por conta (login novo derruba a anterior) e o limite de tentativas erradas é por IP a cada 10 min (nos testes avance o relógio injetado).
+- O servidor aceita 1 sessão de PC e 1 de Android por conta (login novo derruba a anterior do mesmo tipo) e o limite de tentativas erradas é por IP a cada 10 min (nos testes avance o relógio injetado).
 - Não há `python` instalado.
 
 ## Preferências do Andrick (importantes)

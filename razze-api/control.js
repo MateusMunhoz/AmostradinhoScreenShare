@@ -12,6 +12,8 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
   if (!db.prepare('PRAGMA table_info(sessions)').all().some(c => c.name === 'client_id')) db.exec('ALTER TABLE sessions ADD COLUMN client_id TEXT');
   if (!db.prepare('PRAGMA table_info(sessions)').all().some(c => c.name === 'app_version')) db.exec("ALTER TABLE sessions ADD COLUMN app_version TEXT NOT NULL DEFAULT ''");
   if (!db.prepare('PRAGMA table_info(sessions)').all().some(c => c.name === 'client_name')) db.exec("ALTER TABLE sessions ADD COLUMN client_name TEXT NOT NULL DEFAULT 'Tela P2P'");
+  // De que tipo de aparelho é a sessão: uma de PC e uma de Android por conta (issueToken em server.js)
+  if (!db.prepare('PRAGMA table_info(sessions)').all().some(c => c.name === 'plataforma')) db.exec("ALTER TABLE sessions ADD COLUMN plataforma TEXT NOT NULL DEFAULT 'pc'");
   db.exec(`
     CREATE TABLE IF NOT EXISTS server_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS audit_log (id INTEGER PRIMARY KEY, actor TEXT NOT NULL, action TEXT NOT NULL, target TEXT NOT NULL, detail TEXT NOT NULL, created_at INTEGER NOT NULL);
@@ -30,11 +32,11 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
   if (!db.prepare('PRAGMA table_info(live_presence)').all().some(c => c.name === 'sala_atual')) db.exec('ALTER TABLE live_presence ADD COLUMN sala_atual TEXT');
   // Após reiniciar, cada cliente precisa confirmar sua presença novamente.
   db.exec('DELETE FROM live_presence');
-  // Mantém somente a sessão mais recente de cada conta.
+  // Mantém somente a sessão mais recente de cada conta em cada tipo de aparelho (PC e Android).
   db.exec(`DELETE FROM sessions WHERE rowid NOT IN (
     SELECT MAX(rowid)
     FROM sessions
-    GROUP BY user_id
+    GROUP BY user_id, plataforma
   )`);
   // googleOnly: só entra e cria conta pelo Google (o administrador continua podendo entrar com senha).
   // legacyPasswordLogin: com googleOnly ligado, quem já tinha conta com senha ainda entra por ela (desligue quando todos tiverem vinculado o Google).

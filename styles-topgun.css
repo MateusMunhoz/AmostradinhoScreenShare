@@ -123,6 +123,8 @@
 :root[data-skin="topgun"] .brand-mark::before { width: 48px; height: 30px; }
 :root[data-skin="topgun"] .brand-mark span :is(.logo-you, .logo-friend) { color: inherit; }
 :root[data-skin="topgun"] .titlebar span { font-family: var(--tg-mono); font-weight: 700; text-transform: uppercase; letter-spacing: .22em; font-size: 11px; color: var(--tg-green); }
+:root[data-skin="topgun"] .titlebar .brand-name::after { content: " // TOP GUN"; color: var(--tg-amber); }
+:root[data-skin="topgun"] .brand-mark::after { content: "// TOP GUN"; margin-left: 8px; font: 700 12px/1 var(--tg-mono); letter-spacing: .22em; color: var(--tg-amber); }
 :root[data-skin="topgun"] .titlebar::after {
   content: "UHF 243.000 GRD  ·  TCN 74X  ·  HDG 270  ·  ALT 25000  ·  MASTER ARM ON"; position: absolute; right: 160px; font: 400 11px/1 var(--tg-mono);
   letter-spacing: .16em; color: var(--tg-green); opacity: .8; text-shadow: var(--tg-glow);

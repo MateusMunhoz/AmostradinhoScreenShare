@@ -149,6 +149,7 @@ async function abrirSalaChamadaJa(modo, senha) {
     return;
   }
   const port = parseInt($('roomPort').value, 10) || 8765;
+  detalheEntrada('Abrindo a sala neste PC…');
   const res = await window.api.startServer(port, senha, { sessao: { oculta: true } }, modo);
   if (!res.ok) throw new Error(res.error);
   try {
@@ -179,7 +180,7 @@ function textoChamada(cv) {
 
 async function ligarPara(id) {
   const nome = friendName(id);
-  if (chamada.ligando) return;
+  if (chamada.ligando || entrandoNaSala()) return;
   const modo = await escolherModoChamada(nome, friendOnline(id));
   if (!modo) return;
   if (state.myId) {
@@ -190,9 +191,12 @@ async function ligarPara(id) {
   toast(`Ligando para ${nome}…`);
   try {
     usarModoRede(modo);
-    await requireSelectedNetwork();
     const senha = novaSenhaSala();
-    await abrirSalaChamada(modo, senha);
+    await comCarregando(`Ligando para ${nome}…`, async () => {
+      await requireSelectedNetwork();
+      await abrirSalaChamada(modo, senha);
+    });
+    if (!state.myId) return; // outra entrada já estava em andamento
     await renderRoomAddress(); // o endereço da sala (Radmin e Razze) sai daqui
     joinVoiceIn('');
     const cv = conviteChamada(senha);
@@ -204,6 +208,7 @@ async function ligarPara(id) {
     renderDm();
     toast(`Chamando ${nome}. A chamada foi pelas mensagens; quando ${nome} atender, entra direto na voz.`);
   } catch (err) {
+    if (err?.cancelada) return;
     const msg = String(err?.message || 'erro desconhecido').replace(/^.*RazzeApiError: /, '');
     toast(state.myId ? `A sala está aberta, mas a chamada não foi: ${msg}` : `Não foi possível ligar: ${msg}`, 'error');
   } finally {
@@ -213,7 +218,7 @@ async function ligarPara(id) {
 
 // ---------- Atender ----------
 async function atenderChamada(cv, quem) {
-  if (chamada.atendendo) return;
+  if (chamada.atendendo || entrandoNaSala()) return;
   mixer.ensure(); // o clique em Atender libera o áudio da voz
   if (state.myId && mesmaSala(cv)) {
     if (!voice.session) joinVoiceIn('');
@@ -234,26 +239,32 @@ async function atenderChamada(cv, quem) {
   usarModoRede(cv.modo);
   chamada.atendendo = true;
   try {
-    if (cv.modo === 'internet') {
-      const welcome = await connectRoom(cv.servidor, { name: getName(), password: cv.chave, room: cv.codigo });
-      state.password = cv.chave;
-      try { enterRoom(welcome, false, cv.servidor, 0, { url: cv.servidor, code: welcome.sala || cv.codigo }); }
-      catch (err) { dropHalfJoin(); throw err; }
-    } else {
-      const [host, porta] = cv.endereco.split(':');
-      const welcome = await connectRoom(`ws://${host}:${porta}`, { name: getName(), password: cv.chave });
-      state.password = cv.chave;
-      save('roomAddr', cv.endereco);
-      try { enterRoom(welcome, false, host, Number(porta)); }
-      catch (err) { dropHalfJoin(); throw err; }
-    }
-    joinVoiceIn('');
+    await comCarregando(`Atendendo ${quem}…`, () => entrarNaChamada(cv));
+    if (state.myId) joinVoiceIn('');
   } catch (err) {
+    if (err?.cancelada) return;
     const msg = String(err?.message || '');
     toast(/senha incorreta|não encontrada/i.test(msg) ? `A chamada de ${quem} já acabou ou a senha mudou. ${msg}`
       : /conectar|tempo|timeout|recus/i.test(msg) ? `Não deu para chegar na sala de ${quem}: ${msg}` : msg || 'Não foi possível atender.', 'error');
   } finally {
     chamada.atendendo = false;
+  }
+}
+
+// Entra na sala da chamada (pela tela de carregando de atenderChamada)
+async function entrarNaChamada(cv) {
+  if (cv.modo === 'internet') {
+    const welcome = await connectRoom(cv.servidor, { name: getName(), password: cv.chave, room: cv.codigo });
+    state.password = cv.chave;
+    try { enterRoom(welcome, false, cv.servidor, 0, { url: cv.servidor, code: welcome.sala || cv.codigo }); }
+    catch (err) { dropHalfJoin(); throw err; }
+  } else {
+    const [host, porta] = cv.endereco.split(':');
+    const welcome = await connectRoom(`ws://${host}:${porta}`, { name: getName(), password: cv.chave });
+    state.password = cv.chave;
+    save('roomAddr', cv.endereco);
+    try { enterRoom(welcome, false, host, Number(porta)); }
+    catch (err) { dropHalfJoin(); throw err; }
   }
 }
 

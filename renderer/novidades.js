@@ -3,6 +3,17 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.18.8",
+    "date": "2026-10-08",
+    "items": [
+      "Create mensagens-varios-aparelhos.md",
+      "RazzeAPI: login com Google no Android e uma sessão de PC e uma de Android",
+      "Temas: \"Nebula\" e o nome do tema lado a lado em todos",
+      "Sala: tela de carregando ao entrar e uma entrada por vez",
+      "Voz: volume geral das vozes nas configurações"
+    ]
+  },
+  {
     "version": "1.18.7",
     "date": "2026-10-07",
     "items": [
@@ -70,17 +81,6 @@ const NOVIDADES = [
       "App: painel de administração e primeira entrada só com Google",
       "Barra de baixo não some mais no caminho da transmissão até ela",
       "Servidor: conta só pelo Google, lista de convidados, grupos e números do painel"
-    ]
-  },
-  {
-    "version": "1.18.1",
-    "date": "2026-10-06",
-    "items": [
-      "Amigos veem em que sala a pessoa está, em qualquer modo",
-      "Chat e voz: puxar a divisória para cima não corta mais o chat",
-      "Tira o HUB: conta no Perfil, rede nas Configurações, amigos no envelope",
-      "Desfazer a amizade vale na hora para os dois lados",
-      "Ctrl+V na conversa privada não cola também no chat da sala"
     ]
   }
 ];

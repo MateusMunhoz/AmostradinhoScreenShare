@@ -38,7 +38,7 @@ test('Celular: ao trazer, cada item é validado e o desconhecido fica de fora', 
   const { itens, fora } = await C.limpar({
     name: '  Cris  ', clientId: 'ladrao', quality: '../x', stageLayout: 'spotlight', stageSide: '9', musicaVolume: '55',
     'appPreferences.v1': JSON.stringify({ colors: { main: '#000000', detail1: 'vermelho' }, sounds: { volume: 500 } }),
-    vozConfig: JSON.stringify({ micId: 'abc', echo: true, gateDb: -40, duck: 900, estranho: 1 }),
+    vozConfig: JSON.stringify({ micId: 'abc', echo: true, gateDb: -40, duck: 900, vozes: 60, estranho: 1 }),
     volumes: JSON.stringify({ Ana: { voice: 80, screen: 30, muted: true }, Bia: { voice: 'alto' } }),
     excludeApps: JSON.stringify(['Discord.exe', '..\\..\\x.exe']),
     atalhos: JSON.stringify({ mute: 'CommandOrControl+Shift+M', edit: 'rm -rf' }),
@@ -51,7 +51,7 @@ test('Celular: ao trazer, cada item é validado e o desconhecido fica de fora', 
   const prefs = JSON.parse(itens['appPreferences.v1']);
   assert.equal(prefs.colors.main, '#000000');
   assert.equal(prefs.sounds.volume, 100, 'passa pelo normalize das preferências');
-  assert.deepEqual(JSON.parse(itens.vozConfig), { micId: 'abc', echo: true, gateDb: -40 });
+  assert.deepEqual(JSON.parse(itens.vozConfig), { micId: 'abc', echo: true, gateDb: -40, vozes: 60 });
   assert.deepEqual(JSON.parse(itens.volumes), { Ana: { voice: 80, screen: 30, muted: true } });
   assert.deepEqual(JSON.parse(itens.excludeApps), ['Discord.exe']);
   assert.deepEqual(JSON.parse(itens.atalhos), { mute: 'CommandOrControl+Shift+M' });

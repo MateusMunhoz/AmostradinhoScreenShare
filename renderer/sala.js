@@ -22,15 +22,76 @@ function clientId() {
   return id;
 }
 
+// ---------- Carregando ao entrar ----------
+// Criar, entrar pelo endereço ou código, sala de amigo, sessões da rede, convite e chamada passam por aqui: uma
+// entrada por vez, com a tela de carregando por cima de tudo até a sala abrir ou dar erro. Clicar de novo (ou Enter,
+// ou outro caminho) enquanto isso não abre outra conexão. Cancelar fecha a conexão que está esperando a resposta.
+// A troca de host (migrateRoom) não passa por aqui: ela tem o aviso dela e não foi a pessoa que pediu.
+// A trava vale desde o clique; a tela só aparece se demorar mais que um instante (entrada rápida não pisca)
+// desistir: larga a conexão que está esperando resposta (connectRoom põe aqui enquanto espera)
+const entradaSala = { ativa: false, desistir: null, cancelada: false, timer: 0, foco: null };
+function entrandoNaSala() { return entradaSala.ativa; }
+async function comCarregando(titulo, fn) {
+  if (entradaSala.ativa) return;
+  entradaSala.ativa = true;
+  entradaSala.cancelada = false;
+  $('entradaTitulo').textContent = titulo;
+  $('entradaDetalhe').textContent = 'Conferindo a rede…';
+  entradaSala.timer = setTimeout(() => {
+    entradaSala.foco = document.activeElement;
+    $('entradaCarregando').hidden = false;
+    $('entradaCancelar').focus();
+  }, 150);
+  try { return await fn(); }
+  finally {
+    clearTimeout(entradaSala.timer);
+    entradaSala.ativa = false;
+    entradaSala.desistir = null;
+    if (!$('entradaCarregando').hidden) {
+      $('entradaCarregando').hidden = true;
+      // Não abriu a sala: o foco volta para onde estava (o botão de Entrar, o campo da senha)
+      if (!state.myId && entradaSala.foco && document.contains(entradaSala.foco)) entradaSala.foco.focus();
+    }
+    entradaSala.foco = null;
+  }
+}
+function detalheEntrada(texto) { if (entradaSala.ativa) $('entradaDetalhe').textContent = texto; }
+function cancelarEntrada() {
+  if (!entradaSala.ativa || entradaSala.cancelada) return;
+  entradaSala.cancelada = true;
+  $('entradaDetalhe').textContent = 'Cancelando…';
+  entradaSala.desistir?.();
+}
+// Erro de quando a própria pessoa cancelou: quem chamou não mostra aviso de erro
+function erroCancelada() { const e = new Error('Você cancelou a entrada.'); e.cancelada = true; return e; }
+
 async function connectRoom(url, hello, timeoutMs = 8000) {
+  if (entradaSala.cancelada && entradaSala.ativa) throw erroCancelada();
   const addrs = await myAddrs();
+  let alvo = '';
+  try { alvo = new URL(url).host; } catch {}
+  detalheEntrada(/^127\.0\.0\.1(:|$)/.test(alvo) ? 'Abrindo a sala neste PC…' : `Conectando a ${alvo}…`);
   return new Promise((resolve, reject) => {
+    if (entradaSala.ativa && entradaSala.cancelada) return reject(erroCancelada());
     const ws = new WebSocket(url);
     let joined = false;
     let errMsg = null;
+    let desistiu = false;
     const timer = setTimeout(() => {
       if (!joined) { errMsg = 'Tempo esgotado. Confira o endereço e se a VPN ou rede escolhida está conectada.'; ws.close(); }
     }, timeoutMs);
+    // Cancelar: desiste na hora, sem esperar o fechamento (num endereço que não responde ele demora). Se o "pode
+    // entrar" chegar depois, a conexão fecha (onmessage) e não vira um fantasma na sala
+    if (entradaSala.ativa) {
+      entradaSala.desistir = () => {
+        if (joined || desistiu) return;
+        desistiu = true;
+        clearTimeout(timer);
+        ws.onclose = null;
+        try { ws.close(); } catch {}
+        reject(erroCancelada());
+      };
+    }
 
     ws.onopen = () => {
       const razze = contaSala(); // a conta Razze (perfil e Adicionar dos outros)
@@ -42,7 +103,7 @@ async function connectRoom(url, hello, timeoutMs = 8000) {
       try { m = JSON.parse(e.data); } catch { return; }
       if (!joined) {
         // "Pode entrar" depois de já ter desistido (tempo esgotado): fecha, senão fica um fantasma na sala
-        if (m.type === 'welcome' && errMsg) { ws.close(); return; }
+        if (m.type === 'welcome' && (errMsg || desistiu)) { ws.close(); return; }
         if (m.type === 'welcome') {
           joined = true; clearTimeout(timer);
           // Conexão anterior ainda aberta (entrada que falhou no meio): fecha antes de usar a nova
@@ -82,6 +143,9 @@ function dropHalfJoin() {
 async function createRoom() {
   if (state.myId) return toast('Você já está numa sala. Volte para ela e saia antes de entrar em outra.', 'error');
   if (state.abrindo) return; // clique duplo: o segundo servidor derrubaria o primeiro
+  return comCarregando('Criando a sala…', criarSalaAgora);
+}
+async function criarSalaAgora() {
   const port = parseInt($('roomPort').value, 10) || 8765;
   const password = $('roomPassword').value;
   save('roomPort', String(port));
@@ -101,6 +165,7 @@ async function createRoom() {
       return;
     }
     // A sessão aparece para quem está na rede, menos se você desmarcou (e continua assim numa troca de host)
+    detalheEntrada('Abrindo a sala neste PC…');
     const res = await window.api.startServer(port, password, { sessao: { oculta: !$('roomVisible').checked } }, selectedNetworkProvider());
     if (!res.ok) throw new Error(res.error);
     try {
@@ -113,7 +178,7 @@ async function createRoom() {
       throw err;
     }
   } catch (err) {
-    toast(err.message, 'error');
+    if (!err.cancelada) toast(err.message, 'error');
   } finally {
     setBusy(btn, false, 'Criar sala');
     setAbrindoSala(false);
@@ -127,6 +192,9 @@ function setAbrindoSala(on) {
 
 async function joinRoom() {
   if (state.myId) return toast('Você já está numa sala. Volte para ela e saia antes de entrar em outra.', 'error');
+  return comCarregando('Entrando na sala…', entrarSalaAgora);
+}
+async function entrarSalaAgora() {
   if (selectedNetworkProvider() === 'internet') return joinInternetRoom();
   const raw = $('roomAddr').value.trim().replace(/^ws:\/\//, '');
   if (!raw) return toast('Digite o endereço que aparece na tela de quem criou a sala.', 'error');
@@ -142,7 +210,7 @@ async function joinRoom() {
     try { enterRoom(welcome, false, host, port); }
     catch (err) { dropHalfJoin(); throw err; }
   } catch (err) {
-    toast(err.message, 'error');
+    if (!err.cancelada) toast(err.message, 'error');
   } finally {
     setBusy(btn, false, 'Entrar');
   }
@@ -166,7 +234,7 @@ async function joinInternetRoom() {
     try { enterRoom(welcome, false, url, 0, { url, code: welcome.sala || code }); }
     catch (err) { dropHalfJoin(); throw err; }
   } catch (err) {
-    toast(err.message, 'error');
+    if (!err.cancelada) toast(err.message, 'error');
   } finally {
     setBusy(btn, false, 'Entrar');
   }

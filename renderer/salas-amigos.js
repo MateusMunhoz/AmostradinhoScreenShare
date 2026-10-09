@@ -104,6 +104,9 @@ function receberSalasAmigos(lista) {
 async function entrarSalaAmigo(s) {
   if (state.myId) return toast('Você já está numa sala. Volte para ela e saia antes de entrar em outra.', 'error');
   if (!s.passe) return pedirSenhaAmigo(s);
+  return comCarregando(`Entrando na sala de ${s.host}…`, () => entrarSalaAmigoAgora(s));
+}
+async function entrarSalaAmigoAgora(s) {
   if (salasAmigos.entrando) return;
   salasAmigos.entrando = true;
   try {
@@ -112,6 +115,7 @@ async function entrarSalaAmigo(s) {
     try { enterRoom(welcome, false, s.servidor, 0, { url: s.servidor, code: welcome.sala || s.codigo, passe: s.passe }); }
     catch (err) { dropHalfJoin(); throw err; }
   } catch (err) {
+    if (err.cancelada) return;
     if (/convite não vale/i.test(err.message)) pedirSenhaAmigo(s, err.message);
     else toast(err.message, 'error');
   } finally {

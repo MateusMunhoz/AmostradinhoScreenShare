@@ -20,6 +20,7 @@ Tudo o que dá para fazer no Nebula, com os detalhes. Para começar do zero, vej
 
 - **Criar:** clique em **Criar sala**, escolha a porta e, se quiser, uma senha. O app mostra um endereço tipo `26.12.34.56:8765`. Mande para os amigos. Quem cria é o **host**, e aparece "Host" ao lado do nome.
 - **Entrar:** clique em **Entrar numa sala**, cole o endereço e clique em **Entrar**.
+- **Carregando:** criando ou entrando (pelo endereço, pelo código, na sala de um amigo, por um convite ou numa chamada), aparece **Entrando na sala…** com o passo da conexão até a sala abrir. Enquanto isso, clicar de novo não abre outra conexão. **Cancelar** (ou Esc) desiste da entrada.
 - **Tamanho:** até 12 pessoas.
 - **Senha:** é opcional, mas recomendada se a rede da Radmin tiver mais gente.
 - **Painel à direita:** só o chat. O **botão de pessoas**, na barrinha da direita, mostra o total e acende uma bolinha verde quando alguém fala. Ele abre a lista por cima do chat, com:
@@ -450,6 +451,7 @@ Fica nas **Configurações** (a engrenagem), no grupo **Voz e atalhos**, com as 
   - **Automática** (padrão): mede o ruído de fundo e fica 12 dB acima dele. O ruído vem das pausas entre as falas (os últimos ~4 s), então falar sem parar não faz o limite subir e cortar sílabas. Um barulho novo e constante (ventilador, ar-condicionado) passa a contar como ruído em uns 3 s. Ao abrir o microfone, ele se ajusta ao ambiente em meio segundo, começando do último ruído medido naquele microfone. Com a supressão por IA, o limite nunca fica abaixo de −60 dB, para que qualquer estalo não abra o microfone, e a IA também diz se o som é voz: barulho alto que não é voz não abre, e voz clara abre um pouco antes do limite, sem cortar a primeira sílaba. Embaixo do medidor aparece o **Ruído do ambiente** medido (o som antes da IA).
   - O microfone abre no limite e só fecha 3 dB abaixo dele, depois de 300 ms: perto do limite ele não fica abrindo e fechando (vale também no manual).
   - **Manual:** desmarcando, você escolhe o limite, vendo a marca no medidor. A barra fica verde quando o microfone abre.
+- **Volume das vozes:** aumenta ou abaixa todas as vozes de uma vez, de 0 a 200%, sem mexer no volume de cada pessoa: os dois se multiplicam (alguém em 150% com as vozes em 50% fica em 75%). Vale na hora, em qualquer sala. Clique duplo no controle volta para 100%.
 - **Atenuação:** abaixa o som das transmissões enquanto alguém fala na voz, de 0 (desligada) a 100%, e volta suave meio segundo depois. Dá para abaixar também quando você fala. Não mexe em outros programas do PC.
 - **Como falar:**
   - **Detecção de voz:** o microfone fica aberto.

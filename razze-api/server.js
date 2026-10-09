@@ -7,7 +7,7 @@ const fs = require('node:fs');
 const dgram = require('node:dgram');
 const net = require('node:net');
 const { DatabaseSync } = require('node:sqlite');
-const { createHash, randomBytes, scrypt, timingSafeEqual } = require('node:crypto');
+const { createHash, createPublicKey, randomBytes, scrypt, timingSafeEqual, verify: verifySignature } = require('node:crypto');
 const { promisify } = require('node:util');
 const scryptAsync = promisify(scrypt);
 const { createControl } = require('./control');
@@ -40,6 +40,15 @@ const ACTIVITY_FIELD_MAX = 80;
 // servidor troca o código pelo dado da conta. O e-mail só é aceito se o Google confirmou (email_verified).
 const GOOGLE_REDIRECT_RE = /^http:\/\/127\.0\.0\.1:\d{2,5}\/callback$/;
 const GOOGLE_ISSUERS = ['https://accounts.google.com', 'accounts.google.com'];
+// Login com Google no Android (docs/razze-api.md): o Credential Manager entrega um ID token (JWT) que o servidor confere
+// pela assinatura, com as chaves públicas do Google. O nonce sai daqui antes, vale 5 minutos e uma vez só (o token não
+// serve de novo se alguém copiar). A conta segue a mesma lógica do login do PC (entrarPeloGoogle).
+const GOOGLE_JWKS_URL = 'https://www.googleapis.com/oauth2/v3/certs';
+const GOOGLE_NONCE_TTL_MS = 5 * 60 * 1000;
+const GOOGLE_NONCE_MAX = 1000;
+const GOOGLE_NONCE_RE = /^[A-Za-z0-9_-]{43}$/;
+const GOOGLE_ANDROID_BODY_BYTES = 8 * 1024;
+const GOOGLE_CLOCK_SKEW_S = 60;
 const DEFAULT_DOWNLOAD_URL = 'https://github.com/MateusMunhoz/AmostradinhoScreenShare/releases/latest';
 // Sinais da conexão direta das mensagens privadas (oferta e resposta WebRTC, cifradas de ponta a ponta): só na
 // memória, entregues uma vez e apagados em 2 minutos. Nunca vão para o banco nem para o histórico
@@ -143,6 +152,8 @@ function createApiServer(options = {}) {
   };
   const googleClientId = () => String(options.googleClientId ?? process.env.RAZZE_GOOGLE_CLIENT_ID ?? '');
   const googleClientSecret = () => String(options.googleClientSecret ?? process.env.RAZZE_GOOGLE_CLIENT_SECRET ?? '');
+  // O client ID do tipo "Aplicativo da web" que o app de Android usa como serverClientId (não é secreto)
+  const googleWebClientId = () => String(options.googleWebClientId ?? process.env.RAZZE_GOOGLE_WEB_CLIENT_ID ?? '');
   // Troca o código pelos tokens no Google (por TLS, direto). Nos testes entra uma função no lugar (options.googleExchange).
   const googleExchange = options.googleExchange || (async (p) => {
     const form = new URLSearchParams({ code: p.code, client_id: p.clientId, redirect_uri: p.redirectUri, grant_type: 'authorization_code', code_verifier: p.codeVerifier });
@@ -168,6 +179,81 @@ function createApiServer(options = {}) {
     if (!GOOGLE_ISSUERS.includes(payload.iss) || payload.aud !== clientId || !(Number(payload.exp) * 1000 > now())
       || typeof payload.sub !== 'string' || !payload.sub || typeof payload.email !== 'string' || !emailOk) {
       throw new ApiError(401, 'google_failed', 'O Google não confirmou essa conta. Tente de novo.');
+    }
+    return { sub: payload.sub, email: payload.email.trim().toLowerCase(), name: typeof payload.name === 'string' ? payload.name : '' };
+  };
+  // Chaves públicas do Google (JWKS), guardadas pelo tempo que o Google diz (Cache-Control: max-age). Nos testes entra
+  // uma função no lugar (options.googleJwks), que devolve { keys, maxAgeMs }.
+  const googleJwks = options.googleJwks || (async () => {
+    const response = await fetch(GOOGLE_JWKS_URL, { signal: AbortSignal.timeout(10_000) });
+    if (!response.ok) throw new Error('jwks ' + response.status);
+    const maxAge = /max-age=(\d+)/.exec(response.headers.get('cache-control') || '');
+    return { keys: (await response.json()).keys, maxAgeMs: maxAge ? Number(maxAge[1]) * 1000 : 60 * 60 * 1000 };
+  });
+  let jwksCache = { keys: [], until: 0 };
+  // kid desconhecido (o Google troca as chaves de tempos em tempos): busca de novo antes de recusar
+  const googleKey = async (kid) => {
+    const find = () => jwksCache.keys.find((k) => k && k.kid === kid && k.kty === 'RSA');
+    if (jwksCache.until > now() && find()) return find();
+    try {
+      const fresh = await googleJwks();
+      jwksCache = {
+        keys: Array.isArray(fresh?.keys) ? fresh.keys.slice(0, 20) : [],
+        until: now() + Math.min(Math.max(Number(fresh?.maxAgeMs) || 0, 60_000), 24 * 60 * 60 * 1000),
+      };
+    } catch { throw new ApiError(503, 'google_unavailable', 'Não deu para falar com o Google agora. Tente de novo em instantes.'); }
+    return find();
+  };
+  // Nonces do login do Android: só o hash, em memória, uso único
+  const googleNonces = new Map(); // hash -> expira em
+  const newGoogleNonce = () => {
+    const t = now();
+    for (const [key, until] of googleNonces) if (until <= t) googleNonces.delete(key);
+    while (googleNonces.size >= GOOGLE_NONCE_MAX) googleNonces.delete(googleNonces.keys().next().value);
+    const nonce = randomBytes(32).toString('base64url');
+    googleNonces.set(hash(nonce), t + GOOGLE_NONCE_TTL_MS);
+    return nonce;
+  };
+  // Queima o nonce na hora: valendo ou não, não serve de novo
+  const useGoogleNonce = (nonce) => {
+    if (typeof nonce !== 'string' || !GOOGLE_NONCE_RE.test(nonce)) return false;
+    const key = hash(nonce);
+    const until = googleNonces.get(key);
+    googleNonces.delete(key);
+    return !!until && until > now();
+  };
+  const googleAndroidFail = () => new ApiError(401, 'google_failed', 'O Google não confirmou essa conta. Tente de novo.');
+  // Confere o ID token do Android: assinatura RS256 do Google, emissor, cliente (o web client ID), validade, e-mail
+  // confirmado e o nonce. Devolve a mesma identidade de googleIdentity: { sub, email, name }
+  const googleAndroidIdentity = async (body) => {
+    const webClientId = googleWebClientId();
+    if (!webClientId) throw new ApiError(503, 'google_disabled', 'Entrar com Google no Android não está ligado neste servidor.');
+    const unknown = Object.keys(body).filter((k) => k !== 'idToken' && k !== 'nonce');
+    if (unknown.length) throw new ApiError(400, 'invalid_input', 'Campo desconhecido: ' + unknown[0].slice(0, 40) + '.');
+    const idToken = typeof body.idToken === 'string' ? body.idToken : '';
+    const parts = idToken.split('.');
+    if (idToken.length > 4096 || parts.length !== 3 || parts.some((x) => !/^[A-Za-z0-9_-]+$/.test(x))) throw googleAndroidFail();
+    let header, payload;
+    try {
+      header = JSON.parse(Buffer.from(parts[0], 'base64url').toString('utf8'));
+      payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
+    } catch { throw googleAndroidFail(); }
+    if (!header || header.alg !== 'RS256' || typeof header.kid !== 'string' || !payload || typeof payload !== 'object') throw googleAndroidFail();
+    const jwk = await googleKey(header.kid);
+    let valid = false;
+    try {
+      valid = !!jwk && verifySignature('RSA-SHA256', Buffer.from(parts[0] + '.' + parts[1]),
+        createPublicKey({ key: jwk, format: 'jwk' }), Buffer.from(parts[2], 'base64url'));
+    } catch { valid = false; }
+    if (!valid) throw googleAndroidFail();
+    // O nonce só é conferido (e queimado) depois da assinatura: um token falso não gasta o nonce de ninguém
+    const nonceOk = useGoogleNonce(body.nonce) && payload.nonce === body.nonce;
+    const t = Math.floor(now() / 1000);
+    const emailOk = payload.email_verified === true || payload.email_verified === 'true';
+    if (!nonceOk || !GOOGLE_ISSUERS.includes(payload.iss) || payload.aud !== webClientId
+      || !(Number(payload.exp) + GOOGLE_CLOCK_SKEW_S > t) || (payload.iat !== undefined && !(Number(payload.iat) - GOOGLE_CLOCK_SKEW_S <= t))
+      || typeof payload.sub !== 'string' || !payload.sub || payload.sub.length > 255 || typeof payload.email !== 'string' || !emailOk) {
+      throw googleAndroidFail();
     }
     return { sub: payload.sub, email: payload.email.trim().toLowerCase(), name: typeof payload.name === 'string' ? payload.name : '' };
   };
@@ -275,17 +361,20 @@ function createApiServer(options = {}) {
     }
     return () => { record.count++; };
   };
-  const issueToken = (userId) => {
+  // Uma sessão por conta em cada tipo de aparelho: entrar no PC derruba só a sessão de PC anterior; entrar no celular,
+  // só a do celular (o PC e o celular da mesma pessoa ficam logados juntos)
+  const issueToken = (userId, plataforma = 'pc') => {
     const token = randomBytes(32).toString('base64url');
     db.exec('BEGIN IMMEDIATE');
     try {
-      db.prepare('DELETE FROM sessions WHERE user_id = ?').run(userId);
+      db.prepare('DELETE FROM sessions WHERE user_id = ? AND plataforma = ?').run(userId, plataforma);
       db.prepare(
-        'INSERT INTO sessions(token_hash, user_id, expires_at) VALUES(?, ?, ?)'
+        'INSERT INTO sessions(token_hash, user_id, expires_at, plataforma) VALUES(?, ?, ?, ?)'
       ).run(
         hash(token),
         userId,
-        now() + (options.tokenTtlMs || TOKEN_TTL_MS)
+        now() + (options.tokenTtlMs || TOKEN_TTL_MS),
+        plataforma
       );
       db.exec('COMMIT');
     } catch (error) {
@@ -293,6 +382,38 @@ function createApiServer(options = {}) {
       throw error;
     }
     return token;
+  };
+  // A conta de quem o Google confirmou, igual para o PC (código) e o Android (ID token): acha pelo google_sub, cria a
+  // conta se o e-mail é novo (lista de convidados, aprovação) e não junta sozinho com conta de senha do mesmo e-mail
+  const entrarPeloGoogle = async (identity, plataforma) => {
+    let user = db.prepare('SELECT id, status FROM users WHERE google_sub = ?').get(identity.sub);
+    if (!user) {
+      if (db.prepare('SELECT 1 AS yes FROM users WHERE email = ?').get(identity.email)) {
+        // Não junta sozinho: quem criou a conta com esse e-mail pode não ser o dono dele. Entra com a senha e vincula;
+        // com a senha desligada (googleOnly sem legacyPasswordLogin) só o administrador destrava.
+        const semSenha = control.settings().googleOnly && !control.settings().legacyPasswordLogin;
+        throw new ApiError(409, 'account_exists', 'Já existe uma conta com o e-mail ' + identity.email + '. ' + (semSenha
+          ? 'Ela ainda não foi ligada ao Google. Peça ao administrador para liberar a entrada por senha; aí você entra com ela e vincula o Google em Conta.'
+          : 'Entre com a senha e vincule o Google em Conta.'));
+      }
+      const convidado = db.prepare('SELECT grupo FROM allowed_emails WHERE email = ?').get(identity.email);
+      if (!convidado && control.settings().onlyAllowlist) throw new ApiError(403, 'not_allowed', 'Este e-mail não está na lista de convidados. Peça ao administrador para te adicionar.');
+      if (!convidado && !control.settings().registrationOpen) throw new ApiError(403, 'registration_closed', 'Novos cadastros estão desativados.');
+      const id = newId();
+      const salt = randomBytes(16).toString('hex');
+      const unusable = randomBytes(32).toString('hex'); // senha que ninguém conhece: a conta só entra pelo Google até definir uma
+      const displayName = (identity.name.replace(/\s+/g, ' ').trim() || identity.email.split('@')[0]).slice(0, 60) || 'Usuário';
+      const requiresApproval = control.settings().requireApproval && !convidado; // quem está na lista de convidados entra direto
+      db.prepare('INSERT INTO users(id, email, display_name, password_salt, password_hash, status, google_sub, password_set, email_verificado, role, grupo, created_at) VALUES(?, ?, ?, ?, ?, ?, ?, 0, 1, ?, ?, ?)')
+        .run(id, identity.email, displayName, salt, await hashPassword(unusable, salt), requiresApproval ? 'pending' : 'active', identity.sub,
+          convidado?.grupo === 'admin' ? 'admin' : 'user', convidado && convidado.grupo !== 'admin' ? convidado.grupo : 'amigo', now());
+      if (requiresApproval) return { status: 202, value: { user: publicUser(id), status: 'pending_approval' } };
+      return { status: 201, value: { user: publicUser(id), status: 'active', accessToken: issueToken(id, plataforma) } };
+    }
+    db.prepare('UPDATE users SET email_verificado = 1 WHERE id = ? AND email = ?').run(user.id, identity.email);
+    if (user.status === 'pending') throw new ApiError(403, 'account_pending', 'Sua conta aguarda aprovação do servidor.');
+    if (user.status !== 'active') throw new ApiError(403, 'account_disabled', 'Esta conta está desativada.');
+    return { status: 200, value: { user: publicUser(user.id), accessToken: issueToken(user.id, plataforma) } };
   };
   const requireUser = (req) => {
     const match = /^Bearer ([A-Za-z0-9_-]{30,})$/.exec(String(req.headers.authorization || ''));
@@ -464,40 +585,28 @@ function createApiServer(options = {}) {
         return send(res, 200, { user: publicUser(user.id), accessToken: issueToken(user.id) });
       }
 
-      if (method === 'GET' && pathname === '/v1/auth/google/config') return send(res, 200, { enabled: !!googleClientId(), clientId: googleClientId(), googleOnly: !!control.settings().googleOnly, passwordLogin: !!control.settings().legacyPasswordLogin });
+      if (method === 'GET' && pathname === '/v1/auth/google/config') return send(res, 200, { enabled: !!googleClientId(), clientId: googleClientId(), webClientId: googleWebClientId(), googleOnly: !!control.settings().googleOnly, passwordLogin: !!control.settings().legacyPasswordLogin });
       if (method === 'POST' && pathname === '/v1/auth/google') {
         const failed = enforceAuthLimit(req, 'google', 10, 10 * 60 * 1000);
         const body = await readBody(req);
         let identity;
         try { identity = await googleIdentity(body); } catch (error) { if (error.status !== 503) failed(); throw error; }
-        let user = db.prepare('SELECT id, status FROM users WHERE google_sub = ?').get(identity.sub);
-        if (!user) {
-          if (db.prepare('SELECT 1 AS yes FROM users WHERE email = ?').get(identity.email)) {
-            // Não junta sozinho: quem criou a conta com esse e-mail pode não ser o dono dele. Entra com a senha e vincula;
-            // com a senha desligada (googleOnly sem legacyPasswordLogin) só o administrador destrava.
-            const semSenha = control.settings().googleOnly && !control.settings().legacyPasswordLogin;
-            throw new ApiError(409, 'account_exists', 'Já existe uma conta com o e-mail ' + identity.email + '. ' + (semSenha
-              ? 'Ela ainda não foi ligada ao Google. Peça ao administrador para liberar a entrada por senha; aí você entra com ela e vincula o Google em Conta.'
-              : 'Entre com a senha e vincule o Google em Conta.'));
-          }
-          const convidado = db.prepare('SELECT grupo FROM allowed_emails WHERE email = ?').get(identity.email);
-          if (!convidado && control.settings().onlyAllowlist) throw new ApiError(403, 'not_allowed', 'Este e-mail não está na lista de convidados. Peça ao administrador para te adicionar.');
-          if (!convidado && !control.settings().registrationOpen) throw new ApiError(403, 'registration_closed', 'Novos cadastros estão desativados.');
-          const id = newId();
-          const salt = randomBytes(16).toString('hex');
-          const unusable = randomBytes(32).toString('hex'); // senha que ninguém conhece: a conta só entra pelo Google até definir uma
-          const displayName = (identity.name.replace(/\s+/g, ' ').trim() || identity.email.split('@')[0]).slice(0, 60) || 'Usuário';
-          const requiresApproval = control.settings().requireApproval && !convidado; // quem está na lista de convidados entra direto
-          db.prepare('INSERT INTO users(id, email, display_name, password_salt, password_hash, status, google_sub, password_set, email_verificado, role, grupo, created_at) VALUES(?, ?, ?, ?, ?, ?, ?, 0, 1, ?, ?, ?)')
-            .run(id, identity.email, displayName, salt, await hashPassword(unusable, salt), requiresApproval ? 'pending' : 'active', identity.sub,
-              convidado?.grupo === 'admin' ? 'admin' : 'user', convidado && convidado.grupo !== 'admin' ? convidado.grupo : 'amigo', now());
-          if (requiresApproval) return send(res, 202, { user: publicUser(id), status: 'pending_approval' });
-          return send(res, 201, { user: publicUser(id), status: 'active', accessToken: issueToken(id) });
-        }
-        db.prepare('UPDATE users SET email_verificado = 1 WHERE id = ? AND email = ?').run(user.id, identity.email);
-        if (user.status === 'pending') throw new ApiError(403, 'account_pending', 'Sua conta aguarda aprovação do servidor.');
-        if (user.status !== 'active') throw new ApiError(403, 'account_disabled', 'Esta conta está desativada.');
-        return send(res, 200, { user: publicUser(user.id), accessToken: issueToken(user.id) });
+        const result = await entrarPeloGoogle(identity, 'pc');
+        return send(res, result.status, result.value);
+      }
+      // Android: o nonce antes de abrir a folha de contas do Google, e depois o ID token com ele
+      if (method === 'GET' && pathname === '/v1/auth/google/nonce') {
+        if (!googleWebClientId()) throw new ApiError(503, 'google_disabled', 'Entrar com Google no Android não está ligado neste servidor.');
+        enforceAuthLimit(req, 'google-nonce', 30, 10 * 60 * 1000)();
+        return send(res, 200, { nonce: newGoogleNonce() });
+      }
+      if (method === 'POST' && pathname === '/v1/auth/google/android') {
+        const failed = enforceAuthLimit(req, 'google', 10, 10 * 60 * 1000);
+        const body = await readBody(req, GOOGLE_ANDROID_BODY_BYTES);
+        let identity;
+        try { identity = await googleAndroidIdentity(body); } catch (error) { if (error.status !== 503) failed(); throw error; }
+        const result = await entrarPeloGoogle(identity, 'android');
+        return send(res, result.status, result.value);
       }
 
       // Esqueci a senha: o administrador gera um código de uso único (válido por 1 h) e a pessoa define a senha nova com ele

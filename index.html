@@ -777,6 +777,13 @@
             <p class="hint" id="gateHint"></p>
           </section>
           <section class="vd-section">
+            <h3 id="vozesLabel">Volume das vozes<button type="button" class="tip" data-tip="Aumenta ou abaixa todas as vozes de uma vez, junto com o volume de cada pessoa. Clique duplo volta para 100%." aria-label="Aumenta ou abaixa todas as vozes de uma vez, junto com o volume de cada pessoa. Clique duplo volta para 100%."></button></h3>
+            <div class="vd-slider">
+              <input type="range" id="vozesVolume" min="0" max="200" step="5" aria-labelledby="vozesLabel">
+              <span id="vozesValue" class="vd-value"></span>
+            </div>
+          </section>
+          <section class="vd-section">
             <h3 id="duckLabel">Atenuação<button type="button" class="tip" data-tip="Abaixa o som das telas enquanto alguém fala na voz." aria-label="Abaixa o som das telas enquanto alguém fala na voz."></button></h3>
             <div class="vd-slider">
               <input type="range" id="duckAmount" min="0" max="100" step="5" aria-labelledby="duckLabel">
@@ -1285,6 +1292,16 @@
         </div>
       </div>
     </form>
+  </div>
+
+  <!-- Entrando na sala (renderer/sala.js: comCarregando): por cima de tudo até a sala abrir ou dar erro -->
+  <div id="entradaCarregando" class="entrada-carregando" hidden>
+    <div class="entrada-caixa" role="alertdialog" aria-modal="true" aria-labelledby="entradaTitulo" aria-describedby="entradaDetalhe" aria-busy="true">
+      <span class="entrada-roda" aria-hidden="true"></span>
+      <h2 id="entradaTitulo">Entrando na sala…</h2>
+      <p id="entradaDetalhe" class="hint" aria-live="polite"></p>
+      <button id="entradaCancelar" class="btn small ghost" type="button">Cancelar</button>
+    </div>
   </div>
 
   <!-- Trocar a senha (logado) e esqueci a senha (com o código do administrador): renderer/conta.js -->

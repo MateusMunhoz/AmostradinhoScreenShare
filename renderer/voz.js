@@ -196,7 +196,8 @@ const mixer = {
     const n = this.nodes.get(id);
     if (!n) return;
     const v = volOf(id);
-    n.gain.gain.value = this.deafened || v.muted ? 0 : v.voice / 100;
+    // O volume da pessoa vezes o volume geral das vozes (Voz e atalhos › Volume das vozes)
+    n.gain.gain.value = this.deafened || v.muted ? 0 : (v.voice / 100) * (voiceCfg.vozes / 100);
   },
   level(an) {
     const buf = new Float32Array(an.fftSize);
@@ -222,7 +223,7 @@ function tickSpeak() {
     if (now - (lastLoud.get(id) || 0) < 350) next.add(id);
   };
   // Com o fone mutado (ou a pessoa silenciada / no 0% para você), ela não aparece falando: você não está ouvindo
-  const unheard = (id) => { const v = volOf(id); return voice.deafened || v.muted || v.voice === 0; };
+  const unheard = (id) => { const v = volOf(id); return voice.deafened || v.muted || v.voice === 0 || voiceCfg.vozes === 0; };
   for (const [id, n] of mixer.nodes) {
     if (unheard(id)) { lastLoud.delete(id); continue; }
     check(id, n.an, voice.members.get(id)?.muted);
