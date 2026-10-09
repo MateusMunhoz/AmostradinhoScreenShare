@@ -157,7 +157,9 @@ async function criarSalaAgora() {
     if (selectedNetworkProvider() === 'internet') {
       if (password.length < 4) throw new Error('No modo Internet a sala precisa de senha (mínimo 4 caracteres).');
       const url = internetServerUrl();
-      const welcome = await connectRoom(url, { name: getName(), password, create: true });
+      // amigosMembros: amigos de quem estiver na sala também entram com um clique (docs/spec/entrar-pelos-amigos.md)
+      const amigosMembros = $('roomAmigosMembros').checked;
+      const welcome = await connectRoom(url, { name: getName(), password, create: true, amigosMembros });
       state.password = password;
       // criador + amigos: anuncia a sala aos amigos do Razze (salas-amigos.js), se a caixinha estiver marcada
       try { enterRoom(welcome, false, url, 0, { url, code: welcome.sala, criador: true, amigos: $('roomVisible').checked }); }
@@ -244,6 +246,7 @@ async function joinInternetRoom() {
 function enterRoom(welcome, owner, host, port, cloud = null) {
   state.cloud = cloud;
   if (cloud) cloud.passeOn = (welcome.features || []).includes('passe'); // servidor antigo: os amigos entram com a senha
+  receberPasseSala(welcome, welcome.features || []); // o passe da sala inteira (salas-amigos.js)
   salasAmigos.alvo = null;
   RTC_CONFIG.iceServers = cloud && Array.isArray(welcome.iceServers) ? welcome.iceServers : [];
   state.myId = welcome.id;
@@ -447,7 +450,11 @@ async function rejoin(host, timeoutMs) {
   state.isOwner = !state.cloud && host === '127.0.0.1';
   state.host = host;
   if (state.cloud && Array.isArray(welcome.iceServers)) RTC_CONFIG.iceServers = welcome.iceServers; // acesso ao TURN renovado
-  if (state.cloud) { state.cloud.passeOn = (welcome.features || []).includes('passe'); registrarPasseSala(); }
+  if (state.cloud) {
+    state.cloud.passeOn = (welcome.features || []).includes('passe');
+    receberPasseSala(welcome, welcome.features || []);
+    registrarPasseSala();
+  }
   state.hostId = welcome.hostId || null;
   state.handoff = (welcome.features || []).includes('handoff');
   state.sessao = welcome.sessao || state.sessao;
@@ -480,6 +487,7 @@ async function rejoin(host, timeoutMs) {
   renderMembers();
   renderShareBox();
   updateStage();
+  publicarSalaInternet(); // o host ou o passe da sala podem ter mudado enquanto a conexão estava fora
   toast(sameHost ? 'Conexão com a sala de volta.' : state.isOwner ? 'Você agora é o host da sala.' : `${nameOf(state.hostId)} agora é o host da sala.`);
   return true;
 }
@@ -582,7 +590,12 @@ function onRoomMessage(m) {
       toast(String(m.message || 'Não foi possível mudar a senha.').slice(0, 200), 'error');
       break;
     case 'host': // modo Internet: o host saiu e outro assumiu
-      if (m.id === state.myId || state.members.has(m.id)) { state.hostId = m.id; renderMembers(); renderRoomAddress(); }
+      if (m.id === state.myId || state.members.has(m.id)) { state.hostId = m.id; renderMembers(); renderRoomAddress(); publicarSalaInternet(); }
+      break;
+    case 'passe-sala': // modo Internet: o passe da sala mudou ou caiu (salas-amigos.js)
+      receberPasseSala(m);
+      publicarSalaInternet();
+      renderSenhaSala(); // o interruptor do host no painel da sala (chamada.js)
       break;
   }
 }

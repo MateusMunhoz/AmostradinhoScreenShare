@@ -62,6 +62,11 @@ test('sala do modo Internet e em que sala estou vão na batida; as salas dos ami
   assert.equal(cleanInternetRoom({ servidor: 'wss://x.com/?a=1', codigo: 'ABC234' }), null);
   assert.equal(cleanInternetRoom({ servidor: 'wss://x.com', codigo: 'ABC10O' }), null);
   assert.equal(cleanInternetRoom({ servidor: 'wss://x.com', codigo: 'ABC234', passe: 'curto' }).passe, null);
+  // host do anúncio de um convidado: sem controle, cortado em 32; vazio não vai
+  assert.equal(cleanInternetRoom({ servidor: 'wss://x.com', codigo: 'ABC234', host: ' Ana\n ' }).host, 'Ana');
+  assert.equal(cleanInternetRoom({ servidor: 'wss://x.com', codigo: 'ABC234', host: 'x'.repeat(40) }).host, 'x'.repeat(32));
+  assert.equal('host' in cleanInternetRoom({ servidor: 'wss://x.com', codigo: 'ABC234', host: '  ' }), false);
+  assert.equal('host' in cleanInternetRoom({ servidor: 'wss://x.com', codigo: 'ABC234', host: 7 }), false);
   const sent = [];
   const api = {
     heartbeat: async body => { sent.push(body); },

@@ -551,8 +551,13 @@ function setupConta() {
   $('steamSeusNenhum').onclick = () => steamMarcarSeus(false);
   atvAgendarProcura();
   // Em que sala estou: ligado por padrão (salas-amigos.js); desligar tira na hora
+  // Deixar entrar (docs/spec/entrar-pelos-amigos.md): só vale com o de cima ligado; desligar tira o Entrar na hora
+  const salaEntrarApagado = () => { $('atvSalaEntrar').disabled = !$('atvSala').checked; };
   $('atvSala').checked = salaAtualLigada();
-  $('atvSala').onchange = () => { save('atividadeSala', $('atvSala').checked ? '1' : '0'); publicarSalaAtual(); };
+  $('atvSala').onchange = () => { save('atividadeSala', $('atvSala').checked ? '1' : '0'); salaEntrarApagado(); publicarSalaAtual(); publicarSalaInternet(); };
+  $('atvSalaEntrar').checked = salaEntrarLigada();
+  $('atvSalaEntrar').onchange = () => { save('atividadeSalaEntrar', $('atvSalaEntrar').checked ? '1' : '0'); publicarSalaInternet(); };
+  salaEntrarApagado();
   atv.amigos = setInterval(() => void atvAtualizarAmigos(), ATV_CADA_MS);
   window.addEventListener('beforeunload', () => { if (atv.ultimo && atv.ultimo !== '{"game":"","artist":"","title":""}') window.api.razzeSetActivity({}).catch(() => {}); });
   window.api?.aoMudarMusica?.(atvMusicaChegou);

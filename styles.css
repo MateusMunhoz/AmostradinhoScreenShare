@@ -2507,6 +2507,7 @@ body:has(.modal:not([hidden]), #dmPanel:not([hidden]), #peoplePop:not([hidden]),
 .addr.room-senha code { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: .04em; }
 .room-senha .btn.icon { width: 28px; height: 28px; padding: 0; display: grid; place-items: center; }
 .room-senha .btn.icon svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.check-line.room-amigos { margin-top: 6px; font-size: 13px; } /* o interruptor do host: amigos dos membros (salas-amigos.js) */
 .chamada-modos { display: flex; flex-direction: column; gap: 6px; }
 .chamada-modo { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 2px 8px; padding: 8px 10px; border-radius: 8px; background: var(--sunken); cursor: pointer; }
 .chamada-modo:has(input:disabled) { cursor: default; opacity: .6; }

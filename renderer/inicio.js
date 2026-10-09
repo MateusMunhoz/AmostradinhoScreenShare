@@ -326,6 +326,8 @@ $('createBtn').onclick = createRoom;
 window.api.onSessoes(onSessoesDaRede);
 $('roomVisible').checked = load('sessaoVisivel', '1') !== '0';
 $('roomVisible').onchange = () => save('sessaoVisivel', $('roomVisible').checked ? '1' : '0');
+$('roomAmigosMembros').checked = load('salaAmigosMembros', '1') !== '0'; // modo Internet: passe da sala (salas-amigos.js)
+$('roomAmigosMembros').onchange = () => save('salaAmigosMembros', $('roomAmigosMembros').checked ? '1' : '0');
 $('roomPassword').addEventListener('keydown', (e) => { if (e.key === 'Enter') createRoom(); });
 $('joinBtn').onclick = joinRoom;
 $('roomAddr').addEventListener('keydown', (e) => { if (e.key === 'Enter') joinRoom(); });

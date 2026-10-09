@@ -99,6 +99,7 @@ function renderHomeForNetwork() {
   $('joinPassword').placeholder = internet ? 'A senha que quem criou passou' : 'Só se a sala tiver uma';
   $('createBlockHint').textContent = internet ? 'Os amigos entram pelo código da sala' : 'Os amigos entram pelo seu endereço';
   $('roomPortField').hidden = internet;
+  $('roomAmigosMembrosLine').hidden = !internet; // passe da sala: só o servidor do modo Internet tem
   const visible = internet ? 'Mostrar esta sala para meus amigos do Razze' : 'Mostrar esta sessão para quem está na rede';
   const tip = internet ? 'Aparece na tela inicial dos seus amigos do Razze, que entram com um clique enquanto você estiver na sala.'
     : 'Aparece na tela inicial dos outros. A senha continua sendo pedida.';

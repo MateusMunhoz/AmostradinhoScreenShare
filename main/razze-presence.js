@@ -9,7 +9,9 @@ function cleanInternetRoom(v) {
   if (typeof v.codigo !== 'string' || !/^[A-HJ-NP-Z2-9]{6}$/.test(v.codigo)) return null;
   const pessoas = Number.isInteger(v.pessoas) ? Math.min(1000, Math.max(1, v.pessoas)) : 1;
   const passe = typeof v.passe === 'string' && /^[A-Za-z0-9_-]{43}$/.test(v.passe) ? v.passe : null;
-  return { servidor: String(v.servidor), codigo: v.codigo, pessoas, passe };
+  // host: o nome do host da sala, quando quem anuncia é um convidado (docs/spec/entrar-pelos-amigos.md)
+  const host = typeof v.host === 'string' ? v.host.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 32) : '';
+  return { servidor: String(v.servidor), codigo: v.codigo, pessoas, passe, ...(host ? { host } : {}) };
 }
 
 // Em que sala estou, para os amigos (docs/spec/sala-do-amigo.md): o modo, o nome do host, quantas pessoas e se estou na
