@@ -83,6 +83,11 @@
 }
 :root[data-skin="diluna"] .home-screen { padding-left: calc(var(--dl-edge) + 4vh + var(--dl-name) * .95 + 40px); }
 :root[data-skin="diluna"] .home-main { position: relative; z-index: 1; }
+/* O Início ocupa a largura toda (docs/spec/inicio-novo.md): em janela larga, o conteúdo e o rodapé começam depois do astro */
+@media (min-width: 1051px) {
+  :root[data-skin="diluna"] :is(.home-main, .home-status) { padding-left: 220px; }
+  :root[data-skin="diluna"][data-mirror="on"] :is(.home-main, .home-status) { padding-left: 0; padding-right: 220px; }
+}
 :root[data-skin="diluna"] .home-title { font-family: var(--dl-font); letter-spacing: .02em; }
 @media (max-width: 1300px) {
   :root[data-skin="diluna"] .home-screen::before { display: none; }

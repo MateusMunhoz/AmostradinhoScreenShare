@@ -66,7 +66,7 @@ Antes: a RazzeAPI da VPS com o código novo (links de amigo, conta, atividade e,
    Deve acontecer: B vê "A quer ser seu amigo. Aceitar?"; aceitando, os dois aparecem na lista um do outro. Usar o mesmo link
    de novo, num terceiro PC, deve recusar. **Revogar** na lista de links cancela o link.
 4. **Código curto.** Gere outro link e, no PC B, cole só o código `ABCD-EFGH-JK` em Adicionar amigo.
-5. **Ligar e Abrir minha sala.** No Início, **Ligar** para o amigo online: ele recebe o convite e entra na voz. **Abrir minha sala**:
+5. **Ligar e Criar sala.** No Início, **Ligar** para o amigo online: ele recebe o convite e entra na voz. **Criar sala**:
    a sala abre em 1 clique e aparece na lista dos amigos.
 6. **Senha.** Troque a senha em Perfil › Conta Razze. Depois: o administrador gera um **Código de senha** no painel e a pessoa usa
    **Esqueci a senha** na tela de entrar (código vale 1 hora e uma vez).

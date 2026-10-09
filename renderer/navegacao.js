@@ -284,11 +284,10 @@ function renderHomeCall() {
   $('navBackUnread').hidden = !back || !unread;
   $('navBackUnread').textContent = unread > 99 ? '99+' : String(unread);
   $('navBackToRoom').title = $('navBackToRoom').ariaLabel = unread ? `Voltar para a sala · ${unread} ${unread === 1 ? 'mensagem nova' : 'mensagens novas'}` : 'Voltar para a sala';
-  // Numa sala: criar ou entrar em outra fica bloqueado (sairia desta sem querer). Abrindo uma, também: um segundo
-  // servidor derrubaria o primeiro (startServer fecha o que estiver aberto)
-  for (const id of ['goQuick', 'goCreate', 'goJoin', 'rejoinBtn']) $(id).disabled = inCall || state.abrindo;
-  $('goQuick').title = $('goJoin').title = inCall ? 'Você já está numa sala: volte para ela e saia antes' : '';
-  $('goCreate').title = inCall ? 'Você já está numa sala: volte para ela e saia antes' : 'Opções da sala'; // só ícone: a dica é o nome
+  // Criar e entrar continuam à vista e ligados numa sala: perguntam antes de sair dela (foraDaSala, primeira-entrada.js).
+  // Abrindo uma sala, ficam travados: um segundo servidor derrubaria o primeiro (startServer fecha o que estiver aberto)
+  for (const id of ['goQuick', 'goCreate', 'goJoin', 'rejoinBtn']) $(id).disabled = !!state.abrindo;
+  $('goQuick').title = $('goJoin').title = $('goCreate').title = inCall ? 'Você está numa sala: o app pergunta antes de sair dela' : '';
   if (!inCall) return;
   const host = state.hostId === state.myId ? 'você' : nameOf(state.hostId);
   $('homeCallTitle').textContent = host === 'você' ? 'Sua sala' : `Sala de ${host}`;

@@ -4,7 +4,7 @@ Tudo o que dá para fazer no Nebula, com os detalhes. Para começar do zero, vej
 
 - [Sala](#sala)
 - [VPN Nebula](#vpn-nebula)
-- [Sessões abertas](#sessões-abertas)
+- [Salas abertas](#salas-abertas)
 - [Transmitir](#transmitir)
 - [Assistir](#assistir)
 - [Janela flutuante](#janela-flutuante)
@@ -18,8 +18,9 @@ Tudo o que dá para fazer no Nebula, com os detalhes. Para começar do zero, vej
 
 ## Sala
 
-- **Criar:** clique em **Criar sala**, escolha a porta e, se quiser, uma senha. O app mostra um endereço tipo `26.12.34.56:8765`. Mande para os amigos. Quem cria é o **host**, e aparece "Host" ao lado do nome.
-- **Entrar:** clique em **Entrar numa sala**, cole o endereço e clique em **Entrar**.
+- **Criar:** no Início, **Criar sala** abre a sala na hora (no modo Internet, com senha gerada). Para escolher a porta e a senha, clique em **Opções da sala**, dentro do mesmo cartão. O app mostra um endereço tipo `26.12.34.56:8765`. Mande para os amigos. Quem cria é o **host**, e aparece "Host" ao lado do nome.
+- **Entrar:** clique em **Entrar numa sala** (ao lado de Criar sala), cole o endereço (ou o código, no modo Internet) e clique em **Entrar**.
+- **Já numa sala:** Criar sala e Entrar numa sala continuam ligados; o app pergunta antes de tirar você da sala em que está.
 - **Carregando:** criando ou entrando (pelo endereço, pelo código, na sala de um amigo, por um convite ou numa chamada), aparece **Entrando na sala…** com o passo da conexão até a sala abrir. Enquanto isso, clicar de novo não abre outra conexão. **Cancelar** (ou Esc) desiste da entrada.
 - **Tamanho:** até 12 pessoas.
 - **Senha:** é opcional, mas recomendada se a rede da Radmin tiver mais gente.
@@ -45,7 +46,11 @@ Tudo o que dá para fazer no Nebula, com os detalhes. Para começar do zero, vej
 
 ### Como os PCs se conectam
 
-Em **Configurações › Rede**. O padrão é **Internet (servidor)**: sem VPN, a sala fica num servidor (VPS) e os amigos
+No botão **Rede**, no topo do Início: ele mostra a rede em uso e o estado dela (bolinha verde: pronta; laranja: falta
+algo, como "Radmin · sem IP 26.x" ou "Razze · desconectada"). Clicar abre as três redes, cada uma com o que muda; escolher
+troca na hora. Se uma rede não dá para usar agora (sem conta Razze, por exemplo), o motivo aparece na linha dela. Numa
+sala, o app pergunta antes, porque trocar de rede tira você da sala. **Avançado** abre **Configurações › Rede**, com o
+servidor, a conta e as redes Razze. O padrão é **Internet (servidor)**: sem VPN, a sala fica num servidor (VPS) e os amigos
 entram por código e senha, pela lista de salas dos amigos ou por um convite nas mensagens. Também dá para usar
 **Radmin ou rede local** e **Razze (WireGuard)**. Quem já usava o app antes do modo Internet virar o padrão, sem
 ter escolhido outro, continua na Radmin.
@@ -77,17 +82,18 @@ A conexão P2P WireGuard depende dos NATs dos dois lados permitirem hole punchin
   sincroniza a cada 30 segundos; depois de reabrir o Nebula, clique em **Atualizar peers** para sincronizar de novo.
   A senha da sala continua sendo independente das permissões da VPN.
 
-### Sessões abertas
+### Salas abertas
 
-A tela inicial mostra as **sessões abertas** na rede da Radmin: as salas que alguém criou, com o nome de
-quem está com ela, quantas pessoas estão dentro e um cadeado se tiver senha.
+A tela inicial mostra as **salas abertas** na rede em uso, com o nome da rede no título ("Salas abertas na Radmin · 2"):
+as salas que alguém criou, com o nome de quem está com ela, quantas pessoas estão dentro e um cadeado se tiver senha.
+A sala em que você está não entra na lista: ela fica só na faixa de cima, com **Voltar para a sala**.
 
-- **Entrar:** o botão ao lado da sessão entra direto. Se ela tiver senha, abre o **Entrar numa sala** com
+- **Entrar:** o botão ao lado da sala entra direto. Se ela tiver senha, abre o **Entrar numa sala** com
   o endereço preenchido, e é só digitar a senha.
-- **Como aparece:** quem tem uma sala aberta avisa a rede a cada 3 segundos. A sessão some da lista quando
+- **Como aparece:** quem tem uma sala aberta avisa a rede a cada 3 segundos. A sala some da lista quando
   a sala é encerrada, ou depois de uns 10 segundos sem aviso (PC desligado, Radmin caiu).
-- **Troca de host:** a sessão continua a mesma na lista, com o nome do novo host.
-- **Não mostrar a sua:** ao criar a sala, desmarque **Mostrar esta sessão para quem está na rede**. Ela
+- **Troca de host:** a sala continua a mesma na lista, com o nome do novo host.
+- **Não mostrar a sua:** ao criar a sala (em **Opções da sala**), desmarque **Mostrar esta sala para quem está na rede**. Ela
   continua funcionando pelo endereço, só não aparece para os outros (e continua assim se o host mudar).
 - **Se nada aparecer:** algumas redes não deixam passar o aviso. O app também pergunta direto aos
   endereços das salas em que você já esteve, então elas aparecem mesmo assim. Se ainda não aparecer,
@@ -100,8 +106,8 @@ quem está com ela, quantas pessoas estão dentro e um cadeado se tiver senha.
 No modo Internet, a lista da tela inicial vira **Salas dos seus amigos**: as salas que os seus amigos do Razze
 abriram pela internet. Basta estar logado na conta Razze (no seu **Perfil**, em **Conta Razze**); a VPN Razze não precisa estar ligada.
 Quando há uma sala aberta (de amigo ou, nos outros modos, na sua rede), ela sobe para cima dos amigos com o selo
-**AO VIVO**, quantas pessoas, se a voz está ligada, o jogo do dono e os rostos dos seus amigos que já estão dentro.
-**Entrar na sala** vira o botão principal; **Abrir minha sala** e **Entrar com código** ficam como botões comuns.
+**AO VIVO**, quantas pessoas, se a voz está ligada, o jogo do dono e os rostos dos seus amigos que já estão dentro, e
+**Entrar**. **Criar sala** e **Entrar numa sala** ficam sempre no mesmo lugar, acima da lista.
 
 - **Quem instala agora:** o app já começa no modo Internet, com o servidor da equipe e a conta Razze prontos. É só criar
   a conta na aba Rede, adicionar os amigos e criar ou entrar nas salas. Quem já usava o app continua na Radmin; para
@@ -109,7 +115,7 @@ Quando há uma sala aberta (de amigo ou, nos outros modos, na sua rede), ela sob
 
 - **Entrar:** o botão **Entrar** entra direto, sem senha, por um **passe de convite** que só os amigos de quem está
   na sala recebem. Se o passe não valer mais (o host fechou a sala para os amigos, ou o servidor é antigo), abre o
-  **Entrar com código** com o código preenchido, e é só digitar a senha. O servidor usado é o da sala do amigo, mesmo
+  **Entrar numa sala** com o código preenchido, e é só digitar a senha. O servidor usado é o da sala do amigo, mesmo
   que o da sua aba Rede seja outro.
 - **Salas em que o amigo é convidado:** não precisa ser a sala de um amigo. Se o seu amigo está na sala de outra
   pessoa, ela aparece como "Sala de Ciclano · com Fulano", e o **Entrar** também fica ao lado de "Na sala de Ciclano",
@@ -293,18 +299,20 @@ Na primeira vez que o app abre, uma tela de cada vez (três no máximo):
 
 Quem já usava o app não vê essa tela. Quem escolheu *Com amigos* e ainda não entrou vê no Início uma faixa **Entrar na conta**.
 
-No **Início**, com conta: **Amigos online** (até 5, com **Mensagem** e **Ligar** em ícones), **Convidar** (um menu com **Copiar meu link** e **Adicionar amigo**) e **Ver todos** (abre **Adicionar amigo** no envelope).
+No **Início**, com conta, a coluna da direita mostra **Amigos online** (até 5, com **Mensagem** e **Ligar** em ícones), **Convidar** (um menu com **Copiar meu link** e **Adicionar amigo**) e **Ver todos** (abre **Adicionar amigo** no envelope).
 Cada amigo mostra em etiquetas onde está, o jogo e a música (clique na música para ver a faixa). Passando o mouse na linha
 aparece **Chamar para minha sala**: manda o convite da sala em que você está pelas mensagens; fora de sala, abre a sua antes.
 
 O topo diz **Bom dia/Boa tarde/Boa noite** e o seu nome (o lápis ao lado muda o nome; sem nome, aparece o campo), com um
 resumo do momento: quantos amigos estão online, quem está jogando ou quem abriu uma sala. Ao lado, numa janela larga,
 uma constelação parada: você no meio e os amigos online em volta; quem está numa sala brilha na cor de "ao vivo".
-No modo Internet, **Abrir minha sala** diz quais amigos online vão ver a sala; as opções da sala ficam no ícone ao lado.
-**Última sala** mostra de quem era, quando e o modo (o endereço fica na dica), e a barra de baixo mostra a última conversa:
-clicar abre ela.
-**Abrir minha sala** cria a sala em um clique (com senha gerada e visível para os amigos); **Opções da sala** abre a tela
-de antes, com porta, senha e visibilidade.
+No modo Internet, **Criar sala** diz quais amigos online vão ver a sala. Numa sala, a linha embaixo do nome vira "O que
+você quer fazer agora?".
+**Última sala** (só fora de sala) mostra de quem era, quando e o modo (o endereço fica na dica), com **Entrar de novo**;
+se ela está aberta na lista, vira só informação. A barra de baixo mostra a última conversa: clicar abre ela.
+**Criar sala** cria a sala em um clique (com senha gerada e visível para os amigos); **Opções da sala**, dentro do mesmo
+cartão, abre a tela com porta, senha e visibilidade.
+No pé do Início fica a versão ("Nebula 1.18.10 · atualizado"), com **Procurar atualização** e **Novidades**.
 
 ## Senha e frase do perfil
 
@@ -409,11 +417,11 @@ Conversa com um amigo (conta Razze), dentro ou fora da sala.
 - **Convite para a sala:** o **Convidar** da aba **Amigos** (em **Adicionar amigo**) manda um cartão "Convite para a sala de [nome]", com
   quantas pessoas estão, o modo e um **Entrar**. Só entra quando você clica, nunca sozinho.
   - **Pela internet:** entra direto, sem senha (o convite leva um passe que só abre aquela sala enquanto quem
-    convidou está nela). Se o passe não valer mais, abre o **Entrar com código** já preenchido para a senha.
+    convidou está nela). Se o passe não valer mais, abre o **Entrar numa sala** já preenchido para a senha.
   - **Radmin ou Razze:** preenche o endereço e entra; se a sala tiver senha, pede a senha (ela nunca vai no
     convite). Na Razze, precisa estar com a mesma rede ligada.
   - **Outro modo:** se você estiver em outro modo (por exemplo, na Radmin e o convite é pela internet), o cartão
-    avisa qual usar, em Configurações › Rede. O app não troca o modo sozinho.
+    avisa qual usar, no botão **Rede** do topo do Início. O app não troca o modo sozinho.
   - **Já numa sala:** pergunta se quer sair dela e entrar na do amigo.
   - **App antigo:** quem ainda não atualizou vê o convite como texto, com o código ou o endereço, e entra à mão.
 
@@ -635,6 +643,7 @@ O Nebula fica com um ícone na bandeja do Windows (perto do relógio), na cor do
 
 ## Atualizações
 
-- **Sozinho:** o app procura versão nova no GitHub e com quem está na sala. Quando acha, um aviso no canto oferece **Atualizar agora**.
+- **Sozinho:** o app procura versão nova no GitHub e com quem está na sala. Quando acha, aparece o botão **Nova versão** no topo do Início (ao lado da rede), e o rodapé diz "1.18.11 disponível". Fora do Início, o mesmo botão aparece na barrinha da direita e leva ao Início. Nada aparece por cima do jogo ou da transmissão.
+- **O painel:** clicar no botão (ou no aviso do rodapé) mostra a versão nova, a sua, **Ver o que mudou no GitHub** e o que vai acontecer ("O app fecha e abre de novo sozinho"; numa sala, "Você sai da sala…"). **Atualizar e reiniciar** baixa e reinicia; **Depois** esconde o botão até a próxima versão (o rodapé continua avisando).
 - **Na mão:** **Procurar atualização**, no rodapé do Início ou no menu do ícone da bandeja.
-- **Novidades:** depois de atualizar, o Início mostra uma vez o que mudou na versão. Para ver de novo, ou ver as versões anteriores, clique em **Novidades** no rodapé.
+- **Novidades:** depois de atualizar, o cartão **Novo na versão** aparece no pé da coluna da direita, com o primeiro item. **Ver todas as novidades** abre a lista; o X fecha, e ele não volta até a próxima versão. Para ver de novo, ou ver as versões anteriores, clique em **Novidades** no rodapé.

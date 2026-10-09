@@ -52,7 +52,7 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* Início */
-.home-screen { display: flex; flex-direction: column; padding: 28px 40px 20px; gap: 0; overflow-y: auto; }
+.home-screen { display: flex; flex-direction: column; padding: 28px 40px 20px; gap: 0; overflow-y: auto; container: tela-inicio / inline-size; }
 /* Marca na altura da barra de cima (perfil e configurações, à direita) */
 .home-top { flex: none; height: 48px; display: flex; align-items: center; }
 /* A logo: três estrelas ligadas por pontilhados, sempre nas cores dela (não seguem o tema). O mesmo desenho do
@@ -78,11 +78,68 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 .brand-mark svg { width: 46px; height: 46px; }
 .brand-mark svg + .brand-name { margin-left: -3px; transform: translateY(9px); }
 /* O saguão: uma coluna no meio da janela */
-.home-main { flex: 1; width: min(720px, 100%); margin: 0 auto; display: flex; flex-direction: column; justify-content: center; gap: 22px; padding: 28px 0; }
+/* O Início decide o layout pela largura dele, não pela da janela (com o chat de voz ou o chat abertos, ele fica bem
+   mais estreito): container queries em .home-main. Topo, conteúdo e rodapé na mesma largura, alinhados */
+.home-main { flex: 1; width: min(1180px, 100%); margin: 0 auto; display: flex; flex-direction: column; gap: 22px; padding: 24px 0; container: inicio / inline-size; }
+.home-top, .home-status { width: min(1180px, 100%); margin-inline: auto; }
+/* Duas colunas (docs/spec/inicio-novo.md): criar/entrar e salas à esquerda; amigos e "Novo na versão" à direita. Janela
+   estreita: a da direita desce */
+.home-colunas { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: 22px; }
+.home-col { min-width: 0; display: flex; flex-direction: column; gap: 22px; }
+.home-lado { min-width: 0; display: flex; flex-direction: column; gap: 14px; container: lado / inline-size; }
+/* Largo: os amigos ao lado. Estreito: descem para baixo das salas, em duas colunas de amigos se couber */
+@container inicio (min-width: 860px) {
+  .home-colunas:has(> .home-lado > :not([hidden])) { grid-template-columns: minmax(0, 1fr) clamp(300px, 32%, 380px); }
+}
+@container inicio (min-width: 600px) and (max-width: 859.98px) {
+  .home-lado .home-friends-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 18px; }
+}
+.home-lado:not(:has(> :not([hidden]))) { display: none; } /* sem conta e sem novidade: a coluna some */
+/* Criar e entrar: dois cartões do mesmo tamanho, sempre aqui e ligados. Criar é o destaque; "Opções da sala" fica
+   dentro dele, como link */
+.home-acoes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.home-acoes:has(#goJoin[hidden]) { grid-template-columns: minmax(0, 1fr); } /* "Entrar numa sala" aberto: o painel ocupa o lugar dele */
+@container inicio (max-width: 560px) { .home-acoes { grid-template-columns: minmax(0, 1fr); } }
+@container inicio (max-width: 640px) {
+  .home-ceu { display: none; }
+  .home-call { flex-wrap: wrap; }
+  .home-call-info { flex-basis: calc(100% - 30px); }
+  .home-call #homeCallBack { margin-left: auto; }
+  .home-title { font-size: 22px; }
+}
+.home-acao { position: relative; display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 14px; background: var(--panel-2); color: var(--text); }
+.home-acao-criar { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+.home-acao-btn { display: flex; align-items: flex-start; gap: 14px; width: 100%; padding: 18px; border: 0; border-radius: 14px; background: transparent;
+  color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.home-acao-criar .home-acao-btn { padding-bottom: 6px; }
+button.home-acao { flex-direction: row; padding: 18px; border: 1px solid var(--line); }
+.home-acao-btn:hover, button.home-acao:hover { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+.home-acao-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.home-acao-btn:disabled { cursor: progress; opacity: .6; }
+.home-acao[hidden] { display: none; }
+.home-acao-icone { flex: none; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 12px; background: var(--accent-soft); color: var(--accent); }
+.home-acao-criar .home-acao-icone { background: var(--primary); color: var(--primary-ink); }
+.home-acao-icone svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.home-acao-textos { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.home-acao-textos strong { font-size: 17px; }
+.home-acao-textos small, .go-quick-sub { font-size: 13px; font-weight: 400; line-height: 1.45; color: var(--muted); }
+.home-acao-opcoes { align-self: flex-start; margin: 0 0 14px 76px; font-size: 13px; }
+/* O título das salas conta quantas */
+.sessions-title[data-total]:not([data-total=""])::after { content: " · " attr(data-total); }
+.last-room.na-lista { padding-top: 12px; }
+.last-room.na-lista #lastRoomName { font-size: 14px; color: var(--muted); }
+/* "Novo na versão": no pé da coluna de amigos, até fechar */
+.home-novo { display: flex; flex-direction: column; gap: 6px; padding: 14px 16px; border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+  border-radius: 12px; background: color-mix(in srgb, var(--accent) 7%, var(--panel)); }
+.home-novo[hidden] { display: none; }
+.home-novo-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.home-novo-head .home-pop-kicker { margin: 0; color: var(--accent); }
+.home-novo-head .btn.icon svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.home-novo-texto { margin: 0; font-size: 13px; line-height: 1.5; }
+.home-novo .link-btn { align-self: flex-start; font-size: 13px; }
 .home-hello { display: flex; align-items: center; gap: 18px; }
 .avatar.home-avatar { width: 60px; height: 60px; font-size: 24px; background-color: var(--accent); color: var(--accent-ink); }
 /* Com alguém com sala aberta, entrar nela é o mais provável: o amarelo fica só no Entrar, e Criar sala fica neutro */
-.home-card:has(.session) #goQuick { background: var(--panel-2); border-color: var(--line); color: var(--text); }
 .home-hello-text { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
 .home-title { margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -.5px; line-height: 1.15; }
 .home-name { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); }
@@ -102,14 +159,9 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
   width: 100%; display: flex; flex-direction: column; gap: 20px; padding: 24px;
   background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
 }
-.home-cta { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
-.home-cta:has(#goJoin[hidden]) { grid-template-columns: 1fr; } /* com o painel de endereço aberto, Criar sala ocupa a linha */
-.create-block { display: flex; flex-direction: column; gap: 6px; }
 .btn.big { height: 52px; font-size: 16px; border-radius: 10px; }
 .btn.big:not(.primary) { background: var(--panel-2); }
 .hint.center { text-align: center; font-size: 12px; }
-/* Com "Entrar numa sala" aberto, ele vira o principal e Criar sala fica discreto */
-.home-card.joining #goQuick { background: var(--panel-2); border-color: var(--line); color: var(--text); }
 .join-panel { display: flex; flex-direction: column; gap: 12px; padding: 18px; border-radius: 12px; background: var(--panel-2); }
 .join-panel strong { font-size: 15px; }
 .join-panel .field > input { background: var(--bg); height: 44px; }
@@ -159,21 +211,65 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 .link-btn:disabled { color: var(--muted); cursor: default; text-decoration: none; }
 .link-btn:hover:not(:disabled) { color: var(--text); }
 
-/* Aviso de atualização: cartão no canto de cima, por cima de qualquer tela, ao lado da barrinha da direita
-   (perfil e engrenagem continuam clicáveis) */
-.update-banner {
-  position: fixed; top: 16px; right: calc(16px + var(--rail-w, 0px)); z-index: 40; width: 380px; max-width: calc(100vw - 32px); box-sizing: border-box;
-  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px 12px; padding: 14px;
-  border: 1px solid var(--accent); border-radius: 12px; background: var(--panel-2); box-shadow: 0 12px 32px rgba(0, 0, 0, .5);
-  animation: ub-in .25s ease-out;
+/* Topo do Início (docs/spec/inicio-novo.md): a marca à esquerda; à direita, "Nova versão" (só com versão nova) e a rede
+   em uso, sempre à vista. Cada um abre o seu painel logo abaixo (.home-pop), um de cada vez */
+.home-top { justify-content: space-between; gap: 16px; }
+.home-top-acoes { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.home-pop-wrap { position: relative; display: inline-flex; min-width: 0; }
+.home-rede, .home-versao-nova { height: 40px; display: inline-flex; align-items: center; gap: 8px; min-width: 0; padding: 0 14px 0 12px;
+  border-radius: 999px; font: inherit; font-size: 14px; cursor: pointer; }
+.home-rede { border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--line)); background: color-mix(in srgb, var(--accent) 9%, transparent); color: var(--text); }
+.home-rede:hover, .home-rede[aria-expanded="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.home-rede-rotulo, .home-rede-detalhe { color: var(--muted); white-space: nowrap; }
+.home-rede strong { white-space: nowrap; }
+.home-rede-detalhe { overflow: hidden; text-overflow: ellipsis; }
+.home-rede-detalhe:not(:empty)::before { content: "· "; }
+.home-rede-seta, .home-versao-nova svg { flex: none; width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.home-rede[aria-expanded="true"] .home-rede-seta { transform: rotate(180deg); }
+.home-versao-nova { border: 1px solid var(--warn); background: var(--warn-soft); color: var(--warn); font-weight: 700; }
+.home-rede, .home-versao-nova { white-space: nowrap; flex: none; }
+.home-rede { flex: 0 1 auto; }
+/* Topo estreito: "Rede" e "Nova versão" viram só a bolinha e o ícone (o nome da rede e o detalhe ficam) */
+@container tela-inicio (max-width: 700px) {
+  .home-rede-rotulo, .home-versao-nova span { display: none; }
+  .home-versao-nova { padding: 0 12px; }
 }
-@keyframes ub-in { from { transform: translateY(-8px); opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .update-banner { animation: none; } }
-.update-banner .ub-icon { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); }
-.update-banner .ub-icon svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.update-banner .ub-text { display: flex; flex-direction: column; gap: 3px; font-size: 13px; line-height: 1.4; color: var(--muted); }
-.update-banner .ub-text strong { font-size: 14px; color: var(--text); }
-.update-banner .ub-actions { grid-column: 2; display: flex; justify-content: flex-end; gap: 8px; }
+.home-versao-nova svg { width: 16px; height: 16px; }
+.home-versao-nova[hidden] { display: none; }
+.home-pop { position: absolute; top: calc(100% + 8px); right: 0; z-index: 30; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px;
+  padding: 14px; border: 1px solid var(--line-strong); border-radius: 14px; background: var(--panel-2); box-shadow: 0 18px 48px rgba(0, 0, 0, .45); }
+.home-pop[hidden] { display: none; }
+.home-pop-kicker { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.home-rede-menu { width: 400px; max-width: calc(100vw - 48px); padding: 10px; gap: 6px; }
+.home-rede-menu .home-pop-kicker { padding: 4px 6px 2px; }
+.home-rede-opcoes { display: flex; flex-direction: column; gap: 4px; }
+.home-rede-opcao { display: flex; align-items: flex-start; gap: 12px; padding: 11px 12px; border: 1px solid transparent; border-radius: 10px;
+  background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.home-rede-opcao:hover, .home-rede-opcao:focus-visible { background: var(--panel-3); outline: none; }
+.home-rede-opcao:focus-visible { border-color: var(--accent); }
+.home-rede-opcao.atual { border-color: color-mix(in srgb, var(--accent) 45%, transparent); background: var(--accent-soft); }
+.home-rede-opcao .dot { margin-top: 6px; }
+.home-rede-opcao-textos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.home-rede-opcao-linha { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.home-rede-opcao-linha strong { font-size: 15px; }
+.home-rede-opcao-estado { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.home-rede-opcao .hint { font-size: 13px; line-height: 1.45; }
+.home-rede-opcao-erro { font-size: 13px; color: var(--warn); line-height: 1.4; }
+.home-rede-pe { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 2px 6px 0; padding-top: 10px; border-top: 1px solid var(--line); }
+.home-rede-pe .hint { font-size: 12px; }
+.home-versao-painel { width: 380px; max-width: calc(100vw - 48px); padding: 18px; gap: 8px; }
+.home-versao-painel .home-pop-kicker { color: var(--warn); }
+.home-versao-titulo { margin: 0; font-size: 22px; font-weight: 700; }
+.home-versao-novidades[hidden] { display: none; }
+.home-versao-aviso { margin: 4px 0 0; padding: 10px 12px; border-radius: 10px; background: var(--panel-3); font-size: 13px; line-height: 1.45; color: var(--muted); }
+.home-versao-acoes { display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px; }
+.home-versao-acoes .btn[hidden] { display: none; }
+/* O rodapé: "Nebula 1.18.10 · atualizado"; com versão nova, "1.18.11 disponível" em destaque e clicável */
+.status-line.version .home-versao-estado:disabled { cursor: default; color: var(--ok); }
+.status-line.version .home-versao-estado.nova { color: var(--warn); font-weight: 700; }
+/* Na barra da direita, fora do Início: a mesma versão nova */
+.rail-update { color: var(--warn); }
+.rail-update[hidden] { display: none; }
 
 /* Campos e botões */
 .field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted); }
@@ -212,6 +308,8 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 .bar { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; }
 .bar h2 { text-align: center; }
 .form-card { margin: auto; width: min(420px, 100%); display: flex; flex-direction: column; gap: 16px; }
+.form-voltar { align-self: center; display: inline-flex; align-items: center; gap: 6px; min-width: 200px; justify-content: center; margin-top: 8px; }
+.form-voltar svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .hint { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.4; }
 .warn { margin: 0; font-size: 13px; color: var(--warn); line-height: 1.4; }
 
@@ -375,7 +473,6 @@ body:not(.workspace-in-room) #workspaceNav .rail-overlay { display: none; }
 .home-call .btn.icon[aria-pressed="true"] { border-color: var(--warn); color: var(--warn); background: var(--warn-soft); }
 .home-call .home-call-leave { color: var(--warn); } /* sair da voz: laranja de cuidado, como na barra flutuante */
 .home-call #homeCallBack { flex: none; }
-.home-cta .btn:disabled { cursor: not-allowed; }
 .dock-share svg, .pip-chip svg, .jump-new svg, .chat-drop svg {
   fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none;
 }
@@ -875,7 +972,6 @@ fieldset.group > legend { margin-bottom: 10px; }
 }
 @media (max-width: 700px) {
   .home-screen { padding-left: 16px; padding-right: 16px; }
-  .home-cta { grid-template-columns: 1fr; }
   .home-title { font-size: 22px; }
 }
 @media (max-width: 900px) {
@@ -983,13 +1079,9 @@ fieldset.group > legend { margin-bottom: 10px; }
 .session-faces .avatar + .avatar { margin-left: -7px; }
 /* Com sala aberta (de amigo ou na rede), entrar nela vira a ação principal: as salas sobem acima dos amigos, ganham o
    destaque "ao vivo" e "Abrir minha sala" vira botão comum (renderSessoes em renderer/sessoes.js) */
-#home.tem-salas .home-main > #homeFriends { order: 1; }
-#home.tem-salas .home-main > #homeNews { order: 2; }
 #home.tem-salas .home-card { border-color: color-mix(in srgb, var(--live) 45%, var(--line)); }
 #home.tem-salas .session { padding: 14px 14px 14px 16px; border-color: color-mix(in srgb, var(--live) 35%, var(--line)); }
 #home.tem-salas .session > .avatar { width: 44px; height: 44px; font-size: 18px; }
-#home.tem-salas .session > .btn { height: 48px; padding: 0 24px; font-size: 15px; }
-#home.tem-salas #createBlockHint { display: none; }
 .home-friend-sala { color: var(--live); }
 .check-line { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; cursor: pointer; }
 .check-line input { margin-top: 3px; width: 16px; height: 16px; accent-color: var(--accent); flex: none; }
@@ -997,7 +1089,7 @@ fieldset.group > legend { margin-bottom: 10px; }
 .check-line small { font-size: 12px; line-height: 1.4; }
 
 /* Preferências locais e superfícies com contraste independente do fundo. */
-.home-card, .dock, .panel, .person-card, .people-pop, .tile-name, .tile-overlay, .chat-drop, .update-banner {
+.home-card, .dock, .panel, .person-card, .people-pop, .tile-name, .tile-overlay, .chat-drop, .home-pop {
   --text: var(--surface-text); --text-2: var(--surface-text-2); --muted: var(--surface-muted); color: var(--text);
 }
 .tile-overlay, .chat-drop { background: var(--theme-glass); }
@@ -2541,10 +2633,10 @@ body:has(.modal:not([hidden]), #dmPanel:not([hidden]), #peoplePop:not([hidden]),
 
 /* ---------- Início: amigos e entrar na conta ---------- */
 .home-signin {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; margin-bottom: 12px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px;
   background: var(--panel); border: 1px solid var(--line); border-radius: 12px; font-size: 14px; color: var(--text-2);
 }
-.home-friends { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; margin-bottom: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+.home-friends { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
 .home-friends-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .home-friends-actions { display: flex; align-items: center; gap: 12px; }
 .home-friends-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
@@ -2597,21 +2689,22 @@ button.home-chip:hover { color: var(--text); }
 .home-friend-actions { flex: none; display: flex; align-items: center; gap: 6px; }
 .home-friend-chamar { opacity: 0; transition: opacity .12s; }
 .home-friend:hover .home-friend-chamar, .home-friend:focus-within .home-friend-chamar { opacity: 1; }
+.home-friend-name { flex: 1 1 auto; min-width: 72px; }
+/* Coluna estreita: as etiquetas ficam numa linha e cortam com "…" (o texto inteiro está na dica); nada vaza da linha */
+.home-friend-chips { min-width: 0; max-width: 100%; }
+.home-chip { min-width: 0; }
+.home-chip-texto { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.home-friend-chips { align-items: center; }
+.home-friend-chips .home-friend-entrar { flex: none; height: 24px; min-height: 0; padding: 0 12px; font-size: 12px; border-radius: 999px; }
+/* "Entre na sua conta": na coluna estreita o botão desce para baixo do texto, sem quebrar */
+.home-signin { flex-wrap: wrap; }
+.home-signin .btn { flex: none; white-space: nowrap; }
+/* Coluna bem estreita: fica só a etiqueta de onde o amigo está (jogo e música somem); Entrar, Mensagem e Ligar continuam */
+@container lado (max-width: 300px) { .home-friend-chips .home-chip:not(.home-friend-sala) { display: none; } }
+@container lado (max-width: 360px) { .home-friend-chamar { display: none; } }
 .btn.icon.home-friend-ligar { border-color: var(--accent); color: var(--accent); background: transparent; }
-@media (max-width: 760px) { .home-friend-chamar { display: none; } }
 @media (prefers-reduced-motion: reduce) { .home-friend-chamar { transition: none; } }
 
-/* Sua sala: "Abrir minha sala" grande com quem vai ver, as opções num ícone ao lado e "Entrar com código" menor */
-.home-cta { grid-template-columns: 1fr minmax(170px, 30%); }
-@media (max-width: 700px) { .home-cta { grid-template-columns: 1fr; } }
-.create-block { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
-.create-block .hint { grid-column: 1 / -1; }
-#goQuick { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; height: auto; min-height: 52px; padding-block: 8px; }
-.go-quick-sub { font-size: 12px; font-weight: 500; opacity: .8; }
-.go-quick-sub:empty, #home.tem-salas .go-quick-sub { display: none; }
-#goCreate { width: 52px; height: auto; min-height: 52px; }
-/* Com sala de amigo aberta, os três viram botões comuns, da mesma altura */
-#home.tem-salas #goQuick, #home.tem-salas #goCreate, #home.tem-salas #goJoin { min-height: 44px; height: 44px; padding-block: 0; }
 /* Ninguém com sala aberta: uma linha, sem a caixa tracejada */
 .sessions-empty { padding: 0; border: 0; text-align: left; }
 .last-room-info strong { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
