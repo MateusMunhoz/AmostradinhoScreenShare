@@ -265,7 +265,9 @@ async function diretoMensagem(p, data) {
     const file = m.file ? diretoArquivoValido(m.file) : null;
     if ((!text.trim() && !file) || (m.file && !file)) return;
     diretoEnviar(p, { t: 'ack', id: fid });
-    const createdAt = Math.min(Date.now(), Number(m.createdAt) || Date.now());
+    // A hora em que chegou, no relógio deste PC (e não a do PC de quem mandou): pela conexão direta ela chega na hora, e
+    // assim a conversa fica em ordem mesmo com o relógio do outro PC atrasado (as mensagens dele passavam na frente das suas)
+    const createdAt = Date.now();
     const c = dmConv(p.id);
     await dmLoadConv(c);
     if (!dmAdd(c, { id: fid, from: p.id, text, createdAt, e2e: true, direto: true, ...(file ? { file } : {}) })) return;

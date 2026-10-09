@@ -37,8 +37,8 @@ const SPOTIFY = (titulo) => [
 ].join('\r\n');
 
 test('Spotify tocando mostra artista e faixa; pausado, não mostra nada', () => {
-  assert.deepEqual(musicaDoSpotify(SPOTIFY('Metallica - One')), { artista: 'Metallica', faixa: 'One' });
-  assert.deepEqual(musicaDoSpotify(SPOTIFY('AC/DC - Back In Black - Remastered')), { artista: 'AC/DC', faixa: 'Back In Black - Remastered' });
+  assert.deepEqual(musicaDoSpotify(SPOTIFY('Metallica - One')), { artista: 'Metallica', faixa: 'One', spotify: true });
+  assert.deepEqual(musicaDoSpotify(SPOTIFY('AC/DC - Back In Black - Remastered')), { artista: 'AC/DC', faixa: 'Back In Black - Remastered', spotify: true });
   assert.equal(musicaDoSpotify(SPOTIFY('Spotify Premium')), null);
   assert.equal(musicaDoSpotify(SPOTIFY('Spotify')), null);
   assert.equal(musicaDoSpotify(SPOTIFY('Spotify Free')), null);
@@ -57,7 +57,7 @@ test('o texto da prévia junta jogo e música', () => {
 test('lê a linha do midia.exe: faixa, artista, álbum e a capa só se for JPEG pequeno', () => {
   const capa = '/9j/' + 'A'.repeat(100) + '==';
   assert.deepEqual(musicaDoMidia(JSON.stringify({ tocando: true, app: 'Spotify.exe', faixa: "When I'm Small", artista: 'Phantogram', album: 'Eyelid Movies', capa })),
-    { artista: 'Phantogram', faixa: "When I'm Small", album: 'Eyelid Movies', capa: 'data:image/jpeg;base64,' + capa, pausada: false });
+    { artista: 'Phantogram', faixa: "When I'm Small", album: 'Eyelid Movies', capa: 'data:image/jpeg;base64,' + capa, pausada: false, spotify: true });
   assert.equal(musicaDoMidia('{"tocando":false}'), null);
   assert.equal(musicaDoMidia('{"tocando":false,"pausada":true,"faixa":"x"}').pausada, true); // pausada: vem, marcada
   assert.equal(musicaDoMidia('{"tocando":false,"pausada":"sim","faixa":"x"}'), null); // só true conta
@@ -73,7 +73,10 @@ test('lê a linha do midia.exe: faixa, artista, álbum e a capa só se for JPEG 
 
 test('a atividade que chega de outro PC é limpa e limitada', () => {
   const capa = 'data:image/jpeg;base64,/9j/AAAA';
-  assert.deepEqual(limparAtividade({ jogo: 'Dota 2', jogoImagem: capa, artista: 'A', faixa: 'B', album: 'C', capa }), { jogo: 'Dota 2', jogoImagem: capa, jogoDesde: 0, artista: 'A', faixa: 'B', album: 'C', capa, pausada: false });
+  assert.deepEqual(limparAtividade({ jogo: 'Dota 2', jogoImagem: capa, artista: 'A', faixa: 'B', album: 'C', capa }), { jogo: 'Dota 2', jogoImagem: capa, jogoDesde: 0, artista: 'A', faixa: 'B', album: 'C', capa, pausada: false, spotify: false });
+  assert.equal(limparAtividade({ artista: 'A', spotify: true }).spotify, true); // do Spotify: a lista mostra o símbolo dele
+  assert.equal(limparAtividade({ artista: 'A', spotify: 'sim' }).spotify, false); // só true conta
+  assert.equal(limparAtividade({ jogo: 'X', spotify: true }).spotify, false); // sem música, sem Spotify
   assert.equal(limparAtividade({ jogo: 'X', jogoImagem: 'data:image/svg+xml;base64,PHN2Zz4=' }).jogoImagem, ''); // só JPEG
   assert.equal(limparAtividade({ artista: 'A', jogoImagem: capa }).jogoImagem, ''); // sem jogo, sem imagem
   assert.equal(limparAtividade({}), null);
@@ -142,4 +145,43 @@ test('o que não é jogo na Steam fica de fora', () => {
   assert.ok(naoEJogo('9', 'Proton 9.0'));
   assert.ok(naoEJogo('9', 'Steam Linux Runtime 3.0 (sniper)'));
   assert.ok(!naoEJogo('892970', 'Valheim'));
+});
+
+test('o histórico que chega de outro PC: no máximo 3 de cada, texto curto, imagem JPEG e hora dos últimos 30 dias', () => {
+  const { limparHist } = require('../renderer/conta');
+  const agora = Date.UTC(2026, 9, 7, 12);
+  const dia = 864e5;
+  const capa = 'data:image/jpeg;base64,/9j/' + 'A'.repeat(100) + '==';
+  const h = limparHist({
+    jogos: [
+      { nome: 'Apex Legends', imagem: capa, em: agora - dia },
+      { nome: '  Valorant\u0000 ', imagem: 'data:image/png;base64,AAAA', em: agora - 2 * dia },
+      { nome: 'Velho', em: agora - 40 * dia }, // mais de 30 dias: sai
+      { nome: 'Quarto', em: agora }, // passa de 3: nem é olhado
+    ],
+    musicas: [
+      { artista: 'Kavinsky', faixa: 'Nightcall', capa, em: agora },
+      { artista: '', faixa: 'Sem artista', em: agora }, // sem artista: sai
+      { artista: 'Futuro', em: agora + dia }, // no futuro: sai
+    ],
+  }, agora);
+  assert.deepEqual(h.jogos.map((j) => j.nome), ['Apex Legends', 'Valorant']);
+  assert.equal(h.jogos[0].imagem, capa);
+  assert.equal(h.jogos[1].imagem, ''); // não começa como PNG: não passa
+  assert.equal(limparHist({ jogos: [{ nome: 'Apex', imagem: 'data:image/png;base64,iVBORw0KGgoAAAA', em: agora }] }, agora).jogos[0].imagem, 'data:image/png;base64,iVBORw0KGgoAAAA'); // o ícone do .exe (PNG) passa
+  assert.deepEqual(h.musicas, [{ artista: 'Kavinsky', faixa: 'Nightcall', capa, em: agora }]);
+  assert.equal(limparHist({ jogos: Array(10000).fill({ nome: 'X', em: agora }) }, agora).jogos.length, 3);
+  assert.equal(limparHist({ jogos: [{ nome: 'x'.repeat(5000), em: agora }] }, agora).jogos[0].nome.length, 80);
+  assert.deepEqual(limparHist('lixo', agora), { jogos: [], musicas: [] });
+  assert.deepEqual(limparHist({ jogos: 'não é lista', musicas: [{ artista: 'A', em: 'ontem' }] }, agora), { jogos: [], musicas: [] });
+});
+
+test('quando foi: hoje, ontem, há N dias, há N semanas', () => {
+  const { atvQuando } = require('../renderer/conta');
+  const agora = new Date(2026, 9, 7, 15).getTime();
+  assert.equal(atvQuando(new Date(2026, 9, 7, 1).getTime(), agora), 'hoje');
+  assert.equal(atvQuando(new Date(2026, 9, 6, 23).getTime(), agora), 'ontem');
+  assert.equal(atvQuando(new Date(2026, 9, 4, 12).getTime(), agora), 'há 3 dias');
+  assert.equal(atvQuando(new Date(2026, 8, 29).getTime(), agora), 'há 1 semana');
+  assert.equal(atvQuando(new Date(2026, 8, 17).getTime(), agora), 'há 2 semanas');
 });

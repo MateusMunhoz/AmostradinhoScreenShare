@@ -70,26 +70,28 @@
   </header>
   <aside id="workspacePanes" aria-label="Painéis selecionados" hidden>
     <section id="profilePane" class="modal global utility-popup" hidden>
-      <div class="dialog profile-dialog" role="dialog" aria-modal="true" aria-labelledby="profileTitle">
+      <div class="dialog profile-dialog" role="dialog" aria-modal="true" aria-labelledby="profileTitle" tabindex="-1">
       <div class="pane-head"><h2 id="profileTitle">Seu perfil</h2><button id="closeProfile" class="btn icon" type="button"></button></div>
-      <!-- Prévia: o seu perfil como os outros veem na voz (fundo, foto e nome). Clicar na foto troca a foto -->
+      <!-- Prévia: o seu perfil como os outros veem na voz (fundo, foto, nome, conta e frase, no estilo do cartão da voz).
+           Trocar foto e fundo é só por aqui: a câmera na foto e o botão no fundo -->
+      <p class="profile-preview-label">Assim os outros te veem na voz</p>
       <div class="profile-card">
         <div id="profileBgPreview" class="profile-card-bg" role="img" aria-label="Seu fundo do perfil">
           <button id="profilePhotoBig" class="profile-card-photo" type="button" title="Trocar foto" aria-label="Trocar foto"><span id="profileAvatar" class="avatar"></span><span class="profile-card-cam" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span></button>
           <button id="profileBgPickTop" class="btn small profile-card-bgbtn" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/></svg><span>Trocar fundo</span></button>
         </div>
-        <div class="profile-card-info"><strong id="profileDisplayName"></strong><span id="profileCardBio" class="hint"></span><span class="hint">Assim os outros te veem na voz.</span></div>
+        <div class="profile-card-info"><strong id="profileDisplayName"></strong><span id="profileCardConta" class="profile-card-conta"></span><span id="profileCardBio" class="profile-card-bio"></span></div>
       </div>
       <!-- Aparência: foto (e o ajuste dela na bolinha), fundo (renderer/fundo-perfil.js) e a fonte do nome -->
       <h3 class="profile-sec">Aparência</h3>
-      <div class="profile-row"><span>Foto</span><span class="profile-row-actions"><button id="profilePhotoPick" class="btn small" type="button">Escolher</button><button id="profilePhotoAdjust" class="btn small" type="button" hidden>Ajustar</button><button id="profilePhotoRemove" class="btn small icon" type="button" title="Tirar foto" aria-label="Tirar foto" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 11v6M14 11v6M7 7l1 12h8l1-12M9 7V4h6v3"/></svg></button></span></div>
+      <div class="profile-row"><span>Foto</span><span class="profile-row-actions"><button id="profilePhotoAdjust" class="btn small" type="button" hidden>Ajustar</button><button id="profilePhotoRemove" class="btn small icon ghost" type="button" title="Tirar foto" aria-label="Tirar foto" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 11v6M14 11v6M7 7l1 12h8l1-12M9 7V4h6v3"/></svg></button></span></div>
       <input id="profilePhotoFile" type="file" accept="image/*" hidden>
       <div id="profilePhotoFit" class="profile-row" role="radiogroup" aria-label="Ajuste da foto" hidden>
         <span>Ajuste da foto</span>
         <span class="profile-seg"><button type="button" role="radio" data-fit="inteira" title="A foto toda, sem zoom">Inteira</button><button type="button" role="radio" data-fit="preencher" title="Corta o meio da foto para preencher a bolinha">Preencher</button></span>
       </div>
       <p id="profilePhotoOld" class="hint photo-old" hidden>Foto de versão antiga: os outros a veem cortada. Escolha de novo.</p>
-      <div class="profile-row"><span>Fundo<button type="button" class="tip" data-tip="Imagem ou GIF (até 1 MB) atrás do seu perfil, para quem clicar em você na voz. O GIF só se mexe com o perfil aberto." aria-label="Imagem ou GIF (até 1 MB) atrás do seu perfil, para quem clicar em você na voz. O GIF só se mexe com o perfil aberto."></button></span><span class="profile-row-actions"><button id="profileBgPick" class="btn small" type="button">Escolher</button><button id="profileBgAdjust" class="btn small" type="button" hidden>Ajustar</button><button id="profileBgRemove" class="btn small icon" type="button" title="Tirar fundo" aria-label="Tirar fundo" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 11v6M14 11v6M7 7l1 12h8l1-12M9 7V4h6v3"/></svg></button></span></div>
+      <div class="profile-row"><span>Fundo<button type="button" class="tip" data-tip="Imagem ou GIF (até 1 MB) atrás do seu perfil, para quem clicar em você na voz. O GIF só se mexe com o perfil aberto." aria-label="Imagem ou GIF (até 1 MB) atrás do seu perfil, para quem clicar em você na voz. O GIF só se mexe com o perfil aberto."></button></span><span class="profile-row-actions"><button id="profileBgAdjust" class="btn small" type="button" hidden>Ajustar</button><button id="profileBgRemove" class="btn small icon ghost" type="button" title="Tirar fundo" aria-label="Tirar fundo" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 11v6M14 11v6M7 7l1 12h8l1-12M9 7V4h6v3"/></svg></button></span></div>
       <input id="profileBgFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
       <label class="field"><span>Fonte do nome<button type="button" class="tip" data-tip="Todos na sala veem o seu nome nesta fonte." aria-label="Todos na sala veem o seu nome nesta fonte."></button></span><select id="profileNameFont"></select></label>
       <!-- Nome: na sala fica travado (com o cadeado) -->
@@ -157,7 +159,7 @@
       </div>
       <ul id="voicePaneMembers" class="members"></ul>
       <!-- Fora da voz: Entrar. Na voz: faixa de controles embaixo da lista (microfone, fone, Voz e atalhos | Sair da voz) -->
-      <div class="pane-voice-actions"><button id="paneVoiceSettings" class="btn small icon" type="button" hidden></button><button id="paneVoiceMute" class="btn small icon pane-toggle" type="button" hidden></button><button id="paneVoiceDeafen" class="btn small icon pane-toggle" type="button" hidden></button><button id="paneVoiceJoin" class="btn primary small" type="button">Entrar na voz</button><button id="paneVoiceSubsala" class="btn small pane-subsala" type="button" title="Criar uma subsala e entrar nela" hidden></button></div>
+      <div class="pane-voice-actions"><button id="paneVoiceSettings" class="btn small icon" type="button" hidden></button><button id="paneVoiceJoin" class="btn primary small" type="button">Entrar na voz</button><button id="paneVoiceSubsala" class="btn small pane-subsala" type="button" title="Criar uma subsala e entrar nela" hidden></button></div>
     </section>
   </aside>
   <!-- Música junto: colar o link do YouTube para pôr (ou trocar) a música de um canal (renderer/musica.js) -->
@@ -173,47 +175,47 @@
   <!-- Barra de conversas: embaixo, até a barrinha; o envelope (mensagens e amigos) abre o painel para cima, e um chip por conversa aberta, que também abre para cima (renderer/mensagens.js) -->
   <footer id="dmBar" class="dm-bar" aria-label="Conversas" hidden>
     <button id="dmBarLabel" type="button" class="dm-bar-label" title="Mensagens e amigos" aria-label="Mensagens e amigos" aria-expanded="false" aria-controls="dmPanel"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg><span id="dmBarBadge" class="hub-badge" hidden></span></button>
-    <!-- O envelope abre para cima as mensagens e os amigos: duas abas no mesmo painel. Conversas mostra os pedidos de
-         amizade que chegaram; cada amigo tem Mensagem, que abre a conversa (renderer/mensagens.js e renderer/hub.js) -->
+    <!-- O envelope abre para cima tudo num lugar só: busca, quem está online e as conversas. O botão de adicionar amigo
+         (com o número de pedidos) sobe por cima o painel Adicionar amigo: enviar pedido, Recebidos, Enviados e Amigos
+         (renderer/mensagens.js: setDmPanel; renderer/hub.js) -->
     <div id="dmPanel" class="dm-panel" role="dialog" aria-label="Mensagens e amigos" hidden>
       <div class="dm-panel-head">
-        <div class="dm-panel-tabs" role="tablist" aria-label="Mensagens e amigos">
-          <button id="dmTabConvs" type="button" role="tab" aria-selected="true" aria-controls="dmConvs">Conversas <span id="dmTabConvsBadge" class="hub-badge" hidden></span></button>
-          <button id="dmTabFriends" type="button" role="tab" aria-selected="false" aria-controls="dmFriends">Amigos <span id="dmTabFriendsBadge" class="hub-badge" hidden></span></button>
-        </div>
+        <input id="dmPanelFilter" class="hub-filter" type="search" placeholder="Buscar" aria-label="Buscar conversa pelo nome" autocomplete="off">
+        <button id="dmAddOpen" type="button" class="dm-chip-btn dm-add-open" title="Adicionar amigo e pedidos" aria-label="Adicionar amigo e pedidos" aria-expanded="false" aria-controls="dmFriends"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 20a6 6 0 0 0-12 0M9 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M16 11h6"/></svg><span id="dmAddBadge" class="hub-badge" hidden></span></button>
         <button id="dmPanelClose" type="button" class="dm-chip-btn" title="Fechar" aria-label="Fechar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
       </div>
-      <section id="dmConvs" class="dm-panel-pane" role="tabpanel" aria-labelledby="dmTabConvs">
-        <input id="dmPanelFilter" class="hub-filter" type="search" placeholder="Buscar conversa" aria-label="Buscar conversa pelo nome" autocomplete="off">
-        <button id="dmRequestsBanner" type="button" class="dm-requests-banner" hidden></button>
+      <section id="dmConvs" class="dm-panel-pane">
+        <div id="dmOnline" class="dm-online" hidden>
+          <h3 id="dmOnlineTitle" class="hub-section"></h3>
+          <ul id="dmOnlineList" class="dm-online-list" aria-labelledby="dmOnlineTitle"></ul>
+        </div>
+        <h3 class="hub-section">Conversas</h3>
         <p id="dmPanelUnsupported" class="warn" hidden>O servidor Razze ainda não tem mensagens diretas. Quem cuida do servidor precisa atualizar a RazzeAPI.</p>
         <p id="dmPanelError" class="razze-status" role="status"></p>
         <ul id="dmPanelConvList" class="hub-list"></ul>
         <p id="dmPanelConvEmpty" class="hint" hidden></p>
       </section>
-      <section id="dmFriends" class="dm-panel-pane hub-friends" role="tabpanel" aria-labelledby="dmTabFriends" hidden>
-        <!-- Uma busca só; adicionar abre um formulário no lugar dela (hub.js: setFriendsAddOpen) -->
-        <div id="friendsSearchRow" class="hub-search-row">
-          <input id="friendsFilter" class="hub-filter" type="search" placeholder="Buscar amigos" aria-label="Buscar amigos pelo nome" autocomplete="off">
-          <button id="friendsAddOpen" class="btn small primary hub-add-open" type="button" aria-expanded="false" aria-controls="friendsAddForm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 20a6 6 0 0 0-12 0M9 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M16 11h6"/></svg>Adicionar</button>
+      <div id="dmAddBackdrop" class="dm-add-backdrop" hidden></div>
+      <section id="dmFriends" class="dm-add-sheet hub-friends" role="dialog" aria-labelledby="dmAddTitle" hidden>
+        <div class="dm-add-head">
+          <h3 id="dmAddTitle">Adicionar amigo</h3>
+          <button id="dmAddClose" type="button" class="dm-chip-btn" title="Voltar para as conversas" aria-label="Voltar para as conversas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
         </div>
-        <div id="friendsAddForm" class="hub-add-form" hidden>
-          <label for="razzeFriendNickname">Adicionar amigo</label>
-          <input id="razzeFriendNickname" class="hub-filter" type="text" maxlength="300" autocomplete="off" aria-describedby="friendsAddHint">
-          <p id="friendsAddHint" class="hub-add-hint">Digite o nickname exato, ou cole um link ou código de convite (ABCD-EFGH-JK). A pessoa recebe um pedido e aparece aqui quando aceitar.</p>
+        <div id="friendsAddForm" class="hub-add-form">
+          <div class="dm-add-row">
+            <input id="razzeFriendNickname" class="hub-filter" type="text" maxlength="300" autocomplete="off" placeholder="Nickname ou código" aria-label="Nickname ou código de convite" aria-describedby="friendsAddHint">
+            <button id="razzeAddFriend" class="btn small primary" type="button" disabled>Enviar</button>
+          </div>
+          <p id="friendsAddHint" class="hub-add-hint">Nickname exato, link ou código de convite (ABCD-EFGH-JK).</p>
           <div class="hub-add-link">
-            <button id="friendsLinkCopy" class="btn small" type="button">Copiar meu link de convite</button>
+            <button id="friendsLinkCopy" class="btn small hub-link-copy" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/></svg>Copiar meu link de convite</button>
             <ul id="friendsLinks" class="hub-links" aria-label="Seus links de convite ativos"></ul>
           </div>
-          <div class="hub-add-actions">
-            <button id="friendsAddCancel" class="btn small" type="button">Cancelar</button>
-            <button id="razzeAddFriend" class="btn small primary" type="button">Enviar pedido</button>
-          </div>
         </div>
-        <div id="friendsViews" class="hub-views" role="tablist" aria-label="Mostrar">
-          <button type="button" role="tab" data-view="all" aria-selected="true">Todos</button>
-          <button type="button" role="tab" data-view="online" aria-selected="false">Online</button>
-          <button type="button" role="tab" data-view="requests" aria-selected="false">Pedidos <span id="friendsRequestsBadge" class="hub-badge" hidden></span></button>
+        <div id="friendsViews" class="dm-add-tabs" role="tablist" aria-label="Mostrar">
+          <button type="button" role="tab" data-view="in" aria-selected="true">Recebidos</button>
+          <button type="button" role="tab" data-view="out" aria-selected="false">Enviados</button>
+          <button type="button" role="tab" data-view="all" aria-selected="false">Amigos</button>
         </div>
         <p id="razzeFriendsStatus" class="razze-status" role="status" aria-live="polite"></p>
         <div id="razzeFriends" class="hub-friend-list"></div>
@@ -253,6 +255,7 @@
           </div>
           <button class="btn icon" id="homeCallMute" type="button" aria-pressed="false" hidden></button>
           <button class="btn icon" id="homeCallDeafen" type="button" aria-pressed="false" hidden></button>
+          <button class="btn icon home-call-leave" id="homeCallLeave" type="button" hidden></button>
           <button class="btn primary" id="homeCallBack" type="button">Voltar para a sala</button>
         </div>
         <div class="home-hello">
@@ -1036,6 +1039,7 @@
           <div class="extra-card">
             <label class="check-line"><input type="checkbox" id="atvJogo"><span>Mostrar o jogo que estou jogando</span></label>
             <label class="check-line"><input type="checkbox" id="atvMusica"><span>Mostrar a música que estou ouvindo (Spotify e outros players)</span></label>
+            <label class="check-line"><input type="checkbox" id="atvHist"><span>Mostrar os últimos 3 jogos e 3 músicas no perfil (desligar apaga o que está guardado)</span></label>
             <p id="atvPreview" class="hint" role="status" aria-live="polite"></p>
             <p class="hint">Desligado por padrão. Vai só o nome do jogo e a imagem dele, e a faixa com a capa: nenhum outro programa é lido, nem o que toca no navegador. Vale no Windows.</p>
           </div>

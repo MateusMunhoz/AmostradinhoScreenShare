@@ -217,7 +217,6 @@
 :root[data-skin="arasaka"] #chatEmpty:not([hidden]) { border-bottom: 0; margin-bottom: -8px; }
 :root[data-skin="arasaka"] #chatEmpty:not([hidden]) ~ .chat-list { border-top: 0; padding-top: 4px; }
 :root[data-skin="arasaka"] .voice-channel { border-radius: 0; }
-:root[data-skin="arasaka"] .voice-channel-count { font-family: var(--ak-mono); }
 
 /* Barra de conversas no tema: cantos retos, rótulo no vermelho e o colchete de mira nas janelas */
 :root[data-skin="arasaka"] .dm-window { border-radius: 0; background: var(--bracket), var(--panel); }

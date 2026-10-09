@@ -19,7 +19,8 @@ function openProfilePopup() {
   $('profilePane').hidden = false;
   syncWorkspace();
   setUtilityBackground(true);
-  ($('profileName').disabled ? $('closeProfile') : $('profileName')).focus();
+  // Na sala o nome está travado: o foco vai para o próprio painel (sem acender o anel no X)
+  ($('profileName').disabled ? $('profilePane').querySelector('.profile-dialog') : $('profileName')).focus();
 }
 function closeProfilePopup() {
   $('profilePane').hidden = true;
@@ -96,6 +97,8 @@ function syncWorkspace() {
   $('profileName').value = $('name').value;
   $('profileDisplayName').textContent = getName();
   paintName($('profileDisplayName'), '');
+  const conta = contaSala(); // como no cartão da voz: "conta Flyleaf" embaixo do nome
+  $('profileCardConta').textContent = conta ? `conta ${conta.nome}` : '';
   $('profileNameFont').value = appPreferences.nameFont;
   $('profileAvatar').textContent = $('navProfileAvatar').textContent = [...getName()][0].toUpperCase();
   paintAvatar($('profileAvatar'));
@@ -103,7 +106,7 @@ function syncWorkspace() {
   paintAvatar($('homeAvatar'));
   paintAvatar($('navProfileAvatar'));
   $('navProfile').title = $('navProfile').ariaLabel = 'Perfil de ' + getName();
-  $('profileHint').textContent = state.myId ? 'Fica travado enquanto você está numa sala. Saia para trocar.' : 'Aparece para todo mundo na sala e nas mensagens.';
+  $('profileHint').textContent = state.myId ? 'Só dá para trocar fora da sala.' : 'Aparece para todo mundo na sala e nas mensagens.';
   renderVoicePane();
   renderHomeCall();
   renderAmigos();
@@ -244,19 +247,20 @@ function fitNav() {
   if (nav.scrollWidth > nav.clientWidth + 1) nav.classList.add('nav-tight');
 }
 
-// Seção da voz. Fora dela: Entrar como botão principal. Na voz: embaixo da lista, uma faixa com microfone, fone
-// e Voz e atalhos (só o ícone, o nome na dica); Sair vai no título, ao lado do nome. Fora da voz, Voz e atalhos fica só na
-// barrinha, perto da engrenagem.
+// Seção da voz. Fora dela: Entrar como botão principal. Na voz: embaixo da lista, Voz e atalhos (só o ícone, o nome na
+// dica) e a Subsala. Microfone, fone e Sair não se repetem aqui: ficam na barra flutuante (e no cartão do Início, no
+// saguão). Fora da voz, Voz e atalhos fica só na barrinha, perto da engrenagem.
 function layoutVoicePane(active) {
-  const pane = $('voicePane'), head = pane.querySelector('.pane-head'), actions = pane.querySelector('.pane-voice-actions');
+  const pane = $('voicePane'), actions = pane.querySelector('.pane-voice-actions');
   const settings = $('paneVoiceSettings'), join = $('paneVoiceJoin');
   pane.classList.toggle('voice-in-call', active);
   settings.hidden = !active;
   if (active) { setIcon(settings, 'sliders', 'Voz e atalhos'); actions.append(settings); }
   join.disabled = !voice.supported;
-  if (active) { join.innerHTML = ICON.phoneOff; join.append('Sair'); join.title = 'Sair da voz'; join.className = 'btn small danger pane-leave'; }
-  else { join.textContent = voice.pending ? 'Cancelar' : subsalasOn() ? 'Entrar na Voz geral' : 'Entrar na voz'; join.removeAttribute('title'); join.className = 'btn small pane-join' + (voice.pending ? '' : ' primary'); }
-  if (active) head.append(join); else actions.append(join);
+  join.hidden = active;
+  join.textContent = voice.pending ? 'Cancelar' : subsalasOn() ? 'Entrar na Voz geral' : 'Entrar na voz';
+  join.className = 'btn small pane-join' + (voice.pending ? '' : ' primary');
+  actions.append(join);
   // Nova subsala: fora da voz, ao lado do Entrar; na voz, no fim da faixa (cria e já entra: createSubsala)
   const sub = $('paneVoiceSubsala');
   sub.hidden = !subsalasOn() || !state.myId;
@@ -264,14 +268,6 @@ function layoutVoicePane(active) {
   sub.append(active ? 'Subsala' : 'Nova subsala');
   sub.disabled = !voice.supported;
   actions.append(sub);
-  $('paneVoiceMute').hidden = $('paneVoiceDeafen').hidden = !active;
-  const toggle = (btn, on, iconOn, iconOff, textOn, textOff) => {
-    setIcon(btn, on ? iconOn : iconOff, on ? textOn : textOff);
-    btn.setAttribute('aria-pressed', String(on));
-  };
-  toggle($('paneVoiceMute'), voice.muted, 'micOff', 'mic', 'Ligar microfone', 'Desligar microfone');
-  toggle($('paneVoiceDeafen'), voice.deafened, 'headphonesOff', 'headphones', 'Ouvir vozes', 'Silenciar vozes');
-  actions.prepend($('paneVoiceMute'), $('paneVoiceDeafen'));
 }
 // ---------- Início sem sair da sala ----------
 // O botão Início da barra de baixo troca para o saguão; a sala continua (voz, chat, telas, avisos). No saguão, uma
@@ -288,8 +284,9 @@ function renderHomeCall() {
   $('navBackUnread').hidden = !back || !unread;
   $('navBackUnread').textContent = unread > 99 ? '99+' : String(unread);
   $('navBackToRoom').title = $('navBackToRoom').ariaLabel = unread ? `Voltar para a sala · ${unread} ${unread === 1 ? 'mensagem nova' : 'mensagens novas'}` : 'Voltar para a sala';
-  // Numa sala: criar ou entrar em outra fica bloqueado (sairia desta sem querer)
-  for (const id of ['goQuick', 'goCreate', 'goJoin', 'rejoinBtn']) $(id).disabled = inCall;
+  // Numa sala: criar ou entrar em outra fica bloqueado (sairia desta sem querer). Abrindo uma, também: um segundo
+  // servidor derrubaria o primeiro (startServer fecha o que estiver aberto)
+  for (const id of ['goQuick', 'goCreate', 'goJoin', 'rejoinBtn']) $(id).disabled = inCall || state.abrindo;
   $('goQuick').title = $('goJoin').title = inCall ? 'Você já está numa sala: volte para ela e saia antes' : '';
   $('goCreate').title = inCall ? 'Você já está numa sala: volte para ela e saia antes' : 'Opções da sala'; // só ícone: a dica é o nome
   if (!inCall) return;
@@ -300,7 +297,9 @@ function renderHomeCall() {
   const where = voice.session && voice.channel ? `você em ${channelName(voice.channel)}` : 'você na voz';
   $('homeCallSub').textContent = [people === 1 ? 'só você' : `${people} pessoas`, voice.session ? (voice.muted ? `${where}, microfone desligado` : where) : 'fora da voz',
     sharing ? (sharing === 1 ? '1 transmitindo' : `${sharing} transmitindo`) : ''].filter(Boolean).join(' · ');
-  $('homeCallMute').hidden = $('homeCallDeafen').hidden = !voice.session;
+  // No saguão a barra flutuante não aparece: aqui ficam microfone, fone e sair da voz (sair da sala é pela barrinha)
+  $('homeCallMute').hidden = $('homeCallDeafen').hidden = $('homeCallLeave').hidden = !voice.session;
+  setIcon($('homeCallLeave'), 'phoneOff', 'Sair da voz');
   setIcon($('homeCallMute'), voice.muted ? 'micOff' : 'mic', voice.muted ? 'Ligar o microfone' : 'Desligar o microfone');
   $('homeCallMute').setAttribute('aria-pressed', String(voice.muted));
   setIcon($('homeCallDeafen'), voice.deafened ? 'headphonesOff' : 'headphones', voice.deafened ? 'Ouvir as vozes' : 'Silenciar as vozes');
@@ -313,6 +312,7 @@ function setupHomeCall() {
   $('homeCallBack').onclick = $('navBackToRoom').onclick = backToRoom;
   $('homeCallMute').onclick = () => $('voiceMute').click();
   $('homeCallDeafen').onclick = () => $('voiceDeafen').click();
+  $('homeCallLeave').onclick = () => $('voiceJoin').click(); // na voz, o voiceJoin é o Sair
 }
 
 function renderVoicePane() {
@@ -320,11 +320,10 @@ function renderVoicePane() {
   if (voiceDrag) { voiceDragPending = true; return; } // arrastando alguém para outro canal: redesenha ao soltar
   const active = !!voice.session;
   const ids = [...voice.members].filter(([id,m]) => m.session && state.members.has(id)).map(([id]) => id);
-  const people = (n) => (n === 1 ? '1 pessoa' : `${n} pessoas`);
   const channels = subsalasOn(); // com subsalas, a lista vem por canal (renderer/subsalas.js)
-  $('voicePaneStatus').textContent = !voice.supported ? 'Voz indisponível nesta sala.' : voice.pending ? 'Aguardando o microfone…'
-    : active ? (channels && voice.channel ? `Você está em ${channelName(voice.channel)} · ${people(ids.length + 1)} na voz` : `Você está na voz · ${people(ids.length + 1)}`)
-    : `${people(ids.length)} na voz.`;
+  // Só o que a lista não mostra: quem está na voz e em que canal já aparece nela
+  $('voicePaneStatus').textContent = !voice.supported ? 'Voz indisponível nesta sala.' : voice.pending ? 'Aguardando o microfone…' : '';
+  $('voicePaneStatus').hidden = !$('voicePaneStatus').textContent;
   layoutVoicePane(active);
   // Quem está transmitindo tem o botão Assistir na frente do nome; quem transmite fora da voz aparece embaixo
   const list = $('voicePaneMembers'); list.replaceChildren();
@@ -334,7 +333,7 @@ function renderVoicePane() {
   if (map) { /* no mapa, os canais e as pessoas estão no céu */ }
   else if (channels) renderVoiceChannels(list);
   else {
-    if (active) list.append(memberRow(null, `${getName()} (você)`, state.sharing));
+    if (active) list.append(memberRow(null, getName(), state.sharing));
     for (const id of ids) list.append(memberRow(id, nameOf(id), sharing(id)));
   }
   renderVoiceSky(); // o céu (pequeno, em cima da lista) ou o mapa (no lugar da lista): renderer/ceu-voz.js
@@ -345,7 +344,7 @@ function renderVoicePane() {
     head.className = 'members-sub';
     head.textContent = 'Transmitindo, fora da voz';
     list.append(head);
-    for (const id of outside) list.append(id ? memberRow(id, nameOf(id), true) : memberRow(null, `${getName()} (você)`, true));
+    for (const id of outside) list.append(id ? memberRow(id, nameOf(id), true) : memberRow(null, getName(), true));
   }
 }
 // ---------- Divisória entre o chat e a voz ----------
@@ -526,7 +525,7 @@ function setupWorkspace() {
   $('name').addEventListener('input', syncWorkspace);
   setupNameFont();
   setupHomeCall();
-  for (const [proxy, original] of [['paneVoiceJoin','voiceJoin'],['paneVoiceMute','voiceMute'],['paneVoiceDeafen','voiceDeafen'],['paneVoiceSettings','voiceSettingsBtn']]) $(proxy).onclick = () => $(original).click();
+  for (const [proxy, original] of [['paneVoiceJoin','voiceJoin'],['paneVoiceSettings','voiceSettingsBtn']]) $(proxy).onclick = () => $(original).click();
   $('streamPeople').onclick = () => {
     if (!workspaceViews.chat) setPanelOpen(true);
     setPeopleOpen($('peoplePop').hidden);

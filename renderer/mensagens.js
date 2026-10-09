@@ -20,7 +20,7 @@ const dm = {
   account: '', convs: new Map(), bar: [], cursor: 0, timer: null, polling: false,
   unsupported: false, error: '', filter: '',
 };
-let dmPanelTab = 'convs'; // a aba do painel do envelope: convs | friends (vale também depois de sair e entrar na conta)
+let dmPanelTab = 'convs'; // o painel do envelope: convs (as conversas) | friends (Adicionar amigo por cima delas)
 
 const dmKey = (k) => `${k}.${dm.account}`;
 // Configurações › Mensagens privadas: por quanto tempo o histórico fica neste PC (0 = para sempre)
@@ -301,19 +301,27 @@ function dmElements(c) {
     if (e.altKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { e.preventDefault(); dmMoveBy(c.id, e.key === 'ArrowLeft' ? -1 : 1); chip.focus(); }
   };
   dmDraggable(slot, chip, c.id);
+  // Fechada, a conversa é só a foto (bolinha de status e não lidas no canto); nome, ligar e fechar sobem num balão com
+  // o mouse em cima. Aberta, viram a barra de baixo da janela (CSS: .dm-chip-extra)
+  const av = document.createElement('span');
+  av.className = 'dm-av';
   const dot = document.createElement('span');
   dot.className = 'dm-dot';
-  const name = document.createElement('span');
-  name.className = 'dm-name';
   const badge = document.createElement('span');
   badge.className = 'hub-badge dm-badge';
+  av.append(dot, badge);
+  const name = document.createElement('span');
+  name.className = 'dm-name';
   const call = dmIconButton('dm-chip-btn dm-call-btn', ICON.phone, 'Ligar (cria uma sala só para vocês e entra na voz)', () => void ligarPara(c.id));
   const pin = dmIconButton('dm-chip-btn dm-pin', ICON.pin, 'Travar aberta', () => toggleDmPin(c.id));
   const min = dmIconButton('dm-chip-btn dm-min', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12"/></svg>', 'Minimizar', () => minimizeDm(c.id));
   const close = dmIconButton('dm-chip-btn', ICON.close, 'Fechar a conversa (o histórico fica salvo neste PC)', () => closeDm(c.id));
-  chip.append(dot, name, badge, call, pin, min, close);
+  const extra = document.createElement('span');
+  extra.className = 'dm-chip-extra';
+  extra.append(name, call, pin, min, close);
+  chip.append(av, extra);
   slot.append(win, chip);
-  c.el = { slot, win, list, empty, status, input, chip, dot, name, badge, pin, min, modo, attach };
+  c.el = { slot, win, list, empty, status, input, chip, av, dot, name, badge, pin, min, modo, attach };
   return c.el;
 }
 
@@ -376,7 +384,14 @@ function renderDmWindow(c, open) {
   el.chip.setAttribute('aria-expanded', String(open));
   el.dot.classList.toggle('on', online);
   el.dot.title = online ? 'Online' : 'Offline';
+  el.chip.classList.toggle('offline', !online);
+  el.chip.setAttribute('aria-label', `${friendName(c.id)}, ${online ? 'online' : 'offline'}${c.unread ? `, ${c.unread} não ${c.unread === 1 ? 'lida' : 'lidas'}` : ''}`);
   el.name.textContent = friendName(c.id);
+  if (el.av.dataset.name !== friendName(c.id)) { // a foto (a inicial na cor da pessoa) só muda junto com o nome
+    el.av.dataset.name = friendName(c.id);
+    el.av.querySelector('.avatar')?.remove();
+    el.av.prepend(hubAvatar(friendName(c.id)));
+  }
   el.badge.hidden = !c.unread;
   el.badge.textContent = c.unread > 99 ? '99+' : String(c.unread);
   const pinned = !!dm.bar.find((b) => b.id === c.id)?.pinned;
@@ -445,7 +460,7 @@ function renderDmBarHint() {
 
 // ---------- Largura: o que não cabe vai para o "+N" ----------
 // Aberta, uma conversa ocupa 340px; minimizada, pelo menos 160px (as larguras do CSS de .dm-slot)
-const DM_W_OPEN = 340, DM_W_CHIP = 160, DM_GAP = 6, DM_W_MORE = 56;
+const DM_W_OPEN = 340, DM_W_CHIP = 34, DM_GAP = 6, DM_W_MORE = 44;
 function dmVisibleCount() {
   const avail = $('dmBar').clientWidth - $('dmBarLabel').offsetWidth - 10 - DM_GAP;
   const widths = dm.bar.map((b) => (b.open ? DM_W_OPEN : DM_W_CHIP) + DM_GAP);
@@ -582,25 +597,39 @@ function fillDmList(prefix = 'dmPanel') {
     return li;
   }));
   $(prefix + 'ConvEmpty').hidden = rows.length > 0;
-  $(prefix + 'ConvEmpty').textContent = needle ? `Ninguém com “${dm.filter.trim()}”.` : 'Adicione amigos na aba Amigos para conversar com eles.';
-  // Pedidos de amizade que chegaram: um aviso em cima das conversas, que leva para a aba Amigos
-  const pedidos = friendsData.incoming.length;
-  $('dmRequestsBanner').hidden = !pedidos || !!needle;
-  $('dmRequestsBanner').textContent = pedidos === 1 ? `${friendsData.incoming[0].displayName} quer ser seu amigo · Ver` : `${pedidos} pedidos de amizade · Ver`;
+  $(prefix + 'ConvEmpty').textContent = needle ? `Ninguém com “${dm.filter.trim()}”.` : 'Clique em Adicionar amigo, no alto, para conversar com alguém.';
+  if (prefix === 'dmPanel') fillDmOnline(needle);
 }
-// O envelope: mensagens não lidas mais pedidos de amizade; a aba Conversas, só as não lidas
+// Online agora: uma fileira com os amigos online em cima das conversas; clicar abre a conversa. Some durante a busca
+function fillDmOnline(needle) {
+  const on = needle ? [] : friendsData.friends.filter((f) => friendOnline(f.id));
+  $('dmOnline').hidden = !on.length;
+  $('dmOnlineTitle').textContent = `Online agora · ${on.length}`;
+  $('dmOnlineList').replaceChildren(...on.map((f) => {
+    const li = document.createElement('li');
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'dm-online-person';
+    b.title = `Conversar com ${f.displayName}`;
+    const name = document.createElement('span');
+    name.textContent = f.displayName;
+    b.append(hubAvatar(f.displayName), name);
+    b.onclick = () => void openDm(f.id);
+    li.append(b);
+    return li;
+  }));
+}
+// O envelope: mensagens não lidas mais pedidos de amizade
 function renderDmBadge() {
   const unread = dmUnreadTotal(), pedidos = friendsData.incoming.length, total = unread + pedidos;
   $('dmBarBadge').hidden = !total;
   $('dmBarBadge').textContent = total > 99 ? '99+' : String(total);
   const partes = [unread && `${unread} ${unread === 1 ? 'mensagem nova' : 'mensagens novas'}`, pedidos && `${pedidos} ${pedidos === 1 ? 'pedido' : 'pedidos'} de amizade`].filter(Boolean);
   $('dmBarLabel').title = 'Mensagens e amigos' + (partes.length ? ': ' + partes.join(', ') : '');
-  $('dmTabConvsBadge').hidden = !unread;
-  $('dmTabConvsBadge').textContent = unread > 99 ? '99+' : String(unread);
 }
 
-// ---------- Painel da barra: o envelope abre para cima as abas Conversas e Amigos ----------
-// tab: convs | friends; sem ela, a última aberta
+// ---------- Painel da barra: o envelope abre para cima as conversas; Adicionar amigo sobe por cima delas ----------
+// tab: convs | friends; sem ela, o último
 function setDmPanel(open, tab) {
   open = open && !!dm.account;
   const was = !$('dmPanel').hidden;
@@ -614,21 +643,21 @@ function setDmPanel(open, tab) {
     return;
   }
   const amigos = dmPanelTab === 'friends';
-  $('dmTabConvs').setAttribute('aria-selected', String(!amigos));
-  $('dmTabFriends').setAttribute('aria-selected', String(amigos));
-  $('dmTabConvs').tabIndex = amigos ? -1 : 0;
-  $('dmTabFriends').tabIndex = amigos ? 0 : -1;
-  $('dmConvs').hidden = amigos;
-  $('dmFriends').hidden = !amigos;
+  // Adicionar amigo abre em Recebidos quando chegou pedido; sem pedido, na lista de Amigos
+  if (amigos && trocou) friendsFilter.view = friendsData.incoming.length ? 'in' : 'all';
+  $('dmFriends').hidden = $('dmAddBackdrop').hidden = !amigos;
+  $('dmConvs').inert = amigos;
+  $('dmAddOpen').setAttribute('aria-expanded', String(amigos));
+  if (!amigos && (friendsUi.menu || friendsUi.confirm)) friendsUi.menu = friendsUi.confirm = null;
   renderDmPanel();
   if (was && !trocou) return;
-  if (amigos) $($('friendsAddForm').hidden ? 'friendsFilter' : 'razzeFriendNickname').focus();
+  if (amigos) { $('razzeFriendNickname').focus(); if (typeof renderLinksAmigo === 'function') void renderLinksAmigo(); }
   else { $('dmPanelFilter').value = dm.filter; $('dmPanelFilter').focus(); }
 }
 function renderDmPanel() {
   if ($('dmPanel').hidden) return;
+  fillDmList('dmPanel');
   if (dmPanelTab === 'friends') renderFriends();
-  else fillDmList('dmPanel');
 }
 
 function renderDm() {
@@ -665,18 +694,37 @@ function setupDm() {
   renderDmConfig();
   $('dmBarLabel').onclick = () => setDmPanel($('dmPanel').hidden);
   $('dmPanelClose').onclick = () => { setDmPanel(false); $('dmBarLabel').focus(); };
-  $('dmTabConvs').onclick = () => setDmPanel(true, 'convs');
-  $('dmTabFriends').onclick = () => setDmPanel(true, 'friends');
-  $('dmRequestsBanner').onclick = () => { friendsFilter.view = 'requests'; setDmPanel(true, 'friends'); };
-  // Setas trocam de aba (como nas Configurações); Esc fecha o painel (a aba Amigos fecha antes o que tiver aberto nela)
+  // Adicionar amigo: com pedido recebido abre em Recebidos; fechar volta para as conversas
+  $('dmAddOpen').onclick = () => {
+    setDmPanel(true, $('dmFriends').hidden ? 'friends' : 'convs');
+  };
+  const voltarConversas = () => { setDmPanel(true, 'convs'); $('dmAddOpen').focus(); };
+  $('dmAddClose').onclick = voltarConversas;
+  $('dmAddBackdrop').onclick = voltarConversas;
+  // Esc fecha primeiro Adicionar amigo (que fecha antes o menu "⋯" que tiver aberto); depois, o painel
   $('dmPanel').addEventListener('keydown', (e) => {
-    if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && e.target.closest?.('.dm-panel-tabs')) {
-      e.preventDefault();
-      setDmPanel(true, dmPanelTab === 'friends' ? 'convs' : 'friends');
-      $(dmPanelTab === 'friends' ? 'dmTabFriends' : 'dmTabConvs').focus();
-    } else if (e.key === 'Escape') { e.stopPropagation(); setDmPanel(false); $('dmBarLabel').focus(); }
+    if (e.key !== 'Escape') return;
+    e.stopPropagation();
+    if (!$('dmFriends').hidden) voltarConversas();
+    else { setDmPanel(false); $('dmBarLabel').focus(); }
   });
-  $('dmPanelFilter').oninput = () => { dm.filter = $('dmPanelFilter').value; renderDmPanel(); };
+  // Buscou um nome que não está na lista: depois de uma pausa na digitação, abre Adicionar amigo com o nome já no campo
+  let buscaSemNinguem = 0;
+  $('dmPanelFilter').oninput = () => {
+    dm.filter = $('dmPanelFilter').value;
+    renderDmPanel();
+    clearTimeout(buscaSemNinguem);
+    const texto = dm.filter.trim();
+    if (!texto || $('dmPanelConvList').children.length) return;
+    buscaSemNinguem = setTimeout(() => {
+      if ($('dmPanel').hidden || !$('dmFriends').hidden || dm.filter.trim() !== texto) return;
+      dm.filter = $('dmPanelFilter').value = '';
+      setDmPanel(true, 'friends');
+      fillDmList('dmPanel');
+      $('razzeFriendNickname').value = texto;
+      syncFriendsAddButton();
+    }, 800);
+  };
   $('dmMore').onclick = () => setDmMore($('dmMoreMenu').hidden);
   new ResizeObserver(() => { if (dm.account) fitDmBar(); }).observe($('dmBar'));
   // Clicar fora do painel (e fora do botão que abre) fecha

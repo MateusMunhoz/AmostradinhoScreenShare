@@ -91,11 +91,16 @@ const ICON = {
   lock: svg('M6 11h12v10H6zM8 11V7a4 4 0 0 1 8 0v4'),
   globe: svg('M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0zM3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3z'),
   sliders: svg('M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6'), // controles: voz e atalhos
+  roomGear: svg('M3 11l9-7 9 7M5 9.5V20h7M17.5 15.5a2 2 0 1 0 0 4 2 2 0 1 0 0-4zM17.5 13v1.2M17.5 20.8V22M13 17.5h1.2M20.8 17.5H22M14.3 14.3l.85.85M19.85 19.85l.85.85M14.3 20.7l.85-.85M19.85 15.15l.85-.85'), // casinha com engrenagem: opções da sala (Início)
   music: svg('M9 18V5l12-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM21 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z'), // nota: música junto
+  ondas: svg('M4 10v4M8 6v12M12 3v18M16 7v10M20 10v4'),          // barrinhas de som: o canal de voz em que você está
+  ondasParadas: svg('M4 11v2M8 10v4M12 9v6M16 10v4M20 11v2'),  // as mesmas, baixas e iguais: um canal em que você não está
+  spotify: svg('M12 2a10 10 0 1 0 0 20 10 10 0 1 0 0-20zM7 9.5c3.3-1 7-.7 10 1M7.6 12.6c2.7-.8 5.6-.5 8 .9M8.2 15.5c2.1-.6 4.3-.4 6 .7'), // o símbolo do Spotify, numa cor só: a música vem dele
   game: svg('M6 11h4M8 9v4M15 12h.01M18 10h.01M17.3 5H6.7a4 4 0 0 0-4 3.6L2 15a3 3 0 0 0 5.4 2l1.3-2h6.6l1.3 2A3 3 0 0 0 22 15l-.7-6.4A4 4 0 0 0 17.3 5z'), // controle: jogando
   monitor: svg('M3 4h18v12H3zM8 20h8M12 16v4'),       // tela: transmitindo
   clock: svg('M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2'), // relógio: há quanto tempo
   play: svg('M7 4v16l13-8z'),
+  youtube: svg('M6.5 5.5h11a4 4 0 0 1 4 4v5a4 4 0 0 1-4 4h-11a4 4 0 0 1-4-4v-5a4 4 0 0 1 4-4zM10 9.5v5l4.5-2.5z'), // a música (do YouTube), sem o título do vídeo
   user: svg('M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10z'),      // pessoa: perfil
   moveTo: svg('M5 12h14M13 6l6 6-6 6'),
   pin: svg('M12 17v5M9 3h6l-1 6 4 4H6l4-4z'),                                         // alfinete: fixar                                            // seta: mudar de canal

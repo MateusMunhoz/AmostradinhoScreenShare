@@ -135,6 +135,11 @@ async function escolherModoChamada(nome, online) {
 
 // Abre a sala da chamada: escondida, com a senha gerada
 async function abrirSalaChamada(modo, senha) {
+  if (state.abrindo) throw new Error('Já tem uma sala abrindo. Espere um instante.');
+  setAbrindoSala(true);
+  try { await abrirSalaChamadaJa(modo, senha); } finally { setAbrindoSala(false); }
+}
+async function abrirSalaChamadaJa(modo, senha) {
   if (modo === 'internet') {
     const url = internetServerUrl();
     const welcome = await connectRoom(url, { name: getName(), password: senha, create: true });

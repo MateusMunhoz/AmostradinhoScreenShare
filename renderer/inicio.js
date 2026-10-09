@@ -62,7 +62,7 @@ document.querySelectorAll('input[name="noise"]').forEach((r) => {
   r.onchange = () => { voiceCfg.ns = r.value; saveVoiceCfg(); renderVoiceDialog(); restartMic(); };
 });
 // Foto de perfil (renderer/fotos.js)
-$('profilePhotoPick').onclick = $('profilePhotoBig').onclick = () => $('profilePhotoFile').click();
+$('profilePhotoBig').onclick =() => $('profilePhotoFile').click();
 $('profilePhotoFile').onchange = async () => {
   const file = $('profilePhotoFile').files[0];
   $('profilePhotoFile').value = '';

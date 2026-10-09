@@ -252,7 +252,6 @@
 :root[data-skin="eva"] :is(.hub-room, .hub-badge, .voice-channel) { border-radius: 2px; }
 :root[data-skin="eva"] .hub-badge { background: var(--accent); color: #000; font-family: var(--eva-mono); }
 :root[data-skin="eva"] .hub-room .btn.small { letter-spacing: .08em; text-transform: uppercase; }
-:root[data-skin="eva"] .voice-channel-count { font-family: var(--eva-mono); color: var(--accent); }
 :root[data-skin="eva"] #chatEmpty { font-family: var(--eva-mono); color: var(--eva-purple-hi); }
 :root[data-skin="eva"] #chatEmpty::before { content: "> MAGI: CANAL ABERTO. AGUARDANDO TRANSMISSÃO…\A"; white-space: pre-wrap; color: var(--accent); letter-spacing: .06em; }
 

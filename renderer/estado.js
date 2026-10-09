@@ -27,6 +27,7 @@ const state = {
   sessao: null,         // { id, oculta } da sessão (a sala como aparece na lista de sessões abertas)
   ws: null,
   myId: null,
+  abrindo: false,       // abrindo o servidor de uma sala (createRoom, abrirSalaChamada): outro clique não abre um segundo
   isOwner: false,
   host: '',
   port: 8765,

@@ -58,15 +58,13 @@ function channelHead(ch, sub) {
   li.dataset.channel = ch;
   const icon = document.createElement('span');
   icon.className = 'voice-channel-icon';
-  icon.innerHTML = ICON.volume;
+  // Sem caixa: as barrinhas de som (azuis e altas no seu canal, baixas e cinza nos outros) e o nome. Sem o número de
+  // pessoas: quem está no canal aparece logo embaixo
+  icon.innerHTML = here ? ICON.ondas : ICON.ondasParadas;
   icon.setAttribute('aria-hidden', 'true');
   const name = document.createElement('strong');
   name.textContent = channelName(ch);
-  const count = document.createElement('span');
-  count.className = 'voice-channel-count';
-  const n = voiceIdsIn(ch).length;
-  count.textContent = n ? String(n) : '';
-  li.append(icon, name, count);
+  li.append(icon, name);
   if (!here && voice.supported && !voice.pending) {
     const label = voice.session ? `Ir para ${channelName(ch)}` : `Entrar na voz, em ${channelName(ch)}`;
     li.classList.add('joinable');
@@ -81,7 +79,7 @@ function channelHead(ch, sub) {
       voice.setChannel(ch);
     };
   }
-  const music = typeof musicHeadButton === 'function' && musicHeadButton(ch); // pôr uma música (renderer/musica.js)
+  const music = typeof musicHeadButton === 'function' && musicHeadButton(ch); // a música do canal (ouvir) ou Pôr música (renderer/musica.js)
   if (music) li.append(music);
   if (sub) {
     const del = document.createElement('button');
@@ -97,15 +95,13 @@ function channelHead(ch, sub) {
 
 // Os canais no painel de voz, cada um com quem está nele
 // A linha de alguém na voz (null é você): nome, volume, Assistir… (memberRow em membros.js)
-function voiceRow(id) { return id ? memberRow(id, nameOf(id), !!state.members.get(id)?.sharing) : memberRow(null, `${getName()} (você)`, state.sharing); }
+function voiceRow(id) { return id ? memberRow(id, nameOf(id), !!state.members.get(id)?.sharing) : memberRow(null, getName(), state.sharing); }
 
 function renderVoiceChannels(list) {
   for (const [ch, sub] of [['', null], ...state.subsalas.map((s) => [s.id, s])]) {
     list.append(channelHead(ch, sub));
     for (const id of voiceIdsIn(ch)) { const li = voiceRow(id); li.classList.add('in-channel'); makeVoiceDraggable(li, id, ch); list.append(li); }
-    const music = musicRow(ch); // a música do canal, depois de quem está nele, com Ouvir (renderer/musica.js)
-    if (music) list.append(music);
-  }
+  } // a música do canal fica no cabeçalho dele (channelHead › musicHeadButton)
   setupVoiceDrop(list);
 }
 

@@ -1,4 +1,4 @@
-// Barra de mensagens: o envelope abre para cima, em cima da própria barra, o painel com as abas Conversas e Amigos (o HUB saiu).
+// Barra de mensagens: o envelope abre para cima, em cima da própria barra, o painel com quem está online e as conversas; Adicionar amigo sobe por cima (o HUB saiu).
 // Sem servidor Razze: a conta e as conversas são de mentira, só no app (nada é enviado).
 const { openApp, check, sleep, run } = require('./ajuda');
 
@@ -23,7 +23,8 @@ run('Barra de mensagens abre para cima', 90000, async () => {
   const geo = await A.eval(`(() => { const p = $('dmPanel').getBoundingClientRect(), b = $('dmBar').getBoundingClientRect(), l = $('dmBarLabel').getBoundingClientRect(); return { pBottom: p.bottom, bTop: b.top, pLeft: p.left, lLeft: l.left, h: p.height }; })()`);
   check('Clicar em Mensagens abre o painel para cima, colado na barra', await A.eval(`!$('dmPanel').hidden`) && Math.abs(geo.pBottom - geo.bTop) < 2 && Math.abs(geo.pLeft - geo.lLeft) < 2 && geo.h > 150, JSON.stringify(geo));
   check('Sem o HUB: a barra começa na borda esquerda da janela', await A.eval(`!$('hubRail') && $('dmBar').getBoundingClientRect().left === 0`));
-  check('Abre na aba Conversas', await A.eval(`$('dmTabConvs').getAttribute('aria-selected') === 'true' && !$('dmConvs').hidden && $('dmFriends').hidden`));
+  check('Abre nas conversas, sem abas e sem Adicionar amigo por cima', await A.eval(`!$('dmPanel').querySelector('.dm-panel-head [role="tablist"]') && !$('dmConvs').hidden && $('dmFriends').hidden && $('dmAddOpen').getAttribute('aria-expanded') === 'false'`));
+  check('Online agora: a Bia, em cima das conversas', await A.eval(`!$('dmOnline').hidden && $('dmOnlineList').children.length === 1 && $('dmOnlineList').textContent.includes('Bia')`));
   check('Lista: Bia (com a prévia e 2 não lidas) antes do Caio', await A.eval(`(() => {
     const rows = [...$('dmPanelConvList').children];
     return rows.length === 2 && rows[0].textContent.includes('Bia') && rows[0].textContent.includes('oi, bora jogar?') && rows[0].querySelector('.hub-badge')?.textContent === '2' && rows[1].textContent.includes('Caio');
@@ -33,24 +34,36 @@ run('Barra de mensagens abre para cima', 90000, async () => {
   check('Buscar filtra a lista', await A.eval(`$('dmPanelConvList').children.length === 1 && $('dmPanelConvList').textContent.includes('Caio')`));
   await A.eval(`(() => { const f = $('dmPanelFilter'); f.value = ''; f.dispatchEvent(new Event('input')); })()`);
   await A.shot('mensagens-barra.png');
+  // Buscar alguém que não está na lista: depois da pausa, abre Adicionar amigo com o nome no campo
+  await A.eval(`(() => { const f = $('dmPanelFilter'); f.value = 'zeca'; f.dispatchEvent(new Event('input')); })()`);
+  check('Busca sem ninguém ainda não abre Adicionar amigo durante a digitação', await A.eval(`$('dmFriends').hidden`));
+  await sleep(1100);
+  check('Depois da pausa, abre Adicionar amigo com o nome no campo, Enviar ativo e a busca limpa', await A.eval(`!$('dmFriends').hidden && $('razzeFriendNickname').value === 'zeca' && document.activeElement === $('razzeFriendNickname') && !$('razzeAddFriend').disabled && $('dmPanelFilter').value === '' && $('dmPanelConvList').children.length === 2`));
+  const fechar = await A.eval(`(() => { const a = $('dmAddOpen').getBoundingClientRect(), b = $('dmAddClose').getBoundingClientRect(), c = $('dmPanelClose').getBoundingClientRect(); return [a.width, a.height, b.width, b.height, c.width, c.height]; })()`);
+  check('Os X têm o tamanho do botão de adicionar amigo', fechar.every((v) => v === fechar[0]), JSON.stringify(fechar));
+  await A.shot('mensagens-barra-busca-adicionar.png');
+  await A.eval(`(() => { setFriendsAddOpen(false); setDmPanel(true, 'convs'); })()`);
 
-  // Amigos no mesmo painel: um pedido que chegou aparece em cima das conversas, no envelope e na aba Amigos
+  // Um pedido que chegou: número no botão de adicionar amigo e no envelope; o botão sobe Adicionar amigo em Recebidos
   await A.eval(`(() => { friendsData.incoming = [{ id: '${'1'.repeat(32)}', userId: '${'d'.repeat(32)}', displayName: 'Duda' }]; renderAmigos(); renderDmPanel(); })()`);
-  check('Pedido de amizade: aviso nas Conversas, número no envelope (2 + 1) e na aba Amigos', await A.eval(`!$('dmRequestsBanner').hidden && $('dmRequestsBanner').textContent.includes('Duda') && $('dmBarBadge').textContent === '3' && $('dmTabFriendsBadge').textContent === '1' && $('dmTabConvsBadge').textContent === '2'`));
-  await clickAt(A, await centerOf(A, '#dmRequestsBanner'));
-  check('O aviso leva para Amigos › Pedidos, com Aceitar', await A.eval(`!$('dmPanel').hidden && !$('dmFriends').hidden && $('dmConvs').hidden && $('dmTabFriends').getAttribute('aria-selected') === 'true'
-    && friendsFilter.view === 'requests' && [...$('razzeFriends').querySelectorAll('.hub-request')].some((li) => li.textContent.includes('Duda') && li.textContent.includes('Aceitar'))`));
+  check('Pedido de amizade: número no envelope (2 + 1) e no botão de adicionar amigo', await A.eval(`$('dmBarBadge').textContent === '3' && !$('dmAddBadge').hidden && $('dmAddBadge').textContent === '1'`));
+  await clickAt(A, await centerOf(A, '#dmAddOpen'));
+  check('Adicionar amigo sobe por cima das conversas, em Recebidos, com Aceitar e o foco no campo', await A.eval(`!$('dmPanel').hidden && !$('dmFriends').hidden && !$('dmAddBackdrop').hidden && $('dmAddOpen').getAttribute('aria-expanded') === 'true'
+    && friendsFilter.view === 'in' && document.activeElement === $('razzeFriendNickname') && [...$('razzeFriends').querySelectorAll('.hub-request')].some((li) => li.textContent.includes('Duda') && li.textContent.includes('Aceitar'))`));
   await A.shot('mensagens-barra-amigos.png');
   await A.eval(`(() => { friendsFilter.view = 'all'; friendsData.incoming = []; renderAmigos(); })()`);
-  check('Todos: Bia online com Mensagem, Caio offline', await A.eval(`(() => { const t = $('razzeFriends').textContent; return t.includes('Online · 1') && t.includes('Bia') && t.includes('Offline · 1') && !!$('razzeFriends').querySelector('[data-focus="talk:${BIA}"]'); })()`));
+  await A.eval(`(() => { friendsFilter.view = 'in'; renderFriends(); })()`);
+  check('Sem pedidos: o aviso fica logo embaixo das abas, não no pé do painel', await A.eval(`(() => { const t = $('friendsViews').getBoundingClientRect(), e = $('friendsEmpty').getBoundingClientRect(); return !$('friendsEmpty').hidden && e.top - t.bottom < 40; })()`));
+  check('Enviar só fica ativo com algo digitado', await A.eval(`(() => { const i = $('razzeFriendNickname'); const antes = $('razzeAddFriend').disabled; i.value = 'ze'; i.dispatchEvent(new Event('input')); const depois = $('razzeAddFriend').disabled; i.value = ''; i.dispatchEvent(new Event('input')); return antes && !depois && $('razzeAddFriend').disabled; })()`));
+  await A.eval(`(() => { friendsFilter.view = 'all'; renderFriends(); })()`);
+  check('Amigos: Bia online com Mensagem, Caio offline', await A.eval(`(() => { const t = $('razzeFriends').textContent; return t.includes('Online · 1') && t.includes('Bia') && t.includes('Offline · 1') && !!$('razzeFriends').querySelector('[data-focus="talk:${BIA}"]'); })()`));
   // Em que sala a Bia está (presença com o resumo, docs/spec/sala-do-amigo.md): no lugar de "Online"
   await A.eval(`updateFriendsPresence({ friends: [{ id: '${BIA}', online: true, sala: { modo: 'radmin', host: 'Caio', pessoas: 3, voz: false } }, { id: '${CAIO}', online: false, sala: null }], updatedAt: Date.now(), error: '' })`);
   check('Amigo numa sala da Radmin: "Na sala de Caio · Radmin · 3 pessoas"', await A.eval(`$('razzeFriends').querySelector('[data-friend-presence="${BIA}"]').textContent === 'Na sala de Caio · Radmin · 3 pessoas'`));
-  await clickAt(A, await centerOf(A, '#dmTabConvs'));
-  check('Clicar em Conversas volta para a lista das conversas', await A.eval(`!$('dmConvs').hidden && $('dmFriends').hidden && $('dmRequestsBanner').hidden`));
-  await A.eval(`$('dmTabConvs').focus(); $('dmTabConvs').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))`);
-  check('Seta troca de aba', await A.eval(`!$('dmFriends').hidden && document.activeElement === $('dmTabFriends')`));
-  await A.eval(`setDmPanel(true, 'convs')`);
+  await A.eval(`(() => { const b = $('friendsViews').querySelector('[aria-selected="true"]'); b.focus(); b.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true })); })()`);
+  check('Seta troca entre Recebidos, Enviados e Amigos', await A.eval(`friendsFilter.view === 'out' && document.activeElement.dataset.view === 'out'`));
+  await A.eval(`$('razzeFriendNickname').dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`);
+  check('Esc fecha Adicionar amigo e volta para as conversas (o painel fica aberto)', await A.eval(`!$('dmPanel').hidden && $('dmFriends').hidden && $('dmAddBackdrop').hidden && document.activeElement === $('dmAddOpen')`));
 
   await clickAt(A, await centerOf(A, '#dmBarLabel'));
   check('Clicar de novo fecha', await A.eval(`$('dmPanel').hidden && $('dmBarLabel').getAttribute('aria-expanded') === 'false'`));

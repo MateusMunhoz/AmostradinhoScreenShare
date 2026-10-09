@@ -156,7 +156,8 @@ Qualidade, codificação e jogo em tela cheia estão em [Desempenho](desempenho.
 - **Cada tela** tem uma faixa em cima com o nome da pessoa. Quando ela fala na voz, a borda pisca em verde e aparecem 3 barrinhas ao lado do nome.
 - **Barra do vídeo:** fica por cima do vídeo, em cima. Aparece ao mexer o mouse na tela (ou ao navegar com Tab) e some com o mouse parado por uns 2 segundos ou fora da tela; com o mouse em cima dela, fica. Tem silenciar, volume, janela flutuante, destacar, tela cheia e o X. Clicar duas vezes no vídeo também põe em tela cheia. Resolução, quadros e Mbps de cada tela ficam em [Estatísticas](#estatísticas), na aba Transmissão.
 - **Várias telas:** com duas ou mais, uma fica grande à esquerda e as outras numa coluna ao lado, todas ao vivo. Clique numa pequena (ou Enter nela) para trocar o destaque.
-- **Só esta:** o botão de destacar deixa só essa tela ocupando tudo. As outras ficam em pausa só para você, sem vídeo e sem som: quem transmite para de mandar o vídeo para você, e o seu PC deixa de decodificar. A faixa de cima mostra quem está em pausa. Clique num nome para trocar, ou em **Mostrar todas** (ou Esc) para voltar.
+- **Só esta:** o botão de destacar deixa só essa tela ocupando tudo. As outras ficam em pausa só para você, sem vídeo e sem som: quem transmite para de mandar o vídeo para você, e o seu PC deixa de decodificar. A pílula de cima, **Em pausa**, mostra a bolinha de quem está em pausa (o nome aparece com o mouse em cima) e a música como **YouTube**, sem o nome do vídeo. Clique numa bolinha para trocar, ou na grade de **Mostrar todas** (ou Esc) para voltar.
+- **Em cima da tela grande:** sem faixa: a foto (com o anel de quem transmite), o nome e os botões ficam direto sobre o vídeo, com uma sombra escura no alto, e somem com o mouse parado. O volume abre ao passar o mouse no ícone de som; a resolução e os quadros que estão chegando ficam em **Configurações › Estatísticas**.
 - **Transmissão sem som:** se quem transmite está sem o som do PC (desligou em "Som do PC" ou a captura falhou), a faixa da tela mostra **sem som** e o controle de volume some. Quem transmite vê "sem som" no **Ao vivo**; para ter som, é parar e transmitir de novo com "Som do PC" ligado.
 - **Som das telas:** toda transmissão começa **sem som** (0%). Para ouvir, role a roda do mouse para cima em cima da tela (5% por clique), use o controle da barra do vídeo ou clique no alto-falante (liga em 100%). O volume de cada pessoa fica guardado pelo nome.
 - **Volume por pessoa:** veja [Voz](#voz).
@@ -218,8 +219,8 @@ Clique em **Entrar na voz**, na barra de baixo, para ligar o microfone padrão d
   - **microfone** (liga e desliga);
   - **silenciar as vozes** (só o que você ouve, sem mexer no seu microfone nem no som das telas);
   - **sair da voz**.
-- **No seu perfil** (clique no seu nome na voz), **Microfone** e **Fone** ficam lado a lado; desligado ou silenciado, o botão
-  fica laranja e mostra "Desligado" ou "Silenciado" embaixo.
+- **Um lugar só:** microfone, fone e sair da voz ficam na barra flutuante; o painel de voz e o seu perfil não repetem esses
+  botões. No saguão (Início), onde a barra não aparece, o cartão da sala tem microfone, fone e o telefone laranja de sair da voz.
 - **No perfil dos outros**, ao lado do nome aparecem ícones: microfone riscado (microfone desligado) e fone riscado (fone
   silenciado), em laranja, e um alto-falante com X, em cinza, se você silenciou a pessoa. Passe o mouse para ver o que é.
 - **Quem está transmitindo**, no perfil, ganha um anel azul e o selo **Ao vivo** na foto, e uma barra no pé do perfil
@@ -242,15 +243,16 @@ Clique em **Entrar na voz**, na barra de baixo, para ligar o microfone padrão d
 
 No painel **Chat de voz**, a voz fica dividida em canais: a **Voz geral** e as subsalas.
 
-- **Criar:** fora da voz, clique em **+ Nova subsala**, ao lado de **Entrar na Voz geral**; na voz, em **+ Subsala**, na faixa de baixo do painel. Na voz, o **Sair** (vermelho) fica no título do painel, ao lado de Lista e Mapa. A subsala é criada e você já entra nela. Os nomes são sempre `Subsala_1`, `Subsala_2`, e assim por diante: a nova recebe o número seguinte ao da maior que existe.
-- **Entrar:** clique na faixa com o nome do canal. Fora da voz, isso liga o microfone já naquele canal; na voz, você muda de canal sem sair.
+- **Criar:** fora da voz, clique em **+ Nova subsala**, ao lado de **Entrar na Voz geral**; na voz, em **+ Subsala**, na faixa de baixo do painel. Para sair da voz, use o telefone da barra flutuante. A subsala é criada e você já entra nela. Os nomes são sempre `Subsala_1`, `Subsala_2`, e assim por diante: a nova recebe o número seguinte ao da maior que existe.
+- **Cada canal:** o nome com barrinhas de som na frente: azuis e altas no canal em que você está, cinza e baixas nos outros. Quem está no canal aparece logo embaixo.
+- **Entrar:** clique no nome do canal. Fora da voz, isso liga o microfone já naquele canal; na voz, você muda de canal sem sair.
 - **Quem ouve quem:** só quem está no mesmo canal se ouve. O chat de texto e as transmissões continuam valendo para a sala toda.
-- **Apagar:** o **X** ao lado da subsala. Quem estava nela volta para a Voz geral.
+- **Apagar:** passe o mouse na subsala e clique no **X** que aparece no canto (o "Pôr música" desliza para dar espaço; pelo teclado, ele aparece com o foco no canal). Quem estava nela volta para a Voz geral.
 - **Mudar alguém de canal:** arraste a pessoa (ou você) até outro canal. Qualquer um pode mover quem está na voz; o app da pessoa troca de canal sozinho. Precisa do host (ou do servidor da VPS) na versão nova; sem isso, só dá para arrastar você mesmo.
 - **Lista ou Mapa:** os dois ícones ao lado do título (três linhas para a Lista, um planeta para o Mapa) trocam a visão (fica salva neste PC). No **Mapa**, cada canal é um sol e quem está nele orbita como planeta. Cada canal com gente fica numa nebulosa de fumaça com a cor dele, e embaixo do nome aparece quantos estão nele. Quem fala solta ondas verdes, quem transmite solta ondas na cor de destaque e o canal com música solta notinhas. Ao fundo, uma galáxia em espiral gira bem devagar. Com o mouse em cima de um canal, os anéis e a nebulosa dele acendem e o sol cresce; em cima de uma pessoa, o planeta cresce e aparece uma linha até o sol. Quem entra chega como cometa, quem sai escapa da órbita, quem muda de canal faz um arco até o outro sol, quem começa a transmitir solta um anel, e a subsala nova acende com uma onda (a que é apagada se apaga). Com o Nebula fora de foco, só as órbitas continuam se mexendo. Clicar no sol abre um cartão preso a ele: o nome do canal, com quantos estão nele e quantos ao vivo (clicar no nome entra no canal), a música (no seu canal sem música, a linha tracejada **Sem música · Pôr uma**) e, numa subsala, o **X** de apagar. Embaixo, quem está no canal: quem transmite tem **AO VIVO** e o olho de **Assistir**; clicar na pessoa abre o perfil dela (volume e amizade). Esc ou um clique no mapa fecha; arrastar o planeta até outro sol muda a pessoa de canal. A roda do mouse (ou **+** e **−**) aproxima até caber uma subsala e afasta até ver todas; arrastar o fundo anda pelo mapa.
 - **Mapa grande:** com o chat e a voz na barra da direita, deixe o mouse parado no mapa: o chat encolhe e o mapa ocupa a barra toda. Do chat fica uma faixa em cima, com as mensagens novas; clicar nela traz o chat de volta. Tirando o mouse do painel de voz, o chat volta sozinho (menos enquanto você põe uma música, mexe no volume de alguém ou está no perfil de alguém). O **alfinete** ao lado de Lista e Mapa fixa o mapa aberto até você soltar. Com o chat e a voz abertos juntos, arraste o puxador entre os dois para mudar o tamanho de cada um (ou use as setas com ela selecionada); o tamanho fica salvo, e o clique duplo na linha volta ao automático. A seta ao lado do título recolhe o chat ou a voz numa faixa (o chat recolhido mostra as mensagens novas) e o outro ocupa a coluna toda; clique na faixa ou na seta para abrir de novo. Com o mouse dentro da órbita mais de fora de um sol, as órbitas dele param; as outras seguem girando; com o Nebula fora de foco, o céu em cima da Lista não é desenhado (o Mapa continua girando).
-- **Pessoa no mapa:** clicar num planeta abre o mesmo cartão de perfil da lista, subindo do pé do painel de voz (o mapa continua à vista em cima). Em volta da foto ficam, só com o ícone (o nome aparece ao parar o mouse em cima), **Assistir**, **Perfil** (volume e amizade), **Silenciar para mim** e **Mudar de canal**, e ao lado o canal, o nome e o volume da voz dela. No seu planeta: microfone, fone e **Mudar de canal**. O **X**, Esc ou um clique fora da faixa fecha. Na **Lista**, clicar na linha de quem está na voz (foto, nome ou estado) transforma o painel de voz na página da pessoa: o fundo do perfil em cima (ou a cor dela), a foto grande, o nome, o canal e as ações com nome (**Adicionar como amigo**, **Silenciar para mim**, **Mudar de canal**; no seu, microfone e fone), mais o volume. O **X** ao lado do nome, Esc ou um clique fora do painel volta para a lista. Se a pessoa escolheu um **fundo do perfil**, ele aparece atrás, só dentro da faixa ou da caixinha.
-- **Os nomes da pessoa:** quem está na conta Razze aparece no perfil com os dois nomes: **Nome na sala** (o que ela escolheu no app) e **Nome da conta** (o do servidor Razze). Se vocês já são amigos, o nome da conta vem da sua lista; senão, aparece "informado pelo app da pessoa". **Adicionar como amigo** manda o pedido para essa conta, não para o nome da sala (então funciona mesmo com os nomes diferentes ou com outro usuário de mesmo nome). Com um host ou servidor da sala em versão antiga, a conta não chega e vale o nome da sala, como antes.
+- **Pessoa no mapa:** clicar num planeta abre o mesmo cartão de perfil da lista, subindo do pé do painel de voz (o mapa continua à vista em cima). Em volta da foto ficam, só com o ícone (o nome aparece ao parar o mouse em cima), **Assistir**, **Perfil** (volume e amizade), **Silenciar para mim** e **Mudar de canal**, e ao lado o canal, o nome e o volume da voz dela. O **X**, Esc ou um clique fora da faixa fecha. Na **Lista**, clicar na linha de quem está na voz (foto, nome ou estado) transforma o painel de voz na página da pessoa: o fundo do perfil em cima (ou a cor dela), a foto grande, o nome, o canal e as ações com nome (**Adicionar como amigo**, **Silenciar para mim**, **Mudar de canal**; o seu perfil não tem ações: microfone, fone e sair ficam na barra flutuante, e para mudar de canal é só clicar nele), mais o volume. O **X** ao lado do nome, Esc ou um clique fora do painel volta para a lista. Se a pessoa escolheu um **fundo do perfil**, ele aparece atrás, só dentro da faixa ou da caixinha.
+- **Os nomes da pessoa:** quem está na conta Razze aparece no perfil com os dois nomes: em destaque o **nome na sala** (o que ela escolheu no app) e, embaixo dele, pequeno, o **nome da conta** (o do servidor Razze; ex.: "conta Flyleaf"). Se vocês já são amigos, o nome da conta vem da sua lista; senão, a dica dele diz "informado pelo app da pessoa". **Adicionar como amigo** manda o pedido para essa conta, não para o nome da sala (então funciona mesmo com os nomes diferentes ou com outro usuário de mesmo nome). Com um host ou servidor da sala em versão antiga, a conta não chega e vale o nome da sala, como antes.
 - **Céu na Lista:** na Lista, o céu pequeno em cima é só enfeite. Para escondê-lo ou mostrá-lo, use **Configurações › Aparência › Céu da voz em cima da lista**. O Mapa não muda.
 - **Troca de host:** as subsalas continuam, e cada um fica no canal em que estava.
 - **Modo Internet:** o servidor da VPS precisa estar atualizado para ter subsalas; sem isso, o painel mostra só a lista de sempre.
@@ -259,9 +261,9 @@ No painel **Chat de voz**, a voz fica dividida em canais: a **Voz geral** e as s
 
 Uma música por canal (Voz geral ou subsala), que todo mundo ouve junto, no mesmo ponto.
 
-- **Pôr:** no cabeçalho do canal em que você está (fora da voz, a Voz geral), clique na **nota musical** e cole o link de um vídeo do YouTube (`youtube.com/watch`, `youtu.be`, `shorts` ou `music.youtube.com`). A tela da música abre para você.
+- **Pôr:** no cabeçalho do canal em que você está (fora da voz, a Voz geral), clique em **Pôr música** (a pílula tracejada no canto do nome) e cole o link de um vídeo do YouTube (`youtube.com/watch`, `youtu.be`, `shorts` ou `music.youtube.com`). A tela da música abre para você.
 - **Pelo chat:** escreva `/musica` e o link (ou `/tocar`). Antes de mandar, aparece a prévia do vídeo (capa e título) e onde ele vai tocar; **Enter** põe a música no seu canal, ou troca a que está tocando. Só `/` mostra os comandos; texto com `/` que não é comando vai como mensagem normal.
-- **Ouvir:** a música aparece no canal, depois de quem está nele, no painel de voz (e no balão do sol, no Mapa), com **Ouvir**. Ela vira uma tela no palco, ao lado das transmissões: dá para pôr em destaque, tela cheia e arrastar. Os controles dela (tocar, pausar, o progresso, Trocar e Parar) ficam embaixo, por cima do vídeo, e somem junto com a barra de cima quando o mouse fica parado. As legendas do YouTube vêm desligadas; o botão **CC**, na barra de cima, liga e desliga (só para você, e fica salvo). Ao ligar, o player recarrega no mesmo ponto da música (1 a 2 s). Com **Configurações › Aparência › Luz ambiente** ligada, as barras em volta do vídeo pegam as cores dele, como nas transmissões; com o app fora de foco (no jogo), elas param de atualizar.
+- **Ouvir:** a música aparece numa pílula no canto do nome do canal, com barrinhas (baixas e cinza quando está pausada) e o título; clicar nela ouve junto, e ela fica com contorno enquanto você ouve (no Mapa, no balão do sol, com **Ouvir**). Quem pôs aparece com o mouse em cima. Ela vira uma tela no palco, ao lado das transmissões: dá para pôr em destaque, tela cheia e arrastar. Os controles dela (tocar, pausar, o progresso, Trocar e Parar) ficam embaixo, por cima do vídeo, e somem junto com a barra de cima quando o mouse fica parado. Em cima, sem faixa: o título e os ícones (som, legendas, tela cheia e parar de ouvir) ficam direto sobre o vídeo, com uma sombra escura no alto; o volume abre ao passar o mouse no ícone de som. As legendas do YouTube vêm desligadas; o botão **CC**, na barra de cima, liga e desliga (só para você, e fica salvo). Ao ligar, o player recarrega no mesmo ponto da música (1 a 2 s). Com **Configurações › Aparência › Luz ambiente** ligada, as barras em volta do vídeo pegam as cores dele, como nas transmissões; com o app fora de foco (no jogo), elas param de atualizar.
 - **Música esquecida sai sozinha:** pausada por mais de 4 minutos, ou 1 minuto sem ninguém no canal dela e sem ninguém ouvindo (tocando ou não), a sala tira a música.
 - **Controles de todos:** tocar e pausar, o ponto da música, **Trocar** e **Parar a música** valem para todo mundo. Só quem está naquele canal (ou quem pôs a música) controla.
 - **Só seus:** o volume (fica salvo neste PC) e o **X**, que para de ouvir sem parar para os outros.
@@ -269,7 +271,7 @@ Uma música por canal (Voz geral ou subsala), que todo mundo ouve junto, no mesm
 - **Fim:** quando a música acaba, ela sai sozinha e o canal fica livre para outra.
 - **Live do YouTube:** o progresso e o contador dão lugar ao selo **Ao vivo** e cada um assiste na ponta da transmissão, sem pausas para acertar o ponto. Tocar, pausar, **Trocar** e **Parar** continuam valendo para todos; a live não sai sozinha.
 - **Vídeo que não toca:** quem publicou pode não deixar tocar fora do YouTube; a tela avisa para trocar por outro.
-- **Modo Internet:** o servidor da VPS precisa estar atualizado; sem isso, a nota musical não aparece.
+- **Modo Internet:** o servidor da VPS precisa estar atualizado; sem isso, o **Pôr música** não aparece.
 
 ## Primeira entrada
 
@@ -282,7 +284,7 @@ Na primeira vez que o app abre, uma tela de cada vez (três no máximo):
 
 Quem já usava o app não vê essa tela. Quem escolheu *Com amigos* e ainda não entrou vê no Início uma faixa **Entrar na conta**.
 
-No **Início**, com conta: **Amigos online** (até 5, com **Mensagem** e **Ligar** em ícones), **Convidar** (um menu com **Copiar meu link** e **Adicionar amigo**) e **Ver todos** (abre o envelope na aba **Amigos**).
+No **Início**, com conta: **Amigos online** (até 5, com **Mensagem** e **Ligar** em ícones), **Convidar** (um menu com **Copiar meu link** e **Adicionar amigo**) e **Ver todos** (abre **Adicionar amigo** no envelope).
 Cada amigo mostra em etiquetas onde está, o jogo e a música (clique na música para ver a faixa). Passando o mouse na linha
 aparece **Chamar para minha sala**: manda o convite da sala em que você está pelas mensagens; fora de sala, abre a sua antes.
 
@@ -345,25 +347,31 @@ Embaixo das caixinhas, o app mostra **o que os amigos veem agora**. Só os amigo
 "Ouvindo Metallica"; **clicar em "Ouvindo…" mostra a música**. Some em até 2 minutos depois que você para ou desliga. Para os
 amigos precisa de conta; sem conta nada vai ao servidor. Vale no Windows.
 
-Numa sala, quem está nela também vê (com ou sem conta): no seu perfil aparece a caixa **Ouvindo agora** (a capa, com um disco de vinil saindo dela e girando, a faixa, o artista e o álbum; pausou, o disco volta para dentro da capa, a caixa diz **Pausada** e some depois de 3 minutos; no modo gamer e com "reduzir movimento" do Windows o disco fica parado; com o mouse em cima aparece o nome inteiro, e clicar abre a música no Spotify, pelo navegador) e
-**Jogando** (o nome do jogo, há quanto tempo você joga e, se a Steam estiver rodando esse jogo, a imagem dele, mesmo sem marcar o jogo na lista da Steam), e na sua linha da lista vem a música (com a capinha) ou o jogo embaixo do nome; com os dois, a linha mostra a música
+Numa sala, quem está nela também vê (com ou sem conta): no seu perfil aparece, numa linha compacta cada (o tipo vira um ícone pequeno à direita, com o nome na dica), **Ouvindo agora** (a capa, com um disco de vinil saindo dela e girando, a faixa, o artista e o álbum; pausou, o disco volta para dentro da capa, as barrinhas param, a dica diz **Pausada** e a linha some depois de 3 minutos; no modo gamer e com "reduzir movimento" do Windows o disco fica parado; com o mouse em cima aparece o nome inteiro, e clicar abre a música no Spotify, pelo navegador) e
+**Jogando** (o nome do jogo, há quanto tempo você joga e o ícone do próprio programa do jogo, nítido e sem recorte), e na sua linha da lista vem a música (o símbolo do Spotify, de qualquer player, e só o artista; a faixa aparece com o mouse em cima) ou o jogo embaixo do nome; com os dois, a linha mostra a música
 e um controle azul, junto dos ícones de microfone e fone, avisa que você está jogando (o nome do jogo aparece com o mouse em cima). Passa direto de PC para PC, não fica guardado e atualiza em até 30 s.
+
+Embaixo, o perfil mostra **Jogou recentemente** (os últimos 3 jogos, com a imagem e "hoje", "ontem", "há 3 dias") e **Ouviu recentemente** (as últimas 3 músicas, com a capa; clicar abre no Spotify), sem repetir o que está tocando ou jogando agora. A lista fica guardada no seu PC (uns 30 KB, não cresce, só dos últimos 30 dias) e vai só para quem abre o seu perfil. Segue as caixinhas de jogo e de música; em **Configurações › Atividade**, **Mostrar os últimos 3 jogos e 3 músicas no perfil** desliga só essa parte e apaga o que estava guardado.
 
 ## Amigos
 
-No **envelope**, no começo da barra de baixo, aba **Amigos** (ao lado de **Conversas**). Precisa de conta Razze: sem ela,
-o envelope não aparece e a conta se faz no **Perfil**, em **Conta Razze**. Pedido de amizade que chegou aparece também em
-cima das conversas e no número do envelope; clicar leva para **Pedidos**. O **balão** ao lado do nome abre a conversa.
+No **envelope**, no começo da barra de baixo, tudo fica num painel só: em cima, **Online agora** (a foto de cada amigo
+online; clicar abre a conversa) e, embaixo, as **Conversas**. Precisa de conta Razze: sem ela, o envelope não aparece e a
+conta se faz no **Perfil**, em **Conta Razze**.
 
-- **Buscar:** o campo do topo filtra a lista pelo nome. Os chips **Todos**, **Online** e **Pedidos** mudam o que aparece; o número no **Pedidos** conta os pedidos recebidos e enviados.
-- **Adicionar:** clique em **Adicionar**, digite o nickname exato e **Enviar pedido** (ou Enter). Se der errado, o motivo aparece embaixo do campo. Quando der certo, o pedido vai para **Pedidos enviados**.
-- **Copiar meu link:** no Início (**Copiar meu link**) ou no formulário de **Adicionar** (**Copiar meu link de convite**). O app
+O botão de **adicionar amigo**, ao lado da busca, mostra o número de pedidos que chegaram (também somado no envelope) e
+sobe o painel **Adicionar amigo** por cima das conversas, com três abas: **Recebidos** (com **Aceitar**), **Enviados**
+(com **Cancelar**) e **Amigos** (a lista completa, online e offline). Abre em **Recebidos** quando chegou pedido; senão, em **Amigos**. Buscar no envelope um nome que não está na lista abre o painel sozinho, depois de uma pausa na digitação, com o nome já no campo. O **X**, clicar fora ou Esc volta para as conversas.
+O **balão** ao lado do nome abre a conversa.
+
+- **Adicionar:** no campo do alto do painel, digite o nickname exato e **Enviar** (ou Enter). Se der errado, o motivo aparece embaixo do campo. Quando der certo, o pedido vai para **Enviados**.
+- **Copiar meu link:** no Início (**Copiar meu link**) ou no painel **Adicionar amigo** (**Copiar meu link de convite**). O app
   copia uma mensagem pronta com o link e o código curto e avisa até quando vale (7 dias, 1 pessoa; até 5 links ativos).
-  Os links ativos aparecem no formulário de Adicionar, cada um com **Revogar**.
+  Os links ativos aparecem no painel Adicionar amigo, cada um com **Revogar**.
 - **Convite por link:** quem recebe o link (`https://…/a/…`, ou o `telap2p://amigo/…`) abre o app, vê "**Fulano quer ser
   seu amigo. Aceitar?**" e, aceitando, os dois viram amigos na hora. Sem conta, o app leva para a tela de conta e retoma o
   convite depois de entrar. Quem não tem o app instalado baixa pela página do link e depois **cola o link ou o código**
-  (`ABCD-EFGH-JK`, com os hífens) no campo de **Adicionar**. Cada link vale 7 dias e 1 pessoa. Se o servidor ainda não
+  (`ABCD-EFGH-JK`, com os hífens) no campo do painel **Adicionar amigo**. Cada link vale 7 dias e 1 pessoa. Se o servidor ainda não
   tem links de amigo, o app avisa e o nickname continua funcionando.
 - **Ligar:** o **telefone** ao lado do balão (só com o amigo online). Veja [Ligar](#ligar).
 - **Convidar:** aparece só para quem está online, com você numa sala. Manda um **convite** nas mensagens diretas do
@@ -389,7 +397,7 @@ Conversa com um amigo (conta Razze), dentro ou fora da sala.
 - **Clicar fora** da janelinha minimiza a conversa. O **alfinete** no chip trava a janela aberta (clique de novo
   para destravar). A escolha fica salva.
 
-- **Convite para a sala:** o **Convidar** da aba Amigos manda um cartão "Convite para a sala de [nome]", com
+- **Convite para a sala:** o **Convidar** da aba **Amigos** (em **Adicionar amigo**) manda um cartão "Convite para a sala de [nome]", com
   quantas pessoas estão, o modo e um **Entrar**. Só entra quando você clica, nunca sozinho.
   - **Pela internet:** entra direto, sem senha (o convite leva um passe que só abre aquela sala enquanto quem
     convidou está nela). Se o passe não valer mais, abre o **Entrar com código** já preenchido para a senha.
@@ -402,7 +410,7 @@ Conversa com um amigo (conta Razze), dentro ou fora da sala.
 
 ### Ligar
 
-O **telefone** no chip da conversa (ou ao lado do nome, na aba **Amigos** do envelope) liga para o amigo.
+O **telefone** no chip da conversa (ou ao lado do nome, na aba **Amigos** de **Adicionar amigo**) liga para o amigo.
 
 - **A única escolha:** o modo de rede (Internet, Radmin ou rede local, Razze). Vem marcado o que você usa agora; o
   que não está pronto (sem servidor, sem conta Razze, VPN desligada) aparece desativado, com o motivo.
@@ -416,8 +424,8 @@ O **telefone** no chip da conversa (ou ao lado do nome, na aba **Amigos** do env
 - **Os dois veem a senha** no Painel da sala (botão de pessoas), para passar a outra pessoa ou mudar.
 - **App antigo:** vê o convite comum, e o texto da mensagem traz o código ou o endereço e a senha.
 
-- **Abrir:** clique no **envelope**, no começo da barra de baixo: o painel abre para cima na aba **Conversas**, com busca, a última mensagem e as não lidas. Ou, na aba **Amigos** do mesmo painel, no balão ao lado do nome.
-- **Barra de conversas:** fica embaixo da tela. Cada conversa aberta vira um chip. Clicar no chip abre a janela; o **—** minimiza de volta para o chip; o **X** tira da barra.
+- **Abrir:** clique no **envelope**, no começo da barra de baixo: o painel abre para cima com quem está online, a busca e as conversas (a última mensagem e as não lidas). Ou clique na foto de um amigo em **Online agora**.
+- **Barra de conversas:** fica embaixo da tela. Cada conversa aberta vira um chip: a foto da pessoa (a inicial na cor dela), com a bolinha verde quando está online, o número de não lidas no canto e apagada quando está offline. Com o mouse em cima, um balão mostra o nome, o **telefone** e o **X**. Clicar no chip abre a janela (aí o nome e os botões ficam na barra dela); o **—** minimiza de volta para o chip; o **X** tira da barra.
 - **Muitas conversas:** as que não cabem na largura vão para o **+N** no canto direito (fica destacado se alguma tem mensagem não lida). Clicar nele lista as escondidas; escolher uma traz ela de volta para a barra.
 - **Ordem:** arraste um chip para a esquerda ou para a direita de outro (ou **Alt+←** / **Alt+→** com ele selecionado). A ordem fica salva.
 - **Histórico:** fica salvo neste PC, um arquivo por amigo. Fechar a conversa no X não apaga nada: ao abrir de novo, tudo volta.
@@ -490,7 +498,7 @@ Prefere tudo do outro lado? **Configurações › Aparência › Espelhar a inte
 
 **Largura do chat e da voz:** passe o mouse no vão entre o painel e o vídeo até aparecer uma linha; arraste para alargar ou estreitar (de 300 px até pouco mais da metade da janela). O vídeo se ajusta e a largura fica salva. Dois cliques na linha voltam ao tamanho automático. Pelo teclado: Tab até a linha e as setas.
 
-O botão **Perfil** (no alto da barrinha) abre **Seu perfil**: em cima, uma prévia de como os outros te veem na voz (o fundo, a foto e o nome na fonte escolhida); clicar na foto troca a foto e **Trocar fundo** fica no canto do fundo. Embaixo, **Aparência** (foto, fundo e fonte do nome; a lixeira tira a foto ou o fundo) e **Nome**, que só pode ser editado fora da sala (na sala aparece com um cadeado). Nele também fica o **Fundo do perfil**: uma imagem (recortada em quadrado) ou um GIF de até 1 MB, que aparece atrás do seu perfil para quem clicar em você na voz; **Tirar fundo** volta ao normal. Ao escolher a foto ou uma imagem de fundo, abre o **editor de recorte**: arraste a imagem para enquadrar e use o zoom (roda do mouse, controle, setas e + / -); na foto a bolinha mostra o resultado, e no fundo a faixa tracejada é a parte que mais aparece no cartão. **Ajustar**, ao lado de Trocar, abre de novo o editor com o enquadramento anterior, sem escolher a imagem outra vez (GIF não corta, então não tem Ajustar). O GIF só se mexe com o perfil aberto. Dentro da sala, **Chat**, **Voz** e **Transmissão** ficam logo abaixo deles, num grupo separado, só com o ícone (o nome aparece ao parar o mouse em cima), e são alternadores independentes: clique para exibir ou ocultar cada painel. Chat e voz abrem se desdobrando ao lado da barrinha. Os selecionados permanecem visíveis juntos, dividindo o espaço. Perfil e configurações também podem ficar abertos ao mesmo tempo. Cada painel tem sua própria rolagem quando necessário. A seleção dos três painéis da sala é lembrada ao reabrir o app.
+O botão **Perfil** (no alto da barrinha) abre **Seu perfil**: em cima, uma prévia de como os outros te veem na voz (o fundo, a foto, o nome na fonte escolhida, a conta e a frase, como no cartão da voz). Foto e fundo se trocam só por ela: clicar na foto troca a foto e **Trocar fundo** (ou **Escolher fundo**) fica no canto do fundo. Embaixo, **Aparência** (as linhas Foto e Fundo só aparecem quando há **Ajustar** ou a lixeira, que tira a foto ou o fundo; e a fonte do nome) e **Nome**, que só pode ser editado fora da sala (na sala aparece com um cadeado). Nele também fica o **Fundo do perfil**: uma imagem (recortada em quadrado) ou um GIF de até 1 MB, que aparece atrás do seu perfil para quem clicar em você na voz; **Tirar fundo** volta ao normal. Ao escolher a foto ou uma imagem de fundo, abre o **editor de recorte**: arraste a imagem para enquadrar e use o zoom (roda do mouse, controle, setas e + / -); na foto a bolinha mostra o resultado, e no fundo a faixa tracejada é a parte que mais aparece no cartão. **Ajustar** abre de novo o editor com o enquadramento anterior, sem escolher a imagem outra vez (GIF não corta, então não tem Ajustar). O GIF só se mexe com o perfil aberto. Dentro da sala, **Chat**, **Voz** e **Transmissão** ficam logo abaixo deles, num grupo separado, só com o ícone (o nome aparece ao parar o mouse em cima), e são alternadores independentes: clique para exibir ou ocultar cada painel. Chat e voz abrem se desdobrando ao lado da barrinha. Os selecionados permanecem visíveis juntos, dividindo o espaço. Perfil e configurações também podem ficar abertos ao mesmo tempo. Cada painel tem sua própria rolagem quando necessário. A seleção dos três painéis da sala é lembrada ao reabrir o app.
 
 O painel **Voz** mostra os participantes, seus controles de volume e botões para entrar, sair, mutar e silenciar as vozes. Mostrar ou ocultar esse painel não liga nem desliga o microfone. Da mesma forma, ocultar **Transmissão** não encerra uma transmissão em andamento; use o botão **Parar** para encerrá-la.
 

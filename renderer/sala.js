@@ -81,11 +81,13 @@ function dropHalfJoin() {
 
 async function createRoom() {
   if (state.myId) return toast('Você já está numa sala. Volte para ela e saia antes de entrar em outra.', 'error');
+  if (state.abrindo) return; // clique duplo: o segundo servidor derrubaria o primeiro
   const port = parseInt($('roomPort').value, 10) || 8765;
   const password = $('roomPassword').value;
   save('roomPort', String(port));
   const btn = $('createBtn');
   setBusy(btn, true, 'Criando…');
+  setAbrindoSala(true);
   try {
     await requireSelectedNetwork();
     if (selectedNetworkProvider() === 'internet') {
@@ -114,7 +116,13 @@ async function createRoom() {
     toast(err.message, 'error');
   } finally {
     setBusy(btn, false, 'Criar sala');
+    setAbrindoSala(false);
   }
+}
+// Enquanto o servidor de uma sala abre, os botões de abrir ou entrar do Início ficam desativados
+function setAbrindoSala(on) {
+  state.abrindo = on;
+  renderHomeCall();
 }
 
 async function joinRoom() {
@@ -261,9 +269,12 @@ function renderLeaveBtn() {
   setIcon($('leaveBtn'), 'leave', endsRoom ? 'Encerrar sala (sai todo mundo)' : 'Sair da sala');
 }
 
-// Quem assume se o host sair: o mais antigo na sala (sem contar o host)
+// Quem assume se o host sair: o mais antigo na sala (sem contar o host). Vai pelo número de cada um, que segue a
+// ordem de chegada e não muda quando a pessoa cai e volta: assim todo PC calcula a mesma fila. A ordem em que cada
+// PC viu as pessoas entrarem (state.order) muda depois de uma volta, e a sala se dividia em duas.
 function successors() {
-  return state.order.filter((id) => id !== state.hostId && (id === state.myId || state.members.has(id)));
+  return state.order.filter((id) => id !== state.hostId && (id === state.myId || state.members.has(id)))
+    .sort((a, b) => Number(a) - Number(b));
 }
 
 // ---------- Troca de host ----------
@@ -286,6 +297,17 @@ async function migrateRoom(reason) {
     }
   }
   if (!state.migrating || state.myId !== myId) return;
+  // Eu era o host e caiu a conexão com o meu próprio servidor: volto para ele. Se ele parou e eu estou sozinho,
+  // abro de novo; com mais gente, sigo a troca normal (os outros já estão indo para o próximo da fila)
+  if (oldHost === myId) {
+    for (let i = 0; i < 2 && state.migrating; i++) {
+      if (await rejoin('127.0.0.1', 2500)) return;
+      await new Promise((r) => setTimeout(r, 800));
+    }
+    if (!state.migrating || state.myId !== myId) return;
+    if (!successors().some((id) => id !== myId) && await becomeHost()) return;
+    if (!state.migrating || state.myId !== myId) return;
+  }
   if (oldHost && oldHost !== myId && state.members.has(oldHost)) onRoomMessage({ type: 'member-left', id: oldHost });
   state.hostId = null;
   const line = successors();
@@ -384,6 +406,7 @@ async function rejoin(host, timeoutMs) {
       if (!state.members.get(id).back) onRoomMessage({ type: 'member-left', id });
     }
   }, 20000);
+  resendIncomingVideo(); // quem já voltou recebe agora; quem ainda está voltando, no member-joined
   renderLeaveBtn();
   renderRoomAddress();
   renderMembers();
@@ -406,6 +429,7 @@ function onRoomMessage(m) {
       const caiu = state.rewatch.get(m.id);
       state.rewatch.delete(m.id);
       if (caiu && m.sharing && Date.now() - caiu < 60000 && !state.in.has(m.id)) setTimeout(() => watch(m.id), 300);
+      if (back) resendIncomingVideo(m.id); // voltou à sala: o aviso de vídeo pode ter se perdido enquanto ela estava fora
       renderMembers();
       updateStage();
       if (!back && !m.resumed) void appSounds.play('join');
@@ -533,6 +557,8 @@ function handleSignal(from, data) {
     onBioSignal(from, data);
   } else if (data.side === 'atv') {
     onAtvSignal(from, data); // o jogo e a música do perfil (conta.js)
+  } else if (data.side === 'atvh') {
+    onAtvhSignal(from, data); // os últimos jogos e músicas, para o perfil (conta.js)
   } else if (data.side === 'sharer') {
     // Mensagem de quem transmite uma tela que eu pedi para assistir
     const link = state.in.get(from);

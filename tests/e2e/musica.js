@@ -75,10 +75,10 @@ run('Música junto (YouTube)', 180000, async () => {
   check('O título do vídeo vem do player e vai para a sala', (await A.eval(`state.musicas.get('1').title`)).includes('Never Gonna'));
 
   // Bia vê a música no painel de voz e ouve junto
-  await B.waitFor(`!!document.querySelector('.voice-music')`, 5000);
-  check('Bia vê a música da Subsala_1 com "Ouvir"', await B.eval(`document.querySelector('.voice-music').textContent.includes('Never Gonna') && document.querySelector('.voice-music button').textContent === 'Ouvir'`));
+  await B.waitFor(`!!document.querySelector('.voice-channel[data-channel="1"] .voice-channel-song')`, 5000);
+  check('Bia vê a música da Subsala_1 no cabeçalho do canal, para ouvir', await B.eval(`document.querySelector('.voice-channel-song').textContent.includes('Never Gonna') && document.querySelector('.voice-channel-song').getAttribute('aria-pressed') === 'false'`));
   check('Com a música lá, o "Pôr música" some do canal (uma por subsala)', await B.eval(`!document.querySelector('.voice-channel[data-channel="1"] .voice-channel-music')`));
-  await B.eval(`document.querySelector('.voice-music button').click()`);
+  await B.eval(`document.querySelector('.voice-channel-song').click()`);
   await B.waitFor(`${MU('1')}?.ready && ${MU('1')}.state === 1`, 30000);
   await sleep(2500);
   const [pa, pb] = [await posOf(A, '1'), await posOf(B, '1')];

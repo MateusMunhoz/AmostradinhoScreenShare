@@ -88,18 +88,15 @@ function memberRow(id, name, sharing) {
   if (atv) {
     const linha = document.createElement('span');
     linha.className = 'matv';
-    // a capa do álbum ou a imagem do jogo (Steam), pequenas; sem elas, a nota ou o controle
-    const marca = (jogo, imagem) => {
-      const s = document.createElement('span');
-      s.className = 'matv-icon' + (jogo ? ' jogo' : '') + (imagem ? ' capa' : '');
-      if (imagem) { const img = document.createElement('img'); img.src = imagem; img.alt = ''; s.append(img); }
-      else s.innerHTML = jogo ? ICON.game : ICON.music;
-      return s;
-    };
-    const icone = atv.artista ? marca(false, atv.capa) : marca(true, '');
+    // Música: sempre o símbolo do Spotify (marca "está ouvindo", de qualquer player) e só o artista; a faixa fica na
+    // dica e no perfil
+    const icone = document.createElement('span');
+    icone.className = 'matv-icon' + (atv.artista ? ' spotify' : ' jogo');
+    icone.innerHTML = atv.artista ? ICON.spotify : ICON.game;
     const texto = document.createElement('span');
     texto.className = 'matv-text';
-    texto.textContent = atv.artista ? (atv.faixa ? `${atv.faixa} — ${atv.artista}` : atv.artista) : `Jogando ${atv.jogo}`;
+    texto.textContent = atv.artista || `Jogando ${atv.jogo}`;
+    if (atv.artista) linha.title = (atv.faixa ? `${atv.faixa} — ${atv.artista}` : atv.artista) + (atv.spotify ? ' · Spotify' : '');
     linha.append(icone, texto);
     info.append(linha);
   }
@@ -184,7 +181,7 @@ function renderMembers() {
   $('peopleBtn').title = 'Pessoas na sala';
   const inVoiceCount = [...voice.members.values()].filter((m) => m.session).length + (voice.session ? 1 : 0);
   $('voiceCount').textContent = inVoiceCount ? `${inVoiceCount} na voz` : '';
-  list.append(memberRow(null, `${getName()} (você)`, state.sharing));
+  list.append(memberRow(null, getName(), state.sharing));
   const others = [...state.members].sort((a, b) => Number(b[1].sharing) - Number(a[1].sharing));
   for (const [id, m] of others) list.append(memberRow(id, m.name, m.sharing));
   renderVoicePane();

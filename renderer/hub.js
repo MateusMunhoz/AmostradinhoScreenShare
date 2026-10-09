@@ -1,18 +1,18 @@
 'use strict';
 // Amigos (o HUB, a barra da esquerda, saiu; o arquivo ficou com o nome). Moram no painel do envelope, na barra de
-// baixo, como a aba Amigos ao lado de Conversas (renderer/mensagens.js: setDmPanel): buscar (texto +
-// Todos/Online/Pedidos), adicionar pelo nickname (formulário no lugar da busca), mandar mensagem, ligar, convidar
-// para a sua sala, aceitar e cancelar pedidos, remover pelo menu "⋯" (confirma na própria linha). Os dados vêm da
+// baixo, no painel Adicionar amigo que sobe por cima das conversas (renderer/mensagens.js: setDmPanel): adicionar
+// pelo nickname, Recebidos (aceitar), Enviados (cancelar) e Amigos (mandar mensagem, ligar, convidar para a sua sala,
+// remover pelo menu "⋯", que confirma na própria linha). Os dados vêm da
 // RazzeAPI (refreshRazzeLists e a presença em conectividade.js).
 // A conta Razze fica no Perfil (openRazzeLogin) e a rede em Configurações › Rede (openNetworkDialog).
 // Os ajudantes hubAvatar, hubInfo e hubButton (e as classes hub-*) servem às linhas das listas de amigos e de conversas.
 // Script clássico: divide o escopo global com os outros (ordem no index.html). Usa de: util, estado, navegacao, mensagens.
 
 const friendsData = { friends: [], incoming: [], outgoing: [], error: '' };
-const friendsFilter = { text: '', view: 'all' }; // view: all | online | requests
+const friendsFilter = { view: 'in' }; // view: in (recebidos) | out (enviados) | all (amigos)
 const friendsUi = { menu: null, confirm: null }; // id do amigo com o menu "⋯" aberto / com a remoção para confirmar
 
-// "Abrir os amigos": a aba Amigos no painel do envelope. Sem conta, o envelope não aparece: vai para o login no Perfil
+// "Abrir os amigos": o painel Adicionar amigo, por cima das conversas do envelope. Sem conta, o envelope não aparece: vai para o login no Perfil
 function openFriendsDialog() {
   if (!$('generalSettingsDialog').hidden) closeGeneralSettings();
   if (!dm.account) { openRazzeLogin(); return false; }
@@ -33,14 +33,15 @@ function openRazzeLogin() {
   if (!$('razzeAuth').hidden && !$('razzeLogin').disabled) $('razzeEmail').focus();
 }
 
-// Os números de pedidos (aba Amigos e envelope) e a lista, se a aba Amigos está à vista
+// Os números de pedidos (botão de adicionar amigo e envelope) e o painel aberto (Adicionar amigo, ou as conversas
+// com quem está online)
 function renderAmigos() {
   const pending = friendsData.incoming.length;
-  $('dmTabFriendsBadge').hidden = !pending;
-  $('dmTabFriendsBadge').textContent = String(pending);
-  $('dmTabFriendsBadge').title = `${pending} ${pending === 1 ? 'pedido' : 'pedidos'} de amizade`;
+  $('dmAddBadge').hidden = !pending;
+  $('dmAddBadge').textContent = String(pending);
+  $('dmAddOpen').title = 'Adicionar amigo e pedidos' + (pending ? ` · ${pending} ${pending === 1 ? 'pedido' : 'pedidos'} de amizade` : '');
   if (typeof renderDmBadge === 'function') renderDmBadge();
-  if (!$('dmFriends').hidden && !$('dmPanel').hidden) renderFriends();
+  if (typeof renderDmPanel === 'function') renderDmPanel();
 }
 
 function hubAvatar(name, online) {
@@ -111,19 +112,21 @@ function updateFriendsPresence(live) {
 function friendsStatus(text) { $('razzeFriendsStatus').textContent = text; }
 const semAcento = (t) => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
-// Adicionar amigo: o formulário toma o lugar da busca enquanto está aberto
+// Adicionar amigo: true abre o painel com o foco no campo; false limpa o campo (o pedido saiu) e o painel fica aberto
 function setFriendsAddOpen(on) {
-  $('friendsAddForm').hidden = !on;
-  $('friendsSearchRow').hidden = !!on;
-  $('friendsAddOpen').setAttribute('aria-expanded', String(!!on));
   showFriendsAddError('');
-  if (on) { $('razzeFriendNickname').focus(); if (typeof renderLinksAmigo === 'function') void renderLinksAmigo(); }
-  else { $('razzeFriendNickname').value = ''; $('friendsAddOpen').focus(); }
+  if (on) {
+    if ($('dmFriends').hidden) setDmPanel(true, 'friends');
+    $('razzeFriendNickname').focus();
+    if (typeof renderLinksAmigo === 'function') void renderLinksAmigo();
+  } else { $('razzeFriendNickname').value = ''; syncFriendsAddButton(); }
 }
+// Enviar só fica ativo com algo digitado
+function syncFriendsAddButton() { $('razzeAddFriend').disabled = !$('razzeFriendNickname').value.trim(); }
 // Erro do envio aparece embaixo do campo (vazio = sem erro)
 function showFriendsAddError(text) {
   const hint = $('friendsAddHint');
-  hint.textContent = text || 'Digite o nickname exato, ou cole um link ou código de convite (ABCD-EFGH-JK). A pessoa recebe um pedido e aparece aqui quando aceitar.';
+  hint.textContent = text || 'Nickname exato, link ou código de convite (ABCD-EFGH-JK).';
   hint.classList.toggle('erro', !!text);
   hint.setAttribute('role', text ? 'alert' : 'note');
   $('razzeFriendNickname').setAttribute('aria-invalid', String(!!text));
@@ -140,48 +143,44 @@ function renderFriends() {
   if (!box) return;
   // A presença redesenha a lista a cada poucos segundos: o foco volta para o mesmo botão
   const keep = box.contains(document.activeElement) ? document.activeElement.dataset.focus : '';
-  const needle = semAcento(friendsFilter.text.trim());
-  const match = (x) => !needle || semAcento(x.displayName).includes(needle);
   const online = (f) => !friendsData.error && !!f.online;
-  const requests = friendsData.incoming.length + friendsData.outgoing.length;
-  for (const b of $('friendsViews').querySelectorAll('button')) b.setAttribute('aria-selected', String(b.dataset.view === friendsFilter.view));
-  $('friendsRequestsBadge').hidden = !requests;
-  $('friendsRequestsBadge').textContent = String(requests);
+  const counts = { in: friendsData.incoming.length, out: friendsData.outgoing.length, all: friendsData.friends.length };
+  const labels = { in: 'Recebidos', out: 'Enviados', all: 'Amigos' };
+  for (const b of $('friendsViews').querySelectorAll('button')) {
+    const v = b.dataset.view, sel = v === friendsFilter.view;
+    b.textContent = counts[v] ? `${labels[v]} · ${counts[v]}` : labels[v];
+    b.setAttribute('aria-selected', String(sel));
+    b.tabIndex = sel ? 0 : -1;
+  }
 
   const groups = [];
   const view = friendsFilter.view;
-  const incoming = friendsData.incoming.filter(match), outgoing = friendsData.outgoing.filter(match);
-  const on = friendsData.friends.filter((f) => online(f) && match(f)), off = friendsData.friends.filter((f) => !online(f) && match(f));
-  if (view !== 'online' && incoming.length) groups.push([`Pedidos recebidos · ${incoming.length}`, incoming.map(incomingRow)]);
-  if (view !== 'requests' && on.length) groups.push([`Online · ${on.length}`, on.map((f) => friendRow(f, true))]);
-  else if (view === 'all' && !needle && off.length) groups.push(['Online · 0', [friendsEmptyRow('Ninguém online agora. Crie uma sala no Início e convide quando alguém chegar.')]]);
+  const on = friendsData.friends.filter(online), off = friendsData.friends.filter((f) => !online(f));
+  if (view === 'in' && counts.in) groups.push(['', friendsData.incoming.map(incomingRow)]);
+  if (view === 'out' && counts.out) groups.push(['', friendsData.outgoing.map(outgoingRow)]);
+  if (view === 'all' && on.length) groups.push([`Online · ${on.length}`, on.map((f) => friendRow(f, true))]);
   if (view === 'all' && off.length) groups.push([`Offline · ${off.length}`, off.map((f) => friendRow(f, false))]);
-  if (view !== 'online' && outgoing.length) groups.push([`Pedidos enviados · ${outgoing.length}`, outgoing.map(outgoingRow)]);
   box.replaceChildren();
   for (const [title, rows] of groups) {
-    const h = document.createElement('h3');
-    h.className = 'hub-section';
-    h.textContent = title;
+    if (title) {
+      const h = document.createElement('h3');
+      h.className = 'hub-section';
+      h.textContent = title;
+      box.append(h);
+    }
     const ul = document.createElement('ul');
     ul.className = 'hub-list';
     ul.append(...rows);
-    box.append(h, ul);
+    box.append(ul);
   }
   const empty = $('friendsEmpty');
   empty.hidden = groups.length > 0;
-  empty.textContent = needle ? `Ninguém com “${friendsFilter.text.trim()}” por aqui.`
-    : view === 'online' ? 'Nenhum amigo online agora.'
-    : view === 'requests' ? 'Nenhum pedido de amizade pendente.'
-    : 'Você ainda não tem amigos. Clique em Adicionar e digite o nickname de alguém.';
+  empty.textContent = view === 'in' ? 'Nenhum pedido de amizade chegou.'
+    : view === 'out' ? 'Nenhum pedido esperando resposta. Digite um nickname acima para enviar.'
+    : 'Você ainda não tem amigos. Digite o nickname de alguém acima.';
   if (keep) focusFriendControl(keep);
 }
 
-function friendsEmptyRow(text) {
-  const li = document.createElement('li');
-  li.className = 'hub-empty-row';
-  li.textContent = text;
-  return li;
-}
 function hubIconButton(icon, label, onclick, cls, focusKey) {
   const b = document.createElement('button');
   b.type = 'button';
@@ -262,7 +261,7 @@ function outgoingRow(r) {
   const li = document.createElement('li');
   li.className = 'hub-room hub-request';
   li.append(hubAvatar(r.displayName), hubInfo(r.displayName, 'Aguardando resposta'),
-    hubButton('Cancelar pedido', () => cancelFriendRequest(r), 'btn small', `Cancelar o pedido para ${r.displayName}`));
+    hubButton('Cancelar', () => cancelFriendRequest(r), 'btn small', `Cancelar o pedido para ${r.displayName}`));
   return li;
 }
 
@@ -282,17 +281,24 @@ async function removeFriend(f) {
 }
 
 function setupAmigos() {
-  $('friendsFilter').oninput = () => { friendsFilter.text = $('friendsFilter').value; renderFriends(); };
-  for (const b of $('friendsViews').querySelectorAll('button')) b.onclick = () => { friendsFilter.view = b.dataset.view; renderFriends(); };
-  $('friendsAddOpen').onclick = () => setFriendsAddOpen(true);
-  $('friendsAddCancel').onclick = () => setFriendsAddOpen(false);
-  $('razzeFriendNickname').addEventListener('input', () => { if ($('friendsAddHint').classList.contains('erro')) showFriendsAddError(''); });
-  // Esc fecha primeiro o que estiver aberto na aba Amigos (menu, pergunta, formulário); sem nada, fecha o painel (mensagens.js)
+  const views = [...$('friendsViews').querySelectorAll('button')];
+  for (const b of views) b.onclick = () => { friendsFilter.view = b.dataset.view; renderFriends(); };
+  // Setas trocam entre Recebidos, Enviados e Amigos
+  $('friendsViews').addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    e.preventDefault();
+    const i = views.findIndex((b) => b.dataset.view === friendsFilter.view);
+    const next = views[(i + (e.key === 'ArrowRight' ? 1 : views.length - 1)) % views.length];
+    friendsFilter.view = next.dataset.view;
+    renderFriends();
+    next.focus();
+  });
+  $('razzeFriendNickname').addEventListener('input', () => { syncFriendsAddButton(); if ($('friendsAddHint').classList.contains('erro')) showFriendsAddError(''); });
+  // Esc fecha primeiro o menu "⋯" ou a pergunta; sem nada, fecha o painel Adicionar amigo (mensagens.js)
   $('dmFriends').addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
     const id = friendsUi.menu || friendsUi.confirm;
     if (id) { e.stopPropagation(); setFriendMenu(null); focusFriendControl('more:' + id); }
-    else if (!$('friendsAddForm').hidden && $('friendsAddForm').contains(e.target)) { e.stopPropagation(); setFriendsAddOpen(false); }
   });
   // Clique fora do menu "⋯" fecha o menu
   document.addEventListener('mousedown', (e) => {

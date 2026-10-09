@@ -455,13 +455,38 @@ function musicRow(ch) {
   li.append(icon, info, btn);
   return li;
 }
-// O botão de pôr música vai no cabeçalho do seu canal (fora da voz, a Voz geral), se ainda não tem uma lá
+// No cabeçalho do canal, colada ao nome (a lista não tem mais a linha da música embaixo das pessoas):
+// - com música: uma pílula com as barrinhas e o título; clicar ouve junto (ou para de ouvir). Barrinhas paradas e
+//   baixas quando está pausada; quem pôs e o título inteiro ficam na dica
+// - sem música, no seu canal (fora da voz, a Voz geral): a pílula tracejada "Pôr música"
 function musicHeadButton(ch) {
-  if (!state.musicaOn || state.musicas.has(ch) || ch !== myVoiceChannel()) return null;
+  const e = state.musicas.get(ch);
   const b = document.createElement('button');
   b.type = 'button';
-  b.className = 'btn small icon voice-channel-music';
-  setIcon(b, 'music', `Pôr uma música do YouTube em ${channelName(ch)} (todos ouvem junto)`);
+  if (e) {
+    const open = !!state.in.get(musicKey(ch));
+    const titulo = state.in.get(musicKey(ch))?.tile.name || musicTitle(e);
+    b.className = 'voice-channel-song' + (e.playing ? '' : ' paused');
+    b.setAttribute('aria-pressed', String(open));
+    b.title = `${titulo}\n${e.playing ? 'Tocando' : 'Pausada'} · posta por ${e.by === state.myId ? 'você' : nameOf(e.by)}\n`
+      + (open ? 'Parar de ouvir (a música continua para os outros)' : 'Ouvir junto, no mesmo ponto');
+    const barras = document.createElement('span');
+    barras.className = 'song-eq';
+    barras.setAttribute('aria-hidden', 'true');
+    barras.append(document.createElement('span'), document.createElement('span'), document.createElement('span'));
+    const nome = document.createElement('span');
+    nome.className = 'song-title';
+    nome.textContent = titulo;
+    b.append(barras, nome);
+    b.setAttribute('aria-label', `${open ? 'Parar de ouvir' : 'Ouvir'}: ${titulo}`);
+    b.onclick = (ev) => { ev.stopPropagation(); toggleListenMusic(ch); };
+    return b;
+  }
+  if (!state.musicaOn || ch !== myVoiceChannel()) return null;
+  b.className = 'voice-channel-music';
+  b.innerHTML = ICON.music;
+  b.append('Pôr música');
+  b.title = `Pôr uma música do YouTube em ${channelName(ch)} (todos ouvem junto)`;
   b.onclick = (ev) => { ev.stopPropagation(); musicPopFor?.ch === ch ? closeMusicPop() : openMusicPop(ch, b, 'por'); };
   return b;
 }

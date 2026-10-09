@@ -326,7 +326,7 @@ function setupPrimeiraEntrada() {
   document.addEventListener('click', (e) => { if (!$('homeConvidarMenu').hidden && !e.target.closest('.home-menu-wrap')) setHomeConvidarOpen(false); });
   // O nome: o lápis abre o campo; Enter ou sair do campo fecha
   setIcon($('homeNameEdit'), 'edit', 'Mudar seu nome');
-  setIcon($('goCreate'), 'sliders', 'Opções da sala');
+  setIcon($('goCreate'), 'roomGear', 'Opções da sala');
   $('homeNameEdit').onclick = () => { $('home').classList.add('editando-nome'); renderHomeTopo(); $('name').focus(); $('name').select(); };
   const pararDeEditar = () => { if (!$('home').classList.contains('editando-nome')) return; $('home').classList.remove('editando-nome'); renderHomeTopo(); };
   $('name').addEventListener('input', renderHomeTopo);

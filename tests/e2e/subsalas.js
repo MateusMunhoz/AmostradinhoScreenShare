@@ -215,5 +215,5 @@ run('Subsalas: arrastar pessoas e controles da voz fixos', 200000, async () => {
   await wheel(A, mid, -400, 6);
   await skyShot(A, 'subsalas-mapa-zoom.png');
   await A.eval(`$('voiceViewList').click()`);
-  check('Microfone e fone na barra', await A.eval(`!$('paneVoiceMute').hidden && !$('paneVoiceDeafen').hidden`));
+  check('Microfone, fone e Sair não se repetem no painel de voz (ficam na barra flutuante)', await A.eval(`!$('voicePane').querySelector('.pane-voice-actions #voiceMute, .pane-voice-actions #voiceDeafen') && $('paneVoiceJoin').hidden && !$('voiceMute').hidden`));
 });
