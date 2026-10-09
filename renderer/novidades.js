@@ -3,6 +3,13 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.18.9",
+    "date": "2026-10-09",
+    "items": [
+      "Interface: barra flutuante como lugar único de mic/fone/sair, envelope num painel só, histórico de atividade"
+    ]
+  },
+  {
     "version": "1.18.8",
     "date": "2026-10-08",
     "items": [
@@ -72,15 +79,6 @@ const NOVIDADES = [
     "date": "2026-10-06",
     "items": [
       "Correções e melhorias"
-    ]
-  },
-  {
-    "version": "1.17.3",
-    "date": "2026-10-05",
-    "items": [
-      "App: painel de administração e primeira entrada só com Google",
-      "Barra de baixo não some mais no caminho da transmissão até ela",
-      "Servidor: conta só pelo Google, lista de convidados, grupos e números do painel"
     ]
   }
 ];
