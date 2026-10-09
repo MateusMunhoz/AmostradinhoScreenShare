@@ -3,6 +3,13 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.18.10",
+    "date": "2026-10-09",
+    "items": [
+      "Salas dos amigos: entrar com um clique na sala de qualquer amigo (passe da sala)"
+    ]
+  },
+  {
     "version": "1.18.9",
     "date": "2026-10-09",
     "items": [
@@ -72,13 +79,6 @@ const NOVIDADES = [
     "date": "2026-10-06",
     "items": [
       "Corrige conflito de merge no main"
-    ]
-  },
-  {
-    "version": "1.17.4",
-    "date": "2026-10-06",
-    "items": [
-      "Correções e melhorias"
     ]
   }
 ];
