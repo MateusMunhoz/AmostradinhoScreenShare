@@ -102,6 +102,7 @@ async function entradaEnviarConta() {
 async function abrirMinhaSala() {
   $('roomPassword').value = selectedNetworkProvider() === 'internet' ? novaSenhaSala() : '';
   $('roomVisible').checked = load('sessaoVisivel', '1') !== '0';
+  $('roomAmigosMembros').checked = load('salaAmigosMembros', '1') !== '0';
   await createRoom();
 }
 
@@ -264,6 +265,17 @@ function renderHomeAmigos() {
     chamar.textContent = 'Chamar para minha sala';
     chamar.title = state.myId ? `Manda o convite da sua sala para ${f.displayName}` : `Abre a sua sala e manda o convite para ${f.displayName}`;
     chamar.onclick = () => void chamarParaMinhaSala(f);
+    // A sala pela internet em que o amigo está e que ele deixa entrar: Entrar, sem código nem senha (salas-amigos.js)
+    const salaDele = typeof salaDoAmigo === 'function' ? salaDoAmigo(f) : null;
+    if (salaDele) {
+      const entrar = document.createElement('button');
+      entrar.type = 'button';
+      entrar.className = 'btn small primary home-friend-entrar';
+      entrar.textContent = 'Entrar';
+      entrar.title = `Entrar na sala de ${salaDele.host}, onde ${f.displayName} está`;
+      entrar.onclick = () => void entrarPeloAmigo(f);
+      acoes.append(entrar);
+    }
     acoes.append(chamar,
       homeIconBtn('chat', `Mensagem para ${f.displayName}`, () => openDm(f.id)),
       homeIconBtn('phone', `Ligar para ${f.displayName}: cria uma sala só para vocês e entra na voz`, () => void ligarPara(f.id), 'home-friend-ligar'));

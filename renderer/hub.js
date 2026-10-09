@@ -218,6 +218,9 @@ function friendRow(f, isOnline) {
     hubIconButton(ICON.phone, `Ligar para ${f.displayName} (cria uma sala só para vocês e entra na voz)`, () => void ligarPara(f.id), 'hub-talk hub-call', 'call:' + f.id));
   // Convidar só faz sentido para quem está online
   if (isOnline) {
+    // A sala pela internet em que o amigo está e que ele deixa entrar: Entrar, sem código nem senha (salas-amigos.js)
+    const salaDele = typeof salaDoAmigo === 'function' ? salaDoAmigo(f) : null;
+    if (salaDele) li.append(hubButton('Entrar', () => void entrarPeloAmigo(f), 'btn small primary hub-entrar', `Entrar na sala de ${salaDele.host}, onde ${f.displayName} está`));
     const inRoom = !!state.myId && !!state.roomAddr;
     const invite = hubButton('Convidar', () => convidarPorMensagem(f), 'btn small' + (inRoom ? ' primary' : ''),
       inRoom ? `Mandar um convite para a sua sala nas mensagens de ${f.displayName}` : 'Entre numa sala para convidar');

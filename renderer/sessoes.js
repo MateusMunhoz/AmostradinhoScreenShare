@@ -172,7 +172,9 @@ function sessionRow(s) {
   meta.className = 'session-meta';
   const voz = dono?.sala?.voz || dentro.some((f) => f.sala.voz) ? ' · voz ligada' : '';
   // dentro: os outros amigos na sala (o dono já é o rosto grande do cartão)
-  meta.textContent = `${s.pessoas} ${s.pessoas === 1 ? 'pessoa' : 'pessoas'}${s.codigo ? ' · pela internet' : ''}${voz}${s.senha ? ', com senha' : ''}`;
+  // com: os meus amigos que mostram a sala (modo Internet; salas-amigos.js)
+  const com = s.codigo ? comAmigosDaSala(s) : '';
+  meta.textContent = `${s.pessoas} ${s.pessoas === 1 ? 'pessoa' : 'pessoas'}${s.codigo ? ' · pela internet' : ''}${com ? ' · ' + com : ''}${voz}${s.senha ? ', com senha' : ''}`;
   if (s.senha) meta.insertAdjacentHTML('afterbegin', ICON.lock);
   info.append(vivo, name, meta);
   if (dono?.activity?.game) {

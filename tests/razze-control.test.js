@@ -307,3 +307,39 @@ test('excluir conta: só desativada, nunca a própria; apaga em cascata e fica n
   const historico = await req('admin/database/audit_log?limit=50', 'GET', undefined, admin.accessToken);
   assert.match(JSON.stringify(historico), /user\.delete/);
 });
+
+test('sala do modo Internet anunciada por vários membros: uma só, com o host e os amigos de quem vê que estão nela', async t => {
+  const { req, register } = await fixture(t);
+  const [ana, beto, caio, duda] = [await register('Ana'), await register('Beto'), await register('Caio'), await register('Duda')];
+  const amigos = async (x, y) => {
+    const r = await req('friends/requests', 'POST', { email: y.user.email }, x.accessToken);
+    await req('friends/requests/' + r.id + '/accept', 'POST', undefined, y.accessToken);
+  };
+  await amigos(ana, caio); await amigos(beto, caio); await amigos(beto, duda);
+  const passe = 'p'.repeat(43);
+  const sala = { servidor: 'ws://203.0.113.5:8765', codigo: 'ABC234' };
+  // A Ana (host, app antigo) anuncia sem passe nem host; o Beto (convidado) anuncia com o passe da sala e o nome do host
+  assert.equal((await req('presence/heartbeat', 'POST', { internetRoom: { ...sala, pessoas: 2, passe: null } }, ana.accessToken)).status, 200);
+  assert.equal((await req('presence/heartbeat', 'POST', { internetRoom: { ...sala, pessoas: 3, passe, host: ' Ana ' } }, beto.accessToken)).status, 200);
+
+  const doCaio = (await req('rooms', 'GET', undefined, caio.accessToken)).internet;
+  assert.equal(doCaio.length, 1);
+  assert.equal(doCaio[0].host, 'Ana'); assert.equal(doCaio[0].passe, passe); assert.equal(doCaio[0].pessoas, 3);
+  assert.deepEqual(doCaio[0].amigos.map(f => f.displayName).sort(), ['Ana', 'Beto']);
+  assert.equal(doCaio[0].hostAnunciado, undefined);
+
+  // A Duda é amiga só do Beto: vê a sala de Ana pelo Beto, sem a Ana na lista de amigos
+  const daDuda = (await req('rooms', 'GET', undefined, duda.accessToken)).internet;
+  assert.equal(daDuda.length, 1);
+  assert.equal(daDuda[0].host, 'Ana');
+  assert.deepEqual(daDuda[0].amigos, [{ userId: beto.user.id, displayName: 'Beto' }]);
+
+  // O Beto para de deixar entrar: a Duda deixa de ver; o Caio continua vendo, pela Ana
+  await req('presence/heartbeat', 'POST', {}, beto.accessToken);
+  assert.equal((await req('rooms', 'GET', undefined, duda.accessToken)).internet.length, 0);
+  assert.deepEqual((await req('rooms', 'GET', undefined, caio.accessToken)).internet[0].amigos.map(f => f.displayName), ['Ana']);
+
+  for (const host of ['', '   ', 'x'.repeat(33), 'a\u0001b', 5]) {
+    assert.equal((await req('presence/heartbeat', 'POST', { internetRoom: { ...sala, pessoas: 2, passe, host } }, beto.accessToken)).status, 400);
+  }
+});

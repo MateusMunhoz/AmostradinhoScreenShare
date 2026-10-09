@@ -142,9 +142,9 @@ async function abrirSalaChamada(modo, senha) {
 async function abrirSalaChamadaJa(modo, senha) {
   if (modo === 'internet') {
     const url = internetServerUrl();
-    const welcome = await connectRoom(url, { name: getName(), password: senha, create: true });
+    const welcome = await connectRoom(url, { name: getName(), password: senha, create: true, amigosMembros: false });
     state.password = senha;
-    try { enterRoom(welcome, false, url, 0, { url, code: welcome.sala, criador: true, amigos: false }); }
+    try { enterRoom(welcome, false, url, 0, { url, code: welcome.sala, criador: true, amigos: false, chamada: true }); }
     catch (err) { dropHalfJoin(); throw err; }
     return;
   }
@@ -256,7 +256,7 @@ async function entrarNaChamada(cv) {
   if (cv.modo === 'internet') {
     const welcome = await connectRoom(cv.servidor, { name: getName(), password: cv.chave, room: cv.codigo });
     state.password = cv.chave;
-    try { enterRoom(welcome, false, cv.servidor, 0, { url: cv.servidor, code: welcome.sala || cv.codigo }); }
+    try { enterRoom(welcome, false, cv.servidor, 0, { url: cv.servidor, code: welcome.sala || cv.codigo, chamada: true }); }
     catch (err) { dropHalfJoin(); throw err; }
   } else {
     const [host, porta] = cv.endereco.split(':');
@@ -276,6 +276,7 @@ function avisarChamada(cv, quem) {
 
 // ---------- Senha da sala (Painel da sala) ----------
 function renderSenhaSala() {
+  renderAmigosMembros(); // logo abaixo: "Amigos de quem está na sala podem entrar" (salas-amigos.js)
   const box = $('roomSenha');
   const souHost = !!state.myId && state.hostId === state.myId;
   box.hidden = !state.myId || (!state.password && !souHost);

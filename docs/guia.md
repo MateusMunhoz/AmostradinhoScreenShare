@@ -107,12 +107,20 @@ Quando há uma sala aberta (de amigo ou, nos outros modos, na sua rede), ela sob
   a conta na aba Rede, adicionar os amigos e criar ou entrar nas salas. Quem já usava o app continua na Radmin; para
   mudar, escolha **Internet (servidor)** em **Como os PCs se conectam**.
 
-- **Entrar:** o botão **Entrar** entra direto, sem senha, por um **passe de convite** que o app de quem criou a
-  sala manda só para os amigos dele. Se o passe não valer mais (quem convidou saiu da sala) ou o servidor for
-  antigo, abre o **Entrar com código** com o código preenchido, e é só digitar a senha. O servidor usado é o da
-  sala do amigo, mesmo que o da sua aba Rede seja outro.
+- **Entrar:** o botão **Entrar** entra direto, sem senha, por um **passe de convite** que só os amigos de quem está
+  na sala recebem. Se o passe não valer mais (o host fechou a sala para os amigos, ou o servidor é antigo), abre o
+  **Entrar com código** com o código preenchido, e é só digitar a senha. O servidor usado é o da sala do amigo, mesmo
+  que o da sua aba Rede seja outro.
+- **Salas em que o amigo é convidado:** não precisa ser a sala de um amigo. Se o seu amigo está na sala de outra
+  pessoa, ela aparece como "Sala de Ciclano · com Fulano", e o **Entrar** também fica ao lado de "Na sala de Ciclano",
+  na aba **Amigos** e nos **Amigos online** do Início. Continua valendo mesmo depois de quem criou a sala sair.
 - **A sua aparece para os seus amigos:** ao criar a sala, deixe marcado **Mostrar esta sala para meus amigos do
   Razze**. Desmarcado, ela só funciona pelo código e senha.
+- **Amigos de quem estiver na sala também podem entrar** (Criar sala, marcado por padrão): os amigos de qualquer
+  pessoa da sala entram com um clique, mesmo que você não os conheça. O host liga e desliga no painel da sala (ao lado
+  da senha); desligar não tira ninguém, só impede que entre gente nova sem a senha. Mudar a senha troca o passe.
+- **Fechar a sala para os seus amigos sem sumir:** em **Configurações › Atividade**, desligue **Deixar meus amigos
+  entrarem na sala em que estou**. Eles continuam vendo "Na sala de Ciclano", sem o Entrar.
 - **Quanto tempo fica:** enquanto você está na sala. Saiu (ou fechou o app), ela some da lista dos amigos na hora;
   se o PC cair, em até 70 segundos. Se você sair e a sala continuar com os outros, o seu convite para de valer.
 - **Quem vê:** só os amigos aceitos no Razze. Nenhum IP vai junto, só o servidor, o código e quantas pessoas estão.
@@ -379,7 +387,7 @@ O **balão** ao lado do nome abre a conversa.
   amigo, que aparece como um cartão com **Entrar** (veja abaixo).
 - **Remover:** no **⋯** da linha, **Remover [nome]**. A própria linha pergunta se é isso mesmo; **Não** ou Esc desiste.
   Remover desfaz a amizade dos dois lados: some também da lista do outro, sem precisar reabrir o app.
-- **Em que sala o amigo está:** no lugar de "Online", aparece "Na sala de Ciclano · Radmin · 4 pessoas" (ou "na voz"), em qualquer modo e mesmo que o amigo não seja o host; na mesma sala que você, "Na sua sala". Também nos **Amigos online** do Início. É só para saber onde ele está: não vai endereço, e para entrar continua o convite ou o endereço. Quem não quer mostrar desliga em **Configurações › Atividade › Mostrar aos amigos em que sala estou** (ligado por padrão). Salas escondidas e chamadas não aparecem.
+- **Em que sala o amigo está:** no lugar de "Online", aparece "Na sala de Ciclano · Radmin · 4 pessoas" (ou "na voz"), em qualquer modo e mesmo que o amigo não seja o host; na mesma sala que você, "Na sua sala". Também nos **Amigos online** do Início. Não vai endereço. Nas salas pela internet (com o app no modo Internet), aparece um **Entrar** do lado, se o amigo e o host deixam (veja Salas dos amigos); nas outras, para entrar continua o convite ou o endereço. Quem não quer mostrar desliga em **Configurações › Atividade › Mostrar aos amigos em que sala estou** (ligado por padrão). Salas escondidas e chamadas não aparecem.
 
 ## Mensagens diretas
 

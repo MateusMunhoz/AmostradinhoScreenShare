@@ -387,6 +387,11 @@
           <input type="checkbox" id="roomVisible" checked>
           <span><span id="roomVisibleText">Mostrar esta sessão para quem está na rede</span><button type="button" class="tip" id="roomVisibleTip" data-tip="Aparece na tela inicial dos outros. A senha continua sendo pedida." aria-label="Aparece na tela inicial dos outros. A senha continua sendo pedida."></button></span>
         </label>
+        <!-- Só no modo Internet: passe da sala (renderer/salas-amigos.js, docs/spec/entrar-pelos-amigos.md) -->
+        <label class="check-line" id="roomAmigosMembrosLine" hidden>
+          <input type="checkbox" id="roomAmigosMembros" checked>
+          <span>Amigos de quem estiver na sala também podem entrar<button type="button" class="tip" data-tip="Quem está na sala mostra a sala aos próprios amigos, que entram com um clique, sem a senha. Dá para desligar depois, no painel da sala." aria-label="Quem está na sala mostra a sala aos próprios amigos, que entram com um clique, sem a senha. Dá para desligar depois, no painel da sala."></button></span>
+        </label>
         <button class="btn primary" id="createBtn">Criar sala</button>
         <p class="hint" id="createHint">A sala fecha quando todos saírem.</p>
       </div>
@@ -651,6 +656,8 @@
             <div class="pp-addr">
               <div id="roomAddress"></div>
               <div id="roomSenha" class="addr room-senha" hidden></div>
+              <!-- Só o host, no modo Internet (renderer/salas-amigos.js: renderAmigosMembros) -->
+              <label class="check-line room-amigos" id="roomAmigosAberta" hidden><input type="checkbox" id="roomAmigosAbertaOn"><span>Amigos de quem está na sala podem entrar</span></label>
               <p id="noRadmin" class="warn" hidden>Nenhum IP da Radmin VPN (26.x.x.x) encontrado. Ligue a Radmin e entre na rede.</p>
             </div>
           </div>
@@ -1079,6 +1086,9 @@
             <!-- Em que sala estou (renderer/salas-amigos.js, docs/spec/sala-do-amigo.md): ligado por padrão -->
             <label class="check-line"><input type="checkbox" id="atvSala" aria-describedby="atvSalaHint"><span>Mostrar aos amigos em que sala estou</span></label>
             <p id="atvSalaHint" class="hint">Ligado por padrão. Vai só o nome de quem hospeda a sala, o modo (Radmin, Razze ou Internet), quantas pessoas e se você está na voz: nenhum endereço. Salas escondidas e chamadas não aparecem.</p>
+            <!-- Deixar entrar (docs/spec/entrar-pelos-amigos.md): fecha a sala para os amigos sem parar de mostrar -->
+            <label class="check-line"><input type="checkbox" id="atvSalaEntrar" aria-describedby="atvSalaEntrarHint"><span>Deixar meus amigos entrarem na sala em que estou</span></label>
+            <p id="atvSalaEntrarHint" class="hint">Ligado por padrão. Nas salas pela internet, os amigos veem um Entrar e entram sem senha (se quem hospeda deixar). Desligado, eles continuam vendo em que sala você está, sem o Entrar.</p>
           </div>
         </section>
         <!-- Recursos extras: só funcionam para quem liga; nada é baixado antes (renderer/comando-voz.js) -->
