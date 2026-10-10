@@ -96,6 +96,7 @@ const ICON = {
   sliders: svg('M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6'), // controles: voz e atalhos
   roomGear: svg('M3 11l9-7 9 7M5 9.5V20h7M17.5 15.5a2 2 0 1 0 0 4 2 2 0 1 0 0-4zM17.5 13v1.2M17.5 20.8V22M13 17.5h1.2M20.8 17.5H22M14.3 14.3l.85.85M19.85 19.85l.85.85M14.3 20.7l.85-.85M19.85 15.15l.85-.85'), // casinha com engrenagem: opções da sala (Início)
   music: svg('M9 18V5l12-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM21 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z'), // nota: música junto
+  mao: svg('M18 11V6a2 2 0 0 0-4 0M14 10V4a2 2 0 0 0-4 0v2M10 10.5V6a2 2 0 0 0-4 0v8M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-6-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15'), // pedir para falar (Modo Líder)
   megafone: svg('M3 11l18-5v12L3 14zM11.6 16.8a3 3 0 1 1-5.8-1.6'), // subsala Líder (fala para a sala toda)
   ondas: svg('M4 10v4M8 6v12M12 3v18M16 7v10M20 10v4'),          // barrinhas de som: o canal de voz em que você está
   ondasParadas: svg('M4 11v2M8 10v4M12 9v6M16 10v4M20 11v2'),  // as mesmas, baixas e iguais: um canal em que você não está

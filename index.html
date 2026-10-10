@@ -41,6 +41,7 @@
         <button id="miniDeafen" type="button" class="workspace-tab" aria-pressed="false" hidden></button>
         <button id="miniVoice" type="button" class="workspace-tab"></button>
         <button id="miniShare" type="button" class="workspace-tab"></button>
+        <button id="miniMao" type="button" class="workspace-tab" aria-pressed="false" hidden></button>
       </div>
       <span class="nav-space" aria-hidden="true"></span>
       <!-- Versão nova (renderer/atualizacao.js): fora do Início, leva ao painel da atualização no topo do Início -->
@@ -134,7 +135,7 @@
     <!-- Abas do painel da sala: Voz, Chat e Pessoas. "Lado a lado" junta Voz e Chat (com a divisória de sempre);
          recolher esconde o painel e a sua voz vai para a barrinha (renderer/navegacao.js: painelSala) -->
     <div id="paneTabs" class="pane-tabs" role="group" aria-label="Painel da sala">
-      <button id="navVoice" type="button" class="pane-tab" aria-pressed="true" aria-controls="voicePane"><span class="pane-tab-star" aria-hidden="true">✦</span><span>Voz</span></button>
+      <button id="navVoice" type="button" class="pane-tab" aria-pressed="true" aria-controls="voicePane"><span class="pane-tab-star" aria-hidden="true">✦</span><span>Voz</span><span class="pane-tab-pedidos" id="navVoicePedidos" hidden></span></button>
       <button id="navChat" type="button" class="pane-tab" aria-pressed="false" aria-controls="chatTab"><span class="pane-tab-star" aria-hidden="true">✦</span><span>Chat</span><span id="navUnread" class="unread" hidden></span></button>
       <button id="peopleBtn" type="button" class="pane-tab" aria-pressed="false" aria-controls="peoplePop"><span class="pane-tab-star" aria-hidden="true">✦</span><span>Pessoas</span><span id="memberCount" class="pane-tab-n">1</span><span class="people-speak" id="peopleSpeak" title="Alguém está falando" hidden></span></button>
       <span class="pane-tabs-space"></span>
@@ -180,6 +181,7 @@
         <span class="ss-lider-texto" id="ssLiderTexto"></span>
         <input type="range" id="ssLiderVol" class="ss-lider-vol" min="0" max="100" step="5" aria-label="Volume da Líder">
         <button type="button" class="btn small" id="ssLiderOuvir"></button>
+        <button type="button" class="btn small ss-lider-pedir" id="ssLiderPedir"></button>
       </div>
       <div class="ss-linha ss-voz">
         <div class="voice-dock" id="voiceDock" role="group" aria-label="Conversa por voz">

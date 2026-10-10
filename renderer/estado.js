@@ -36,6 +36,8 @@ const state = {
   // Troca de host: quem roda o servidor, a ordem de chegada (o mais antigo assume) e a senha para voltar
   hostId: null,
   subsalas: null,          // subsalas de voz da sala [{ id, name }]; null: o servidor da sala não tem subsalas
+  liderPedidos: [],        // Modo Líder: quem pediu para falar, na ordem (subsalas.js › setLider)
+  liderPalavra: [],        // Modo Líder: quem tem a palavra (fala para a sala toda de fora da Líder)
   liderOn: false,          // o servidor conhece o Modo Líder (subsala que fala para a sala toda)
   subsalaMove: false,      // o servidor da sala sabe mover os outros de canal (arrastar no painel de voz)
   musicas: new Map(),      // música de cada canal: ch -> { videoId, title, by, playing, pos, at } (renderer/musica.js)

@@ -272,6 +272,7 @@ function enterRoom(welcome, owner, host, port, cloud = null) {
   voice.reset(welcome);
   lider.reset();
   lider.setCanal(liderChannel());
+  setLider(welcome.lider, true);
   setMusicas(state.musicaOn ? welcome.musicas : [], welcome.now, true); // as músicas que já estavam tocando na sala
   window.api.roomKeys(true).then(syncComandoVozTecla, () => {});
   renderLeaveBtn();
@@ -296,6 +297,7 @@ function leaveRoom(reason, kind = 'info', endRoom = false) {
   void appSounds.play('leave');
   voice.reset(null);
   lider.reset();
+  state.liderPedidos = []; state.liderPalavra = []; liderPedirAoEntrar = false;
   const ws = state.ws;
   state.ws = null;
   state.migrating = false;
@@ -428,7 +430,7 @@ async function becomeHost() {
   let res;
   for (let i = 0; i < 6; i++) {
     // O modo da rede vai junto: sala da Razze continua só para quem está na Razze depois que o host muda
-    res = await window.api.startServer(state.port, state.password, { chat: chat.log, nextId: Math.max(0, ...known) + 1, hostId: state.myId, sessao: state.sessao, subsalas: state.subsalas || [], musicas: musicSeed() }, selectedNetworkProvider());
+    res = await window.api.startServer(state.port, state.password, { chat: chat.log, nextId: Math.max(0, ...known) + 1, hostId: state.myId, sessao: state.sessao, subsalas: state.subsalas || [], lider: { pedidos: state.liderPedidos, palavra: state.liderPalavra }, musicas: musicSeed() }, selectedNetworkProvider());
     if (res.ok || !state.migrating) break;
     await new Promise((r) => setTimeout(r, 1000));
   }
@@ -473,6 +475,7 @@ async function rejoin(host, timeoutMs) {
   state.musicaOn = (welcome.features || []).includes('musica');
   state.senhaOn = (welcome.features || []).includes('senha'); // o servidor sabe mudar a senha da sala
   setSubsalas((welcome.features || []).includes('subsalas') ? welcome.subsalas : null);
+  setLider(welcome.lider, true);
   setMusicas(state.musicaOn ? welcome.musicas : [], welcome.now);
   if (state.musicaOn) resendListening();
   if (!state.isOwner && !state.cloud) save('roomAddr', `${host}:${state.port}`);
@@ -581,6 +584,12 @@ function onRoomMessage(m) {
       break;
     case 'subsalas':
       setSubsalas(m.list);
+      break;
+    case 'lider': // Modo Líder: os pedidos para falar e quem tem a palavra (subsalas.js)
+      setLider(m);
+      break;
+    case 'lider-aviso':
+      avisoLider(m);
       break;
     case 'subsala-erro':
       toast(String(m.text || 'Não foi possível criar a subsala.').slice(0, 200), 'error');

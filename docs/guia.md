@@ -301,8 +301,22 @@ ninguém do próprio grupo.
   "Ouvindo a Líder" do **Seu sinal** tem o **volume da Líder** (fica salvo neste PC; a roda do mouse muda de 5 em
   5%). Quem está na Líder não ouve você.
 - **Quem está fora da voz** vê "Líder na sala" com o botão **Ouvir**: escuta sem ligar o microfone. **Parar** desliga.
+- **Pedir para falar:** quem está fora da Líder clica em **Pedir para falar** (a mão, no **Seu sinal**; com o painel
+  recolhido, na barrinha). Fora da voz, o botão entra na voz (Voz geral) e já manda o pedido. Enquanto espera, a linha
+  mostra "Pedido enviado" e o **Cancelar**.
+- **Quem decide:** quem está transmitindo dentro da Líder. Cada pedido toca um som, aparece num aviso e soma no número
+  da aba **Voz**; embaixo da Líder, em **Pedidos**, cada pessoa tem **Aceitar** e **Recusar**. Dentro da Líder sem
+  transmitir, você vê quantos pedidos estão esperando, mas não decide. Se ninguém transmite, os pedidos esperam.
+- **Com a palavra:** quem foi aceito continua no próprio canal, e a voz vai também para a sala toda (a Líder e quem
+  está fora da voz ouvindo). A linha diz "Você está falando para a sala toda" (ou "Ligue o microfone para falar") e
+  tem o **Devolver**. Embaixo da Líder, a seção **Com a palavra** mostra quem está falando; o líder tem o **Tirar**.
+  Não há limite de pessoas com a palavra.
+- **Avisos:** quem pediu fica sabendo se foi aceito, recusado ou se a palavra foi tirada.
+- **Some sozinho:** o pedido e a palavra somem quando a pessoa sai da voz ou da sala, entra na Líder (lá já fala
+  livre) ou a Líder é apagada. Na troca de host, continuam.
 - **Silenciar as vozes** cala a Líder também.
-- **Telas:** o que é transmitido de dentro da Líder fica aberto para a sala toda, mesmo com **Só o meu canal**.
+- **Telas:** o que é transmitido de dentro da Líder fica aberto para a sala toda, mesmo com **Só o meu canal**. O
+  ícone de **Quem pode assistir** fica fixo no globo enquanto você está na Líder.
 - **Entrar na voz:** o botão **Entrar** nunca leva para a Líder (lá você falaria para todos). Para entrar nela, clique
   no nome do canal.
 - **Apagar a Líder:** todo mundo para de ouvir, e quem estava nela volta para a Voz geral.

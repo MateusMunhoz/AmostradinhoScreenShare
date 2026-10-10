@@ -253,7 +253,7 @@ const inVoice = (id) => (id === state.myId ? !!voice.session : !!voice.members.g
 
 // Entrar e sair da voz: o som toca para você mesmo e, de quem mais, só se você estiver na voz (quem só está
 // na sala, assistindo, não precisa ouvir cada entrada e saída da conversa)
-const voice = new VoiceChat({ send, changed: () => { lider.sync(); renderVoice(); }, error: message => toast(message, 'error'), mixer,
+const voice = new VoiceChat({ send, changed: () => { lider.sync(); liderPedirPendente(); renderVoice(); }, error: message => toast(message, 'error'), mixer,
   activity: (event, id) => { if (id === voice.id || voice.session) void appSounds.play(event); } });
 // A voz da subsala Líder para a sala toda (voice.js › LiderAudio; o canal dela vem de setSubsalas, em subsalas.js)
 const lider = new LiderAudio({ voice, send, mixer, changed: () => scheduleVoiceLists() });

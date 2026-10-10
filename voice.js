@@ -241,7 +241,8 @@ class VoiceChat {
   }
 }
 // A voz da subsala Líder para a sala toda (docs/spec/modo-lider.md). Fala para a sala toda quem está na voz, dentro da
-// subsala Líder (a fonte). Ouve quem está na voz em outro canal, ou fora da voz com "Ouvir a Líder" (sem microfone).
+// subsala Líder ou com a palavra (a fonte). Ouve cada fonte quem está em outro canal da voz, ou fora da voz com "Ouvir a
+// Líder" (sem microfone).
 // Quem ouve chama cada fonte numa conexão só de receber, e a fonte responde mandando o microfone. Essas conexões ficam
 // separadas das do canal (VoiceChat): entrar e sair da Líder não derruba a conversa do grupo. No mixer, cada fonte
 // entra como 'lider:<id>' (com o volume da Líder).
@@ -253,34 +254,43 @@ class LiderAudio {
     Object.assign(this, { voice, send, changed, makePeer, makeAudio, token, mixer, retryMs });
     this.canal = '';          // o canal da subsala Líder ('' sem ela)
     this.ouvindo = false;     // Ouvir a Líder fora da voz
+    this.palavra = new Set(); // quem tem a palavra (fala para a sala toda de fora da Líder)
     this.ouve = new Map();    // fonte -> conexão (eu ouço ela)
     this.fala = new Map();    // quem me ouve -> conexão (eu sou a fonte)
   }
-  reset() { this.canal = ''; this.ouvindo = false; this.sync(); }
+  reset() { this.canal = ''; this.ouvindo = false; this.palavra = new Set(); this.sync(); }
   setCanal(ch) {
     this.canal = String(ch || '');
-    if (!this.canal) this.ouvindo = false;
+    if (!this.canal) { this.ouvindo = false; this.palavra = new Set(); }
     this.sync();
   }
+  setPalavra(ids) { this.palavra = new Set((ids || []).map(String)); this.sync(); }
   setOuvindo(on) { this.ouvindo = !!on; this.sync(); this.changed(); }
-  souFonte() { return !!this.canal && !!this.voice.session && this.voice.channel === this.canal; }
+  // Eu falo para a sala toda: na voz, dentro da Líder ou com a palavra
+  souFonte() { return !!this.canal && !!this.voice.session && (this.voice.channel === this.canal || this.palavra.has(String(this.voice.id))); }
   // Ouço a Líder: na voz em outro canal, ou fora da voz com Ouvir a Líder ligado
   souOuvinte() { return !!this.canal && (this.voice.session ? this.voice.channel !== this.canal : this.ouvindo); }
+  // Mesmo canal de voz que eu: lá a voz já chega pelo canal (VoiceChat), sem a Líder
+  noMeuCanal(m) { return !!this.voice.session && !!m?.session && (m.channel || '') === this.voice.channel; }
   // As fontes, com a sessão de voz de cada uma
   fontes() {
     const out = new Map();
     if (!this.canal) return out;
-    for (const [id, m] of this.voice.members) if (m.session && m.channel === this.canal) out.set(id, m.session);
+    for (const [id, m] of this.voice.members) if (m.session && (m.channel === this.canal || this.palavra.has(id))) out.set(id, m.session);
     return out;
   }
   sync() {
-    const want = this.souOuvinte() ? this.fontes() : new Map();
+    // Ouço quem está na Líder (de outro canal) e quem tem a palavra (fora do meu canal); dentro da Líder, só a palavra
+    const want = new Map();
+    if (this.canal && (this.voice.session || this.ouvindo)) {
+      for (const [id, sessao] of this.fontes()) if (!this.noMeuCanal(this.voice.members.get(id))) want.set(id, sessao);
+    }
     for (const [id, p] of [...this.ouve]) if (want.get(id) !== p.sessao) this.fechar('ouve', id, true);
     for (const [id, sessao] of want) if (!this.ouve.has(id)) this.chamar(id, sessao);
-    // A fonte para de mandar para quem saiu da sala ou entrou na Líder (lá se ouve pelo canal)
+    // A fonte para de mandar para quem saiu da sala ou veio para o meu canal (lá se ouve pelo canal)
     for (const id of [...this.fala.keys()]) {
       const m = this.voice.members.get(id);
-      if (!this.souFonte() || !m || (m.session && m.channel === this.canal)) this.fechar('fala', id, true);
+      if (!this.souFonte() || !m || this.noMeuCanal(m)) this.fechar('fala', id, true);
     }
   }
   sinal(id, role, p, data) { this.send({ type: 'signal', to: id, data: { side: 'lider', role, call: p.call, sessao: p.sessao, ...data } }); }
@@ -338,7 +348,7 @@ class LiderAudio {
       if (data.bye) { if (p?.call === data.call) this.fechar('fala', id); return; }
       if (!this.souFonte() || data.sessao !== this.voice.session || !this.voice.stream) return;
       const m = this.voice.members.get(id);
-      if (!m || (m.session && m.channel === this.canal)) return;
+      if (!m || this.noMeuCanal(m)) return;
       if (p && p.call !== data.call && data.sdp?.type === 'offer') { this.fechar('fala', id); p = null; }
       if (!p) {
         if (data.sdp?.type !== 'offer') return;

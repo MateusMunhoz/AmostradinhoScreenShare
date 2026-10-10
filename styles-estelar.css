@@ -270,3 +270,5 @@ body.app-blurred :is(.voice-sky-neb, .voice-sky :is(.sky-galaxy, .sky-tw, .sky-s
 :root:not([data-skin]) .seu-sinal.na-voz .ss-rotulo { color: var(--ok); }
 :root:not([data-skin])[data-glass=opaque] :is(.seu-sinal, .room-menu) { background-image: var(--st-plus); }
 :root:not([data-skin]) .voice-channel-selo { font: 400 10px/1.2 var(--st-mono); letter-spacing: .16em; }
+:root:not([data-skin]) .lider-secao { font: 400 10px/1.2 var(--st-mono); letter-spacing: .16em; }
+:root:not([data-skin]) .lider-secao-aviso { font: 400 11px/1.3 var(--st-mono); letter-spacing: .04em; }

@@ -10,7 +10,7 @@ let room = null;
 let roomChanged = () => {};
 
 const {
-  MAX_MEMBERS, send, cleanSessao, cleanSenha, newMember, memberInfo, createChat, createSubsalas, createMusicas, limparMusicas, handleMemberMessage,
+  MAX_MEMBERS, send, cleanSessao, cleanSenha, newMember, memberInfo, createChat, createSubsalas, memberGone, createMusicas, limparMusicas, handleMemberMessage,
 } = require('./sala-protocolo');
 
 const LOCAL = ['127.0.0.1', '::1', '::ffff:127.0.0.1'];
@@ -49,7 +49,7 @@ function startServer(port, password = '', seed = {}) { // a senha pode mudar dep
     const members = new Map(); // id -> { ws, name, sharing, version, addrs }
     let nextId = Math.max(1, Math.floor(Number(seed.nextId)) || 1);
     const chat = createChat(seed.chat);
-    const subsalas = createSubsalas(seed.subsalas); // as subsalas de voz continuam depois da troca de host
+    const subsalas = createSubsalas(seed.subsalas, seed.lider); // as subsalas de voz continuam depois da troca de host
     const musicas = createMusicas(seed.musicas); // e as músicas de cada canal, de onde estavam
     // Quem roda este servidor: numa sala nova, a primeira conexão do próprio PC; depois de uma troca,
     // já vem definido (os outros podem chegar antes do próprio novo host)
@@ -134,6 +134,7 @@ function startServer(port, password = '', seed = {}) { // a senha pode mudar dep
               if (old.client !== client || oldId === resume) continue;
               members.delete(oldId);
               broadcast({ type: 'member-left', id: oldId });
+              memberGone({ subsalas, broadcast }, oldId);
               old.ws.terminate();
             }
           }
@@ -155,6 +156,7 @@ function startServer(port, password = '', seed = {}) { // a senha pode mudar dep
             features: ['chat', 'voice', 'handoff', 'sessoes', 'subsalas', 'subsala-move', 'lider', 'musica', 'senha'],
             chat: chat.log,
             subsalas: subsalas.list,
+            lider: subsalas.liderMsg(),
             musicas: [...musicas.map.values()],
             now: Date.now(),
             sessao,
@@ -184,6 +186,7 @@ function startServer(port, password = '', seed = {}) { // a senha pode mudar dep
         if (!me || members.get(id) !== me) return; // já tinha saído (substituída pela conexão nova do mesmo PC)
         members.delete(id);
         broadcast({ type: 'member-left', id });
+        memberGone({ subsalas, broadcast }, id);
         roomChanged();
       });
     });

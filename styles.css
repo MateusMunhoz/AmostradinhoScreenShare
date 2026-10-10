@@ -2942,3 +2942,20 @@ button.home-chip:hover { color: var(--text); }
 .ss-lider-vol { flex: 0 1 96px; min-width: 56px; accent-color: var(--accent); }
 .ss-lider-vol[hidden] { display: none; }
 .ss-lider .btn { flex: none; }
+
+/* Pedir para falar: a mão no cartão, a palavra acesa, as seções embaixo da Líder e o número na aba Voz */
+.ss-lider-pedir { display: inline-flex; align-items: center; gap: 6px; }
+.ss-lider-pedir svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ss-lider.com-palavra .ss-lider-icone, .ss-lider.com-palavra .ss-lider-texto { color: var(--ok); }
+#workspaceNav #miniMao[aria-pressed=true] { color: var(--accent); }
+#workspaceNav #miniMao.com-palavra { color: var(--ok); background: color-mix(in srgb, var(--ok) 14%, transparent); }
+.lider-secao { margin: 8px 0 2px 26px; font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); list-style: none; }
+.lider-secao-aviso { text-transform: none; letter-spacing: 0; font-weight: 500; font-size: 11.5px; }
+.lider-linha { display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 2px 4px 2px 26px; list-style: none; }
+.lider-linha .avatar { flex: none; width: 24px; height: 24px; font-size: 11px; }
+.lider-linha.speaking .avatar { box-shadow: 0 0 0 2px var(--ok); }
+.lider-linha-nome { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; font-size: 13px; color: var(--text); overflow: hidden; }
+.lider-linha-nome small { font-size: 11px; color: var(--muted); }
+.lider-linha .btn { flex: none; }
+.pane-tab-pedidos { min-width: 16px; height: 16px; padding: 0 4px; box-sizing: border-box; border-radius: 999px; background: var(--accent); color: var(--accent-ink, #000);
+  font-size: 10px; font-weight: 700; line-height: 16px; text-align: center; letter-spacing: 0; }

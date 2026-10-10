@@ -695,8 +695,12 @@ function renderShareOpenMenu() {
 function syncShareOpen() {
   const btn = $('shareOpenBtn');
   const open = state.shareOpen !== false;
+  // Na subsala Líder, a transmissão é sempre para a sala toda: o globo fica fixo e o menu não abre
+  const naLider = !!liderChannel() && myVoiceChannel() === liderChannel();
+  btn.disabled = naLider;
+  if (naLider) { setIcon(btn, 'globe', 'Na subsala Líder, a transmissão é sempre para a sala toda'); toggleShareOpenMenu(false); }
   // Só o ícone: globo = a sala toda; cadeado = só o seu canal. Clicar abre as duas opções (toggleShareOpenMenu)
-  setIcon(btn, open ? 'globe' : 'lock', open ? 'Quem pode assistir: a sala toda' : `Quem pode assistir: só ${channelName(myVoiceChannel())}`);
+  else setIcon(btn, open ? 'globe' : 'lock', open ? 'Quem pode assistir: a sala toda' : `Quem pode assistir: só ${channelName(myVoiceChannel())}`);
   renderShareOpenMenu();
   if (!state.sharing) return;
   for (const id of [...state.out.keys()]) {

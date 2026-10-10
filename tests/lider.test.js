@@ -176,3 +176,105 @@ test('LiderAudio: quem não é fonte ignora pedidos para ouvir', async () => {
   l.receive('1', { side: 'lider', role: 'ouvir', call: 'c', sessao: v.session, sdp: { type: 'offer' } });
   assert.equal(l.fala.size, 0);
 });
+
+test('pedir para falar: a fila, quem decide, aceitar, recusar, tirar, devolver e a limpeza', async t => {
+  const port = await freePort();
+  assert.equal((await startServer(port)).ok, true);
+  t.after(stopServer);
+  const a = await client(port); t.after(() => a.ws.terminate());
+  const b = await client(port); t.after(() => b.ws.terminate());
+  const c = await client(port); t.after(() => c.ws.terminate());
+  const ultimo = async (x) => { await new Promise(r => setTimeout(r, 80)); return x.messages.filter(m => m.type === 'lider').at(-1); };
+  a.send({ type: 'subsala-create', modo: 'lider' });
+  await b.wait(m => m.type === 'subsalas');
+  a.send({ type: 'voice-state', session: 'sa', channel: '1' });
+  b.send({ type: 'voice-state', session: 'sb', channel: '' });
+  // Fora da voz não pede
+  c.send({ type: 'lider-pedir' });
+  b.send({ type: 'lider-pedir' });
+  b.send({ type: 'lider-pedir' }); // repetido não duplica
+  assert.deepEqual((await ultimo(a)).pedidos, [b.welcome.id]);
+  // Quem não transmite na Líder não decide
+  a.send({ type: 'lider-responder', id: b.welcome.id, ok: true });
+  assert.match((await a.wait(m => m.type === 'subsala-erro')).text, /Só quem está transmitindo/);
+  a.send({ type: 'share', sharing: true, info: {} });
+  a.send({ type: 'lider-responder', id: b.welcome.id, ok: true });
+  assert.equal((await b.wait(m => m.type === 'lider-aviso')).aviso, 'aceito');
+  assert.deepEqual(await ultimo(c), { type: 'lider', pedidos: [], palavra: [b.welcome.id] });
+  // Com a palavra, B fala para a sala toda: o sinal "falar" de B passa
+  b.send({ type: 'signal', to: c.welcome.id, data: { side: 'lider', role: 'falar', call: 'k', sessao: 'sb' } });
+  assert.equal((await c.wait(m => m.type === 'signal')).from, b.welcome.id);
+  a.send({ type: 'lider-tirar', id: b.welcome.id });
+  assert.equal((await b.wait(m => m.type === 'lider-aviso')).aviso, 'tirada');
+  assert.deepEqual((await ultimo(c)).palavra, []);
+  // Recusar
+  b.messages.length = 0;
+  b.send({ type: 'lider-pedir' });
+  await b.wait(m => m.type === 'lider' && m.pedidos.length === 1);
+  a.send({ type: 'lider-responder', id: b.welcome.id, ok: false });
+  assert.equal((await b.wait(m => m.type === 'lider-aviso')).aviso, 'recusado');
+  // Devolver e cancelar
+  b.messages.length = 0;
+  b.send({ type: 'lider-pedir' });
+  await b.wait(m => m.type === 'lider' && m.pedidos.length === 1);
+  b.send({ type: 'lider-cancelar' });
+  assert.deepEqual((await ultimo(c)).pedidos, []);
+  b.messages.length = 0;
+  b.send({ type: 'lider-pedir' });
+  await b.wait(m => m.type === 'lider' && m.pedidos.length === 1);
+  b.messages.length = 0;
+  a.send({ type: 'lider-responder', id: b.welcome.id, ok: true });
+  await b.wait(m => m.type === 'lider' && m.palavra.length === 1);
+  b.send({ type: 'lider-devolver' });
+  assert.deepEqual((await ultimo(c)).palavra, []);
+  // Limpeza: entrar na Líder, sair da voz e sair da sala
+  b.messages.length = 0;
+  b.send({ type: 'lider-pedir' });
+  await b.wait(m => m.type === 'lider' && m.pedidos.length === 1);
+  b.send({ type: 'voice-state', session: 'sb', channel: '1' });
+  assert.deepEqual((await ultimo(c)).pedidos, [], 'entrou na Líder: o pedido some');
+  b.send({ type: 'voice-state', session: 'sb', channel: '' });
+  b.send({ type: 'lider-pedir' });
+  await c.wait(m => m.type === 'lider' && m.pedidos.length === 1);
+  b.ws.terminate();
+  await c.wait(m => m.type === 'lider' && m.pedidos.length === 0);
+  // Quem entra depois recebe o estado
+  const d = await client(port); t.after(() => d.ws.terminate());
+  assert.deepEqual(d.welcome.lider, { type: 'lider', pedidos: [], palavra: [] });
+});
+
+test('semente da troca de host: pedidos e palavra continuam, e só com a Líder', () => {
+  const s = createSubsalas([{ id: '1', modo: 'lider' }], { pedidos: ['3', '4', '3', 'x'], palavra: ['4', '5'] });
+  assert.deepEqual([s.pedidos, s.palavra], [['3'], ['4', '5']]);
+  assert.deepEqual(createSubsalas([{ id: '1' }], { pedidos: ['3'], palavra: ['4'] }).liderMsg(), { type: 'lider', pedidos: [], palavra: [] });
+  s.remove('1');
+  assert.deepEqual([s.pedidos, s.palavra], [[], []], 'apagar a Líder zera');
+});
+
+test('LiderAudio com a palavra: quem tem a palavra vira fonte; dentro da Líder, ouço só a palavra', async () => {
+  // Eu (1) dentro da Líder; a 2 tem a palavra na Voz geral; a 3 está na Líder comigo
+  const { v, l } = fixture('1');
+  await v.join('5');
+  l.setCanal('5');
+  v.update('2', 's2', false, false, '');
+  v.update('3', 's3', false, false, '5');
+  l.sync();
+  assert.equal(l.ouve.size, 0);
+  l.setPalavra(['2']);
+  assert.deepEqual([...l.ouve.keys()], ['2'], 'ouço quem tem a palavra (de outro canal), não quem está comigo');
+  l.setPalavra([]);
+  assert.equal(l.ouve.size, 0);
+  // Eu com a palavra, na Voz geral: viro fonte e aceito quem chama
+  const f = fixture('2');
+  await f.v.join('');
+  f.l.setCanal('5');
+  f.v.update('1', 's1', false, false, '5');
+  f.l.receive('1', { side: 'lider', role: 'ouvir', call: 'c', sessao: f.v.session, sdp: { type: 'offer' } });
+  assert.equal(f.l.fala.size, 0, 'sem a palavra, não');
+  f.l.setPalavra(['2']);
+  assert.equal(f.l.souFonte(), true);
+  f.l.receive('1', { side: 'lider', role: 'ouvir', call: 'c', sessao: f.v.session, sdp: { type: 'offer' } });
+  assert.equal(f.l.fala.size, 1);
+  f.l.setPalavra([]);
+  assert.equal(f.l.fala.size, 0, 'devolveu: para de mandar');
+});
