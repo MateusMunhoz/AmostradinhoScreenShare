@@ -3,6 +3,13 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.19.1",
+    "date": "2026-10-10",
+    "items": [
+      "Tema Cloud: noite preta com nuvens vermelhas e enfeites em japonês"
+    ]
+  },
+  {
     "version": "1.19.0",
     "date": "2026-10-10",
     "items": [
@@ -78,13 +85,6 @@ const NOVIDADES = [
       "Início no visual Carta Estelar: saudação, constelação e amigos com etiquetas",
       "Início: sala aberta de amigo sobe e vira a ação principal",
       "Corrige promoção a admin pela lista de convidados e mostra quem vinculou o Google"
-    ]
-  },
-  {
-    "version": "1.18.3",
-    "date": "2026-10-06",
-    "items": [
-      "Atualiza lockfile para 1.18.2"
     ]
   }
 ];
