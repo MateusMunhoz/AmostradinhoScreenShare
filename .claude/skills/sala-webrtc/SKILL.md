@@ -30,7 +30,7 @@ description: Como a sala do Tela P2P funciona - sinalização WebSocket, protoco
 
 ## Troca de host (`migrateRoom` em `renderer/sala.js`)
 1. A conexão cai: se não foi `host-left`, tenta voltar ao mesmo host 2 vezes.
-2. Todos calculam a mesma fila (`successors()`, ordem de chegada). O primeiro chama `becomeHost()`: abre servidor novo
+2. Todos calculam a mesma fila (`successors()`, pelo número de cada um, que segue a ordem de chegada). O primeiro chama `becomeHost()`: abre servidor novo
    na mesma porta (`window.api.startServer`, com chat, subsalas e `nextId`) e volta por `127.0.0.1`.
 3. Os outros tentam os endereços que esse sucessor avisou, por até ~15 s cada.
 4. Cada um volta com o mesmo número → as conexões diretas continuam e a tela não cai.

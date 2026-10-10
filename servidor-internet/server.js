@@ -12,6 +12,12 @@
 //   passe { passe }                     -> quem entrou com a senha registra o próprio passe de convite (null tira);
 //                                          o app anuncia o passe só para os amigos, pela RazzeAPI
 //   senha { password }                  -> o host muda a senha; quem entrou com a senha recebe a nova, os passes caem
+//                                          (e o passe da sala troca)
+//   hello { create: true, amigosMembros } -> com amigosMembros !== false, a sala nasce com um passe da sala
+//   amigos-membros { on }               -> o host liga ou desliga o passe da sala
+//   passe-sala { passe, amigosMembros } (do servidor) -> o passe da sala mudou ou caiu (null); também vem no welcome.
+//                                          Vale para todos da sala e não cai quando quem criou sai
+//                                          (docs/spec/entrar-pelos-amigos.md)
 //   host { id }  (do servidor)          -> o host saiu e outro assumiu (é quem pode mudar a senha)
 //   info                                -> { type: 'info', app: 'tela-p2p-internet', turn, stun } (teste da aba Rede; o STUN
 //                                          também serve à conexão direta das mensagens privadas)
@@ -20,7 +26,7 @@ const http = require('http');
 const crypto = require('crypto');
 const { WebSocketServer } = require('ws');
 const {
-  MAX_MEMBERS, send, cleanSessao, cleanClient, cleanSenha, newMember, memberInfo, createChat, createSubsalas, createMusicas, limparMusicas, handleMemberMessage,
+  MAX_MEMBERS, send, cleanSessao, cleanClient, cleanSenha, newMember, memberInfo, createChat, createSubsalas, memberGone, createMusicas, limparMusicas, handleMemberMessage,
 } = require('../sala-protocolo');
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sem 0/O e 1/I, que confundem
@@ -52,13 +58,24 @@ function passwordCheck(password) {
 
 // Passes de convite da sala: cada pessoa que entrou com a senha pode ter um (vale enquanto ela estiver na sala).
 // Guardados só como HMAC com uma chave da própria sala, como a senha.
+// Mais o passe da sala (docs/spec/entrar-pelos-amigos.md): um só, criado pelo servidor e entregue a todos da sala, que
+// não cai quando alguém sai. Fica também em texto, só na memória, porque é entregue a quem entra.
 const PASSE_RE = /^[A-Za-z0-9_-]{43}$/;
 function createPasses() {
   const key = crypto.randomBytes(32);
   const digest = (p) => crypto.createHmac('sha256', key).update(String(p ?? '')).digest();
   const byMember = new Map(); // id -> HMAC do passe
+  let sala = null; // { texto, hmac } do passe da sala, ou null
   return {
     digest,
+    // Passe da sala: gera um novo (o antigo deixa de valer) ou tira (false)
+    trocarSala(on = true) {
+      if (!on) { sala = null; return null; }
+      const texto = crypto.randomBytes(32).toString('base64url');
+      sala = { texto, hmac: digest(texto) };
+      return texto;
+    },
+    sala: () => sala?.texto || null,
     set(id, passe) { if (passe) byMember.set(id, digest(passe)); else byMember.delete(id); },
     remove(id) { byMember.delete(id); },
     clear() { byMember.clear(); }, // a senha mudou: os convites antigos caem (a chave fica: quem entrou por passe ainda volta)
@@ -68,6 +85,7 @@ function createPasses() {
       const d = digest(passe);
       let ok = false;
       for (const v of byMember.values()) ok = crypto.timingSafeEqual(v, d) || ok;
+      if (sala) ok = crypto.timingSafeEqual(sala.hmac, d) || ok;
       return ok;
     },
     size: () => byMember.size,
@@ -142,12 +160,16 @@ function createInternetServer(options = {}) {
     return list;
   }
 
-  function createRoomState(password) {
+  function createRoomState(password, amigosMembros = true) {
     const code = (() => { for (;;) { const c = makeCode(); if (!rooms.has(c)) return c; } })();
     const room = {
       code, check: passwordCheck(password), passes: createPasses(), members: new Map(), away: new Map(), hostId: null, nextId: 1,
       chat: createChat(), subsalas: createSubsalas(), musicas: createMusicas(null, cfg.now), sessao: cleanSessao({ oculta: true }), createdAt: cfg.now(),
+      amigosMembros,
     };
+    if (amigosMembros) room.passes.trocarSala();
+    // O passe da sala mudou ou caiu: avisa todos (quem está fora no tempo de espera recebe no welcome ao voltar)
+    room.avisarPasseSala = () => room.broadcast({ type: 'passe-sala', passe: room.passes.sala(), amigosMembros: room.amigosMembros });
     room.broadcast = (msg, exceptId) => {
       for (const [mid, m] of room.members) if (mid !== exceptId && !room.away.has(mid)) send(m.ws, msg);
     };
@@ -161,6 +183,7 @@ function createInternetServer(options = {}) {
     room.passes.remove(id);
     if (!room.members.delete(id)) return;
     room.broadcast({ type: 'member-left', id });
+    memberGone({ subsalas: room.subsalas, broadcast: room.broadcast }, id);
     if (room.members.size === 0) {
       rooms.delete(room.code);
       cfg.log(`sala ${room.code} fechada`);
@@ -232,7 +255,20 @@ function createInternetServer(options = {}) {
         room.check = passwordCheck(nova);
         room.passes.clear();
         for (const [mid, m] of room.members) if (!room.away.has(mid)) send(m.ws, m.viaPasse ? { type: 'senha', by: id } : { type: 'senha', password: nova, by: id });
+        if (room.amigosMembros) { room.passes.trocarSala(); room.avisarPasseSala(); }
         cfg.log(`sala ${room.code}: senha mudada`);
+        return;
+      }
+      // Amigos de quem está na sala podem entrar (passe da sala): só o host liga ou desliga. Desligar tira o passe da
+      // sala na hora (quem já entrou fica); ligar cria um novo
+      if (me && msg.type === 'amigos-membros') {
+        if (typeof msg.on !== 'boolean') return;
+        if (id !== room.hostId) return send(ws, { type: 'senha-erro', message: 'Só o host da sala muda isso.' });
+        if (msg.on === room.amigosMembros) return;
+        room.amigosMembros = msg.on;
+        room.passes.trocarSala(msg.on);
+        room.avisarPasseSala();
+        cfg.log(`sala ${room.code}: amigos dos membros ${msg.on ? 'ligado' : 'desligado'}`);
         return;
       }
       if (me) return handleMemberMessage({ members: room.members, broadcast: room.broadcast, chat: room.chat, subsalas: room.subsalas, musicas: room.musicas }, id, me, msg);
@@ -251,7 +287,7 @@ function createInternetServer(options = {}) {
         if (rooms.size >= cfg.maxRooms) { send(ws, { type: 'error', message: 'O servidor está cheio agora. Tente daqui a pouco.' }); return ws.close(); }
         if (creates.blocked(ip)) { send(ws, { type: 'error', message: 'Muitas salas criadas daqui. Espere um pouco.' }); return ws.close(); }
         creates.hit(ip);
-        room = createRoomState(password);
+        room = createRoomState(password, msg.amigosMembros !== false);
         cfg.log(`sala ${room.code} criada`);
       } else {
         const code = cleanCode(msg.room);
@@ -299,9 +335,12 @@ function createInternetServer(options = {}) {
         hostId: room.hostId,
         sala: room.code,
         members: [...room.members].filter(([mid]) => mid !== id).map(([mid, m]) => memberInfo(mid, m)),
-        features: ['chat', 'voice', 'internet', 'resume', 'subsalas', 'subsala-move', 'musica', 'passe', 'senha'],
+        features: ['chat', 'voice', 'internet', 'resume', 'subsalas', 'subsala-move', 'lider', 'musica', 'passe', 'senha', 'passe-sala'],
+        passeSala: room.passes.sala(),
+        amigosMembros: room.amigosMembros,
         chat: room.chat.log,
         subsalas: room.subsalas.list,
+        lider: room.subsalas.liderMsg(),
         musicas: [...room.musicas.map.values()],
         now: cfg.now(),
         sessao: room.sessao,

@@ -177,12 +177,11 @@ function renderMyProfileBg() {
   $('profileBgPreview').style.setProperty('--person', personColor(null));
   $('profileBgRemove').hidden = !fundos.mine;
   $('profileBgAdjust').hidden = !fundos.mine || !recorteTem('fundoOrigem');
-  $('profileBgPick').textContent = fundos.mine ? 'Trocar' : 'Escolher';
   $('profileBgPickTop').querySelector('span').textContent = fundos.mine ? 'Trocar fundo' : 'Escolher fundo';
   if (typeof skyFocusId !== 'undefined' && skyFocusId === state.myId) fundoChanged(skyFocusId);
 }
 function setupProfileBg() {
-  $('profileBgPick').onclick = $('profileBgPickTop').onclick = () => $('profileBgFile').click();
+  $('profileBgPickTop').onclick =() => $('profileBgFile').click();
   $('profileBgFile').onchange = async () => {
     const file = $('profileBgFile').files[0];
     $('profileBgFile').value = '';

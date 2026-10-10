@@ -41,7 +41,7 @@
 }
 
 /* ---------- Painéis: marcas de retícula (+) nos cantos, só com material Opaco (o vidro tem o próprio brilho) ---------- */
-:root:not([data-skin])[data-glass=opaque] :is(.workspace-pane, .dock, .panel, .home-card, .dialog) { background-image: var(--st-plus); }
+:root:not([data-skin])[data-glass=opaque] :is(.workspace-pane, .panel, .home-card, .dialog) { background-image: var(--st-plus); }
 :root:not([data-skin]) .btn:not(.primary):not(.live):not(.danger) { transition: border-color .15s, background-color .15s; }
 :root:not([data-skin]) .btn:not(.primary):not(.live):not(.danger):hover:not(:disabled) { border-color: var(--st-mark); }
 
@@ -49,12 +49,10 @@
 :root:not([data-skin]) :is(.pane-head h2, .chat-title, .stream-pane-head h2)::before {
   content: "✦"; margin-right: 8px; font-size: 11px; vertical-align: 2px; color: var(--accent);
 }
-/* Barra de título: a legenda da carta, discreta, à direita */
-:root:not([data-skin]) .titlebar::after {
-  content: "CARTA ESTELAR"; position: absolute; right: 160px; font: 400 11px/1 var(--st-mono);
-  letter-spacing: .22em; color: var(--muted); opacity: .7;
+/* Barra de título: o nome do tema logo depois de "Nebula", como nos outros temas */
+:root:not([data-skin]) .titlebar .brand-name::after {
+  content: " // CARTA ESTELAR"; font: 400 11px/1 var(--st-mono); letter-spacing: .22em; color: var(--muted); opacity: .7;
 }
-@media (max-width: 900px) { :root:not([data-skin]) .titlebar::after { display: none; } }
 
 /* Chat: horário em fonte fixa, como um registro */
 :root:not([data-skin]) .msg-time { font-family: var(--st-mono); letter-spacing: 0; }
@@ -259,3 +257,18 @@ body.app-blurred :is(.voice-sky-neb, .voice-sky :is(.sky-galaxy, .sky-tw, .sky-s
   .voice-sky .sky-shoot { display: none; }
   :root:not([data-skin]) .home-meteor.falling { display: none; }
 }
+
+/* ---------- Sala (docs/spec/sala-nova.md): o nome da sala com a estrela, rótulos em fonte fixa espaçada como o
+   "NEBULA ✦ REDE ESTELAR" do palco, a estrelinha na aba aberta e as marcas (+) no cartão Seu sinal ---------- */
+:root:not([data-skin]) .room-name-star { display: inline; font-size: 11px; color: var(--accent); }
+:root:not([data-skin]) .room-head-meta, :root:not([data-skin]) .ss-rotulo, :root:not([data-skin]) #emptyText.empty-rotulo {
+  font: 400 11px/1 var(--st-mono); letter-spacing: .18em; text-transform: uppercase; }
+:root:not([data-skin]) .pane-tab { font: 400 11px/1 var(--st-mono); letter-spacing: .16em; text-transform: uppercase; }
+:root:not([data-skin]) .pane-tab-n { letter-spacing: 0; }
+:root:not([data-skin]) .pane-tab-star { display: inline; font-size: 9px; color: transparent; }
+:root:not([data-skin]) .pane-tab[aria-pressed=true] .pane-tab-star { color: var(--accent); }
+:root:not([data-skin]) .seu-sinal.na-voz .ss-rotulo { color: var(--ok); }
+:root:not([data-skin])[data-glass=opaque] :is(.seu-sinal, .room-menu) { background-image: var(--st-plus); }
+:root:not([data-skin]) .voice-channel-selo { font: 400 10px/1.2 var(--st-mono); letter-spacing: .16em; }
+:root:not([data-skin]) .lider-secao { font: 400 10px/1.2 var(--st-mono); letter-spacing: .16em; }
+:root:not([data-skin]) .lider-secao-aviso { font: 400 11px/1.3 var(--st-mono); letter-spacing: .04em; }

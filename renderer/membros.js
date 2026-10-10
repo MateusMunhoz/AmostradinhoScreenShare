@@ -88,18 +88,15 @@ function memberRow(id, name, sharing) {
   if (atv) {
     const linha = document.createElement('span');
     linha.className = 'matv';
-    // a capa do álbum ou a imagem do jogo (Steam), pequenas; sem elas, a nota ou o controle
-    const marca = (jogo, imagem) => {
-      const s = document.createElement('span');
-      s.className = 'matv-icon' + (jogo ? ' jogo' : '') + (imagem ? ' capa' : '');
-      if (imagem) { const img = document.createElement('img'); img.src = imagem; img.alt = ''; s.append(img); }
-      else s.innerHTML = jogo ? ICON.game : ICON.music;
-      return s;
-    };
-    const icone = atv.artista ? marca(false, atv.capa) : marca(true, '');
+    // Música: sempre o símbolo do Spotify (marca "está ouvindo", de qualquer player) e só o artista; a faixa fica na
+    // dica e no perfil
+    const icone = document.createElement('span');
+    icone.className = 'matv-icon' + (atv.artista ? ' spotify' : ' jogo');
+    icone.innerHTML = atv.artista ? ICON.spotify : ICON.game;
     const texto = document.createElement('span');
     texto.className = 'matv-text';
-    texto.textContent = atv.artista ? (atv.faixa ? `${atv.faixa} — ${atv.artista}` : atv.artista) : `Jogando ${atv.jogo}`;
+    texto.textContent = atv.artista || `Jogando ${atv.jogo}`;
+    if (atv.artista) linha.title = (atv.faixa ? `${atv.faixa} — ${atv.artista}` : atv.artista) + (atv.spotify ? ' · Spotify' : '');
     linha.append(icone, texto);
     info.append(linha);
   }
@@ -184,7 +181,7 @@ function renderMembers() {
   $('peopleBtn').title = 'Pessoas na sala';
   const inVoiceCount = [...voice.members.values()].filter((m) => m.session).length + (voice.session ? 1 : 0);
   $('voiceCount').textContent = inVoiceCount ? `${inVoiceCount} na voz` : '';
-  list.append(memberRow(null, `${getName()} (você)`, state.sharing));
+  list.append(memberRow(null, getName(), state.sharing));
   const others = [...state.members].sort((a, b) => Number(b[1].sharing) - Number(a[1].sharing));
   for (const [id, m] of others) list.append(memberRow(id, m.name, m.sharing));
   renderVoicePane();
@@ -192,14 +189,27 @@ function renderMembers() {
   repaintAllAvatars(); // entrou ou saiu alguém: a cor da estrela de quem não tem foto segue a ordem da sala
 }
 
+// Palco vazio: a constelação de sempre e, embaixo, quem está transmitindo com o Assistir de cada um (o mesmo do
+// painel da voz e da aba Pessoas)
 function updateStage() {
-  const othersSharing = [...state.members.values()].some((m) => m.sharing);
+  const live = [...state.members].filter(([, m]) => m.sharing).map(([id]) => id);
   $('emptyStage').hidden = state.in.size > 0;
   $('tiles').hidden = state.in.size === 0;
-  $('emptyText').textContent = othersSharing
-    ? 'Clique em Assistir ao lado de quem está transmitindo.'
-    : state.sharing
-      ? 'Você está transmitindo.'
-      : 'Ninguém está transmitindo agora.';
+  $('emptyText').textContent = live.length ? 'Transmitindo agora'
+    : state.sharing ? 'Você está transmitindo.' : 'Ninguém está transmitindo agora.';
+  $('emptyText').classList.toggle('empty-rotulo', live.length > 0);
+  const box = $('emptyLive');
+  box.replaceChildren();
+  for (const id of live) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'btn primary empty-assistir';
+    b.innerHTML = ICON.play;
+    b.append(`Assistir ${nameOf(id)}`);
+    if (!canWatch(id)) { b.disabled = true; b.title = closedShareText(id); }
+    b.onclick = () => watch(id);
+    box.append(b);
+  }
+  box.hidden = !live.length;
   if (!state.in.size) $('downloadInfo').textContent = '';
 }

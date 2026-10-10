@@ -1,7 +1,9 @@
 // Música junto: Ana põe um vídeo do YouTube na Subsala_1, Bia ouve junto no mesmo ponto; pausar, pular e trocar
 // valem para as duas; quem sai do canal não controla; parar fecha a tela das duas. Precisa de internet (YouTube).
 // O volume fica em 0 (mudo) nas duas: o teste não toca som alto no seu PC.
-const { openApp, createRoom, joinRoom, share, check, sleep, run, attach } = require('./ajuda');
+const { openApp, createRoom, joinRoom, share, check, sleep, run, attach, FAKE } = require('./ajuda');
+// A janela do teste fica atrás da outra: sem isto, a animação de abrir o painel congela no começo e o clique erra o botão
+FAKE.push('--disable-backgrounding-occluded-windows', '--disable-features=CalculateNativeWinOcclusion');
 
 const VID = 'dQw4w9WgXcQ', VID2 = 'M7lc1UVf-VE';
 const TONE = `(() => { window.tctx = new AudioContext(); const o = tctx.createOscillator(); const dst = tctx.createMediaStreamDestination(); o.connect(dst); o.start(); voice.media = { getUserMedia: async () => dst.stream }; })()`;
@@ -17,7 +19,7 @@ run('Música junto (YouTube)', 180000, async () => {
   const B = await openApp('musB', 9562, { fake: true });
   await joinRoom(B, { name: 'Bia', addr: '127.0.0.1:18861' });
   for (const X of [A, B]) {
-    await X.eval(`setVoiceView('lista'); musica.volume = 0; (() => { workspaceViews.voice = true; saveWorkspaceViews(); syncWorkspace(); })()`);
+    await X.eval(`setVoiceView('lista'); musica.volume = 0; setPainelSala({ aba: 'voz', juntos: false, recolhido: false })`);
     await X.eval(TONE);
     await X.eval(`$('voiceJoin').click()`);
   }
@@ -75,10 +77,10 @@ run('Música junto (YouTube)', 180000, async () => {
   check('O título do vídeo vem do player e vai para a sala', (await A.eval(`state.musicas.get('1').title`)).includes('Never Gonna'));
 
   // Bia vê a música no painel de voz e ouve junto
-  await B.waitFor(`!!document.querySelector('.voice-music')`, 5000);
-  check('Bia vê a música da Subsala_1 com "Ouvir"', await B.eval(`document.querySelector('.voice-music').textContent.includes('Never Gonna') && document.querySelector('.voice-music button').textContent === 'Ouvir'`));
+  await B.waitFor(`!!document.querySelector('.voice-channel[data-channel="1"] .voice-channel-song')`, 5000);
+  check('Bia vê a música da Subsala_1 no cabeçalho do canal, para ouvir', await B.eval(`document.querySelector('.voice-channel-song').textContent.includes('Never Gonna') && document.querySelector('.voice-channel-song').getAttribute('aria-pressed') === 'false'`));
   check('Com a música lá, o "Pôr música" some do canal (uma por subsala)', await B.eval(`!document.querySelector('.voice-channel[data-channel="1"] .voice-channel-music')`));
-  await B.eval(`document.querySelector('.voice-music button').click()`);
+  await B.eval(`document.querySelector('.voice-channel-song').click()`);
   await B.waitFor(`${MU('1')}?.ready && ${MU('1')}.state === 1`, 30000);
   await sleep(2500);
   const [pa, pb] = [await posOf(A, '1'), await posOf(B, '1')];

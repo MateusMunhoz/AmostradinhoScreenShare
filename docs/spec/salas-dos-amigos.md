@@ -50,6 +50,9 @@ salas uns dos outros na tela inicial e entram com um clique, sem precisar da VPN
 - RazzeAPI antiga: não devolve `internet`; a lista fica vazia.
 - App antigo: ignora `internet` na resposta.
 
+**Depois (entrar-pelos-amigos):** o passe passou a ser também da sala inteira (não cai quando quem criou sai) e
+qualquer membro anuncia a sala aos próprios amigos. Veja [entrar-pelos-amigos.md](entrar-pelos-amigos.md).
+
 ## Convite pelas mensagens diretas (1.14.0)
 O **Convidar** do HUB › Amigos manda uma mensagem direta com um texto legível (para app antigo) e uma última linha
 `telap2p://sala?d=<base64url de JSON>`: `{ v: 1, modo: 'internet', servidor, codigo, passe?, pessoas }` ou

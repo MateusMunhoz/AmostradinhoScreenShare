@@ -24,7 +24,7 @@
 :root[data-skin="dusol"] body::after { background: linear-gradient(90deg, transparent 18%, rgba(0, 0, 0, .25) 45%, rgba(0, 0, 0, .1) 100%); }
 
 /* ---------- Painéis: um fio de luz quente em cima, como a borda do Sol ---------- */
-:root[data-skin="dusol"] :is(.workspace-pane, .dock, .panel, .home-card, .dialog, .sky-focus.sky-pop, .rail-music-menu) {
+:root[data-skin="dusol"] :is(.workspace-pane, .seu-sinal, .pane-tabs, .room-menu, .panel, .home-card, .dialog, .sky-focus.sky-pop, .rail-music-menu) {
   box-shadow: inset 0 1px 0 rgba(255, 170, 60, .28), 0 10px 30px rgba(0, 0, 0, .35);
 }
 :root[data-skin="dusol"] :is(.pane-head h2, .chat-title, .stream-pane-head h2, .dialog h2, .settings-section h3) {
@@ -57,13 +57,14 @@
 :root[data-skin="dusol"] .brand-mark { text-shadow: 0 0 10px #000, 0 0 3px #000; }
 :root[data-skin="dusol"] .brand-mark::before { filter: drop-shadow(0 0 4px #000) drop-shadow(0 0 1px #000); }
 :root[data-skin="dusol"] .titlebar span { text-transform: uppercase; letter-spacing: .3em; font-size: 11px; color: var(--ds-yellow); }
-:root[data-skin="dusol"] .titlebar span::after { content: " // DU'SOL"; color: var(--ds-orange); }
+:root[data-skin="dusol"] .titlebar .brand-name::after { content: " // DU'SOL"; color: var(--ds-orange); }
 :root[data-skin="dusol"] .titlebar::after {
   content: "☉  FOTOSFERA  ·  5.778 K  ·  ATIVIDADE SOLAR"; position: absolute; right: 160px; font: 400 11px/1 var(--font-console);
   letter-spacing: .25em; color: var(--ds-orange); opacity: .8;
 }
 :root[data-skin="dusol"] .brand-mark::after {
-  content: "// DU'SOL"; margin-left: 6px; font: 700 12px/1 var(--ds-font); font-stretch: condensed; letter-spacing: .3em; color: var(--ds-orange);
+  content: "// DU'SOL"; margin-left: 6px; font: 700 12px/1 var(--ds-font); font-stretch: condensed; letter-spacing: .3em; color: var(--ds-yellow);
+  text-shadow: 0 0 12px #000, 0 0 6px #000, 0 0 2px #000, 0 1px 2px #000; /* em cima do Sol: o contorno escuro é o que deixa ler */
 }
 /* Saguão: o nome em pé, grande, em laranja, do outro lado do Sol (no espaço, logo depois da borda dele). A borda do
    Sol fica a 20,5% da largura da imagem; com a imagem cobrindo a janela pela esquerda, isso dá max(20,5vw, 36,44vh)
@@ -80,6 +81,11 @@
 }
 :root[data-skin="dusol"] .home-screen { padding-left: calc(var(--ds-edge) + 4vh + var(--ds-name) * .85 + 40px); }
 :root[data-skin="dusol"] .home-main { position: relative; z-index: 1; }
+/* O Início ocupa a largura toda (docs/spec/inicio-novo.md): em janela larga, o conteúdo e o rodapé começam depois do astro */
+@media (min-width: 1051px) {
+  :root[data-skin="dusol"] :is(.home-main, .home-status) { padding-left: 220px; }
+  :root[data-skin="dusol"][data-mirror="on"] :is(.home-main, .home-status) { padding-left: 0; padding-right: 220px; }
+}
 :root[data-skin="dusol"] .home-title { text-transform: uppercase; letter-spacing: .04em; }
 /* Janela estreita: sem espaço para o nome entre o Sol e o conteúdo; o saguão volta ao normal */
 @media (max-width: 1300px) {

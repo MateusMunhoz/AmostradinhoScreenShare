@@ -31,29 +31,72 @@ function registrarPasseSala() {
   }
   try { state.ws.send(JSON.stringify({ type: 'passe', passe: salasAmigos.passe })); } catch {}
 }
-// O passe para um convite: o que já existe ou um novo, registrado agora ('' se esta sala não aceita passe)
+// O passe para um convite: o passe da sala, o meu que já existe ou um novo, registrado agora ('' se esta sala não
+// aceita passe)
 function garantirPasse() {
   const c = state.cloud;
+  if (c?.passeSala) return c.passeSala;
   if (!c || !c.passeOn || c.passe || !state.ws) return '';
   if (!salasAmigos.passe) { salasAmigos.passe = novoPasse(); registrarPasseSala(); }
   return salasAmigos.passe;
 }
 
-// Anuncia (ou atualiza o número de pessoas) da sala que eu criei pela internet
+// ---------- Passe da sala (docs/spec/entrar-pelos-amigos.md) ----------
+// O servidor cria um passe da sala inteira, que não cai quando quem criou sai, e entrega a todos (no welcome e na
+// mensagem passe-sala). Com ele, qualquer membro anuncia a sala aos próprios amigos. O host desliga no painel da sala.
+const PASSE_RE = /^[A-Za-z0-9_-]{43}$/;
+// Do welcome (entrar ou voltar) e da mensagem passe-sala. amigosMembros: null = servidor antigo, sem o passe da sala
+function receberPasseSala(m, features = null) {
+  const c = state.cloud;
+  if (!c) return;
+  if (features && !features.includes('passe-sala')) { c.passeSala = ''; c.amigosMembros = null; return; }
+  c.passeSala = typeof m.passeSala === 'string' && PASSE_RE.test(m.passeSala) ? m.passeSala
+    : typeof m.passe === 'string' && PASSE_RE.test(m.passe) ? m.passe : '';
+  c.amigosMembros = m.amigosMembros === true;
+}
+const salaEntrarLigada = () => load('atividadeSalaEntrar', '1') === '1';
+
+// Anuncia (ou atualiza) a sala pela internet em que estou: quem criou (com "Mostrar esta sala para meus amigos") e,
+// com o passe da sala, qualquer membro com "Mostrar aos amigos em que sala estou" ligado. "Deixar meus amigos
+// entrarem" desligado tira o anúncio (o "Na sala de X" continua, por publicarSalaAtual)
 function publicarSalaInternet() {
   const c = state.cloud;
-  if (!c || !c.criador || !c.amigos) return;
-  const sala = { servidor: c.url, codigo: c.code, pessoas: state.members.size + 1, passe: c.passeOn ? salasAmigos.passe || null : null };
+  if (!c) return;
+  const criador = c.criador && c.amigos;
+  const membro = !!c.passeSala && !c.chamada && salaAtualLigada();
+  if (!salaEntrarLigada() || (!criador && !membro)) return retirarAnuncioInternet();
+  const host = String((state.hostId === state.myId ? getName() : nameOf(state.hostId)) || '').trim().slice(0, 32);
+  const passe = c.passeSala || (c.passeOn ? salasAmigos.passe || null : null);
+  const sala = { servidor: c.url, codigo: c.code, pessoas: state.members.size + 1, passe, ...(host ? { host } : {}) };
   const assinatura = JSON.stringify(sala);
   if (assinatura === salasAmigos.enviado) return;
   salasAmigos.enviado = assinatura;
   window.api.razzeInternetRoom(sala).catch(() => {});
 }
 
-function retirarSalaInternet() {
+function retirarAnuncioInternet() {
   if (salasAmigos.enviado) window.api.razzeInternetRoom(null).catch(() => {});
   salasAmigos.enviado = '';
+}
+function retirarSalaInternet() {
+  retirarAnuncioInternet();
   salasAmigos.passe = '';
+}
+
+// Painel da sala: o host liga ou desliga "Amigos de quem está na sala podem entrar" (só ele vê; servidor antigo, some)
+function renderAmigosMembros() {
+  const linha = $('roomAmigosAberta');
+  const c = state.cloud;
+  linha.hidden = !c || typeof c.amigosMembros !== 'boolean' || !state.myId || state.hostId !== state.myId;
+  if (linha.hidden) return;
+  const cb = $('roomAmigosAbertaOn');
+  cb.checked = c.amigosMembros;
+  cb.onchange = () => {
+    if (state.hostId !== state.myId) return renderAmigosMembros();
+    send({ type: 'amigos-membros', on: cb.checked });
+    toast(cb.checked ? 'Os amigos de quem está na sala já podem entrar com um clique.'
+      : 'Agora só entra quem tem a senha ou um convite de quem criou a sala. Quem já está continua.');
+  };
 }
 
 // ---------- Em que sala estou (docs/spec/sala-do-amigo.md) ----------
@@ -63,8 +106,13 @@ function retirarSalaInternet() {
 const salaAtualLigada = () => load('atividadeSala', '1') === '1';
 let salaAtualEnviada = '';
 // paraComparar: a minha sala para o "Na sua sala", mesmo com o interruptor desligado
+// Escondida: no modo Internet, só a da chamada (o servidor da VPS marca toda sala como oculta, porque ela não entra na
+// lista da rede local; sem isto a sala pela internet nunca aparecia); nos outros modos, a que o host tirou da lista
+function salaAtualEscondida() {
+  return state.cloud ? !!state.cloud.chamada : !!state.sessao?.oculta;
+}
 function salaAtualResumo(paraComparar = false) {
-  if (!state.myId || !state.ws || state.sessao?.oculta || (!paraComparar && !salaAtualLigada())) return null;
+  if (!state.myId || !state.ws || salaAtualEscondida() || (!paraComparar && !salaAtualLigada())) return null;
   const modo = state.cloud ? 'internet' : selectedNetworkProvider() === 'razze' ? 'razze' : 'radmin';
   const host = state.hostId === state.myId ? getName() : nameOf(state.hostId);
   return { modo, host, pessoas: state.members.size + 1, voz: !!voice.session };
@@ -97,13 +145,45 @@ function receberSalasAmigos(lista) {
       id: `${s.servidor}#${s.codigo}`, host: String(s.host || 'amigo').slice(0, 60), pessoas: Number.isInteger(s.pessoas) ? s.pessoas : 1,
       senha: !s.passe, codigo: s.codigo, servidor: s.servidor, passe: s.passe || '',
       userId: typeof s.userId === 'string' ? s.userId : '', // o dono, para o cartão mostrar o jogo dele (sessoes.js)
+      // Os meus amigos que anunciaram a sala (RazzeAPI nova; a antiga não manda): "com Fulano" e o Entrar da aba Amigos
+      amigos: (Array.isArray(s.amigos) ? s.amigos : []).slice(0, 10)
+        .filter((f) => f && typeof f.userId === 'string' && f.userId.length <= 80 && typeof f.displayName === 'string')
+        .map((f) => ({ userId: f.userId, displayName: f.displayName.slice(0, 60) })),
     }));
+}
+
+// A sala pela internet em que o amigo está e que ele deixa entrar (sem ser a minha); null se não tem. Só no modo
+// Internet: nos outros modos o app não entra nessas salas (trocar de modo sozinho fica para depois)
+function salaDoAmigo(f) {
+  if (!f?.online || selectedNetworkProvider() !== 'internet') return null;
+  return sessoes.amigos.find((s) => (s.amigos.length ? s.amigos.some((a) => a.userId === f.id) : s.userId === f.id)
+    && !(state.cloud?.code === s.codigo && state.cloud?.url === s.servidor)) || null;
+}
+// O Entrar ao lado de "Na sala de X" (aba Amigos e Início): pergunta antes de sair da sala em que estou
+async function entrarPeloAmigo(f) {
+  const s = salaDoAmigo(f);
+  if (!s) return toast(`${f.displayName} não está mais numa sala aberta para os amigos.`, 'error');
+  if (state.myId) {
+    if (!(await appConfirm(`Sair desta sala e entrar na sala de ${s.host}?`, { title: 'Trocar de sala', ok: 'Trocar' }))) return;
+    leaveRoom();
+  }
+  show('home');
+  return entrarSalaAmigo(s);
+}
+// O texto "com Fulano, Beltrano" do cartão da sala: os meus amigos que estão nela (menos o host, que já está no título)
+function comAmigosDaSala(s) {
+  const nomes = (s.amigos || []).map((f) => f.displayName).filter((n) => n !== s.host);
+  if (!nomes.length) return '';
+  return 'com ' + (nomes.length > 3 ? `${nomes.slice(0, 3).join(', ')} e mais ${nomes.length - 3}` : nomes.join(', '));
 }
 
 // Entrar na sala de um amigo: pelo passe, direto; sem passe (ou se ele não vale mais), pede a senha
 async function entrarSalaAmigo(s) {
   if (state.myId) return toast('Você já está numa sala. Volte para ela e saia antes de entrar em outra.', 'error');
   if (!s.passe) return pedirSenhaAmigo(s);
+  return comCarregando(`Entrando na sala de ${s.host}…`, () => entrarSalaAmigoAgora(s));
+}
+async function entrarSalaAmigoAgora(s) {
   if (salasAmigos.entrando) return;
   salasAmigos.entrando = true;
   try {
@@ -112,6 +192,7 @@ async function entrarSalaAmigo(s) {
     try { enterRoom(welcome, false, s.servidor, 0, { url: s.servidor, code: welcome.sala || s.codigo, passe: s.passe }); }
     catch (err) { dropHalfJoin(); throw err; }
   } catch (err) {
+    if (err.cancelada) return;
     if (/convite não vale/i.test(err.message)) pedirSenhaAmigo(s, err.message);
     else toast(err.message, 'error');
   } finally {

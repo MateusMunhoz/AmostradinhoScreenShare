@@ -19,7 +19,7 @@ quem estava fazendo e o que aconteceu.
    o jogo.
    Deve acontecer: sem apertar, ninguém te ouve; segurando, ouvem. A barra mostra "Segure …" e "Falando".
 5. **Quem está falando.** Cada um fala uma frase.
-   Deve acontecer: acende o anel verde de quem fala na lista de pessoas e a bolinha verde no botão de pessoas.
+   Deve acontecer: acende o anel verde de quem fala na lista de pessoas e a bolinha verde na aba Pessoas.
 6. **Ouvir a própria voz.** De fone, abra Voz e atalhos e clique em **Ouvir minha voz**. Fale, troque a supressão
    de ruído entre **Avançado** e **Desligada** e digite no teclado.
    Deve acontecer: você se ouve na hora, sem atraso que atrapalhe; com a IA, o teclado some. Desligue o microfone
@@ -46,7 +46,7 @@ quem estava fazendo e o que aconteceu.
 
 11. **Troca de host de verdade.** Quem criou a sala **fecha o app** no meio da call (sem clicar em Sair).
     Deve acontecer: em uns 5 a 15 segundos, a pessoa que entrou primeiro vira host sozinha. A voz e as
-    transmissões continuam, e o botão de pessoas mostra "Host" nela.
+    transmissões continuam, e a aba Pessoas mostra "Host" nela.
 
 12. **Sessões abertas.** Uma pessoa cria uma sala; as outras ficam na tela inicial, sem entrar.
     Deve acontecer: em até 5 segundos, aparece "Sessão de <nome>" na lista de todo mundo, com o número de
@@ -66,7 +66,7 @@ Antes: a RazzeAPI da VPS com o código novo (links de amigo, conta, atividade e,
    Deve acontecer: B vê "A quer ser seu amigo. Aceitar?"; aceitando, os dois aparecem na lista um do outro. Usar o mesmo link
    de novo, num terceiro PC, deve recusar. **Revogar** na lista de links cancela o link.
 4. **Código curto.** Gere outro link e, no PC B, cole só o código `ABCD-EFGH-JK` em Adicionar amigo.
-5. **Ligar e Abrir minha sala.** No Início, **Ligar** para o amigo online: ele recebe o convite e entra na voz. **Abrir minha sala**:
+5. **Ligar e Criar sala.** No Início, **Ligar** para o amigo online: ele recebe o convite e entra na voz. **Criar sala**:
    a sala abre em 1 clique e aparece na lista dos amigos.
 6. **Senha.** Troque a senha em Perfil › Conta Razze. Depois: o administrador gera um **Código de senha** no painel e a pessoa usa
    **Esqueci a senha** na tela de entrar (código vale 1 hora e uma vez).
@@ -77,6 +77,29 @@ Antes: a RazzeAPI da VPS com o código novo (links de amigo, conta, atividade e,
    "Ouvindo Y" (clicar mostra a faixa); desligue as caixinhas e some em até 2 minutos.
 10. **Google** (se ligado na VPS). **Entrar com Google** abre o navegador e volta logado. Com um e-mail que já tem conta com senha,
     deve avisar para entrar com a senha e usar **Vincular Google**.
+
+## Modo Líder (três PCs)
+
+1. **Criar.** No PC A, na voz, clique em **+ Subsala** e escolha **Líder**.
+   Deve acontecer: A entra na subsala nova, com o selo LÍDER. No PC B, o + Subsala mostra o Líder desativado.
+2. **Ouvir de outro canal.** B entra na voz pelo **Entrar** (deve cair na Voz geral, não na Líder). A fala.
+   Deve acontecer: B ouve A; o Seu sinal de B mostra "Ouvindo a Líder" com o volume. B fala: A **não** ouve B.
+   Com o volume da Líder em 0, B deixa de ouvir A.
+3. **Ouvir sem microfone.** O PC C fica fora da voz e clica em **Ouvir** no Seu sinal.
+   Deve acontecer: C ouve A sem o Windows pedir o microfone. **Parar** corta o som.
+4. **Grupo e Líder juntos.** B e C entram numa subsala Padrão e conversam enquanto A fala.
+   Deve acontecer: os dois se ouvem e ouvem A ao mesmo tempo, sem eco.
+5. **Tela.** A transmite com **Só o meu canal** marcado.
+   Deve acontecer: B e C (fora da Líder) conseguem assistir; o selo vira LÍDER · AO VIVO.
+6. **Pedir para falar.** A transmite na Líder. B (em outro canal) clica em **Pedir para falar**.
+   Deve acontecer: A ouve o som de **Pediram para falar**, vê o aviso e o número na aba Voz. A clica em **Aceitar**: B fala e A e C ouvem B,
+   enquanto o grupo de B continua ouvindo B normalmente. B ouve o som de **Você recebeu a palavra**.
+7. **Tirar e recusar.** A clica em **Tirar**: ninguém fora do grupo de B ouve mais B, e B é avisado. B pede de novo
+   e A clica em **Recusar**: B é avisado.
+8. **Pedir fora da voz.** C sai da voz e clica em **Pedir**.
+   Deve acontecer: C entra na Voz geral e o pedido chega a A.
+9. **Apagar.** Apague a Líder.
+   Deve acontecer: ninguém ouve mais A nem quem tinha a palavra de fora, e A volta para a Voz geral.
 
 ## Anotações
 

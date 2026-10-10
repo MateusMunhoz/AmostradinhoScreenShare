@@ -20,8 +20,8 @@ run('Sessões abertas na rede', 150000, async () => {
   let l = await lista(O);
   const ana = l.find((s) => s.host === 'Ana');
   check('A sessão da Ana aparece, com senha e 1 pessoa', ana && ana.senha === true && ana.pessoas === 1 && ana.porta === P.ana, JSON.stringify(ana));
-  check('Na tela: "Sessão de Ana", cadeado e Entrar na sala', await O.eval(`(() => { const li = [...$('sessionList').querySelectorAll('.session')].find((x) => x.textContent.includes('Sessão de Ana')); return li && !!li.querySelector('.session-meta svg') && li.querySelector('button').textContent === 'Entrar na sala'; })()`));
-  check('Com sala aberta, ela vira a ação principal', await O.eval(`$('home').classList.contains('tem-salas') && !$('goQuick').classList.contains('primary')`));
+  check('Na tela: "Sala de Ana", cadeado e Entrar', await O.eval(`(() => { const li = [...$('sessionList').querySelectorAll('.session')].find((x) => x.textContent.includes('Sala de Ana')); return li && !!li.querySelector('.session-meta svg') && li.querySelector('button').textContent === 'Entrar'; })()`));
+  check('Com sala aberta: o título conta, e Criar e Entrar continuam iguais e ligados', await O.eval(`$('home').classList.contains('tem-salas') && Number($('sessionsTitle').dataset.total) >= 1 && !$('goQuick').disabled && !$('goJoin').disabled && !$('goJoin').hidden`));
   check('Quem está na sala não procura sessões', await A.eval(`!sessoes.observando`));
 
   const C = await openApp('sessC', 9513);
@@ -38,7 +38,7 @@ run('Sessões abertas na rede', 150000, async () => {
   const B = await openApp('sessB', 9515);
   await B.eval(`$('name').value = 'Bia'`);
   await B.waitFor(`listaSessoes().some((s) => s.host === 'Ana')`, 8000);
-  await B.eval(`[...$('sessionList').querySelectorAll('.session')].find((x) => x.textContent.includes('Sessão de Ana')).querySelector('button').click()`);
+  await B.eval(`[...$('sessionList').querySelectorAll('.session')].find((x) => x.textContent.includes('Sala de Ana')).querySelector('button').click()`);
   check('Com senha: abre o painel de entrar com o endereço', await B.eval(`!$('joinPanel').hidden && $('roomAddr').value.endsWith(':${P.ana}')`));
   await B.eval(`(() => { $('joinPassword').value = 'abc'; $('joinBtn').click(); })()`);
   await B.waitFor(`!$('room').hidden`, 8000);

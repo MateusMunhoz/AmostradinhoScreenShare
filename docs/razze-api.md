@@ -72,6 +72,7 @@ Todas as respostas usam JSON. Erros seguem `{ "error": { "code": "...", "message
 | `PATCH /v1/me` (`{ bio }`), `POST /v1/me/password` (`{ currentPassword, newPassword }`) | A frase do perfil (até 128 caracteres; os amigos recebem em `/v1/friends` como `bio`) e a troca de senha (pede a atual; mínimo 8 caracteres; 10 tentativas a cada 15 min por IP) |
 | `POST /v1/feedback` | Feedback e bugs mandados pelo app (ícone na barrinha). `tipo`: `bug` (obrigatórios `area` e `titulo`), `ideia` (`titulo`) ou `nota` (`nota` de 0 a 10). Opcionais: `area`, `frequencia`, `impacto`, `uso` (opções fixas), `titulo` (140), `detalhes`/`passos` (2000), `gosta`/`incomoda` (500), `usa` (lista de opções), `contato` (booleano), `tecnico` (`versao`, `sistema`, `tema`, `naSala`) e `imagem` (`data:image/jpeg` ou `png` em base64, até 450 KB, conferida pela assinatura do arquivo). Campo desconhecido é recusado. Só esta rota aceita corpo de até 700 KB. Até 5 por hora e 20 por dia por conta |
 | `PUT /v1/me/activity` (`{ game, artist, title }`) | Atividade no perfil: o jogo e a música que a pessoa deixou ligados (cada campo até 80 caracteres; tudo vazio apaga; 12 envios por minuto). Só os amigos veem, em `/v1/friends` como `activity` (`null` sem nada); some 2 minutos depois do último envio |
+| `GET /v1/auth/google/nonce`, `POST /v1/auth/google/android` (`{ idToken, nonce }`) | Entrar com Google **no Android** (veja "Entrar com Google no Android"): o nonce (43 caracteres, vale 5 min e uma vez só; 30 por IP a cada 10 min) e o ID token do Credential Manager. O servidor confere a assinatura com as chaves públicas do Google, o emissor, `aud` = `RAZZE_GOOGLE_WEB_CLIENT_ID`, a validade, o e-mail confirmado e o nonce, e daí segue a mesma lógica de conta do login do PC (mesmas respostas: 200, 201, 202 `pending_approval`, 403, 409 `account_exists`). Campo desconhecido é recusado; corpo até 8 KB; o mesmo limite de 10 erros a cada 10 min por IP. Sem a variável: 503 `google_disabled` |
 | `GET /v1/auth/google/config`, `POST /v1/auth/google` (`{ code, codeVerifier, redirectUri }`) | Entrar com Google: a config diz se está ligado e o client ID; o login troca o código do Google (que voltou para `127.0.0.1` no PC) pela conta. Cria a conta se o e-mail (confirmado pelo Google) é novo; se já existe conta com esse e-mail, responde `account_exists` (409) e **não junta sozinho** (com `googleOnly` e sem `legacyPasswordLogin`, a mensagem pede ao administrador para liberar a senha, já que entrar com ela está bloqueado). 10 tentativas erradas a cada 10 min por IP |
 | `POST /v1/me/google`, `DELETE /v1/me/google` | Vincular o Google à conta logada e desvincular (só quem tem senha desvincula; quem entrou só pelo Google define a primeira senha em `POST /v1/me/password` sem a atual) |
 | `POST /v1/admin/users/:id/reset-code`, `POST /v1/auth/reset` (`{ email, code, password }`) | Esqueci a senha **sem e-mail**: o administrador gera um código (`ABCD-EFGH`, vale 1 hora, uso único, só o hash fica no banco; botão **Código de senha** em Administração › Pessoas, no app, e no painel web) e passa para a pessoa, que redefine a senha. 5 erros queimam o código; redefinir derruba as sessões da conta |
@@ -155,6 +156,27 @@ nenhuma credencial: o client ID vem de `GET /v1/auth/google/config`. Sem as vari
 4. Conta: e-mail novo cria a conta (respeita a aprovação do administrador, se estiver ligada); e-mail que já tem conta com senha pede
    entrar com a senha e **Vincular Google** no Perfil › Conta Razze.
 
+## Entrar com Google no Android
+
+O app de Android (repositório `nebula_app_android`, `docs/spec/login-google.md`) não tem a porta local do PC: o Credential Manager
+do Android devolve um **ID token** assinado pelo Google. O app pede `GET /v1/auth/google/nonce`, abre a folha de contas com esse
+nonce e manda o token para `POST /v1/auth/google/android`. A conta é a mesma do PC: o Google dá o mesmo `sub` para a mesma pessoa em
+todos os clientes do projeto.
+
+1. No mesmo projeto do Google Cloud do PC: **Credenciais** › **Criar credenciais** › **ID do cliente OAuth** › tipo **Aplicativo da
+   web** (sem origem nem redirecionamento). Esse é o `webClientId`; não precisa do segredo.
+2. Também um **ID do cliente OAuth** do tipo **Android**: pacote `app.nebula.android` e o SHA-1 da chave que assina o APK (um para a
+   chave de debug de quem testa e um para a de release). O app não usa esse ID diretamente, mas o Google só entrega o token a um app
+   cadastrado assim.
+3. No `.env` da VPS: `RAZZE_GOOGLE_WEB_CLIENT_ID=...` e suba de novo (`docker compose up -d`). `GET /v1/auth/google/config` passa a
+   mandar `webClientId`.
+4. As chaves públicas do Google (`https://www.googleapis.com/oauth2/v3/certs`) são buscadas pela VPS e guardadas pelo tempo que o
+   Google diz; a VPS precisa de saída HTTPS para o Google (a mesma que o login do PC já usa).
+
+**Sessões:** cada conta tem **uma sessão de PC e uma de Android** (coluna `plataforma` da tabela `sessions`). Entrar no PC derruba só
+a sessão de PC anterior; entrar no celular, só a do celular. Trocar ou redefinir a senha e "revogar sessões" no painel continuam
+derrubando todas.
+
 ## WireGuard e limites atuais
 
 O cliente gera a chave privada localmente, protege a identidade com `safeStorage` e envia somente a chave pública para o servidor. Ao conectar, usa STUN para descobrir o mapeamento UDP público, registra o endpoint, atribui um IP overlay e instala um serviço de túnel WireGuard no Windows. A configuração que o serviço local precisa fica no perfil do usuário; a API nunca recebe a chave privada.
@@ -179,6 +201,7 @@ O módulo web separado fica em `razze-api/admin/` e abre em `https://SEU_DOMINIO
 O processo principal do TelaP2P envia uma batida a cada 20 segundos, inclusive minimizado. A presença expira após 70 segundos sem contato (ajustável de 45 a 300 no painel). Amigos mostram Online/Offline; a rede mostra pessoas conectadas e salas abertas; a tela inicial lista as salas da rede selecionada. A publicação respeita a opção de sala oculta. Ao sair, o cliente retira sua presença; se cair ou a conexão falhar, o prazo remove os anúncios. A presença é por sessão, então sair em um dispositivo não apaga a presença de outro.
 
 **Salas dos amigos (modo Internet):** quem cria uma sala no servidor do modo Internet (e deixou "Mostrar esta sala para meus amigos do Razze") manda `internetRoom` na batida: endereço do servidor (`ws://` ou `wss://`), código, número de pessoas e o passe de convite (43 caracteres base64url, ou `null` num servidor antigo). Não precisa de rede Razze nem de VPN. A API devolve essas salas em `internet` só para os amigos aceitos (nunca para o próprio usuário nem no painel de administração) e elas somem com a presença. Detalhes em [spec/salas-dos-amigos.md](spec/salas-dos-amigos.md).
+Qualquer membro da sala (não só quem criou) pode anunciar, com o passe da sala e o campo opcional `host` (o nome do host, 1 a 32 caracteres, sem controle). A mesma sala anunciada por várias pessoas vem uma vez só, com `amigos: [{userId, displayName}]` (até 10: os amigos de quem vê que a anunciaram), o maior `pessoas`, o passe de quem tem um e `host` anunciado (sem ele, o nome de quem anunciou, como antes). Detalhes em [spec/entrar-pelos-amigos.md](spec/entrar-pelos-amigos.md).
 
 **Em que sala o amigo está (qualquer modo):** quem está numa sala (host ou não) manda `salaAtual` na batida: `modo` (`radmin`, `razze` ou `internet`), `host` (o nome de quem hospeda, até 32 caracteres), `pessoas` e `voz` (booleano). Nada de endereço, código ou senha; qualquer outro campo é recusado (400). A API devolve em `/v1/friends` como `sala`, só para os amigos (os membros das redes e a administração não recebem), e some com a presença ou com `salaAtual: null`. Servidor antigo ignora o campo. Detalhes em [spec/sala-do-amigo.md](spec/sala-do-amigo.md).
 
@@ -186,9 +209,9 @@ Online confirma contato recente com a API; não prova conectividade P2P. As sala
 
 | Rota | Uso |
 |---|---|
-| `POST /v1/presence/heartbeat` | `{connections:[{networkId,deviceId}], room:null ou {id,networkId,host,porta,pessoas,senha}, internetRoom?:{servidor,codigo,pessoas,passe}, salaAtual?:{modo,host,pessoas,voz}}` |
+| `POST /v1/presence/heartbeat` | `{connections:[{networkId,deviceId}], room:null ou {id,networkId,host,porta,pessoas,senha}, internetRoom?:{servidor,codigo,pessoas,passe,host?}, salaAtual?:{modo,host,pessoas,voz}}` |
 | `DELETE /v1/presence` | Retirar a presença da sessão atual |
-| `GET /v1/rooms?networkId=ID` | `rooms`: salas visíveis das redes de que o usuário é membro; `internet`: salas do modo Internet dos amigos aceitos |
+| `GET /v1/rooms?networkId=ID` | `rooms`: salas visíveis das redes de que o usuário é membro; `internet`: salas do modo Internet dos amigos aceitos (`servidor, codigo, pessoas, passe, host, userId, lastSeen, amigos`) |
 | `GET /v1/admin/me`, `GET /v1/admin/overview` | Identidade administrativa e resumo |
 | `GET/PATCH /v1/admin/settings` | `requireApproval`, `registrationOpen`, `presenceTimeoutSeconds`, `googleOnly` (ninguém cria conta por senha; o administrador mantém a senha), `legacyPasswordLogin` (padrão ligado: com `googleOnly`, quem já tinha conta com senha ainda entra por ela; desligue quando todos tiverem vinculado o Google) e `onlyAllowlist` (só e-mails da lista de convidados criam conta) persistentes |
 | `GET/POST /v1/admin/allowlist` (`{ email, grupo: amigo|teste|admin, label? }`), `DELETE /v1/admin/allowlist/:email` | Lista de convidados: quem está nela entra já ativo (sem aprovação) com o grupo ou papel combinado; pôr na lista alguém que já criou conta (pendente) libera e ajusta, **só se o Google confirmou o e-mail dessa conta** (criada pelo Google ou que entrou/vinculou um Google do mesmo e-mail); senão a conta fica como está e a resposta traz `semGoogle: true`. Tirar da lista não apaga a conta. Até 500 e-mails |

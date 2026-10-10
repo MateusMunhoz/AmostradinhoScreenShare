@@ -13,7 +13,7 @@ description: Escolher e rodar os testes certos do Tela P2P para uma mudança, di
 | `renderer/`, `index.html`, `styles*.css`, `voice.js`, `encode-once.js` | + `npx electron tests/e2e/carga.cjs` | `npm run test:e2e -- <nome>` do que foi afetado |
 | Configurações, preferências, temas, sons, barra/painéis | + `npm run test:settings` | — |
 | Voz, áudio, `rtc.js`, `voice.js`, microfone | + `npm run test:rtc` | `roteiro-de-teste.md` (Voz) numa call |
-| Sala, `signaling.js`, `sala-protocolo.js`, troca de host | `npm test` já cobre signaling/subsalas | `npm run test:e2e -- troca-de-host` e roteiro item 11 |
+| Sala, `signaling.js`, `sala-protocolo.js`, troca de host | `npm test` já cobre signaling/subsalas | `npm run test:e2e -- troca-de-host`, `sala-host-sozinho` e roteiro item 11 |
 | `servidor-internet/` | `npm test` (servidor-internet.test.js) | `npm run test:e2e -- internet` |
 | `razze-api/`, `main/razze-*` | `npm run test:razze-api` | `npm run test:e2e -- razze`; painel: `npm run test:razze-admin` |
 | Janelas flutuantes, chat por cima do jogo, atalhos | `npm test` | `npm run test:e2e -- janela-flutuante`, `node tests/e2e/ctrl-enter.js`, roteiro 9–10 |

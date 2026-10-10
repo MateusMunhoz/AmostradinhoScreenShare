@@ -45,7 +45,7 @@
 }
 
 /* ---------- Painéis: nogueira escura com um filete de ouro em cima ---------- */
-:root[data-skin="renascenca"] :is(.workspace-pane, .dock, .panel, .dialog, .sky-focus.sky-pop, .rail-music-menu, #workspaceNav) {
+:root[data-skin="renascenca"] :is(.workspace-pane, .seu-sinal, .pane-tabs, .room-menu, .panel, .dialog, .sky-focus.sky-pop, .rail-music-menu, #workspaceNav) {
   box-shadow: inset 0 1px 0 rgba(232, 200, 115, .35), 0 12px 32px rgba(10, 6, 2, .5);
 }
 :root[data-skin="renascenca"] :is(.pane-head h2, .chat-title, .stream-pane-head h2, .dialog h2, .settings-section h3) {
@@ -68,6 +68,8 @@
 
 /* ---------- Barra de título e marca: capitulares romanas ---------- */
 :root[data-skin="renascenca"] .titlebar span { font-family: var(--rn-caps); font-weight: 600; letter-spacing: .14em; font-size: 12px; color: var(--rn-gold-hi); }
+:root[data-skin="renascenca"] .titlebar .brand-name::after { content: " · RENASCENÇA"; color: var(--rn-gold); }
+:root[data-skin="renascenca"] .brand-mark::after { content: "· Renascença"; margin-left: 10px; font: 600 14px/1 var(--rn-caps); letter-spacing: .14em; color: var(--rn-gold-hi); transform: translateY(9px); }
 :root[data-skin="renascenca"] :is(.brand-mark, .home-title) { font-family: var(--rn-caps); font-weight: 700; letter-spacing: .03em; }
 :root[data-skin="renascenca"] .home-title { text-shadow: 0 2px 14px rgba(10, 6, 2, .85), 0 0 2px #000; }
 :root[data-skin="renascenca"] :is(.brand-mark, .home-sub, .home-foot) { text-shadow: 0 0 10px #000, 0 0 3px #000; }

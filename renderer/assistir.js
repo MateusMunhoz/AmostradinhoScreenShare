@@ -413,26 +413,33 @@ function renderPausedStrip() {
   strip.innerHTML = '';
   strip.hidden = !state.focus;
   if (!state.focus) return;
+  // Uma pílula só: "Em pausa", a bolinha de cada pessoa (a foto ou a inicial; o nome na dica), a música como YouTube
+  // (sem o título do vídeo) e, depois de um risquinho, a grade de Mostrar todas
   const label = document.createElement('span');
   label.className = 'paused-label';
-  label.textContent = 'Em pausa para você:';
+  label.textContent = 'Em pausa';
   strip.append(label);
   for (const [id, link] of state.in) {
     if (id === state.focus) continue;
     const btn = document.createElement('button');
-    btn.className = 'btn small';
+    btn.className = 'paused-item';
     btn.type = 'button';
-    btn.textContent = link.tile.name;
-    btn.title = `Destacar ${link.tile.name}`;
+    const nome = link.music ? 'YouTube' : link.tile.name;
+    if (link.music) { btn.classList.add('music'); btn.innerHTML = ICON.youtube; } else btn.append(avatar(link.tile.name, id));
+    btn.title = nome;
+    btn.setAttribute('aria-label', `Destacar ${nome}`);
     btn.onclick = () => setFocus(id);
     strip.append(btn);
   }
+  const sep = document.createElement('span');
+  sep.className = 'paused-sep';
+  sep.setAttribute('aria-hidden', 'true');
   const all = document.createElement('button');
-  all.className = 'btn small ghost';
+  all.className = 'paused-item paused-all';
   all.type = 'button';
-  all.textContent = 'Mostrar todas';
+  setIcon(all, 'grid', 'Mostrar todas');
   all.onclick = () => setFocus(null);
-  strip.append(all);
+  strip.append(sep, all);
 }
 
 function ensureStats() {
@@ -501,6 +508,15 @@ function syncIncomingVideo() {
     if (link.videoOn === on) continue;
     link.videoOn = on;
     if (!link.self) sendSignal(id, { side: 'viewer', video: on });
+  }
+}
+
+// A conexão com a sala caiu e voltou (troca de host, rede que piscou): o aviso de vídeo ligado/pausado pode ter
+// se perdido no caminho, e quem transmite ficava sem mandar vídeo. Manda de novo (onlyId: só para essa pessoa).
+function resendIncomingVideo(onlyId) {
+  for (const [id, link] of state.in) {
+    if (link.self || (onlyId && id !== onlyId)) continue;
+    sendSignal(id, { side: 'viewer', video: link.videoOn });
   }
 }
 

@@ -3,6 +3,44 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.19.0",
+    "date": "2026-10-10",
+    "items": [
+      "Modo Líder, fase 3: sons próprios, aviso de app antigo e acabamento",
+      "Modo Líder, fase 2: pedir para falar",
+      "Modo Líder, fase 1: subsala que fala para a sala toda",
+      "Spec do Modo Líder: subsala que fala para a sala toda, com pedidos para falar",
+      "Sala nova: cabeçalho da sala, abas Voz/Chat/Pessoas e o cartão Seu sinal",
+      "Spec da sala nova: cabeçalho da sala, abas no painel e o cartão Seu sinal",
+      "Início novo: rede sempre à vista, criar e entrar lado a lado, amigos ao lado"
+    ]
+  },
+  {
+    "version": "1.18.10",
+    "date": "2026-10-09",
+    "items": [
+      "Salas dos amigos: entrar com um clique na sala de qualquer amigo (passe da sala)"
+    ]
+  },
+  {
+    "version": "1.18.9",
+    "date": "2026-10-09",
+    "items": [
+      "Interface: barra flutuante como lugar único de mic/fone/sair, envelope num painel só, histórico de atividade"
+    ]
+  },
+  {
+    "version": "1.18.8",
+    "date": "2026-10-08",
+    "items": [
+      "Create mensagens-varios-aparelhos.md",
+      "RazzeAPI: login com Google no Android e uma sessão de PC e uma de Android",
+      "Temas: \"Nebula\" e o nome do tema lado a lado em todos",
+      "Sala: tela de carregando ao entrar e uma entrada por vez",
+      "Voz: volume geral das vozes nas configurações"
+    ]
+  },
+  {
     "version": "1.18.7",
     "date": "2026-10-07",
     "items": [
@@ -47,40 +85,6 @@ const NOVIDADES = [
     "date": "2026-10-06",
     "items": [
       "Atualiza lockfile para 1.18.2"
-    ]
-  },
-  {
-    "version": "1.18.2",
-    "date": "2026-10-06",
-    "items": [
-      "Corrige conflito de merge no main"
-    ]
-  },
-  {
-    "version": "1.17.4",
-    "date": "2026-10-06",
-    "items": [
-      "Correções e melhorias"
-    ]
-  },
-  {
-    "version": "1.17.3",
-    "date": "2026-10-05",
-    "items": [
-      "App: painel de administração e primeira entrada só com Google",
-      "Barra de baixo não some mais no caminho da transmissão até ela",
-      "Servidor: conta só pelo Google, lista de convidados, grupos e números do painel"
-    ]
-  },
-  {
-    "version": "1.18.1",
-    "date": "2026-10-06",
-    "items": [
-      "Amigos veem em que sala a pessoa está, em qualquer modo",
-      "Chat e voz: puxar a divisória para cima não corta mais o chat",
-      "Tira o HUB: conta no Perfil, rede nas Configurações, amigos no envelope",
-      "Desfazer a amizade vale na hora para os dois lados",
-      "Ctrl+V na conversa privada não cola também no chat da sala"
     ]
   }
 ];

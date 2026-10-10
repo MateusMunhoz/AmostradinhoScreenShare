@@ -313,7 +313,9 @@ function broadcastChunk({ key, timestamp, data }) {
       askKey();
       continue;
     }
-    if (!key && link.needKey) continue;
+    // Esperando quadro-chave: pede de novo. O NVENC só manda quando pedem, e o pedido feito com a rede cheia
+    // pode ter virado um quadro-chave que também foi pulado (a tela dessa pessoa ficava parada para sempre)
+    if (!key && link.needKey) { askKey(); continue; }
     if (key) link.needKey = false;
     try {
       for (const m of msgs) dc.send(m);

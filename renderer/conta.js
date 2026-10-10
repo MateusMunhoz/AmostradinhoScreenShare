@@ -193,6 +193,11 @@ async function atvTick(forcar = false) {
   let r = { jogo: '', jogoImagem: '', musica: null };
   if ((jogos || musica) && window.api?.atividadeLer) { try { r = await window.api.atividadeLer({ jogos, musica, steam: steamMarcados() }); } catch { /* sem leitura: manda vazio */ } }
   const jogo = jogos ? r.jogo || '' : '';
+  if (jogo !== atv.jogo) {
+    // Últimos jogos: entra ao abrir e a hora é acertada ao fechar (se o app fechar no meio, fica a hora em que abriu)
+    if (atv.jogo) atvhJogo(atv.jogo, atv.jogoImagem);
+    if (jogo) atvhJogo(jogo, r.jogoImagem || '');
+  }
   if (jogo !== atv.jogo) atv.jogoDesde = jogo ? Date.now() : 0; // desde quando joga: "há 40 min" no perfil
   atv.jogo = jogo; // para a música que chega na hora (atvMusicaChegou) não apagar o jogo
   atv.jogoImagem = jogo ? r.jogoImagem || '' : '';
@@ -201,7 +206,7 @@ async function atvTick(forcar = false) {
   const texto = atvTexto(jogo, tocando);
   $('atvPreview').textContent = !jogos && !musica ? 'Nada aparece no seu perfil.'
     : texto ? 'Aparece agora: ' + texto : 'Agora não há nada para mostrar (jogo não reconhecido ou música pausada).';
-  atvMudou(limparAtividade({ jogo, jogoImagem: atv.jogoImagem, jogoDesde: atv.jogoDesde, artista: faixa ? faixa.artista : '', faixa: faixa ? faixa.faixa : '', album: faixa?.album, capa: faixa?.capa, pausada: faixa?.pausada }));
+  atvMudou(limparAtividade({ jogo, jogoImagem: atv.jogoImagem, jogoDesde: atv.jogoDesde, artista: faixa ? faixa.artista : '', faixa: faixa ? faixa.faixa : '', album: faixa?.album, capa: faixa?.capa, pausada: faixa?.pausada, spotify: faixa?.spotify }));
   if (!logado) return;
   const payload = { game: jogo, artist: tocando ? tocando.artista : '', title: tocando ? tocando.faixa : '' };
   const chave = JSON.stringify(payload);
@@ -325,16 +330,20 @@ const atvDaSala = new Map(); // id -> { jogo, artista, faixa }
 const atvPedidas = new Set(); // ids a quem já perguntei nesta sala
 let atvMinha = null; // a minha, como os outros veem (null: nada)
 
-// Vem de outro PC: só texto, sem caracteres de controle e curto. Nada para mostrar -> null
+// Vem de outro PC: só texto, sem caracteres de controle e curto; imagem só pequena em data: URL, JPEG (a capa) ou PNG
+// (o ícone do .exe do jogo, main/atividade.js › iconeDoJogo), conferida pelo começo do arquivo
+const atvLimparTexto = (v) => (typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f-\u009f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, ATV_TEXTO_MAX) : '');
+const atvLimparImagem = (v) => (typeof v === 'string' && v.length <= ATV_CAPA_MAX && /^data:image\/(jpeg;base64,\/9j\/|png;base64,iVBORw0KGgo)[A-Za-z0-9+/]*={0,2}$/.test(v) ? v : '');
+// Nada para mostrar -> null
 function limparAtividade(d) {
-  const t = (v) => (typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f-\u009f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, ATV_TEXTO_MAX) : '');
-  const imagem = (v) => (typeof v === 'string' && v.length <= ATV_CAPA_MAX && /^data:image\/jpeg;base64,\/9j\/[A-Za-z0-9+/]+={0,2}$/.test(v) ? v : '');
+  const t = atvLimparTexto, imagem = atvLimparImagem;
   // Desde quando joga (ms, relógio de quem joga): só um instante das últimas 48 h, com folga de 5 min para relógio adiantado
   const agora = Date.now();
   const desde = Number.isInteger(d?.jogoDesde) && d.jogoDesde >= agora - ATV_DESDE_MAX_MS && d.jogoDesde <= agora + 5 * 60000 ? Math.min(d.jogoDesde, agora) : 0;
   const a = { jogo: t(d?.jogo), jogoImagem: imagem(d?.jogoImagem), jogoDesde: desde, artista: t(d?.artista), faixa: t(d?.faixa), album: t(d?.album), capa: imagem(d?.capa) };
   if (!a.artista && a.faixa) { a.artista = a.faixa; a.faixa = ''; }
   a.pausada = !!a.artista && d?.pausada === true;
+  a.spotify = !!a.artista && d?.spotify === true; // a música vem do Spotify: a lista mostra o símbolo dele
   if (!a.artista) a.album = a.capa = ''; // sem música, sem capa
   if (!a.jogo) { a.jogoImagem = ''; a.jogoDesde = 0; } // sem jogo, sem imagem nem tempo
   return a.jogo || a.artista ? a : null;
@@ -359,6 +368,7 @@ function atvRedesenhar(id) {
 function atvMudou(nova) {
   if (JSON.stringify(nova) === JSON.stringify(atvMinha)) return;
   atvMinha = nova;
+  if (nova?.artista && !nova.pausada) atvhMusica(nova); // começou a tocar: entra nas últimas músicas
   if (!state.myId) return;
   for (const id of state.members.keys()) sendSignal(id, { side: 'atv', ...(atvMinha || {}) });
   atvRedesenhar(null);
@@ -366,7 +376,7 @@ function atvMudou(nova) {
 // A música mudou agora (main/atividade.js pelo midia.exe): a sala vê na hora; os amigos da conta, na próxima leitura
 function atvMusicaChegou(m) {
   if (!atvLigada('Musica')) return;
-  atvMudou(limparAtividade({ jogo: atvLigada('Jogo') ? atv.jogo : '', jogoImagem: atvLigada('Jogo') ? atv.jogoImagem : '', jogoDesde: atvLigada('Jogo') ? atv.jogoDesde : 0, artista: m?.artista, faixa: m?.faixa, album: m?.album, capa: m?.capa, pausada: m?.pausada }));
+  atvMudou(limparAtividade({ jogo: atvLigada('Jogo') ? atv.jogo : '', jogoImagem: atvLigada('Jogo') ? atv.jogoImagem : '', jogoDesde: atvLigada('Jogo') ? atv.jogoDesde : 0, artista: m?.artista, faixa: m?.faixa, album: m?.album, capa: m?.capa, pausada: m?.pausada, spotify: m?.spotify }));
 }
 function pedirAtv(id) {
   if (!id || id === state.myId || atvPedidas.has(id) || !state.members.has(id)) return;
@@ -381,7 +391,92 @@ function onAtvSignal(from, data) {
   if (nova) atvDaSala.set(from, nova); else atvDaSala.delete(from);
   atvRedesenhar(from);
 }
-function resetAtvDaSala() { atvDaSala.clear(); atvPedidas.clear(); }
+function resetAtvDaSala() { atvDaSala.clear(); atvPedidas.clear(); atvhDaSala.clear(); atvhPedidas.clear(); atvhRespostas.clear(); }
+
+// ---------- O que jogou e ouviu por último (perfil) ----------
+// Os últimos 3 jogos e as últimas 3 músicas ficam neste PC (atividadeHist: uns 30 KB com as imagens, e não cresce) e vão
+// só para quem abre o seu perfil ({ side: 'atvh', want: true } -> { side: 'atvh', jogos, musicas }), como a frase. Segue as
+// caixinhas de jogo e música e a do histórico (Configurações › Atividade); desligar o histórico apaga o guardado.
+// Nada muda no protocolo da sala. A resposta tem no máximo 6 imagens de 28 KB: cabe nos 256 KB de uma mensagem.
+const ATVH_MAX = 3;
+const ATVH_DIAS = 30;
+const atvhDaSala = new Map(); // id -> { jogos, musicas } (só na memória, só desta sala)
+const atvhPedidas = new Map(); // id -> quando pedi (não pede de novo antes de 3 s)
+const atvhRespostas = new Map(); // id -> quando respondi (não manda de novo antes de 3 s)
+const atvhLigado = () => load('atividadeHistorico', '1') === '1';
+
+// Vem de outro PC (ou do disco): no máximo 3 de cada, texto curto, imagem pequena e a hora dos últimos 30 dias
+function limparHist(d, agora = Date.now()) {
+  const quando = (v) => (Number.isInteger(v) && v >= agora - ATVH_DIAS * 864e5 && v <= agora + 5 * 60000 ? Math.min(v, agora) : 0);
+  const lista = (v, f) => (Array.isArray(v) ? v.slice(0, ATVH_MAX).map(f).filter(Boolean) : []);
+  return {
+    jogos: lista(d?.jogos, (j) => {
+      const nome = atvLimparTexto(j?.nome), em = quando(j?.em);
+      return nome && em ? { nome, imagem: atvLimparImagem(j?.imagem), em } : null;
+    }),
+    musicas: lista(d?.musicas, (m) => {
+      const artista = atvLimparTexto(m?.artista), em = quando(m?.em);
+      return artista && em ? { artista, faixa: atvLimparTexto(m?.faixa), capa: atvLimparImagem(m?.capa), em } : null;
+    }),
+  };
+}
+let atvHist = null; // lido do disco na primeira vez que precisa (atvhGuardado)
+function atvhGuardado() {
+  if (!atvHist) { try { atvHist = limparHist(JSON.parse(load('atividadeHist', '{}') || '{}')); } catch { atvHist = limparHist({}); } }
+  return atvHist;
+}
+
+// "hoje", "ontem", "há 3 dias", "há 2 semanas"
+function atvQuando(em, agora = Date.now()) {
+  const dia = (x) => { const t = new Date(x); return new Date(t.getFullYear(), t.getMonth(), t.getDate()).getTime(); };
+  const dias = Math.round((dia(agora) - dia(em)) / 864e5);
+  if (dias <= 0) return 'hoje';
+  if (dias === 1) return 'ontem';
+  if (dias < 7) return `há ${dias} dias`;
+  return dias < 14 ? 'há 1 semana' : `há ${Math.floor(dias / 7)} semanas`;
+}
+function atvhGuardar(tipo, item, igual) {
+  if (!atvhLigado()) return;
+  const h = atvhGuardado();
+  atvHist = limparHist({ ...h, [tipo]: [item, ...h[tipo].filter((x) => !igual(x))] });
+  save('atividadeHist', JSON.stringify(atvHist));
+}
+function atvhJogo(nome, imagem) { if (nome) atvhGuardar('jogos', { nome, imagem, em: Date.now() }, (x) => x.nome === nome); }
+function atvhMusica(m) {
+  const faixa = m.faixa || '';
+  atvhGuardar('musicas', { artista: m.artista, faixa, capa: m.capa || '', em: Date.now() }, (x) => x.artista === m.artista && x.faixa === faixa);
+}
+// O que os outros veem do seu: só o que as caixinhas deixam
+function atvhMinha() {
+  if (!atvhLigado()) return { jogos: [], musicas: [] };
+  const h = atvhGuardado();
+  return { jogos: atvLigada('Jogo') ? h.jogos : [], musicas: atvLigada('Musica') ? h.musicas : [] };
+}
+function atvhDe(id) {
+  if (!id || id === 'me' || id === state.myId) return atvhMinha();
+  return atvhDaSala.get(id) || null;
+}
+function pedirAtvh(id) {
+  if (!id || id === state.myId || !state.members.has(id)) return;
+  const at = atvhPedidas.get(id);
+  if (at && Date.now() - at < 3000) return;
+  atvhPedidas.set(id, Date.now());
+  sendSignal(id, { side: 'atvh', want: true });
+}
+function onAtvhSignal(from, data) {
+  if (!state.members.has(from)) return; // só quem está na sala
+  if (data.want === true) {
+    const at = atvhRespostas.get(from);
+    if (at && Date.now() - at < 3000) return; // pedido repetido: não manda as imagens de novo
+    atvhRespostas.set(from, Date.now());
+    return sendSignal(from, { side: 'atvh', ...atvhMinha() });
+  }
+  if (!atvhPedidas.has(from)) return; // só aceita resposta de quem eu perguntei
+  const h = limparHist(data);
+  const antes = JSON.stringify(atvhDaSala.get(from) || null);
+  atvhDaSala.set(from, h);
+  if (JSON.stringify(h) !== antes && typeof skyFocusId !== 'undefined' && skyFocusId === from) { skyFocusKey = ''; renderSkyProfile(); }
+}
 
 // Os amigos no Início: recarrega só a atividade deles, sem mexer no resto da lista
 async function atvAtualizarAmigos() {
@@ -438,8 +533,15 @@ function setupConta() {
   $('atvJogo').checked = atvLigada('Jogo');
   $('atvMusica').checked = atvLigada('Musica');
   for (const [id, k] of [['atvJogo', 'Jogo'], ['atvMusica', 'Musica']]) {
-    $(id).onchange = () => { save('atividade' + k, $(id).checked ? '1' : '0'); atvAgendar(); if (k === 'Jogo') atvAgendarProcura(); };
+    $(id).onchange = () => { save('atividade' + k, $(id).checked ? '1' : '0'); atvAgendar(); if (k === 'Jogo') atvAgendarProcura(); atvRedesenhar(null); };
   }
+  // Últimos jogos e músicas: desligar apaga o que estava guardado neste PC
+  $('atvHist').checked = atvhLigado();
+  $('atvHist').onchange = () => {
+    save('atividadeHistorico', $('atvHist').checked ? '1' : '0');
+    if (!$('atvHist').checked) { atvHist = limparHist({}); save('atividadeHist', JSON.stringify(atvHist)); }
+    atvRedesenhar(null);
+  };
   $('atvConfigurar').onclick = () => openGeneralSettings('activity');
   $('steamProcurar').onclick = () => void renderSteamJogos(true);
   $('steamNovosTodos').onclick = () => { for (const cb of $('steamNovos').querySelectorAll('input')) { cb.checked = true; cb.onchange(); } };
@@ -449,8 +551,13 @@ function setupConta() {
   $('steamSeusNenhum').onclick = () => steamMarcarSeus(false);
   atvAgendarProcura();
   // Em que sala estou: ligado por padrão (salas-amigos.js); desligar tira na hora
+  // Deixar entrar (docs/spec/entrar-pelos-amigos.md): só vale com o de cima ligado; desligar tira o Entrar na hora
+  const salaEntrarApagado = () => { $('atvSalaEntrar').disabled = !$('atvSala').checked; };
   $('atvSala').checked = salaAtualLigada();
-  $('atvSala').onchange = () => { save('atividadeSala', $('atvSala').checked ? '1' : '0'); publicarSalaAtual(); };
+  $('atvSala').onchange = () => { save('atividadeSala', $('atvSala').checked ? '1' : '0'); salaEntrarApagado(); publicarSalaAtual(); publicarSalaInternet(); };
+  $('atvSalaEntrar').checked = salaEntrarLigada();
+  $('atvSalaEntrar').onchange = () => { save('atividadeSalaEntrar', $('atvSalaEntrar').checked ? '1' : '0'); publicarSalaInternet(); };
+  salaEntrarApagado();
   atv.amigos = setInterval(() => void atvAtualizarAmigos(), ATV_CADA_MS);
   window.addEventListener('beforeunload', () => { if (atv.ultimo && atv.ultimo !== '{"game":"","artist":"","title":""}') window.api.razzeSetActivity({}).catch(() => {}); });
   window.api?.aoMudarMusica?.(atvMusicaChegou);
@@ -474,4 +581,4 @@ function setupConta() {
   renderBio();
 }
 
-if (typeof module !== 'undefined') module.exports = { limparBio, atvTexto, limparAtividade, atvHa };
+if (typeof module !== 'undefined') module.exports = { limparBio, atvTexto, limparAtividade, atvHa, limparHist, atvQuando };

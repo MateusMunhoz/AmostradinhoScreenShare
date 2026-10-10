@@ -52,7 +52,7 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* Início */
-.home-screen { display: flex; flex-direction: column; padding: 16px 40px 20px; gap: 0; overflow-y: auto; }
+.home-screen { display: flex; flex-direction: column; padding: 28px 40px 20px; gap: 0; overflow-y: auto; container: tela-inicio / inline-size; }
 /* Marca na altura da barra de cima (perfil e configurações, à direita) */
 .home-top { flex: none; height: 48px; display: flex; align-items: center; }
 /* A logo: três estrelas ligadas por pontilhados, sempre nas cores dela (não seguem o tema). O mesmo desenho do
@@ -78,11 +78,68 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 .brand-mark svg { width: 46px; height: 46px; }
 .brand-mark svg + .brand-name { margin-left: -3px; transform: translateY(9px); }
 /* O saguão: uma coluna no meio da janela */
-.home-main { flex: 1; width: min(720px, 100%); margin: 0 auto; display: flex; flex-direction: column; justify-content: center; gap: 22px; padding: 28px 0; }
+/* O Início decide o layout pela largura dele, não pela da janela (com o chat de voz ou o chat abertos, ele fica bem
+   mais estreito): container queries em .home-main. Topo, conteúdo e rodapé na mesma largura, alinhados */
+.home-main { flex: 1; width: min(1180px, 100%); margin: 0 auto; display: flex; flex-direction: column; gap: 22px; padding: 24px 0; container: inicio / inline-size; }
+.home-top, .home-status { width: min(1180px, 100%); margin-inline: auto; }
+/* Duas colunas (docs/spec/inicio-novo.md): criar/entrar e salas à esquerda; amigos e "Novo na versão" à direita. Janela
+   estreita: a da direita desce */
+.home-colunas { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: 22px; }
+.home-col { min-width: 0; display: flex; flex-direction: column; gap: 22px; }
+.home-lado { min-width: 0; display: flex; flex-direction: column; gap: 14px; container: lado / inline-size; }
+/* Largo: os amigos ao lado. Estreito: descem para baixo das salas, em duas colunas de amigos se couber */
+@container inicio (min-width: 860px) {
+  .home-colunas:has(> .home-lado > :not([hidden])) { grid-template-columns: minmax(0, 1fr) clamp(300px, 32%, 380px); }
+}
+@container inicio (min-width: 600px) and (max-width: 859.98px) {
+  .home-lado .home-friends-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 18px; }
+}
+.home-lado:not(:has(> :not([hidden]))) { display: none; } /* sem conta e sem novidade: a coluna some */
+/* Criar e entrar: dois cartões do mesmo tamanho, sempre aqui e ligados. Criar é o destaque; "Opções da sala" fica
+   dentro dele, como link */
+.home-acoes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.home-acoes:has(#goJoin[hidden]) { grid-template-columns: minmax(0, 1fr); } /* "Entrar numa sala" aberto: o painel ocupa o lugar dele */
+@container inicio (max-width: 560px) { .home-acoes { grid-template-columns: minmax(0, 1fr); } }
+@container inicio (max-width: 640px) {
+  .home-ceu { display: none; }
+  .home-call { flex-wrap: wrap; }
+  .home-call-info { flex-basis: calc(100% - 30px); }
+  .home-call #homeCallBack { margin-left: auto; }
+  .home-title { font-size: 22px; }
+}
+.home-acao { position: relative; display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 14px; background: var(--panel-2); color: var(--text); }
+.home-acao-criar { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+.home-acao-btn { display: flex; align-items: flex-start; gap: 14px; width: 100%; padding: 18px; border: 0; border-radius: 14px; background: transparent;
+  color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.home-acao-criar .home-acao-btn { padding-bottom: 6px; }
+button.home-acao { flex-direction: row; padding: 18px; border: 1px solid var(--line); }
+.home-acao-btn:hover, button.home-acao:hover { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+.home-acao-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.home-acao-btn:disabled { cursor: progress; opacity: .6; }
+.home-acao[hidden] { display: none; }
+.home-acao-icone { flex: none; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 12px; background: var(--accent-soft); color: var(--accent); }
+.home-acao-criar .home-acao-icone { background: var(--primary); color: var(--primary-ink); }
+.home-acao-icone svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.home-acao-textos { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.home-acao-textos strong { font-size: 17px; }
+.home-acao-textos small, .go-quick-sub { font-size: 13px; font-weight: 400; line-height: 1.45; color: var(--muted); }
+.home-acao-opcoes { align-self: flex-start; margin: 0 0 14px 76px; font-size: 13px; }
+/* O título das salas conta quantas */
+.sessions-title[data-total]:not([data-total=""])::after { content: " · " attr(data-total); }
+.last-room.na-lista { padding-top: 12px; }
+.last-room.na-lista #lastRoomName { font-size: 14px; color: var(--muted); }
+/* "Novo na versão": no pé da coluna de amigos, até fechar */
+.home-novo { display: flex; flex-direction: column; gap: 6px; padding: 14px 16px; border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+  border-radius: 12px; background: color-mix(in srgb, var(--accent) 7%, var(--panel)); }
+.home-novo[hidden] { display: none; }
+.home-novo-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.home-novo-head .home-pop-kicker { margin: 0; color: var(--accent); }
+.home-novo-head .btn.icon svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.home-novo-texto { margin: 0; font-size: 13px; line-height: 1.5; }
+.home-novo .link-btn { align-self: flex-start; font-size: 13px; }
 .home-hello { display: flex; align-items: center; gap: 18px; }
 .avatar.home-avatar { width: 60px; height: 60px; font-size: 24px; background-color: var(--accent); color: var(--accent-ink); }
 /* Com alguém com sala aberta, entrar nela é o mais provável: o amarelo fica só no Entrar, e Criar sala fica neutro */
-.home-card:has(.session) #goQuick { background: var(--panel-2); border-color: var(--line); color: var(--text); }
 .home-hello-text { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
 .home-title { margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -.5px; line-height: 1.15; }
 .home-name { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); }
@@ -102,14 +159,9 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
   width: 100%; display: flex; flex-direction: column; gap: 20px; padding: 24px;
   background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
 }
-.home-cta { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
-.home-cta:has(#goJoin[hidden]) { grid-template-columns: 1fr; } /* com o painel de endereço aberto, Criar sala ocupa a linha */
-.create-block { display: flex; flex-direction: column; gap: 6px; }
 .btn.big { height: 52px; font-size: 16px; border-radius: 10px; }
 .btn.big:not(.primary) { background: var(--panel-2); }
 .hint.center { text-align: center; font-size: 12px; }
-/* Com "Entrar numa sala" aberto, ele vira o principal e Criar sala fica discreto */
-.home-card.joining #goQuick { background: var(--panel-2); border-color: var(--line); color: var(--text); }
 .join-panel { display: flex; flex-direction: column; gap: 12px; padding: 18px; border-radius: 12px; background: var(--panel-2); }
 .join-panel strong { font-size: 15px; }
 .join-panel .field > input { background: var(--bg); height: 44px; }
@@ -159,21 +211,65 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 .link-btn:disabled { color: var(--muted); cursor: default; text-decoration: none; }
 .link-btn:hover:not(:disabled) { color: var(--text); }
 
-/* Aviso de atualização: cartão no canto de cima, por cima de qualquer tela, ao lado da barrinha da direita
-   (perfil e engrenagem continuam clicáveis) */
-.update-banner {
-  position: fixed; top: 16px; right: calc(16px + var(--rail-w, 0px)); z-index: 40; width: 380px; max-width: calc(100vw - 32px); box-sizing: border-box;
-  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px 12px; padding: 14px;
-  border: 1px solid var(--accent); border-radius: 12px; background: var(--panel-2); box-shadow: 0 12px 32px rgba(0, 0, 0, .5);
-  animation: ub-in .25s ease-out;
+/* Topo do Início (docs/spec/inicio-novo.md): a marca à esquerda; à direita, "Nova versão" (só com versão nova) e a rede
+   em uso, sempre à vista. Cada um abre o seu painel logo abaixo (.home-pop), um de cada vez */
+.home-top { justify-content: space-between; gap: 16px; }
+.home-top-acoes { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.home-pop-wrap { position: relative; display: inline-flex; min-width: 0; }
+.home-rede, .home-versao-nova { height: 40px; display: inline-flex; align-items: center; gap: 8px; min-width: 0; padding: 0 14px 0 12px;
+  border-radius: 999px; font: inherit; font-size: 14px; cursor: pointer; }
+.home-rede { border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--line)); background: color-mix(in srgb, var(--accent) 9%, transparent); color: var(--text); }
+.home-rede:hover, .home-rede[aria-expanded="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.home-rede-rotulo, .home-rede-detalhe { color: var(--muted); white-space: nowrap; }
+.home-rede strong { white-space: nowrap; }
+.home-rede-detalhe { overflow: hidden; text-overflow: ellipsis; }
+.home-rede-detalhe:not(:empty)::before { content: "· "; }
+.home-rede-seta, .home-versao-nova svg { flex: none; width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.home-rede[aria-expanded="true"] .home-rede-seta { transform: rotate(180deg); }
+.home-versao-nova { border: 1px solid var(--warn); background: var(--warn-soft); color: var(--warn); font-weight: 700; }
+.home-rede, .home-versao-nova { white-space: nowrap; flex: none; }
+.home-rede { flex: 0 1 auto; }
+/* Topo estreito: "Rede" e "Nova versão" viram só a bolinha e o ícone (o nome da rede e o detalhe ficam) */
+@container tela-inicio (max-width: 700px) {
+  .home-rede-rotulo, .home-versao-nova span { display: none; }
+  .home-versao-nova { padding: 0 12px; }
 }
-@keyframes ub-in { from { transform: translateY(-8px); opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .update-banner { animation: none; } }
-.update-banner .ub-icon { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); }
-.update-banner .ub-icon svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.update-banner .ub-text { display: flex; flex-direction: column; gap: 3px; font-size: 13px; line-height: 1.4; color: var(--muted); }
-.update-banner .ub-text strong { font-size: 14px; color: var(--text); }
-.update-banner .ub-actions { grid-column: 2; display: flex; justify-content: flex-end; gap: 8px; }
+.home-versao-nova svg { width: 16px; height: 16px; }
+.home-versao-nova[hidden] { display: none; }
+.home-pop { position: absolute; top: calc(100% + 8px); right: 0; z-index: 30; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px;
+  padding: 14px; border: 1px solid var(--line-strong); border-radius: 14px; background: var(--panel-2); box-shadow: 0 18px 48px rgba(0, 0, 0, .45); }
+.home-pop[hidden] { display: none; }
+.home-pop-kicker { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.home-rede-menu { width: 400px; max-width: calc(100vw - 48px); padding: 10px; gap: 6px; }
+.home-rede-menu .home-pop-kicker { padding: 4px 6px 2px; }
+.home-rede-opcoes { display: flex; flex-direction: column; gap: 4px; }
+.home-rede-opcao { display: flex; align-items: flex-start; gap: 12px; padding: 11px 12px; border: 1px solid transparent; border-radius: 10px;
+  background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.home-rede-opcao:hover, .home-rede-opcao:focus-visible { background: var(--panel-3); outline: none; }
+.home-rede-opcao:focus-visible { border-color: var(--accent); }
+.home-rede-opcao.atual { border-color: color-mix(in srgb, var(--accent) 45%, transparent); background: var(--accent-soft); }
+.home-rede-opcao .dot { margin-top: 6px; }
+.home-rede-opcao-textos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.home-rede-opcao-linha { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.home-rede-opcao-linha strong { font-size: 15px; }
+.home-rede-opcao-estado { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.home-rede-opcao .hint { font-size: 13px; line-height: 1.45; }
+.home-rede-opcao-erro { font-size: 13px; color: var(--warn); line-height: 1.4; }
+.home-rede-pe { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 2px 6px 0; padding-top: 10px; border-top: 1px solid var(--line); }
+.home-rede-pe .hint { font-size: 12px; }
+.home-versao-painel { width: 380px; max-width: calc(100vw - 48px); padding: 18px; gap: 8px; }
+.home-versao-painel .home-pop-kicker { color: var(--warn); }
+.home-versao-titulo { margin: 0; font-size: 22px; font-weight: 700; }
+.home-versao-novidades[hidden] { display: none; }
+.home-versao-aviso { margin: 4px 0 0; padding: 10px 12px; border-radius: 10px; background: var(--panel-3); font-size: 13px; line-height: 1.45; color: var(--muted); }
+.home-versao-acoes { display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px; }
+.home-versao-acoes .btn[hidden] { display: none; }
+/* O rodapé: "Nebula 1.18.10 · atualizado"; com versão nova, "1.18.11 disponível" em destaque e clicável */
+.status-line.version .home-versao-estado:disabled { cursor: default; color: var(--ok); }
+.status-line.version .home-versao-estado.nova { color: var(--warn); font-weight: 700; }
+/* Na barra da direita, fora do Início: a mesma versão nova */
+.rail-update { color: var(--warn); }
+.rail-update[hidden] { display: none; }
 
 /* Campos e botões */
 .field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted); }
@@ -212,6 +308,8 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 .bar { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; }
 .bar h2 { text-align: center; }
 .form-card { margin: auto; width: min(420px, 100%); display: flex; flex-direction: column; gap: 16px; }
+.form-voltar { align-self: center; display: inline-flex; align-items: center; gap: 6px; min-width: 200px; justify-content: center; margin-top: 8px; }
+.form-voltar svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .hint { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.4; }
 .warn { margin: 0; font-size: 13px; color: var(--warn); line-height: 1.4; }
 
@@ -223,13 +321,6 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 .stage-col { min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 12px; }
 .stage-col .stage-area { flex: 1; }
 
-/* Barra da sala */
-.dock {
-  flex: none; min-height: 60px; box-sizing: border-box; display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
-  padding: 8px 10px; border-radius: var(--radius-lg); background: var(--panel); border: 1px solid var(--line);
-}
-.dock .btn.icon { width: 36px; height: 36px; }
-.dock-spacer { flex: 1; }
 /* Quem está falando: anel verde na bolinha, barrinhas que mexem ao lado do nome e borda no vídeo */
 .eq { display: none; align-items: flex-end; gap: 2px; height: 12px; margin-left: 6px; vertical-align: -1px; }
 .eq > span { width: 3px; height: 100%; border-radius: 1px; background: var(--ok); transform-origin: bottom; animation: eq .9s ease-in-out infinite; }
@@ -247,10 +338,8 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 #overlayToggle.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
 body:not(.workspace-in-room) #workspaceNav .rail-overlay { display: none; }
 
-/* Voz na barra de baixo */
+/* Voz no cartão Seu sinal */
 .voice-dock { display: flex; align-items: center; gap: 6px; }
-/* Fora da voz: uma linha fina separa o grupo da voz do Transmitir (dentro, a caixa da voz já separa) */
-.dock > .voice-dock:not(.active) { padding-left: 10px; border-left: 1px solid var(--line); }
 .voice-dock.active { padding: 3px 3px 3px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
 .voice-dock .btn.icon { width: 36px; height: 36px; }
 .voice-dock #voiceJoin:not(.icon) { display: inline-flex; align-items: center; }
@@ -359,8 +448,6 @@ body:not(.workspace-in-room) #workspaceNav .rail-overlay { display: none; }
 .person-card .warn-on { border-color: var(--warn); color: var(--warn); background: rgba(224, 185, 106, .12); }
 .person-card .hint { margin: 0; font-size: 12px; line-height: 1.45; }
 .dock-share { display: inline-flex; align-items: center; gap: 8px; height: 40px; }
-.dock-invite { display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 12px; font-size: 13px; }
-.dock-invite svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
 /* Faixa da chamada no saguão (você saiu da tela da sala pelo Início, mas continua nela) */
 .home-call { display: flex; align-items: center; gap: 12px; padding: 12px 12px 12px 16px; border: 1px solid var(--accent); border-radius: 12px; background: var(--accent-soft); }
@@ -373,8 +460,8 @@ body:not(.workspace-in-room) #workspaceNav .rail-overlay { display: none; }
 .home-call-info .hint { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .home-call .btn.icon { width: 36px; height: 36px; }
 .home-call .btn.icon[aria-pressed="true"] { border-color: var(--warn); color: var(--warn); background: var(--warn-soft); }
+.home-call .home-call-leave { color: var(--warn); } /* sair da voz: laranja de cuidado, como na barra flutuante */
 .home-call #homeCallBack { flex: none; }
-.home-cta .btn:disabled { cursor: not-allowed; }
 .dock-share svg, .pip-chip svg, .jump-new svg, .chat-drop svg {
   fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none;
 }
@@ -407,9 +494,6 @@ body:not(.workspace-in-room) #workspaceNav .rail-overlay { display: none; }
 .pip-chip svg { width: 16px; height: 16px; stroke: var(--accent); }
 .pip-chip .btn.icon { width: 30px; height: 30px; }
 kbd { font-family: Consolas, monospace; font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; }
-.chat-toggle { position: relative; }
-.chat-toggle[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
-.chat-toggle .unread { position: absolute; top: -6px; right: -6px; }
 .stage-area { min-height: 0; display: flex; flex-direction: column; gap: 8px; position: relative; }
 /* Janela de transmitir: o escurecido e a janela ficam dentro da área das transmissões */
 #shareDialog { border-radius: 12px; padding: 12px; }
@@ -436,8 +520,24 @@ kbd { font-family: Consolas, monospace; font-size: 11px; color: var(--muted); bo
 .tile.small .tile-pip-note { padding: 8px; }
 .tile.small .tile-pip-note > :not(:first-child) { display: none; }
 .tile.small .tile-pip-note svg { width: 24px; height: 24px; }
-.paused-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.paused-label { font-size: 13px; color: var(--muted); }
+/* Em pausa (renderPausedStrip, assistir.js): uma pílula com as bolinhas de quem está em pausa e a grade de Mostrar todas */
+.paused-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; align-self: flex-start; width: fit-content; max-width: 100%; box-sizing: border-box;
+  min-height: 36px; padding: 3px 4px 3px 12px; border: 1px solid var(--line); border-radius: 18px; background: var(--panel); }
+.paused-strip[hidden] { display: none; }
+.paused-label { margin-right: 4px; font-size: 11.5px; color: var(--muted); }
+.paused-item { flex: none; width: 28px; height: 28px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--text); cursor: pointer; }
+.paused-item .avatar { width: 28px; height: 28px; font-size: 12px; background-color: var(--person, var(--primary)); color: var(--bg); transition: box-shadow .15s; }
+.paused-item:hover .avatar, .paused-item:focus-visible .avatar { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--line-strong); }
+.paused-item.music, .paused-all { transition: background .15s, color .15s; }
+.paused-item.music { background: var(--panel-2); }
+.paused-item.music:hover, .paused-all:hover { background: var(--panel-3); }
+.paused-all { color: var(--muted); }
+.paused-all:hover { color: var(--text); }
+.paused-item:focus-visible { outline: none; }
+.paused-item.music:focus-visible, .paused-all:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.paused-item svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.paused-all svg { width: 14px; height: 14px; stroke-width: 2; }
+.paused-sep { width: 1px; height: 16px; margin: 0 2px; background: var(--line-strong); }
 .tile {
   position: relative; display: flex; flex-direction: column; min-height: 180px; overflow: hidden;
   background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
@@ -668,8 +768,8 @@ html .chat-form #chatSend:disabled { opacity: 1; background: transparent; border
 .member .matv { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 12px; color: var(--text-2); }
 .matv-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .matv-icon { flex: none; display: grid; place-items: center; color: var(--accent); }
-.matv-icon.capa img { display: block; width: 16px; height: 16px; border-radius: 3px; object-fit: cover; }
 .matv-icon svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.matv-icon.spotify svg { width: 14px; height: 14px; stroke-width: 1.8; } /* o símbolo do Spotify, numa cor só (verde no app é "falando") */
 .member.live .mstatus { color: var(--live); }
 .share-box { display: flex; flex-direction: column; gap: 10px; padding-top: 16px; border-top: 1px solid var(--line); }
 #shareLive { display: flex; flex-direction: column; gap: 10px; }
@@ -858,7 +958,6 @@ fieldset.group > legend { margin-bottom: 10px; }
 }
 @media (max-width: 700px) {
   .home-screen { padding-left: 16px; padding-right: 16px; }
-  .home-cta { grid-template-columns: 1fr; }
   .home-title { font-size: 22px; }
 }
 @media (max-width: 900px) {
@@ -966,13 +1065,9 @@ fieldset.group > legend { margin-bottom: 10px; }
 .session-faces .avatar + .avatar { margin-left: -7px; }
 /* Com sala aberta (de amigo ou na rede), entrar nela vira a ação principal: as salas sobem acima dos amigos, ganham o
    destaque "ao vivo" e "Abrir minha sala" vira botão comum (renderSessoes em renderer/sessoes.js) */
-#home.tem-salas .home-main > #homeFriends { order: 1; }
-#home.tem-salas .home-main > #homeNews { order: 2; }
 #home.tem-salas .home-card { border-color: color-mix(in srgb, var(--live) 45%, var(--line)); }
 #home.tem-salas .session { padding: 14px 14px 14px 16px; border-color: color-mix(in srgb, var(--live) 35%, var(--line)); }
 #home.tem-salas .session > .avatar { width: 44px; height: 44px; font-size: 18px; }
-#home.tem-salas .session > .btn { height: 48px; padding: 0 24px; font-size: 15px; }
-#home.tem-salas #createBlockHint { display: none; }
 .home-friend-sala { color: var(--live); }
 .check-line { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; cursor: pointer; }
 .check-line input { margin-top: 3px; width: 16px; height: 16px; accent-color: var(--accent); flex: none; }
@@ -980,7 +1075,7 @@ fieldset.group > legend { margin-bottom: 10px; }
 .check-line small { font-size: 12px; line-height: 1.4; }
 
 /* Preferências locais e superfícies com contraste independente do fundo. */
-.home-card, .dock, .panel, .person-card, .people-pop, .tile-name, .tile-overlay, .chat-drop, .update-banner {
+.home-card, .seu-sinal, .panel, .person-card, .people-pop, .tile-name, .tile-overlay, .chat-drop, .home-pop {
   --text: var(--surface-text); --text-2: var(--surface-text-2); --muted: var(--surface-muted); color: var(--text);
 }
 .tile-overlay, .chat-drop { background: var(--theme-glass); }
@@ -1124,18 +1219,11 @@ body:not(.workspace-in-room) .nav-sep { display: none; }
 .pane-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
 .pane-head h2, .stream-pane-head h2 { font-size: 15px; }
 .pane-voice-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
-/* Microfone e fone: ícone + texto, como na barra de baixo; desligado fica na cor de aviso */
-.pane-voice-actions .pane-toggle { display: inline-flex; align-items: center; gap: 6px; }
-.pane-voice-actions .pane-toggle svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.pane-voice-actions .pane-toggle[aria-pressed=true] { border-color: var(--warn); color: var(--warn); background: var(--warn-soft); }
-/* Na voz: a faixa de controles fica embaixo da lista, separada por uma linha. Microfone, fone e Voz e atalhos só
-   com o ícone (o nome na dica). Sair fica no título (pílula vermelha, longe do microfone e do fone, que usam o laranja) */
+/* Na voz: a faixa de baixo da lista (Voz e atalhos, só o ícone, e Subsala), separada por uma linha. Microfone, fone e
+   Sair ficam na barra flutuante */
 .voice-in-call .pane-voice-actions { flex-wrap: nowrap; align-items: center; margin: 10px 0 0; padding-top: 10px; border-top: 1px solid var(--line); }
 .pane-voice-actions .btn.icon { width: 32px; padding: 0; justify-content: center; }
-.pane-voice-actions .btn.icon svg, .pane-head .pane-leave svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.pane-head .pane-leave { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 10px; border-radius: 13px; border-color: rgba(226, 107, 107, .45); background: rgba(226, 107, 107, .1); color: #F08F8F; font-size: 12px; }
-.pane-head .pane-leave:hover:not(:disabled) { background: rgba(226, 107, 107, .2); border-color: #E26B6B; }
-.pane-head .pane-leave svg { width: 13px; height: 13px; }
+.pane-voice-actions .btn.icon svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 /* Fora da voz: Entrar largo e Nova subsala do lado. Na voz: + Subsala na faixa, separado do microfone e do fone */
 .pane-voice-actions .pane-join.primary { flex: 1; }
 .pane-voice-actions .pane-subsala { display: inline-flex; align-items: center; gap: 6px; }
@@ -1361,7 +1449,6 @@ button.sky-card-info:hover:not(:disabled) .sky-card-go { color: var(--accent); }
 #workspacePanes .chat-head { flex: none; }
 #workspacePanes .chat-list { min-height: 36px; }
 #workspacePanes .chat-form { flex: none; }
-#workspacePanes .people-pop { top: 50px; right: 8px; left: 8px; max-height: calc(100% - 60px); z-index: 8; }
 
 
 .settings-pane .general-settings { width: auto; max-height: none; border: 0; padding: 0; overflow: visible; display: grid; gap: 16px; }
@@ -1407,30 +1494,7 @@ button.sky-card-info:hover:not(:disabled) .sky-card-go { color: var(--accent); }
 .stream-pane-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .workspace-wide #workspacePanes { width: auto; left: 16px; bottom: 116px; display: grid; grid-template-columns: repeat(auto-fit,minmax(min(280px,100%),1fr)); grid-auto-rows: minmax(0,1fr); }
 .workspace-wide .stage-col { justify-content: flex-end; }
-.workspace-wide .dock { min-height: 84px; }
-.dock { flex-wrap: nowrap; flex-shrink: 0; }
-/* Nunca quebra em duas linhas: sem espaço, a barra enxuga em etapas (fitDock em renderer/navegacao.js) */
-.dock > * { flex: none; }
-.dock > .dock-spacer { flex: 1 1 0; min-width: 0; }
-.dock.tight-1 #liveText { display: none; }
-.dock.tight-2 .live-info { display: none; }
-.dock.tight-2 .dock-invite .dock-label, .dock.tight-2 #voiceMeText, .dock.tight-2 .stage-layout .dock-label { display: none; }
-.dock.tight-2 .dock-invite { padding: 0; width: 36px; justify-content: center; }
-.dock.tight-3 .vs-label { display: none; }
-.dock.tight-4 .voice-avatars { display: none !important; }
-/* 5) o que ainda não cabe vai para o menu da setinha, antes do Sair */
-.dock .dock-overflow { display: none !important; }
-.voice-dock:not(:has(> :not([hidden]):not(.dock-overflow))) { display: none; }
-.dock-more { position: relative; display: flex; }
-.dock-more[hidden] { display: none; }
-#dockMore[aria-expanded="true"] { border-color: var(--accent); color: var(--accent); }
-#dockMore.has-unread::after { content: ""; position: absolute; top: -3px; right: -3px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); border: 2px solid var(--panel); }
-.dock-more-menu {
-  position: absolute; right: 0; bottom: calc(100% + 12px); z-index: 25; min-width: 230px; max-width: min(320px, calc(100vw - 32px));
-  display: flex; flex-direction: column; gap: 2px; padding: 6px; box-sizing: border-box;
-  border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); box-shadow: 0 12px 32px rgba(0, 0, 0, .45);
-}
-.dock-more-menu[hidden] { display: none; }
+/* Item de menu (o da música no cartão Seu sinal) */
 .dock-more-item {
   display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 12px; border: 0; border-radius: 6px;
   background: transparent; color: var(--surface-text); font: inherit; font-size: 13px; text-align: left; cursor: pointer;
@@ -1440,8 +1504,6 @@ button.sky-card-info:hover:not(:disabled) .sky-card-go { color: var(--accent); }
 .dock-more-item:hover:not(:disabled), .dock-more-item:focus-visible { background: var(--panel-3); outline: none; }
 .dock-more-item.on { color: var(--accent); }
 .dock-more-item:disabled { opacity: .45; cursor: default; }
-#workspaceEmpty { flex: 1; }
-.workspace-in-room #openGeneralSettingsRoom { display: none; }
 /* Na sala, sem painel aberto: as telas começam embaixo da barra de cima (na altura dos painéis), e a barra
    não fica solta por cima do vídeo */
 .workspace-in-room:not(.has-workspace-pane) #room { padding-top: var(--workspace-top); }
@@ -1461,8 +1523,6 @@ button.sky-card-info:hover:not(:disabled) .sky-card-go { color: var(--accent); }
 .toast { top: calc(var(--workspace-top) + 8px); }
 @media (max-width: 900px) {
   .workspace-tab { padding: 0 6px; font-size: 11px; }
-  .dock-share { font-size: 12px; padding: 8px; }
-  .dock { gap: 6px; }
 }
 
 /* Perfil e preferências são diálogos sobrepostos; nunca dividem os painéis da sala. */
@@ -1525,7 +1585,7 @@ html[data-glass=clear], html[data-glass=liquid] {
     radial-gradient(50% 45% at 22% 92%, color-mix(in srgb, var(--primary) 20%, transparent), transparent 72%),
     var(--glass-base);
 }
-:is(html[data-glass=clear], html[data-glass=liquid]) :is(.home-card, .dock, .panel, .workspace-pane, #workspaceNav, .dialog, .person-card, .people-pop, .update-banner, .toast, .stat-card, .stream-card, .join-panel, .session) {
+:is(html[data-glass=clear], html[data-glass=liquid]) :is(.home-card, .seu-sinal, .panel, .workspace-pane, #workspaceNav, .dialog, .person-card, .people-pop, .update-banner, .toast, .stat-card, .stream-card, .join-panel, .session) {
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   border-color: var(--glass-edge);
@@ -1536,7 +1596,7 @@ html[data-glass=clear], html[data-glass=liquid] {
   background-color: var(--panel-strong);
 }
 /* Transparente: um reflexo leve no alto dos painéis, para o vidro não parecer só um recorte */
-html[data-glass=clear] :is(.home-card, .dock, .panel, .workspace-pane, #workspaceNav, .dialog, .stream-card, .join-panel) {
+html[data-glass=clear] :is(.home-card, .seu-sinal, .panel, .workspace-pane, #workspaceNav, .dialog, .stream-card, .join-panel) {
   background-image: linear-gradient(180deg, var(--glass-sheen), transparent 40%);
   box-shadow: inset 0 1px 0 var(--glass-sheen), 0 8px 24px rgba(0, 0, 0, .18);
 }
@@ -1544,10 +1604,10 @@ html[data-glass=clear] :is(.home-card, .dock, .panel, .workspace-pane, #workspac
 :is(html[data-glass=clear], html[data-glass=liquid]) .tile { background: var(--panel); border-color: var(--glass-edge); }
 /* Bordas Líquido: a quina de cima pega luz, como a borda de um vidro. As cores translúcidas vêm de
    preferencias-modelo.js › borders (--line, --line-strong, --field-line). */
-:is(html[data-border=clear], html[data-border=liquid]) :is(.home-card, .dock, .panel, .workspace-pane, #workspaceNav, .dialog, .person-card, .people-pop, .update-banner, .toast, .stat-card, .stream-card, .join-panel, .session) {
+:is(html[data-border=clear], html[data-border=liquid]) :is(.home-card, .seu-sinal, .panel, .workspace-pane, #workspaceNav, .dialog, .person-card, .people-pop, .update-banner, .toast, .stat-card, .stream-card, .join-panel, .session) {
   border-color: var(--line-strong);
 }
-html[data-border=liquid] :is(.home-card, .dock, .panel, .workspace-pane, #workspaceNav, .dialog, .person-card, .people-pop, .update-banner, .toast, .stat-card, .stream-card, .join-panel, .session, .btn:not(.primary):not(.live):not(.danger), input, select, textarea) {
+html[data-border=liquid] :is(.home-card, .seu-sinal, .panel, .workspace-pane, #workspaceNav, .dialog, .person-card, .people-pop, .update-banner, .toast, .stat-card, .stream-card, .join-panel, .session, .btn:not(.primary):not(.live):not(.danger), input, select, textarea) {
   border-top-color: var(--edge-sheen);
 }
 /* Vídeo nunca fica transparente */
@@ -1556,11 +1616,11 @@ html[data-border=liquid] :is(.home-card, .dock, .panel, .workspace-pane, #worksp
 /* Líquido: vidro grosso. Brilho de luz no alto das bordas (especular), lente que entorta de leve o fundo nas
    barras e botões, cantos em cápsula e um "aperto" com mola ao clicar. */
 html[data-glass=liquid] { --radius: 12px; --radius-lg: 18px; --lift: inset 0 1px 0 var(--glass-sheen); }
-html[data-glass=liquid] :is(.home-card, .dock, .panel, .workspace-pane, #workspaceNav, .dialog, .person-card, .people-pop, .update-banner, .toast, .stat-card, .stream-card, .join-panel, .session) {
+html[data-glass=liquid] :is(.home-card, .seu-sinal, .panel, .workspace-pane, #workspaceNav, .dialog, .person-card, .people-pop, .update-banner, .toast, .stat-card, .stream-card, .join-panel, .session) {
   background-image: linear-gradient(165deg, rgba(255, 255, 255, .13), rgba(255, 255, 255, 0) 34%, rgba(255, 255, 255, 0) 72%, rgba(255, 255, 255, .05));
   box-shadow: inset 0 1px 0 var(--glass-sheen), inset 1px 0 0 rgba(255, 255, 255, .06), inset 0 -1px 0 rgba(0, 0, 0, .18), 0 10px 30px rgba(0, 0, 0, .22);
 }
-html[data-glass=liquid] :is(#workspaceNav, .dock, .toast, .seg) {
+html[data-glass=liquid] :is(#workspaceNav, .seu-sinal, .toast, .seg) {
   -webkit-backdrop-filter: url(#liquidLens) blur(calc(var(--glass-blur) * .6)) saturate(var(--glass-saturate)) brightness(1.06);
   backdrop-filter: url(#liquidLens) blur(calc(var(--glass-blur) * .6)) saturate(var(--glass-saturate)) brightness(1.06);
 }
@@ -1599,17 +1659,17 @@ html[data-glass=liquid] .btn.primary { box-shadow: inset 0 1px 0 rgba(255, 255, 
 .select-item.active { background: var(--accent-soft); }
 .select-item[aria-selected=true] { font-weight: 700; box-shadow: inset 3px 0 0 var(--accent); }
 .select-item[aria-disabled=true] { opacity: .5; cursor: default; }
-:is(html[data-glass=clear], html[data-glass=liquid]) :is(.select-pop, .dock-more-menu) {
+:is(html[data-glass=clear], html[data-glass=liquid]) :is(.select-pop, .rail-music-menu) {
   background: var(--panel-strong); /* mais cheia que os painéis: a lista fica por cima de texto */
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
 }
 /* Os menus de botões ficam dentro de painéis que já desfocam (o desfoque deles não pega): o mesmo fundo três
    vezes, na cor do tema, cobre ~99% e o botão de trás não aparece através do menu */
-:is(html[data-glass=clear], html[data-glass=liquid]) .dock-more-menu {
+:is(html[data-glass=clear], html[data-glass=liquid]) .rail-music-menu {
   background: linear-gradient(var(--panel-strong), var(--panel-strong)), linear-gradient(var(--panel-strong), var(--panel-strong)), var(--panel-strong);
 }
-html[data-glass=liquid] :is(.select-pop, .dock-more-menu) { border-radius: 18px; box-shadow: inset 0 1px 0 var(--glass-sheen), 0 14px 36px rgba(0, 0, 0, .35); }
+html[data-glass=liquid] :is(.select-pop, .rail-music-menu) { border-radius: 18px; box-shadow: inset 0 1px 0 var(--glass-sheen), 0 14px 36px rgba(0, 0, 0, .35); }
 html[data-glass=liquid] .select-item { border-radius: 12px; }
 html[data-border=liquid] .select-pop { border-top-color: var(--edge-sheen); }
 
@@ -1780,7 +1840,6 @@ html[data-glass=liquid] .theme-swatches { border-radius: 10px; }
 /* Números: mensagens novas e pedidos de amizade */
 .hub-badge { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
   background: var(--accent); color: var(--bg); font-size: 11px; font-weight: 700; letter-spacing: 0; }
-.hub-views button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
 .hub-section { margin: 6px 0 0; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .hub-room { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); }
 .hub-room-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
@@ -1791,29 +1850,16 @@ html[data-glass=liquid] .theme-swatches { border-radius: 10px; }
 .hub-room .avatar { width: 30px; height: 30px; flex: none; font-size: 12px; background-color: var(--person, var(--primary)); color: var(--bg); }
 .hub-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 /* Amigos */
-/* Busca + Adicionar numa linha; o formulário de adicionar ocupa o lugar dela */
-.hub-search-row { display: flex; gap: 8px; }
-.hub-search-row[hidden], .hub-add-form[hidden] { display: none; }
 .hub-filter { min-width: 0; width: 100%; height: 36px; box-sizing: border-box; padding: 0 10px; font: inherit; font-size: 13px;
   color: var(--text); background: var(--sunken); border: 1px solid var(--field-line); border-radius: 8px; }
 .hub-filter::placeholder { color: var(--muted); }
 .hub-filter:focus, .hub-filter:focus-visible { border-color: var(--accent); outline: 2px solid var(--accent-soft); outline-offset: 0; }
 .hub-filter[aria-invalid="true"] { border-color: var(--warn); }
-.hub-add-open { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 36px; }
-.hub-add-open svg, .hub-menu-item svg { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.hub-add-form { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
-.hub-add-form label { font-size: 13px; font-weight: 600; }
+.hub-menu-item svg { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.hub-add-form { display: flex; flex-direction: column; gap: 8px; }
 .hub-add-hint { margin: 0; font-size: 12px; line-height: 1.4; color: var(--muted); }
 .hub-add-hint.erro { color: var(--warn); }
-.hub-add-actions { display: flex; justify-content: flex-end; gap: 8px; }
-/* Todos / Online / Pedidos: chips */
-.hub-views { display: flex; gap: 6px; flex-wrap: wrap; }
-.hub-views button { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: 999px;
-  background: transparent; color: var(--muted); font: inherit; font-size: 12px; cursor: pointer; }
-.hub-views button:hover { color: var(--text); }
-.hub-views button[aria-selected="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--text); font-weight: 600; }
 .hub-friends .razze-status:empty { display: none; }
-.hub-empty-row { padding: 10px 12px; border: 1px dashed var(--line-strong); border-radius: 8px; font-size: 12px; line-height: 1.45; color: var(--muted); }
 .hub-friend-list { display: flex; flex-direction: column; gap: 4px; }
 .hub-friend { padding: 8px 8px 8px 10px; gap: 8px; }
 .hub-avatar { position: relative; flex: none; display: inline-flex; }
@@ -1838,7 +1884,7 @@ html[data-glass=liquid] .theme-swatches { border-radius: 10px; }
 /* Adicionar, filtro e abas ficam fixos no topo; só a lista rola. Botões das linhas compactos para o nome caber */
 .hub-friend-list { flex: 1; min-height: 0; overflow-y: auto; padding-right: 2px; }
 .hub-room .btn.small { flex: none; padding: 5px 10px; font-size: 12px; }
-.hub-search-row, .hub-add-form, .hub-views, .hub-friends .razze-status { flex: none; }
+.hub-add-form, .dm-add-tabs, .hub-friends .razze-status { flex: none; }
 
 /* Confirmação no tema (appConfirm em renderer/util.js): por cima de tudo, até das configurações */
 .modal.app-confirm { z-index: 60; }
@@ -1846,19 +1892,19 @@ html[data-glass=liquid] .theme-swatches { border-radius: 10px; }
 .app-confirm h2 { font-size: 16px; }
 .app-confirm-text { margin: 0; color: var(--text); font-size: 14px; line-height: 1.45; overflow-wrap: anywhere; }
 .app-confirm-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
-
-/* Subsalas de voz no painel de voz (renderer/subsalas.js): cabeçalho de cada canal e quem está nele, recuado */
-.voice-channel { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding: 6px 6px 6px 8px; border-radius: 6px; background: var(--panel-2); font-size: 13px; }
+/* Subsalas de voz no painel de voz (renderer/subsalas.js): cabeçalho de cada canal e quem está nele, recuado. Sem caixa:
+   as barrinhas de som e o nome; no seu canal elas ficam azuis e altas, nos outros, cinza e baixas */
+.voice-channel { display: flex; align-items: center; gap: 8px; min-height: 30px; box-sizing: border-box; margin-top: 12px; padding: 2px 4px; border-radius: 6px; background: none; font-size: 12px; }
 .voice-channel:first-child { margin-top: 0; }
-.voice-channel strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.voice-channel.here { box-shadow: inset 3px 0 0 var(--accent); }
-.voice-channel.here strong { color: var(--accent); }
+.voice-channel strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; color: var(--text-2); }
+.voice-channel.here strong { color: var(--text); }
 .voice-channel-icon { display: inline-flex; color: var(--muted); }
+.voice-channel.here .voice-channel-icon { color: var(--accent); }
 .voice-channel-icon svg, .pane-subsala svg, .voice-channel-delete svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.voice-channel-count { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.voice-channel-icon svg { width: 14px; height: 14px; stroke-width: 2.2; }
 .voice-channel.joinable { cursor: pointer; }
-.voice-channel.joinable:hover { background: var(--accent-soft); }
-.voice-channel.joinable:hover strong { color: var(--accent); }
+.voice-channel.joinable:hover { background: color-mix(in srgb, var(--text) 5%, transparent); }
+.voice-channel.joinable:hover strong { color: var(--text); }
 .voice-channel.joinable:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .voice-channel-delete { margin-left: auto; }
 .voice-channel-delete { width: 26px; height: 26px; padding: 0; display: grid; place-items: center; background: transparent; border-color: transparent; color: var(--muted); }
@@ -1881,7 +1927,7 @@ html[data-glass=liquid] .theme-swatches { border-radius: 10px; }
 .voice-dragging .drop-target.member { box-shadow: inset 2px 0 0 var(--accent); }
 
 /* Mensagens diretas (renderer/mensagens.js). Barra de conversas: uma faixa fina embaixo, até a barrinha. O envelope
-   abre o painel com as abas Conversas e Amigos.
+   abre o painel com quem está online e as conversas; Adicionar amigo sobe por cima.
    Cada conversa é um chip; aberta, o chip vira o rodapé de uma janela que sobe por cima do conteúdo */
 :root { --dm-h: 34px; }
 .has-dm-bar main { height: calc(100% - var(--dm-h)); }
@@ -1895,7 +1941,7 @@ html[data-glass=liquid] .theme-swatches { border-radius: 10px; }
 .dm-bar-label .hub-badge { position: absolute; top: 2px; right: 2px; min-width: 15px; height: 15px; padding: 0 4px; font-size: 9.5px; pointer-events: none; }
 .dm-bar-label:hover, .dm-bar-label:focus-visible, .dm-bar-label.open { color: var(--accent); background: var(--panel-2); outline: none; }
 .dm-bar-label.open { box-shadow: inset 0 2px 0 var(--accent); }
-/* O painel do envelope: sobe grudado na barra (como a janela de uma conversa), com as abas Conversas e Amigos */
+/* O painel do envelope: sobe grudado na barra (como a janela de uma conversa) */
 .dm-panel { position: absolute; left: 0; bottom: 100%; width: 380px; max-width: calc(100vw - var(--rail-w) - 20px); height: min(520px, calc(100vh - 140px));
   display: flex; flex-direction: column; gap: 8px; padding: 10px 12px 12px; background: var(--panel); border: 1px solid var(--line); border-bottom: 0;
   border-radius: 0 10px 0 0; box-shadow: 0 -12px 36px rgba(0, 0, 0, .45); transform-origin: bottom; animation: dm-panel-up .16s ease-out; z-index: 1; }
@@ -1903,43 +1949,95 @@ html[data-glass=liquid] .theme-swatches { border-radius: 10px; }
 @keyframes dm-panel-up { from { transform: scaleY(.6); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .dm-panel { animation: none; } }
 .dm-panel-head { flex: none; display: flex; align-items: center; gap: 8px; font-size: 13px; }
-/* Conversas | Amigos: duas abas lado a lado, com o número de cada uma */
-.dm-panel-tabs { flex: 1; display: flex; gap: 4px; padding: 3px; border-radius: 10px; background: var(--sunken); border: 1px solid var(--line); }
-.dm-panel-tabs button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 30px; padding: 0 10px; border: 0; border-radius: 7px;
-  background: transparent; color: var(--muted); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
-.dm-panel-tabs button:hover { color: var(--text); }
-.dm-panel-tabs button[aria-selected="true"] { background: var(--panel-2); color: var(--text); box-shadow: inset 0 -2px 0 var(--accent); }
-.dm-panel-tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-.dm-panel-tabs .hub-badge { min-width: 16px; height: 16px; font-size: 10px; }
+.dm-panel .dm-panel-head .hub-filter { flex: 1 1 auto; border-radius: 999px; padding: 0 14px; }
+/* Adicionar amigo: ícone redondo com o número de pedidos que chegaram */
+.dm-panel-head .dm-add-open { position: relative; flex: none; width: 36px; height: 36px; border-radius: 50%; color: var(--accent); background: var(--panel-2); }
+/* Fechar (o painel e o Adicionar amigo): do mesmo tamanho e forma do botão de adicionar amigo */
+.dm-panel-head #dmPanelClose, .dm-add-head #dmAddClose { width: 36px; height: 36px; border-radius: 50%; background: var(--panel-2); }
+.dm-panel-head #dmPanelClose:hover, .dm-add-head #dmAddClose:hover { color: var(--text); background: var(--panel-3); }
+.dm-add-head #dmAddClose { background: var(--panel-3); }
+.dm-add-open .hub-badge { position: absolute; top: -3px; right: -3px; min-width: 16px; height: 16px; padding: 0 4px; font-size: 10px; pointer-events: none; }
+.dm-add-open[aria-expanded="true"] { background: var(--accent-soft); }
+/* Online agora: uma fileira de amigos, cada um com a foto e o nome embaixo */
+.dm-online { flex: none; display: flex; flex-direction: column; gap: 8px; }
+.dm-online[hidden] { display: none; }
+.dm-online-list { list-style: none; margin: 0; padding: 0 0 2px; display: flex; gap: 10px; overflow-x: auto; }
+.dm-online-person { display: flex; flex-direction: column; align-items: center; gap: 5px; width: 58px; padding: 0; border: 0; background: transparent;
+  color: var(--text); font: inherit; font-size: 11.5px; cursor: pointer; }
+.dm-online-person span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dm-online-person .avatar { width: 44px; height: 44px; font-size: 16px; background-color: var(--person, var(--primary)); color: var(--bg);
+  box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--ok); }
+.dm-online-person:hover span, .dm-online-person:focus-visible span { color: var(--accent); }
+.dm-online-person:focus-visible { outline: none; }
+.dm-online-person:focus-visible .avatar { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--accent); }
+/* Adicionar amigo: sobe de baixo, por cima das conversas (que ficam escurecidas atrás) */
+.dm-add-backdrop { position: absolute; inset: 0; z-index: 2; background: rgba(0, 0, 0, .45); border-radius: inherit; }
+.dm-add-backdrop[hidden], .dm-add-sheet[hidden] { display: none; }
+.dm-add-sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; height: 88%; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px;
+  padding: 14px 12px 12px; background: var(--panel-2); border-top: 1px solid var(--line-strong); border-radius: 16px 16px 0 0;
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, .4); animation: dm-sheet-up .16s ease-out; }
+@keyframes dm-sheet-up { from { transform: translateY(24px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .dm-add-sheet { animation: none; } }
+.dm-add-head { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.dm-add-head h3 { margin: 0; font-size: 16px; }
+.dm-add-row { display: flex; gap: 8px; }
+.dm-panel .dm-add-row .hub-filter { flex: 1 1 auto; }
+.dm-add-row .btn { flex: none; height: 36px; }
+.dm-add-row .btn:disabled { opacity: .5; cursor: default; }
+/* Copiar meu link: botão secundário à esquerda, com ícone */
+.hub-add-link .hub-link-copy { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line-strong); background: transparent; }
+.hub-link-copy svg { width: 15px; height: 15px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+/* Lista vazia: some e o aviso fica logo embaixo das abas */
+.dm-add-sheet .hub-friend-list:empty { display: none; }
+.dm-add-sheet #friendsEmpty { padding: 24px 12px; text-align: center; }
+/* Recebidos | Enviados | Amigos */
+.dm-add-tabs { display: flex; gap: 4px; padding: 3px; border-radius: 10px; background: var(--sunken); border: 1px solid var(--line); }
+.dm-add-tabs button { flex: 1; height: 30px; padding: 0 6px; border: 0; border-radius: 7px; background: transparent; color: var(--muted);
+  font: inherit; font-size: 12.5px; font-weight: 600; white-space: nowrap; cursor: pointer; }
+.dm-add-tabs button:hover { color: var(--text); }
+.dm-add-tabs button[aria-selected="true"] { background: var(--panel-3); color: var(--text); box-shadow: inset 0 -2px 0 var(--accent); }
+.dm-add-tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .dm-panel-pane { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
 .dm-panel-pane[hidden] { display: none; }
 .dm-panel .hub-filter, .dm-panel .warn, .dm-panel .razze-status, .dm-panel .hint { flex: none; margin: 0; }
 .dm-panel .razze-status:empty { display: none; }
 .dm-panel .hub-list { flex: 1; min-height: 0; overflow-y: auto; }
-.dm-panel .hub-search-row .hub-filter { flex: 1 1 auto; } /* a busca encolhe para o Adicionar caber */
 .dm-panel .hub-friend-list .hub-list { flex: none; overflow: visible; }
-/* Pedidos de amizade em cima das conversas: leva para Amigos › Pedidos */
-.dm-requests-banner { flex: none; display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--accent); border-radius: 8px;
-  background: var(--accent-soft); color: var(--text); font: inherit; font-size: 12.5px; text-align: left; cursor: pointer; }
-.dm-requests-banner[hidden] { display: none; }
-.dm-requests-banner:hover, .dm-requests-banner:focus-visible { background: color-mix(in srgb, var(--accent) 22%, var(--panel-2)); outline: none; }
 .dm-bar-hint { align-self: center; min-width: 0; padding: 4px 6px; border: 0; border-radius: 6px; background: transparent; font: inherit; font-size: 12px; color: var(--muted);
   text-align: left; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dm-bar-hint:hover { color: var(--text); background: color-mix(in srgb, var(--text) 5%, transparent); }
 .dm-bar-hint strong { color: var(--text); font-weight: 600; }
 .dm-bar-hint .hub-badge { margin-left: 8px; }
 .dm-bar-hint[hidden] { display: none; }
+/* Cada conversa fechada é só a foto (34 px); aberta, a vaga cresce para a janela e a barra dela */
 .dm-slots { display: flex; align-items: stretch; gap: 6px; min-width: 0; }
-.dm-slot { position: relative; flex: 0 1 210px; min-width: 120px; display: flex; }
+.dm-slot { position: relative; flex: 0 0 34px; display: flex; }
 .dm-slot.open { flex: 0 0 340px; }
-.dm-chip { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 0 4px 0 12px; border-left: 1px solid var(--line); border-right: 1px solid var(--line);
-  background: var(--panel-2); font-size: 13px; cursor: pointer; user-select: none; }
-.dm-chip:hover, .dm-chip:focus-visible { background: var(--panel-3); outline: none; }
-.dm-slot.open .dm-chip { background: var(--panel); box-shadow: inset 0 2px 0 var(--accent); }
-.dm-chip.has-unread .dm-name { font-weight: 700; color: var(--accent); }
-.dm-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.dm-chip { position: relative; flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; cursor: pointer; user-select: none; }
+.dm-chip:focus-visible { outline: none; }
+.dm-slot.open .dm-chip { justify-content: flex-start; padding: 0 4px 0 10px; border-left: 1px solid var(--line); border-right: 1px solid var(--line);
+  background: var(--panel); box-shadow: inset 0 2px 0 var(--accent); }
+/* A foto: a inicial na cor da pessoa; status no canto de baixo, não lidas no de cima. Offline fica apagada */
+.dm-av { position: relative; flex: none; display: grid; }
+.dm-av .avatar { width: 26px; height: 26px; font-size: 11px; font-weight: 700; background-color: var(--person, var(--primary)); color: var(--bg); transition: box-shadow .15s; }
+.dm-slot.open .dm-av .avatar { width: 22px; height: 22px; font-size: 10px; }
+.dm-chip:hover .dm-av .avatar, .dm-chip:focus-visible .dm-av .avatar { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--line-strong); }
+.dm-slot.open .dm-chip .dm-av .avatar { box-shadow: none; }
+.dm-chip.offline .dm-av .avatar { background-color: var(--panel-3); color: var(--muted); }
+.dm-dot { position: absolute; right: -2px; bottom: -2px; width: 9px; height: 9px; border-radius: 50%; background: var(--muted); box-shadow: 0 0 0 2px var(--panel); }
 .dm-dot.on { background: var(--ok); }
+.dm-chip.offline .dm-dot { display: none; }
+.dm-av .dm-badge { position: absolute; top: -6px; right: -8px; min-width: 15px; height: 15px; padding: 0 4px; font-size: 9.5px; box-shadow: 0 0 0 2px var(--panel); pointer-events: none; }
+.dm-chip.has-unread .dm-name { font-weight: 700; color: var(--accent); }
 .dm-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Nome, ligar e fechar: aberta, na barra da janela; fechada, num balão em cima da foto, com o mouse ou o foco nela
+   (o ::after cobre o vão entre a foto e o balão, para o mouse não perder o balão no caminho) */
+.dm-chip-extra { flex: 1; min-width: 0; display: flex; align-items: center; gap: 2px; }
+.dm-slot:not(.open) .dm-chip-extra { position: absolute; left: -6px; bottom: calc(100% + 6px); z-index: 2; display: none; max-width: 260px; height: 32px; box-sizing: border-box;
+  padding: 0 3px 0 10px; background: var(--panel-2); border: 1px solid var(--line-strong); border-radius: 8px; box-shadow: var(--shadow-2); white-space: nowrap; }
+.dm-slot:not(.open) .dm-chip-extra::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 8px; }
+.dm-slot:not(.open, .dragging) .dm-chip:is(:hover, :focus-visible, :focus-within) .dm-chip-extra { display: flex; }
+.dm-slot:not(.open) .dm-name { flex: none; max-width: 160px; margin-right: 6px; font-size: 12px; font-weight: 600; }
 .dm-chip-btn { flex: none; width: 26px; height: 26px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 4px; background: transparent; color: var(--muted); cursor: pointer; }
 .dm-chip-btn:hover { color: var(--text); background: var(--panel-3); }
 .dm-chip-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
@@ -1979,16 +2077,15 @@ html[data-glass=liquid] .theme-swatches { border-radius: 10px; }
 .hub-room .btn.hub-talk { flex: none; width: 28px; height: 28px; padding: 0; display: grid; place-items: center; }
 .hub-talk svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .hub-list > li { flex-shrink: 0; }
-.dm-slot { min-width: 160px; }
 .dm-slot[hidden] { display: none; }
 /* Arrastar um chip para mudar a ordem: uma barrinha na cor de destaque mostra onde ele vai entrar */
 .dm-chip[draggable=true] { cursor: grab; }
 .dm-slot.dragging .dm-chip { opacity: .45; }
-.dm-slot.drop-before .dm-chip { box-shadow: inset 3px 0 0 var(--accent); }
-.dm-slot.drop-after .dm-chip { box-shadow: inset -3px 0 0 var(--accent); }
+.dm-slot.drop-before .dm-chip { box-shadow: -3px 0 0 var(--accent); }
+.dm-slot.drop-after .dm-chip { box-shadow: 3px 0 0 var(--accent); }
 /* "+N": as conversas que não cabem; a lista sobe a partir dele, no canto direito */
-.dm-more { flex: none; margin-left: auto; min-width: 50px; padding: 0 12px; border: 0; border-left: 1px solid var(--line); background: transparent; color: var(--muted);
-  font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.dm-more { flex: none; align-self: center; margin-left: auto; width: 28px; height: 28px; padding: 0; border: 1px dashed var(--line-strong); border-radius: 50%; background: transparent; color: var(--muted);
+  font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
 .dm-more:hover, .dm-more:focus-visible, .dm-more[aria-expanded=true] { color: var(--accent); background: var(--panel-2); outline: none; }
 .dm-more.has-unread { color: var(--accent); }
 .dm-more[hidden], .dm-more-menu[hidden] { display: none; }
@@ -2023,6 +2120,19 @@ html[data-tips="off"] .tip { display: none !important; }
 .music-tile .music-note { flex: none; display: inline-flex; color: var(--accent); }
 .music-tile .music-note svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .music-tile .music-where { flex: none; }
+/* Tela grande (transmissão e música): sem faixa. A foto, o nome e os ícones ficam direto sobre o vídeo, numa cor
+   clara, com uma sombra escura no alto só para dar leitura; somem junto com os controles (ui-idle). Saem o "Ao vivo"
+   (o anel da foto já diz) e a qualidade (fica nas Estatísticas); na música, a nota e o canal (é a do seu canal). O
+   volume vira só o ícone e a barrinha abre com o mouse em cima */
+.tile:not(.small) .tile-name { height: 64px; align-items: flex-start; padding: 8px 8px 0 12px; background: linear-gradient(var(--scrim), transparent); color: var(--on-video); }
+.tile:not(.small) .tile-name > :not(.tile-bar) { margin-top: 3px; }
+.tile:not(.small) .tile-name :is(.tile-chip.live, .tile-quality), .music-tile:not(.small) :is(.music-note, .music-where) { display: none; }
+.tile:not(.small) .tile-noaudio { color: var(--on-video); }
+.tile:not(.small) .tile-name-text { line-height: 24px; color: var(--on-video); text-shadow: 0 1px 3px var(--scrim); }
+.tile:not(.small) .tile-bar .btn.icon { color: var(--on-video); border-radius: 50%; }
+.tile:not(.small) .tile-bar .btn.icon:hover { background: color-mix(in srgb, var(--on-video) 16%, transparent); }
+.tile:not(.small) .tile-vol { width: 0; margin: 0; opacity: 0; transition: width .15s, opacity .15s, margin .15s; }
+.tile:not(.small) .tile-bar:hover .tile-vol, .tile:not(.small) .tile-vol:focus-visible { width: 80px; margin-right: 4px; opacity: 1; }
 /* O player do tamanho do vídeo (16:9), no meio: as barras em volta são do quadro, para a luz ambiente (musica.js) */
 .music-body { container-type: size; }
 .music-frame { position: absolute; inset: 0; margin: auto; width: min(100cqw, 100cqh * 16 / 9); height: min(100cqh, 100cqw * 9 / 16); border: 0; display: block; pointer-events: none; } /* o mouse fica com o quadro (mostra e esconde os controles); os controles são os nossos (controls=0) */
@@ -2043,10 +2153,26 @@ html[data-tips="off"] .tip { display: none !important; }
 .voice-music-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .voice-music-info strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .voice-music-info span { color: var(--muted); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.voice-channel-music { width: 26px; height: 26px; padding: 0; display: grid; place-items: center; background: transparent; border-color: transparent; color: var(--muted); }
-.voice-channel-music:hover { color: var(--accent); }
-.voice-channel-music { margin-left: auto; }
-.voice-channel-music + .voice-channel-delete { margin-left: 0; }
+/* A música no cabeçalho do canal (musica.js › musicHeadButton): uma pílula no canto. Tocando: barrinhas e o título,
+   clicar ouve junto (ouvindo, ela fica acesa). Sem música, no seu canal: "Pôr música", tracejada */
+.voice-channel-music, .voice-channel-song { flex: 0 1 auto; min-width: 0; max-width: 220px; height: 26px; margin-left: auto; display: inline-flex; align-items: center; gap: 7px;
+  padding: 0 12px 0 10px; border-radius: 13px; font: inherit; font-size: 11.5px; font-weight: 400; cursor: pointer; transition: background .15s, color .15s, border-color .15s; }
+.voice-channel-music { border: 1px dashed var(--line-strong); background: none; color: var(--muted); }
+.voice-channel-music:hover { color: var(--text); border-color: var(--muted); }
+.voice-channel-music svg { width: 12px; height: 12px; }
+.voice-channel-song { border: 1px solid transparent; background: var(--accent-soft); color: var(--text); }
+.voice-channel-song:hover { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+.voice-channel-song[aria-pressed=true] { border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
+.voice-channel-music:focus-visible, .voice-channel-song:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.voice-channel-song .song-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* As barrinhas paradas (o app roda junto com jogos: sem animação contínua); pausada, ficam baixas e cinza */
+.song-eq { flex: none; display: inline-flex; align-items: flex-end; gap: 2px; height: 10px; color: var(--accent); }
+.song-eq > span { width: 2px; height: 6px; border-radius: 1px; background: currentColor; }
+.song-eq > span:nth-child(2) { height: 10px; }
+.song-eq > span:nth-child(3) { height: 7px; }
+.voice-channel-song.paused .song-eq { color: var(--muted); }
+.voice-channel-song.paused .song-eq > span { height: 3px; }
+.voice-channel-music + .voice-channel-delete, .voice-channel-song + .voice-channel-delete { margin-left: 0; }
 .voice-sky .sky-music { fill: var(--accent); font-size: 8px; pointer-events: none; }
 /* Balão de colar o link */
 .music-pop { position: fixed; z-index: 40; width: 320px; max-width: calc(100vw - 16px); padding: 12px; background: var(--panel); color: var(--text);
@@ -2118,64 +2244,17 @@ html[data-tips="off"] .tip { display: none !important; }
 .phone-qr-side p { margin: 0; }
 .phone-url { display: block; padding: 8px 10px; border-radius: 6px; background: var(--sunken); font-size: 12px; overflow-wrap: anywhere; user-select: all; }
 
-/* Estatísticas e chat saíram da barra de baixo: ficam nas Configurações e na barrinha da direita (os botões continuam no
-   HTML, escondidos, porque o código ainda atualiza o estado deles) */
-.dock .dock-off { display: none !important; }
-
-/* Barra da sala flutuante: uma pílula por cima das telas, embaixo e no meio, em vez de uma faixa embaixo delas.
-   Transmitindo, o bloco Ao vivo mostra a miniatura, o nome da tela, Trocar e Parar (sem quem assiste). */
-.stage-col { position: relative; }
-.dock {
-  position: absolute; left: 50%; bottom: 16px; z-index: 6; translate: -50% 0; width: max-content; max-width: calc(100% - 32px);
-  min-height: 0; padding: 6px; gap: 8px; border-radius: 999px; box-shadow: 0 10px 30px rgba(0, 0, 0, .55);
-}
-.workspace-wide .dock { min-height: 0; }
-.dock > .dock-spacer { display: none; }
-.dock .live-chip { border-radius: 999px; }
-.dock .voice-dock.active { border-radius: 999px; }
-.dock > .voice-dock:not(.active) { padding-left: 0; border-left: 0; }
-.dock .dock-share { border-radius: 999px; }
 #liveText { display: none; }
-.dock .live-chip .btn.icon { border-radius: 50%; }
-.dock .live-thumb { border-radius: 999px 5px 5px 999px; }
-/* A pílula fica por cima do pé do palco: o texto do palco vazio sobe para não ficar embaixo dela */
-#room .empty-stage { padding-bottom: 96px; }
 :root:not([data-skin]) #room .empty-stage::after { top: 18px; bottom: auto; }
-
-/* Barra flutuante igual ao desenho A: botões redondos e cheios; Parar e Sair da voz em laranja cheio; a voz sem a
-   caixa em volta nem o "Na voz"; uma linha fina separando a transmissão da voz. Convidar saiu (fica em Pessoas). */
-.dock .btn.icon { width: 34px; height: 34px; border: 0; border-radius: 50%; background: color-mix(in srgb, var(--text) 10%, transparent); color: var(--text); box-shadow: none; }
-.dock .btn.icon:hover:not(:disabled) { background: color-mix(in srgb, var(--text) 18%, transparent); }
-.dock .live-chip { gap: 8px; height: 40px; padding: 3px 4px 3px 3px; }
-.dock .live-chip .btn.icon { width: 30px; height: 30px; }
-.dock #stopShareBtn, .dock #voiceJoin.voice-leave { background: var(--warn) !important; color: var(--bg) !important; border: 0 !important; }
-.dock #stopShareBtn:hover:not(:disabled), .dock #voiceJoin.voice-leave:hover:not(:disabled) { filter: brightness(1.1); }
-.dock .voice-dock.active { padding: 0 0 0 8px; border: 0; border-left: 1px solid var(--line); border-radius: 0; background: none; }
-.dock #voiceMe { display: none !important; }
-.dock #voiceMute[aria-pressed=true], .dock #voiceDeafen[aria-pressed=true] { background: var(--warn-soft, color-mix(in srgb, var(--warn) 22%, transparent)); color: var(--warn); }
-.dock #dockAddr { display: none !important; }
-/* Com o player do YouTube no palco, a pílula sobe e fica acima dos controles dele (play, barra de progresso, Trocar) */
-.stage-col:has(.music-tile:not(.small)) .dock { bottom: 64px; }
-/* Some sozinha com o mouse parado, junto com as telas (watchDock em renderer/navegacao.js) */
-/* O mesmo fade das faixas das telas e dos controles do YouTube (.ui-idle): só a opacidade, em .2s */
-.dock { transition: opacity .2s; }
-.dock.dock-sleep { opacity: 0; pointer-events: none; }
-@media (prefers-reduced-motion: reduce) { .dock { transition: none; } }
-/* Voz e atalhos saiu da barrinha da direita: fica nas Configurações (a engrenagem) */
-#voiceSettingsBtn { display: none !important; }
-/* Com qualquer janela ou menu aberto (configurações, transmitir, perfil, mensagens e amigos, pessoas, música, imagem,
-   cartão de alguém, confirmações), a pílula sai da frente */
-body:has(.modal:not([hidden]), #dmPanel:not([hidden]), #peoplePop:not([hidden]), #musicPop:not([hidden]),
-  #imageViewer:not([hidden]), #personCard:not([hidden])) .dock { opacity: 0 !important; pointer-events: none !important; }
 /* Entrar na voz (fora dela): as bolinhas de quem já está na voz e "Entrar", numa pílula; a setinha ao lado abre os
-   canais com gente (renderVoiceJoin em renderer/voz.js). As bolinhas soltas da barra só aparecem dentro da voz */
-.dock .voice-enter { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 16px 0 12px; border: 0; border-radius: 999px;
+   canais com gente (renderVoiceJoin em renderer/voz.js) */
+.seu-sinal .voice-enter { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 16px 0 12px; border: 0; border-radius: 999px;
   background: color-mix(in srgb, var(--text) 10%, transparent); color: var(--text); font-weight: 600; box-shadow: none; }
-.dock .voice-enter:hover:not(:disabled) { background: color-mix(in srgb, var(--text) 18%, transparent); }
-.dock .voice-enter > svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.dock .voice-enter .vs-faces .avatar { box-shadow: 0 0 0 2px var(--panel); }
-.dock .voice-dock:not(.active) #voiceAvatars { display: none !important; }
-.dock #voiceJoinMore { width: 30px; height: 30px; margin-left: -4px; }
+.seu-sinal .voice-enter:hover:not(:disabled) { background: color-mix(in srgb, var(--text) 18%, transparent); }
+.seu-sinal .voice-enter > svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.seu-sinal .voice-enter .vs-faces .avatar { box-shadow: 0 0 0 2px var(--panel); }
+.seu-sinal #voiceAvatars { display: none !important; } /* quem está na voz já aparece na aba Voz */
+.seu-sinal #voiceJoinMore { width: 30px; height: 30px; margin-left: -4px; }
 #voiceJoinPop .vs-row .vs-faces { flex: none; }
 /* Perfil aberto pela lista: o painel de voz vira a página da pessoa (renderSkyPage em renderer/ceu-voz.js). O fundo do
    perfil fica só na faixa de cima; sem fundo, a faixa leva a cor da pessoa */
@@ -2209,49 +2288,51 @@ body:has(.modal:not([hidden]), #dmPanel:not([hidden]), #peoplePop:not([hidden]),
 .sky-page-st.warn { background: var(--warn-soft, color-mix(in srgb, var(--warn) 14%, transparent)); color: var(--warn); }
 .sky-page-st svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 /* Ouvindo agora e Jogando no perfil (renderSkyPage; conta.js › atvDe) */
-.sky-page-atv { flex: none; display: flex; flex-direction: column; margin: 6px 12px 4px; padding: 4px 12px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--sunken); }
-.sky-page-atv .atv-item { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 8px 0; }
-.sky-page-atv .atv-item + .atv-item { border-top: 1px solid var(--line); }
+/* Linhas compactas, sem caixa: uma linha fina em cima, cada atividade numa linha com a capa pequena e o tipo à direita */
+.sky-page-atv { flex: none; display: flex; flex-direction: column; gap: 2px; margin: 6px 12px 0; padding-top: 6px; border-top: 1px solid var(--line); }
+.sky-page-atv .atv-item { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 3px 0; }
 /* A música é um botão (abre no Spotify): sem cara de botão, só um fundo leve no mouse */
-.sky-page-atv button.atv-item { width: calc(100% + 12px); margin: 0 -6px; padding-inline: 6px; border: 0; border-radius: var(--radius); background: none;
+.sky-page-atv button.atv-item { width: calc(100% + 8px); margin: 0 -4px; padding-inline: 4px; border: 0; border-radius: var(--radius); background: none;
   color: inherit; font: inherit; text-align: left; cursor: pointer; transition: background .15s; }
 .sky-page-atv button.atv-item:hover { background: color-mix(in srgb, var(--text) 6%, transparent); }
 .sky-page-atv button.atv-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 /* Capa e imagem do jogo com uma borda por dentro (não somem no fundo escuro); sem imagem, o quadrado leva o tom do destaque.
    Jogo usa a mesma cor da música: verde no app é "falando" */
-.sky-page-atv .atv-icon { flex: none; width: 48px; height: 48px; display: grid; place-items: center; overflow: hidden; border-radius: var(--radius);
+.sky-page-atv .atv-icon { flex: none; width: 32px; height: 32px; display: grid; place-items: center; overflow: hidden; border-radius: var(--radius);
   background: var(--accent-soft); color: var(--accent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 24%, transparent); }
 .sky-page-atv .atv-icon.capa { position: relative; background: var(--panel-2); box-shadow: none; }
 .sky-page-atv .atv-icon.capa::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 10%, transparent); pointer-events: none; }
 .sky-page-atv .atv-icon img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.sky-page-atv .atv-icon svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.sky-page-atv .atv-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-.sky-page-atv .atv-label { display: flex; align-items: center; gap: 6px; font-size: 10.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
-.sky-page-atv .atv-label svg { flex: none; width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; }
-.sky-page-atv .atv-title { font-size: 14px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sky-page-atv .atv-sub { font-size: 12px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sky-page-atv .atv-icon svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.sky-page-atv .atv-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.sky-page-atv .atv-label { flex: none; display: flex; align-items: center; color: var(--accent); }
+.sky-page-atv .atv-rotulo { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; } /* só para o leitor de tela */
+.sky-page-atv .atv-tipo { display: grid; }
+.sky-page-atv .atv-label svg { flex: none; width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.sky-page-atv .atv-title { font-size: 12px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sky-page-atv .atv-sub { font-size: 10.5px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sky-page-atv .atv-sep { color: var(--muted); }
 .sky-page-atv .atv-ha { display: flex; align-items: center; gap: 5px; }
-.sky-page-atv .atv-ha svg { flex: none; width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.sky-page-atv .atv-ha svg { flex: none; width: 10px; height: 10px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 /* A música: um vinil sai da capa e gira; pausada, volta para dentro e para (renderer/ceu-voz.js › atvVinil). Exceção
    aprovada à regra de animação contínua: só no perfil aberto, só transform, parada no modo gamer e em "reduzir movimento" */
-.sky-page-atv .atv-icon.atv-vinil { position: relative; width: 76px; overflow: visible; background: none; box-shadow: none; display: block; transition: width .4s ease; }
-.atv-vinil .vinil-sai { position: absolute; left: 2px; top: 2px; width: 44px; height: 44px; transform: translateX(26px); transition: transform .4s ease; }
+.sky-page-atv .atv-icon.atv-vinil { position: relative; width: 46px; overflow: visible; background: none; box-shadow: none; display: block; transition: width .4s ease; }
+.atv-vinil .vinil-sai { position: absolute; left: 2px; top: 2px; width: 28px; height: 28px; transform: translateX(14px); transition: transform .4s ease; }
 .atv-vinil .vinil-disco { position: absolute; inset: 0; border-radius: 50%; animation: atv-girar 4s linear calc(var(--atv-t, 0) * -1s) infinite;
   background: repeating-radial-gradient(circle, #0B0C0E 0 1px, #18191C 1px 2.5px); box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 8%, transparent); }
-.atv-vinil .vinil-selo { position: absolute; left: 50%; top: 50%; width: 16px; height: 16px; margin: -8px 0 0 -8px; overflow: hidden; border-radius: 50%; background: var(--accent); }
+.atv-vinil .vinil-selo { position: absolute; left: 50%; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; overflow: hidden; border-radius: 50%; background: var(--accent); }
 .atv-vinil .vinil-selo img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .atv-vinil .vinil-selo::after { content: ""; position: absolute; left: 50%; top: 50%; width: 3px; height: 3px; margin: -1.5px 0 0 -1.5px; border-radius: 50%; background: var(--sunken); }
 .atv-vinil .vinil-brilho { position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
   background: conic-gradient(from 300deg, transparent 0deg, rgb(255 255 255 / .1) 30deg, transparent 60deg, transparent 180deg, rgb(255 255 255 / .07) 210deg, transparent 240deg); }
-.atv-vinil .vinil-capa { position: absolute; left: 0; top: 0; width: 48px; height: 48px; display: grid; place-items: center; overflow: hidden; border-radius: var(--radius);
+.atv-vinil .vinil-capa { position: absolute; left: 0; top: 0; width: 32px; height: 32px; display: grid; place-items: center; overflow: hidden; border-radius: var(--radius);
   background: var(--accent-soft); color: var(--accent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 10%, transparent), 4px 0 10px rgb(0 0 0 / .45); }
 .atv-vinil .vinil-capa:has(img) { background: var(--panel-2); }
 .atv-vinil .vinil-capa img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.atv-vinil .vinil-capa svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.atv-vinil .vinil-capa svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .atv-item.pausada .vinil-sai { transform: translateX(0); }
-/* Pausada, o disco some atrás da capa e a caixa encolhe para 48 px: o texto anda para a esquerda e alinha com o do jogo */
-.sky-page-atv .atv-item.pausada .atv-icon.atv-vinil { width: 48px; }
+/* Pausada, o disco some atrás da capa e a caixa encolhe para 32 px: o texto anda para a esquerda */
+.sky-page-atv .atv-item.pausada .atv-icon.atv-vinil { width: 32px; }
 .atv-item.pausada .vinil-disco { animation-play-state: paused; }
 @keyframes atv-girar { to { transform: rotate(360deg); } }
 .sky-page-atv .atv-eq { display: inline-flex; align-items: flex-end; gap: 2px; width: 11px; height: 11px; }
@@ -2265,6 +2346,27 @@ body:has(.modal:not([hidden]), #dmPanel:not([hidden]), #peoplePop:not([hidden]),
   .atv-vinil .vinil-disco { animation: none; }
   .sky-page-atv .atv-eq > span { animation: none; transform: scaleY(.6); }
 }
+/* Os últimos jogos e músicas no perfil (renderSkyPage; conta.js › atvhDe): jogos em 3 colunas, músicas em linhas */
+.sky-page-hist { flex: none; display: flex; flex-direction: column; gap: 6px; margin: 12px 12px 0; }
+.sky-page-hist:last-child { margin-bottom: 14px; }
+.sky-page-hist-t { margin: 0; font-size: 10.5px; font-weight: 400; color: var(--muted); }
+.hist-jogos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.hist-jogo { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
+/* A imagem do jogo numa bolinha, sem caixa atrás; sem imagem, o controle na mesma bolinha */
+.hist-jogo-img { width: 44px; height: 44px; display: grid; place-items: center; overflow: hidden; border-radius: 50%; background: var(--panel-2); color: var(--accent); }
+.hist-jogo-img:has(img) { background: none; }
+.hist-jogo-img img, .hist-capa img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.hist-jogo-img svg, .hist-capa svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.hist-capa svg { width: 13px; height: 13px; }
+.hist-jogo-nome { max-width: 100%; font-size: 11px; font-weight: 700; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hist-quando { font-size: 10px; color: var(--muted); }
+.hist-musica { display: flex; align-items: center; gap: 10px; width: calc(100% + 8px); margin: 0 -4px; padding: 4px; border: 0; border-radius: var(--radius); background: none;
+  color: inherit; font: inherit; text-align: left; cursor: pointer; transition: background .15s; }
+.hist-musica:hover { background: color-mix(in srgb, var(--text) 6%, transparent); }
+.hist-musica:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.hist-capa { flex: none; width: 26px; height: 26px; display: grid; place-items: center; overflow: hidden; border-radius: 4px; background: var(--accent-soft); color: var(--accent); }
+.hist-musica-txt { flex: 1; min-width: 0; font-size: 11.5px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hist-musica-txt strong { color: var(--text); }
 /* Os nomes da pessoa no perfil: o da sala e o da conta Razze (voz.js › nomesDe) */
 .nomes-pessoa { display: grid; gap: 2px; margin: 4px 0 0; font-size: 12px; }
 .nomes-pessoa > div { display: flex; gap: 6px; min-width: 0; }
@@ -2281,34 +2383,14 @@ body:has(.modal:not([hidden]), #dmPanel:not([hidden]), #peoplePop:not([hidden]),
 .sky-page-act[aria-pressed=true] { color: var(--warn); }
 .sky-page-act:disabled { opacity: .45; cursor: default; }
 .sky-page-act svg { flex: none; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-/* O seu perfil: microfone e fone lado a lado; desligado fica laranja (cuidado), com o estado embaixo */
-.sky-page-toggles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 4px; }
-.sky-page-tog { display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 60px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-lg);
-  background: var(--panel-2); color: var(--text); font: inherit; text-align: left; cursor: pointer; transition: background .15s, border-color .15s; }
-.sky-page-tog:hover { background: var(--panel-3); }
-.sky-page-tog .tog-icon { flex: none; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; background: color-mix(in srgb, var(--text) 8%, transparent); }
-.sky-page-tog .tog-icon svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
-.sky-page-tog .tog-text { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.sky-page-tog .tog-name { font-size: 13px; font-weight: 600; }
-.sky-page-tog .tog-state { font-size: 11.5px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sky-page-tog[aria-pressed=true] { border-color: color-mix(in srgb, var(--warn) 45%, transparent); background: var(--warn-soft); }
-.sky-page-tog[aria-pressed=true] .tog-icon { background: color-mix(in srgb, var(--warn) 16%, transparent); color: var(--warn); }
-.sky-page-tog[aria-pressed=true] .tog-state { color: var(--warn); }
 .sky-page .sky-focus-vol { width: auto; margin: 4px 20px 16px; }
-/* Na voz: microfone, fone e sair no meio da pílula; no fim, quem está na chamada (as bolinhas, depois de uma linha) */
-.dock .voice-dock #voiceMute { order: 1; }
-.dock .voice-dock #voiceDeafen { order: 2; }
-.dock .voice-dock #voiceJoin { order: 3; }
-.dock .voice-dock #voiceJoinMore { order: 4; }
-.dock .voice-dock #voiceAvatars { order: 5; padding-left: 8px; border-left: 1px solid var(--line); }
-.dock .voice-dock .voice-stack { border-radius: 999px; }
 
 /* Página do perfil: nome em destaque, canal e Ao vivo em selos na mesma linha, volume com nome, X sem fundo e sem
    ser cortado pela barra de rolagem */
 .sky-page .sky-focus-name { color: var(--text); font-weight: 700; }
 .sky-page-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .sky-page-tags .live-pill { font-size: 10px; padding: 2px 8px; text-transform: uppercase; letter-spacing: .04em; }
-.sky-focus.sky-page { scrollbar-width: thin; } /* sem reservar espaço para a barra: o fundo vai até a borda direita */
+.sky-focus.sky-page { scrollbar-width: none; } /* sem barra de rolagem à vista (a roda do mouse ainda rola se faltar altura) */
 .sky-page .sky-page-back { width: 32px; height: 32px; background: none; border-color: transparent; box-shadow: none; color: var(--text-2); }
 .sky-page .sky-page-back:hover { color: var(--text); background: color-mix(in srgb, var(--text) 8%, transparent); }
 .sky-page-label { margin: 8px 20px 0; font-size: 12px; color: var(--muted); }
@@ -2325,11 +2407,22 @@ body:has(.modal:not([hidden]), #dmPanel:not([hidden]), #peoplePop:not([hidden]),
 /* A foto fica colada à esquerda do fundo (ainda no meio da altura); nome e selos alinhados com ela, à esquerda */
 .sky-page-banner { place-items: center start; padding-left: 16px; }
 .sky-page-head { align-items: flex-start; text-align: left; }
+/* Cabeçalho compacto: nome menor com a conta embaixo ("conta Flyleaf"), o canal pequeno à direita e a frase em itálico */
+.sky-page-head { flex-direction: row; gap: 8px; padding: 10px 12px 2px; }
+.sky-page-who { gap: 2px; }
+.sky-page .sky-focus-name { font-size: 15px; }
+.sky-page-head > .sky-focus-where { flex: none; margin-top: 3px; font-size: 10px; }
+.sky-page-tags { font-size: 11px; }
+.sky-page-conta { color: var(--muted); }
+.sky-page .sky-focus-bio { margin-top: 2px; font-size: 12px; font-style: italic; }
 .sky-page-who { align-items: flex-start; }
 .sky-page-tags { justify-content: flex-start; }
 /* O perfil fica embaixo, colado na borda de baixo do painel de voz (a lista continua à vista em cima) */
 .sky-focus.sky-page, .sky-focus.sky-page.has-bg { inset: auto 0 0 0; max-height: 100%; border-radius: 14px 14px 0 0;
   border-top: 1px solid var(--line-strong); box-shadow: 0 -12px 32px rgba(0, 0, 0, .45); }
+/* Painel de voz largo (os outros fechados): o perfil para em 440 px, preso no canto de baixo. Mais largo que isso, o
+   fundo (um quadrado de 520 px, fundo-perfil.js › FUNDO_SIDE) seria ampliado e ficaria borrado, e as linhas esticariam */
+.sky-focus.sky-page, .sky-focus.sky-page.has-bg { right: auto; width: 100%; max-width: 440px; border-right: 1px solid var(--line-strong); }
 .sky-page .sky-focus-vol { margin-bottom: 14px; }
 
 /* Seu perfil: a prévia em cima (fundo, foto à esquerda e o nome na fonte escolhida), depois Aparência e Nome */
@@ -2345,13 +2438,22 @@ body:has(.modal:not([hidden]), #dmPanel:not([hidden]), #peoplePop:not([hidden]),
 .profile-card-cam svg, .profile-card-bgbtn svg, .profile-lock svg, .profile-row .btn.icon svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .profile-card-bgbtn { position: absolute; right: 8px; bottom: 8px; display: inline-flex; align-items: center; gap: 6px;
   background: color-mix(in srgb, var(--panel) 80%, transparent); }
-.profile-card-info { display: flex; flex-direction: column; gap: 4px; padding: 10px 16px 12px; }
-.profile-card-info strong { font-size: 18px; overflow-wrap: anywhere; }
+/* Nome, conta e frase no mesmo tamanho do cartão da voz (renderSkyPage em renderer/ceu-voz.js) */
+.profile-card-info { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px 12px; }
+.profile-card-info strong { font-size: 15px; overflow-wrap: anywhere; }
+.profile-card-conta { font-size: 11px; color: var(--muted); }
+.profile-card-conta:empty { display: none; }
+.profile-card-bio { margin-top: 2px; font-size: 12px; font-style: italic; line-height: 1.35; color: var(--text-2); overflow-wrap: anywhere; }
+/* A legenda fica fora do cartão, como rótulo (dentro dele parecia parte do perfil) */
+.profile-preview-label { margin: 0 0 6px; font-size: 12px; color: var(--muted); }
+.profile-dialog:focus { outline: none; }
 .profile-sec { margin: 6px 0 4px; font: 600 12px/1 var(--st-mono, Consolas, monospace); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
 .profile-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; font-size: 14px; }
 .profile-row[hidden] { display: none; }
+/* Trocar foto e fundo é pela prévia; a linha só aparece quando há Ajustar ou Tirar */
+.profile-row:has(.profile-row-actions):not(:has(.profile-row-actions > :not([hidden]))) { display: none; }
 .profile-row > span:first-child { display: inline-flex; align-items: center; gap: 4px; }
-.profile-row-actions { display: inline-flex; gap: 6px; }
+.profile-row-actions { display: inline-flex; gap: 12px; } /* a lixeira afastada do Ajustar */
 .profile-row .btn.icon { width: 34px; height: 34px; padding: 0; display: grid; place-items: center; }
 .profile-seg { display: inline-flex; padding: 3px; border-radius: 10px; background: var(--sunken); border: 1px solid var(--line); }
 .profile-seg button { height: 30px; padding: 0 14px; border: 0; border-radius: 7px; background: none; color: var(--text-2); font: inherit; font-size: 13px; cursor: pointer; }
@@ -2401,6 +2503,7 @@ body:has(.modal:not([hidden]), #dmPanel:not([hidden]), #peoplePop:not([hidden]),
 .addr.room-senha code { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: .04em; }
 .room-senha .btn.icon { width: 28px; height: 28px; padding: 0; display: grid; place-items: center; }
 .room-senha .btn.icon svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.check-line.room-amigos { margin-top: 6px; font-size: 13px; } /* o interruptor do host: amigos dos membros (salas-amigos.js) */
 .chamada-modos { display: flex; flex-direction: column; gap: 6px; }
 .chamada-modo { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 2px 8px; padding: 8px 10px; border-radius: 8px; background: var(--sunken); cursor: pointer; }
 .chamada-modo:has(input:disabled) { cursor: default; opacity: .6; }
@@ -2434,10 +2537,10 @@ body:has(.modal:not([hidden]), #dmPanel:not([hidden]), #peoplePop:not([hidden]),
 
 /* ---------- Início: amigos e entrar na conta ---------- */
 .home-signin {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; margin-bottom: 12px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px;
   background: var(--panel); border: 1px solid var(--line); border-radius: 12px; font-size: 14px; color: var(--text-2);
 }
-.home-friends { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; margin-bottom: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+.home-friends { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
 .home-friends-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .home-friends-actions { display: flex; align-items: center; gap: 12px; }
 .home-friends-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
@@ -2490,21 +2593,22 @@ button.home-chip:hover { color: var(--text); }
 .home-friend-actions { flex: none; display: flex; align-items: center; gap: 6px; }
 .home-friend-chamar { opacity: 0; transition: opacity .12s; }
 .home-friend:hover .home-friend-chamar, .home-friend:focus-within .home-friend-chamar { opacity: 1; }
+.home-friend-name { flex: 1 1 auto; min-width: 72px; }
+/* Coluna estreita: as etiquetas ficam numa linha e cortam com "…" (o texto inteiro está na dica); nada vaza da linha */
+.home-friend-chips { min-width: 0; max-width: 100%; }
+.home-chip { min-width: 0; }
+.home-chip-texto { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.home-friend-chips { align-items: center; }
+.home-friend-chips .home-friend-entrar { flex: none; height: 24px; min-height: 0; padding: 0 12px; font-size: 12px; border-radius: 999px; }
+/* "Entre na sua conta": na coluna estreita o botão desce para baixo do texto, sem quebrar */
+.home-signin { flex-wrap: wrap; }
+.home-signin .btn { flex: none; white-space: nowrap; }
+/* Coluna bem estreita: fica só a etiqueta de onde o amigo está (jogo e música somem); Entrar, Mensagem e Ligar continuam */
+@container lado (max-width: 300px) { .home-friend-chips .home-chip:not(.home-friend-sala) { display: none; } }
+@container lado (max-width: 360px) { .home-friend-chamar { display: none; } }
 .btn.icon.home-friend-ligar { border-color: var(--accent); color: var(--accent); background: transparent; }
-@media (max-width: 760px) { .home-friend-chamar { display: none; } }
 @media (prefers-reduced-motion: reduce) { .home-friend-chamar { transition: none; } }
 
-/* Sua sala: "Abrir minha sala" grande com quem vai ver, as opções num ícone ao lado e "Entrar com código" menor */
-.home-cta { grid-template-columns: 1fr minmax(170px, 30%); }
-@media (max-width: 700px) { .home-cta { grid-template-columns: 1fr; } }
-.create-block { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
-.create-block .hint { grid-column: 1 / -1; }
-#goQuick { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; height: auto; min-height: 52px; padding-block: 8px; }
-.go-quick-sub { font-size: 12px; font-weight: 500; opacity: .8; }
-.go-quick-sub:empty, #home.tem-salas .go-quick-sub { display: none; }
-#goCreate { width: 52px; height: auto; min-height: 52px; }
-/* Com sala de amigo aberta, os três viram botões comuns, da mesma altura */
-#home.tem-salas #goQuick, #home.tem-salas #goCreate, #home.tem-salas #goJoin { min-height: 44px; height: 44px; padding-block: 0; }
 /* Ninguém com sala aberta: uma linha, sem a caixa tracejada */
 .sessions-empty { padding: 0; border: 0; text-align: left; }
 .last-room-info strong { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -2601,10 +2705,9 @@ button.home-chip:hover { color: var(--text); }
 .share-open-menu svg { flex: none; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .share-open-menu .som-text { display: flex; flex-direction: column; gap: 2px; font-size: 14px; }
 .share-open-menu small { font-size: 12px; color: var(--muted); }
-.dock .live-chip #shareOpenBtn { width: 30px; height: 30px; }
 /* Sair da voz só com contorno laranja (enche ao passar o mouse): não se confunde com o Parar, que é cheio */
-.dock #voiceJoin.voice-leave { background: transparent !important; color: var(--warn) !important; box-shadow: inset 0 0 0 1.5px var(--warn) !important; }
-.dock #voiceJoin.voice-leave:hover:not(:disabled) { background: var(--warn) !important; color: var(--bg) !important; filter: none; }
+.seu-sinal #voiceJoin.voice-leave { background: transparent !important; color: var(--warn) !important; box-shadow: inset 0 0 0 1.5px var(--warn) !important; }
+.seu-sinal #voiceJoin.voice-leave:hover:not(:disabled) { background: var(--warn) !important; color: var(--bg) !important; filter: none; }
 /* Lista "Na voz": nomes do mesmo tamanho e peso (cada um na sua fonte); o perfil abre dentro dela */
 .vs-row .vs-name { font-size: 14px; font-weight: 500; line-height: 1.3; }
 #voiceStackPop > .sky-focus.sky-page, #voiceStackPop > .sky-focus.sky-page.has-bg { position: relative; inset: auto; flex: none; max-height: none;
@@ -2624,12 +2727,21 @@ button.home-chip:hover { color: var(--text); }
   border-color: transparent !important; background: var(--warn-soft, color-mix(in srgb, var(--warn) 16%, transparent)); color: var(--warn); }
 .voice-channel-delete:hover:not(:disabled) svg { transform: scale(1.15); }
 .voice-channel-delete:focus-visible { outline: 2px solid var(--warn); outline-offset: 1px; }
-/* Hover do X de apagar: o X num laranja forte, o fundo num laranja fraco e uma borda laranja */
-.voice-channel-delete:hover:not(:disabled), .sky-card-head .voice-channel-delete:hover:not(:disabled) {
+/* Hover do X de apagar no cartão do mapa: o X num laranja forte, o fundo num laranja fraco e uma borda laranja */
+.sky-card-head .voice-channel-delete:hover:not(:disabled) {
   color: var(--warn) !important; background: color-mix(in srgb, var(--warn) 14%, transparent) !important;
   border-color: color-mix(in srgb, var(--warn) 70%, transparent) !important; }
-.voice-channel-delete:hover:not(:disabled) svg { stroke-width: 2.4; }
+.sky-card-head .voice-channel-delete:hover:not(:disabled) svg { stroke-width: 2.4; }
 .voice-channel-delete { border: 1px solid transparent; }
+/* Painel de voz: o X de apagar a subsala só aparece com o mouse (ou o foco do teclado) no canal. Ele entra crescendo
+   de 0 a 26 px e o que vem antes dele (Pôr música ou a música) desliza para a esquerda, dando espaço. Fino, cinza e
+   sem caixa; só com o mouse em cima dele fica laranja, numa bolinha clara */
+.voice-channel .voice-channel-delete { width: 0; height: 26px; min-width: 0; flex: none; overflow: hidden; border: 0; border-radius: 50%; opacity: 0; color: var(--muted);
+  transition: width .18s ease-out, margin .18s ease-out, opacity .15s ease-out, background-color .15s ease-out, color .15s ease-out; }
+.voice-channel:is(:hover, :focus-within) .voice-channel-delete { width: 26px; opacity: 1; }
+.voice-channel:is(:hover, :focus-within) :is(.voice-channel-music, .voice-channel-song) + .voice-channel-delete { margin-left: 4px; }
+.voice-channel .voice-channel-delete svg { width: 12px; height: 12px; }
+@media (prefers-reduced-motion: reduce) { .voice-channel .voice-channel-delete { transition: none; } }
 
 /* Feedback e bugs (renderer/feedback.js): janela com três abas de perguntas curtas */
 .fb-dialog { width: min(560px, 100%); gap: 14px; }
@@ -2682,3 +2794,168 @@ button.home-chip:hover { color: var(--text); }
 .adm-fb-dados dt { color: var(--muted); }
 .adm-fb-dados dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .adm-fb-img { max-width: 100%; max-height: 360px; align-self: flex-start; border-radius: 6px; border: 1px solid var(--line); }
+
+/* Entrando na sala (renderer/sala.js: comCarregando): por cima de tudo, inclusive da primeira entrada, até a sala
+   abrir ou dar erro. A roda só gira enquanto espera a conexão; no modo gamer e com "reduzir movimento" fica parada */
+.entrada-carregando { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; padding: 24px; background: var(--scrim); }
+.entrada-carregando[hidden] { display: none; }
+.entrada-caixa { width: min(340px, 100%); display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 24px 22px 18px;
+  background: var(--panel); color: var(--surface-text, var(--text)); border: 1px solid var(--line); border-radius: var(--radius-lg); text-align: center; }
+.entrada-caixa h2 { margin: 4px 0 0; font-size: 16px; }
+.entrada-caixa .hint { margin: 0; min-height: 18px; font-size: 13px; overflow-wrap: anywhere; }
+.entrada-caixa .btn { margin-top: 6px; }
+.entrada-roda { width: 34px; height: 34px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--accent); animation: entrada-gira .8s linear infinite; }
+@keyframes entrada-gira { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .entrada-roda { animation: none; border-color: var(--accent); border-right-color: var(--line); } }
+:root[data-gamer="on"] .entrada-roda { animation: none; border-color: var(--accent); border-right-color: var(--line); }
+
+/* ---------- Sala nova (docs/spec/sala-nova.md): cabeçalho da sala, abas do painel e o cartão Seu sinal ---------- */
+/* Cabeçalho, em cima do palco: o nome da sala abre o menu da sala; à direita Grade/Destaque, Convidar e Sair.
+   Sem espaço, some a rede e as pessoas (apertado-1) e depois o texto dos botões (apertado-2): fitRoomHead */
+.room-head { flex: none; display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 44px; box-sizing: border-box; padding: 4px 0; }
+.room-menu-wrap { position: relative; display: flex; flex: 0 1 auto; min-width: 0; }
+/* O nome só encolhe (com reticências) depois que a rede e os textos dos botões já saíram */
+.room-head:not(.apertado-2) .room-menu-wrap { flex-shrink: 0; }
+.room-name { display: inline-flex; align-items: center; gap: 7px; min-width: 0; max-width: 100%; height: 36px; padding: 0 10px; border: 1px solid transparent; border-radius: 8px;
+  background: none; color: var(--text); font: inherit; font-size: 15px; font-weight: 650; cursor: pointer; }
+.room-name:hover, .room-name[aria-expanded=true] { background: var(--panel); border-color: var(--line); }
+.room-name:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+#roomHeadTitle { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.room-name svg { flex: none; width: 15px; height: 15px; fill: none; stroke: var(--muted); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.room-name-star { display: none; }
+.room-head-meta { flex: none; font-size: 12px; color: var(--muted); white-space: nowrap; }
+.room-head-space { flex: 1 1 0; min-width: 0; }
+.room-head > :not(.room-menu-wrap):not(.room-head-space) { flex: none; }
+.room-head-btn { display: inline-flex; align-items: center; gap: 6px; }
+.room-head-btn svg { flex: none; width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.room-head .room-leave { color: #E26B6B; }
+.room-head .room-leave:hover:not(:disabled) { color: #F08F8F; border-color: rgba(226, 107, 107, .45); background: rgba(226, 107, 107, .1); }
+.room-head.apertado-1 .room-head-meta { display: none; }
+.room-head.apertado-2 .room-head-btn .dock-label { display: none; }
+.room-head.apertado-2 .room-head-btn { width: 32px; padding: 0; justify-content: center; }
+/* Menu da sala: endereço e senha, quem pode entrar e, embaixo, desempenho e sair */
+.room-menu { --text: var(--surface-text); --text-2: var(--surface-text-2); --muted: var(--surface-muted);
+  position: absolute; top: calc(100% + 6px); left: 0; z-index: 25; width: min(340px, calc(100vw - 40px)); box-sizing: border-box;
+  display: flex; flex-direction: column; gap: 10px; padding: 12px; color: var(--text);
+  border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); box-shadow: 0 12px 32px rgba(0, 0, 0, .45); }
+.room-menu-addr { display: flex; flex-direction: column; gap: 8px; }
+.room-menu-addr .addr { background: var(--sunken); }
+.room-menu-addr .warn { margin: 0; }
+.room-menu-itens { display: flex; flex-direction: column; gap: 2px; padding-top: 8px; border-top: 1px solid var(--line); }
+.room-menu-item { display: flex; align-items: center; gap: 10px; min-height: 38px; padding: 0 10px; border: 0; border-radius: 6px;
+  background: transparent; color: var(--text); font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+.room-menu-item:hover, .room-menu-item:focus-visible { background: var(--panel-3); outline: none; }
+.room-menu-item svg { flex: none; width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.room-menu-item.danger { color: #E26B6B; }
+/* O palco começa logo embaixo do cabeçalho */
+#room .stage-col { gap: 8px; }
+
+/* Abas do painel: Voz, Chat e Pessoas, numa faixa que fecha o bloco em cima. O painel de chat e o de voz continuam
+   os de sempre; sozinhos (uma aba), o título deles sai, porque a aba já diz o que é */
+.pane-tabs { display: none; }
+.workspace-in-room.has-workspace-pane .pane-tabs { --text: var(--surface-text); --muted: var(--surface-muted);
+  display: flex; align-items: center; gap: 2px; flex: none; padding: 4px 6px 0 8px; color: var(--text);
+  border: 1px solid var(--line); border-radius: 10px 10px 0 0; background: var(--panel); }
+.pane-tab { position: relative; display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 10px; border: 0; border-bottom: 2px solid transparent;
+  border-radius: 0; background: none; color: var(--muted); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.pane-tab:hover { color: var(--text); }
+.pane-tab[aria-pressed=true] { color: var(--text); border-bottom-color: var(--accent); }
+.pane-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; border-radius: 6px; }
+.pane-tab-star { display: none; }
+.pane-tab-n { font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
+.pane-tab .people-speak { top: 7px; right: 0; }
+.pane-tabs-space { flex: 1 1 0; min-width: 0; }
+.pane-tabs-btn { flex: none; width: 30px; height: 30px; }
+.pane-tabs-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+#paneJuntos[aria-pressed=true] { color: var(--accent); }
+.workspace-in-room.has-workspace-pane:not(.workspace-wide) :is(#chatTab, #chatTab[hidden] + #voicePane, #chatTab[hidden] + .pane-split + #voicePane, #workspacePanes.map-focus > .map-chat-strip) {
+  border-top-width: 0; border-radius: 0; }
+#workspacePanes:not(.juntos) #chatTab .chat-head, #workspacePanes:not(.juntos) #voicePaneTitle { display: none; }
+#workspacePanes:not(.juntos) #voicePane .pane-head { margin-bottom: 8px; }
+/* Aba Pessoas: a lista no lugar do chat e da voz (antes era um balão por cima do chat) */
+#workspacePanes > .people-pop { position: static; flex: 1 1 0; min-height: 0; max-height: none; z-index: auto; padding: 12px 14px;
+  border: 1px solid var(--line); border-top: 0; border-radius: 0; background: var(--panel); box-shadow: none; }
+
+/* Seu sinal: fecha o bloco embaixo, em qualquer aba. Em cima, em que canal você está; no meio, a voz (Entrar, ou
+   microfone, fone, sair e Voz e atalhos); embaixo, Transmitir tela (ao vivo, o bloco Ao vivo) */
+.seu-sinal { flex: none; display: flex; flex-direction: column; gap: 8px; padding: 10px 12px 12px; color: var(--text);
+  border: 1px solid var(--line); border-radius: 0 0 10px 10px; background: var(--panel); }
+.ss-linha { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ss-estado { min-height: 20px; font-size: 12px; }
+.ss-rotulo { flex: none; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.ss-onde { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+.seu-sinal.na-voz .ss-onde { color: var(--ok); }
+.seu-sinal .rail-music-menu { top: auto; right: 0; bottom: calc(100% + 8px); }
+.ss-voz .voice-dock { flex: 1 1 auto; min-width: 0; }
+.seu-sinal .voice-dock.active { padding: 0; border: 0; border-radius: 0; background: none; }
+.seu-sinal #voiceMe { flex: 1 1 auto; min-width: 0; margin-right: 0; }
+.seu-sinal .voice-dock:not(.active) #voiceJoin { flex: 1 1 auto; justify-content: center; }
+/* O Entrar da voz fica só no cartão (o do painel continua no HTML para quem clica nele por código) */
+.pane-voice-actions :is(.pane-join, #paneVoiceSettings) { display: none; }
+.voice-in-call .pane-voice-actions:not(:has(> :not([hidden]):not(.pane-join):not(#paneVoiceSettings))) { display: none; }
+/* Lista e Mapa com o nome (com uma aba só, o seletor fica no lugar do título "Chat de voz") */
+.voice-view button:has(> span) { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; }
+/* Os avisos descem para não cobrir o cabeçalho da sala (Convidar e Sair) */
+.workspace-in-room .toast { top: 64px; }
+.seu-sinal .btn.icon { width: 36px; height: 36px; }
+.seu-sinal .ss-ajustes { flex: none; }
+.seu-sinal .ss-ajustes svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ss-tx { flex-wrap: wrap; }
+.ss-tx .dock-share { flex: 1 1 auto; justify-content: center; }
+.ss-tx .live-chip { flex: 1 1 auto; min-width: 0; }
+.ss-tx .live-info { flex: 1 1 auto; }
+.ss-tx .live-info strong { max-width: none; }
+.ss-tx .pip-chip { flex: 1 1 100%; }
+.workspace-wide :is(.pane-tabs, .seu-sinal) { grid-column: 1 / -1; }
+.workspace-wide .seu-sinal { border-radius: 10px; }
+.workspace-wide .pane-tabs { border-radius: 10px; }
+
+/* Painel recolhido: a coluninha da barrinha com abrir o painel, microfone, fone, entrar/sair da voz e transmitir */
+.seu-sinal-mini { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.seu-sinal-mini[hidden] { display: none; }
+#workspaceNav .seu-sinal-mini [aria-pressed=true] { color: var(--warn); }
+#workspaceNav #miniVoice.mini-sair { color: var(--warn); }
+#workspaceNav #miniShare.ao-vivo { color: var(--accent); background: var(--accent-soft); }
+
+/* Palco vazio: quem está transmitindo, com o Assistir de cada um, embaixo da constelação */
+#room .empty-stage:has(.empty-live:not([hidden])) { gap: 12px; }
+:root[data-skin] #room .empty-stage:has(.empty-live:not([hidden])) { align-content: center; }
+#emptyText.empty-rotulo { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+.empty-live { position: relative; z-index: 1; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.empty-assistir { display: inline-flex; align-items: center; gap: 8px; }
+.empty-assistir svg { width: 13px; height: 13px; fill: currentColor; stroke: none; }
+
+/* ---------- Modo Líder (docs/spec/modo-lider.md): o selo da subsala, o menu do modo e a linha no Seu sinal ---------- */
+.voice-channel-selo { flex: none; padding: 2px 7px; border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); border-radius: 999px;
+  color: var(--accent); font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+.voice-channel-selo.ao-vivo { background: var(--accent-soft); }
+.voice-channel.lider .voice-channel-icon { color: var(--accent); }
+.subsala-modo-menu { min-width: 260px; }
+.subsala-modo-menu button:disabled { opacity: .5; cursor: default; }
+.subsala-modo-menu button:disabled:hover { background: none; }
+.ss-lider { min-height: 30px; font-size: 12.5px; color: var(--muted); }
+.ss-lider-icone { flex: none; display: inline-flex; color: var(--muted); }
+.ss-lider-icone svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ss-lider.ouvindo .ss-lider-icone { color: var(--accent); }
+.ss-lider.ouvindo .ss-lider-texto { color: var(--text); }
+.ss-lider-texto { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ss-lider-vol { flex: 0 1 96px; min-width: 56px; accent-color: var(--accent); }
+.ss-lider-vol[hidden] { display: none; }
+.ss-lider .btn { flex: none; }
+
+/* Pedir para falar: a mão no cartão, a palavra acesa, as seções embaixo da Líder e o número na aba Voz */
+.ss-lider-pedir { display: inline-flex; align-items: center; gap: 6px; }
+.ss-lider-pedir svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ss-lider.com-palavra .ss-lider-icone, .ss-lider.com-palavra .ss-lider-texto { color: var(--ok); }
+#workspaceNav #miniMao[aria-pressed=true] { color: var(--accent); }
+#workspaceNav #miniMao.com-palavra { color: var(--ok); background: color-mix(in srgb, var(--ok) 14%, transparent); }
+.lider-secao { margin: 8px 0 2px 26px; font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); list-style: none; }
+.lider-secao-aviso { text-transform: none; letter-spacing: 0; font-weight: 500; font-size: 11.5px; }
+.lider-linha { display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 2px 4px 2px 26px; list-style: none; }
+.lider-linha .avatar { flex: none; width: 24px; height: 24px; font-size: 11px; }
+.lider-linha.speaking .avatar { box-shadow: 0 0 0 2px var(--ok); }
+.lider-linha-nome { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; font-size: 13px; color: var(--text); overflow: hidden; }
+.lider-linha-nome small { font-size: 11px; color: var(--muted); }
+.lider-linha .btn { flex: none; }
+.pane-tab-pedidos { min-width: 16px; height: 16px; padding: 0 4px; box-sizing: border-box; border-radius: 999px; background: var(--accent); color: var(--accent-ink, #000);
+  font-size: 10px; font-weight: 700; line-height: 16px; text-align: center; letter-spacing: 0; }

@@ -91,15 +91,19 @@ function testInternetServer(url, timeoutMs = 6000) {
 function renderHomeForNetwork() {
   const internet = selectedNetworkProvider() === 'internet';
   // Pela internet, a lista é a das salas dos amigos do Razze (salas-amigos.js)
-  $('sessionsTitle').textContent = internet ? 'Salas dos seus amigos' : 'Sessões abertas na sua rede';
-  $('goJoin').textContent = internet ? 'Entrar com código' : 'Entrar com endereço';
+  // O título diz a rede (docs/spec/inicio-novo.md): quem não vê a sala de um amigo entende que ele está em outra
+  const provider = selectedNetworkProvider();
+  $('sessionsTitle').textContent = internet ? 'Salas dos seus amigos'
+    : provider === 'razze' ? 'Salas abertas na rede Razze'
+    : window.api.platform === 'linux' ? 'Salas abertas na rede local' : 'Salas abertas na Radmin';
+  $('goJoinSub').textContent = internet ? 'Digite o código e a senha da sala.' : 'Cole o endereço que te mandaram, tipo 26.12.34.56:8765.';
   $('joinPanelTitle').textContent = internet ? 'Entrar com código' : 'Entrar com endereço';
   $('roomAddrLabel').textContent = internet ? 'Código da sala' : 'Endereço de quem criou';
   $('roomAddr').placeholder = internet ? 'ABC234' : '26.123.45.67:8765';
   $('joinPassword').placeholder = internet ? 'A senha que quem criou passou' : 'Só se a sala tiver uma';
-  $('createBlockHint').textContent = internet ? 'Os amigos entram pelo código da sala' : 'Os amigos entram pelo seu endereço';
   $('roomPortField').hidden = internet;
-  const visible = internet ? 'Mostrar esta sala para meus amigos do Razze' : 'Mostrar esta sessão para quem está na rede';
+  $('roomAmigosMembrosLine').hidden = !internet; // passe da sala: só o servidor do modo Internet tem
+  const visible = internet ? 'Mostrar esta sala para meus amigos do Razze' : 'Mostrar esta sala para quem está na rede';
   const tip = internet ? 'Aparece na tela inicial dos seus amigos do Razze, que entram com um clique enquanto você estiver na sala.'
     : 'Aparece na tela inicial dos outros. A senha continua sendo pedida.';
   $('roomVisibleText').textContent = visible;
@@ -110,6 +114,94 @@ function renderHomeForNetwork() {
   $('createHint').textContent = internet
     ? 'Mande o código e a senha, ou deixe a caixinha marcada: os amigos do Razze entram pela lista, com um clique.'
     : 'A sala fecha quando todos saírem.';
+}
+
+// ---------- Menu da rede no topo do Início (docs/spec/inicio-novo.md) ----------
+// As três redes, cada uma com o estado e o que muda; escolher troca ali mesmo (usarModoRede, chamada.js). Se a rede não
+// dá para usar agora, o motivo aparece na linha dela, sem trocar. Numa sala, pergunta antes: trocar tira você dela.
+const REDES_TOPO = [
+  { modo: 'radmin', nome: () => (window.api.platform === 'linux' ? 'Rede local' : 'Radmin ou rede local'), frase: 'Os amigos entram pelo seu endereço.' },
+  { modo: 'internet', nome: () => 'Internet', frase: 'Sem VPN, pelo servidor. Amigos da conta entram pela lista.' },
+  { modo: 'razze', nome: () => 'Razze (WireGuard)', frase: 'A VPN da sua rede Razze, pela internet.' },
+];
+const redeMenu = { erro: {}, motivos: {} };
+
+function renderRedeMenu() {
+  const atual = selectedNetworkProvider();
+  const box = $('homeRedeOpcoes');
+  box.replaceChildren(...REDES_TOPO.map((r) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'home-rede-opcao' + (r.modo === atual ? ' atual' : '');
+    b.dataset.modo = r.modo;
+    b.setAttribute('aria-current', r.modo === atual ? 'true' : 'false');
+    const dot = document.createElement('span');
+    const motivo = redeMenu.motivos[r.modo];
+    const ok = r.modo === atual ? $('radminDot').classList.contains('ok') : motivo === '';
+    dot.className = 'dot ' + (motivo === undefined && r.modo !== atual ? 'hollow' : ok ? 'ok' : 'warn');
+    const textos = document.createElement('span');
+    textos.className = 'home-rede-opcao-textos';
+    const linha = document.createElement('span');
+    linha.className = 'home-rede-opcao-linha';
+    const nome = document.createElement('strong');
+    nome.textContent = r.nome();
+    const estado = document.createElement('span');
+    estado.className = 'home-rede-opcao-estado';
+    estado.textContent = r.modo === atual ? `Em uso · ${$('radminDetail').textContent}` : motivo === undefined ? '' : motivo ? 'Indisponível' : 'Pronta';
+    linha.append(nome, estado);
+    const frase = document.createElement('span');
+    frase.className = 'hint';
+    frase.textContent = r.modo === atual ? $('homeRede').dataset.explica || r.frase : r.frase;
+    textos.append(linha, frase);
+    if (redeMenu.erro[r.modo]) {
+      const erro = document.createElement('span');
+      erro.className = 'home-rede-opcao-erro';
+      erro.setAttribute('role', 'alert');
+      erro.textContent = redeMenu.erro[r.modo];
+      textos.append(erro);
+    }
+    b.append(dot, textos);
+    b.onclick = () => void escolherRedeTopo(r.modo);
+    return b;
+  }));
+}
+
+function setRedeMenuOpen(open) {
+  if (open) setVersaoPainelOpen(false);
+  $('homeRedeMenu').hidden = !open;
+  $('homeRede').setAttribute('aria-expanded', String(open));
+  if (!open) return;
+  redeMenu.erro = {};
+  renderRedeMenu();
+  $('homeRedeOpcoes').querySelector('.atual')?.focus();
+  // O estado das outras redes (a Razze pergunta ao processo principal): chega depois e redesenha
+  for (const r of REDES_TOPO) {
+    if (r.modo === selectedNetworkProvider()) continue;
+    void motivoModoIndisponivel(r.modo).then((m) => { redeMenu.motivos[r.modo] = m; if (!$('homeRedeMenu').hidden) renderRedeMenu(); });
+  }
+}
+
+async function escolherRedeTopo(modo) {
+  const r = REDES_TOPO.find((x) => x.modo === modo);
+  if (!r) return;
+  if (modo === selectedNetworkProvider()) { setRedeMenuOpen(false); $('homeRede').focus(); return; }
+  const motivo = await motivoModoIndisponivel(modo);
+  redeMenu.motivos[modo] = motivo;
+  if (motivo) {
+    redeMenu.erro = { [modo]: `Não dá agora: ${motivo}.` };
+    renderRedeMenu();
+    $('homeRedeOpcoes').querySelector(`[data-modo="${modo}"]`)?.focus();
+    return;
+  }
+  if (state.myId) {
+    const sala = state.hostId && state.hostId !== state.myId ? `da sala de ${nameOf(state.hostId)}` : 'da sua sala';
+    if (!(await appConfirm(`Trocar para ${r.nome()}? Você sai ${sala}.`, { title: 'Trocar de rede', ok: 'Sair e trocar' }))) return;
+    leaveRoom();
+  }
+  setRedeMenuOpen(false);
+  usarModoRede(modo);
+  $('homeRede').focus();
+  toast(`Agora pela rede ${r.nome()}.`);
 }
 
 function inviteTokenFromValue(value) {
@@ -181,10 +273,11 @@ function renderConnectivitySettings() {
     setNetSummary(!!url, url ? `Internet · servidor ${url}` : 'Internet: falta o endereço do servidor.');
   }
   renderHomeForNetwork();
-  if (prefs.provider === 'radmin') { // o mesmo estado do rodapé da tela inicial (Radmin encontrada ou não)
+  if (prefs.provider === 'radmin') { // o mesmo estado do botão da rede no topo do Início (Radmin encontrada ou não)
     const ok = $('radminDot').classList.contains('ok');
-    setNetSummary(ok, ok ? `${$('radminTitle').textContent} · ${$('radminDetail').textContent}. Os amigos entram pelo seu endereço.`
-      : `${$('radminTitle').textContent}. Na rede local, os amigos entram pelo seu endereço do mesmo jeito.`);
+    const explica = $('homeRede').dataset.explica || $('radminTitle').textContent;
+    setNetSummary(ok, ok ? `${explica}. Os amigos entram pelo seu endereço.`
+      : `${explica}. Na rede local, os amigos entram pelo seu endereço do mesmo jeito.`);
   }
   refreshRazzeState();
 }

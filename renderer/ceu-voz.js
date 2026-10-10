@@ -83,7 +83,7 @@ function skyLayout(chs, { D, MIN }) {
 function skySystems() {
   const channels = subsalasOn();
   const person = (id) => (id ? { id, name: nameOf(id), sharing: !!state.members.get(id)?.sharing, muted: !!voice.members.get(id)?.muted, deafened: !!voice.members.get(id)?.deafened }
-    : { id: state.myId, name: `${getName()} (você)`, sharing: state.sharing, muted: voice.muted, deafened: voice.deafened, me: true });
+    : { id: state.myId, name: getName(), sharing: state.sharing, muted: voice.muted, deafened: voice.deafened, me: true });
   return (channels ? ['', ...state.subsalas.map((s) => s.id)] : ['']).map((ch) => ({
     ch, sub: channels && ch ? state.subsalas.find((s) => s.id === ch) : null, name: channels ? channelName(ch) : 'Voz',
     here: !!voice.session && voice.channel === ch, people: voiceIdsIn(ch).map(person), music: !!state.musicas?.get(ch),
@@ -880,7 +880,10 @@ function skyCard(ch, sub) {
   const nLive = ids.filter(live).length;
   const info = el(here ? 'div' : 'button', 'sky-card-info');
   const text = el('span', 'sky-card-text');
-  text.append(el('strong', '', name), el('span', '', (ids.length ? `${ids.length} na voz${nLive ? ` · ${nLive} ao vivo` : ''}` : 'Ninguém aqui ainda') + (here ? ' · você está aqui' : '')));
+  // No canal em que você está, só o nome (quem está nele aparece logo embaixo); "ao vivo" fica se alguém transmite
+  const linha = here ? (nLive ? `${nLive} ao vivo` : '') : ids.length ? `${ids.length} na voz${nLive ? ` · ${nLive} ao vivo` : ''}` : 'Ninguém aqui ainda';
+  text.append(el('strong', '', name));
+  if (linha) text.append(el('span', '', linha));
   info.append(el('span', 'sky-card-sun'), text);
   if (!here) {
     info.type = 'button';
@@ -927,7 +930,7 @@ function skyCard(ch, sub) {
     const rows = el('div', 'sky-card-rows');
     for (const id of ids) {
       const who = id || state.myId;
-      const full = id ? nameOf(id) : `${getName()} (você)`;
+      const full = id ? nameOf(id) : getName();
       const row = el('div', 'sky-card-row');
       const open = button('sky-card-person', (e) => { openSkyProfile(who, e.detail === 0 ? open : e); skyProfileBack = ch; });
       open.title = `${full}: volume e perfil`;
@@ -1091,6 +1094,7 @@ function openSkyProfile(id, at, from = null) {
   skyFocusId = id;
   skyFocusKey = '';
   pedirBio(id); // e pela frase do perfil (renderer/conta.js)
+  pedirAtvh(id); // e pelos últimos jogos e músicas (renderer/conta.js)
   requestProfileBg(id); // pergunta pelo fundo do perfil dela (pode ter trocado); chega e redesenha sozinho
   if (!from) setMapFocus(true);
   if (!from && !voiceMapOn()) $('voiceSkyBox').hidden = false; // na lista, a caixa do céu pode estar escondida (renderVoiceSky)
@@ -1191,7 +1195,7 @@ function renderSkyProfile() {
   box.classList.remove('sky-head');
   box.classList.add('sky-page');
   box.style.setProperty('--orbit', '0.62');
-  const name = me ? `${getName()} (você)` : nameOf(id);
+  const name = me ? getName() : nameOf(id); // no seu perfil, só o nome (sem "(você)")
   const sharing = me ? state.sharing : !!state.members.get(id)?.sharing;
   const micOff = me ? voice.muted : !!voice.members.get(id)?.muted;
   const deafOn = me ? voice.deafened : !!voice.members.get(id)?.deafened;
@@ -1200,7 +1204,7 @@ function renderSkyProfile() {
   const here = voiceChannelOf(pid);
   const canMove = channels.length > 1 && canDragVoice(pid);
   const bg = profileBgOf(pid); // o fundo do perfil da pessoa (renderer/fundo-perfil.js), se já chegou
-  const key = JSON.stringify([skyFocusFrom, voiceNow, id, name, sharing, state.in.has(id), micOff, deafOn, v?.muted, v?.voice, v?.screen, bg.length, bg.slice(-40), here, canMove, channels.map(channelName), photoHashOf(pid), bioDe(pid), atvDe(pid), contaDe(id), typeof friendsData === 'object' ? [friendsData.friends.length, friendsData.outgoing.length, friendsData.incoming.length] : 0]);
+  const key = JSON.stringify([skyFocusFrom, voiceNow, id, name, sharing, state.in.has(id), micOff, deafOn, v?.muted, v?.voice, v?.screen, bg.length, bg.slice(-40), here, canMove, channels.map(channelName), photoHashOf(pid), bioDe(pid), atvDe(pid), [...(atvhDe(pid)?.jogos || []), ...(atvhDe(pid)?.musicas || [])].map((x) => [x.nome || x.artista, x.faixa, x.em]), contaDe(id), typeof friendsData === 'object' ? [friendsData.friends.length, friendsData.outgoing.length, friendsData.incoming.length] : 0]);
   if (key === skyFocusKey && !box.hidden) return placeSkyProfile();
   skyFocusKey = key;
   box.replaceChildren();
@@ -1346,7 +1350,13 @@ function renderSkyPage(box, { id, me, pid, name, sharing, micOff, deafOn, v, cha
     v?.muted && ['muted', 'Silenciada para você', '']].filter(Boolean) : [];
   const who = el('div', 'sky-page-who');
   const tags = el('div', 'sky-page-tags');
-  tags.append(where);
+  // O nome da conta Razze numa linha pequena embaixo do nome ("conta Flyleaf"); o canal vai à direita do nome
+  const conta = contaDe(id), amigo = !me && amigoDe(id);
+  if (conta) {
+    const c = el('span', 'sky-page-conta', `conta ${amigo ? amigo.displayName : conta.nome}`);
+    c.title = me || amigo ? 'Nome da conta' : 'Nome da conta (informado pelo app da pessoa)';
+    tags.append(c);
+  }
   if (sharing && me) tags.append(el('span', 'live-pill', 'Ao vivo'));
   const nameRow = el('div', 'sky-page-namerow');
   nameRow.append(title);
@@ -1362,11 +1372,10 @@ function renderSkyPage(box, { id, me, pid, name, sharing, micOff, deafOn, v, cha
     }
     nameRow.append(ics);
   }
-  who.append(nameRow, tags);
-  const nomes = nomesDe(id); // o nome da sala e o da conta Razze (voz.js)
-  if (nomes) who.append(nomes);
+  who.append(nameRow);
+  if (tags.childElementCount) who.append(tags);
   if (bioDe(pid)) who.append(el('p', 'sky-focus-bio', bioDe(pid)));
-  head.append(who, back);
+  head.append(who, where);
   const list = el('div', 'sky-page-actions');
   const act = (icon, label, onclick, { pressed, disabled } = {}) => {
     const b = el('button', 'sky-page-act');
@@ -1379,28 +1388,8 @@ function renderSkyPage(box, { id, me, pid, name, sharing, micOff, deafOn, v, cha
     list.append(b);
     return b;
   };
-  if (me) {
-    // Microfone e fone: dois botões lado a lado; desligado fica laranja (cuidado) e diz o estado embaixo
-    const pares = el('div', 'sky-page-toggles');
-    const tog = (icon, nome, estado, acao, onclick, off) => {
-      const b = el('button', 'sky-page-tog');
-      b.type = 'button';
-      b.title = acao;
-      b.setAttribute('aria-label', estado ? `${acao} (${nome.toLowerCase()} ${estado.toLowerCase()})` : acao);
-      b.setAttribute('aria-pressed', String(off));
-      const ic = el('span', 'tog-icon');
-      ic.innerHTML = ICON[icon];
-      const txt = el('span', 'tog-text');
-      txt.append(el('span', 'tog-name', nome));
-      if (estado) txt.append(el('span', 'tog-state', estado));
-      b.append(ic, txt);
-      b.onclick = onclick;
-      pares.append(b);
-    };
-    tog(micOff ? 'micOff' : 'mic', 'Microfone', micOff ? 'Desligado' : '', micOff ? 'Ligar o microfone' : 'Desligar o microfone', () => $('voiceMute').click(), micOff);
-    tog(deafOn ? 'headphonesOff' : 'headphones', 'Fone', deafOn ? 'Silenciado' : '', deafOn ? 'Ouvir as vozes' : 'Silenciar as vozes', () => $('voiceDeafen').click(), deafOn);
-    list.append(pares);
-  } else {
+  // No seu perfil não há microfone nem fone: eles ficam na barra flutuante (não se repetem pela tela)
+  if (!me) {
     const fb = friendButton(id, nameOf(id));
     const done = fb.getAttribute('aria-disabled') === 'true';
     const label = fb.title.startsWith('Você e') ? 'Vocês já são amigos' : fb.title.startsWith('Pedido') ? 'Pedido de amizade enviado'
@@ -1417,10 +1406,11 @@ function renderSkyPage(box, { id, me, pid, name, sharing, micOff, deafOn, v, cha
     if (friend && typeof openDm === 'function') act('chat', 'Mandar mensagem', () => { closeSkyProfile(); void openDm(friend.id); });
     if (voiceNow) act(v.muted ? 'muted' : 'volume', v.muted ? 'Ouvir de novo' : 'Silenciar para mim', () => setVol(id, { muted: !v.muted }), { pressed: v.muted });
   }
-  if (canMove) {
+  if (canMove && !me) { // no seu perfil não: você muda de canal clicando no canal da lista
     const move = act('moveTo', 'Mudar de canal', () => toggleSkyMoveMenu(move, pid, channels, here));
     move.setAttribute('aria-haspopup', 'menu');
   }
+  head.append(back);
   banner.append(face); // a foto fica dentro do fundo, no canto de baixo
   box.append(banner, head);
   // O que a pessoa está ouvindo e jogando (conta.js), numa caixa entre os nomes e as ações
@@ -1440,17 +1430,24 @@ function renderSkyPage(box, { id, me, pid, name, sharing, micOff, deafOn, v, cha
         if (capa) { const img = el('img'); img.src = capa; img.alt = ''; ic.append(img); } // a imagem do jogo (Steam)
         else ic.innerHTML = ICON[icone];
       }
+      // O tipo (Ouvindo agora, Pausada, Jogando) vira um ícone pequeno à direita; o texto fica só para o leitor de tela
       const label = el('span', 'atv-label');
+      label.title = rotulo;
       if (cls.startsWith('musica')) { // as barrinhas: sobem e descem tocando, baixas e paradas na pausa
         const eq = el('span', 'atv-eq');
         eq.setAttribute('aria-hidden', 'true');
         eq.append(el('span'), el('span'), el('span'));
         label.append(eq);
+      } else {
+        const ico = el('span', 'atv-tipo');
+        ico.setAttribute('aria-hidden', 'true');
+        ico.innerHTML = ICON[icone];
+        label.append(ico);
       }
-      label.append(rotulo);
+      label.append(el('span', 'atv-rotulo', rotulo));
       const txt = el('div', 'atv-text');
-      txt.append(label, el('strong', 'atv-title', titulo));
-      linha.append(ic, txt);
+      txt.append(el('strong', 'atv-title', titulo));
+      linha.append(ic, txt, label);
       caixa.append(linha);
       return txt;
     };
@@ -1487,7 +1484,44 @@ function renderSkyPage(box, { id, me, pid, name, sharing, micOff, deafOn, v, cha
     }
     box.append(caixa);
   }
-  box.append(list);
+  // Os últimos jogos e músicas (conta.js › atvhDe), menos o que já aparece tocando ou jogando agora
+  const hist = atvhDe(pid);
+  if (hist) {
+    const jogos = hist.jogos.filter((j) => j.nome !== atv?.jogo);
+    const musicas = hist.musicas.filter((m) => !(m.artista === atv?.artista && m.faixa === (atv?.faixa || '')));
+    const secao = (titulo) => { const s = el('section', 'sky-page-hist'); s.append(el('h4', 'sky-page-hist-t', titulo)); box.append(s); return s; };
+    const imagem = (cls, src, icone) => {
+      const s = el('span', cls);
+      if (src) { const img = el('img'); img.src = src; img.alt = ''; s.append(img); } else s.innerHTML = ICON[icone];
+      return s;
+    };
+    if (jogos.length) {
+      const grade = el('div', 'hist-jogos');
+      for (const j of jogos) {
+        const card = el('div', 'hist-jogo');
+        card.title = j.nome;
+        card.append(imagem('hist-jogo-img', j.imagem, 'game'), el('span', 'hist-jogo-nome', j.nome), el('span', 'hist-quando', atvQuando(j.em)));
+        grade.append(card);
+      }
+      secao('Jogou recentemente').append(grade);
+    }
+    if (musicas.length) {
+      const s = secao('Ouviu recentemente');
+      for (const m of musicas) {
+        // Como a música de agora: clicar abre a busca dela no Spotify, no navegador
+        const b = el('button', 'hist-musica');
+        b.type = 'button';
+        b.title = (m.faixa ? `${m.faixa} — ${m.artista}` : m.artista) + ` · ${atvQuando(m.em)}\nAbrir no Spotify`;
+        b.onclick = () => window.api?.openLink?.('https://open.spotify.com/search/' + encodeURIComponent([m.faixa, m.artista].filter(Boolean).join(' ')));
+        const txt = el('span', 'hist-musica-txt');
+        txt.append(el('strong', '', m.faixa || m.artista));
+        if (m.faixa) txt.append(` · ${m.artista}`);
+        b.append(imagem('hist-capa', m.capa, 'music'), txt);
+        s.append(b);
+      }
+    }
+  }
+  if (list.childElementCount) box.append(list); // no seu perfil, sem outro canal, não sobra ação nenhuma
   if (v && voiceNow) box.append(el('span', 'sky-page-label', 'Volume da voz'), skyVolumeRow(id, name, v));
   if (liveOther) {
     const watching = state.in.has(id);

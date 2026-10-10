@@ -12,6 +12,8 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
   if (!db.prepare('PRAGMA table_info(sessions)').all().some(c => c.name === 'client_id')) db.exec('ALTER TABLE sessions ADD COLUMN client_id TEXT');
   if (!db.prepare('PRAGMA table_info(sessions)').all().some(c => c.name === 'app_version')) db.exec("ALTER TABLE sessions ADD COLUMN app_version TEXT NOT NULL DEFAULT ''");
   if (!db.prepare('PRAGMA table_info(sessions)').all().some(c => c.name === 'client_name')) db.exec("ALTER TABLE sessions ADD COLUMN client_name TEXT NOT NULL DEFAULT 'Tela P2P'");
+  // De que tipo de aparelho é a sessão: uma de PC e uma de Android por conta (issueToken em server.js)
+  if (!db.prepare('PRAGMA table_info(sessions)').all().some(c => c.name === 'plataforma')) db.exec("ALTER TABLE sessions ADD COLUMN plataforma TEXT NOT NULL DEFAULT 'pc'");
   db.exec(`
     CREATE TABLE IF NOT EXISTS server_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS audit_log (id INTEGER PRIMARY KEY, actor TEXT NOT NULL, action TEXT NOT NULL, target TEXT NOT NULL, detail TEXT NOT NULL, created_at INTEGER NOT NULL);
@@ -30,11 +32,11 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
   if (!db.prepare('PRAGMA table_info(live_presence)').all().some(c => c.name === 'sala_atual')) db.exec('ALTER TABLE live_presence ADD COLUMN sala_atual TEXT');
   // Após reiniciar, cada cliente precisa confirmar sua presença novamente.
   db.exec('DELETE FROM live_presence');
-  // Mantém somente a sessão mais recente de cada conta.
+  // Mantém somente a sessão mais recente de cada conta em cada tipo de aparelho (PC e Android).
   db.exec(`DELETE FROM sessions WHERE rowid NOT IN (
     SELECT MAX(rowid)
     FROM sessions
-    GROUP BY user_id
+    GROUP BY user_id, plataforma
   )`);
   // googleOnly: só entra e cria conta pelo Google (o administrador continua podendo entrar com senha).
   // legacyPasswordLogin: com googleOnly ligado, quem já tinha conta com senha ainda entra por ela (desligue quando todos tiverem vinculado o Google).
@@ -98,17 +100,27 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
     return [...listed.values()];
   }
   // Salas do modo Internet dos amigos aceitos (não precisam de rede Razze nem de VPN). A sala do próprio
-  // usuário não aparece; a mesma sala anunciada por duas sessões aparece uma vez só.
+  // usuário não aparece; a mesma sala anunciada por várias sessões ou pessoas aparece uma vez só, com os amigos de quem
+  // vê que estão nela (docs/spec/entrar-pelos-amigos.md). host: o host anunciado; sem ele (app antigo), quem anunciou
   function friendRooms(viewerId, snapshot = presence()) {
     const listed = new Map();
     for (const p of snapshot) {
       const r = p.internetRoom;
       if (!r || p.userId === viewerId || !friendshipExists(viewerId, p.userId)) continue;
       const key = r.servidor + '#' + r.codigo;
-      if (listed.has(key)) continue;
-      listed.set(key, { ...r, host: p.displayName, userId: p.userId, lastSeen: p.lastSeen });
+      let sala = listed.get(key);
+      if (!sala) {
+        sala = { servidor: r.servidor, codigo: r.codigo, pessoas: r.pessoas, passe: r.passe || null, host: r.host || p.displayName,
+          userId: p.userId, lastSeen: p.lastSeen, amigos: [], hostAnunciado: !!r.host };
+        listed.set(key, sala);
+      } else {
+        sala.pessoas = Math.max(sala.pessoas, r.pessoas);
+        if (!sala.passe && r.passe) sala.passe = r.passe;
+        if (!sala.hostAnunciado && r.host) { sala.host = r.host; sala.hostAnunciado = true; }
+      }
+      if (sala.amigos.length < 10 && !sala.amigos.some(f => f.userId === p.userId)) sala.amigos.push({ userId: p.userId, displayName: p.displayName });
     }
-    return [...listed.values()];
+    return [...listed.values()].map(({ hostAnunciado, ...sala }) => sala);
   }
   function enrichUsers(rows) {
     const online = new Map(presence().map(p => [p.userId, p.lastSeen]));
@@ -153,7 +165,10 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
           url.username || url.password || url.search || url.hash ||
           typeof r.codigo !== 'string' || !/^[A-HJ-NP-Z2-9]{6}$/.test(r.codigo) || !Number.isInteger(r.pessoas) || r.pessoas < 1 || r.pessoas > 1000 ||
           (r.passe !== undefined && r.passe !== null && (typeof r.passe !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(r.passe)))) bad('Anúncio de sala inválido.');
-      internetRoom = { servidor: r.servidor, codigo: r.codigo, pessoas: r.pessoas, passe: r.passe || null };
+      // host (opcional): o nome do host da sala, quando quem anuncia não é o host (docs/spec/entrar-pelos-amigos.md)
+      const host = typeof r.host === 'string' ? r.host.trim() : '';
+      if ((r.host !== undefined && r.host !== null && typeof r.host !== 'string') || (r.host != null && (!host || host.length > 32 || /[\u0000-\u001f\u007f]/.test(host)))) bad('Anúncio de sala inválido.');
+      internetRoom = { servidor: r.servidor, codigo: r.codigo, pessoas: r.pessoas, passe: r.passe || null, ...(host ? { host } : {}) };
     }
     let salaAtual = null;
     if (body.salaAtual) {

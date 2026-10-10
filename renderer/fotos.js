@@ -247,7 +247,6 @@ function removeMyPhoto() {
 function renderMyPhoto() {
   repaintAllAvatars();
   $('profilePhotoRemove').hidden = !fotos.mine;
-  $('profilePhotoPick').textContent = fotos.mine ? 'Trocar' : 'Escolher';
   $('profilePhotoFit').hidden = true; // o enquadramento agora é feito no editor de recorte (renderer/recorte.js)
   $('profilePhotoAdjust').hidden = !fotos.mine || !recorteTem('fotoOrigem');
   for (const b of $('profilePhotoFit').querySelectorAll('[data-fit]')) b.setAttribute('aria-checked', String(b.dataset.fit === fotoFit));

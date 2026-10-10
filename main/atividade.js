@@ -58,6 +58,11 @@ function jogoAberto(nomes) {
   for (const exe of Object.keys(JOGOS)) if (nomes.has(exe)) return JOGOS[exe];
   return '';
 }
+// O executável da lista que está aberto ('' se nenhum): para achar o ícone dele
+function exeAberto(nomes) {
+  for (const exe of Object.keys(JOGOS)) if (nomes.has(exe)) return exe;
+  return '';
+}
 
 // Saída de `tasklist /v /fo csv /nh` do Spotify: o título da janela é a 9ª coluna. Tocando, é "Artista - Faixa";
 // pausado ou parado, é só "Spotify" (ou "Spotify Free/Premium"). Devolve { artista, faixa } ou null.
@@ -68,7 +73,7 @@ function musicaDoSpotify(saida) {
     if (!titulo || /^n\/?[ad]$/i.test(titulo) || /^spotify( (free|premium))?$/i.test(titulo)) continue;
     const corte = titulo.indexOf(' - ');
     if (corte <= 0) continue; // sem "Artista - Faixa": é outra janela do Spotify
-    return { artista: titulo.slice(0, corte).trim().slice(0, 80), faixa: titulo.slice(corte + 3).trim().slice(0, 80) };
+    return { artista: titulo.slice(0, corte).trim().slice(0, 80), faixa: titulo.slice(corte + 3).trim().slice(0, 80), spotify: true };
   }
   return null;
 }
@@ -101,7 +106,8 @@ function musicaDoMidia(linha) {
   const t = (v) => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, 80) : '');
   const faixa = t(o.faixa);
   if (!faixa) return null;
-  return { artista: t(o.artista), faixa, album: t(o.album), capa: limparCapa(o.capa), pausada };
+  // spotify: o player é o Spotify (a lista da sala mostra o símbolo dele; outro player, a nota)
+  return { artista: t(o.artista), faixa, album: t(o.album), capa: limparCapa(o.capa), pausada, spotify: typeof o.app === 'string' && /spotify/i.test(o.app) };
 }
 
 const midia = { proc: null, atual: null, pronto: false, quedas: 0, esperando: [], aoMudar: null, pausadaEm: 0 };
@@ -285,48 +291,79 @@ async function jogosDaSteam({ recarregar = false } = {}) {
       try {
         const app = lerVdf(await fs.promises.readFile(path.join(lib, 'steamapps', n), 'utf8')).AppState || {};
         const id = String(app.appid || ''), nome = String(app.name || '').replace(/\s+/g, ' ').trim().slice(0, 80);
-        if (/^\d{1,10}$/.test(id) && nome && !naoEJogo(id, nome)) achados.set(id, nome);
+        // A pasta do jogo (steamapps/common/<installdir>): para achar o .exe aberto e o ícone dele
+        const dir = String(app.installdir || '');
+        const pasta = dir && dir !== '.' && dir !== '..' && !/[\\/:*?"<>|]/.test(dir) ? path.join(lib, 'steamapps', 'common', dir) : '';
+        if (/^\d{1,10}$/.test(id) && nome && !naoEJogo(id, nome)) achados.set(id, { nome, pasta });
       } catch { /* manifesto quebrado: pula */ }
     }
   }
   if (raiz !== steam.caminho) steam.jogos.clear();
   steam.caminho = raiz;
   for (const id of [...steam.jogos.keys()]) if (!achados.has(id)) steam.jogos.delete(id);
-  for (const [id, nome] of achados) {
+  for (const [id, { nome, pasta }] of achados) {
     const antes = steam.jogos.get(id);
-    steam.jogos.set(id, { id, nome, imagem: antes ? antes.imagem : await imagemDoJogo(raiz, id) });
+    steam.jogos.set(id, { id, nome, pasta, imagem: antes ? antes.imagem : await imagemDoJogo(raiz, id) });
   }
   steam.lidoEm = Date.now();
   return ordem();
 }
 
-// O jogo da Steam aberto agora, se a pessoa marcou: { nome, imagem } ou null
+// O jogo da Steam aberto agora, se a pessoa marcou: { nome, pasta } ou null
 async function jogoDaSteamAberto(permitidos) {
   if (!permitidos.length) return null;
   const { rodando } = await lerRegistroSteam();
   if (!rodando || !permitidos.includes(rodando)) return null;
   if (!steam.jogos.has(rodando)) await jogosDaSteam({ recarregar: true });
   const j = steam.jogos.get(rodando);
-  return j ? { nome: j.nome, imagem: j.imagem } : null;
+  return j ? { nome: j.nome, pasta: j.pasta || '' } : null;
 }
 
-// O jogo veio da lista de executáveis (JOGOS), mas a Steam está rodando esse mesmo jogo: usa a imagem dela. O nome já
-// aparece de qualquer jeito, então a imagem não mostra nada a mais (marcar na Steam continua decidindo o resto)
+// ---------- O ícone do jogo (perfil) ----------
+// O ícone do próprio .exe que está aberto, 48x48 (o "grande" do Windows), em PNG para manter o fundo transparente:
+// nítido no tamanho em que aparece e sem recorte. O caminho do .exe vem do PowerShell (Get-Process), uma vez por jogo:
+// pelo nome do executável (lista JOGOS) ou, na Steam, o maior processo aberto de dentro da pasta do jogo.
+const ICONE_MAX = 20000;
+const icones = new Map(); // nome do jogo -> { url, em } (sem ícone tenta de novo depois de 1 min)
+const caminhoDoProcesso = (script) => new Promise((resolve) => {
+  execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], { windowsHide: true, timeout: 8000, encoding: 'utf8' },
+    (erro, saida) => { const p = erro ? '' : String(saida || '').trim().split(/\r?\n/)[0].trim(); resolve(/^[a-z]:\\.+\.exe$/i.test(p) ? p : ''); });
+});
+const aspasPs = (s) => "'" + String(s).replace(/'/g, "''") + "'";
+async function exeDoJogo({ exe, pasta }) {
+  if (exe && /^[\w .-]+\.exe$/i.test(exe)) {
+    return caminhoDoProcesso(`(Get-Process -Name ${aspasPs(exe.replace(/\.exe$/i, ''))} -ErrorAction SilentlyContinue | Where-Object Path | Select-Object -First 1).Path`);
+  }
+  if (pasta) {
+    const raiz = pasta.replace(/\\?$/, '\\');
+    return caminhoDoProcesso(`(Get-Process | Where-Object { $_.Path -and $_.Path.StartsWith(${aspasPs(raiz)}, [StringComparison]::OrdinalIgnoreCase) } | Sort-Object WorkingSet64 -Descending | Select-Object -First 1).Path`);
+  }
+  return '';
+}
+async function iconeDoJogo(nome, onde) {
+  const visto = icones.get(nome);
+  if (visto && (visto.url || Date.now() - visto.em < 60 * 1000)) return visto.url;
+  let url = '';
+  try {
+    const caminho = await exeDoJogo(onde);
+    const { app } = require('electron');
+    if (caminho && app?.getFileIcon) {
+      const img = await app.getFileIcon(caminho, { size: 'large' });
+      const png = img.isEmpty() ? null : img.toPNG();
+      if (png && png.length <= ICONE_MAX) url = 'data:image/png;base64,' + png.toString('base64');
+    }
+  } catch { /* sem ícone: o perfil mostra o controle */ }
+  if (icones.size > 50) icones.clear();
+  icones.set(nome, { url, em: Date.now() });
+  return url;
+}
+
 const nomeComparavel = (n) => String(n || '').normalize('NFD').toLowerCase().replace(/[^a-z0-9]/g, '');
 // Um nome começando com o outro também vale ("Overwatch®" na Steam, "Overwatch 2" na lista): a Steam já disse que é
 // esse jogo que está rodando, o nome só confere que não é outro
 function mesmoJogo(a, b) {
   const x = nomeComparavel(a), y = nomeComparavel(b);
   return x.length >= 4 && y.length >= 4 && (x.startsWith(y) || y.startsWith(x));
-}
-let steamSemJogo = ''; // o número que a Steam diz estar rodando e não achamos instalado (não procura de novo a cada leitura)
-async function imagemDaSteamPara(nome) {
-  const { rodando } = await lerRegistroSteam();
-  if (!rodando || rodando === steamSemJogo) return '';
-  if (!steam.jogos.has(rodando)) await jogosDaSteam({ recarregar: true });
-  const j = steam.jogos.get(rodando);
-  if (!j) { steamSemJogo = rodando; return ''; }
-  return mesmoJogo(j.nome, nome) ? j.imagem : '';
 }
 
 // opcoes: { jogos: boolean, musica: boolean, steam: ids marcados }. Só lê o que foi pedido.
@@ -337,10 +374,10 @@ async function lerAtividade(opcoes = {}) {
   const r = { ...vazio };
   const windows = opcoes.musica ? await musicaPeloWindows() : { ok: false };
   const daSteam = opcoes.jogos ? await jogoDaSteamAberto(limparIdsSteam(opcoes.steam)) : null;
-  if (daSteam) { r.jogo = daSteam.nome; r.jogoImagem = daSteam.imagem; }
+  if (daSteam) r.jogo = daSteam.nome;
   const lista = (opcoes.jogos && !daSteam) || (opcoes.musica && !windows.ok) ? nomesDeProcessos(await rodar('tasklist /fo csv /nh')) : new Set();
   if (opcoes.jogos && !daSteam) r.jogo = jogoAberto(lista);
-  if (r.jogo && !r.jogoImagem) r.jogoImagem = await imagemDaSteamPara(r.jogo);
+  if (r.jogo) r.jogoImagem = await iconeDoJogo(r.jogo, daSteam ? { pasta: daSteam.pasta } : { exe: exeAberto(lista) });
   if (windows.ok) r.musica = windows.musica;
   else if (opcoes.musica && lista.has('spotify.exe')) r.musica = musicaDoSpotify(await rodar('tasklist /v /fo csv /nh /fi "IMAGENAME eq Spotify.exe"'));
   return r;

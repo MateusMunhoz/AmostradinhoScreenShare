@@ -102,6 +102,7 @@ async function entradaEnviarConta() {
 async function abrirMinhaSala() {
   $('roomPassword').value = selectedNetworkProvider() === 'internet' ? novaSenhaSala() : '';
   $('roomVisible').checked = load('sessaoVisivel', '1') !== '0';
+  $('roomAmigosMembros').checked = load('salaAmigosMembros', '1') !== '0';
   await createRoom();
 }
 
@@ -123,7 +124,9 @@ function renderHomeTopo() {
   const salas = typeof listaSessoes === 'function' && sessoes.observando ? listaSessoes() : [];
   const resumo = $('homeResumo');
   resumo.textContent = '';
-  if (salas.length) {
+  if (state.myId) { // a sala em que você está já é a faixa de cima (docs/spec/inicio-novo.md)
+    resumo.textContent = nome ? 'O que você quer fazer agora?' : '';
+  } else if (salas.length) {
     const vivo = document.createElement('span');
     vivo.className = 'home-resumo-vivo';
     vivo.textContent = salas.length === 1 ? `${salas[0].host} abriu uma sala` : `${salas.length} salas abertas agora`;
@@ -137,11 +140,27 @@ function renderHomeTopo() {
   resumo.hidden = !resumo.textContent;
   renderHomeCeu(logado, online);
 
-  // Quem vê a sala que você abrir (só no modo Internet a lista é dos amigos da conta)
-  const visivel = selectedNetworkProvider() === 'internet' && logado && load('sessaoVisivel', '1') !== '0';
+  // Quem vê a sala que você abrir (só no modo Internet a lista é dos amigos da conta); sem ninguém, o que o botão faz
+  const internet = selectedNetworkProvider() === 'internet';
+  const visivel = internet && logado && load('sessaoVisivel', '1') !== '0';
   const nomes = online.map((f) => f.displayName);
-  $('goQuickSub').textContent = !visivel || !nomes.length ? ''
-    : nomes.length === 1 ? `${nomes[0]} vê a sua sala` : nomes.length === 2 ? `${nomes[0]} e ${nomes[1]} veem a sua sala` : `${nomes.length} amigos online veem a sua sala`;
+  $('goQuickSub').textContent = visivel && nomes.length
+    ? (nomes.length === 1 ? `Abre na hora. ${nomes[0]} vê a sua sala.` : nomes.length === 2 ? `Abre na hora. ${nomes[0]} e ${nomes[1]} veem a sua sala.` : `Abre na hora. ${nomes.length} amigos online veem a sua sala.`)
+    : internet ? 'Abre na hora, com senha gerada.' : 'Abre na hora. Os amigos entram pelo seu endereço.';
+}
+
+// Numa sala, criar ou entrar em outra pergunta antes de sair desta (docs/spec/inicio-novo.md) e só depois faz. Fora de
+// sala, faz na hora (sem esperar: quem clica e já preenche a tela seguinte, como os testes, não fica para trás)
+function foraDaSala(acao, fazer) {
+  if (!state.myId) return fazer();
+  void sairDaSalaAntes(acao).then((ok) => { if (ok) fazer(); });
+}
+async function sairDaSalaAntes(acao) {
+  if (!state.myId) return true;
+  const sala = state.hostId && state.hostId !== state.myId ? `da sala de ${nameOf(state.hostId)}` : 'da sua sala';
+  if (!(await appConfirm(`Você sai ${sala} para ${acao}.`, { title: 'Sair da sala?', ok: 'Sair e continuar' }))) return false;
+  leaveRoom();
+  return true;
 }
 
 // A constelação do topo: você no meio e até 5 amigos online em volta, ligados por pontilhados. Quem está numa sala
@@ -187,7 +206,12 @@ function homeChip(icone, texto, cls = '') {
   const chip = document.createElement('span');
   chip.className = 'home-chip' + (cls ? ' ' + cls : '');
   if (icone) chip.innerHTML = ICON[icone];
-  chip.append(document.createTextNode(texto));
+  // O texto num span: numa coluna estreita ele corta com "…" (o inteiro fica na dica)
+  const t = document.createElement('span');
+  t.className = 'home-chip-texto';
+  t.textContent = texto;
+  chip.append(t);
+  chip.title = texto;
   return chip;
 }
 
@@ -254,16 +278,27 @@ function renderHomeAmigos() {
       frase.textContent = f.bio;
       chips.append(frase);
     }
+    // A sala pela internet em que o amigo está e que ele deixa entrar: Entrar, sem código nem senha (salas-amigos.js).
+    // Fica na linha das etiquetas, logo depois de "Na sala de…": a etiqueta usa a largura toda e o botão desce de linha
+    // quando não cabe (coluna estreita), em vez de espremer o texto
+    const salaDele = typeof salaDoAmigo === 'function' ? salaDoAmigo(f) : null;
+    if (salaDele) {
+      const entrar = document.createElement('button');
+      entrar.type = 'button';
+      entrar.className = 'btn small primary home-friend-entrar';
+      entrar.textContent = 'Entrar';
+      entrar.title = `Entrar na sala de ${salaDele.host}, onde ${f.displayName} está`;
+      entrar.onclick = () => void entrarPeloAmigo(f);
+      const sala = chips.querySelector('.home-friend-sala');
+      if (sala) sala.after(entrar); else chips.prepend(entrar);
+    }
     nome.append(quem);
     if (chips.childNodes.length) nome.append(chips);
     const acoes = document.createElement('span');
     acoes.className = 'home-friend-actions';
-    const chamar = document.createElement('button');
-    chamar.type = 'button';
-    chamar.className = 'btn small home-friend-chamar';
-    chamar.textContent = 'Chamar para minha sala';
-    chamar.title = state.myId ? `Manda o convite da sua sala para ${f.displayName}` : `Abre a sua sala e manda o convite para ${f.displayName}`;
-    chamar.onclick = () => void chamarParaMinhaSala(f);
+    // "Chamar para minha sala" é um ícone (a dica diz o resto): na coluna estreita, o nome e o que o amigo faz têm espaço
+    const chamar = homeIconBtn('userPlus', state.myId ? `Chamar ${f.displayName} para a sua sala (manda o convite)` : `Chamar ${f.displayName}: abre a sua sala e manda o convite`,
+      () => void chamarParaMinhaSala(f), 'home-friend-chamar');
     acoes.append(chamar,
       homeIconBtn('chat', `Mensagem para ${f.displayName}`, () => openDm(f.id)),
       homeIconBtn('phone', `Ligar para ${f.displayName}: cria uma sala só para vocês e entra na voz`, () => void ligarPara(f.id), 'home-friend-ligar'));
@@ -307,7 +342,7 @@ function setupPrimeiraEntrada() {
   $('obForgot').onclick = () => abrirSenha('esqueci', $('obEmail').value.trim());
   $('obSkip').onclick = () => { save('modoUso', 'rapida'); fecharPrimeiraEntrada(); };
   $('obDialog').addEventListener('keydown', (e) => { if (e.key === 'Escape' && entrada.passo > 1) entradaIrPara(entrada.passo - 1); });
-  $('goQuick').onclick = abrirMinhaSala;
+  $('goQuick').onclick = () => foraDaSala('criar outra sala', abrirMinhaSala);
   $('homeSigninBtn').onclick = () => abrirPrimeiraEntrada(3);
   $('homeFriendsAll').onclick = () => openFriendsDialog();
   $('homeFriendsLink').onclick = () => { setHomeConvidarOpen(false); copiarMeuLink(); };
@@ -326,7 +361,6 @@ function setupPrimeiraEntrada() {
   document.addEventListener('click', (e) => { if (!$('homeConvidarMenu').hidden && !e.target.closest('.home-menu-wrap')) setHomeConvidarOpen(false); });
   // O nome: o lápis abre o campo; Enter ou sair do campo fecha
   setIcon($('homeNameEdit'), 'edit', 'Mudar seu nome');
-  setIcon($('goCreate'), 'sliders', 'Opções da sala');
   $('homeNameEdit').onclick = () => { $('home').classList.add('editando-nome'); renderHomeTopo(); $('name').focus(); $('name').select(); };
   const pararDeEditar = () => { if (!$('home').classList.contains('editando-nome')) return; $('home').classList.remove('editando-nome'); renderHomeTopo(); };
   $('name').addEventListener('input', renderHomeTopo);

@@ -53,15 +53,15 @@ app.whenReady().then(async () => {
     check('Status da lista: "Transmitindo" em amarelo', await run(`(() => { const li = [...document.querySelectorAll('#members .member')].find((l) => l.dataset.person === '2'); return getComputedStyle(li.querySelector('.mstatus')).color; })()`) === 'rgb(214, 196, 92)');
     // Painel: só o chat; pessoas pelo botão
     check('Painel sem a prévia da própria tela e sem a lista à vista', await run(`!document.getElementById('myPreview') && $('peoplePop').hidden && getComputedStyle($('chatTab')).display !== 'none'`));
-    check('Botão de pessoas mostra o total (2)', await run(`$('memberCount').textContent === '2' && $('peopleBtn').getAttribute('aria-expanded') === 'false'`));
+    check('Aba Pessoas mostra o total (2)', await run(`$('memberCount').textContent === '2'`), await run(`$('memberCount').textContent + ' ' + $('peopleBtn').getAttribute('aria-pressed')`));
     await run(`$('peopleBtn').click()`);
-    check('Clicar abre a lista com as pessoas e o endereço da sala', await run(`!$('peoplePop').hidden && $('members').querySelectorAll('.member').length === 2 && $('roomAddress').textContent.includes('8765') && $('peopleBtn').getAttribute('aria-expanded') === 'true'`));
+    check('Clicar abre a lista com as pessoas; o endereço da sala fica no menu da sala', await run(`!$('peoplePop').hidden && $('members').querySelectorAll('.member').length === 2 && $('roomMenu').contains($('roomAddress')) && $('roomAddress').textContent.includes('8765') && $('peopleBtn').getAttribute('aria-pressed') === 'true'`));
     await run(`speaking = new Set(['2']); renderSpeaking()`);
     check('Bolinha verde no botão quando alguém fala', await run(`!$('peopleSpeak').hidden`));
     await sleep(400);
     fs.writeFileSync(path.join(OUT, 'lista-de-pessoas.png'), (await win.webContents.capturePage()).toPNG());
     await run(`speaking = new Set(); renderSpeaking(); document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))`);
-    check('Clicar fora fecha a lista', await run(`$('peoplePop').hidden`));
+    check('Pessoas é uma aba: clicar fora não fecha; a aba Chat volta para o chat', await run(`!$('peoplePop').hidden`) && await run(`(() => { $('navChat').click(); return $('peoplePop').hidden && !$('chatTab').hidden; })()`));
     // Sensibilidade
     // Um tom contínuo (~-26 dB) entra na cadeia do microfone, no lugar da voz
     await run(`(() => { const o = micNow.ctx.createOscillator(); const g = micNow.ctx.createGain(); g.gain.value = 0.07; o.connect(g); g.connect(micNow.pre); g.connect(micNow.gate); o.start(); window.testTone = o; })()`);
