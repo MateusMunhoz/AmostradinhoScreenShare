@@ -68,29 +68,53 @@ function cleanSenha(p, min = 0) {
 
 // Subsalas de voz: canais dentro da sala. Só quem está no mesmo canal se conecta e se ouve; '' é a Voz geral.
 // Os nomes são sempre Subsala_N, com N = o maior número que existe + 1 (apagar a última libera o número dela).
+// Modo Líder (docs/spec/modo-lider.md): no máximo uma subsala por sala fala para a sala toda; ela leva modo: 'lider'
+// (a Padrão não leva o campo, e os apps antigos a veem como uma subsala comum).
+// Junto ficam os pedidos para falar (na ordem em que chegaram) e quem tem a palavra: quem está fora da Líder e fala
+// para a sala toda. A semente lider ({ pedidos, palavra }) vem da troca de host.
 const SUBSALAS_MAX = 50;
 function cleanChannel(c) { return /^\d{1,6}$/.test(String(c ?? '')) ? String(c) : ''; }
-function createSubsalas(seed) {
-  const list = (Array.isArray(seed) ? seed : [])
-    .map((x) => cleanChannel(x?.id)).filter(Boolean)
-    .filter((id, i, all) => all.indexOf(id) === i).slice(0, SUBSALAS_MAX)
-    .sort((a, b) => Number(a) - Number(b))
-    .map((id) => ({ id, name: `Subsala_${id}` }));
+const cleanIds = (l) => (Array.isArray(l) ? l : []).map(String).filter((x, i, all) => /^\d{1,6}$/.test(x) && all.indexOf(x) === i).slice(0, MAX_MEMBERS);
+function createSubsalas(seed, liderSeed) {
+  const list = [];
+  for (const x of Array.isArray(seed) ? seed : []) {
+    const id = cleanChannel(x?.id);
+    if (!id || list.some((s) => s.id === id) || list.length >= SUBSALAS_MAX) continue;
+    const sub = { id, name: `Subsala_${id}` };
+    if (x.modo === 'lider' && !list.some((s) => s.modo === 'lider')) sub.modo = 'lider';
+    list.push(sub);
+  }
+  list.sort((a, b) => Number(a.id) - Number(b.id));
+  const temLider = list.some((s) => s.modo === 'lider');
+  const palavra = temLider ? cleanIds(liderSeed?.palavra) : [];
   return {
     list,
+    pedidos: temLider ? cleanIds(liderSeed?.pedidos).filter((x) => !palavra.includes(x)) : [],
+    palavra,
     has(id) { return !!id && list.some((x) => x.id === id); },
-    create() {
-      if (list.length >= SUBSALAS_MAX) return null;
+    // O canal da subsala Líder ('' sem ela)
+    lider() { return list.find((x) => x.modo === 'lider')?.id || ''; },
+    create(modo = 'padrao') {
+      if (list.length >= SUBSALAS_MAX || (modo === 'lider' && this.lider())) return null;
       const id = String(list.reduce((n, x) => Math.max(n, Number(x.id)), 0) + 1);
       const sub = { id, name: `Subsala_${id}` };
+      if (modo === 'lider') sub.modo = 'lider';
       list.push(sub);
       return sub;
     },
     remove(id) {
       const i = list.findIndex((x) => x.id === id);
       if (i < 0) return false;
+      if (list[i].modo === 'lider') { this.pedidos.length = 0; this.palavra.length = 0; } // sem Líder, sem pedidos
       list.splice(i, 1);
       return true;
+    },
+    liderMsg() { return { type: 'lider', pedidos: [...this.pedidos], palavra: [...this.palavra] }; },
+    // Tira alguém dos pedidos e da palavra (saiu da sala ou da voz, ou entrou na Líder); true se mudou
+    liderSai(id) {
+      let mudou = false;
+      for (const l of [this.pedidos, this.palavra]) { const i = l.indexOf(id); if (i >= 0) { l.splice(i, 1); mudou = true; } }
+      return mudou;
     },
   };
 }
@@ -147,12 +171,13 @@ function newMember(ws, msg, resume, subsalas = null) {
     version: /^\d+\.\d+\.\d+$/.test(msg.version) ? msg.version : '', addrs: cleanAddrs(msg.addrs),
     voiceSession, voiceChannel, muted: !!voiceSession && msg.muted === true, deafened: !!voiceSession && msg.deafened === true, shareInfo,
     avatar: cleanHash(msg.avatar), avatarFull: cleanHash(msg.avatarFull), nameFont: cleanNameFont(msg.nameFont), razze: cleanRazze(msg.razze),
+    lider: msg.lider === true, // o app conhece o Modo Líder (quem não conhece não ouve a Líder de fora dela)
   };
 }
 
 // O que os outros ficam sabendo de cada pessoa
 function memberInfo(id, m) {
-  return { id, name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs, voiceSession: m.voiceSession, voiceChannel: m.voiceChannel || '', muted: m.muted, deafened: m.deafened, shareInfo: m.shareInfo, avatar: m.avatar, avatarFull: m.avatarFull, nameFont: m.nameFont, razze: m.razze || null };
+  return { id, name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs, voiceSession: m.voiceSession, voiceChannel: m.voiceChannel || '', muted: m.muted, deafened: m.deafened, shareInfo: m.shareInfo, avatar: m.avatar, avatarFull: m.avatarFull, nameFont: m.nameFont, razze: m.razze || null, lider: !!m.lider };
 }
 
 // Conversa da sala: guarda as últimas mensagens e numera as novas
@@ -172,6 +197,23 @@ function createChat(seedChat) {
 
 const voiceStateOf = (id, m) => ({ type: 'voice-state', id, session: m.voiceSession, channel: m.voiceChannel || '', muted: m.muted, deafened: m.deafened });
 
+// Modo Líder: quem fala para a sala toda (está na voz, dentro da Líder ou com a palavra) e quem decide os pedidos
+// (transmitindo dentro da Líder)
+function liderFonte(subsalas, id, m) {
+  const ch = subsalas?.lider();
+  return !!ch && !!m?.voiceSession && (m.voiceChannel === ch || subsalas.palavra.includes(id));
+}
+function liderLider(subsalas, m) { const ch = subsalas?.lider(); return !!ch && !!m?.voiceSession && m.voiceChannel === ch && !!m.sharing; }
+// Saiu da voz ou entrou na Líder: o pedido e a palavra somem
+function liderConfere(subsalas, broadcast, id, m) {
+  const ch = subsalas?.lider();
+  if (ch && (!m.voiceSession || m.voiceChannel === ch) && subsalas.liderSai(id)) broadcast(subsalas.liderMsg());
+}
+// Alguém saiu da sala (os dois servidores chamam)
+function memberGone({ subsalas, broadcast }, id) {
+  if (subsalas?.liderSai(id)) broadcast(subsalas.liderMsg());
+}
+
 // Mensagem de quem já está na sala. members: Map id -> pessoa; broadcast(msg, exceptId).
 // subsalas (opcional): sem ele, a sala não tem subsalas e todo mundo fica na Voz geral.
 function handleMemberMessage({ members, broadcast, chat, subsalas = null, musicas = null }, id, me, msg) {
@@ -182,8 +224,11 @@ function handleMemberMessage({ members, broadcast, chat, subsalas = null, musica
     me.muted = !!msg.session && msg.muted === true;
     me.deafened = !!msg.session && msg.deafened === true; // fone silenciado: os outros veem na lista da voz
     broadcast(voiceStateOf(id, me));
+    liderConfere(subsalas, broadcast, id, me);
   } else if (msg.type === 'subsala-create' && subsalas) {
-    if (subsalas.create()) broadcast({ type: 'subsalas', list: subsalas.list });
+    const modo = msg.modo === 'lider' ? 'lider' : 'padrao';
+    if (subsalas.create(modo)) broadcast({ type: 'subsalas', list: subsalas.list });
+    else if (modo === 'lider' && subsalas.lider()) send(me.ws, { type: 'subsala-erro', text: `Já existe uma subsala Líder (Subsala_${subsalas.lider()}).` });
   } else if (msg.type === 'subsala-delete' && subsalas) {
     const sub = cleanChannel(msg.id);
     if (!subsalas.remove(sub)) return;
@@ -195,6 +240,7 @@ function handleMemberMessage({ members, broadcast, chat, subsalas = null, musica
     }
     if (musicas?.map.delete(sub)) broadcast(musicas.msg()); // a música da subsala apagada para
     broadcast({ type: 'subsalas', list: subsalas.list });
+    broadcast(subsalas.liderMsg());
   } else if (msg.type === 'subsala-move' && subsalas) {
     // Arrastar alguém para outro canal no painel de voz: só quem está na voz, para a Voz geral ou uma subsala que
     // existe. Todo mundo fica sabendo, inclusive a pessoa movida (o app dela troca de canal sozinho)
@@ -203,6 +249,40 @@ function handleMemberMessage({ members, broadcast, chat, subsalas = null, musica
     if (!target?.voiceSession || (ch && !subsalas.has(ch)) || (target.voiceChannel || '') === ch) return;
     target.voiceChannel = ch;
     broadcast(voiceStateOf(String(msg.id), target));
+    liderConfere(subsalas, broadcast, String(msg.id), target);
+  } else if (msg.type === 'lider-pedir' && subsalas) {
+    // Pedir para falar: na voz, fora da Líder, sem pedido nem palavra
+    const ch = subsalas.lider();
+    if (!ch || !me.voiceSession || me.voiceChannel === ch || subsalas.pedidos.includes(id) || subsalas.palavra.includes(id)) return;
+    subsalas.pedidos.push(id);
+    broadcast(subsalas.liderMsg());
+  } else if (msg.type === 'lider-cancelar' && subsalas) {
+    const i = subsalas.pedidos.indexOf(id);
+    if (i < 0) return;
+    subsalas.pedidos.splice(i, 1);
+    broadcast(subsalas.liderMsg());
+  } else if (msg.type === 'lider-devolver' && subsalas) {
+    const i = subsalas.palavra.indexOf(id);
+    if (i < 0) return;
+    subsalas.palavra.splice(i, 1);
+    broadcast(subsalas.liderMsg());
+  } else if ((msg.type === 'lider-responder' || msg.type === 'lider-tirar') && subsalas) {
+    // Aceitar, recusar e tirar a palavra: só quem está transmitindo dentro da Líder
+    const alvo = String(msg.id);
+    if (!liderLider(subsalas, me)) return send(me.ws, { type: 'subsala-erro', text: 'Só quem está transmitindo na subsala Líder decide quem fala.' });
+    if (msg.type === 'lider-tirar') {
+      const i = subsalas.palavra.indexOf(alvo);
+      if (i < 0) return;
+      subsalas.palavra.splice(i, 1);
+      send(members.get(alvo)?.ws, { type: 'lider-aviso', aviso: 'tirada', by: id });
+    } else {
+      const i = subsalas.pedidos.indexOf(alvo);
+      if (i < 0) return;
+      subsalas.pedidos.splice(i, 1);
+      if (msg.ok === true) subsalas.palavra.push(alvo);
+      send(members.get(alvo)?.ws, { type: 'lider-aviso', aviso: msg.ok === true ? 'aceito' : 'recusado', by: id });
+    }
+    broadcast(subsalas.liderMsg());
   } else if (msg.type === 'musica-set' && musicas) {
     // Pôr uma música: vai para o canal de quem pôs. Só uma por canal (para trocar, use "trocar")
     const videoId = cleanVideoId(msg.videoId), ch = channelOf(me);
@@ -268,11 +348,16 @@ function handleMemberMessage({ members, broadcast, chat, subsalas = null, musica
     if (msg.data?.side === 'voice' && (!me.voiceSession ||
         msg.data.session !== me.voiceSession || msg.data.targetSession !== target.voiceSession ||
         !target.voiceSession || (me.voiceChannel || '') !== (target.voiceChannel || ''))) return; // canais diferentes não se ouvem
+    // A voz da Líder (voice.js › LiderAudio): só entre quem fala para a sala toda (na voz, dentro da subsala Líder) e
+    // quem ouve; quem ouve não precisa estar na voz (Ouvir a Líder, sem microfone)
+    if (msg.data?.side === 'lider') {
+      if (!(msg.data.role === 'ouvir' ? liderFonte(subsalas, String(msg.to), target) : msg.data.role === 'falar' && liderFonte(subsalas, id, me))) return;
+    }
     send(target.ws, { type: 'signal', from: id, data: msg.data });
   }
 }
 
 module.exports = {
   MAX_MEMBERS, CHAT_KEEP, SUBSALAS_MAX, send, cleanShareInfo, cleanHash, cleanNameFont, cleanRazze, cleanAddrs, cleanSessao, cleanClient, cleanSenha,
-  cleanChannel, createSubsalas, cleanVideoId, createMusicas, limparMusicas, newMember, memberInfo, createChat, handleMemberMessage,
+  cleanChannel, createSubsalas, memberGone, cleanVideoId, createMusicas, limparMusicas, newMember, memberInfo, createChat, handleMemberMessage,
 };

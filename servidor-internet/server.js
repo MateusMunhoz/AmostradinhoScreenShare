@@ -26,7 +26,7 @@ const http = require('http');
 const crypto = require('crypto');
 const { WebSocketServer } = require('ws');
 const {
-  MAX_MEMBERS, send, cleanSessao, cleanClient, cleanSenha, newMember, memberInfo, createChat, createSubsalas, createMusicas, limparMusicas, handleMemberMessage,
+  MAX_MEMBERS, send, cleanSessao, cleanClient, cleanSenha, newMember, memberInfo, createChat, createSubsalas, memberGone, createMusicas, limparMusicas, handleMemberMessage,
 } = require('../sala-protocolo');
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sem 0/O e 1/I, que confundem
@@ -183,6 +183,7 @@ function createInternetServer(options = {}) {
     room.passes.remove(id);
     if (!room.members.delete(id)) return;
     room.broadcast({ type: 'member-left', id });
+    memberGone({ subsalas: room.subsalas, broadcast: room.broadcast }, id);
     if (room.members.size === 0) {
       rooms.delete(room.code);
       cfg.log(`sala ${room.code} fechada`);
@@ -334,11 +335,12 @@ function createInternetServer(options = {}) {
         hostId: room.hostId,
         sala: room.code,
         members: [...room.members].filter(([mid]) => mid !== id).map(([mid, m]) => memberInfo(mid, m)),
-        features: ['chat', 'voice', 'internet', 'resume', 'subsalas', 'subsala-move', 'musica', 'passe', 'senha', 'passe-sala'],
+        features: ['chat', 'voice', 'internet', 'resume', 'subsalas', 'subsala-move', 'lider', 'musica', 'passe', 'senha', 'passe-sala'],
         passeSala: room.passes.sala(),
         amigosMembros: room.amigosMembros,
         chat: room.chat.log,
         subsalas: room.subsalas.list,
+        lider: room.subsalas.liderMsg(),
         musicas: [...room.musicas.map.values()],
         now: cfg.now(),
         sessao: room.sessao,

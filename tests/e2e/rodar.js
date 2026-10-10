@@ -6,7 +6,7 @@ const { spawnSync } = require('child_process');
 const path = require('path');
 const { APP, FOTOS, fullscreenApps } = require('./ajuda');
 
-const TESTS = ['carga.cjs', 'filtros.cjs', 'razze.js', 'atualizacao.js', 'chat.js', 'janela-flutuante.js', 'varias-telas.js', 'varias-janelas.js', 'voz.js', 'troca-de-host.js', 'sala-host-sozinho.js', 'trocar-tela.js', 'ver-a-propria.js', 'sessoes.js', 'espelho.js', 'som.js', 'quatro-k.js', 'microfone.js', 'fotos.js', 'transmitir-janela.js', 'voz-painel.js', 'voz-assistir.js', 'subsalas.js', 'mensagens-barra.js', 'mensagens-direto.js', 'nomes-perfil.js', 'chamada.cjs', 'inicio-ceu.js', 'musica.js', 'barra.js', 'religar.js', 'internet.js', 'entrar-pelos-amigos.js'];
+const TESTS = ['carga.cjs', 'filtros.cjs', 'razze.js', 'atualizacao.js', 'chat.js', 'janela-flutuante.js', 'varias-telas.js', 'varias-janelas.js', 'voz.js', 'troca-de-host.js', 'sala-host-sozinho.js', 'trocar-tela.js', 'ver-a-propria.js', 'sessoes.js', 'espelho.js', 'som.js', 'quatro-k.js', 'microfone.js', 'fotos.js', 'transmitir-janela.js', 'voz-painel.js', 'voz-assistir.js', 'subsalas.js', 'mensagens-barra.js', 'mensagens-direto.js', 'nomes-perfil.js', 'chamada.cjs', 'inicio-ceu.js', 'musica.js', 'barra.js', 'religar.js', 'internet.js', 'entrar-pelos-amigos.js', 'inicio.js', 'lider.js'];
 const only = process.argv[2];
 const list = only ? TESTS.filter((t) => t.replace(/\.c?js$/, '') === only) : TESTS;
 if (!list.length) {

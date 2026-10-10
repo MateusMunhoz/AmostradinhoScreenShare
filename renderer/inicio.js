@@ -16,7 +16,7 @@ $('voiceJoin').onclick = () => {
 $('voiceJoinMore').onclick = () => ($('voiceJoinPop') ? closeVoiceJoinPop() : openVoiceJoinPop());
 setIcon($('voiceJoinMore'), 'chevronUp', 'Escolher o canal para entrar');
 $('voiceMute').onclick = () => voice.mute();
-$('paneVoiceSubsala').onclick = () => createSubsala(true);
+$('paneVoiceSubsala').onclick = () => subsalaButtonClick($('paneVoiceSubsala'));
 $('voiceDeafen').onclick = () => voice.deafen();
 // Captura antes de qualquer outro atalho da página
 window.addEventListener('keydown', async (e) => {
@@ -202,43 +202,47 @@ for (const id of ['closeShare', 'closeGeneralSettings', 'closeProfile']) setIcon
 setIcon($('refreshSources'), 'refresh', 'Atualizar lista');
 $('closeShare').onclick = closeShareDialog;
 
-// Tela inicial: Radmin VPN, última sala e "Entrar numa sala" aberto ali mesmo
+// O botão da rede no topo do Início (docs/spec/inicio-novo.md): bolinha, nome curto e detalhe; a frase inteira vai na
+// dica e no resumo de Configurações › Rede (homeRede.dataset.explica)
+function setRedeTopo(ok, nome, detalhe, explica) {
+  $('radminDot').className = 'dot ' + (ok ? 'ok' : 'warn');
+  $('radminTitle').textContent = nome;
+  $('radminDetail').textContent = detalhe;
+  $('homeRede').title = explica;
+  $('homeRede').dataset.explica = explica;
+  $('homeRede').setAttribute('aria-label', `Rede: ${nome}, ${detalhe}. Trocar de rede`);
+  if (!$('homeRedeMenu').hidden) renderRedeMenu();
+}
+
+// Tela inicial: a rede em uso, última sala e "Entrar numa sala" aberto ali mesmo
 async function renderRadmin() {
   renderHomeForNetwork();
   if (selectedNetworkProvider() === 'internet') {
     const url = internetServerUrl();
-    $('radminDot').className = 'dot ' + (url ? 'ok' : 'warn');
-    $('radminTitle').textContent = url ? 'Modo Internet' : 'Modo Internet sem servidor';
-    // O endereço do servidor fica na dica: na linha, só o que a pessoa precisa fazer
-    $('radminDetail').textContent = url ? '' : 'Coloque o endereço do servidor em Configurações › Rede';
-    $('radminTitle').title = url ? `Servidor: ${url}` : '';
-    return;
+    let host = '';
+    try { host = url ? new URL(url).host : ''; } catch {}
+    return setRedeTopo(!!url, 'Internet', !url ? 'sem servidor' : url === INTERNET_URL_PADRAO ? 'servidor da equipe' : host,
+      url ? `Modo Internet · servidor ${url}` : 'Modo Internet sem servidor: coloque o endereço em Configurações › Rede');
   }
-  $('radminTitle').title = '';
   if (selectedNetworkProvider() === 'razze') {
     let status;
     const prefs = networkPreferences();
     try { status = prefs.activeNetworkId ? await window.api.razzeWireGuardStatus(prefs.activeNetworkId) : null; } catch { status = null; }
     const ips = await window.api.getIps('razze').catch(() => []);
     const connected = !!status?.connected && ips.length > 0;
-    $('radminDot').className = 'dot ' + (connected ? 'ok' : 'warn');
-    $('radminTitle').textContent = connected ? 'VPN Razze conectada' : 'VPN Razze desconectada';
-    $('radminDetail').textContent = connected ? ips.map((item) => item.address).join(', ') : status?.error || 'Conecte uma rede em Configurações › Rede';
-    return;
+    return setRedeTopo(connected, 'Razze', connected ? ips[0].address : 'desconectada',
+      connected ? `VPN Razze conectada · ${ips.map((item) => item.address).join(', ')}` : status?.error || 'VPN Razze desconectada: conecte uma rede');
   }
   let ips = [];
   try { ips = await window.api.getIps(); } catch {}
   if (window.api.platform === 'linux') { // a Radmin não existe no Linux: rede local, ou a Razze pela internet
     const lan = ips[0];
-    $('radminDot').className = 'dot ' + (lan ? 'ok' : 'warn');
-    $('radminTitle').textContent = lan ? 'Rede local' : 'Sem rede';
-    $('radminDetail').textContent = lan ? `${lan.address} · pela internet, use a VPN Razze` : 'Conecte o PC a uma rede';
-    return;
+    return setRedeTopo(!!lan, 'Rede local', lan ? lan.address : 'sem rede',
+      lan ? `Rede local · ${lan.address}. Pela internet, use a VPN Razze` : 'Sem rede: conecte o PC a uma rede');
   }
   const r = ips.find((i) => i.radmin);
-  $('radminDot').className = 'dot ' + (r ? 'ok' : 'warn');
-  $('radminTitle').textContent = r ? 'Radmin VPN conectada' : 'Radmin VPN não encontrada';
-  $('radminDetail').textContent = r ? r.address : 'Ligue a Radmin e entre na rede';
+  setRedeTopo(!!r, 'Radmin', r ? r.address : 'sem IP 26.x',
+    r ? `Radmin VPN conectada · ${r.address}` : 'Radmin VPN não encontrada: ligue a Radmin e entre na rede');
 }
 
 // "Sala de Flyleaf · Última sala · ontem às 22h · Radmin" (sessoes.js › lembrarUltimaSala); o endereço ou o código
@@ -251,15 +255,23 @@ function quandoFoi(t) {
   if (d.toDateString() === ontem.toDateString()) return `ontem às ${hora}`;
   return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
+// Só fora de sala (numa sala, ela é a faixa de cima). Se a última sala está aberta na lista, vira só informação
 function renderLastRoom() {
   const last = load('roomAddr');
-  $('lastRoom').hidden = !last;
-  $('lastRoomAddr').textContent = last;
+  $('lastRoom').hidden = !last || !!state.myId;
   let info = null;
   try { info = JSON.parse(load('ultimaSala', 'null')); } catch {}
   if (!info || info.endereco !== last || typeof info.host !== 'string' || !info.host) info = null;
+  // Na lista pelo mesmo endereço, ou (a lista mostra o IP da rede, e o guardado pode ser outro, como 127.0.0.1) pelo
+  // mesmo host na mesma porta
+  const porta = Number(String(last).split(':')[1]);
+  const naLista = !!last && sessoes.observando && listaSessoes().some((s) => s.codigo === last || `${s.endereco}:${s.porta}` === last
+    || (!!info && s.host === info.host && s.porta === porta));
+  $('rejoinBtn').hidden = naLista;
+  $('lastRoom').classList.toggle('na-lista', naLista);
+  $('lastRoomAddr').textContent = last;
   $('lastRoomName').textContent = info ? `Sala de ${info.host}` : 'Última sala';
-  $('lastRoomMeta').textContent = info ? ['Última sala', Number.isFinite(info.quando) ? quandoFoi(info.quando) : '', SALA_MODO[info.modo] || ''].filter(Boolean).join(' · ') : last;
+  $('lastRoomMeta').textContent = info ? ['Última sala', Number.isFinite(info.quando) ? quandoFoi(info.quando) : '', SALA_MODO[info.modo] || '', naLista ? 'aberta na lista acima' : ''].filter(Boolean).join(' · ') : last;
   $('lastRoom').title = last;
 }
 
@@ -280,15 +292,43 @@ window.addEventListener('focus', () => { if (!$('home').hidden) renderRadmin(); 
 
 window.api.getVersion().then((v) => {
   update.myVersion = v;
-  $('appVersion').textContent = `Versão ${v}`;
+  $('appVersion').textContent = `Nebula ${v}`;
   showNewsIfNew();
   checkGithub();
 });
 $('showNews').onclick = () => setNewsOpen($('homeNews').hidden);
+$('homeNovoFechar').onclick = () => { fecharNovo(); $('showNews').focus(); };
+$('homeNovoTodas').onclick = () => { fecharNovo(); setNewsOpen(true); $('homeNewsClose').focus(); };
 $('homeNewsClose').onclick = () => { setNewsOpen(false); $('showNews').focus(); };
 $('checkUpdates').onclick = () => checkGithub(true);
-$('ubGo').onclick = runUpdate;
-$('ubLater').onclick = () => { update.dismissed = updateMode()?.version || ''; renderUpdateBanner(); };
+// Topo do Início (docs/spec/inicio-novo.md): o painel da atualização e o menu da rede, um de cada vez
+$('homeVersaoNova').onclick = () => setVersaoPainelOpen($('homeVersaoPainel').hidden);
+$('homeVersaoEstado').onclick = () => setVersaoPainelOpen(true);
+$('navUpdate').onclick = () => { show('home'); setVersaoPainelOpen(true); };
+$('hvGo').onclick = runUpdate;
+$('hvDepois').onclick = () => {
+  update.dismissed = updateMode()?.version || '';
+  setVersaoPainelOpen(false);
+  renderUpdateBanner();
+  $('homeVersaoEstado').focus();
+};
+$('homeRede').onclick = () => setRedeMenuOpen($('homeRedeMenu').hidden);
+$('homeRedeAvancado').onclick = () => { setRedeMenuOpen(false); openGeneralSettings('network'); };
+// Fecham com Esc (o foco volta ao botão), clique fora; no menu da rede, as setas andam entre as redes
+for (const [pop, btn, fechar] of [['homeRedeMenu', 'homeRede', setRedeMenuOpen], ['homeVersaoPainel', 'homeVersaoNova', setVersaoPainelOpen]]) {
+  $(pop).addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); fechar(false); $(btn).focus(); return; }
+    if (pop !== 'homeRedeMenu' || !['ArrowDown', 'ArrowUp'].includes(e.key)) return;
+    const itens = [...$('homeRedeOpcoes').querySelectorAll('button')];
+    const i = itens.indexOf(document.activeElement);
+    e.preventDefault();
+    itens[(i + (e.key === 'ArrowDown' ? 1 : itens.length - 1)) % itens.length]?.focus();
+  });
+}
+document.addEventListener('pointerdown', (e) => {
+  if (!$('homeRedeMenu').hidden && !e.target.closest('#homeRedeMenu, #homeRede')) setRedeMenuOpen(false);
+  if (!$('homeVersaoPainel').hidden && !e.target.closest('#homeVersaoPainel, #homeVersaoNova, #homeVersaoEstado, #navUpdate')) setVersaoPainelOpen(false);
+});
 // Quem deixa o app aberto também fica sabendo: procura de novo a cada 15 min, e também ao voltar para a janela se
 // a última procura foi há mais de 15 min
 let lastGithubCheck = Date.now();
@@ -300,7 +340,7 @@ const checkGithubSoon = () => {
 setInterval(checkGithubSoon, 60 * 1000);
 window.addEventListener('focus', checkGithubSoon);
 
-$('goCreate').onclick = () => show('create-room');
+$('goCreate').onclick = () => foraDaSala('criar outra sala', () => show('create-room'));
 setupRecorte(); // editor de recorte da foto e do fundo (renderer/recorte.js)
 setupConta(); // senha e frase do perfil (renderer/conta.js)
 setupAdmin(); // administração, só para administradores (renderer/admin.js)
@@ -312,7 +352,7 @@ $('entradaCarregando').addEventListener('keydown', (e) => {
   else if (e.key === 'Tab') { e.preventDefault(); $('entradaCancelar').focus(); } // só tem o Cancelar
 });
 setupPrimeiraEntrada(); // primeira entrada e amigos no Início (renderer/primeira-entrada.js)
-$('goJoin').onclick = () => setJoinOpen(true);
+$('goJoin').onclick = () => foraDaSala('entrar em outra sala', () => setJoinOpen(true));
 $('cancelJoin').onclick = () => setJoinOpen(false);
 $('rejoinBtn').onclick = () => {
   $('roomAddr').value = load('roomAddr');
@@ -385,28 +425,17 @@ document.addEventListener('pointerdown', (e) => { if ($('shareOpenMenu') && !e.t
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && $('shareOpenMenu')) { toggleShareOpenMenu(false); $('shareOpenBtn').focus(); } });
 $('refreshSources').onclick = loadSources;
 $('refreshApps').onclick = loadAudioApps;
-// Ícone das Estatísticas, na sala ao lado de Sair da sala
+// Desempenho, no menu da sala: o ícone das Estatísticas com o nome
 setIcon($('openStatsRoom'), 'stats', 'Estatísticas: desempenho do PC e a transmissão de cada pessoa');
+$('openStatsRoom').append(rotuloMenu('Desempenho'));
 $('openStatsRoom').onclick = openStats;
 $('selfViewBtn').onclick = toggleSelfView;
 
 // Chat
-$('chatToggle').insertAdjacentHTML('afterbegin', ICON.chat);
-$('chatToggle').onclick = () => setPanelOpen(!chat.open);
-// A lista abre por cima do chat e da voz: com os dois fechados, o chat abre junto
-$('peopleBtn').onclick = () => {
-  if ($('workspacePanes').hidden) setPanelOpen(true);
-  setPeopleOpen($('peoplePop').hidden);
-};
-// Clicar fora da lista fecha (o cartão de volume, que abre de dentro dela, conta como dentro)
+// Clicar fora fecha os balões da voz (o cartão de volume, que abre de dentro deles, conta como dentro)
 document.addEventListener('mousedown', (e) => {
   if ($('voiceStackPop') && !e.target.closest('#voiceStackPop, #voiceAvatars, #personCard')) closeVoiceStackPop();
   if ($('voiceJoinPop') && !e.target.closest('#voiceJoinPop, #voiceJoinMore')) closeVoiceJoinPop();
-});
-document.addEventListener('mousedown', (e) => {
-  if ($('peoplePop').hidden) return;
-  if (e.target.closest('#peoplePop, #peopleBtn, #personCard')) return;
-  setPeopleOpen(false);
 });
 $('chatJump').onclick = () => { scrollChatToEnd(); markRead(); };
 $('chatList').addEventListener('scroll', () => { if (chatAtBottom() && chat.open && !document.hidden && !mapFocus.on) markRead(); else renderUnread(); });
@@ -457,7 +486,6 @@ document.addEventListener('keydown', (e) => {
   else if (!$('dmPanel').hidden) { setDmPanel(false); $('dmBarLabel').focus(); }
   else if (!$('dmMoreMenu').hidden) { setDmMore(false); $('dmMore').focus(); }
   else if (!$('musicPop').hidden) closeMusicPop();
-  else if (!$('peoplePop').hidden) { setPeopleOpen(false); $('peopleBtn').focus(); }
   else if (!$('closeDialog').hidden) closeCloseDialog();
   else if (!$('shareDialog').hidden) closeShareDialog();
   else if (state.focus && !document.fullscreenElement) setFocus(null);
@@ -474,7 +502,6 @@ setupAmigos();
 setupDm();
 setupWorkspace();
 startClips();
-watchDock();
 setupGeneralSettings();
 setupComandoVoz();
 setupPhone();

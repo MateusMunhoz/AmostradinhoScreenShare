@@ -65,16 +65,7 @@ run('Várias telas (destaque com coluna)', 200000, async () => {
   check('Todas tocando e recebendo vídeo', t.every((x) => x.playing && x.videoOn));
   await B.shot('varias-telas.png');
   // Com tela sendo assistida, as telas vão até o topo: sem o nome do app nem o título "Transmissões"
-  check('Telas até o topo, sem os títulos', await B.eval(`getComputedStyle(document.querySelector('.stream-pane-head')).display === 'none' && getComputedStyle(document.querySelector('.workspace-brand')).display === 'none' && $('tiles').getBoundingClientRect().top - $('titlebar').offsetHeight < 40`));
-
-  // Painel "Transmissão" desligado: as telas ficam escondidas, então quem transmite para de mandar o vídeo
-  // para a Bia (o som continua); ligado de novo, o vídeo volta
-  await B.eval(`$('navStreams').click()`);
-  await sleep(300);
-  check('Transmissão desligada: vídeo das telas pausado', await B.eval(`$('streamArea').hidden && [...state.in.values()].every((l) => !l.videoOn)`));
-  await B.eval(`$('navStreams').click()`);
-  await sleep(300);
-  check('Transmissão ligada de novo: vídeo volta', await B.eval(`!$('streamArea').hidden && [...state.in.values()].every((l) => l.videoOn)`));
+  check('Telas logo embaixo do cabeçalho da sala, sem os títulos', await B.eval(`getComputedStyle(document.querySelector('.stream-pane-head')).display === 'none' && getComputedStyle(document.querySelector('.workspace-brand')).display === 'none' && $('tiles').getBoundingClientRect().top - $('roomHead').getBoundingClientRect().bottom < 30`));
 
   const target = t.find((x) => x.small);
   await B.eval(`state.in.get('${target.id}').tile.el.click()`);
@@ -96,5 +87,5 @@ run('Várias telas (destaque com coluna)', 200000, async () => {
   check('Com uma só, volta a ocupar tudo', await B.eval(`!$('tiles').classList.contains('column') && ![...state.in.values()][0].tile.el.classList.contains('small')`));
   await B.eval(`stopWatching(state.main)`);
   await sleep(300);
-  check('Sem tela nenhuma: a faixa de cima continua sem aparecer', await B.eval(`getComputedStyle(document.querySelector('.stream-pane-head')).display === 'none' && $('emptyStage').getBoundingClientRect().top - $('titlebar').offsetHeight < 40`));
+  check('Sem tela nenhuma: a faixa de cima continua sem aparecer (o palco vem logo depois do cabeçalho da sala)', await B.eval(`getComputedStyle(document.querySelector('.stream-pane-head')).display === 'none' && $('emptyStage').getBoundingClientRect().top - $('roomHead').getBoundingClientRect().bottom < 30`));
 });

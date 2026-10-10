@@ -562,8 +562,6 @@ function setupGeneralSettings() {
     saveAppPreferences();
   };
   $('resetColors').onclick = () => { appPreferences.colors = { ...AppPreferences.defaults.colors }; renderGeneralSettings(); saveAppPreferences(); };
-  $('openGeneralSettingsRoom').onclick = openGeneralSettings;
-  setIcon($('openGeneralSettingsRoom'), 'sliders', 'Configurações: voz, aparência, sons e estatísticas');
   $('closeGeneralSettings').onclick = closeGeneralSettings;
   renderGeneralSettings();
   window.addEventListener('beforeunload', () => appSounds.stopAll());

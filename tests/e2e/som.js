@@ -52,11 +52,6 @@ run('Som das transmissões', 150000, async () => {
   const lvl = await B.eval(LEVEL('Ana'));
   check('Ana no máximo: o som chega e toca', lvl > 0.3, lvl.toFixed(2));
   await B.shot('som.png');
-  await B.eval(`$('navStreams').click()`);
-  await sleep(1200);
-  const lvl2 = await B.eval(LEVEL('Ana'));
-  check('Painel Transmissão desligado: o som continua', lvl2 > 0.3, lvl2.toFixed(2));
-  await B.eval(`$('navStreams').click()`);
   await B.eval(`togglePip([...state.members].find(([, m]) => m.name === 'Ana')[0])`);
   await sleep(1500);
   const pip = await B.eval(PLAYING('Ana'));

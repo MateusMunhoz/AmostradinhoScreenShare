@@ -86,10 +86,20 @@ function setNewsOpen(open) {
   if (!open && update.myVersion) save('novidadesVistas', update.myVersion);
 }
 
-// Depois de atualizar, o cartão aparece uma vez sozinho (até fechar)
+// Depois de atualizar, o cartão "Novo na versão" aparece no pé da coluna de amigos (docs/spec/inicio-novo.md), com o
+// primeiro item; fica até fechar ou abrir a lista inteira, e não volta até a próxima versão
 function showNewsIfNew() {
   const v = update.myVersion;
-  if (typeof NOVIDADES !== 'undefined' && NOVIDADES.some((n) => n.version === v) && load('novidadesVistas') !== v) setNewsOpen(true);
+  const n = typeof NOVIDADES === 'undefined' ? null : NOVIDADES.find((x) => x.version === v);
+  if (!n || !n.items.length || load('novidadesVistas') === v) return;
+  const { tag, lines } = newsParts(n.items[0]);
+  $('homeNovoTitulo').textContent = `Novo na ${v}`;
+  $('homeNovoTexto').textContent = (tag ? `${tag}: ` : '') + lines.join(' ') + (n.items.length > 1 ? ` (e mais ${n.items.length - 1})` : '');
+  $('homeNovo').hidden = false;
+}
+function fecharNovo() {
+  $('homeNovo').hidden = true;
+  if (update.myVersion) save('novidadesVistas', update.myVersion);
 }
 
 // ---------- Atualizações pela sala ----------
@@ -189,58 +199,95 @@ async function checkGithub(manual = false) {
   renderUpdateBanner();
 }
 
-// ---------- Aviso de atualização ----------
-// Um cartão no canto da tela, em qualquer tela do app. Um botão faz tudo: baixa do GitHub (se ainda
-// não veio pela sala) e reinicia o app já na versão nova. "Depois" esconde até a próxima versão.
+// ---------- Aviso de atualização (docs/spec/inicio-novo.md) ----------
+// Sem cartão flutuante (não cobre o jogo nem a transmissão): no Início, o botão "Nova versão" no topo e o
+// "1.2.3 disponível" no rodapé; nas outras telas, o mesmo botão na barra da direita (navUpdate), que leva ao Início.
+// Os dois abrem o painel: um botão faz tudo, baixa do GitHub (se ainda não veio pela sala) e reinicia o app já na
+// versão nova. "Depois" esconde o botão até a próxima versão (o rodapé continua dizendo que tem).
 function updateMode() {
   if (update.ready) return { mode: 'ready', version: update.ready };
   if (update.github) return { mode: update.exePage ? 'exe' : 'github', version: update.github.version };
   return null;
 }
 
+// O nome ficou de antes (todo lugar que sabe de versão nova chama este): agora desenha o botão, o rodapé e o painel
 function renderUpdateBanner() {
   const m = updateMode();
-  const banner = $('updateBanner');
-  if (!m || update.dismissed === m.version || update.installing) {
-    banner.hidden = !update.installing;
-    return;
+  const mostrar = !!m && (update.dismissed !== m.version || update.installing);
+  $('homeVersaoNova').hidden = !mostrar;
+  $('navUpdate').hidden = !mostrar || !$('home').hidden;
+  $('navUpdate').title = m ? `Versão ${m.version}: ver e atualizar` : '';
+  const estado = $('homeVersaoEstado');
+  estado.textContent = m ? `${m.version} ${m.mode === 'ready' ? 'pronta' : 'disponível'}` : 'atualizado';
+  estado.classList.toggle('nova', !!m);
+  estado.disabled = !m;
+  if (!m) setVersaoPainelOpen(false);
+  else if (!$('homeVersaoPainel').hidden) renderVersaoPainel();
+}
+
+function renderVersaoPainel() {
+  const m = updateMode();
+  if (!m) return;
+  if (update.installing) return; // baixando ou reiniciando: o texto é o do runUpdate
+  const leaves = state.myId ? ' Você sai da sala e o app abre de novo sozinho.' : ' O app fecha e abre de novo sozinho.';
+  $('hvKicker').textContent = m.mode === 'ready' ? 'Nova versão pronta' : 'Nova versão disponível';
+  $('hvTitulo').textContent = `Nebula ${m.version}`;
+  $('hvSub').textContent = `Você está na ${update.myVersion}`;
+  // As novidades da versão nova só chegam com ela (renderer/novidades.js vem no pacote): o link leva à página dela
+  const box = $('hvNovidades');
+  box.textContent = '';
+  const page = update.github?.page;
+  if (page) {
+    const link = document.createElement('button');
+    link.type = 'button';
+    link.className = 'link-btn';
+    link.textContent = 'Ver o que mudou no GitHub';
+    link.onclick = () => window.api.openGithub(page);
+    box.append(link);
   }
-  const inRoom = !!state.myId;
-  const leaves = inRoom ? ' Você sai da sala e o app abre de novo sozinho.' : ' O app fecha e abre de novo sozinho.';
-  $('ubTitle').textContent = m.mode === 'ready' ? `Versão ${m.version} pronta` : `Versão ${m.version} disponível`;
-  $('ubText').textContent = m.mode === 'ready' ? `Já está baixada.${leaves}`
+  box.hidden = !page;
+  $('hvAviso').textContent = m.mode === 'ready' ? `Já está baixada.${leaves}`
     : m.mode === 'github' ? `Baixa em poucos segundos e atualiza.${leaves}`
     : `Esta versão precisa do ${window.api.platform === 'linux' ? 'AppImage' : '.exe'} novo. Baixe na página do GitHub e abra no lugar do antigo.`;
-  $('ubGo').textContent = m.mode === 'exe' ? 'Abrir no GitHub' : 'Atualizar agora';
-  $('ubGo').disabled = false;
-  $('ubLater').hidden = false;
-  banner.hidden = false;
+  $('hvGo').textContent = m.mode === 'exe' ? 'Abrir no GitHub' : 'Atualizar e reiniciar';
+  $('hvGo').disabled = false;
+  $('hvDepois').hidden = false;
+}
+
+function setVersaoPainelOpen(open) {
+  if (open && !updateMode()) return;
+  if (open) { setRedeMenuOpen(false); renderVersaoPainel(); }
+  $('homeVersaoPainel').hidden = !open;
+  $('homeVersaoNova').setAttribute('aria-expanded', String(open));
+  if (open) $('hvGo').focus();
 }
 
 async function runUpdate() {
   const m = updateMode();
   if (!m) return;
   if (m.mode === 'exe') return window.api.openGithub(update.exePage);
-  const go = $('ubGo');
+  const go = $('hvGo');
   update.installing = true;
-  $('ubLater').hidden = true;
+  $('hvDepois').hidden = true;
   if (m.mode === 'github') {
     setBusy(go, true, 'Baixando…');
-    $('ubText').textContent = 'Baixando a versão nova do GitHub…';
+    $('hvAviso').textContent = 'Baixando a versão nova do GitHub…';
     const res = await window.api.githubInstall();
     if (!res.ok) {
       update.installing = false;
+      setBusy(go, false, 'Atualizar e reiniciar');
       if (res.page && /exe novo|pacote de atualização/.test(res.error)) {
         // Mudou algo que só um .exe novo traz (ex.: versão do Electron): manda para a página da versão
         update.exePage = res.page;
       } else {
         toast(`Não deu para atualizar: ${res.error}`, 'error');
       }
-      return renderUpdateBanner();
+      renderUpdateBanner();
+      return renderVersaoPainel();
     }
     update.ready = res.version;
   }
   setBusy(go, true, 'Reiniciando…');
-  $('ubText').textContent = 'Abrindo a versão nova…';
+  $('hvAviso').textContent = 'Abrindo a versão nova…';
   window.api.restartApp();
 }

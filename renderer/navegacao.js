@@ -1,12 +1,42 @@
 'use strict';
-// Uma barrinha fixa na borda direita (só ícones); os botões da sala são alternadores independentes, não abas
-// exclusivas. Chat e voz abrem à esquerda dela, no mesmo lugar de sempre.
+// Uma barrinha fixa na borda direita (só ícones, só coisas do app). O painel da sala fica à esquerda dela, com as
+// abas Voz, Chat e Pessoas e o cartão Seu sinal no pé (docs/spec/sala-nova.md).
 const workspaceViews = (() => {
   let saved; try { saved = JSON.parse(load('workspaceViews.v1', '{}')); } catch {}
   return { chat: typeof saved?.chat === 'boolean' ? saved.chat : load('panelOpen', '1') !== '0',
     voice: typeof saved?.voice === 'boolean' ? saved.voice : true,
     streams: typeof saved?.streams === 'boolean' ? saved.streams : true };
 })();
+// Abas do painel: a aba aberta, "lado a lado" (Voz e Chat juntos, com a divisória de sempre) e recolhido (o painel
+// some e a sua voz vai para a barrinha). Quem já usava o chat e a voz juntos começa lado a lado. Os painéis de chat
+// e de voz são os de sempre: a aba só decide quais aparecem, por workspaceViews.chat e .voice (aplicarPainelSala).
+const painelSala = (() => {
+  let s; try { s = JSON.parse(load('painelSala.v1', '{}')); } catch {}
+  return { aba: ['voz', 'chat', 'pessoas'].includes(s?.aba) ? s.aba : workspaceViews.voice || !workspaceViews.chat ? 'voz' : 'chat',
+    juntos: typeof s?.juntos === 'boolean' ? s.juntos : workspaceViews.chat && workspaceViews.voice,
+    recolhido: s?.recolhido === true };
+})();
+function aplicarPainelSala() {
+  const { aba, juntos, recolhido } = painelSala, ambos = juntos && aba !== 'pessoas';
+  workspaceViews.chat = !recolhido && (aba === 'chat' || ambos);
+  workspaceViews.voice = !recolhido && (aba === 'voz' || ambos);
+  workspaceViews.streams = true; // as telas ficam sempre à vista (o antigo "Esconder as telas" saiu)
+}
+// Muda a aba, o lado a lado ou o recolhido, e redesenha. O chat aberto e à vista marca as mensagens como lidas.
+function setPainelSala(mudar = {}) {
+  Object.assign(painelSala, mudar);
+  save('painelSala.v1', JSON.stringify(painelSala));
+  aplicarPainelSala();
+  chat.open = workspaceViews.chat;
+  save('panelOpen', chat.open ? '1' : '0');
+  saveWorkspaceViews();
+  syncWorkspace();
+  if (chat.open && chatAtBottom()) markRead();
+  renderUnread();
+  renderVoiceAvatars();
+  closePersonCard();
+  if (chat.open && paneFold.which !== 'chat') requestAnimationFrame(scrollChatToEnd);
+}
 let workspaceReady = false;
 let profileReturnFocus = null;
 function setUtilityBackground(inert) {
@@ -67,31 +97,33 @@ function syncWorkspace() {
   // chat e voz continuam (dá para conversar e mexer na voz sem voltar); só as telas ficam na sala.
   const inCall = !!state.myId, inRoom = !$('room').hidden && inCall;
   const settings = !$('generalSettingsDialog').hidden, profile = !$('profilePane').hidden;
-  const roomPanes = inCall && (workspaceViews.chat || workspaceViews.voice);
-  const any = roomPanes;
+  const any = inCall && !painelSala.recolhido;
+  const pessoas = any && painelSala.aba === 'pessoas';
   $('workspacePanes').hidden = !any;
   $('chatTab').hidden = !inCall || !workspaceViews.chat;
   $('voicePane').hidden = !inCall || !workspaceViews.voice;
+  setPeopleOpen(pessoas);
   $('streamArea').hidden = inRoom && !workspaceViews.streams;
-  $('workspaceEmpty').hidden = any || workspaceViews.streams;
   document.body.classList.toggle('has-workspace-pane', any);
   document.body.classList.toggle('workspace-in-room', inCall);
   document.body.classList.toggle('workspace-wide', inRoom && !workspaceViews.streams && any);
-  // Barra e painéis formam um bloco só: o último painel aberto fecha o bloco com os cantos de baixo
-  $('chatTab').classList.toggle('pane-last', !workspaceViews.voice);
-  $('voicePane').classList.toggle('pane-last', workspaceViews.voice);
+  // Abas, painéis e o cartão Seu sinal formam um bloco só; o cartão fecha o bloco embaixo
+  $('chatTab').classList.remove('pane-last');
+  $('voicePane').classList.remove('pane-last');
+  $('seuSinal').hidden = !any;
+  $('workspacePanes').classList.toggle('juntos', workspaceViews.chat && workspaceViews.voice);
+  $('seuSinalMini').hidden = !inCall || any;
   if (inRoom) syncIncomingVideo(); // telas escondidas não baixam vídeo (o som continua)
-  if (mapFocus.on && !mapFocusFits()) setMapFocus(false); // o mapa em foco só existe com chat e voz na barra
+  if (mapFocus.on && !mapFocusFits()) setMapFocus(false); // o mapa em foco só existe com chat e voz lado a lado
   $('workspaceContext').textContent = inRoom ? 'Na sala' : 'Início';
-  $('leaveBtn').hidden = $('peopleBtn').hidden = !inCall; // Sair e as pessoas: na sala e no menu
   $('dockHome').hidden = !inRoom; // no menu, o Voltar para a sala fica no lugar do Início (renderHomeCall)
-  for (const [id, view] of [['navChat','chat'],['navVoice','voice'],['navStreams','streams']]) {
-    $(id).hidden = !inCall;
-    $(id).setAttribute('aria-pressed', String(workspaceViews[view]));
-  }
+  $('navVoice').setAttribute('aria-pressed', String(workspaceViews.voice));
+  $('navChat').setAttribute('aria-pressed', String(workspaceViews.chat));
+  $('peopleBtn').setAttribute('aria-pressed', String(pessoas));
+  $('paneJuntos').setAttribute('aria-pressed', String(painelSala.juntos));
+  setIcon($('paneJuntos'), 'splitRows', painelSala.juntos ? 'Separar: uma aba de cada vez' : 'Voz e Chat lado a lado (um em cima do outro)');
   $('navSettings').setAttribute('aria-expanded', String(settings));
   $('navProfile').setAttribute('aria-expanded', String(profile));
-  if (!inCall) setPeopleOpen(false);
   fitNav();
   $('profileName').disabled = !!state.myId;
   $('profileName').value = $('name').value;
@@ -111,136 +143,104 @@ function syncWorkspace() {
   renderHomeCall();
   renderAmigos();
 }
-// Barra de baixo numa linha só: sem espaço, enxuga em etapas até caber (o que some continua na tela em outro
-// lugar): 1) o texto "2 assistindo" do Ao vivo; 2) os textos "Na voz" e "Convidar" (ficam os ícones);
-// 3) os nomes nas bolinhas de quem está na voz (fica a foto ou a inicial); 4) as bolinhas (estão no painel Voz)
-const DOCK_STEPS = ['tight-1', 'tight-2', 'tight-3', 'tight-4'];
-// 5) ainda sem espaço: os botões saem da barra para o menu da setinha ^, nesta ordem (os mais usados por último).
-// stageLayout é o grupo Grade/Destaque: no menu vira os dois itens.
-const DOCK_OVERFLOW = ['stageLayout',
-  'voiceDeafen', 'selfViewBtn', 'shareOpenBtn', 'switchShareBtn', 'voiceMute', 'voiceJoin'];
-function fitDock() {
-  const dock = document.querySelector('.dock');
-  if (!dock || !dock.offsetParent) return;
-  const fits = () => dock.scrollWidth <= dock.clientWidth + 1;
-  dock.classList.remove(...DOCK_STEPS);
-  for (const el of dock.querySelectorAll('.dock-overflow')) el.classList.remove('dock-overflow');
-  $('dockMoreWrap').hidden = true;
-  for (const step of DOCK_STEPS) {
-    if (fits()) break;
-    dock.classList.add(step);
-  }
-  if (!fits()) {
-    $('dockMoreWrap').hidden = false;
-    for (const id of DOCK_OVERFLOW) {
-      if (fits()) break;
-      if ($(id).getClientRects().length) $(id).classList.add('dock-overflow');
-    }
-  }
-  const moved = DOCK_OVERFLOW.filter((id) => $(id).classList.contains('dock-overflow'));
-  if (!moved.length) closeDockMore();
-  else if (!$('dockMoreMenu').hidden) buildDockMore();
-  // Mensagem nova com o botão do chat dentro do menu: a bolinha aparece na setinha
-  $('dockMore').classList.toggle('has-unread', moved.includes('chatToggle') && !$('chatUnread').hidden);
-}
-function buildDockMore() {
-  const menu = $('dockMoreMenu');
-  menu.replaceChildren();
-  for (const id of DOCK_OVERFLOW) {
-    const box = $(id);
-    if (!box.classList.contains('dock-overflow')) continue;
-    for (const original of box.matches('button') ? [box] : box.querySelectorAll('button')) {
-      const full = original.getAttribute('aria-label') || original.title || original.textContent.trim();
-      const item = document.createElement('button');
-      item.type = 'button';
-      item.className = 'dock-more-item';
-      item.setAttribute('role', 'menuitem');
-      item.title = full;
-      item.disabled = original.disabled;
-      const icon = original.querySelector('svg');
-      if (icon) item.append(icon.cloneNode(true));
-      const label = document.createElement('span');
-      // O nome curto: o texto que o botão mostra na barra ("Convidar", "Grade") ou a dica até os dois-pontos
-      // ("Estatísticas: desempenho do PC…" vira "Estatísticas")
-      label.textContent = original.querySelector('.dock-label')?.textContent || (original.getAttribute('aria-label') ? full.split(':')[0] : original.textContent.trim() || full.split(':')[0]);
-      item.append(label);
-      if (original.getAttribute('aria-pressed') === 'true') item.classList.add('on');
-      if (id === 'chatToggle' && !$('chatUnread').hidden) item.append($('chatUnread').cloneNode(true));
-      item.onclick = () => { closeDockMore(); original.click(); };
-      menu.append(item);
-    }
+// ---------- Cabeçalho da sala ----------
+// Em cima do palco: o nome da sala (abre o menu da sala), a rede e quantas pessoas; à direita Grade/Destaque (com
+// telas), Convidar e Sair. Sem espaço, enxuga em etapas: 1) a rede e as pessoas; 2) os textos de Convidar e Sair.
+const HEAD_STEPS = ['apertado-1', 'apertado-2'];
+function fitRoomHead() {
+  const head = $('roomHead');
+  if (!head.offsetParent) return;
+  head.classList.remove(...HEAD_STEPS);
+  for (const step of HEAD_STEPS) {
+    if (head.scrollWidth <= head.clientWidth + 1) break;
+    head.classList.add(step);
   }
 }
-function openDockMore() {
-  buildDockMore();
-  $('dockMoreMenu').hidden = false;
-  $('dockMore').setAttribute('aria-expanded', 'true');
-  $('dockMoreMenu').querySelector('button:not(:disabled)')?.focus();
+function redeDaSala() {
+  if (state.cloud) return 'Internet';
+  const modo = selectedNetworkProvider();
+  return modo === 'razze' ? 'Razze' : modo === 'internet' ? 'Internet' : window.api.platform === 'linux' ? 'Rede local' : 'Radmin';
 }
-function closeDockMore(focusButton = false) {
-  if ($('dockMoreMenu').hidden) return;
-  $('dockMoreMenu').hidden = true;
-  $('dockMore').setAttribute('aria-expanded', 'false');
-  if (focusButton) $('dockMore').focus();
+function renderRoomHead() {
+  if (!state.myId) { setRoomMenuOpen(false); return; }
+  const dono = state.hostId === state.myId;
+  $('roomHeadTitle').textContent = dono ? 'Sua sala' : `Sala de ${nameOf(state.hostId)}`;
+  const pessoas = state.members.size + 1;
+  $('roomHeadMeta').textContent = `${redeDaSala()} · ${pessoas === 1 ? 'só você' : `${pessoas} pessoas`}`;
+  $('roomMenuBtn').title = 'Configurações da sala: endereço, senha e quem pode entrar';
+  $('dockAddr').title = state.cloud ? 'Copiar o código da sala para mandar a quem vai entrar' : 'Copiar o endereço da sala para mandar a quem vai entrar';
 }
-function watchDock() {
-  const dock = document.querySelector('.dock');
-  setIcon($('dockMore'), 'chevronUp', 'Mais controles (não couberam na barra)');
-  $('dockMore').onclick = () => ($('dockMoreMenu').hidden ? openDockMore() : closeDockMore(true));
-  $('dockMoreMenu').addEventListener('keydown', (e) => {
-    const items = [...$('dockMoreMenu').querySelectorAll('button:not(:disabled)')];
-    const at = items.indexOf(document.activeElement);
-    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeDockMore(true); }
-    else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-      e.preventDefault();
-      items[(at + (e.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length]?.focus();
-    } else if (e.key === 'Tab') closeDockMore();
+function rotuloMenu(texto) { const s = document.createElement('span'); s.textContent = texto; return s; }
+function setRoomMenuOpen(open) {
+  const menu = $('roomMenu');
+  if (menu.hidden === !open) return;
+  menu.hidden = !open;
+  $('roomMenuBtn').setAttribute('aria-expanded', String(open));
+  if (open) menu.querySelector('button, input')?.focus();
+}
+function setupRoomHead() {
+  $('roomMenuBtn').onclick = () => setRoomMenuOpen($('roomMenu').hidden);
+  $('roomMenuLeave').onclick = () => { setRoomMenuOpen(false); $('leaveBtn').click(); };
+  $('openStatsRoom').addEventListener('click', () => setRoomMenuOpen(false));
+  document.addEventListener('pointerdown', (e) => { if (!e.target.closest?.('.room-menu-wrap')) setRoomMenuOpen(false); });
+  $('roomMenu').addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setRoomMenuOpen(false); $('roomMenuBtn').focus(); }
   });
-  document.addEventListener('mousedown', (e) => { if (!$('dockMoreWrap').contains(e.target)) closeDockMore(); });
-  // A pílula aparece e some junto com as faixas das telas e os controles do YouTube (.ui-idle, setupTileIdle em
-  // palco.js): com telas no palco, ela só segue o estado delas; sem telas, usa o mesmo tempo (TILE_IDLE_MS) sozinha.
-  // Com o mouse em cima dela, o foco nela (Tab) ou um menu dela aberto (setinha, entrar na voz, quem pode assistir), fica
-  const tiles = () => [...$('tiles').querySelectorAll('.tile')];
-  const held = () => dock.matches(':hover, :focus-within') || !$('dockMoreMenu').hidden || !!$('voiceJoinPop') || !!$('shareOpenMenu');
-  const sync = () => { if (tiles().length) dock.classList.toggle('dock-sleep', !held() && tiles().every((t) => t.classList.contains('ui-idle'))); };
-  new MutationObserver(sync).observe($('tiles'), { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
-  let sleepTimer = 0;
-  const sleepSoon = (ms) => { clearTimeout(sleepTimer); sleepTimer = setTimeout(() => { if (held()) return sleepSoon(TILE_IDLE_MS); dock.classList.add('dock-sleep'); }, ms); };
-  const stage = dock.closest('.stage-col') || dock.parentElement;
-  stage.addEventListener('pointermove', (e) => {
-    // Com telas no palco, o mouse chegando perto da pílula (escondida, sem receber o mouse) traz as telas e ela de volta
-    if (tiles().length) {
-      if (dock.classList.contains('dock-sleep') && pointerNearDock(e.clientX, e.clientY)) {
-        for (const t of tiles()) t.classList.remove('ui-idle');
-        dock.classList.remove('dock-sleep');
-      }
-      return;
-    }
-    dock.classList.remove('dock-sleep');
-    sleepSoon(TILE_IDLE_MS);
-  }, { passive: true });
-  stage.addEventListener('pointerleave', () => { if (!tiles().length && !held()) { clearTimeout(sleepTimer); dock.classList.add('dock-sleep'); } });
-  // Passar da tela para a pílula não esconde a tela (palco.js); sair da pílula para fora das telas esconde as duas
-  dock.addEventListener('pointerleave', (e) => {
-    if (!e.relatedTarget?.closest?.('.tile')) for (const t of tiles()) t.classList.add('ui-idle');
-    sync();
-  });
-  dock.addEventListener('focusin', () => dock.classList.remove('dock-sleep'));
-  dock.addEventListener('focusout', () => setTimeout(() => (tiles().length ? sync() : sleepSoon(TILE_IDLE_MS))));
-  sleepSoon(TILE_IDLE_MS);
   let queued = false;
-  const again = () => { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; fitDock(); }); };
-  new ResizeObserver(again).observe(dock);
-  // O próprio menu muda ao medir e ao abrir: mudanças dentro dele não medem de novo (senão mede sem parar)
-  new MutationObserver((records) => { if (records.some((r) => !$('dockMoreWrap').contains(r.target))) again(); })
-    .observe(dock, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['hidden'] });
-  // Trocar a fonte ou o tema muda a largura dos botões sem mudar a da barra: mede de novo (as fontes do app
-  // chegam depois, por isso também quando uma termina de carregar)
+  const again = () => { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; fitRoomHead(); }); };
+  new ResizeObserver(again).observe($('roomHead'));
+  new MutationObserver(again).observe($('roomHead'), { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['hidden'] });
   new MutationObserver(again).observe(document.documentElement, { attributes: true, attributeFilter: ['style', 'data-skin'] });
   document.fonts?.addEventListener('loadingdone', again);
 }
-// Barra sem espaço (janela estreita, fonte larga): Chat, Voz e Transmissão ficam só com o ícone. Na barrinha da
-// direita eles já são só ícone; continua aqui para quem mede a barra.
+
+// ---------- Seu sinal ----------
+// O cartão no pé do painel: em que canal você está (ou "Fora da voz"), os botões da voz e o Transmitir. Recolhido o
+// painel, a coluninha da barrinha repete microfone, fone, entrar/sair da voz e transmitir (os botões de verdade são os
+// do cartão: a coluninha só clica neles).
+function renderSeuSinal() {
+  const na = !!voice.session;
+  $('ssOnde').textContent = voice.pending ? 'Entrando na voz…' : na ? `Voz conectada · ${channelName(voice.channel)}` : 'Fora da voz';
+  $('seuSinal').classList.toggle('na-voz', na);
+  $('seuSinal').classList.toggle('ao-vivo', !!state.sharing);
+  $('miniMute').hidden = $('miniDeafen').hidden = !na;
+  setIcon($('miniMute'), voice.muted ? 'micOff' : 'mic', voice.muted ? 'Ligar o microfone' : 'Desligar o microfone');
+  $('miniMute').setAttribute('aria-pressed', String(voice.muted));
+  setIcon($('miniDeafen'), voice.deafened ? 'headphonesOff' : 'headphones', voice.deafened ? 'Ouvir as vozes' : 'Silenciar as vozes');
+  $('miniDeafen').setAttribute('aria-pressed', String(voice.deafened));
+  setIcon($('miniVoice'), na || voice.pending ? 'phoneOff' : 'phone', na ? 'Sair da voz' : voice.pending ? 'Cancelar entrada na voz' : 'Entrar na voz');
+  $('miniVoice').disabled = !voice.supported;
+  $('miniVoice').classList.toggle('mini-sair', na || voice.pending);
+  setIcon($('miniShare'), state.sharing ? 'stop' : 'monitor', state.sharing ? 'Parar de transmitir' : 'Transmitir tela');
+  $('miniShare').classList.toggle('ao-vivo', !!state.sharing);
+  renderLiderLinha();
+}
+function setupSeuSinal() {
+  setIcon($('paneExpand'), 'panelOpen', 'Abrir o painel da sala');
+  setIcon($('paneRecolher'), 'panelClose', 'Recolher o painel (a sua voz fica na barrinha)');
+  $('paneExpand').onclick = () => setPainelSala({ recolhido: false });
+  $('paneRecolher').onclick = () => setPainelSala({ recolhido: true });
+  $('paneJuntos').onclick = () => setPainelSala(painelSala.juntos ? { juntos: false } : { juntos: true, aba: painelSala.aba === 'pessoas' ? 'voz' : painelSala.aba });
+  $('navVoice').onclick = () => setPainelSala({ aba: 'voz', recolhido: false });
+  $('navChat').onclick = () => setPainelSala({ aba: 'chat', recolhido: false });
+  $('peopleBtn').onclick = () => setPainelSala({ aba: 'pessoas', recolhido: false });
+  // Setas trocam de aba (como numa lista de abas)
+  $('paneTabs').addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    const tabs = [$('navVoice'), $('navChat'), $('peopleBtn')], at = tabs.indexOf(document.activeElement);
+    if (at < 0) return;
+    e.preventDefault();
+    const next = tabs[(at + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+    next.focus(); next.click();
+  });
+  $('miniMute').onclick = () => $('voiceMute').click();
+  $('miniDeafen').onclick = () => $('voiceDeafen').click();
+  $('miniVoice').onclick = () => $('voiceJoin').click();
+  $('miniShare').onclick = () => (state.sharing ? $('stopShareBtn') : $('shareBtn')).click();
+  setupLiderLinha();
+}
+
+// Barrinha sem espaço (janela baixa, fonte larga): marca para o CSS apertar
 function fitNav() {
   const nav = $('workspaceNav');
   nav.classList.remove('nav-tight');
@@ -248,8 +248,8 @@ function fitNav() {
 }
 
 // Seção da voz. Fora dela: Entrar como botão principal. Na voz: embaixo da lista, Voz e atalhos (só o ícone, o nome na
-// dica) e a Subsala. Microfone, fone e Sair não se repetem aqui: ficam na barra flutuante (e no cartão do Início, no
-// saguão). Fora da voz, Voz e atalhos fica só na barrinha, perto da engrenagem.
+// dica) e a Subsala. Microfone, fone e Sair não se repetem aqui: ficam no cartão Seu sinal, logo embaixo (e na faixa
+// do Início, no saguão).
 function layoutVoicePane(active) {
   const pane = $('voicePane'), actions = pane.querySelector('.pane-voice-actions');
   const settings = $('paneVoiceSettings'), join = $('paneVoiceJoin');
@@ -270,13 +270,15 @@ function layoutVoicePane(active) {
   actions.append(sub);
 }
 // ---------- Início sem sair da sala ----------
-// O botão Início da barra de baixo troca para o saguão; a sala continua (voz, chat, telas, avisos). No saguão, uma
+// O botão Início da barrinha troca para o saguão; a sala continua (voz, chat, telas, avisos). No saguão, uma
 // faixa mostra a sala, quem está nela, a sua voz e o Voltar (com as mensagens novas).
 function goHomeKeepCall() { if (state.myId) show('home'); }
 function backToRoom() { if (state.myId) { show('room'); markChatSeenIfVisible(); } }
 function markChatSeenIfVisible() { if (chat.open && chatAtBottom() && !mapFocus.on && paneFold.which !== 'chat') markRead(); }
 function renderHomeCall() {
   const inCall = !!state.myId;
+  renderRoomHead();
+  renderSeuSinal();
   $('homeCall').hidden = !inCall;
   // Barrinha da direita: no menu, com a sala aberta, o botão de voltar fica no pé (com as mensagens novas)
   const back = inCall && $('room').hidden, unread = chat.unread;
@@ -284,11 +286,10 @@ function renderHomeCall() {
   $('navBackUnread').hidden = !back || !unread;
   $('navBackUnread').textContent = unread > 99 ? '99+' : String(unread);
   $('navBackToRoom').title = $('navBackToRoom').ariaLabel = unread ? `Voltar para a sala · ${unread} ${unread === 1 ? 'mensagem nova' : 'mensagens novas'}` : 'Voltar para a sala';
-  // Numa sala: criar ou entrar em outra fica bloqueado (sairia desta sem querer). Abrindo uma, também: um segundo
-  // servidor derrubaria o primeiro (startServer fecha o que estiver aberto)
-  for (const id of ['goQuick', 'goCreate', 'goJoin', 'rejoinBtn']) $(id).disabled = inCall || state.abrindo;
-  $('goQuick').title = $('goJoin').title = inCall ? 'Você já está numa sala: volte para ela e saia antes' : '';
-  $('goCreate').title = inCall ? 'Você já está numa sala: volte para ela e saia antes' : 'Opções da sala'; // só ícone: a dica é o nome
+  // Criar e entrar continuam à vista e ligados numa sala: perguntam antes de sair dela (foraDaSala, primeira-entrada.js).
+  // Abrindo uma sala, ficam travados: um segundo servidor derrubaria o primeiro (startServer fecha o que estiver aberto)
+  for (const id of ['goQuick', 'goCreate', 'goJoin', 'rejoinBtn']) $(id).disabled = !!state.abrindo;
+  $('goQuick').title = $('goJoin').title = $('goCreate').title = inCall ? 'Você está numa sala: o app pergunta antes de sair dela' : '';
   if (!inCall) return;
   const host = state.hostId === state.myId ? 'você' : nameOf(state.hostId);
   $('homeCallTitle').textContent = host === 'você' ? 'Sua sala' : `Sala de ${host}`;
@@ -496,40 +497,27 @@ function setupWorkspace() {
   setupPaneFold();
   host.append($('peoplePop'));
   setupPaneResize(host);
+  host.append($('seuSinal')); // o cartão fecha o bloco embaixo, em qualquer aba
   document.body.append($('profilePane'), $('generalSettingsDialog'));
   $('sidePanel').hidden = true;
   $('generalSettingsDialog').setAttribute('aria-labelledby', 'generalSettingsTitle');
-  const icons = {navSettings: '<svg viewBox="0 0 24 24"><path d="m9 3 1-2h4l1 2 2 1 2 0 2 3-1 2v3l1 2-2 3h-2l-2 1-1 3h-4l-1-3-2-1H5l-2-3 1-2V9L3 7l2-3h2z"/><circle cx="12" cy="11" r="3"/></svg>',
-    navChat: ICON.chat, navVoice: ICON.mic, navStreams: '<svg viewBox="0 0 24 24"><path d="M3 4h18v13H3zM8 21h8M12 17v4"/></svg>'};
-  for (const [id, icon] of Object.entries(icons)) $(id).querySelector('.nav-icon').innerHTML = icon;
-  // Só com o ícone (barra apertada), o nome da aba continua na dica e no leitor de tela
-  for (const id of ['navChat', 'navVoice', 'navStreams']) {
-    const name = $(id).querySelector('.nav-icon + span').textContent;
-    $(id).title = name;
-    $(id).setAttribute('aria-label', name);
-  }
+  $('navSettings').querySelector('.nav-icon').innerHTML = '<svg viewBox="0 0 24 24"><path d="m9 3 1-2h4l1 2 2 1 2 0 2 3-1 2v3l1 2-2 3h-2l-2 1-1 3h-4l-1-3-2-1H5l-2-3 1-2V9L3 7l2-3h2z"/><circle cx="12" cy="11" r="3"/></svg>';
   new ResizeObserver(() => fitNav()).observe($('workspaceNav'));
   $('navProfile').onclick = openProfilePopup;
   $('closeProfile').onclick = closeProfilePopup;
   setupUtilityPopup('profilePane', closeProfilePopup);
   setupUtilityPopup('generalSettingsDialog', closeGeneralSettings);
   $('navSettings').onclick = () => $('generalSettingsDialog').hidden ? openGeneralSettings() : closeGeneralSettings();
-  $('navChat').onclick = () => setPanelOpen(!workspaceViews.chat);
-  $('navVoice').onclick = () => { workspaceViews.voice = !workspaceViews.voice; saveWorkspaceViews(); syncWorkspace(); };
-  // As telas só existem na sala: no menu, Transmissão volta para ela (com as telas à vista)
-  $('navStreams').onclick = () => {
-    if ($('room').hidden) { if (!workspaceViews.streams) { workspaceViews.streams = true; saveWorkspaceViews(); } backToRoom(); return; }
-    workspaceViews.streams = !workspaceViews.streams; saveWorkspaceViews(); syncWorkspace();
-  };
+  setupRoomHead();
+  setupSeuSinal();
   $('profileName').oninput = () => { if (state.myId) return; $('name').value = $('profileName').value; save('name', $('name').value); $('profileDisplayName').textContent = getName(); $('profileAvatar').textContent = $('navProfileAvatar').textContent = [...getName()][0].toUpperCase(); $('navProfile').title = $('navProfile').ariaLabel = 'Perfil de ' + getName(); };
   $('name').addEventListener('input', syncWorkspace);
   setupNameFont();
   setupHomeCall();
   for (const [proxy, original] of [['paneVoiceJoin','voiceJoin'],['paneVoiceSettings','voiceSettingsBtn']]) $(proxy).onclick = () => $(original).click();
-  $('streamPeople').onclick = () => {
-    if (!workspaceViews.chat) setPanelOpen(true);
-    setPeopleOpen($('peoplePop').hidden);
-  };
+  $('streamPeople').onclick = () => setPainelSala({ aba: 'pessoas', recolhido: false });
+  aplicarPainelSala();
+  chat.open = workspaceViews.chat;
   workspaceReady = true;
   syncWorkspace();
 }

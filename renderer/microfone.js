@@ -157,7 +157,7 @@ async function restartMic() {
   const track = stream.getAudioTracks()[0];
   track.onended = oldTrack ? oldTrack.onended : null;
   if (oldTrack) oldTrack.onended = null;
-  for (const p of voice.peers.values()) {
+  for (const p of [...voice.peers.values(), ...lider.fala.values()]) { // o canal e quem ouve você da subsala Líder
     const sender = p.pc.getSenders().find((s) => s.track && s.track.kind === 'audio');
     if (sender) await sender.replaceTrack(track).catch(() => {});
   }

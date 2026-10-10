@@ -96,7 +96,7 @@ async function connectRoom(url, hello, timeoutMs = 8000) {
     ws.onopen = () => {
       const razze = contaSala(); // a conta Razze (perfil e Adicionar dos outros)
       contaAnunciada = JSON.stringify(razze);
-      ws.send(JSON.stringify({ type: 'hello', ...hello, client: clientId(), addrs, version: update.myVersion, avatar: fotos.mine?.hash || '', avatarFull: fotos.mineFull?.hash || '', nameFont: appPreferences.nameFont, razze }));
+      ws.send(JSON.stringify({ type: 'hello', ...hello, client: clientId(), addrs, version: update.myVersion, avatar: fotos.mine?.hash || '', avatarFull: fotos.mineFull?.hash || '', nameFont: appPreferences.nameFont, razze, lider: true }));
     };
     ws.onmessage = (e) => {
       let m;
@@ -257,18 +257,22 @@ function enterRoom(welcome, owner, host, port, cloud = null) {
   resetBiosDaSala();
   resetAtvDaSala();
   resetProfileBgs(); // os ids são da sala: o que sabia do fundo de cada um não vale na próxima (fundo-perfil.js)
-  for (const m of welcome.members) state.members.set(m.id, { name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs || [], shareInfo: m.shareInfo || null, avatar: m.avatar || '', avatarFull: m.avatarFull || '', nameFont: AppPreferences.cleanNameFont(m.nameFont), razze: limparContaSala(m.razze) });
+  for (const m of welcome.members) state.members.set(m.id, { name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs || [], shareInfo: m.shareInfo || null, avatar: m.avatar || '', avatarFull: m.avatarFull || '', nameFont: AppPreferences.cleanNameFont(m.nameFont), razze: limparContaSala(m.razze), lider: m.lider === true });
   state.hostId = welcome.hostId || null;
   state.handoff = (welcome.features || []).includes('handoff');
   state.sessao = welcome.sessao || null;
   state.subsalas = (welcome.features || []).includes('subsalas') && Array.isArray(welcome.subsalas) ? welcome.subsalas : null;
   state.subsalaMove = (welcome.features || []).includes('subsala-move');
+  state.liderOn = (welcome.features || []).includes('lider'); // o servidor conhece o Modo Líder
   state.musicaOn = (welcome.features || []).includes('musica');
   state.senhaOn = (welcome.features || []).includes('senha'); // o servidor sabe mudar a senha da sala
   state.order = [...welcome.members.map((m) => m.id), welcome.id];
   lembrarDaSala();
   lembrarUltimaSala();
   voice.reset(welcome);
+  lider.reset();
+  lider.setCanal(liderChannel());
+  setLider(welcome.lider, true);
   setMusicas(state.musicaOn ? welcome.musicas : [], welcome.now, true); // as músicas que já estavam tocando na sala
   window.api.roomKeys(true).then(syncComandoVozTecla, () => {});
   renderLeaveBtn();
@@ -292,6 +296,8 @@ function leaveRoom(reason, kind = 'info', endRoom = false) {
   if (!state.myId) return;
   void appSounds.play('leave');
   voice.reset(null);
+  lider.reset();
+  state.liderPedidos = []; state.liderPalavra = []; liderPedirAoEntrar = false;
   const ws = state.ws;
   state.ws = null;
   state.migrating = false;
@@ -335,9 +341,15 @@ function leaveRoom(reason, kind = 'info', endRoom = false) {
   if (reason) toast(reason, kind);
 }
 
+// Sair, no cabeçalho da sala e no fim do menu da sala (para quem criou a sala sozinho, Encerrar)
 function renderLeaveBtn() {
   const endsRoom = state.isOwner && !state.handoff;
-  setIcon($('leaveBtn'), 'leave', endsRoom ? 'Encerrar sala (sai todo mundo)' : 'Sair da sala');
+  const tip = endsRoom ? 'Encerrar sala (sai todo mundo)' : 'Sair da sala';
+  setIcon($('leaveBtn'), 'leave', tip);
+  $('leaveBtn').append(rotuloMenu(endsRoom ? 'Encerrar' : 'Sair'));
+  $('leaveBtn').lastChild.className = 'dock-label';
+  setIcon($('roomMenuLeave'), 'leave', tip);
+  $('roomMenuLeave').append(rotuloMenu(endsRoom ? 'Encerrar a sala' : 'Sair da sala'));
 }
 
 // Quem assume se o host sair: o mais antigo na sala (sem contar o host). Vai pelo número de cada um, que segue a
@@ -418,7 +430,7 @@ async function becomeHost() {
   let res;
   for (let i = 0; i < 6; i++) {
     // O modo da rede vai junto: sala da Razze continua só para quem está na Razze depois que o host muda
-    res = await window.api.startServer(state.port, state.password, { chat: chat.log, nextId: Math.max(0, ...known) + 1, hostId: state.myId, sessao: state.sessao, subsalas: state.subsalas || [], musicas: musicSeed() }, selectedNetworkProvider());
+    res = await window.api.startServer(state.port, state.password, { chat: chat.log, nextId: Math.max(0, ...known) + 1, hostId: state.myId, sessao: state.sessao, subsalas: state.subsalas || [], lider: { pedidos: state.liderPedidos, palavra: state.liderPalavra }, musicas: musicSeed() }, selectedNetworkProvider());
     if (res.ok || !state.migrating) break;
     await new Promise((r) => setTimeout(r, 1000));
   }
@@ -459,9 +471,11 @@ async function rejoin(host, timeoutMs) {
   state.handoff = (welcome.features || []).includes('handoff');
   state.sessao = welcome.sessao || state.sessao;
   state.subsalaMove = (welcome.features || []).includes('subsala-move');
+  state.liderOn = (welcome.features || []).includes('lider');
   state.musicaOn = (welcome.features || []).includes('musica');
   state.senhaOn = (welcome.features || []).includes('senha'); // o servidor sabe mudar a senha da sala
   setSubsalas((welcome.features || []).includes('subsalas') ? welcome.subsalas : null);
+  setLider(welcome.lider, true);
   setMusicas(state.musicaOn ? welcome.musicas : [], welcome.now);
   if (state.musicaOn) resendListening();
   if (!state.isOwner && !state.cloud) save('roomAddr', `${host}:${state.port}`);
@@ -469,7 +483,7 @@ async function rejoin(host, timeoutMs) {
   for (const m of state.members.values()) delete m.back;
   for (const m of welcome.members) {
     const before = state.members.get(m.id);
-    state.members.set(m.id, { name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs || [], shareInfo: m.shareInfo || null, avatar: m.avatar || '', avatarFull: m.avatarFull || '', nameFont: AppPreferences.cleanNameFont(m.nameFont), razze: limparContaSala(m.razze), back: true });
+    state.members.set(m.id, { name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs || [], shareInfo: m.shareInfo || null, avatar: m.avatar || '', avatarFull: m.avatarFull || '', nameFont: AppPreferences.cleanNameFont(m.nameFont), razze: limparContaSala(m.razze), lider: m.lider === true, back: true });
     if (!state.order.includes(m.id)) state.order.push(m.id);
     if (before && before.sharing && !m.sharing) stopWatching(m.id, false);
     voice.update(m.id, m.voiceSession || '', !!m.muted, !!m.deafened, m.voiceChannel);
@@ -497,7 +511,7 @@ function onRoomMessage(m) {
     case 'member-joined': {
       // Quem volta depois da troca de host continua de onde estava (mesmo número, mesmas conexões)
       const back = state.members.get(m.id);
-      state.members.set(m.id, { name: m.name, sharing: !!m.sharing, version: m.version, addrs: m.addrs || [], shareInfo: m.shareInfo || null, avatar: m.avatar || '', avatarFull: m.avatarFull || '', nameFont: AppPreferences.cleanNameFont(m.nameFont), razze: limparContaSala(m.razze), back: true });
+      state.members.set(m.id, { name: m.name, sharing: !!m.sharing, version: m.version, addrs: m.addrs || [], shareInfo: m.shareInfo || null, avatar: m.avatar || '', avatarFull: m.avatarFull || '', nameFont: AppPreferences.cleanNameFont(m.nameFont), razze: limparContaSala(m.razze), lider: m.lider === true, back: true });
       if (!state.order.includes(m.id)) state.order.push(m.id);
       if (back && back.sharing && !m.sharing) stopWatching(m.id, false);
       voice.update(m.id, m.voiceSession || '', !!m.muted, !!m.deafened, m.voiceChannel);
@@ -571,6 +585,15 @@ function onRoomMessage(m) {
     case 'subsalas':
       setSubsalas(m.list);
       break;
+    case 'lider': // Modo Líder: os pedidos para falar e quem tem a palavra (subsalas.js)
+      setLider(m);
+      break;
+    case 'lider-aviso':
+      avisoLider(m);
+      break;
+    case 'subsala-erro':
+      toast(String(m.text || 'Não foi possível criar a subsala.').slice(0, 200), 'error');
+      break;
     case 'musicas':
       setMusicas(m.list, m.now);
       break;
@@ -604,6 +627,7 @@ function onRoomMessage(m) {
 // O campo "side" diz de qual lado da conexão veio a mensagem.
 function handleSignal(from, data) {
   if (data.side === 'voice') return voice.receive(from, data);
+  if (data.side === 'lider') return lider.receive(from, data); // a voz da subsala Líder (voice.js)
   if (data.side === 'viewer') {
     // Mensagem de alguém que assiste (ou quer assistir) a minha tela
     if (data.subscribe) return addWatcher(from, data.once === true);

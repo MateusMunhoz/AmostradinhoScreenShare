@@ -4,7 +4,7 @@ Tudo o que dá para fazer no Nebula, com os detalhes. Para começar do zero, vej
 
 - [Sala](#sala)
 - [VPN Nebula](#vpn-nebula)
-- [Sessões abertas](#sessões-abertas)
+- [Salas abertas](#salas-abertas)
 - [Transmitir](#transmitir)
 - [Assistir](#assistir)
 - [Janela flutuante](#janela-flutuante)
@@ -18,34 +18,55 @@ Tudo o que dá para fazer no Nebula, com os detalhes. Para começar do zero, vej
 
 ## Sala
 
-- **Criar:** clique em **Criar sala**, escolha a porta e, se quiser, uma senha. O app mostra um endereço tipo `26.12.34.56:8765`. Mande para os amigos. Quem cria é o **host**, e aparece "Host" ao lado do nome.
-- **Entrar:** clique em **Entrar numa sala**, cole o endereço e clique em **Entrar**.
+- **Criar:** no Início, **Criar sala** abre a sala na hora (no modo Internet, com senha gerada). Para escolher a porta e a senha, clique em **Opções da sala**, dentro do mesmo cartão. O app mostra um endereço tipo `26.12.34.56:8765`. Mande para os amigos. Quem cria é o **host**, e aparece "Host" ao lado do nome.
+- **Entrar:** clique em **Entrar numa sala** (ao lado de Criar sala), cole o endereço (ou o código, no modo Internet) e clique em **Entrar**.
+- **Já numa sala:** Criar sala e Entrar numa sala continuam ligados; o app pergunta antes de tirar você da sala em que está.
 - **Carregando:** criando ou entrando (pelo endereço, pelo código, na sala de um amigo, por um convite ou numa chamada), aparece **Entrando na sala…** com o passo da conexão até a sala abrir. Enquanto isso, clicar de novo não abre outra conexão. **Cancelar** (ou Esc) desiste da entrada.
 - **Tamanho:** até 12 pessoas.
 - **Senha:** é opcional, mas recomendada se a rede da Radmin tiver mais gente.
-- **Painel à direita:** só o chat. O **botão de pessoas**, na barrinha da direita, mostra o total e acende uma bolinha verde quando alguém fala. Ele abre a lista por cima do chat, com:
-  - quem está na sala, com **Assistir** e o volume de cada pessoa;
-  - os detalhes da sua transmissão;
+- **Cabeçalho da sala:** em cima das telas, o nome da sala ("Sua sala" ou "Sala de Ana"), a rede e quantas pessoas
+  estão nela; à direita, **Grade** / **Destaque** (com telas abertas), **Convidar** (copia o endereço ou o código) e
+  **Sair** (para o host sozinho, **Encerrar**). Em janela estreita, a rede e os textos dos botões somem primeiro.
+- **Menu da sala:** clicar no nome da sala abre:
   - o endereço da sala, com **Copiar**;
   - a **senha** da sala (para quem entrou com ela e para o host), escondida, com o **olho** para mostrar, **Copiar** e
     **Mudar**. Só o host muda: quem já está continua na sala e recebe a nova; quem entrar depois precisa dela. Vazia,
     a sala fica sem senha (no modo Internet, mínimo 4 caracteres). No modo Internet, mudar também cancela os convites
     sem senha (pelas mensagens e pela lista dos amigos), e se o host sai, quem está há mais tempo assume. Numa sala
-    cujo servidor é antigo, o **Mudar** fica desativado e explica.
+    cujo servidor é antigo, o **Mudar** fica desativado e explica;
+  - **Amigos de quem está na sala podem entrar** (só o host, no modo Internet);
+  - **Desempenho** (as estatísticas) e **Sair da sala**.
 
-  Clicar fora ou apertar Esc fecha a lista.
+  Clicar fora ou apertar Esc fecha o menu.
+- **Painel da sala, com abas:** **Voz**, **Chat** e **Pessoas** (com o total e uma bolinha verde quando alguém fala).
+  - **Voz:** os canais e quem está em cada um, com **Lista** e **Mapa**, **Pôr música** e as subsalas.
+  - **Chat:** as mensagens; a aba mostra quantas chegaram.
+  - **Pessoas:** quem está na sala, com **Assistir** e o volume de cada pessoa, e os detalhes da sua transmissão.
+  - **Lado a lado** (o ícone de duas faixas, à direita das abas): Voz e Chat juntos, um em cima do outro, com a
+    divisória para arrastar.
+  - **Recolher** (o último ícone): o painel some e as telas ocupam a largura toda. A sua voz e o Transmitir vão para a
+    barrinha da direita (o primeiro ícone ali abre o painel de novo).
+  - As setas do teclado trocam de aba. A aba aberta, o lado a lado e o recolhido ficam salvos.
+- **Seu sinal:** o cartão no pé do painel, à vista em qualquer aba:
+  - em cima, em que canal você está ("Voz conectada · Voz geral") ou "Fora da voz";
+  - fora da voz, **Entrar na voz** (com as bolinhas de quem já está conversando, entra no canal com mais gente; com
+    gente em mais de uma subsala, a setinha ao lado abre a lista desses canais); dentro, microfone, fone, sair da voz
+    e **Voz e atalhos**;
+  - **Transmitir tela**, que vira o bloco **Ao vivo**: a miniatura do que você transmite (abre a sua tela no palco), o
+    nome da tela, **Trocar** e **Parar**;
+  - as janelas flutuantes abertas e a música que você está ouvindo (clicar mostra **Pausar** ou **Continuar** e **Sair
+    da música**).
+- **Palco vazio:** com alguém transmitindo, aparece **Transmitindo agora** com um **Assistir** para cada pessoa.
 - **Perfil de alguém:** o mesmo cartão em todo lugar (Pessoas da sala, voz em lista e voz no mapa): fundo, foto, nome, onde a pessoa está, as ações (assistir, adicionar como amigo, mandar mensagem para amigos, silenciar e mudar de canal na voz) e o volume.
-- **Barra flutuante:** uma pílula por cima das telas, embaixo e no meio. Some sozinha com o mouse parado e volta ao mexer o mouse (com o mouse em cima dela, fica); com uma música do YouTube no palco, fica acima dos controles do player. Tem:
-  - **Transmitir minha tela** (vira o bloco **Ao vivo**: a miniatura do que você transmite, que abre a sua tela no palco, e o nome da tela, com **Trocar** e **Parar**);
-  - a voz: dentro dela, microfone, fone e sair no meio e, no fim, as bolinhas de quem está na chamada com você; fora dela, as bolinhas de quem já está conversando e **Entrar** (entra no canal com mais gente; sem ninguém, o botão diz **Voz**). Com gente em mais de uma subsala, a setinha ao lado abre a lista desses canais para escolher onde entrar;
-  - as janelas flutuantes abertas.
-  As **Estatísticas** ficam nas Configurações, e o chat abre pela barrinha da direita.
-- **Barrinha da direita:** em cima, o perfil; logo abaixo, separados por uma linha, o **botão de pessoas** (o total e uma bolinha verde quando alguém fala; abre a lista de quem está na sala), **Chat**, **Voz** e **Transmissão**. Ouvindo uma música, aparece também o botão de **música**: clicar mostra **Pausar** ou **Continuar** (para todos, se você pode controlar) e **Sair da música** (a música continua para os outros). No pé, **Início** (vai para o saguão sem sair da sala) e, depois de uma linha, o **chat por cima do jogo**, o **modo gamer** (o controle), **Voz e atalhos**, **Feedback e bugs** (o balão com exclamação) e a engrenagem; por último, depois de outra linha, **Sair**, em vermelho. No saguão, com a sala aberta, o pé mostra **Voltar para a sala**, com o número de mensagens novas.
-- **Recolher o painel:** o balão do chat recolhe o painel, e os vídeos ocupam a largura toda. Recolhido, ele mostra quantas mensagens chegaram, e o endereço da sala passa para a barra.
+- **Barrinha da direita:** só o que é do app, igual dentro e fora da sala: em cima, o perfil; no pé, **Início** (vai para o saguão sem sair da sala), o **chat por cima do jogo**, o **modo gamer** (o controle), **Feedback e bugs** (o balão com exclamação) e a engrenagem. No saguão, com a sala aberta, o pé mostra **Voltar para a sala**, com o número de mensagens novas.
 
 ### Como os PCs se conectam
 
-Em **Configurações › Rede**. O padrão é **Internet (servidor)**: sem VPN, a sala fica num servidor (VPS) e os amigos
+No botão **Rede**, no topo do Início: ele mostra a rede em uso e o estado dela (bolinha verde: pronta; laranja: falta
+algo, como "Radmin · sem IP 26.x" ou "Razze · desconectada"). Clicar abre as três redes, cada uma com o que muda; escolher
+troca na hora. Se uma rede não dá para usar agora (sem conta Razze, por exemplo), o motivo aparece na linha dela. Numa
+sala, o app pergunta antes, porque trocar de rede tira você da sala. **Avançado** abre **Configurações › Rede**, com o
+servidor, a conta e as redes Razze. O padrão é **Internet (servidor)**: sem VPN, a sala fica num servidor (VPS) e os amigos
 entram por código e senha, pela lista de salas dos amigos ou por um convite nas mensagens. Também dá para usar
 **Radmin ou rede local** e **Razze (WireGuard)**. Quem já usava o app antes do modo Internet virar o padrão, sem
 ter escolhido outro, continua na Radmin.
@@ -77,17 +98,18 @@ A conexão P2P WireGuard depende dos NATs dos dois lados permitirem hole punchin
   sincroniza a cada 30 segundos; depois de reabrir o Nebula, clique em **Atualizar peers** para sincronizar de novo.
   A senha da sala continua sendo independente das permissões da VPN.
 
-### Sessões abertas
+### Salas abertas
 
-A tela inicial mostra as **sessões abertas** na rede da Radmin: as salas que alguém criou, com o nome de
-quem está com ela, quantas pessoas estão dentro e um cadeado se tiver senha.
+A tela inicial mostra as **salas abertas** na rede em uso, com o nome da rede no título ("Salas abertas na Radmin · 2"):
+as salas que alguém criou, com o nome de quem está com ela, quantas pessoas estão dentro e um cadeado se tiver senha.
+A sala em que você está não entra na lista: ela fica só na faixa de cima, com **Voltar para a sala**.
 
-- **Entrar:** o botão ao lado da sessão entra direto. Se ela tiver senha, abre o **Entrar numa sala** com
+- **Entrar:** o botão ao lado da sala entra direto. Se ela tiver senha, abre o **Entrar numa sala** com
   o endereço preenchido, e é só digitar a senha.
-- **Como aparece:** quem tem uma sala aberta avisa a rede a cada 3 segundos. A sessão some da lista quando
+- **Como aparece:** quem tem uma sala aberta avisa a rede a cada 3 segundos. A sala some da lista quando
   a sala é encerrada, ou depois de uns 10 segundos sem aviso (PC desligado, Radmin caiu).
-- **Troca de host:** a sessão continua a mesma na lista, com o nome do novo host.
-- **Não mostrar a sua:** ao criar a sala, desmarque **Mostrar esta sessão para quem está na rede**. Ela
+- **Troca de host:** a sala continua a mesma na lista, com o nome do novo host.
+- **Não mostrar a sua:** ao criar a sala (em **Opções da sala**), desmarque **Mostrar esta sala para quem está na rede**. Ela
   continua funcionando pelo endereço, só não aparece para os outros (e continua assim se o host mudar).
 - **Se nada aparecer:** algumas redes não deixam passar o aviso. O app também pergunta direto aos
   endereços das salas em que você já esteve, então elas aparecem mesmo assim. Se ainda não aparecer,
@@ -100,8 +122,8 @@ quem está com ela, quantas pessoas estão dentro e um cadeado se tiver senha.
 No modo Internet, a lista da tela inicial vira **Salas dos seus amigos**: as salas que os seus amigos do Razze
 abriram pela internet. Basta estar logado na conta Razze (no seu **Perfil**, em **Conta Razze**); a VPN Razze não precisa estar ligada.
 Quando há uma sala aberta (de amigo ou, nos outros modos, na sua rede), ela sobe para cima dos amigos com o selo
-**AO VIVO**, quantas pessoas, se a voz está ligada, o jogo do dono e os rostos dos seus amigos que já estão dentro.
-**Entrar na sala** vira o botão principal; **Abrir minha sala** e **Entrar com código** ficam como botões comuns.
+**AO VIVO**, quantas pessoas, se a voz está ligada, o jogo do dono e os rostos dos seus amigos que já estão dentro, e
+**Entrar**. **Criar sala** e **Entrar numa sala** ficam sempre no mesmo lugar, acima da lista.
 
 - **Quem instala agora:** o app já começa no modo Internet, com o servidor da equipe e a conta Razze prontos. É só criar
   a conta na aba Rede, adicionar os amigos e criar ou entrar nas salas. Quem já usava o app continua na Radmin; para
@@ -109,7 +131,7 @@ Quando há uma sala aberta (de amigo ou, nos outros modos, na sua rede), ela sob
 
 - **Entrar:** o botão **Entrar** entra direto, sem senha, por um **passe de convite** que só os amigos de quem está
   na sala recebem. Se o passe não valer mais (o host fechou a sala para os amigos, ou o servidor é antigo), abre o
-  **Entrar com código** com o código preenchido, e é só digitar a senha. O servidor usado é o da sala do amigo, mesmo
+  **Entrar numa sala** com o código preenchido, e é só digitar a senha. O servidor usado é o da sala do amigo, mesmo
   que o da sua aba Rede seja outro.
 - **Salas em que o amigo é convidado:** não precisa ser a sala de um amigo. Se o seu amigo está na sala de outra
   pessoa, ela aparece como "Sala de Ciclano · com Fulano", e o **Entrar** também fica ao lado de "Na sala de Ciclano",
@@ -228,7 +250,7 @@ Clique em **Entrar na voz**, na barra de baixo, para ligar o microfone padrão d
   - **microfone** (liga e desliga);
   - **silenciar as vozes** (só o que você ouve, sem mexer no seu microfone nem no som das telas);
   - **sair da voz**.
-- **Um lugar só:** microfone, fone e sair da voz ficam na barra flutuante; o painel de voz e o seu perfil não repetem esses
+- **Um lugar só:** microfone, fone e sair da voz ficam no cartão **Seu sinal**, no pé do painel; o painel de voz e o seu perfil não repetem esses
   botões. No saguão (Início), onde a barra não aparece, o cartão da sala tem microfone, fone e o telefone laranja de sair da voz.
 - **No perfil dos outros**, ao lado do nome aparecem ícones: microfone riscado (microfone desligado) e fone riscado (fone
   silenciado), em laranja, e um alto-falante com X, em cinza, se você silenciou a pessoa. Passe o mouse para ver o que é.
@@ -252,7 +274,7 @@ Clique em **Entrar na voz**, na barra de baixo, para ligar o microfone padrão d
 
 No painel **Chat de voz**, a voz fica dividida em canais: a **Voz geral** e as subsalas.
 
-- **Criar:** fora da voz, clique em **+ Nova subsala**, ao lado de **Entrar na Voz geral**; na voz, em **+ Subsala**, na faixa de baixo do painel. Para sair da voz, use o telefone da barra flutuante. A subsala é criada e você já entra nela. Os nomes são sempre `Subsala_1`, `Subsala_2`, e assim por diante: a nova recebe o número seguinte ao da maior que existe.
+- **Criar:** fora da voz, clique em **+ Nova subsala**, ao lado de **Entrar na Voz geral**; na voz, em **+ Subsala**, na faixa de baixo do painel. Para sair da voz, use o telefone do cartão **Seu sinal**. O botão pergunta o modo: **Padrão** (só quem está nela se ouve) ou **Líder** (quem está nela fala para a sala toda; veja **Modo Líder**, logo abaixo). A subsala é criada e você já entra nela. Os nomes são sempre `Subsala_1`, `Subsala_2`, e assim por diante: a nova recebe o número seguinte ao da maior que existe.
 - **Cada canal:** o nome com barrinhas de som na frente: azuis e altas no canal em que você está, cinza e baixas nos outros. Quem está no canal aparece logo embaixo.
 - **Entrar:** clique no nome do canal. Fora da voz, isso liga o microfone já naquele canal; na voz, você muda de canal sem sair.
 - **Quem ouve quem:** só quem está no mesmo canal se ouve. O chat de texto e as transmissões continuam valendo para a sala toda.
@@ -260,11 +282,50 @@ No painel **Chat de voz**, a voz fica dividida em canais: a **Voz geral** e as s
 - **Mudar alguém de canal:** arraste a pessoa (ou você) até outro canal. Qualquer um pode mover quem está na voz; o app da pessoa troca de canal sozinho. Precisa do host (ou do servidor da VPS) na versão nova; sem isso, só dá para arrastar você mesmo.
 - **Lista ou Mapa:** os dois ícones ao lado do título (três linhas para a Lista, um planeta para o Mapa) trocam a visão (fica salva neste PC). No **Mapa**, cada canal é um sol e quem está nele orbita como planeta. Cada canal com gente fica numa nebulosa de fumaça com a cor dele, e embaixo do nome aparece quantos estão nele. Quem fala solta ondas verdes, quem transmite solta ondas na cor de destaque e o canal com música solta notinhas. Ao fundo, uma galáxia em espiral gira bem devagar. Com o mouse em cima de um canal, os anéis e a nebulosa dele acendem e o sol cresce; em cima de uma pessoa, o planeta cresce e aparece uma linha até o sol. Quem entra chega como cometa, quem sai escapa da órbita, quem muda de canal faz um arco até o outro sol, quem começa a transmitir solta um anel, e a subsala nova acende com uma onda (a que é apagada se apaga). Com o Nebula fora de foco, só as órbitas continuam se mexendo. Clicar no sol abre um cartão preso a ele: o nome do canal, com quantos estão nele e quantos ao vivo (clicar no nome entra no canal), a música (no seu canal sem música, a linha tracejada **Sem música · Pôr uma**) e, numa subsala, o **X** de apagar. Embaixo, quem está no canal: quem transmite tem **AO VIVO** e o olho de **Assistir**; clicar na pessoa abre o perfil dela (volume e amizade). Esc ou um clique no mapa fecha; arrastar o planeta até outro sol muda a pessoa de canal. A roda do mouse (ou **+** e **−**) aproxima até caber uma subsala e afasta até ver todas; arrastar o fundo anda pelo mapa.
 - **Mapa grande:** com o chat e a voz na barra da direita, deixe o mouse parado no mapa: o chat encolhe e o mapa ocupa a barra toda. Do chat fica uma faixa em cima, com as mensagens novas; clicar nela traz o chat de volta. Tirando o mouse do painel de voz, o chat volta sozinho (menos enquanto você põe uma música, mexe no volume de alguém ou está no perfil de alguém). O **alfinete** ao lado de Lista e Mapa fixa o mapa aberto até você soltar. Com o chat e a voz abertos juntos, arraste o puxador entre os dois para mudar o tamanho de cada um (ou use as setas com ela selecionada); o tamanho fica salvo, e o clique duplo na linha volta ao automático. A seta ao lado do título recolhe o chat ou a voz numa faixa (o chat recolhido mostra as mensagens novas) e o outro ocupa a coluna toda; clique na faixa ou na seta para abrir de novo. Com o mouse dentro da órbita mais de fora de um sol, as órbitas dele param; as outras seguem girando; com o Nebula fora de foco, o céu em cima da Lista não é desenhado (o Mapa continua girando).
-- **Pessoa no mapa:** clicar num planeta abre o mesmo cartão de perfil da lista, subindo do pé do painel de voz (o mapa continua à vista em cima). Em volta da foto ficam, só com o ícone (o nome aparece ao parar o mouse em cima), **Assistir**, **Perfil** (volume e amizade), **Silenciar para mim** e **Mudar de canal**, e ao lado o canal, o nome e o volume da voz dela. O **X**, Esc ou um clique fora da faixa fecha. Na **Lista**, clicar na linha de quem está na voz (foto, nome ou estado) transforma o painel de voz na página da pessoa: o fundo do perfil em cima (ou a cor dela), a foto grande, o nome, o canal e as ações com nome (**Adicionar como amigo**, **Silenciar para mim**, **Mudar de canal**; o seu perfil não tem ações: microfone, fone e sair ficam na barra flutuante, e para mudar de canal é só clicar nele), mais o volume. O **X** ao lado do nome, Esc ou um clique fora do painel volta para a lista. Se a pessoa escolheu um **fundo do perfil**, ele aparece atrás, só dentro da faixa ou da caixinha.
+- **Pessoa no mapa:** clicar num planeta abre o mesmo cartão de perfil da lista, subindo do pé do painel de voz (o mapa continua à vista em cima). Em volta da foto ficam, só com o ícone (o nome aparece ao parar o mouse em cima), **Assistir**, **Perfil** (volume e amizade), **Silenciar para mim** e **Mudar de canal**, e ao lado o canal, o nome e o volume da voz dela. O **X**, Esc ou um clique fora da faixa fecha. Na **Lista**, clicar na linha de quem está na voz (foto, nome ou estado) transforma o painel de voz na página da pessoa: o fundo do perfil em cima (ou a cor dela), a foto grande, o nome, o canal e as ações com nome (**Adicionar como amigo**, **Silenciar para mim**, **Mudar de canal**; o seu perfil não tem ações: microfone, fone e sair ficam no cartão Seu sinal, e para mudar de canal é só clicar nele), mais o volume. O **X** ao lado do nome, Esc ou um clique fora do painel volta para a lista. Se a pessoa escolheu um **fundo do perfil**, ele aparece atrás, só dentro da faixa ou da caixinha.
 - **Os nomes da pessoa:** quem está na conta Razze aparece no perfil com os dois nomes: em destaque o **nome na sala** (o que ela escolheu no app) e, embaixo dele, pequeno, o **nome da conta** (o do servidor Razze; ex.: "conta Flyleaf"). Se vocês já são amigos, o nome da conta vem da sua lista; senão, a dica dele diz "informado pelo app da pessoa". **Adicionar como amigo** manda o pedido para essa conta, não para o nome da sala (então funciona mesmo com os nomes diferentes ou com outro usuário de mesmo nome). Com um host ou servidor da sala em versão antiga, a conta não chega e vale o nome da sala, como antes.
 - **Céu na Lista:** na Lista, o céu pequeno em cima é só enfeite. Para escondê-lo ou mostrá-lo, use **Configurações › Aparência › Céu da voz em cima da lista**. O Mapa não muda.
 - **Troca de host:** as subsalas continuam, e cada um fica no canal em que estava.
 - **Modo Internet:** o servidor da VPS precisa estar atualizado para ter subsalas; sem isso, o painel mostra só a lista de sempre.
+
+### Modo Líder (aulão)
+
+Uma subsala em **Modo Líder** fala para a sala toda: serve para dar uma aula ou apresentar alguma coisa sem tirar
+ninguém do próprio grupo.
+
+- **Criar:** no **+ Subsala** (ou **+ Nova subsala**), escolha **Líder**. Só pode haver uma por sala; com uma já
+  aberta, a opção fica desativada e diz qual é. O modo não muda depois: para trocar, apague e crie outra.
+- **No painel de voz:** o canal da Líder tem o selo **LÍDER** (e **LÍDER · AO VIVO** com alguém transmitindo nela).
+- **Quem está na Líder** fala livre, e a sala toda ouve. O cartão **Seu sinal** mostra "Você fala para a sala toda".
+- **Quem está em outro canal** continua conversando com o próprio grupo e ouve a Líder junto. A linha
+  "Ouvindo a Líder" do **Seu sinal** tem o **volume da Líder** (fica salvo neste PC; a roda do mouse muda de 5 em
+  5%). Quem está na Líder não ouve você.
+- **Quem está fora da voz** vê "Líder na sala" com o botão **Ouvir**: escuta sem ligar o microfone. **Parar** desliga.
+- **Pedir para falar:** quem está fora da Líder clica em **Pedir para falar** (a mão, no **Seu sinal**; com o painel
+  recolhido, na barrinha). Fora da voz, o botão entra na voz (Voz geral) e já manda o pedido. Enquanto espera, a linha
+  mostra "Pedido enviado" e o **Cancelar**.
+- **Quem decide:** quem está transmitindo dentro da Líder. Cada pedido toca um som, aparece num aviso e soma no número
+  da aba **Voz**; embaixo da Líder, em **Pedidos**, cada pessoa tem **Aceitar** e **Recusar**. Dentro da Líder sem
+  transmitir, você vê quantos pedidos estão esperando, mas não decide. Se ninguém transmite, os pedidos esperam.
+- **Com a palavra:** quem foi aceito continua no próprio canal, e a voz vai também para a sala toda (a Líder e quem
+  está fora da voz ouvindo). A linha diz "Você está falando para a sala toda" (ou "Ligue o microfone para falar") e
+  tem o **Devolver**. Embaixo da Líder, a seção **Com a palavra** mostra quem está falando; o líder tem o **Tirar**.
+  Não há limite de pessoas com a palavra.
+- **Avisos:** quem pediu fica sabendo se foi aceito, recusado ou se a palavra foi tirada.
+- **Sons:** **Pediram para falar** (para quem decide; duas batidinhas) e **Você recebeu a palavra** (quatro tons
+  subindo), no grupo **Modo Líder** de **Configurações › Sons**, com o volume de cada um. No tema Top Gun, viram o
+  "Copy" do rádio e o "Loud and clear".
+- **Some sozinho:** o pedido e a palavra somem quando a pessoa sai da voz ou da sala, entra na Líder (lá já fala
+  livre) ou a Líder é apagada. Na troca de host, continuam.
+- **Silenciar as vozes** cala a Líder também.
+- **Telas:** o que é transmitido de dentro da Líder fica aberto para a sala toda, mesmo com **Só o meu canal**. O
+  ícone de **Quem pode assistir** fica fixo no globo enquanto você está na Líder.
+- **Entrar na voz:** o botão **Entrar** nunca leva para a Líder (lá você falaria para todos). Para entrar nela, clique
+  no nome do canal.
+- **Apagar a Líder:** todo mundo para de ouvir, e quem estava nela volta para a Voz geral.
+- **Versões:** precisa do host (ou do servidor da VPS) na versão nova; sem isso, o + Subsala cria uma subsala comum,
+  como antes. Quem está numa versão antiga vê a Líder como uma subsala comum e não a ouve de fora. Quem fala para a
+  sala toda vê na linha da Líder quantos não ouvem ("2 não ouvem (app antigo)"; parando o mouse, os nomes).
 
 ### Música junto (YouTube)
 
@@ -293,18 +354,20 @@ Na primeira vez que o app abre, uma tela de cada vez (três no máximo):
 
 Quem já usava o app não vê essa tela. Quem escolheu *Com amigos* e ainda não entrou vê no Início uma faixa **Entrar na conta**.
 
-No **Início**, com conta: **Amigos online** (até 5, com **Mensagem** e **Ligar** em ícones), **Convidar** (um menu com **Copiar meu link** e **Adicionar amigo**) e **Ver todos** (abre **Adicionar amigo** no envelope).
+No **Início**, com conta, a coluna da direita mostra **Amigos online** (até 5, com **Mensagem** e **Ligar** em ícones), **Convidar** (um menu com **Copiar meu link** e **Adicionar amigo**) e **Ver todos** (abre **Adicionar amigo** no envelope).
 Cada amigo mostra em etiquetas onde está, o jogo e a música (clique na música para ver a faixa). Passando o mouse na linha
 aparece **Chamar para minha sala**: manda o convite da sala em que você está pelas mensagens; fora de sala, abre a sua antes.
 
 O topo diz **Bom dia/Boa tarde/Boa noite** e o seu nome (o lápis ao lado muda o nome; sem nome, aparece o campo), com um
 resumo do momento: quantos amigos estão online, quem está jogando ou quem abriu uma sala. Ao lado, numa janela larga,
 uma constelação parada: você no meio e os amigos online em volta; quem está numa sala brilha na cor de "ao vivo".
-No modo Internet, **Abrir minha sala** diz quais amigos online vão ver a sala; as opções da sala ficam no ícone ao lado.
-**Última sala** mostra de quem era, quando e o modo (o endereço fica na dica), e a barra de baixo mostra a última conversa:
-clicar abre ela.
-**Abrir minha sala** cria a sala em um clique (com senha gerada e visível para os amigos); **Opções da sala** abre a tela
-de antes, com porta, senha e visibilidade.
+No modo Internet, **Criar sala** diz quais amigos online vão ver a sala. Numa sala, a linha embaixo do nome vira "O que
+você quer fazer agora?".
+**Última sala** (só fora de sala) mostra de quem era, quando e o modo (o endereço fica na dica), com **Entrar de novo**;
+se ela está aberta na lista, vira só informação. A barra de baixo mostra a última conversa: clicar abre ela.
+**Criar sala** cria a sala em um clique (com senha gerada e visível para os amigos); **Opções da sala**, dentro do mesmo
+cartão, abre a tela com porta, senha e visibilidade.
+No pé do Início fica a versão ("Nebula 1.18.10 · atualizado"), com **Procurar atualização** e **Novidades**.
 
 ## Senha e frase do perfil
 
@@ -409,11 +472,11 @@ Conversa com um amigo (conta Razze), dentro ou fora da sala.
 - **Convite para a sala:** o **Convidar** da aba **Amigos** (em **Adicionar amigo**) manda um cartão "Convite para a sala de [nome]", com
   quantas pessoas estão, o modo e um **Entrar**. Só entra quando você clica, nunca sozinho.
   - **Pela internet:** entra direto, sem senha (o convite leva um passe que só abre aquela sala enquanto quem
-    convidou está nela). Se o passe não valer mais, abre o **Entrar com código** já preenchido para a senha.
+    convidou está nela). Se o passe não valer mais, abre o **Entrar numa sala** já preenchido para a senha.
   - **Radmin ou Razze:** preenche o endereço e entra; se a sala tiver senha, pede a senha (ela nunca vai no
     convite). Na Razze, precisa estar com a mesma rede ligada.
   - **Outro modo:** se você estiver em outro modo (por exemplo, na Radmin e o convite é pela internet), o cartão
-    avisa qual usar, em Configurações › Rede. O app não troca o modo sozinho.
+    avisa qual usar, no botão **Rede** do topo do Início. O app não troca o modo sozinho.
   - **Já numa sala:** pergunta se quer sair dela e entrar na do amigo.
   - **App antigo:** quem ainda não atualizou vê o convite como texto, com o código ou o endereço, e entra à mão.
 
@@ -430,7 +493,7 @@ O **telefone** no chip da conversa (ou ao lado do nome, na aba **Amigos** de **A
   cartão na conversa. Depois de 10 minutos o cartão vira "Chamada de [nome]", com **Entrar**.
 - **Atender:** entra com a senha da mensagem e vai direto para a voz. Se você estiver em outro modo, pergunta antes
   de trocar. Na Razze, precisa estar com a mesma rede ligada.
-- **Os dois veem a senha** no Painel da sala (botão de pessoas), para passar a outra pessoa ou mudar.
+- **Os dois veem a senha** no menu da sala (o nome da sala, no cabeçalho), para passar a outra pessoa ou mudar.
 - **App antigo:** vê o convite comum, e o texto da mensagem traz o código ou o endereço e a senha.
 
 - **Abrir:** clique no **envelope**, no começo da barra de baixo: o painel abre para cima com quem está online, a busca e as conversas (a última mensagem e as não lidas). Ou clique na foto de um amigo em **Online agora**.
@@ -508,7 +571,7 @@ Prefere tudo do outro lado? **Configurações › Aparência › Espelhar a inte
 
 **Largura do chat e da voz:** passe o mouse no vão entre o painel e o vídeo até aparecer uma linha; arraste para alargar ou estreitar (de 300 px até pouco mais da metade da janela). O vídeo se ajusta e a largura fica salva. Dois cliques na linha voltam ao tamanho automático. Pelo teclado: Tab até a linha e as setas.
 
-O botão **Perfil** (no alto da barrinha) abre **Seu perfil**: em cima, uma prévia de como os outros te veem na voz (o fundo, a foto, o nome na fonte escolhida, a conta e a frase, como no cartão da voz). Foto e fundo se trocam só por ela: clicar na foto troca a foto e **Trocar fundo** (ou **Escolher fundo**) fica no canto do fundo. Embaixo, **Aparência** (as linhas Foto e Fundo só aparecem quando há **Ajustar** ou a lixeira, que tira a foto ou o fundo; e a fonte do nome) e **Nome**, que só pode ser editado fora da sala (na sala aparece com um cadeado). Nele também fica o **Fundo do perfil**: uma imagem (recortada em quadrado) ou um GIF de até 1 MB, que aparece atrás do seu perfil para quem clicar em você na voz; **Tirar fundo** volta ao normal. Ao escolher a foto ou uma imagem de fundo, abre o **editor de recorte**: arraste a imagem para enquadrar e use o zoom (roda do mouse, controle, setas e + / -); na foto a bolinha mostra o resultado, e no fundo a faixa tracejada é a parte que mais aparece no cartão. **Ajustar** abre de novo o editor com o enquadramento anterior, sem escolher a imagem outra vez (GIF não corta, então não tem Ajustar). O GIF só se mexe com o perfil aberto. Dentro da sala, **Chat**, **Voz** e **Transmissão** ficam logo abaixo deles, num grupo separado, só com o ícone (o nome aparece ao parar o mouse em cima), e são alternadores independentes: clique para exibir ou ocultar cada painel. Chat e voz abrem se desdobrando ao lado da barrinha. Os selecionados permanecem visíveis juntos, dividindo o espaço. Perfil e configurações também podem ficar abertos ao mesmo tempo. Cada painel tem sua própria rolagem quando necessário. A seleção dos três painéis da sala é lembrada ao reabrir o app.
+O botão **Perfil** (no alto da barrinha) abre **Seu perfil**: em cima, uma prévia de como os outros te veem na voz (o fundo, a foto, o nome na fonte escolhida, a conta e a frase, como no cartão da voz). Foto e fundo se trocam só por ela: clicar na foto troca a foto e **Trocar fundo** (ou **Escolher fundo**) fica no canto do fundo. Embaixo, **Aparência** (as linhas Foto e Fundo só aparecem quando há **Ajustar** ou a lixeira, que tira a foto ou o fundo; e a fonte do nome) e **Nome**, que só pode ser editado fora da sala (na sala aparece com um cadeado). Nele também fica o **Fundo do perfil**: uma imagem (recortada em quadrado) ou um GIF de até 1 MB, que aparece atrás do seu perfil para quem clicar em você na voz; **Tirar fundo** volta ao normal. Ao escolher a foto ou uma imagem de fundo, abre o **editor de recorte**: arraste a imagem para enquadrar e use o zoom (roda do mouse, controle, setas e + / -); na foto a bolinha mostra o resultado, e no fundo a faixa tracejada é a parte que mais aparece no cartão. **Ajustar** abre de novo o editor com o enquadramento anterior, sem escolher a imagem outra vez (GIF não corta, então não tem Ajustar). O GIF só se mexe com o perfil aberto. Dentro da sala, Voz, Chat e Pessoas são as abas do painel (veja **Sala**).
 
 O painel **Voz** mostra os participantes, seus controles de volume e botões para entrar, sair, mutar e silenciar as vozes. Mostrar ou ocultar esse painel não liga nem desliga o microfone. Da mesma forma, ocultar **Transmissão** não encerra uma transmissão em andamento; use o botão **Parar** para encerrá-la.
 
@@ -635,6 +698,7 @@ O Nebula fica com um ícone na bandeja do Windows (perto do relógio), na cor do
 
 ## Atualizações
 
-- **Sozinho:** o app procura versão nova no GitHub e com quem está na sala. Quando acha, um aviso no canto oferece **Atualizar agora**.
+- **Sozinho:** o app procura versão nova no GitHub e com quem está na sala. Quando acha, aparece o botão **Nova versão** no topo do Início (ao lado da rede), e o rodapé diz "1.18.11 disponível". Fora do Início, o mesmo botão aparece na barrinha da direita e leva ao Início. Nada aparece por cima do jogo ou da transmissão.
+- **O painel:** clicar no botão (ou no aviso do rodapé) mostra a versão nova, a sua, **Ver o que mudou no GitHub** e o que vai acontecer ("O app fecha e abre de novo sozinho"; numa sala, "Você sai da sala…"). **Atualizar e reiniciar** baixa e reinicia; **Depois** esconde o botão até a próxima versão (o rodapé continua avisando).
 - **Na mão:** **Procurar atualização**, no rodapé do Início ou no menu do ícone da bandeja.
-- **Novidades:** depois de atualizar, o Início mostra uma vez o que mudou na versão. Para ver de novo, ou ver as versões anteriores, clique em **Novidades** no rodapé.
+- **Novidades:** depois de atualizar, o cartão **Novo na versão** aparece no pé da coluna da direita, com o primeiro item. **Ver todas as novidades** abre a lista; o X fecha, e ele não volta até a próxima versão. Para ver de novo, ou ver as versões anteriores, clique em **Novidades** no rodapé.

@@ -14,7 +14,7 @@ run('Voz, volume e chat por cima do jogo', 150000, async () => {
   await B.eval(`localStorage.removeItem('volumes'); volumes = {};`);
   const anaId = await A.eval('state.myId');
 
-  check('Botão "Entrar na voz" na barra', await B.eval(`['Voz', 'Entrar'].some((t) => $('voiceJoin').textContent.endsWith(t)) && !$('voiceDock').classList.contains('active')`));
+  check('Botão "Entrar na voz" no cartão Seu sinal', await B.eval(`['Entrar na voz', 'Entrar'].some((t) => $('voiceJoin').textContent.endsWith(t)) && !$('voiceDock').classList.contains('active')`));
   await A.eval(TONE);
   await B.eval(TONE);
   // Sons da voz: registra o que tocaria na Bia (o som toca de verdade também)
@@ -108,7 +108,7 @@ run('Voz, volume e chat por cima do jogo', 150000, async () => {
   check('Clicar na Ana da lista abre o perfil dela na lista', await B.eval(`skyFocusId === '${anaId}' && skyFocusFrom === 'pilula' && !$('skyFocus').hidden`));
   await B.eval(`closeSkyProfile(); [...$('voiceStackPop').querySelectorAll('button')].find((b) => b.textContent === 'Abrir o painel da voz').click()`);
   await sleep(200);
-  check('"Abrir o painel da voz" abre o painel e fecha a lista', await B.eval(`chat.open && workspaceViews.voice && !$('voiceStackPop')`));
+  check('"Abrir o painel da voz" abre a aba Voz e fecha a lista', await B.eval(`workspaceViews.voice && painelSala.aba === 'voz' && !$('voiceStackPop')`));
   check('Fechar a lista com o perfil aberto nela não some com o perfil (os outros continuam abrindo)', await B.eval(`!!$('skyFocus') && document.body.contains($('skyFocus'))`));
   await B.eval(`setPanelOpen(true)`);
 
@@ -138,5 +138,5 @@ run('Voz, volume e chat por cima do jogo', 150000, async () => {
 
   await B.eval(`$('voiceJoin').click()`);
   await sleep(300);
-  check('Sair da voz volta ao botão "Entrar na voz"', await B.eval(`!voice.session && ['Voz', 'Entrar'].some((t) => $('voiceJoin').textContent.endsWith(t)) && !mixer.localNode`));
+  check('Sair da voz volta ao botão "Entrar na voz"', await B.eval(`!voice.session && ['Entrar na voz', 'Entrar'].some((t) => $('voiceJoin').textContent.endsWith(t)) && !mixer.localNode`));
 });

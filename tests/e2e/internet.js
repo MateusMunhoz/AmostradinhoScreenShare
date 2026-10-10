@@ -27,7 +27,7 @@ run('Modo Internet (código + senha, TURN, reconexão)', 180000, async () => {
   try {
     const A = await openApp('netA', 9731, { fake: true });
     await A.eval(useInternet);
-    check('Tela inicial pede código', await A.eval(`$('goJoin').textContent === 'Entrar com código' && $('roomPortField').hidden`));
+    check('Tela inicial pede código', await A.eval(`$('goJoinSub').textContent.includes('código') && $('roomPortField').hidden && $('radminTitle').textContent === 'Internet'`));
     await A.eval(`(async () => { try { return await testInternetServer('ws://127.0.0.1:${PORT}'); } catch (e) { return e.message; } })()`)
       .then((r) => check('Aba Rede reconhece o servidor', typeof r === 'object', JSON.stringify(r)));
 

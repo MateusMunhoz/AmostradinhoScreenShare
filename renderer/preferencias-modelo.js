@@ -21,6 +21,8 @@ const AppPreferences = (() => {
     { id: 'suaveTransmitiu', label: 'Suave · três tons subindo', synth: [[523, 0, 0.1, 0.9], [659, 0.08, 0.1, 0.9], [784, 0.16, 0.22, 0.9]] },
     { id: 'suaveParouTransmitir', label: 'Suave · três tons descendo', synth: [[784, 0, 0.1, 0.9], [659, 0.08, 0.1, 0.9], [523, 0.16, 0.22, 0.9]] },
     { id: 'suaveMencao', label: 'Suave · chamado agudo', synth: [[988, 0, 0.08, 1], [1319, 0.07, 0.08, 1], [988, 0.2, 0.08, 1], [1319, 0.27, 0.16, 1]] },
+    { id: 'suaveMao', label: 'Suave · duas batidinhas', synth: [[740, 0, 0.06, 0.9], [740, 0.14, 0.09, 0.9]] },
+    { id: 'suavePalavra', label: 'Suave · quatro tons subindo', synth: [[523, 0, 0.08, 0.9], [659, 0.07, 0.08, 0.9], [784, 0.14, 0.08, 0.9], [1047, 0.21, 0.24, 0.9]] },
     // Chamadas de rádio do tema Top Gun (voz de piloto no rádio UHF, geradas por assets/temas/gerar-radio.js). Com
     // files, cada vez toca uma das falas, sorteada sem repetir a última (SoundPlayer)
     { id: 'radioFoxOne', label: 'Rádio · "Fox one / two / three!"', files: ['radio-fox-1.wav', 'radio-fox-2.wav', 'radio-fox-3.wav'] },
@@ -35,8 +37,9 @@ const AppPreferences = (() => {
     { id: 'radioSquelch', label: 'Rádio · Copy', file: 'radio-squelch.wav' },
   ];
   // mute/unmute: o seu microfone (o apertar para falar não conta); deafen/undeafen: o seu fone (Silenciar vozes);
-  // shareStart/shareStop: a sua transmissão; mention: alguém escreveu @seu nome no chat; enter: você entrou numa sala
-  const events = ['enter', 'join', 'leave', 'chat', 'mention', 'voiceJoin', 'voiceLeave', 'mute', 'unmute', 'deafen', 'undeafen', 'shareStart', 'shareStop'];
+  // shareStart/shareStop: a sua transmissão; mention: alguém escreveu @seu nome no chat; enter: você entrou numa sala;
+  // liderPedido: alguém pediu para falar (para quem decide, no Modo Líder); liderPalavra: você recebeu a palavra
+  const events = ['enter', 'join', 'leave', 'chat', 'mention', 'voiceJoin', 'voiceLeave', 'mute', 'unmute', 'deafen', 'undeafen', 'shareStart', 'shareStop', 'liderPedido', 'liderPalavra'];
   // Cores: as 4 primeiras sempre valem; as outras começam vazias ('' = automático, calculada das 4) e só
   // passam a valer quando a pessoa escolhe
   const optionalColors = ['text', 'live', 'speaking', 'warn', 'line'];
@@ -118,8 +121,8 @@ const AppPreferences = (() => {
     font: { family: 'system', custom: '', chat: false }, nameFont: '',
     sounds: { enter: 'notification035', join: 'notification035', leave: 'whoosh', chat: 'wood', voiceJoin: 'suaveEntrou', voiceLeave: 'suaveSaiu',
       mute: 'suaveMutou', unmute: 'suaveDesmutou', deafen: 'suaveFoneDesligou', undeafen: 'suaveFoneLigou',
-      shareStart: 'suaveTransmitiu', shareStop: 'suaveParouTransmitir', mention: 'suaveMencao',
-      chatMuted: false, volume: 50, levels: { enter: 100, join: 100, leave: 100, chat: 100, mention: 100, voiceJoin: 100, voiceLeave: 100, mute: 100, unmute: 100, deafen: 100, undeafen: 100, shareStart: 100, shareStop: 100 } },
+      shareStart: 'suaveTransmitiu', shareStop: 'suaveParouTransmitir', mention: 'suaveMencao', liderPedido: 'suaveMao', liderPalavra: 'suavePalavra',
+      chatMuted: false, volume: 50, levels: { enter: 100, join: 100, leave: 100, chat: 100, mention: 100, voiceJoin: 100, voiceLeave: 100, mute: 100, unmute: 100, deafen: 100, undeafen: 100, shareStart: 100, shareStop: 100, liderPedido: 100, liderPalavra: 100 } },
     // Mensagens privadas: histórico neste PC para sempre ou por 30 dias; levar o histórico no backup do celular
     mensagens: { retencao: 'sempre', backup: false } };
   // Temas prontos (Aparência > Temas): cores e material de uma vez. As cores de detalhe que não aparecem aqui
@@ -165,7 +168,8 @@ const AppPreferences = (() => {
     { id: 'topgun', label: 'Top Gun', note: 'A cabine do F-14: painéis de MFD em verde no preto, a voz num radar, asas de piloto, blueprints de caças em verde e as chamadas de rádio como sons (Fox one, Splash one, Radio check).',
       colors: { main: '#010402', secondary: '#04100A', detail1: '#39FF6A', detail2: '#7DF9FF', warn: '#FFB000', text: '#B9F5C4', line: '#14532A' }, appearance: { glass: 'opaque', border: 'solid' },
       sounds: { enter: 'radioCheck', join: 'radioFoxOne', voiceJoin: 'radioFoxOne', leave: 'radioSplash', voiceLeave: 'radioSplash', shareStart: 'radioCheck', shareStop: 'radioRtb',
-        mute: 'radioGoingCold', unmute: 'radioGoingHot', deafen: 'radioSilence', undeafen: 'radioLoudClear', mention: 'radioTallyHo', chat: 'radioSquelch' } },
+        mute: 'radioGoingCold', unmute: 'radioGoingHot', deafen: 'radioSilence', undeafen: 'radioLoudClear', mention: 'radioTallyHo', chat: 'radioSquelch',
+        liderPedido: 'radioSquelch', liderPalavra: 'radioLoudClear' } },
   ];
   const cleanSkin = (id) => skins.some((k) => k.id && k.id === id) ? id : '';
   // Preferências com o tema aplicado (o resto, como fontes e sons, fica como está)

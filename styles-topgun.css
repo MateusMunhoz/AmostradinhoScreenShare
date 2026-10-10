@@ -67,7 +67,7 @@
 }
 
 /* ---------- Painéis: cada um é um MFD ---------- */
-:root[data-skin="topgun"] :is(.workspace-pane, .dock, .panel, .home-card, .dialog, .rail-music-menu) {
+:root[data-skin="topgun"] :is(.workspace-pane, .seu-sinal, .pane-tabs, .room-menu, .panel, .home-card, .dialog, .rail-music-menu) {
   border-radius: var(--radius-lg); background: var(--tg-corners), var(--panel); border-color: var(--tg-green-dim); box-shadow: var(--tg-bezel);
 }
 :root[data-skin="topgun"] .dialog { background: var(--tg-corners), var(--bg); }

@@ -27,7 +27,7 @@
 :root[data-skin="diluna"] body::after { background: linear-gradient(90deg, transparent 18%, rgba(2, 3, 12, .25) 45%, rgba(2, 3, 12, .1) 100%); }
 
 /* ---------- Painéis: um fio de luar em cima ---------- */
-:root[data-skin="diluna"] :is(.workspace-pane, .dock, .panel, .home-card, .dialog, .sky-focus.sky-pop, .rail-music-menu) {
+:root[data-skin="diluna"] :is(.workspace-pane, .seu-sinal, .pane-tabs, .room-menu, .panel, .home-card, .dialog, .sky-focus.sky-pop, .rail-music-menu) {
   box-shadow: inset 0 1px 0 rgba(111, 227, 255, .26), 0 10px 30px rgba(0, 0, 0, .35);
 }
 :root[data-skin="diluna"] :is(.pane-head h2, .chat-title, .stream-pane-head h2, .dialog h2, .settings-section h3) {
@@ -83,6 +83,11 @@
 }
 :root[data-skin="diluna"] .home-screen { padding-left: calc(var(--dl-edge) + 4vh + var(--dl-name) * .95 + 40px); }
 :root[data-skin="diluna"] .home-main { position: relative; z-index: 1; }
+/* O Início ocupa a largura toda (docs/spec/inicio-novo.md): em janela larga, o conteúdo e o rodapé começam depois do astro */
+@media (min-width: 1051px) {
+  :root[data-skin="diluna"] :is(.home-main, .home-status) { padding-left: 220px; }
+  :root[data-skin="diluna"][data-mirror="on"] :is(.home-main, .home-status) { padding-left: 0; padding-right: 220px; }
+}
 :root[data-skin="diluna"] .home-title { font-family: var(--dl-font); letter-spacing: .02em; }
 @media (max-width: 1300px) {
   :root[data-skin="diluna"] .home-screen::before { display: none; }

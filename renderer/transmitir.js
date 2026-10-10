@@ -5,8 +5,6 @@
 // ---------- Transmitir ----------
 function openShareDialog(switching = false) {
   state.shareSwitching = switching && state.sharing;
-  // A janela abre dentro da área das transmissões: com o painel Transmissão desligado, ele liga
-  if (workspaceViews.streams === false) { workspaceViews.streams = true; saveWorkspaceViews(); syncWorkspace(); }
   $('shareDialog').hidden = false;
   $('shareDialog').classList.toggle('switching', state.shareSwitching);
   $('shareTitle').textContent = state.shareSwitching ? 'Trocar o que transmitir' : 'Transmitir';
@@ -636,9 +634,10 @@ function sendShareInfo(hw) {
 // Canal de alguém: o da voz; fora da voz, a Voz geral ('')
 function channelOfMember(id) { const v = voice.members.get(id); return v?.session ? v.channel || '' : ''; }
 // A minha transmissão: aberta, qualquer um da sala assiste; fechada, só quem está no meu canal
-function mayWatchMe(id) { return state.shareOpen !== false || channelOfMember(id) === myVoiceChannel(); }
+// Na subsala Líder, a transmissão é sempre para a sala toda (docs/spec/modo-lider.md)
+function mayWatchMe(id) { return state.shareOpen !== false || channelOfMember(id) === myVoiceChannel() || (!!liderChannel() && myVoiceChannel() === liderChannel()); }
 // A transmissão de alguém: quem não manda "open" (versão antiga) está aberta
-function canWatch(id) { return state.members.get(id)?.shareInfo?.open !== false || channelOfMember(id) === myVoiceChannel(); }
+function canWatch(id) { return state.members.get(id)?.shareInfo?.open !== false || channelOfMember(id) === myVoiceChannel() || (!!liderChannel() && channelOfMember(id) === liderChannel()); }
 function closedShareText(id) { return `${nameOf(id)} deixou a transmissão só para quem está em ${channelName(channelOfMember(id))}.`; }
 // Muda só a transmissão atual; a próxima começa como está na janela de transmitir
 function setShareOpen(open) {
@@ -696,8 +695,12 @@ function renderShareOpenMenu() {
 function syncShareOpen() {
   const btn = $('shareOpenBtn');
   const open = state.shareOpen !== false;
+  // Na subsala Líder, a transmissão é sempre para a sala toda: o globo fica fixo e o menu não abre
+  const naLider = !!liderChannel() && myVoiceChannel() === liderChannel();
+  btn.disabled = naLider;
+  if (naLider) { setIcon(btn, 'globe', 'Na subsala Líder, a transmissão é sempre para a sala toda'); toggleShareOpenMenu(false); }
   // Só o ícone: globo = a sala toda; cadeado = só o seu canal. Clicar abre as duas opções (toggleShareOpenMenu)
-  setIcon(btn, open ? 'globe' : 'lock', open ? 'Quem pode assistir: a sala toda' : `Quem pode assistir: só ${channelName(myVoiceChannel())}`);
+  else setIcon(btn, open ? 'globe' : 'lock', open ? 'Quem pode assistir: a sala toda' : `Quem pode assistir: só ${channelName(myVoiceChannel())}`);
   renderShareOpenMenu();
   if (!state.sharing) return;
   for (const id of [...state.out.keys()]) {
