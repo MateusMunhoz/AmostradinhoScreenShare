@@ -41,6 +41,10 @@ run('Modo Líder: a subsala Líder fala para a sala toda', 150000, async () => {
   check('Seu sinal da Bia: "Ouvindo a Líder" com o volume', await B.eval(`!$('ssLider').hidden && $('ssLiderTexto').textContent.startsWith('Ouvindo a Líder') && !$('ssLiderVol').hidden && $('ssLiderOuvir').hidden`));
   check('A Ana não ouve a Bia (a conexão da Líder é só de ida)', await A.eval(`!mixer.nodes.has('${bia}') && !mixer.nodes.has('lider:${bia}') && lider.fala.has('${bia}')`));
   check('Seu sinal da Ana: "Você fala para a sala toda"', await A.eval(`$('ssLiderTexto').textContent === 'Você fala para a sala toda'`));
+  check('Todos com o app novo: a sala avisa que conhece o Modo Líder', await A.eval(`[...state.members.values()].every((m) => m.lider === true)`));
+  await A.eval(`(() => { const caio = [...state.members].find(([, m]) => m.name === 'Caio')[1]; caio.lider = false; renderLiderLinha(); })()`);
+  check('App antigo na sala: quem fala para todos vê quantos não ouvem', await A.eval(`$('ssLiderTexto').textContent.endsWith('1 não ouve (app antigo)') && $('ssLider').title.includes('Caio')`));
+  await A.eval(`(() => { [...state.members].find(([, m]) => m.name === 'Caio')[1].lider = true; renderLiderLinha(); })()`);
   await B.eval(`setLiderVolume(0)`);
   check('Volume da Líder em 0: a Ana não aparece falando para a Bia', await B.waitFor(`!speaking.has('${ana}')`, 5000).then(() => true, () => false));
   await B.eval(`setLiderVolume(100)`);

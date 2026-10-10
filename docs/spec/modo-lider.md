@@ -1,7 +1,6 @@
 # Modo Líder (subsala que fala para a sala toda)
 
-Status: aprovada. Fases 1 e 2 implementadas (o modo na criação, a voz da Líder para a sala toda, Ouvir a Líder, a tela
-aberta e os pedidos para falar); fase 3 (acabamento) a fazer.
+Status: implementada (fases 1, 2 e 3). Falta o deploy do servidor da VPS para o modo Internet.
 
 Decisões: quem aceita os pedidos é quem está transmitindo na Líder; o grupo e a Líder tocam juntos, com o volume da
 Líder à parte; sem limite de pessoas com a palavra, com o líder no controle; quem está fora da voz pode ouvir sem
@@ -138,6 +137,15 @@ Mais de uma pessoa transmitindo na subsala Líder: qualquer uma delas pode aceit
 - Quem tem a palavra vira fonte no `LiderAudio`: quem está fora do canal dela (inclusive dentro da Líder) chama e ouve.
 - Dentro da Líder sem transmitir, a pessoa vê quantos pedidos esperam ("quem transmite decide"), sem os botões.
 - O som do pedido e do aceite é o de menção; sons próprios ficam para a fase 3.
+
+### Como ficou a fase 3
+- Sons próprios: `liderPedido` (Suave · duas batidinhas) e `liderPalavra` (Suave · quatro tons subindo), com o grupo
+  **Modo Líder** em Configurações › Sons. No Top Gun: "Copy" e "Loud and clear".
+- O aviso de app antigo não compara versões (o app em desenvolvimento tem o mesmo número da última sem o Modo Líder):
+  o app novo diz no `hello` que conhece o Modo Líder (`lider: true`), o servidor repassa no `memberInfo`, e quem
+  não diz conta como antigo. Quem está dentro da Líder não conta (ouve pelo canal).
+- Temas: o selo, a mão e as seções usam as cores de cada tema (`--accent`, `--ok`); conferido por fotos no Estelar,
+  Arasaka, EVA, Top Gun, Du'Sol e Renascença. No Estelar, os rótulos usam a fonte fixa espaçada.
 
 ## Critérios de aceitação
 - [ ] Ao criar uma subsala, dá para escolher Padrão ou Líder; Líder só uma por sala.

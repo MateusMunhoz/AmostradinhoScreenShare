@@ -92,8 +92,8 @@ Antes: a RazzeAPI da VPS com o código novo (links de amigo, conta, atividade e,
 5. **Tela.** A transmite com **Só o meu canal** marcado.
    Deve acontecer: B e C (fora da Líder) conseguem assistir; o selo vira LÍDER · AO VIVO.
 6. **Pedir para falar.** A transmite na Líder. B (em outro canal) clica em **Pedir para falar**.
-   Deve acontecer: A ouve um som, vê o aviso e o número na aba Voz. A clica em **Aceitar**: B fala e A e C ouvem B,
-   enquanto o grupo de B continua ouvindo B normalmente.
+   Deve acontecer: A ouve o som de **Pediram para falar**, vê o aviso e o número na aba Voz. A clica em **Aceitar**: B fala e A e C ouvem B,
+   enquanto o grupo de B continua ouvindo B normalmente. B ouve o som de **Você recebeu a palavra**.
 7. **Tirar e recusar.** A clica em **Tirar**: ninguém fora do grupo de B ouve mais B, e B é avisado. B pede de novo
    e A clica em **Recusar**: B é avisado.
 8. **Pedir fora da voz.** C sai da voz e clica em **Pedir**.

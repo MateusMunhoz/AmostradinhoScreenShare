@@ -57,6 +57,9 @@ test('sala: cria a Líder, recusa a segunda e só passa o sinal da Líder de/par
   const b = await client(port); t.after(() => b.ws.terminate());
   const c = await client(port); t.after(() => c.ws.terminate());
   assert.ok(a.welcome.features.includes('lider'));
+  const d = await client(port, { lider: true }); t.after(() => d.ws.terminate());
+  assert.equal((await a.wait(m => m.type === 'member-joined' && m.id === d.welcome.id)).lider, true, 'o app novo avisa que conhece o Modo Líder');
+  assert.equal(d.welcome.members.find(m => m.id === a.welcome.id).lider, false, 'o antigo não');
   a.send({ type: 'subsala-create', modo: 'lider' });
   assert.deepEqual((await b.wait(m => m.type === 'subsalas')).list, [{ id: '1', name: 'Subsala_1', modo: 'lider' }]);
   b.send({ type: 'subsala-create', modo: 'lider' });

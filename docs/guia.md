@@ -312,6 +312,9 @@ ninguém do próprio grupo.
   tem o **Devolver**. Embaixo da Líder, a seção **Com a palavra** mostra quem está falando; o líder tem o **Tirar**.
   Não há limite de pessoas com a palavra.
 - **Avisos:** quem pediu fica sabendo se foi aceito, recusado ou se a palavra foi tirada.
+- **Sons:** **Pediram para falar** (para quem decide; duas batidinhas) e **Você recebeu a palavra** (quatro tons
+  subindo), no grupo **Modo Líder** de **Configurações › Sons**, com o volume de cada um. No tema Top Gun, viram o
+  "Copy" do rádio e o "Loud and clear".
 - **Some sozinho:** o pedido e a palavra somem quando a pessoa sai da voz ou da sala, entra na Líder (lá já fala
   livre) ou a Líder é apagada. Na troca de host, continuam.
 - **Silenciar as vozes** cala a Líder também.
@@ -321,7 +324,8 @@ ninguém do próprio grupo.
   no nome do canal.
 - **Apagar a Líder:** todo mundo para de ouvir, e quem estava nela volta para a Voz geral.
 - **Versões:** precisa do host (ou do servidor da VPS) na versão nova; sem isso, o + Subsala cria uma subsala comum,
-  como antes. Quem está numa versão antiga vê a Líder como uma subsala comum e não a ouve de fora.
+  como antes. Quem está numa versão antiga vê a Líder como uma subsala comum e não a ouve de fora. Quem fala para a
+  sala toda vê na linha da Líder quantos não ouvem ("2 não ouvem (app antigo)"; parando o mouse, os nomes).
 
 ### Música junto (YouTube)
 

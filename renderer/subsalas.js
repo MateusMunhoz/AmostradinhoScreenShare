@@ -104,6 +104,13 @@ async function deleteSubsala(sub) {
   send({ type: 'subsala-delete', id: sub.id });
 }
 
+// Quem está num app sem o Modo Líder (o app novo avisa na entrada: hello › lider) vê a Líder como subsala comum e não
+// ouve de fora dela. Quem está dentro da Líder ouve pelo canal, então não conta
+function semLider() {
+  const ch = liderChannel();
+  return [...state.members].filter(([id, m]) => !m.lider && !(inVoice(id) && voiceChannelOf(id) === ch)).map(([id]) => id);
+}
+
 // ---------- Pedir para falar (Modo Líder, fase 2) ----------
 // Quem está fora da Líder pede; quem está transmitindo dentro dela (o líder) aceita, recusa ou tira a palavra. O
 // servidor guarda a fila e quem tem a palavra (sala-protocolo.js) e confere quem pode decidir.
@@ -119,14 +126,14 @@ function setLider(m, quieto = false) {
   // Pedido novo: o líder ouve e vê quem pediu
   const novos = pedidos.filter((id) => !antes.includes(id) && id !== state.myId);
   if (!quieto && novos.length && souLiderDecide()) {
-    void appSounds.play('mention');
+    void appSounds.play('liderPedido');
     toast(novos.length === 1 ? `${nameOf(novos[0])} pediu para falar. Aceite ou recuse no painel de voz.` : `${novos.length} pessoas pediram para falar.`);
   }
   renderVoice();
 }
 function avisoLider(m) {
   const quem = nameOf(String(m.by));
-  if (m.aviso === 'aceito') { void appSounds.play('mention'); toast(`${quem} aceitou: você está falando para a sala toda.`); }
+  if (m.aviso === 'aceito') { void appSounds.play('liderPalavra'); toast(`${quem} aceitou: você está falando para a sala toda.`); }
   else if (m.aviso === 'recusado') toast(`${quem} recusou o pedido para falar.`);
   else if (m.aviso === 'tirada') toast(`${quem} tirou a sua palavra.`);
 }
@@ -168,6 +175,10 @@ function renderLiderLinha() {
       : meuPedido() ? 'Pedido enviado' : `${ouvindo ? 'Ouvindo a Líder' : 'Líder na sala'} · ${channelName(ch)}`;
   row.classList.toggle('ouvindo', ouvindo || dentro);
   row.classList.toggle('com-palavra', palavra);
+  // Quem fala para a sala toda fica sabendo de quem não vai ouvir (app antigo)
+  const antigos = dentro || palavra ? semLider() : [];
+  row.title = antigos.length ? `Não ouvem você (app antigo, precisam atualizar): ${antigos.map(nameOf).join(', ')}` : '';
+  if (antigos.length) $('ssLiderTexto').textContent += ` · ${antigos.length === 1 ? '1 não ouve' : `${antigos.length} não ouvem`} (app antigo)`;
   const vol = $('ssLiderVol');
   vol.hidden = dentro || !ouvindo;
   if (document.activeElement !== vol) vol.value = String(liderVolume);
