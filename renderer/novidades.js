@@ -3,6 +3,19 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.19.0",
+    "date": "2026-10-10",
+    "items": [
+      "Modo Líder, fase 3: sons próprios, aviso de app antigo e acabamento",
+      "Modo Líder, fase 2: pedir para falar",
+      "Modo Líder, fase 1: subsala que fala para a sala toda",
+      "Spec do Modo Líder: subsala que fala para a sala toda, com pedidos para falar",
+      "Sala nova: cabeçalho da sala, abas Voz/Chat/Pessoas e o cartão Seu sinal",
+      "Spec da sala nova: cabeçalho da sala, abas no painel e o cartão Seu sinal",
+      "Início novo: rede sempre à vista, criar e entrar lado a lado, amigos ao lado"
+    ]
+  },
+  {
     "version": "1.18.10",
     "date": "2026-10-09",
     "items": [
@@ -72,13 +85,6 @@ const NOVIDADES = [
     "date": "2026-10-06",
     "items": [
       "Atualiza lockfile para 1.18.2"
-    ]
-  },
-  {
-    "version": "1.18.2",
-    "date": "2026-10-06",
-    "items": [
-      "Corrige conflito de merge no main"
     ]
   }
 ];
