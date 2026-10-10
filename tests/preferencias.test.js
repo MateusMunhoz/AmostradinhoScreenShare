@@ -206,6 +206,17 @@ test('largura do chat e da voz: automática, limitada e mantida ao trocar de tem
   const pal = P.palette(p.colors);
   assert.equal(new Set([pal['--live'], pal['--ok'], pal['--warn']]).size, 3, 'você, quem fala e cuidado em cores diferentes');
 });
+test('Tema Cloud: cores próprias e os sons da pessoa ficam como estão', () => {
+  const cl = P.skins.find(k => k.id === 'cloud');
+  assert.equal(P.cleanSkin('cloud'), 'cloud');
+  assert.equal(cl.label, 'Cloud');
+  assert.equal(cl.sounds, undefined, 'sem sons próprios');
+  const p = P.applyTheme(P.normalize({ sounds: { volume: 30, join: 'suaveEntrou' } }), 'cloud');
+  assert.equal(p.sounds.join, 'suaveEntrou', 'o som escolhido fica');
+  assert.equal(p.sounds.volume, 30, 'o volume fica');
+  const pal = P.palette(p.colors);
+  assert.equal(new Set([pal['--live'], pal['--ok'], pal['--warn']]).size, 3, 'você, quem fala e cuidado em cores diferentes');
+});
 test('Som com várias falas: sorteia uma e não repete a última', async () => {
   const P2 = P, played = [];
   const sound = P2.sounds.find(s => s.id === 'radioSplash');

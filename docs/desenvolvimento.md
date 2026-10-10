@@ -61,7 +61,7 @@ isso (chamam `watch`, `state`, `speaking`... direto na página).
 | 8 | `tema.js` | Cores das janelas montadas por código, cor de cada pessoa, barrinhas de quem fala |
 | 9 | `fotos.js` | Foto de perfil sem servidor: a sua, pedir a dos outros pelo hash, pintar as bolinhas |
 | 10 | `fundo-perfil.js` | Fundo do perfil (imagem ou GIF até 1 MB): o seu, e o dos outros por mensagens diretas em pedaços, conferido pelo hash ([spec](spec/fundo-do-perfil.md)) |
-| 11 | `icone-app.js` | O ícone do app desenhado num canvas: a logo (`LOGO_STARS`, `LOGO_DOTS`), nas cores dela; os temas E.V.A e Arasaka têm o próprio (também usado pelo `gerar-icone.js`) |
+| 11 | `icone-app.js` | O ícone do app desenhado num canvas: a logo (`LOGO_STARS`, `LOGO_DOTS`), nas cores dela; os temas E.V.A, Arasaka e Cloud têm o próprio (também usado pelo `gerar-icone.js`) |
 | 12 | `configuracoes.js` | Configurações: a janela única (grupos à esquerda, abas em cima: `showSettingsTab`, `settingsOpenOn`), interface e preferências deste PC (`appPreferences.v1`) |
 | 13 | `modo-gamer.js` | Modo gamer (o controle na barrinha): prioridade normal, vidro opaco, sem animações, sem céu e sem luz ambiente, sem mudar as escolhas salvas |
 | 14 | `qr.js` | Gerador de QR code próprio (modo byte, correção M, versões 1 a 10), em SVG |

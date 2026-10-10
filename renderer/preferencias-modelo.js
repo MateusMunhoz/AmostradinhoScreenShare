@@ -166,6 +166,10 @@ const AppPreferences = (() => {
       colors: { main: '#010402', secondary: '#04100A', detail1: '#39FF6A', detail2: '#7DF9FF', warn: '#FFB000', text: '#B9F5C4', line: '#14532A' }, appearance: { glass: 'opaque', border: 'solid' },
       sounds: { enter: 'radioCheck', join: 'radioFoxOne', voiceJoin: 'radioFoxOne', leave: 'radioSplash', voiceLeave: 'radioSplash', shareStart: 'radioCheck', shareStop: 'radioRtb',
         mute: 'radioGoingCold', unmute: 'radioGoingHot', deafen: 'radioSilence', undeafen: 'radioLoudClear', mention: 'radioTallyHo', chat: 'radioSquelch' } },
+    // Cloud: a noite preta com nuvens vermelhas. Vermelho no destaque (você/ao vivo), osso em quem fala e laranja
+    // nos avisos (styles-cloud.css). Sem sons próprios: ficam os que a pessoa escolheu
+    { id: 'cloud', label: 'Cloud', note: 'Noite preta com nuvens vermelhas, cantos retos e enfeites em japonês.',
+      colors: { main: '#050304', secondary: '#0E0809', detail1: '#D1122B', detail2: '#E8E2D0', warn: '#E0873A', text: '#E6DCD8', line: '#3A1218' }, appearance: { glass: 'opaque', border: 'solid' } },
   ];
   const cleanSkin = (id) => skins.some((k) => k.id && k.id === id) ? id : '';
   // Preferências com o tema aplicado (o resto, como fontes e sons, fica como está)

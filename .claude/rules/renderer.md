@@ -50,7 +50,7 @@ paths:
   por `{ side: 'fundo' }` em pedaços; valide tudo que chega como em `onPhotoSignal`.
 
 ## Temas (aba Tema)
-- Cada tema é um `styles-<tema>.css` sob `:root[data-skin="<id>"]` (Arasaka, E.V.A, Du'Sol) + a entrada em `skins`
+- Cada tema é um `styles-<tema>.css` sob `:root[data-skin="<id>"]` (Arasaka, E.V.A, Du'Sol, Cloud) + a entrada em `skins`
   (`renderer/preferencias-modelo.js`) + `<link>` no `index.html` + `PACK_FILES` e `build.files`. A prévia do cartão é
   `.skin-preview[data-preview=<id>]`, com cores fixas.
 - O Du'Sol (`styles-dusol.css`) usa uma imagem: `assets/temas/dusol-sol.webp`, gerada por `assets/temas/gerar-sol.py`

@@ -35,7 +35,7 @@ function applyTitleBar() {
   titleBarKey = key;
   window.api.setTitleBar(color, text).catch(() => {});
 }
-// Ícone da janela na barra de tarefas: a logo (nas cores dela); os temas E.V.A, Arasaka e Top Gun têm o próprio
+// Ícone da janela na barra de tarefas: a logo (nas cores dela); os temas E.V.A, Arasaka, Top Gun e Cloud têm o próprio
 let appIconColor = '';
 function applyAppIcon() {
   // Tema E.V.A: o rosto do EVA-01; tema Arasaka: o emblema da corporação; tema Top Gun: as asas de piloto; senão, as duas telas
@@ -49,6 +49,7 @@ function applyAppIcon() {
   canvas.width = canvas.height = 256;
   if (eva) drawEvaIcon(canvas.getContext('2d'), 256);
   else if (skin === 'topgun') drawTopGunIcon(canvas.getContext('2d'), 256);
+  else if (skin === 'cloud') drawCloudIcon(canvas.getContext('2d'), 256);
   else (skin === 'arasaka' ? drawArasakaIcon : drawAppIcon)(canvas.getContext('2d'), 256, color);
   window.api.setWindowIcon(canvas.toDataURL('image/png')).catch(() => {});
 }

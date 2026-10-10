@@ -63,6 +63,7 @@
       "styles-diluna.css",
       "styles-renascenca.css",
       "styles-topgun.css",
+      "styles-cloud.css",
       "renderer/**",
       "assets/audio/**",
       "assets/icone/**",
