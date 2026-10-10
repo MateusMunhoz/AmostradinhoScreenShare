@@ -274,7 +274,7 @@ Clique em **Entrar na voz**, na barra de baixo, para ligar o microfone padrão d
 
 No painel **Chat de voz**, a voz fica dividida em canais: a **Voz geral** e as subsalas.
 
-- **Criar:** fora da voz, clique em **+ Nova subsala**, ao lado de **Entrar na Voz geral**; na voz, em **+ Subsala**, na faixa de baixo do painel. Para sair da voz, use o telefone do cartão **Seu sinal**. A subsala é criada e você já entra nela. Os nomes são sempre `Subsala_1`, `Subsala_2`, e assim por diante: a nova recebe o número seguinte ao da maior que existe.
+- **Criar:** fora da voz, clique em **+ Nova subsala**, ao lado de **Entrar na Voz geral**; na voz, em **+ Subsala**, na faixa de baixo do painel. Para sair da voz, use o telefone do cartão **Seu sinal**. O botão pergunta o modo: **Padrão** (só quem está nela se ouve) ou **Líder** (quem está nela fala para a sala toda; veja **Modo Líder**, logo abaixo). A subsala é criada e você já entra nela. Os nomes são sempre `Subsala_1`, `Subsala_2`, e assim por diante: a nova recebe o número seguinte ao da maior que existe.
 - **Cada canal:** o nome com barrinhas de som na frente: azuis e altas no canal em que você está, cinza e baixas nos outros. Quem está no canal aparece logo embaixo.
 - **Entrar:** clique no nome do canal. Fora da voz, isso liga o microfone já naquele canal; na voz, você muda de canal sem sair.
 - **Quem ouve quem:** só quem está no mesmo canal se ouve. O chat de texto e as transmissões continuam valendo para a sala toda.
@@ -287,6 +287,27 @@ No painel **Chat de voz**, a voz fica dividida em canais: a **Voz geral** e as s
 - **Céu na Lista:** na Lista, o céu pequeno em cima é só enfeite. Para escondê-lo ou mostrá-lo, use **Configurações › Aparência › Céu da voz em cima da lista**. O Mapa não muda.
 - **Troca de host:** as subsalas continuam, e cada um fica no canal em que estava.
 - **Modo Internet:** o servidor da VPS precisa estar atualizado para ter subsalas; sem isso, o painel mostra só a lista de sempre.
+
+### Modo Líder (aulão)
+
+Uma subsala em **Modo Líder** fala para a sala toda: serve para dar uma aula ou apresentar alguma coisa sem tirar
+ninguém do próprio grupo.
+
+- **Criar:** no **+ Subsala** (ou **+ Nova subsala**), escolha **Líder**. Só pode haver uma por sala; com uma já
+  aberta, a opção fica desativada e diz qual é. O modo não muda depois: para trocar, apague e crie outra.
+- **No painel de voz:** o canal da Líder tem o selo **LÍDER** (e **LÍDER · AO VIVO** com alguém transmitindo nela).
+- **Quem está na Líder** fala livre, e a sala toda ouve. O cartão **Seu sinal** mostra "Você fala para a sala toda".
+- **Quem está em outro canal** continua conversando com o próprio grupo e ouve a Líder junto. A linha
+  "Ouvindo a Líder" do **Seu sinal** tem o **volume da Líder** (fica salvo neste PC; a roda do mouse muda de 5 em
+  5%). Quem está na Líder não ouve você.
+- **Quem está fora da voz** vê "Líder na sala" com o botão **Ouvir**: escuta sem ligar o microfone. **Parar** desliga.
+- **Silenciar as vozes** cala a Líder também.
+- **Telas:** o que é transmitido de dentro da Líder fica aberto para a sala toda, mesmo com **Só o meu canal**.
+- **Entrar na voz:** o botão **Entrar** nunca leva para a Líder (lá você falaria para todos). Para entrar nela, clique
+  no nome do canal.
+- **Apagar a Líder:** todo mundo para de ouvir, e quem estava nela volta para a Voz geral.
+- **Versões:** precisa do host (ou do servidor da VPS) na versão nova; sem isso, o + Subsala cria uma subsala comum,
+  como antes. Quem está numa versão antiga vê a Líder como uma subsala comum e não a ouve de fora.
 
 ### Música junto (YouTube)
 

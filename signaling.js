@@ -152,7 +152,7 @@ function startServer(port, password = '', seed = {}) { // a senha pode mudar dep
             id,
             hostId,
             members: [...members].map(([mid, m]) => memberInfo(mid, m)),
-            features: ['chat', 'voice', 'handoff', 'sessoes', 'subsalas', 'subsala-move', 'musica', 'senha'],
+            features: ['chat', 'voice', 'handoff', 'sessoes', 'subsalas', 'subsala-move', 'lider', 'musica', 'senha'],
             chat: chat.log,
             subsalas: subsalas.list,
             musicas: [...musicas.map.values()],

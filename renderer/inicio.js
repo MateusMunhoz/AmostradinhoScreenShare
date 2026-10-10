@@ -16,7 +16,7 @@ $('voiceJoin').onclick = () => {
 $('voiceJoinMore').onclick = () => ($('voiceJoinPop') ? closeVoiceJoinPop() : openVoiceJoinPop());
 setIcon($('voiceJoinMore'), 'chevronUp', 'Escolher o canal para entrar');
 $('voiceMute').onclick = () => voice.mute();
-$('paneVoiceSubsala').onclick = () => createSubsala(true);
+$('paneVoiceSubsala').onclick = () => subsalaButtonClick($('paneVoiceSubsala'));
 $('voiceDeafen').onclick = () => voice.deafen();
 // Captura antes de qualquer outro atalho da página
 window.addEventListener('keydown', async (e) => {

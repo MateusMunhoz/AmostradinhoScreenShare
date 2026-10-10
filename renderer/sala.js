@@ -263,12 +263,15 @@ function enterRoom(welcome, owner, host, port, cloud = null) {
   state.sessao = welcome.sessao || null;
   state.subsalas = (welcome.features || []).includes('subsalas') && Array.isArray(welcome.subsalas) ? welcome.subsalas : null;
   state.subsalaMove = (welcome.features || []).includes('subsala-move');
+  state.liderOn = (welcome.features || []).includes('lider'); // o servidor conhece o Modo Líder
   state.musicaOn = (welcome.features || []).includes('musica');
   state.senhaOn = (welcome.features || []).includes('senha'); // o servidor sabe mudar a senha da sala
   state.order = [...welcome.members.map((m) => m.id), welcome.id];
   lembrarDaSala();
   lembrarUltimaSala();
   voice.reset(welcome);
+  lider.reset();
+  lider.setCanal(liderChannel());
   setMusicas(state.musicaOn ? welcome.musicas : [], welcome.now, true); // as músicas que já estavam tocando na sala
   window.api.roomKeys(true).then(syncComandoVozTecla, () => {});
   renderLeaveBtn();
@@ -292,6 +295,7 @@ function leaveRoom(reason, kind = 'info', endRoom = false) {
   if (!state.myId) return;
   void appSounds.play('leave');
   voice.reset(null);
+  lider.reset();
   const ws = state.ws;
   state.ws = null;
   state.migrating = false;
@@ -465,6 +469,7 @@ async function rejoin(host, timeoutMs) {
   state.handoff = (welcome.features || []).includes('handoff');
   state.sessao = welcome.sessao || state.sessao;
   state.subsalaMove = (welcome.features || []).includes('subsala-move');
+  state.liderOn = (welcome.features || []).includes('lider');
   state.musicaOn = (welcome.features || []).includes('musica');
   state.senhaOn = (welcome.features || []).includes('senha'); // o servidor sabe mudar a senha da sala
   setSubsalas((welcome.features || []).includes('subsalas') ? welcome.subsalas : null);
@@ -577,6 +582,9 @@ function onRoomMessage(m) {
     case 'subsalas':
       setSubsalas(m.list);
       break;
+    case 'subsala-erro':
+      toast(String(m.text || 'Não foi possível criar a subsala.').slice(0, 200), 'error');
+      break;
     case 'musicas':
       setMusicas(m.list, m.now);
       break;
@@ -610,6 +618,7 @@ function onRoomMessage(m) {
 // O campo "side" diz de qual lado da conexão veio a mensagem.
 function handleSignal(from, data) {
   if (data.side === 'voice') return voice.receive(from, data);
+  if (data.side === 'lider') return lider.receive(from, data); // a voz da subsala Líder (voice.js)
   if (data.side === 'viewer') {
     // Mensagem de alguém que assiste (ou quer assistir) a minha tela
     if (data.subscribe) return addWatcher(from, data.once === true);

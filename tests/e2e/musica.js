@@ -1,7 +1,9 @@
 // Música junto: Ana põe um vídeo do YouTube na Subsala_1, Bia ouve junto no mesmo ponto; pausar, pular e trocar
 // valem para as duas; quem sai do canal não controla; parar fecha a tela das duas. Precisa de internet (YouTube).
 // O volume fica em 0 (mudo) nas duas: o teste não toca som alto no seu PC.
-const { openApp, createRoom, joinRoom, share, check, sleep, run, attach } = require('./ajuda');
+const { openApp, createRoom, joinRoom, share, check, sleep, run, attach, FAKE } = require('./ajuda');
+// A janela do teste fica atrás da outra: sem isto, a animação de abrir o painel congela no começo e o clique erra o botão
+FAKE.push('--disable-backgrounding-occluded-windows', '--disable-features=CalculateNativeWinOcclusion');
 
 const VID = 'dQw4w9WgXcQ', VID2 = 'M7lc1UVf-VE';
 const TONE = `(() => { window.tctx = new AudioContext(); const o = tctx.createOscillator(); const dst = tctx.createMediaStreamDestination(); o.connect(dst); o.start(); voice.media = { getUserMedia: async () => dst.stream }; })()`;

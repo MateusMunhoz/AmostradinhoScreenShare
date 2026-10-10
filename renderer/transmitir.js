@@ -634,9 +634,10 @@ function sendShareInfo(hw) {
 // Canal de alguém: o da voz; fora da voz, a Voz geral ('')
 function channelOfMember(id) { const v = voice.members.get(id); return v?.session ? v.channel || '' : ''; }
 // A minha transmissão: aberta, qualquer um da sala assiste; fechada, só quem está no meu canal
-function mayWatchMe(id) { return state.shareOpen !== false || channelOfMember(id) === myVoiceChannel(); }
+// Na subsala Líder, a transmissão é sempre para a sala toda (docs/spec/modo-lider.md)
+function mayWatchMe(id) { return state.shareOpen !== false || channelOfMember(id) === myVoiceChannel() || (!!liderChannel() && myVoiceChannel() === liderChannel()); }
 // A transmissão de alguém: quem não manda "open" (versão antiga) está aberta
-function canWatch(id) { return state.members.get(id)?.shareInfo?.open !== false || channelOfMember(id) === myVoiceChannel(); }
+function canWatch(id) { return state.members.get(id)?.shareInfo?.open !== false || channelOfMember(id) === myVoiceChannel() || (!!liderChannel() && channelOfMember(id) === liderChannel()); }
 function closedShareText(id) { return `${nameOf(id)} deixou a transmissão só para quem está em ${channelName(channelOfMember(id))}.`; }
 // Muda só a transmissão atual; a próxima começa como está na janela de transmitir
 function setShareOpen(open) {

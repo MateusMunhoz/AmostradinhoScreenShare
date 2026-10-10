@@ -7,6 +7,8 @@
 // Script clássico: divide o escopo global com os outros (ordem no index.html). Usa de: util, estado, voz.
 
 const subsalasOn = () => Array.isArray(state.subsalas);
+// Modo Líder (docs/spec/modo-lider.md): a subsala Líder fala para a sala toda. O canal dela, ou '' sem ela
+const liderChannel = () => state.subsalas?.find((s) => s.modo === 'lider')?.id || '';
 function channelName(ch) { return !ch ? 'Voz geral' : state.subsalas?.find((s) => s.id === ch)?.name || `Subsala_${ch}`; }
 // Canal de alguém que está na voz ('' também para quem está fora; use inVoice para saber se está)
 function voiceChannelOf(id) { return !id || id === state.myId ? voice.channel : voice.members.get(id)?.channel || ''; }
@@ -14,8 +16,9 @@ function voiceChannelOf(id) { return !id || id === state.myId ? voice.channel : 
 // A lista chegou do servidor (entrada, troca de host ou alguém criou/apagou): null é sala sem subsalas
 function setSubsalas(list) {
   state.subsalas = Array.isArray(list)
-    ? list.filter((s) => s && /^\d{1,6}$/.test(String(s.id))).map((s) => ({ id: String(s.id), name: `Subsala_${s.id}` }))
+    ? list.filter((s) => s && /^\d{1,6}$/.test(String(s.id))).map((s) => ({ id: String(s.id), name: `Subsala_${s.id}`, ...(s.modo === 'lider' ? { modo: 'lider' } : {}) }))
     : null;
+  lider.setCanal(liderChannel());
   // Estava numa subsala que não existe mais (o servidor novo não tem subsalas): volta para a Voz geral
   if (voice.session && voice.channel && !(state.subsalas || []).some((s) => s.id === voice.channel)) voice.moveTo('');
   const wait = subsalaJoinNext, made = wait && (state.subsalas || []).find((s) => !wait.known.has(s.id));
@@ -27,11 +30,70 @@ function setSubsalas(list) {
 // Nova subsala. join (o botão do painel): cria e já entra nela; quando a lista volta do servidor com uma subsala que
 // não existia, vai para lá (até 5 s depois; se nada chegar, só não entra)
 let subsalaJoinNext = null; // { known: ids de antes, at }
-function createSubsala(join = false) {
+function createSubsala(join = false, modo = 'padrao') {
   if (!subsalasOn() || !state.myId) return;
   if (join === true) subsalaJoinNext = { known: new Set(state.subsalas.map((s) => s.id)), at: Date.now() };
-  send({ type: 'subsala-create' });
+  send(modo === 'lider' ? { type: 'subsala-create', modo } : { type: 'subsala-create' });
 }
+
+// O + Subsala do painel de voz: com servidor que conhece o Modo Líder, pergunta o modo antes (Padrão ou Líder);
+// sem isso, cria uma Padrão direto, como sempre
+function subsalaButtonClick(btn) {
+  if (!state.liderOn) return createSubsala(true);
+  toggleSubsalaModoMenu(btn);
+}
+function toggleSubsalaModoMenu(btn, force) {
+  const open = force ?? !$('subsalaModoMenu');
+  btn?.setAttribute('aria-expanded', String(open));
+  $('subsalaModoMenu')?.remove();
+  if (!open) return;
+  const menu = document.createElement('div');
+  menu.id = 'subsalaModoMenu';
+  menu.className = 'share-open-menu subsala-modo-menu';
+  menu.setAttribute('role', 'menu');
+  menu.setAttribute('aria-label', 'Modo da subsala');
+  const head = document.createElement('div');
+  head.className = 'som-head';
+  head.textContent = 'Nova subsala';
+  menu.append(head);
+  const ja = liderChannel();
+  for (const [modo, icon, label, sub] of [['padrao', 'ondas', 'Padrão', 'Só quem está nela se ouve'],
+    ['lider', 'megafone', 'Líder', ja ? `Já existe uma subsala Líder (${channelName(ja)})` : 'Quem está nela fala para a sala toda']]) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.setAttribute('role', 'menuitem');
+    b.dataset.modo = modo;
+    b.innerHTML = ICON[icon];
+    const t = document.createElement('span');
+    t.className = 'som-text';
+    const strong = document.createElement('strong');
+    strong.textContent = label;
+    const small = document.createElement('small');
+    small.textContent = sub;
+    t.append(strong, small);
+    b.append(t);
+    b.disabled = modo === 'lider' && !!ja;
+    b.onclick = () => { toggleSubsalaModoMenu(btn, false); createSubsala(true, modo); };
+    menu.append(b);
+  }
+  menu.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { e.stopPropagation(); toggleSubsalaModoMenu(btn, false); btn?.focus(); }
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+    e.preventDefault();
+    const items = [...menu.querySelectorAll('button:not(:disabled)')], at = items.indexOf(document.activeElement);
+    items[(at + (e.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length]?.focus();
+  });
+  document.body.append(menu);
+  // Abre embaixo do botão (ou em cima, se não couber)
+  const r = btn.getBoundingClientRect();
+  menu.style.left = `${Math.max(8, Math.min(r.left, innerWidth - menu.offsetWidth - 8))}px`;
+  if (r.bottom + 8 + menu.offsetHeight <= innerHeight - 8) menu.style.top = `${r.bottom + 6}px`;
+  else menu.style.bottom = `${innerHeight - r.top + 6}px`;
+  menu.querySelector('button:not(:disabled)')?.focus();
+}
+document.addEventListener('pointerdown', (e) => {
+  if ($('subsalaModoMenu') && !e.target.closest?.('#subsalaModoMenu, #paneVoiceSubsala')) toggleSubsalaModoMenu($('paneVoiceSubsala'), false);
+});
 
 async function deleteSubsala(sub) {
   const inside = voiceIdsIn(sub.id).length;
@@ -40,6 +102,44 @@ async function deleteSubsala(sub) {
     : `Apagar ${sub.name}?`;
   if (!(await appConfirm(text, { title: 'Apagar subsala', ok: 'Apagar', danger: true }))) return;
   send({ type: 'subsala-delete', id: sub.id });
+}
+
+// A linha da Líder no cartão Seu sinal: com gente na subsala Líder, quem está fora dela ouve (na voz, sempre; fora
+// da voz, com o Ouvir) e ajusta o volume; quem está dentro vê que fala para a sala toda
+function renderLiderLinha() {
+  const row = $('ssLider'), ch = liderChannel();
+  const fontes = ch && state.myId ? voiceIdsIn(ch) : [];
+  row.hidden = !fontes.length;
+  if (row.hidden) return;
+  const dentro = !!voice.session && voice.channel === ch, ouvindo = lider.souOuvinte();
+  $('ssLiderIcone').innerHTML = ICON.megafone;
+  $('ssLiderTexto').textContent = dentro ? 'Você fala para a sala toda' : `${ouvindo ? 'Ouvindo a Líder' : 'Líder na sala'} · ${channelName(ch)}`;
+  row.classList.toggle('ouvindo', ouvindo || dentro);
+  const vol = $('ssLiderVol');
+  vol.hidden = dentro || !ouvindo;
+  if (document.activeElement !== vol) vol.value = String(liderVolume);
+  vol.title = `Volume da Líder: ${liderVolume}%`;
+  const ouvir = $('ssLiderOuvir');
+  ouvir.hidden = dentro || !!voice.session; // na voz, a Líder já toca junto com o seu canal
+  ouvir.textContent = lider.ouvindo ? 'Parar' : 'Ouvir';
+  ouvir.title = lider.ouvindo ? 'Parar de ouvir a Líder' : 'Ouvir a Líder sem entrar na voz (sem microfone)';
+  ouvir.setAttribute('aria-pressed', String(lider.ouvindo));
+}
+function setupLiderLinha() {
+  $('ssLiderOuvir').onclick = () => { mixer.ensure(); lider.setOuvindo(!lider.ouvindo); renderLiderLinha(); };
+  $('ssLiderVol').oninput = (e) => { setLiderVolume(e.target.value); e.target.title = `Volume da Líder: ${liderVolume}%`; };
+  onWheelVolumeLider($('ssLiderVol'));
+}
+// A roda do mouse em cima do volume da Líder: 5% por clique
+function onWheelVolumeLider(el) {
+  el.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const steps = wheelSteps('lider', e);
+    if (!steps) return;
+    setLiderVolume(liderVolume + steps * WHEEL_STEP);
+    el.value = String(liderVolume);
+    volBubble(document, `Volume da Líder: ${liderVolume}%`, e.clientX, e.clientY);
+  }, { passive: false });
 }
 
 // Quem está na voz num canal (ids; null é você)
@@ -65,6 +165,17 @@ function channelHead(ch, sub) {
   const name = document.createElement('strong');
   name.textContent = channelName(ch);
   li.append(icon, name);
+  // Subsala Líder: o selo, e AO VIVO com alguém transmitindo nela
+  if (sub?.modo === 'lider') {
+    li.classList.add('lider');
+    const selo = document.createElement('span');
+    selo.className = 'voice-channel-selo';
+    selo.textContent = 'Líder';
+    selo.title = 'Subsala Líder: quem está nela fala para a sala toda';
+    const aoVivo = voiceIdsIn(ch).some((id) => (id ? state.members.get(id)?.sharing : state.sharing));
+    if (aoVivo) { selo.classList.add('ao-vivo'); selo.textContent = 'Líder · ao vivo'; }
+    name.after(selo);
+  }
   if (!here && voice.supported && !voice.pending) {
     const label = voice.session ? `Ir para ${channelName(ch)}` : `Entrar na voz, em ${channelName(ch)}`;
     li.classList.add('joinable');

@@ -213,6 +213,7 @@ function renderSeuSinal() {
   $('miniVoice').classList.toggle('mini-sair', na || voice.pending);
   setIcon($('miniShare'), state.sharing ? 'stop' : 'monitor', state.sharing ? 'Parar de transmitir' : 'Transmitir tela');
   $('miniShare').classList.toggle('ao-vivo', !!state.sharing);
+  renderLiderLinha();
 }
 function setupSeuSinal() {
   setIcon($('paneExpand'), 'panelOpen', 'Abrir o painel da sala');
@@ -236,6 +237,7 @@ function setupSeuSinal() {
   $('miniDeafen').onclick = () => $('voiceDeafen').click();
   $('miniVoice').onclick = () => $('voiceJoin').click();
   $('miniShare').onclick = () => (state.sharing ? $('stopShareBtn') : $('shareBtn')).click();
+  setupLiderLinha();
 }
 
 // Barrinha sem espaço (janela baixa, fonte larga): marca para o CSS apertar

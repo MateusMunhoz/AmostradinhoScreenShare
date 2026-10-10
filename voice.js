@@ -240,4 +240,152 @@ class VoiceChat {
     this.mixer?.detach(id);
   }
 }
-if (typeof module !== 'undefined') module.exports = { VoiceChat };
+// A voz da subsala Líder para a sala toda (docs/spec/modo-lider.md). Fala para a sala toda quem está na voz, dentro da
+// subsala Líder (a fonte). Ouve quem está na voz em outro canal, ou fora da voz com "Ouvir a Líder" (sem microfone).
+// Quem ouve chama cada fonte numa conexão só de receber, e a fonte responde mandando o microfone. Essas conexões ficam
+// separadas das do canal (VoiceChat): entrar e sair da Líder não derruba a conversa do grupo. No mixer, cada fonte
+// entra como 'lider:<id>' (com o volume da Líder).
+// Sinal: { side: 'lider', role: 'ouvir' (de quem ouve para a fonte) | 'falar' (da fonte para quem ouve), call,
+// sessao (a sessão de voz da fonte), sdp | candidate | bye }. O servidor da sala só passa o sinal de/para uma fonte.
+class LiderAudio {
+  constructor({ voice, send, changed = () => {}, makePeer = () => new RTCPeerConnection(typeof RTC_CONFIG !== 'undefined' ? RTC_CONFIG : { iceServers: [] }),
+    makeAudio = () => new Audio(), token = () => crypto.randomUUID(), mixer = null, retryMs = 20000 }) {
+    Object.assign(this, { voice, send, changed, makePeer, makeAudio, token, mixer, retryMs });
+    this.canal = '';          // o canal da subsala Líder ('' sem ela)
+    this.ouvindo = false;     // Ouvir a Líder fora da voz
+    this.ouve = new Map();    // fonte -> conexão (eu ouço ela)
+    this.fala = new Map();    // quem me ouve -> conexão (eu sou a fonte)
+  }
+  reset() { this.canal = ''; this.ouvindo = false; this.sync(); }
+  setCanal(ch) {
+    this.canal = String(ch || '');
+    if (!this.canal) this.ouvindo = false;
+    this.sync();
+  }
+  setOuvindo(on) { this.ouvindo = !!on; this.sync(); this.changed(); }
+  souFonte() { return !!this.canal && !!this.voice.session && this.voice.channel === this.canal; }
+  // Ouço a Líder: na voz em outro canal, ou fora da voz com Ouvir a Líder ligado
+  souOuvinte() { return !!this.canal && (this.voice.session ? this.voice.channel !== this.canal : this.ouvindo); }
+  // As fontes, com a sessão de voz de cada uma
+  fontes() {
+    const out = new Map();
+    if (!this.canal) return out;
+    for (const [id, m] of this.voice.members) if (m.session && m.channel === this.canal) out.set(id, m.session);
+    return out;
+  }
+  sync() {
+    const want = this.souOuvinte() ? this.fontes() : new Map();
+    for (const [id, p] of [...this.ouve]) if (want.get(id) !== p.sessao) this.fechar('ouve', id, true);
+    for (const [id, sessao] of want) if (!this.ouve.has(id)) this.chamar(id, sessao);
+    // A fonte para de mandar para quem saiu da sala ou entrou na Líder (lá se ouve pelo canal)
+    for (const id of [...this.fala.keys()]) {
+      const m = this.voice.members.get(id);
+      if (!this.souFonte() || !m || (m.session && m.channel === this.canal)) this.fechar('fala', id, true);
+    }
+  }
+  sinal(id, role, p, data) { this.send({ type: 'signal', to: id, data: { side: 'lider', role, call: p.call, sessao: p.sessao, ...data } }); }
+  nova(map, id, sessao, call) {
+    const pc = this.makePeer(), audio = this.makeAudio();
+    audio.autoplay = true;
+    audio.muted = this.mixer ? true : this.voice.deafened;
+    const p = { pc, audio, sessao, call, chain: Promise.resolve(), candidates: [], status: 'conectando' };
+    map.set(id, p);
+    const role = map === this.ouve ? 'ouvir' : 'falar';
+    pc.onicecandidate = (e) => { if (e.candidate && map.get(id) === p) this.sinal(id, role, p, { candidate: e.candidate }); };
+    pc.onconnectionstatechange = () => {
+      if (map.get(id) !== p) return;
+      const s = pc.connectionState;
+      p.status = s === 'connected' ? 'conectado' : ['failed', 'disconnected'].includes(s) ? 'reconectando' : 'conectando';
+      if (s === 'connected') clearTimeout(p.retry);
+      if (s === 'failed') this.refazer(map, id, p);
+      this.changed();
+    };
+    // Quem ouve refaz a chamada se não conectou a tempo (a oferta pode ter se perdido)
+    if (map === this.ouve) p.retry = setTimeout(() => this.refazer(map, id, p), this.retryMs);
+    return p;
+  }
+  refazer(map, id, p) {
+    if (map.get(id) !== p || p.pc.connectionState === 'connected') return;
+    this.fechar(map === this.ouve ? 'ouve' : 'fala', id, map === this.ouve);
+    this.sync();
+  }
+  chamar(id, sessao) {
+    const p = this.nova(this.ouve, id, sessao, this.token());
+    p.pc.addTransceiver?.('audio', { direction: 'recvonly' });
+    p.pc.ontrack = (e) => {
+      p.audio.srcObject = e.streams[0] || new MediaStream([e.track]);
+      this.mixer?.attach('lider:' + id, p.audio.srcObject);
+      p.audio.play().catch(() => {});
+    };
+    this.fila(p, this.ouve, async () => {
+      await p.pc.setLocalDescription(await p.pc.createOffer());
+      if (this.ouve.get(id) === p) this.sinal(id, 'ouvir', p, { sdp: p.pc.localDescription });
+    });
+  }
+  fila(p, map, task) {
+    p.chain = p.chain.then(async () => { if ([...map.values()].includes(p)) await task(); }).catch((err) => {
+      if (![...map.values()].includes(p)) return;
+      console.warn('Falha na voz da Líder:', err);
+      p.status = 'falha';
+      this.changed();
+    });
+  }
+  receive(id, data) {
+    if (typeof data.call !== 'string') return;
+    if (data.role === 'ouvir') {
+      // Eu sou a fonte: alguém quer me ouvir (ou parou)
+      let p = this.fala.get(id);
+      if (data.bye) { if (p?.call === data.call) this.fechar('fala', id); return; }
+      if (!this.souFonte() || data.sessao !== this.voice.session || !this.voice.stream) return;
+      const m = this.voice.members.get(id);
+      if (!m || (m.session && m.channel === this.canal)) return;
+      if (p && p.call !== data.call && data.sdp?.type === 'offer') { this.fechar('fala', id); p = null; }
+      if (!p) {
+        if (data.sdp?.type !== 'offer') return;
+        p = this.nova(this.fala, id, this.voice.session, data.call);
+        // Só o microfone vai; quem ouve não manda nada (a conexão é só de receber do lado dela)
+        this.voice.stream.getAudioTracks().forEach((t) => p.pc.addTrack(t, this.voice.stream));
+      }
+      if (p.call !== data.call) return;
+      this.fila(p, this.fala, async () => {
+        if (data.sdp) {
+          await p.pc.setRemoteDescription(data.sdp);
+          for (const c of p.candidates.splice(0)) await p.pc.addIceCandidate(c);
+          await p.pc.setLocalDescription(await p.pc.createAnswer());
+          if (this.fala.get(id) === p) this.sinal(id, 'falar', p, { sdp: p.pc.localDescription });
+        } else if (data.candidate) await this.candidato(p, data.candidate);
+      });
+    } else if (data.role === 'falar') {
+      // Resposta da fonte que eu chamei
+      const p = this.ouve.get(id);
+      if (!p || p.call !== data.call) return;
+      if (data.bye) { this.fechar('ouve', id); setTimeout(() => this.sync(), 1000); return; }
+      this.fila(p, this.ouve, async () => {
+        if (data.sdp?.type === 'answer') {
+          await p.pc.setRemoteDescription(data.sdp);
+          for (const c of p.candidates.splice(0)) await p.pc.addIceCandidate(c);
+        } else if (data.candidate) await this.candidato(p, data.candidate);
+      });
+    }
+  }
+  async candidato(p, c) {
+    if (p.pc.remoteDescription) await p.pc.addIceCandidate(c);
+    else if (p.candidates.length < 128) p.candidates.push(c);
+  }
+  // avisar: manda o "tchau" para o outro lado fechar também
+  fechar(lado, id, avisar = false) {
+    const map = lado === 'ouve' ? this.ouve : this.fala, p = map.get(id);
+    if (!p) return;
+    map.delete(id);
+    if (avisar) this.sinal(id, lado === 'ouve' ? 'ouvir' : 'falar', p, { bye: true });
+    clearTimeout(p.retry);
+    p.pc.ontrack = p.pc.onicecandidate = p.pc.onconnectionstatechange = null;
+    p.pc.close();
+    p.audio.pause();
+    p.audio.srcObject = null;
+    if (lado === 'ouve') this.mixer?.detach('lider:' + id);
+  }
+  // Sem mixer (testes), o fone silenciado cala as vozes da Líder também
+  deafen(on) { if (!this.mixer) for (const p of this.ouve.values()) p.audio.muted = !!on; }
+}
+if (typeof module !== 'undefined') module.exports = { VoiceChat, LiderAudio };

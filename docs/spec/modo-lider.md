@@ -1,6 +1,11 @@
 # Modo Líder (subsala que fala para a sala toda)
 
-Status: proposta, aguardando aprovação.
+Status: aprovada. Fase 1 implementada (o modo na criação, a voz da Líder para a sala toda, Ouvir a Líder e a tela
+aberta); fases 2 e 3 a fazer.
+
+Decisões: quem aceita os pedidos é quem está transmitindo na Líder; o grupo e a Líder tocam juntos, com o volume da
+Líder à parte; sem limite de pessoas com a palavra, com o líder no controle; quem está fora da voz pode ouvir sem
+microfone.
 
 ## Objetivo
 Dar um "aulão" dentro da sala: uma subsala em **Modo Líder** transmite a tela e a voz para todas as outras subsalas e
@@ -118,6 +123,13 @@ Mais de uma pessoa transmitindo na subsala Líder: qualquer uma delas pode aceit
 1. Servidor e o modo na criação, a voz da Líder chegando à sala toda, **Ouvir a Líder** e a tela aberta para todos.
 2. Pedir para falar: a fila, Aceitar, Recusar, Tirar e Devolver.
 3. Acabamento: volume da Líder, sons, temas, guia e roteiro de teste.
+
+### O que mudou do plano na fase 1
+- O **Entrar** da voz (o botão que vai para o canal com mais gente) nunca leva para a Líder: quem só queria entrar
+  na voz cairia falando para a sala toda. Para entrar nela, clica-se no canal.
+- A conexão da Líder é chamada por quem ouve (só de receber) e respondida pela fonte com o microfone. Assim a fonte
+  não precisa saber de antemão quem ouve, e quem está fora da voz ouve sem abrir o microfone.
+- O volume da Líder (linha do Seu sinal) já entrou na fase 1, junto com o Ouvir.
 
 ## Critérios de aceitação
 - [ ] Ao criar uma subsala, dá para escolher Padrão ou Líder; Líder só uma por sala.

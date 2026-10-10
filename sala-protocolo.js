@@ -68,21 +68,30 @@ function cleanSenha(p, min = 0) {
 
 // Subsalas de voz: canais dentro da sala. Só quem está no mesmo canal se conecta e se ouve; '' é a Voz geral.
 // Os nomes são sempre Subsala_N, com N = o maior número que existe + 1 (apagar a última libera o número dela).
+// Modo Líder (docs/spec/modo-lider.md): no máximo uma subsala por sala fala para a sala toda; ela leva modo: 'lider'
+// (a Padrão não leva o campo, e os apps antigos a veem como uma subsala comum).
 const SUBSALAS_MAX = 50;
 function cleanChannel(c) { return /^\d{1,6}$/.test(String(c ?? '')) ? String(c) : ''; }
 function createSubsalas(seed) {
-  const list = (Array.isArray(seed) ? seed : [])
-    .map((x) => cleanChannel(x?.id)).filter(Boolean)
-    .filter((id, i, all) => all.indexOf(id) === i).slice(0, SUBSALAS_MAX)
-    .sort((a, b) => Number(a) - Number(b))
-    .map((id) => ({ id, name: `Subsala_${id}` }));
+  const list = [];
+  for (const x of Array.isArray(seed) ? seed : []) {
+    const id = cleanChannel(x?.id);
+    if (!id || list.some((s) => s.id === id) || list.length >= SUBSALAS_MAX) continue;
+    const sub = { id, name: `Subsala_${id}` };
+    if (x.modo === 'lider' && !list.some((s) => s.modo === 'lider')) sub.modo = 'lider';
+    list.push(sub);
+  }
+  list.sort((a, b) => Number(a.id) - Number(b.id));
   return {
     list,
     has(id) { return !!id && list.some((x) => x.id === id); },
-    create() {
-      if (list.length >= SUBSALAS_MAX) return null;
+    // O canal da subsala Líder ('' sem ela)
+    lider() { return list.find((x) => x.modo === 'lider')?.id || ''; },
+    create(modo = 'padrao') {
+      if (list.length >= SUBSALAS_MAX || (modo === 'lider' && this.lider())) return null;
       const id = String(list.reduce((n, x) => Math.max(n, Number(x.id)), 0) + 1);
       const sub = { id, name: `Subsala_${id}` };
+      if (modo === 'lider') sub.modo = 'lider';
       list.push(sub);
       return sub;
     },
@@ -183,7 +192,9 @@ function handleMemberMessage({ members, broadcast, chat, subsalas = null, musica
     me.deafened = !!msg.session && msg.deafened === true; // fone silenciado: os outros veem na lista da voz
     broadcast(voiceStateOf(id, me));
   } else if (msg.type === 'subsala-create' && subsalas) {
-    if (subsalas.create()) broadcast({ type: 'subsalas', list: subsalas.list });
+    const modo = msg.modo === 'lider' ? 'lider' : 'padrao';
+    if (subsalas.create(modo)) broadcast({ type: 'subsalas', list: subsalas.list });
+    else if (modo === 'lider' && subsalas.lider()) send(me.ws, { type: 'subsala-erro', text: `Já existe uma subsala Líder (Subsala_${subsalas.lider()}).` });
   } else if (msg.type === 'subsala-delete' && subsalas) {
     const sub = cleanChannel(msg.id);
     if (!subsalas.remove(sub)) return;
@@ -268,6 +279,12 @@ function handleMemberMessage({ members, broadcast, chat, subsalas = null, musica
     if (msg.data?.side === 'voice' && (!me.voiceSession ||
         msg.data.session !== me.voiceSession || msg.data.targetSession !== target.voiceSession ||
         !target.voiceSession || (me.voiceChannel || '') !== (target.voiceChannel || ''))) return; // canais diferentes não se ouvem
+    // A voz da Líder (voice.js › LiderAudio): só entre quem fala para a sala toda (na voz, dentro da subsala Líder) e
+    // quem ouve; quem ouve não precisa estar na voz (Ouvir a Líder, sem microfone)
+    if (msg.data?.side === 'lider') {
+      const ch = subsalas?.lider(), fonte = (m) => !!ch && !!m.voiceSession && m.voiceChannel === ch;
+      if (!(msg.data.role === 'ouvir' ? fonte(target) : msg.data.role === 'falar' && fonte(me))) return;
+    }
     send(target.ws, { type: 'signal', from: id, data: msg.data });
   }
 }

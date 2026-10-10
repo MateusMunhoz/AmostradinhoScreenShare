@@ -78,6 +78,22 @@ Antes: a RazzeAPI da VPS com o código novo (links de amigo, conta, atividade e,
 10. **Google** (se ligado na VPS). **Entrar com Google** abre o navegador e volta logado. Com um e-mail que já tem conta com senha,
     deve avisar para entrar com a senha e usar **Vincular Google**.
 
+## Modo Líder (três PCs)
+
+1. **Criar.** No PC A, na voz, clique em **+ Subsala** e escolha **Líder**.
+   Deve acontecer: A entra na subsala nova, com o selo LÍDER. No PC B, o + Subsala mostra o Líder desativado.
+2. **Ouvir de outro canal.** B entra na voz pelo **Entrar** (deve cair na Voz geral, não na Líder). A fala.
+   Deve acontecer: B ouve A; o Seu sinal de B mostra "Ouvindo a Líder" com o volume. B fala: A **não** ouve B.
+   Com o volume da Líder em 0, B deixa de ouvir A.
+3. **Ouvir sem microfone.** O PC C fica fora da voz e clica em **Ouvir** no Seu sinal.
+   Deve acontecer: C ouve A sem o Windows pedir o microfone. **Parar** corta o som.
+4. **Grupo e Líder juntos.** B e C entram numa subsala Padrão e conversam enquanto A fala.
+   Deve acontecer: os dois se ouvem e ouvem A ao mesmo tempo, sem eco.
+5. **Tela.** A transmite com **Só o meu canal** marcado.
+   Deve acontecer: B e C (fora da Líder) conseguem assistir; o selo vira LÍDER · AO VIVO.
+6. **Apagar.** Apague a Líder.
+   Deve acontecer: ninguém ouve mais A de fora, e A volta para a Voz geral.
+
 ## Anotações
 
 | Item | Quem | O que aconteceu |

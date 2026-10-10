@@ -174,6 +174,13 @@
           <div class="rail-music-menu" id="navMusicMenu" role="menu" aria-label="Música" hidden></div>
         </div>
       </div>
+      <!-- Subsala Líder (docs/spec/modo-lider.md): ouvir quem fala para a sala toda e o volume dela (renderLiderLinha) -->
+      <div class="ss-linha ss-lider" id="ssLider" hidden>
+        <span class="ss-lider-icone" id="ssLiderIcone" aria-hidden="true"></span>
+        <span class="ss-lider-texto" id="ssLiderTexto"></span>
+        <input type="range" id="ssLiderVol" class="ss-lider-vol" min="0" max="100" step="5" aria-label="Volume da Líder">
+        <button type="button" class="btn small" id="ssLiderOuvir"></button>
+      </div>
       <div class="ss-linha ss-voz">
         <div class="voice-dock" id="voiceDock" role="group" aria-label="Conversa por voz">
           <div class="voice-avatars" id="voiceAvatars" hidden></div>

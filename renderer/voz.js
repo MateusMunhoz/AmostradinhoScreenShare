@@ -193,11 +193,13 @@ const mixer = {
     for (const id of this.nodes.keys()) this.apply(id);
   },
   apply(id) {
+    // A mesma pessoa pode tocar duas vezes: no seu canal (id) e falando da subsala Líder ('lider:' + id)
+    if (!id.startsWith('lider:')) this.apply('lider:' + id);
     const n = this.nodes.get(id);
     if (!n) return;
-    const v = volOf(id);
-    // O volume da pessoa vezes o volume geral das vozes (Voz e atalhos › Volume das vozes)
-    n.gain.gain.value = this.deafened || v.muted ? 0 : (v.voice / 100) * (voiceCfg.vozes / 100);
+    const lider = id.startsWith('lider:'), v = volOf(lider ? id.slice(6) : id);
+    // O volume da pessoa vezes o volume geral das vozes (Voz e atalhos › Volume das vozes); da Líder, vezes o volume dela
+    n.gain.gain.value = this.deafened || v.muted ? 0 : (v.voice / 100) * (voiceCfg.vozes / 100) * (lider ? liderVolume / 100 : 1);
   },
   level(an) {
     const buf = new Float32Array(an.fftSize);
@@ -224,8 +226,9 @@ function tickSpeak() {
   };
   // Com o fone mutado (ou a pessoa silenciada / no 0% para você), ela não aparece falando: você não está ouvindo
   const unheard = (id) => { const v = volOf(id); return voice.deafened || v.muted || v.voice === 0 || voiceCfg.vozes === 0; };
-  for (const [id, n] of mixer.nodes) {
-    if (unheard(id)) { lastLoud.delete(id); continue; }
+  for (const [key, n] of mixer.nodes) {
+    const daLider = key.startsWith('lider:'), id = daLider ? key.slice(6) : key; // a voz da subsala Líder acende a mesma pessoa
+    if (unheard(id) || (daLider && liderVolume === 0)) { lastLoud.delete(id); continue; }
     check(id, n.an, voice.members.get(id)?.muted);
   }
   if (mixer.localNode && state.myId) check(state.myId, mixer.localNode.an, voice.muted);
@@ -250,8 +253,17 @@ const inVoice = (id) => (id === state.myId ? !!voice.session : !!voice.members.g
 
 // Entrar e sair da voz: o som toca para você mesmo e, de quem mais, só se você estiver na voz (quem só está
 // na sala, assistindo, não precisa ouvir cada entrada e saída da conversa)
-const voice = new VoiceChat({ send, changed: renderVoice, error: message => toast(message, 'error'), mixer,
+const voice = new VoiceChat({ send, changed: () => { lider.sync(); renderVoice(); }, error: message => toast(message, 'error'), mixer,
   activity: (event, id) => { if (id === voice.id || voice.session) void appSounds.play(event); } });
+// A voz da subsala Líder para a sala toda (voice.js › LiderAudio; o canal dela vem de setSubsalas, em subsalas.js)
+const lider = new LiderAudio({ voice, send, mixer, changed: () => scheduleVoiceLists() });
+// Volume das vozes da Líder (0 a 100%), separado do volume de cada pessoa; fica salvo neste PC
+let liderVolume = Math.max(0, Math.min(100, Number(load('liderVolume', '100')) || 0));
+function setLiderVolume(v) {
+  liderVolume = Math.max(0, Math.min(100, Math.round(Number(v) || 0)));
+  save('liderVolume', String(liderVolume));
+  for (const key of mixer.nodes.keys()) if (key.startsWith('lider:')) mixer.apply(key);
+}
 // Mutar e desmutar o seu microfone tocam som (o botão ou o atalho; o apertar para falar não). O fone tem o som
 // dele; quando o fone muda, o microfone muda junto e toca só o som do fone.
 let voiceWasMuted = false, voiceWasDeafened = false;
@@ -370,7 +382,7 @@ function renderVoiceAvatars(onlyIfChanged = false) {
 }
 
 // ---------- Entrar na voz (fora dela): as bolinhas de quem já está conversando e "Entrar" ----------
-// Sem ninguém, fica "Voz". Entrar vai para o canal com mais gente (empate: a Voz geral). Com subsalas e gente em mais
+// Sem ninguém, fica "Voz". Entrar vai para o canal com mais gente (empate: a Voz geral; nunca a subsala Líder). Com subsalas e gente em mais
 // de um canal, a setinha ao lado abre a lista desses canais (voiceJoinPop) para escolher onde entrar.
 function voiceBusyChannels() {
   if (!subsalasOn()) {
@@ -379,8 +391,9 @@ function voiceBusyChannels() {
   }
   return ['', ...state.subsalas.map((x) => x.id)].map((ch) => ({ ch, ids: voiceIdsIn(ch).filter(Boolean) })).filter((c) => c.ids.length);
 }
+// A subsala Líder nunca é o destino do Entrar: lá a pessoa falaria para a sala toda (só entra nela escolhendo)
 function voiceJoinTarget() {
-  const busy = voiceBusyChannels();
+  const busy = voiceBusyChannels().filter((c) => !c.ch || c.ch !== liderChannel());
   return busy.reduce((best, c) => (c.ids.length > best.ids.length ? c : best), busy[0] || { ch: '', ids: [] });
 }
 function voiceFaces(ids) {
