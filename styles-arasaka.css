@@ -14,7 +14,7 @@
 :root[data-skin="arasaka"] ::selection { background: var(--accent); color: #000; }
 
 /* Cantos retos em tudo o que é caixa (a bolinha das pessoas continua redonda) */
-:root[data-skin="arasaka"] :is(.btn, .dock, .tile, .dialog, .workspace-pane, .panel, .home-card, .theme-card, .person-card,
+:root[data-skin="arasaka"] :is(.btn, .seu-sinal, .pane-tabs, .room-menu, .tile, .dialog, .workspace-pane, .panel, .home-card, .theme-card, .person-card,
   .tile-chip, .toast, .workspace-tab, .dock-more-menu, .voice-more-menu, input, textarea, select, .seg, .seg label,
   .live-chip, .file-card, .chat-staged, .image-viewer button, .pc-photo-btn, .home-pop, .session, .theme-swatches,
   .seg > *, .seg button, .members li, .mention-pop, .people-pop, .skin-card, .skin-preview, .sky-focus, .sky-move-menu,
@@ -27,7 +27,7 @@
 :root[data-skin="arasaka"] .rail-music-head strong { text-transform: uppercase; letter-spacing: .14em; font-size: 12px; color: var(--accent); }
 
 /* Colchete vermelho no canto de cima dos painéis, como a mira da referência */
-:root[data-skin="arasaka"] :is(.dock, .workspace-pane, .panel, .home-card, .dialog) { background: var(--bracket), var(--panel); }
+:root[data-skin="arasaka"] :is(.seu-sinal, .pane-tabs, .room-menu, .workspace-pane, .panel, .home-card, .dialog) { background: var(--bracket), var(--panel); }
 :root[data-skin="arasaka"] .dialog { background: var(--bracket), var(--bg); }
 
 /* Telas: o canto de cima à esquerda cortado, com a linha do corte */

@@ -48,7 +48,7 @@ run('Voz e atalhos nas Configurações', 60000, async () => {
   check('A transmissão continua do mesmo tamanho', depois.left === areaAntes.left && depois.width === areaAntes.width, JSON.stringify(depois));
 
   // Divisória entre o chat e a voz: puxar tudo para cima para no mínimo do chat (o campo de escrever continua inteiro)
-  await A.eval(`(() => { if (!workspaceViews.chat) $('navChat').click(); if (!workspaceViews.voice) $('navVoice').click(); })()`);
+  await A.eval(`(() => { $('navChat').click(); if (!painelSala.juntos) $('paneJuntos').click(); })()`);
   await sleep(300);
   await A.waitFor(`!!document.querySelector('.pane-split') && getComputedStyle(document.querySelector('.pane-split')).display !== 'none'`, 5000);
   await A.eval(`(() => { const bar = document.querySelector('.pane-split'); for (let i = 0; i < 30; i++) bar.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true })); })()`);

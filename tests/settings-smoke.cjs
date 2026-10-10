@@ -26,7 +26,7 @@ app.whenReady().then(async()=>{
       await check('Seleção de painéis persiste',`workspaceViews.voice===false && workspaceViews.chat===true && workspaceViews.streams===true`);
     } else {
       await run(`window.navBefore=$('workspaceNav').getBoundingClientRect().toJSON();void 0;`);
-      await check('Perfil e engrenagem disponíveis fora da sala',`!$('navProfile').hidden && !$('navSettings').hidden && $('navChat').hidden && $('navVoice').hidden && $('navStreams').hidden`);
+      await check('Perfil e engrenagem disponíveis fora da sala',`!$('navProfile').hidden && !$('navSettings').hidden && $('workspacePanes').hidden && !$('workspaceNav').contains($('navChat')) && !$('workspaceNav').contains($('navStreams'))`);
       await check('Sem HUB: conta no Perfil, rede nas Configurações, amigos no envelope', `!$('hubRail') && $('profilePane').contains($('razzeAuth')) && $('generalSettingsDialog').contains($('settingsPanel-network')) && $('settingsPanel-network').contains($('connectionMap')) && !$('settingsPanel-network').contains($('razzeAuth')) && $('dmPanel').contains($('dmFriends')) && $('dmFriends').contains($('razzeFriends'))`);
       await check('Amigos sem conta leva ao login no Perfil', `(() => {const ok = openFriendsDialog() === false && !$('profilePane').hidden && $('dmPanel').hidden;closeProfilePopup();return ok && $('profilePane').hidden;})()`);
       await check('Sem servidor Razze, o Perfil leva a Configurações › Rede', `(() => {openProfilePopup();$('profileOpenNetwork').hidden=false;$('profileOpenNetwork').click();const ok = $('profilePane').hidden && !$('generalSettingsDialog').hidden && !$('settingsPanel-network').hidden && settingsTabNow==='network';closeGeneralSettings();return ok;})()`);
@@ -117,18 +117,22 @@ app.whenReady().then(async()=>{
       await run(`$('navSettings').click()`);
       await check('Configurações acessíveis na sala',`!$('generalSettingsDialog').hidden`);
       await run(`closeGeneralSettings();void 0;`);
-      for(let mask=0;mask<8;mask++) {
-        await run(`for(const [id,on] of [['navChat',${!!(mask&1)}],['navVoice',${!!(mask&2)}],['navStreams',${!!(mask&4)}]])if(($(id).getAttribute('aria-pressed')==='true')!==on)$(id).click();`);
-        await check('Painéis independentes, combinação '+mask,`$('chatTab').hidden===${!(mask&1)} && $('voicePane').hidden===${!(mask&2)} && $('streamArea').hidden===${!(mask&4)} && document.documentElement.scrollWidth<=innerWidth`);
+      // Abas do painel (docs/spec/sala-nova.md): Voz, Chat, Pessoas, lado a lado e recolhido (as telas sempre à vista)
+      for (const [aba, juntos, recolhido, chat, voz] of [['voz',false,false,false,true],['chat',false,false,true,false],['pessoas',false,false,false,false],
+        ['voz',true,false,true,true],['chat',true,false,true,true],['voz',false,true,false,false]]) {
+        await run(`setPainelSala({ aba: '${aba}', juntos: ${juntos}, recolhido: ${recolhido} })`);
+        await check(`Painel: aba ${aba}${juntos ? ', lado a lado' : ''}${recolhido ? ', recolhido' : ''}`,
+          `$('chatTab').hidden===${!chat} && $('voicePane').hidden===${!voz} && $('peoplePop').hidden===${aba !== 'pessoas' || recolhido} && $('workspacePanes').hidden===${recolhido} && $('seuSinalMini').hidden===${!recolhido} && !$('streamArea').hidden && document.documentElement.scrollWidth<=innerWidth`);
       }
+      await run(`setPainelSala({ aba: 'voz', juntos: true, recolhido: false })`);
       // Perfil e configurações são janelas por cima: abrir uma fecha a outra; os painéis da sala continuam
       await run(`openProfilePopup();openGeneralSettings();`);
       await check('Configurações abrem por cima, fecham o perfil e mantêm os painéis',`$('profilePane').hidden && !$('generalSettingsDialog').hidden && !$('chatTab').hidden && !$('voicePane').hidden && !$('streamArea').hidden`);
-      await run(`closeGeneralSettings();$('navVoice').click();`);
+      await run(`closeGeneralSettings();$('navChat').click();if(painelSala.juntos)$('paneJuntos').click();`);
       win.setSize(1600,950);await new Promise(r=>setTimeout(r,250));
       fs.writeFileSync(path.join(root,'.test-profile','workspace-room.png'),(await win.webContents.capturePage()).toPNG());
       await run(`leaveRoom();void 0;`);
-      await check('Saída oculta painéis da sala e mantém navegação global',`$('navChat').hidden && $('navVoice').hidden && $('navStreams').hidden && !$('navProfile').hidden && !$('navSettings').hidden && $('chatTab').hidden && $('voicePane').hidden`);
+      await check('Saída oculta painéis da sala e mantém navegação global',`$('workspacePanes').hidden && $('seuSinalMini').hidden && !$('navProfile').hidden && !$('navSettings').hidden && $('chatTab').hidden && $('voicePane').hidden`);
       win.webContents.session.flushStorageData();
     }
     assert.deepEqual(errors,[],'Erros no renderer');

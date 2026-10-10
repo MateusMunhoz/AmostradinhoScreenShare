@@ -425,28 +425,17 @@ document.addEventListener('pointerdown', (e) => { if ($('shareOpenMenu') && !e.t
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && $('shareOpenMenu')) { toggleShareOpenMenu(false); $('shareOpenBtn').focus(); } });
 $('refreshSources').onclick = loadSources;
 $('refreshApps').onclick = loadAudioApps;
-// Ícone das Estatísticas, na sala ao lado de Sair da sala
+// Desempenho, no menu da sala: o ícone das Estatísticas com o nome
 setIcon($('openStatsRoom'), 'stats', 'Estatísticas: desempenho do PC e a transmissão de cada pessoa');
+$('openStatsRoom').append(rotuloMenu('Desempenho'));
 $('openStatsRoom').onclick = openStats;
 $('selfViewBtn').onclick = toggleSelfView;
 
 // Chat
-$('chatToggle').insertAdjacentHTML('afterbegin', ICON.chat);
-$('chatToggle').onclick = () => setPanelOpen(!chat.open);
-// A lista abre por cima do chat e da voz: com os dois fechados, o chat abre junto
-$('peopleBtn').onclick = () => {
-  if ($('workspacePanes').hidden) setPanelOpen(true);
-  setPeopleOpen($('peoplePop').hidden);
-};
-// Clicar fora da lista fecha (o cartão de volume, que abre de dentro dela, conta como dentro)
+// Clicar fora fecha os balões da voz (o cartão de volume, que abre de dentro deles, conta como dentro)
 document.addEventListener('mousedown', (e) => {
   if ($('voiceStackPop') && !e.target.closest('#voiceStackPop, #voiceAvatars, #personCard')) closeVoiceStackPop();
   if ($('voiceJoinPop') && !e.target.closest('#voiceJoinPop, #voiceJoinMore')) closeVoiceJoinPop();
-});
-document.addEventListener('mousedown', (e) => {
-  if ($('peoplePop').hidden) return;
-  if (e.target.closest('#peoplePop, #peopleBtn, #personCard')) return;
-  setPeopleOpen(false);
 });
 $('chatJump').onclick = () => { scrollChatToEnd(); markRead(); };
 $('chatList').addEventListener('scroll', () => { if (chatAtBottom() && chat.open && !document.hidden && !mapFocus.on) markRead(); else renderUnread(); });
@@ -497,7 +486,6 @@ document.addEventListener('keydown', (e) => {
   else if (!$('dmPanel').hidden) { setDmPanel(false); $('dmBarLabel').focus(); }
   else if (!$('dmMoreMenu').hidden) { setDmMore(false); $('dmMore').focus(); }
   else if (!$('musicPop').hidden) closeMusicPop();
-  else if (!$('peoplePop').hidden) { setPeopleOpen(false); $('peopleBtn').focus(); }
   else if (!$('closeDialog').hidden) closeCloseDialog();
   else if (!$('shareDialog').hidden) closeShareDialog();
   else if (state.focus && !document.fullscreenElement) setFocus(null);
@@ -514,7 +502,6 @@ setupAmigos();
 setupDm();
 setupWorkspace();
 startClips();
-watchDock();
 setupGeneralSettings();
 setupComandoVoz();
 setupPhone();

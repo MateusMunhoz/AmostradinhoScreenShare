@@ -1,6 +1,7 @@
 # Sala nova: cada coisa no seu lugar
 
-Status: Proposta (09/10/2026, branch `sala-nova`, a partir de `inicio-novo`). Só interface: não mexe em servidor, IPC,
+Status: Implementada em 09/10/2026 (branch `sala-nova`, a partir de `inicio-novo`), com as sugestões das decisões
+(sem palavras temáticas); falta o teste numa call de verdade. Só interface: não mexe em servidor, IPC,
 protocolo da sala nem `boot.js`.
 Desenho: a quarta proposta da conversa ("console estelar"): cabeçalho da sala, palco, painel com abas e o cartão "Seu
 sinal" fixo embaixo do painel.
@@ -130,19 +131,30 @@ Checklist: tudo isto continua funcionando depois da mudança.
 | `workspaceEmpty` ("Escolha os painéis...") | Sai: o palco está sempre lá e o painel tem sempre uma aba |
 | `navProfile`, `dockHome`, `navBackToRoom`, `navUpdate`, `navGamer`, `overlayToggle`, `navFeedback`, `navSettings` | Barrinha, sem mudança |
 
-## Decisões (preciso de você)
+## Decisões (aprovadas: as sugestões, sem palavras temáticas)
 1. **Ver Voz e Chat ao mesmo tempo** (hoje dá, ligando os dois na barrinha).
    - Sugestão: abas + "abrir ao lado" na aba Chat (Voz em cima, Chat embaixo).
    - Alternativa: sem divisão; uma aba por vez.
 2. **Palavras temáticas** ("5 a bordo", "Capitão", "Nova órbita", "fora da órbita").
-   - Sugestão: só em rótulo que não é botão ("a bordo", "Capitão"); botões e abas com texto claro.
-   - Alternativa: nenhuma palavra temática.
+   - Escolhido: nenhuma palavra temática; o tema fica só na decoração.
 3. **Sair da sala**.
    - Sugestão: "Sair" no cabeçalho e também no fim do menu da sala.
    - Alternativa: só no menu da sala (mais discreto, um clique a mais).
 4. **Ordem de entrega**.
    - Sugestão: um PR com tudo, mantendo os ids de hoje nos botões novos (ver Restrições), para não ficar meio a meio.
    - Alternativa: dois PRs (1: cabeçalho, menu da sala e barrinha só do app; 2: abas e cartão "Seu sinal").
+
+## O que mudou do plano na implementação
+- "Lado a lado" é um ícone à direita das abas (não dentro da aba Chat); quem já usava chat e voz juntos começa lado a
+  lado. Recolher é o ícone ao lado.
+- "Sua transmissão" (quem assiste, codificador) continua na aba Pessoas, embaixo da lista, e não na dica do chip ao vivo.
+- As bolinhas de quem está na voz saíram da barra (a aba Voz mostra quem está); o `voiceAvatars` continua no HTML,
+  escondido. O Entrar e o Voz e atalhos do painel de voz também (ficam só no cartão).
+- "Esconder as telas" (o antigo Transmissão da barrinha, `navStreams`) chegou a virar item do menu da sala, mas saiu
+  na avaliação porque bagunçava o visual: as telas ficam sempre à vista (quem tinha escondido volta a ver).
+- A engrenagem da barra de baixo (`openGeneralSettingsRoom`) e o balão do chat (`chatToggle`) saíram: estão na
+  barrinha e nas abas. O "…" da janela estreita também: o cabeçalho enxuga em etapas (`fitRoomHead`).
+- Os avisos (toast) descem para não cobrir o cabeçalho da sala.
 
 ## Mudanças
 - `index.html`: cabeçalho da sala (`roomHead`, `roomMenu`) em cima do palco; o `pp-addr` se muda para o menu; abas no

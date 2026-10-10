@@ -18,7 +18,7 @@ run('Assistir pelo painel Voz', 90000, async () => {
   const anaId = await A.eval('state.myId');
   const B = await openApp('vaB', 9542, { fake: true });
   await joinRoom(B, { name: 'Bia', addr: '127.0.0.1:18831' });
-  await B.eval(`(() => { workspaceViews.voice = true; saveWorkspaceViews(); syncWorkspace(); })()`);
+  await B.eval(`setPainelSala({ aba: 'voz', juntos: false, recolhido: false })`);
   await B.waitFor(`!!${ROW(anaId)}`, 5000);
   check('Ana transmite fora da voz: aparece em "Transmitindo, fora da voz"', await B.eval(`$('voicePaneMembers').querySelector('.members-sub')?.textContent === 'Transmitindo, fora da voz'`));
   const btn = `[...${ROW(anaId)}.querySelectorAll('button')].find((b) => /Assistir|Parar/.test(b.textContent))`;

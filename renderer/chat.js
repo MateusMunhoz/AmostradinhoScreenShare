@@ -25,25 +25,18 @@ const chat = {
 };
 
 
-// Painel (endereço, pessoas e chat) aberto ou recolhido pelo balão da barra
+// Abrir ou fechar o chat (avisos, arquivo na bandeja, "Abrir o chat"): abre na aba Chat (lado a lado, a Voz fica
+// junto); fechar volta para a Voz, ou recolhe o painel se o chat estava sozinho (painelSala, navegacao.js)
 function setPanelOpen(open) {
-  chat.open = open;
-  save('panelOpen', open ? '1' : '0');
-  workspaceViews.chat = open;
-  saveWorkspaceViews();
-  syncWorkspace();
-  $('chatToggle').setAttribute('aria-pressed', String(open));
-  if (open && chatAtBottom()) markRead();
-  renderUnread();
-  renderVoiceAvatars();
-  closePersonCard();
-  setPeopleOpen(false);
+  if (open) setPainelSala({ recolhido: false, aba: painelSala.juntos && painelSala.aba === 'voz' ? 'voz' : 'chat' });
+  else if (!workspaceViews.chat) setPainelSala();
+  else setPainelSala(painelSala.juntos ? { juntos: false, aba: 'voz' } : { recolhido: true });
 }
 
-// Lista de pessoas: abre pelo botão no topo do chat, por cima das mensagens
+// Aba Pessoas: a lista no lugar do chat e da voz (quem decide é syncWorkspace, pela aba aberta)
 function setPeopleOpen(open) {
+  if ($('peoplePop').hidden === !open) return;
   $('peoplePop').hidden = !open;
-  $('peopleBtn').setAttribute('aria-expanded', String(open));
   if (!open) closePersonCard();
   if (!open && typeof skyFocusFrom !== 'undefined' && skyFocusFrom === 'pessoas') closeSkyProfile();
 }
@@ -68,16 +61,11 @@ function renderUnread() {
   const n = chat.unread;
   $('navUnread').hidden = !n;
   $('navUnread').textContent = n > 99 ? '99+' : String(n);
-  $('chatUnread').hidden = !n;
-  $('chatUnread').textContent = n > 99 ? '99+' : String(n);
   $('chatFoldUnread').hidden = !n; // chat recolhido: as novas no título (setupPaneFold)
   $('chatFoldUnread').textContent = n === 1 ? '1 nova' : `${n > 99 ? '99+' : n} novas`;
   $('mapChatUnread').hidden = !n;
   $('mapChatUnread').textContent = n === 1 ? '1 nova' : `${n > 99 ? '99+' : n} novas`;
-  const label = chat.open ? 'Recolher o painel da sala'
-    : n ? `Abrir o chat (${n} ${n === 1 ? 'mensagem nova' : 'mensagens novas'})` : 'Abrir o painel da sala e o chat';
-  $('chatToggle').title = label;
-  $('chatToggle').setAttribute('aria-label', label);
+  $('navChat').title = n ? `Chat · ${n} ${n === 1 ? 'mensagem nova' : 'mensagens novas'}` : 'Chat';
   $('chatJump').hidden = !n || !chat.open || chatAtBottom();
   if (typeof renderHomeCall === 'function') renderHomeCall(); // o Voltar conta as novas
 }
@@ -101,7 +89,7 @@ function resetChat(welcome) {
   clearStaged(); // sala nova: nada da bandeja da sala anterior
   $('chatSend').disabled = !chat.supported || !$('chatInput').value.trim();
   for (const m of (welcome && welcome.chat) || []) appendMessage(m, false);
-  setPanelOpen(workspaceViews.chat);
+  setPainelSala();
   requestAnimationFrame(scrollChatToEnd);
 }
 

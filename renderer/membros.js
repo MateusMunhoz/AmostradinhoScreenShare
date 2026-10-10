@@ -189,14 +189,27 @@ function renderMembers() {
   repaintAllAvatars(); // entrou ou saiu alguém: a cor da estrela de quem não tem foto segue a ordem da sala
 }
 
+// Palco vazio: a constelação de sempre e, embaixo, quem está transmitindo com o Assistir de cada um (o mesmo do
+// painel da voz e da aba Pessoas)
 function updateStage() {
-  const othersSharing = [...state.members.values()].some((m) => m.sharing);
+  const live = [...state.members].filter(([, m]) => m.sharing).map(([id]) => id);
   $('emptyStage').hidden = state.in.size > 0;
   $('tiles').hidden = state.in.size === 0;
-  $('emptyText').textContent = othersSharing
-    ? 'Clique em Assistir ao lado de quem está transmitindo.'
-    : state.sharing
-      ? 'Você está transmitindo.'
-      : 'Ninguém está transmitindo agora.';
+  $('emptyText').textContent = live.length ? 'Transmitindo agora'
+    : state.sharing ? 'Você está transmitindo.' : 'Ninguém está transmitindo agora.';
+  $('emptyText').classList.toggle('empty-rotulo', live.length > 0);
+  const box = $('emptyLive');
+  box.replaceChildren();
+  for (const id of live) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'btn primary empty-assistir';
+    b.innerHTML = ICON.play;
+    b.append(`Assistir ${nameOf(id)}`);
+    if (!canWatch(id)) { b.disabled = true; b.title = closedShareText(id); }
+    b.onclick = () => watch(id);
+    box.append(b);
+  }
+  box.hidden = !live.length;
   if (!state.in.size) $('downloadInfo').textContent = '';
 }

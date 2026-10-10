@@ -45,7 +45,7 @@
 }
 
 /* ---------- Painéis: nogueira escura com um filete de ouro em cima ---------- */
-:root[data-skin="renascenca"] :is(.workspace-pane, .dock, .panel, .dialog, .sky-focus.sky-pop, .rail-music-menu, #workspaceNav) {
+:root[data-skin="renascenca"] :is(.workspace-pane, .seu-sinal, .pane-tabs, .room-menu, .panel, .dialog, .sky-focus.sky-pop, .rail-music-menu, #workspaceNav) {
   box-shadow: inset 0 1px 0 rgba(232, 200, 115, .35), 0 12px 32px rgba(10, 6, 2, .5);
 }
 :root[data-skin="renascenca"] :is(.pane-head h2, .chat-title, .stream-pane-head h2, .dialog h2, .settings-section h3) {

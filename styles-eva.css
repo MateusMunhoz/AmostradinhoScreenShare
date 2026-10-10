@@ -42,7 +42,7 @@
 :root[data-skin="eva"] :is(.btn, .tile, .dialog, .workspace-pane, .panel, .home-card, .person-card, .tile-chip, .toast,
   .workspace-tab, .dock-more-menu, .voice-more-menu, input, textarea, select, .seg, .seg label, .seg button, .file-card,
   .chat-staged, .home-pop, .session, .members li, .mention-pop, .people-pop, .select-pop) { border-radius: 2px !important; }
-:root[data-skin="eva"] :is(.home-card, .dock, .workspace-pane, .panel, .dialog) {
+:root[data-skin="eva"] :is(.home-card, .seu-sinal, .pane-tabs, .room-menu, .workspace-pane, .panel, .dialog) {
   background: var(--eva-marks), linear-gradient(180deg, rgba(107, 63, 160, .20), transparent 140px), var(--panel);
   border-color: var(--line); box-shadow: inset 0 2px 0 var(--accent), 0 14px 34px rgba(0, 0, 0, .45);
 }
@@ -78,7 +78,7 @@
 :root[data-skin="eva"] .btn:not(.primary):not(.live):not(.danger) { border-color: var(--line); box-shadow: none; }
 :root[data-skin="eva"] .btn:not(.primary):not(.live):not(.danger):hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
 /* Sair, encerrar e parar: a faixa de perigo embaixo */
-:root[data-skin="eva"] :is(.btn.danger, #workspaceNav .rail-leave) {
+:root[data-skin="eva"] :is(.btn.danger, .room-head .room-leave, .room-menu-item.danger) {
   border-image: repeating-linear-gradient(-45deg, var(--warn) 0 6px, #000 6px 12px) 0 0 3 0 / 0 0 3px 0;
 }
 :root[data-skin="eva"] .workspace-tab[aria-pressed=true], :root[data-skin="eva"] .workspace-tab[aria-expanded=true] {

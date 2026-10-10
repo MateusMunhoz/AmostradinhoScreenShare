@@ -30,23 +30,17 @@
   <header class="workspace-header">
     <span class="workspace-brand">Nebula <span id="workspaceContext">Início</span></span>
     <nav id="workspaceNav" aria-label="Painéis do aplicativo">
-      <!-- Em cima: o perfil; separados por uma linha, as pessoas da sala, Chat, Voz, Transmissão e a música que você
-           ouve. No pé: Início e Sair (no menu, Voltar para a sala) e, depois de outra linha, a engrenagem -->
+      <!-- Só o que é do app: o perfil em cima; no pé, Início (ou Voltar para a sala), o chat por cima do jogo, o modo
+           gamer, Feedback e a engrenagem. É a mesma dentro e fora da sala (docs/spec/sala-nova.md) -->
       <button id="navProfile" type="button" class="workspace-tab profile-tab" aria-label="Seu perfil" title="Seu perfil" aria-haspopup="dialog" aria-expanded="false" aria-controls="profilePane"><span id="navProfileAvatar" aria-hidden="true"></span></button>
       <span class="nav-sep" aria-hidden="true"></span>
-      <!-- Pessoas na sala: o total e a bolinha verde de quem fala; abre a lista por cima do chat -->
-      <button class="workspace-tab rail-people" id="peopleBtn" type="button" aria-expanded="false" aria-controls="peoplePop" hidden>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5a6.5 6.5 0 0 1 3.5 5.5"/></svg>
-        <span id="memberCount">1</span>
-        <span class="people-speak" id="peopleSpeak" title="Alguém está falando" hidden></span>
-      </button>
-      <button id="navChat" type="button" class="workspace-tab room-tab" aria-pressed="true" aria-controls="chatTab" hidden><span class="nav-icon" aria-hidden="true"></span><span>Chat</span><span id="navUnread" class="unread" hidden></span></button>
-      <button id="navVoice" type="button" class="workspace-tab room-tab" aria-pressed="true" aria-controls="voicePane" hidden><span class="nav-icon" aria-hidden="true"></span><span>Voz</span></button>
-      <button id="navStreams" type="button" class="workspace-tab room-tab" aria-pressed="true" aria-controls="streamArea" hidden><span class="nav-icon" aria-hidden="true"></span><span>Transmissão</span></button>
-      <!-- Música que você está ouvindo (renderer/musica.js): clicar abre Pausar/Continuar e Sair -->
-      <div class="rail-music" id="navMusicWrap" hidden>
-        <button id="navMusic" type="button" class="workspace-tab" aria-haspopup="menu" aria-expanded="false" aria-controls="navMusicMenu"></button>
-        <div class="rail-music-menu" id="navMusicMenu" role="menu" aria-label="Música" hidden></div>
+      <!-- Painel da sala recolhido: a sua voz e o Transmitir vêm para cá; o primeiro botão abre o painel de novo -->
+      <div id="seuSinalMini" class="seu-sinal-mini" role="group" aria-label="Sua voz e sua transmissão" hidden>
+        <button id="paneExpand" type="button" class="workspace-tab"></button>
+        <button id="miniMute" type="button" class="workspace-tab" aria-pressed="false" hidden></button>
+        <button id="miniDeafen" type="button" class="workspace-tab" aria-pressed="false" hidden></button>
+        <button id="miniVoice" type="button" class="workspace-tab"></button>
+        <button id="miniShare" type="button" class="workspace-tab"></button>
       </div>
       <span class="nav-space" aria-hidden="true"></span>
       <!-- Versão nova (renderer/atualizacao.js): fora do Início, leva ao painel da atualização no topo do Início -->
@@ -60,14 +54,9 @@
       <!-- Chat por cima do jogo (renderer/overlay.js): só na sala -->
       <button id="overlayToggle" type="button" class="workspace-tab rail-overlay" aria-pressed="false"></button>
       <button id="navGamer" type="button" class="workspace-tab rail-gamer" aria-label="Modo gamer" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 11h4M8 9v4M15 12h.01M18 10h.01M17.3 5H6.7a4 4 0 0 0-4 3.6l-.9 7.8A2.5 2.5 0 0 0 6.2 18l1.6-1.6a2 2 0 0 1 1.4-.4h5.6a2 2 0 0 1 1.4.4l1.6 1.6a2.5 2.5 0 0 0 4.4-1.6l-.9-7.8a4 4 0 0 0-4-3.6z"/></svg></button>
-      <!-- Voz e atalhos (microfone, supressão de ruído, teclas): ícone ao lado da engrenagem (renderer/voz.js) -->
-      <button id="voiceSettingsBtn" type="button" class="workspace-tab"></button>
       <!-- Feedback e bugs (renderer/feedback.js): abre a janela de perguntas, que vai para a RazzeAPI -->
       <button id="navFeedback" type="button" class="workspace-tab" aria-label="Feedback e bugs" title="Feedback e bugs" aria-haspopup="dialog" aria-expanded="false" aria-controls="feedbackDialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M12 7v4M12 14h.01"/></svg></button>
       <button id="navSettings" type="button" class="workspace-tab settings-tab" aria-label="Configurações" title="Configurações" aria-haspopup="dialog" aria-expanded="false" aria-controls="generalSettingsDialog"><span class="nav-icon" aria-hidden="true"></span></button>
-      <!-- Sair da sala: por último, separado do Início e dos ajustes, em vermelho -->
-      <span class="nav-sep rail-leave-sep" aria-hidden="true"></span>
-      <button id="leaveBtn" type="button" class="workspace-tab rail-leave" hidden></button>
     </nav>
   </header>
   <aside id="workspacePanes" aria-label="Painéis selecionados" hidden>
@@ -142,10 +131,20 @@
       </div>
       </div>
     </section>
+    <!-- Abas do painel da sala: Voz, Chat e Pessoas. "Lado a lado" junta Voz e Chat (com a divisória de sempre);
+         recolher esconde o painel e a sua voz vai para a barrinha (renderer/navegacao.js: painelSala) -->
+    <div id="paneTabs" class="pane-tabs" role="group" aria-label="Painel da sala">
+      <button id="navVoice" type="button" class="pane-tab" aria-pressed="true" aria-controls="voicePane"><span class="pane-tab-star" aria-hidden="true">✦</span><span>Voz</span></button>
+      <button id="navChat" type="button" class="pane-tab" aria-pressed="false" aria-controls="chatTab"><span class="pane-tab-star" aria-hidden="true">✦</span><span>Chat</span><span id="navUnread" class="unread" hidden></span></button>
+      <button id="peopleBtn" type="button" class="pane-tab" aria-pressed="false" aria-controls="peoplePop"><span class="pane-tab-star" aria-hidden="true">✦</span><span>Pessoas</span><span id="memberCount" class="pane-tab-n">1</span><span class="people-speak" id="peopleSpeak" title="Alguém está falando" hidden></span></button>
+      <span class="pane-tabs-space"></span>
+      <button id="paneJuntos" type="button" class="btn icon small ghost pane-tabs-btn" aria-pressed="false"></button>
+      <button id="paneRecolher" type="button" class="btn icon small ghost pane-tabs-btn"></button>
+    </div>
     <!-- Mapa em foco (renderer/ceu-voz.js): o chat encolhe e fica só esta faixa; clicar traz o chat de volta -->
     <button id="mapChatStrip" class="map-chat-strip" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Chat escondido enquanto você olha o mapa</span><span id="mapChatUnread" class="map-chat-unread" hidden></span></button>
     <section id="voicePane" class="workspace-pane" aria-labelledby="voicePaneTitle" hidden>
-      <div class="pane-head"><h2 id="voicePaneTitle">Chat de voz</h2><div class="voice-view" role="group" aria-label="Como ver a voz"><button id="voiceViewList" type="button" title="Lista: canais e pessoas em linhas" aria-label="Lista"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><button id="voiceViewMap" type="button" title="Mapa: canais como sóis e pessoas como planetas" aria-label="Mapa"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0zM5 7.6c1.5.2 2.3 1.2 2.1 2.4-.2 1.3.9 1.9 1.9 2.4 1 .6.8 2-.3 2.4-1 .4-1.4 1.4-1 2.5M14.2 3.4c-.7 1.2-.2 2.4 1 2.9 1.3.5 2 1.4 1.4 2.6M20.8 13.4c-1.3-.5-2.7.1-3.1 1.3-.4 1.3-1.5 1.8-2.6 1.5"/></svg></button></div><button id="mapPin" class="btn small icon map-pin" type="button" aria-pressed="false" hidden></button></div>
+      <div class="pane-head"><h2 id="voicePaneTitle">Chat de voz</h2><div class="voice-view" role="group" aria-label="Como ver a voz"><button id="voiceViewList" type="button" title="Lista: canais e pessoas em linhas" aria-label="Lista"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span>Lista</span></button><button id="voiceViewMap" type="button" title="Mapa: canais como sóis e pessoas como planetas" aria-label="Mapa"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0zM5 7.6c1.5.2 2.3 1.2 2.1 2.4-.2 1.3.9 1.9 1.9 2.4 1 .6.8 2-.3 2.4-1 .4-1.4 1.4-1 2.5M14.2 3.4c-.7 1.2-.2 2.4 1 2.9 1.3.5 2 1.4 1.4 2.6M20.8 13.4c-1.3-.5-2.7.1-3.1 1.3-.4 1.3-1.5 1.8-2.6 1.5"/></svg><span>Mapa</span></button></div><button id="mapPin" class="btn small icon map-pin" type="button" aria-pressed="false" hidden></button></div>
       <p id="voicePaneStatus" class="hint"></p>
       <!-- Céu da voz: cada canal é um sol e quem está nele orbita como planeta. Na visão Mapa, fica grande no lugar da lista (renderer/ceu-voz.js) -->
       <div id="voiceSkyBox" class="voice-sky-box" hidden>
@@ -162,6 +161,51 @@
       <ul id="voicePaneMembers" class="members"></ul>
       <!-- Fora da voz: Entrar. Na voz: faixa de controles embaixo da lista (microfone, fone, Voz e atalhos | Sair da voz) -->
       <div class="pane-voice-actions"><button id="paneVoiceSettings" class="btn small icon" type="button" hidden></button><button id="paneVoiceJoin" class="btn primary small" type="button">Entrar na voz</button><button id="paneVoiceSubsala" class="btn small pane-subsala" type="button" title="Criar uma subsala e entrar nela" hidden></button></div>
+    </section>
+    <!-- Seu sinal: a sua voz e a sua transmissão, fixo no pé do painel em qualquer aba (com o painel recolhido, vai
+         para a barrinha: seuSinalMini). Os botões são os de sempre, com os mesmos ids (renderer/voz.js, transmitir.js) -->
+    <section id="seuSinal" class="seu-sinal" aria-label="Sua voz e sua transmissão" hidden>
+      <div class="ss-linha ss-estado">
+        <span class="ss-rotulo" id="ssRotulo">Seu sinal</span>
+        <span class="ss-onde" id="ssOnde"></span>
+        <!-- Música que você está ouvindo (renderer/musica.js): clicar abre Pausar/Continuar e Sair -->
+        <div class="rail-music" id="navMusicWrap" hidden>
+          <button id="navMusic" type="button" class="btn icon small ghost" aria-haspopup="menu" aria-expanded="false" aria-controls="navMusicMenu"></button>
+          <div class="rail-music-menu" id="navMusicMenu" role="menu" aria-label="Música" hidden></div>
+        </div>
+      </div>
+      <div class="ss-linha ss-voz">
+        <div class="voice-dock" id="voiceDock" role="group" aria-label="Conversa por voz">
+          <div class="voice-avatars" id="voiceAvatars" hidden></div>
+          <span class="voice-me" id="voiceMe" title="Você na voz" hidden>
+            <span class="eq" aria-hidden="true"><span></span><span></span><span></span></span><span id="voiceMeText">Na voz</span>
+          </span>
+          <button class="btn icon" id="voiceMute" type="button" aria-pressed="false" hidden></button>
+          <button class="btn icon" id="voiceDeafen" type="button" aria-pressed="false" hidden></button>
+          <button class="btn" id="voiceJoin" type="button">Entrar na voz</button>
+          <button class="btn icon" id="voiceJoinMore" type="button" aria-haspopup="menu" aria-expanded="false" hidden></button>
+        </div>
+        <button id="voiceSettingsBtn" type="button" class="btn icon ss-ajustes"></button>
+      </div>
+      <div class="ss-linha ss-tx">
+        <button class="btn primary dock-share" id="shareBtn" type="button" title="Escolher a tela ou a janela para transmitir">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v12H3zM8 21h8M12 17v4"/></svg>Transmitir tela
+        </button>
+        <div class="live-chip" id="liveChip" hidden>
+          <!-- A miniatura do que você transmite é o "Me ver" (abre a sua tela no palco); ao lado, o que é e quem assiste -->
+          <button class="live-thumb" id="selfViewBtn" type="button" aria-pressed="false"><img id="liveThumb" alt=""><span class="live-pill">Ao vivo</span></button>
+          <span class="live-info"><strong id="liveSource"></strong><span id="liveText"></span></span>
+          <button class="btn small icon" id="shareOpenBtn" type="button" aria-haspopup="menu" aria-expanded="false"></button>
+          <button class="btn small icon" id="switchShareBtn" type="button"></button>
+          <button class="btn small icon danger" id="stopShareBtn" type="button"></button>
+        </div>
+        <div class="pip-chip" id="pipChip" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v14H3zM12 11h7v6h-7z"/></svg>
+          <span id="pipChipText"></span>
+          <kbd>Ctrl+Shift+E</kbd>
+          <button class="btn icon ghost" id="pipChipClose" type="button"></button>
+        </div>
+      </div>
     </section>
   </aside>
   <!-- Música junto: colar o link do YouTube para pôr (ou trocar) a música de um canal (renderer/musica.js) -->
@@ -469,6 +513,37 @@
     <section id="room" class="screen" hidden>
       <div class="room-grid" id="roomGrid">
         <div class="stage-col">
+          <!-- Cabeçalho da sala: o nome abre o menu da sala (endereço, senha, quem pode entrar, esconder as telas,
+               desempenho, sair); à direita, Grade/Destaque (com telas), Convidar e Sair (docs/spec/sala-nova.md) -->
+          <header class="room-head" id="roomHead">
+            <div class="room-menu-wrap">
+              <button id="roomMenuBtn" class="room-name" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="roomMenu">
+                <span class="room-name-star" aria-hidden="true">✦</span><span id="roomHeadTitle">Sala</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+              </button>
+              <div id="roomMenu" class="room-menu" role="dialog" aria-label="Configurações da sala" hidden>
+                <div class="room-menu-addr">
+                  <div id="roomAddress"></div>
+                  <div id="roomSenha" class="addr room-senha" hidden></div>
+                  <!-- Só o host, no modo Internet (renderer/salas-amigos.js: renderAmigosMembros) -->
+                  <label class="check-line room-amigos" id="roomAmigosAberta" hidden><input type="checkbox" id="roomAmigosAbertaOn"><span>Amigos de quem está na sala podem entrar</span></label>
+                  <p id="noRadmin" class="warn" hidden>Nenhum IP da Radmin VPN (26.x.x.x) encontrado. Ligue a Radmin e entre na rede.</p>
+                </div>
+                <div class="room-menu-itens">
+                  <button id="openStatsRoom" type="button" class="room-menu-item"></button>
+                  <button id="roomMenuLeave" type="button" class="room-menu-item danger"></button>
+                </div>
+              </div>
+            </div>
+            <span class="room-head-meta" id="roomHeadMeta"></span>
+            <span class="room-head-space"></span>
+            <div id="stageLayout" class="seg stage-layout" role="group" aria-label="Arrumação das telas" hidden><button type="button" data-layout="grid" title="Todas do mesmo tamanho, como no Google Meet">Grade</button><button type="button" data-layout="spotlight" title="Uma grande e as outras numa coluna ao lado">Destaque</button></div>
+            <!-- Convidar: copia o endereço (ou o código) da sala -->
+            <button class="btn small room-head-btn" id="dockAddr" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg><span class="dock-label">Convidar</span>
+            </button>
+            <button id="leaveBtn" type="button" class="btn small room-head-btn room-leave"></button>
+          </header>
           <div class="stage-area" id="streamArea">
             <div class="stream-pane-head"><h2>Transmissões</h2><button class="btn small" id="streamPeople" type="button">Pessoas na sala</button></div>
             <div id="pausedStrip" class="paused-strip" role="group" aria-label="Transmissões em pausa" hidden></div>
@@ -483,6 +558,7 @@
                 </span>
               </div>
               <p id="emptyText"></p>
+              <div id="emptyLive" class="empty-live" hidden></div>
             </div>
             <div id="tiles" class="tiles" hidden></div>
             <div id="stageSplitter" class="stage-splitter" role="separator" aria-orientation="vertical" aria-label="Largura da coluna de telas pequenas" aria-valuemin="15" aria-valuemax="50" tabindex="0" hidden></div>
@@ -624,56 +700,6 @@
             </div>
           </div>
 
-          <div id="workspaceEmpty" class="empty-stage" hidden><p>Escolha os painéis na barrinha da direita: Chat, Voz ou Transmissão.</p></div>
-          <!-- Barra da sala: transmitir, janela flutuante e o resto, embaixo dos vídeos -->
-          <div class="dock" role="toolbar" aria-label="Controles da sala">
-            <!-- Uma linha só: transmitir | voz | espaço | convidar, estatísticas, chat | sair -->
-            <button class="btn primary dock-share" id="shareBtn" type="button" title="Transmitir minha tela">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v12H3zM8 21h8M12 17v4"/></svg>Transmitir
-            </button>
-            <div class="live-chip" id="liveChip" hidden>
-              <!-- A miniatura do que você transmite é o "Me ver" (abre a sua tela no palco); ao lado, o que é e quem assiste -->
-              <button class="live-thumb" id="selfViewBtn" type="button" aria-pressed="false"><img id="liveThumb" alt=""><span class="live-pill">Ao vivo</span></button>
-              <span class="live-info"><strong id="liveSource"></strong><span id="liveText"></span></span>
-              <button class="btn small icon" id="shareOpenBtn" type="button" aria-haspopup="menu" aria-expanded="false"></button>
-              <button class="btn small icon" id="switchShareBtn" type="button"></button>
-              <button class="btn small icon danger" id="stopShareBtn" type="button"></button>
-            </div>
-            <div class="pip-chip" id="pipChip" hidden>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v14H3zM12 11h7v6h-7z"/></svg>
-              <span id="pipChipText"></span>
-              <kbd>Ctrl+Shift+E</kbd>
-              <button class="btn icon ghost" id="pipChipClose" type="button"></button>
-            </div>
-            <!-- Voz: entrar; dentro, meu indicador, microfone, silenciar as vozes e sair. Com o painel
-                 recolhido, as bolinhas de quem está na voz (clicar abre o volume da pessoa). -->
-            <div class="voice-dock" id="voiceDock" role="group" aria-label="Conversa por voz">
-              <div class="voice-avatars" id="voiceAvatars" hidden></div>
-              <span class="voice-me" id="voiceMe" title="Você na voz" hidden>
-                <span class="eq" aria-hidden="true"><span></span><span></span><span></span></span><span id="voiceMeText">Na voz</span>
-              </span>
-              <button class="btn icon" id="voiceMute" type="button" aria-pressed="false" hidden></button>
-              <button class="btn icon" id="voiceDeafen" type="button" aria-pressed="false" hidden></button>
-              <button class="btn" id="voiceJoin" type="button">Entrar na voz</button>
-              <button class="btn icon" id="voiceJoinMore" type="button" aria-haspopup="menu" aria-expanded="false" hidden></button>
-            </div>
-            <div id="stageLayout" class="seg stage-layout" role="group" aria-label="Arrumação das telas" hidden><button type="button" data-layout="grid" title="Todas do mesmo tamanho, como no Google Meet">Grade</button><button type="button" data-layout="spotlight" title="Uma grande e as outras numa coluna ao lado">Destaque</button></div>
-            <span class="dock-spacer"></span>
-            <!-- Convidar: copia o endereço da sala (que aparece ao passar o mouse e em Pessoas na sala) -->
-            <button class="btn dock-invite" id="dockAddr" type="button" hidden>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 9h11v11H9zM5 15H4V4h11v1"/></svg><span class="dock-label">Convidar</span>
-            </button>
-            <button class="btn icon" id="openGeneralSettingsRoom" type="button"></button>
-            <button class="btn icon dock-off" id="openStatsRoom" type="button"></button>
-            <button class="btn icon chat-toggle dock-off" id="chatToggle" type="button" aria-pressed="true">
-              <span id="chatUnread" class="unread" hidden></span>
-            </button>
-            <!-- Janela estreita: o que não cabe na barra vai para este menu (fitDock em renderer/navegacao.js) -->
-            <div class="dock-more" id="dockMoreWrap" hidden>
-              <button class="btn icon" id="dockMore" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="dockMoreMenu"></button>
-              <div class="dock-more-menu" id="dockMoreMenu" role="menu" aria-label="Mais controles da sala" hidden></div>
-            </div>
-          </div>
         </div>
 
         <!-- Painel: endereço, sua transmissão, quem está na sala e o chat, sempre à vista -->
@@ -707,7 +733,7 @@
             </form>
           </div>
 
-          <div class="people-pop" id="peoplePop" role="dialog" aria-labelledby="peopleTitle" hidden>
+          <div class="people-pop" id="peoplePop" role="region" aria-labelledby="peopleTitle" hidden>
             <div class="pp-head">
               <h3 id="peopleTitle">Na sala · <span id="memberTitleCount">1</span></h3>
               <span class="hint" id="voiceCount"></span>
@@ -720,13 +746,6 @@
               <p id="encoderInfo" class="hint"></p>
               <p id="awayInfo" class="hint"></p>
               <p id="noAudio" class="warn" hidden>Transmitindo sem áudio.</p>
-            </div>
-            <div class="pp-addr">
-              <div id="roomAddress"></div>
-              <div id="roomSenha" class="addr room-senha" hidden></div>
-              <!-- Só o host, no modo Internet (renderer/salas-amigos.js: renderAmigosMembros) -->
-              <label class="check-line room-amigos" id="roomAmigosAberta" hidden><input type="checkbox" id="roomAmigosAbertaOn"><span>Amigos de quem está na sala podem entrar</span></label>
-              <p id="noRadmin" class="warn" hidden>Nenhum IP da Radmin VPN (26.x.x.x) encontrado. Ligue a Radmin e entre na rede.</p>
             </div>
           </div>
         </aside>

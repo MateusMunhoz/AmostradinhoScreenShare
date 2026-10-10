@@ -17,7 +17,7 @@ run('Música junto (YouTube)', 180000, async () => {
   const B = await openApp('musB', 9562, { fake: true });
   await joinRoom(B, { name: 'Bia', addr: '127.0.0.1:18861' });
   for (const X of [A, B]) {
-    await X.eval(`setVoiceView('lista'); musica.volume = 0; (() => { workspaceViews.voice = true; saveWorkspaceViews(); syncWorkspace(); })()`);
+    await X.eval(`setVoiceView('lista'); musica.volume = 0; setPainelSala({ aba: 'voz', juntos: false, recolhido: false })`);
     await X.eval(TONE);
     await X.eval(`$('voiceJoin').click()`);
   }

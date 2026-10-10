@@ -335,9 +335,15 @@ function leaveRoom(reason, kind = 'info', endRoom = false) {
   if (reason) toast(reason, kind);
 }
 
+// Sair, no cabeçalho da sala e no fim do menu da sala (para quem criou a sala sozinho, Encerrar)
 function renderLeaveBtn() {
   const endsRoom = state.isOwner && !state.handoff;
-  setIcon($('leaveBtn'), 'leave', endsRoom ? 'Encerrar sala (sai todo mundo)' : 'Sair da sala');
+  const tip = endsRoom ? 'Encerrar sala (sai todo mundo)' : 'Sair da sala';
+  setIcon($('leaveBtn'), 'leave', tip);
+  $('leaveBtn').append(rotuloMenu(endsRoom ? 'Encerrar' : 'Sair'));
+  $('leaveBtn').lastChild.className = 'dock-label';
+  setIcon($('roomMenuLeave'), 'leave', tip);
+  $('roomMenuLeave').append(rotuloMenu(endsRoom ? 'Encerrar a sala' : 'Sair da sala'));
 }
 
 // Quem assume se o host sair: o mais antigo na sala (sem contar o host). Vai pelo número de cada um, que segue a

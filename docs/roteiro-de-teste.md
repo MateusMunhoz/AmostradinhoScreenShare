@@ -19,7 +19,7 @@ quem estava fazendo e o que aconteceu.
    o jogo.
    Deve acontecer: sem apertar, ninguém te ouve; segurando, ouvem. A barra mostra "Segure …" e "Falando".
 5. **Quem está falando.** Cada um fala uma frase.
-   Deve acontecer: acende o anel verde de quem fala na lista de pessoas e a bolinha verde no botão de pessoas.
+   Deve acontecer: acende o anel verde de quem fala na lista de pessoas e a bolinha verde na aba Pessoas.
 6. **Ouvir a própria voz.** De fone, abra Voz e atalhos e clique em **Ouvir minha voz**. Fale, troque a supressão
    de ruído entre **Avançado** e **Desligada** e digite no teclado.
    Deve acontecer: você se ouve na hora, sem atraso que atrapalhe; com a IA, o teclado some. Desligue o microfone
@@ -46,7 +46,7 @@ quem estava fazendo e o que aconteceu.
 
 11. **Troca de host de verdade.** Quem criou a sala **fecha o app** no meio da call (sem clicar em Sair).
     Deve acontecer: em uns 5 a 15 segundos, a pessoa que entrou primeiro vira host sozinha. A voz e as
-    transmissões continuam, e o botão de pessoas mostra "Host" nela.
+    transmissões continuam, e a aba Pessoas mostra "Host" nela.
 
 12. **Sessões abertas.** Uma pessoa cria uma sala; as outras ficam na tela inicial, sem entrar.
     Deve acontecer: em até 5 segundos, aparece "Sessão de <nome>" na lista de todo mundo, com o número de

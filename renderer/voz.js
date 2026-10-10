@@ -401,7 +401,7 @@ function renderVoiceJoin() {
   join.className = 'btn voice-enter';
   join.replaceChildren();
   if (target.ids.length) join.append(voiceFaces(target.ids), 'Entrar');
-  else { join.innerHTML = ICON.mic; join.append('Voz'); }
+  else { join.innerHTML = ICON.mic; join.append('Entrar na voz'); }
   const names = target.ids.map(nameOf).join(', ');
   join.title = !voice.supported ? 'O host precisa da versão 1.8.4 ou mais nova para ter voz'
     : target.ids.length ? `Entrar na voz${subsalasOn() ? ` (${channelName(target.ch)})` : ''}: ${names}` : 'Liga o microfone e entra na conversa por voz';
@@ -527,7 +527,7 @@ function renderVoiceStackPop() {
   }
   const panel = el('button', 'btn ghost', 'Abrir o painel da voz');
   panel.type = 'button';
-  panel.onclick = () => { closeVoiceStackPop(); workspaceViews.voice = true; saveWorkspaceViews(); setPanelOpen(true); syncWorkspace(); };
+  panel.onclick = () => { closeVoiceStackPop(); setPainelSala({ aba: 'voz', recolhido: false }); };
   actions.append(panel);
   pop.append(head, list, actions);
   if (skyFocusFrom === 'pilula' && skyFocusId) pop.append($('skyFocus')); // o perfil aberto continua na lista redesenhada
