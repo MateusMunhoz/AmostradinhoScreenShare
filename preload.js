@@ -111,6 +111,7 @@ contextBridge.exposeInMainWorld('api', {
   razzeGoogleUnlink: (c) => ipcRenderer.invoke('razze-google-unlink', { currentPassword: String(c?.currentPassword || ''), code2fa: String(c?.code2fa || '') }),
   razzeChangePassword: (current, next, code2fa) => ipcRenderer.invoke('razze-change-password', String(current || ''), String(next || ''), String(code2fa || '')),
   razzeSetHandle: (name) => ipcRenderer.invoke('razze-set-handle', String(name || '')),
+  razzeKeepHandle: () => ipcRenderer.invoke('razze-keep-handle'),
   razzeChangeEmail: (email, c) => ipcRenderer.invoke('razze-change-email', String(email || ''), { currentPassword: String(c?.currentPassword || ''), code2fa: String(c?.code2fa || '') }),
   razzeVerifyEmail: () => ipcRenderer.invoke('razze-verify-email'),
   razzeConfirmEmailChange: (code, purpose) => ipcRenderer.invoke('razze-confirm-email-change', String(code || ''), purpose === 'confirmar' ? 'confirmar' : 'trocar-email'),

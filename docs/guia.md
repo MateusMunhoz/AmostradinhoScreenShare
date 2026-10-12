@@ -392,8 +392,8 @@ No pé do Início fica a versão ("Nebula 1.18.10 · atualizado"), com **Procura
 
 - **Identificador:** toda conta tem um identificador no formato **nome#1234** (ex.: `lucas#0420`). É por ele que os amigos te
   adicionam e você pode entrar com ele no lugar do e-mail. O nome tem só letras sem acento e números (2 a 32) e é escolhido ao
-  criar a conta; o número depois do `#` é sorteado. Contas de antes ganharam um a partir do nome e o app avisa uma vez, com
-  **Copiar**. O nome de exibição (o que aparece no Início e na sala) continua livre, com espaço e acento.
+  criar a conta; o número depois do `#` é sorteado. Contas de antes ganharam um a partir do nome: ao abrir o app, a janela
+  **Escolha seu identificador** pede o nome (ou **Manter** o gerado) e volta a cada abertura até a pessoa escolher. O nome de exibição (o que aparece no Início e na sala) continua livre, com espaço e acento.
 - **Conta e segurança:** Perfil › Conta Razze › **Conta e segurança** junta tudo da conta: o identificador (**Copiar**, **Trocar o
   nome**, uma vez a cada 7 dias; o número fica se estiver livre), o e-mail (**Confirmar**, **Trocar e-mail**: o código vai para o
   novo e o antigo recebe um aviso), a senha (**Trocar senha** ou, em conta do Google, **Entrar também com senha**, que pode usar

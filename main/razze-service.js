@@ -222,6 +222,7 @@ function createRazzeService(options = {}) {
     forgot: (login) => requireClient(false).forgot(login),
     forgotReset: (body) => requireClient(false).forgotReset(body),
     setHandle: (name) => requireClient().setHandle(name),
+    keepHandle: () => requireClient().keepHandle(),
     changeEmail: (body) => requireClient().changeEmail(body),
     verifyEmail: () => requireClient().verifyEmail(),
     confirmEmailChange: (code, purpose) => requireClient().confirmEmailChange(code, purpose),

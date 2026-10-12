@@ -160,6 +160,9 @@ function createApiServer(options = {}) {
   if (!userColumns.includes('handle_key')) db.exec('ALTER TABLE users ADD COLUMN handle_key TEXT');
   if (!userColumns.includes('handle_tag')) db.exec('ALTER TABLE users ADD COLUMN handle_tag INTEGER');
   if (!userColumns.includes('handle_changed_at')) db.exec('ALTER TABLE users ADD COLUMN handle_changed_at INTEGER');
+  // A pessoa escolheu o nome (ou confirmou o gerado)? As contas de antes e as criadas por app antigo começam com 0: o app
+  // pede para escolher (docs/spec/identificador-nome-tag.md, "Contas antigas")
+  if (!userColumns.includes('handle_escolhido')) db.exec('ALTER TABLE users ADD COLUMN handle_escolhido INTEGER NOT NULL DEFAULT 0');
   db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_handle ON users(handle_key, handle_tag) WHERE handle_key IS NOT NULL');
   // Cadastro por senha esperando o código do e-mail: até quando vale (NULL = conta confirmada ou de antes da confirmação)
   if (!userColumns.includes('confirmar_ate')) db.exec('ALTER TABLE users ADD COLUMN confirmar_ate INTEGER');
@@ -320,13 +323,13 @@ function createApiServer(options = {}) {
   const handleSql = "CASE WHEN handle_key IS NULL THEN NULL ELSE handle_name || '#' || substr('000' || handle_tag, -4) END";
   const publicUser = (id) => {
     const u = db.prepare('SELECT id, email, display_name AS displayName, bio, role, created_at AS createdAt, password_set AS passwordSet, '
-      + 'handle_name AS handleName, handle_tag AS handleTag, handle_changed_at AS handleChangedAt, email_verificado AS emailVerified FROM users WHERE id = ?').get(id);
+      + 'handle_name AS handleName, handle_tag AS handleTag, handle_changed_at AS handleChangedAt, handle_escolhido AS handleChosen, email_verificado AS emailVerified FROM users WHERE id = ?').get(id);
     if (!u) return null;
-    const { passwordSet, handleName, handleTag, handleChangedAt, emailVerified, ...rest } = u;
+    const { passwordSet, handleName, handleTag, handleChangedAt, handleChosen, emailVerified, ...rest } = u;
     const doisFatores = !!db.prepare('SELECT 1 AS sim FROM two_factor WHERE user_id = ? AND enabled_at IS NOT NULL').get(id);
     return {
       ...rest, handle: ident.formatar(handleName, handleTag), googleLinked: !!googleDe(id), hasPassword: !!passwordSet,
-      emailVerified: !!emailVerified, twoFactor: doisFatores,
+      emailVerified: !!emailVerified, twoFactor: doisFatores, handleChosen: !!handleChosen,
       handleChangeAt: handleChangedAt ? handleChangedAt + HANDLE_TROCA_MS : 0, // quando pode trocar o nome de novo
     };
   };
@@ -479,6 +482,7 @@ function createApiServer(options = {}) {
             convidado?.grupo === 'admin' ? 'admin' : 'user', convidado && convidado.grupo !== 'admin' ? convidado.grupo : 'amigo', now());
         db.prepare("INSERT INTO user_identities(provider, subject, user_id, email, created_at) VALUES('google', ?, ?, ?, ?)").run(identity.sub, id, identity.email, now());
         gravarHandle(id, nome);
+        if (handleName !== undefined) db.prepare('UPDATE users SET handle_escolhido = 1 WHERE id = ?').run(id);
         db.exec('COMMIT');
       } catch (error) { db.exec('ROLLBACK'); throw error; }
       if (requiresApproval) return { status: 202, value: { user: publicUser(id), status: 'pending_approval' } };
@@ -792,6 +796,7 @@ function createApiServer(options = {}) {
           db.prepare('INSERT INTO users(id, email, display_name, password_salt, password_hash, status, confirmar_ate, created_at) VALUES(?, ?, ?, ?, ?, ?, ?, ?)')
             .run(id, email, displayName, salt, passwordHash, requiresApproval ? 'pending' : 'active', confirmar ? now() + CONFIRMAR_CADASTRO_MS : null, now());
           gravarHandle(id, nome);
+          if (body.handleName !== undefined) db.prepare('UPDATE users SET handle_escolhido = 1 WHERE id = ?').run(id);
           db.exec('COMMIT');
         } catch (error) { db.exec('ROLLBACK'); throw error; }
         const user = publicUser(id);
@@ -1187,20 +1192,26 @@ function createApiServer(options = {}) {
         if (antes.ok) avisar(antes.email, 'O e-mail da sua conta foi trocado', 'O e-mail da sua conta ' + (handleDe(userId) || '') + ' foi trocado para ' + mascarar(lido.email) + '.');
         return send(res, 200, { user: publicUser(userId) });
       }
-      // Trocar o nome do identificador (a tag fica se estiver livre no nome novo); no máximo uma vez a cada 7 dias
+      // Trocar o nome do identificador (a tag fica se estiver livre no nome novo); no máximo uma vez a cada 7 dias.
+      // { keep: true }: manter o gerado automaticamente. A primeira escolha de quem tinha o gerado não espera os 7 dias.
       if (method === 'PATCH' && pathname === '/v1/me/handle') {
         const body = await readBody(req);
-        const nome = nomeValido(body.name);
-        const u = db.prepare('SELECT handle_key AS chave, handle_tag AS tag, handle_changed_at AS em FROM users WHERE id = ?').get(userId);
-        if (u.chave === nome.toLowerCase() && u.tag) {
-          db.prepare('UPDATE users SET handle_name = ? WHERE id = ?').run(nome, userId); // só maiúsculas/minúsculas: não conta como troca
+        if (body.keep === true) {
+          db.prepare('UPDATE users SET handle_escolhido = 1 WHERE id = ?').run(userId);
           return send(res, 200, { user: publicUser(userId) });
         }
-        if (u.em && u.em + HANDLE_TROCA_MS > now()) {
+        const nome = nomeValido(body.name);
+        const u = db.prepare('SELECT handle_key AS chave, handle_tag AS tag, handle_changed_at AS em, handle_escolhido AS escolhido FROM users WHERE id = ?').get(userId);
+        if (u.chave === nome.toLowerCase() && u.tag) {
+          // só maiúsculas/minúsculas: não conta como troca
+          db.prepare('UPDATE users SET handle_name = ?, handle_escolhido = 1 WHERE id = ?').run(nome, userId);
+          return send(res, 200, { user: publicUser(userId) });
+        }
+        if (u.escolhido && u.em && u.em + HANDLE_TROCA_MS > now()) {
           throw new ApiError(429, 'handle_cooldown', 'Você trocou o nome há pouco. Dá para trocar de novo em ' + new Date(u.em + HANDLE_TROCA_MS).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) + '.');
         }
         db.exec('BEGIN IMMEDIATE');
-        try { gravarHandle(userId, nome, { manterTag: u.tag || 0, marcarTroca: true }); db.exec('COMMIT'); }
+        try { gravarHandle(userId, nome, { manterTag: u.tag || 0, marcarTroca: true }); db.prepare('UPDATE users SET handle_escolhido = 1 WHERE id = ?').run(userId); db.exec('COMMIT'); }
         catch (error) { db.exec('ROLLBACK'); throw error; }
         return send(res, 200, { user: publicUser(userId) });
       }

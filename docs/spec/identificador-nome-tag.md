@@ -42,8 +42,10 @@ mesma conta. Resolve dois problemas de hoje:
 ### Contas antigas (migração)
 - Na subida do servidor, cada conta sem identificador ganha um, gerado do `display_name` como a sugestão acima (acentos
   viram a letra sem acento, o resto sai; menos de 2 caracteres ou nome reservado → `usuario`), com tag sorteada.
-- Na primeira vez que a pessoa abre o app atualizado: aviso único "Agora sua conta tem um identificador: **lucas#0420**.
-  É por ele que seus amigos te adicionam." com **Copiar** e **Trocar o nome**.
+- Ao abrir o app atualizado, quem tem o identificador gerado sozinho (contas antigas e as criadas por app antigo,
+  `handleChosen: false`) vê a janela **Escolha seu identificador**, com o nome sugerido, **Salvar** e **Manter
+  lucas#0420**. Cancelar adia: ela volta na próxima vez que o app abrir, até a pessoa escolher. Essa primeira escolha não
+  espera o intervalo de 7 dias. App antigo não mostra a janela: a pessoa vê quando atualizar.
 
 ### Trocar o nome
 - Em Conta → "Identificador": troca o nome; a tag **se mantém** se `novo-nome#tag` estiver livre, senão sorteia outra

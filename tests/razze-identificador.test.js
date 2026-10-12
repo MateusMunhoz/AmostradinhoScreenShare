@@ -254,3 +254,23 @@ test('TOTP do módulo bate com o vetor da RFC 6238 (SHA-1)', () => {
   assert.equal(totp.base32(totp.deBase32('GEZDGNBVGY3TQOJQ')).toString(), 'GEZDGNBVGY3TQOJQ');
   assert.ok(createHmac); // node:crypto disponível
 });
+
+test('identificador gerado sozinho: a conta sabe que não escolheu; manter ou trocar marca como escolhido sem esperar 7 dias', async () => {
+  const antigo = (await request('/v1/auth/register', { method: 'POST', body: { email: 'dado@example.com', displayName: 'Dado', password: 'senha-longa-1' } })).body;
+  const login = (await request('/v1/auth/login', { method: 'POST', body: { email: 'dado@example.com', password: 'senha-longa-1' } })).body;
+  assert.equal(login.user.handleChosen, false); // app antigo: nome sugerido
+  const novo = await newUser('Edu', { handleName: 'Edu' });
+  assert.equal(novo.user.handleChosen, true);
+  // a primeira escolha não espera o intervalo, mesmo logo depois de outra troca registrada
+  api.db.prepare('UPDATE users SET handle_changed_at = ? WHERE id = ?').run(clock, antigo.user.id);
+  const troca = await request('/v1/me/handle', { method: 'PATCH', body: { name: 'DadoReal' } }, login.accessToken);
+  assert.equal(troca.status, 200);
+  assert.equal(troca.body.user.handleChosen, true);
+  assert.equal((await request('/v1/me/handle', { method: 'PATCH', body: { name: 'Outro' } }, login.accessToken)).status, 429); // agora vale o intervalo
+  // manter o gerado
+  const outro = (await request('/v1/auth/register', { method: 'POST', body: { email: 'fabi@example.com', displayName: 'Fabi', password: 'senha-longa-1' } })).body;
+  const t = (await request('/v1/auth/login', { method: 'POST', body: { email: 'fabi@example.com', password: 'senha-longa-1' } })).body.accessToken;
+  const manter = await request('/v1/me/handle', { method: 'PATCH', body: { keep: true } }, t);
+  assert.equal(manter.body.user.handleChosen, true);
+  assert.equal(manter.body.user.handle, outro.user.handle);
+});

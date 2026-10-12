@@ -177,12 +177,35 @@ async function aposEntrar(r) {
   avisarIdentificador();
 }
 
-// Conta de antes do identificador: um aviso só, com Copiar
+// Identificador gerado automaticamente (conta de antes dele, ou criada por app antigo): pede para escolher o nome, uma
+// vez por abertura do app, até a pessoa salvar um ou manter o gerado. Escolhido: um aviso só, com Copiar.
+let identificadorPedido = '';
 function avisarIdentificador() {
-  if (!logadoAgora() || !razzeUser.handle || load('identificadorVisto', '') === razzeUser.id) return;
+  if (!logadoAgora() || !razzeUser.handle) return;
+  if (razzeUser.handleChosen === false) {
+    if (identificadorPedido === razzeUser.id) return;
+    identificadorPedido = razzeUser.id;
+    return void escolherIdentificador();
+  }
+  if (load('identificadorVisto', '') === razzeUser.id) return;
   save('identificadorVisto', razzeUser.id);
   toast('Sua conta é ' + razzeUser.handle + '. É por ele que seus amigos te adicionam.', 'info',
     { label: 'Copiar', run: () => void copiarIdentificador() });
+}
+async function escolherIdentificador() {
+  const atual = razzeUser.handle;
+  const r = await perguntar({
+    titulo: 'Escolha seu identificador',
+    texto: 'Agora cada conta tem um identificador no formato nome#1234: é por ele que os amigos te adicionam e você pode entrar com ele. '
+      + 'O seu foi criado automaticamente: ' + atual + '. Escolha o nome (só letras sem acento e números); o número depois do # fica o mesmo se estiver livre.',
+    campos: [{ id: 'nome', rotulo: 'Nome', valor: atual.split('#')[0], max: 32 }], ok: 'Salvar',
+    extras: [{ rotulo: 'Manter ' + atual, acao: () => window.api.razzeKeepHandle() }],
+    enviar: (v) => { const p = problemaDoNomeId(v.nome); if (p) throw new Error(p); return window.api.razzeSetHandle(v.nome); },
+  });
+  if (!r?.user) return; // Cancelar: pergunta de novo na próxima vez que abrir o app
+  atualizarUsuario(r.user);
+  save('identificadorVisto', r.user.id);
+  toast('Seu identificador é ' + r.user.handle + '.', 'info', { label: 'Copiar', run: () => void copiarIdentificador() });
 }
 async function copiarIdentificador() {
   if (!logadoAgora() || !razzeUser.handle) return toast('Entre na sua conta para ter um identificador.', 'error');

@@ -395,7 +395,7 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
         if (body.handleName !== undefined) {
           const nome = nomeValido(body.handleName);
           const atual = db.prepare('SELECT handle_tag AS tag FROM users WHERE id=?').get(previous.id);
-          transaction(() => { gravarHandle(previous.id, nome, { manterTag: atual.tag || 0 }); audit(actor, 'user.handle', previous.id, { de: previous.handle }); });
+          transaction(() => { gravarHandle(previous.id, nome, { manterTag: atual.tag || 0 }); db.prepare('UPDATE users SET handle_escolhido = 1 WHERE id=?').run(previous.id); audit(actor, 'user.handle', previous.id, { de: previous.handle }); });
           if (Object.keys(body).length === 1) return result({ user: user(previous.id) });
         }
         const role = body.role ?? previous.role, status = body.status ?? previous.status, grupo = body.grupo ?? previous.grupo;

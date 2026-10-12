@@ -61,6 +61,7 @@ class RazzeApiClient {
   forgotReset(body) { return this.request('POST', '/v1/auth/forgot/reset', body); }
   googleFinish(ticket, handleName) { return this.request('POST', '/v1/auth/google/finish', { ticket, handleName }); }
   setHandle(name) { return this.request('PATCH', '/v1/me/handle', { name }); }
+  keepHandle() { return this.request('PATCH', '/v1/me/handle', { keep: true }); }
   changeEmail(body) { return this.request('POST', '/v1/me/email', body); }
   verifyEmail() { return this.request('POST', '/v1/me/email/verify'); }
   confirmEmailChange(code, purpose) { return this.request('POST', '/v1/me/email/confirm', { code, purpose }); }

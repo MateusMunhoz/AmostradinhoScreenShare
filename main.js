@@ -486,6 +486,7 @@ if (hasSingleInstance) app.whenReady().then(() => {
   ipcMain.handle('razze-change-password', (_e, current, next, code2fa) => razze.changePassword(String(current || '').slice(0, 200), String(next || '').slice(0, 200), String(code2fa || '').trim().slice(0, 20)));
   // Identificador, e-mail e dois fatores (renderer/conta-seguranca.js)
   ipcMain.handle('razze-set-handle', (_e, name) => razze.setHandle(String(name || '').slice(0, 32)));
+  ipcMain.handle('razze-keep-handle', () => razze.keepHandle());
   ipcMain.handle('razze-change-email', (_e, email, c) => razze.changeEmail({ email: String(email || '').slice(0, 254), ...confirmacao(c) }));
   ipcMain.handle('razze-verify-email', () => razze.verifyEmail());
   ipcMain.handle('razze-confirm-email-change', (_e, code, purpose) => razze.confirmEmailChange(String(code || '').slice(0, 12), purpose === 'confirmar' ? 'confirmar' : 'trocar-email'));
