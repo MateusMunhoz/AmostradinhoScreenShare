@@ -345,6 +345,7 @@ window.addEventListener('focus', checkGithubSoon);
 $('goCreate').onclick = () => foraDaSala('criar outra sala', () => show('create-room'));
 setupRecorte(); // editor de recorte da foto e do fundo (renderer/recorte.js)
 setupConta(); // senha e frase do perfil (renderer/conta.js)
+setupContaSeguranca(); // identificador, e-mail, Google e dois fatores (renderer/conta-seguranca.js)
 setupAdmin(); // administração, só para administradores (renderer/admin.js)
 setupFeedback(); // feedback e bugs, ícone na barrinha (renderer/feedback.js)
 // Tela de carregando ao entrar na sala (renderer/sala.js): Cancelar ou Esc fecham a conexão que está esperando

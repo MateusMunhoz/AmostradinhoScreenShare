@@ -1,7 +1,8 @@
 'use strict';
 
 class RazzeApiError extends Error {
-  constructor(status, code, message) { super(message); this.name = 'RazzeApiError'; this.status = status; this.code = code; }
+  // data: os campos a mais do erro (ex.: o desafio do 2FA, o identificador da conta que já tem o e-mail)
+  constructor(status, code, message, data = {}) { super(message); this.name = 'RazzeApiError'; this.status = status; this.code = code; this.data = data; }
 }
 
 class RazzeApiClient {
@@ -41,7 +42,7 @@ class RazzeApiClient {
     try { payload = await response.json(); } catch {}
     if (!response.ok) {
       const error = payload && payload.error || {};
-      throw new RazzeApiError(response.status, error.code || 'request_failed', error.message || 'A RazzeAPI recusou a requisição.');
+      throw new RazzeApiError(response.status, error.code || 'request_failed', error.message || 'A RazzeAPI recusou a requisição.', error);
     }
     return payload;
   }
@@ -50,8 +51,24 @@ class RazzeApiClient {
   offline() { return this.request('DELETE', '/v1/presence'); }
   listRooms() { return this.request('GET', '/v1/rooms'); }
   health() { return this.request('GET', '/v1/health'); }
-  register(email, password, displayName) { return this.request('POST', '/v1/auth/register', { email, password, displayName }); }
-  login(email, password) { return this.request('POST', '/v1/auth/login', { email, password }); }
+  register(email, password, displayName, handleName) { return this.request('POST', '/v1/auth/register', { email, password, displayName, ...(handleName ? { handleName } : {}) }); }
+  // login: e-mail ou identificador (nome#1234). Vai também como "email" para servidor antigo, que só conhece esse campo
+  login(login, password) { return this.request('POST', '/v1/auth/login', { email: login, login, password }); }
+  login2fa(challenge, code) { return this.request('POST', '/v1/auth/login/2fa', { challenge, code }); }
+  confirmEmail(email, code) { return this.request('POST', '/v1/auth/confirm-email', { email, code }); }
+  resendConfirmation(email) { return this.request('POST', '/v1/auth/confirm-email/resend', { email }); }
+  forgot(login) { return this.request('POST', '/v1/auth/forgot', { login }); }
+  forgotReset(body) { return this.request('POST', '/v1/auth/forgot/reset', body); }
+  googleFinish(ticket, handleName) { return this.request('POST', '/v1/auth/google/finish', { ticket, handleName }); }
+  setHandle(name) { return this.request('PATCH', '/v1/me/handle', { name }); }
+  changeEmail(body) { return this.request('POST', '/v1/me/email', body); }
+  verifyEmail() { return this.request('POST', '/v1/me/email/verify'); }
+  confirmEmailChange(code, purpose) { return this.request('POST', '/v1/me/email/confirm', { code, purpose }); }
+  passwordSetup(body) { return this.request('POST', '/v1/me/password-setup', body); }
+  twoFactorSetup(body) { return this.request('POST', '/v1/me/2fa/setup', body); }
+  twoFactorEnable(code) { return this.request('POST', '/v1/me/2fa/enable', { code }); }
+  twoFactorDisable(body) { return this.request('POST', '/v1/me/2fa/disable', body); }
+  twoFactorRecovery(body) { return this.request('POST', '/v1/me/2fa/recovery', body); }
   logout() { return this.request('POST', '/v1/auth/logout'); }
   me() { return this.request('GET', '/v1/me'); }
   listFriends() { return this.request('GET', '/v1/friends'); }
@@ -63,9 +80,9 @@ class RazzeApiClient {
   removeFriend(id) { return this.request('DELETE', '/v1/friends/' + encodeURIComponent(id)); }
   googleConfig() { return this.request('GET', '/v1/auth/google/config'); }
   googleLogin(login) { return this.request('POST', '/v1/auth/google', login); }
-  googleLink(login) { return this.request('POST', '/v1/me/google', login); }
-  googleUnlink() { return this.request('DELETE', '/v1/me/google'); }
-  changePassword(currentPassword, newPassword) { return this.request('POST', '/v1/me/password', { currentPassword, newPassword }); }
+  googleLink(body) { return this.request('POST', '/v1/me/google', body); }
+  googleUnlink(body = {}) { return this.request('DELETE', '/v1/me/google', body); }
+  changePassword(currentPassword, newPassword, code2fa) { return this.request('POST', '/v1/me/password', { currentPassword, newPassword, ...(code2fa ? { code2fa } : {}) }); }
   resetPassword(email, code, password) { return this.request('POST', '/v1/auth/reset', { email, code, password }); }
   setActivity(activity) { return this.request('PUT', '/v1/me/activity', activity); }
   setBio(bio) { return this.request('PATCH', '/v1/me', { bio }); }
@@ -96,7 +113,7 @@ class RazzeApiClient {
   // Painel de administração do app: só as rotas do painel (lista fechada), com a sessão da própria conta; o servidor
   // confere o papel de administrador em toda chamada. Nada de banco, rede nem cliente; código de senha só o de uso único (reset-code).
   admin(method, endpoint, body) {
-    const rota = /^\/v1\/admin\/(?:analytics|overview|settings|allowlist|allowlist\/[^/?#\s]{3,254}|users|users\/[a-f0-9]{32}|users\/[a-f0-9]{32}\/(?:approve|revoke-sessions|reset-code)|feedback|feedback\/[a-f0-9]{32}(?:\/imagem)?)$/;
+    const rota = /^\/v1\/admin\/(?:analytics|overview|settings|allowlist|allowlist\/[^/?#\s]{3,254}|users|users\/[a-f0-9]{32}|users\/[a-f0-9]{32}\/(?:approve|revoke-sessions|reset-code|2fa-reset)|feedback|feedback\/[a-f0-9]{32}(?:\/imagem)?)$/;
     if (!['GET', 'POST', 'PATCH', 'DELETE'].includes(method) || typeof endpoint !== 'string' || !rota.test(endpoint)) throw new RazzeApiError(0, 'admin_route', 'Rota de administração não permitida.');
     if (body !== undefined && (body === null || typeof body !== 'object' || Array.isArray(body) || JSON.stringify(body).length > 2000)) throw new RazzeApiError(0, 'admin_body', 'Pedido de administração inválido.');
     return this.request(method, endpoint, body);

@@ -48,7 +48,7 @@ test('frase do perfil: salva, limpa e limita; só ela pode ser alterada', async 
 });
 
 test('os amigos veem a frase do perfil', async () => {
-  const sent = await request('/v1/friends/requests', { method: 'POST', body: { email: 'eva@example.com' } }, fabio.accessToken);
+  const sent = await request('/v1/friends/requests', { method: 'POST', body: { nickname: eva.user.handle } }, fabio.accessToken);
   await request('/v1/friends/requests/' + sent.body.id + '/accept', { method: 'POST' }, eva.accessToken);
   const list = (await request('/v1/friends', {}, fabio.accessToken)).body.friends;
   assert.equal(list[0].bio, 'Jogo à noite');

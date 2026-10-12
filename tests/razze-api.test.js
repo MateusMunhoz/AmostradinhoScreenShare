@@ -60,7 +60,7 @@ test('amizades, redes e convites respeitam permissões', async () => {
   const network = networkResult.body.network;
   assert.equal((await request('/v1/networks/' + network.id, {}, bob.accessToken)).status, 404);
   assert.equal((await request('/v1/networks/' + network.id, { method: 'PATCH', body: { name: 'Invadida' } }, bob.accessToken)).status, 403);
-  const friendRequest = await request('/v1/friends/requests', { method: 'POST', body: { email: 'alice@example.com' } }, bob.accessToken);
+  const friendRequest = await request('/v1/friends/requests', { method: 'POST', body: { nickname: alice.user.handle } }, bob.accessToken);
   assert.equal(friendRequest.body.status, 'pending');
   const accepted = await request('/v1/friends/requests/' + friendRequest.body.id + '/accept', { method: 'POST' }, alice.accessToken);
   assert.equal(accepted.body.status, 'accepted');

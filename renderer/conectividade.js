@@ -319,9 +319,12 @@ async function loadRazzeState() {
     if (typeof admAtualizarBotao === 'function') admAtualizarBotao(); // Administração: só para administradores (renderer/admin.js)
     anunciarContaNaSala();
     if (typeof syncBioComConta === 'function') syncBioComConta(user); // a frase do perfil (renderer/conta.js)
+    if (typeof avisarIdentificador === 'function') avisarIdentificador(); // conta de antes do identificador: avisa uma vez
+    if (typeof renderSeguranca === 'function') renderSeguranca();
     if (user?.id) void dmStart(user.id); // mensagens diretas desta conta (renderer/mensagens.js)
     $('razzeAccountName').textContent = user?.displayName || user?.email || 'Conta Razze';
-    $('razzeAccountEmail').textContent = user?.displayName ? user.email || '' : '';
+    // O identificador (nome#1234) na frente do e-mail: é o que os amigos usam para adicionar
+    $('razzeAccountEmail').textContent = [user?.handle, user?.displayName ? user.email : ''].filter(Boolean).join(' · ');
     $('razzeAccountName').title = $('razzeAccountName').textContent; // cortado com "…" quando não cabe
     $('razzeAccountEmail').title = $('razzeAccountEmail').textContent;
     $('razzeAccountAvatar').textContent = ((user?.displayName || user?.email || '?').trim()[0] || '?').toUpperCase();
@@ -583,6 +586,8 @@ function setRazzeAuthTab(register) {
   $('razzeTabLogin').setAttribute('aria-selected', String(!register));
   $('razzeTabRegister').setAttribute('aria-selected', String(register));
   $('razzeNameField').hidden = !register;
+  $('razzeHandleField').hidden = !register;
+  $('razzeEmailLabel').textContent = register ? 'E-mail' : 'E-mail ou identificador';
   $('razzeLogin').hidden = register;
   $('razzeRegister').hidden = !register;
   $('razzePassword').autocomplete = register ? 'new-password' : 'current-password';
@@ -655,11 +660,11 @@ function setupConnectivitySettings() {
   $('razzeLogin').onclick = async () => {
     $('razzeLogin').disabled = true;
     try {
-      const result = await window.api.razzeLogin($('razzeEmail').value.trim(), $('razzePassword').value);
-      razzeUser = result.user;
+      // Com 2FA ou e-mail ainda não confirmado, a janela do código abre no meio (renderer/conta-seguranca.js)
+      const result = await entrarComSenha($('razzeEmail').value.trim(), $('razzePassword').value);
+      if (result?.status !== 'active') { setRazzeStatus(result ? 'Conta confirmada. O administrador ainda precisa aprovar.' : ''); return; }
       $('razzePassword').value = '';
       setRazzeStatus('Você entrou na sua conta.');
-      await refreshRazzeState();
       void retomarConviteAmigo(); // convite de amigo que estava esperando a conta
     } catch (error) { setRazzeStatus('Não foi possível entrar: ' + error.message); }
     finally { $('razzeLogin').disabled = false; }
@@ -667,10 +672,18 @@ function setupConnectivitySettings() {
   $('razzeRegister').onclick = async () => {
     $('razzeRegister').disabled = true;
     try {
-      const result = await window.api.razzeRegister($('razzeEmail').value.trim(), $('razzePassword').value, $('razzeDisplayName').value.trim());
-      $('razzePassword').value = '';
-      setRazzeStatus(result.status === 'pending_approval' ? 'Cadastro enviado. Aguarde a aprovação do administrador do servidor e depois entre.' : 'Conta criada. Agora é só entrar.');
+      const nomeId = $('razzeHandleName').value.trim() || sugerirNomeId($('razzeDisplayName').value);
+      const problema = problemaDoNomeId(nomeId);
+      if (problema) { setRazzeStatus(problema); $('razzeHandleName').focus(); return; }
+      const email = $('razzeEmail').value.trim(), senha = $('razzePassword').value;
+      let result = await cadastrar(email, senha, $('razzeDisplayName').value.trim(), nomeId);
       setRazzeAuthTab(false);
+      if (!result) { setRazzeStatus('Conta criada, falta confirmar o e-mail. Entre com o e-mail e a senha para receber outro código.'); return; }
+      // Servidor sem e-mail: a conta já vale, entra com a senha (com o código, já entrou: result.state)
+      if (result.status === 'active' && !result.state) result = await entrarComSenha(email, senha);
+      $('razzePassword').value = '';
+      setRazzeStatus(result?.status === 'pending_approval' ? 'Cadastro enviado. Aguarde a aprovação do administrador do servidor e depois entre.'
+        : result?.status === 'active' ? 'Conta criada: ' + (razzeUser?.handle || '') + '. Você já está dentro.' : 'Conta criada. Agora é só entrar.');
     } catch (error) { setRazzeStatus('Não foi possível criar a conta: ' + error.message); }
     finally { $('razzeRegister').disabled = false; }
   };
@@ -711,6 +724,11 @@ function setupConnectivitySettings() {
     // Link ou código de convite colado no lugar do nickname (renderer/primeira-entrada.js)
     const convite = amigoTokenDe(nickname);
     if (convite) { setFriendsAddOpen(false); $('razzeFriendNickname').value = ''; return void receberConviteAmigo(convite); }
+    // Só o identificador completo: nome solto pode ser de várias contas (docs/spec/identificador-nome-tag.md)
+    if (!pareceIdentificador(nickname)) {
+      showFriendsAddError(nickname.includes('@') ? 'Adicione pelo identificador (ex.: lucas#0420), não pelo e-mail.' : 'Falta a tag: peça o identificador completo (ex.: lucas#0420).');
+      return void $('razzeFriendNickname').focus();
+    }
     try {
       const result = await window.api.razzeRequestFriend(nickname.trim());
       setFriendsAddOpen(false);

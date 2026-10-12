@@ -59,22 +59,32 @@ Todas as respostas usam JSON. Erros seguem `{ "error": { "code": "...", "message
 | Método e rota | Uso |
 |---|---|
 | `GET /v1/health` | Disponibilidade e porta STUN anunciada |
-| `POST /v1/auth/register`, `POST /v1/auth/login` | Cadastro pendente e login após aprovação |
+| `POST /v1/auth/register` (`{ email, password, displayName, handleName? }`) | Cadastro por senha. `handleName`: o nome do identificador (só letras sem acento e números, 2 a 32; sem ele, app antigo, usa a sugestão do nome de exibição); a tag é sorteada. Com e-mail ligado, responde 202 `confirm_email` (`enviadoPara` mascarado) e a conta só vale com o código; não confirmada em 24 h, some e libera o e-mail e o nome |
+| `POST /v1/auth/confirm-email` (`{ email, code }`), `POST /v1/auth/confirm-email/resend` (`{ email }`) | Código do cadastro: confirma e entra (ou 202 `pending_approval`). Reenviar só depois de 1 min; até 5 códigos por hora por conta; 5 erros queimam o código |
+| `POST /v1/auth/login` (`{ login \| email, password }`) | Entrar com e-mail **ou identificador** (`nome#1234`). Com 2FA ligado: 403 `2fa_required` com `challenge` (vale 5 min). E-mail do cadastro não confirmado: 403 `email_unconfirmed`. Com `googleOnly`, entra por senha quem tem e-mail confirmado (e o administrador); sem e-mail confirmado, só com `legacyPasswordLogin` |
+| `POST /v1/auth/login/2fa` (`{ challenge, code }`) | Segunda etapa: código do app autenticador ou de recuperação; 5 erros derrubam o desafio |
+| `POST /v1/auth/forgot` (`{ login }`), `POST /v1/auth/forgot/reset` (`{ login, code, password, code2fa? }`) | Esqueci a senha **por e-mail**: o código vai para o e-mail confirmado da conta (a resposta é a mesma exista a conta ou não; `twoFactor` diz se vai pedir o 2FA). Com 2FA ligado, pede também o código do app. Trocar derruba as sessões. Sem e-mail ligado: 503 `email_disabled` |
+| `POST /v1/auth/google/finish` (`{ ticket, handleName }`) | Volta da escolha do nome da conta nova pelo Google (veja `escolherNome` abaixo). Ticket vale 10 min e uma vez |
 | `POST /v1/auth/logout`, `GET /v1/me` | Encerrar sessão e consultar conta |
 | `GET /v1/admin/users`, `GET /v1/admin/networks` | Listagens administrativas com `RAZZE_ADMIN_TOKEN`. Cada usuário traz `googleLinked` (se já vinculou o Google: confira antes de desligar `legacyPasswordLogin`) |
 | `POST /v1/admin/users/:id/approve` | Aprovar conta pendente com `RAZZE_ADMIN_TOKEN` |
 | `GET /v1/friends`, `GET /v1/friends/requests` | Listar amizades e solicitações; cada amigo vem com `dmKey` (a chave pública das mensagens criptografadas, ou `null`) e `sala` (em que sala está, ou `null`; veja abaixo) |
 | `PUT /v1/me/dm-key` (`{ publicKey }`) | Publicar a chave pública X25519 (32 bytes em base64) das mensagens criptografadas desta conta; vale a do último PC que publicou |
-| `POST /v1/friends/requests`, `POST /v1/friends/requests/:id/accept`, `DELETE /v1/friends/:userId` | Gerenciar amizades. O pedido acha a pessoa por `userId` (a conta, usada pelo perfil de quem está na sala), `nickname` ou `email` |
+| `POST /v1/friends/requests`, `POST /v1/friends/requests/:id/accept`, `DELETE /v1/friends/:userId` | Gerenciar amizades. O pedido acha a pessoa por `userId` (a conta, usada pelo perfil de quem está na sala) ou `nickname` com o **identificador** `nome#1234` (exato, sem diferenciar maiúsculas; 30 erros a cada 10 min por IP). `nickname` sem `#` ainda procura pelo nome de exibição (app antigo, só durante a transição). **`email` não é mais aceito** (dava para descobrir quem tem conta). Amigos e pedidos vêm com `handle` |
 | `POST /v1/friends/links`, `GET /v1/friends/links`, `DELETE /v1/friends/links/:id` | Links de amigo: criar (devolve `token`, `code` curto `ABCD-EFGH-JK`, `url` e `appLink`; vale 7 dias e 1 pessoa; até 5 ativos por conta), listar os ativos e revogar |
 | `GET /v1/friends/links/preview?token=`, `POST /v1/friends/links/accept` (`{ token }`) | Ver quem convidou (`displayName`) e aceitar: os dois viram amigos na hora. `token` aceita o segredo ou o código curto. Recusa o próprio link, expirado, usado ou revogado (`link_invalid`, `own_link`); 30 tentativas a cada 10 min por IP |
 | `GET /a/<token>` | Página pública de abertura do convite (sem login, sem script, sem consultar o banco): "Abrir no Tela P2P" (`telap2p://amigo/<token>`) e "Baixar" |
-| `PATCH /v1/me` (`{ bio }`), `POST /v1/me/password` (`{ currentPassword, newPassword }`) | A frase do perfil (até 128 caracteres; os amigos recebem em `/v1/friends` como `bio`) e a troca de senha (pede a atual; mínimo 8 caracteres; 10 tentativas a cada 15 min por IP) |
+| `PATCH /v1/me` (`{ bio }`), `POST /v1/me/password` (`{ currentPassword, newPassword, code2fa? }`) | A frase do perfil (até 128 caracteres; os amigos recebem em `/v1/friends` como `bio`) e a troca de senha (pede a atual e, com 2FA, o código; mínimo 8 caracteres; 10 tentativas a cada 15 min por IP) |
+| `GET /v1/me` | A conta: além do de antes, `handle` (`nome#1234`), `handleChangeAt` (quando pode trocar o nome de novo), `emailVerified`, `twoFactor`, `googleLinked`, `hasPassword` |
+| `PATCH /v1/me/handle` (`{ name }`) | Trocar o nome do identificador: a tag fica se estiver livre no nome novo; uma troca a cada 7 dias (429 `handle_cooldown`); só maiúsculas/minúsculas não conta como troca. Nomes reservados (`admin`, `nebula`, `suporte`…) recusados |
+| `POST /v1/me/email` (`{ email, currentPassword \| code2fa }`), `POST /v1/me/email/confirm` (`{ code, purpose? }`) | Trocar o e-mail: pede a senha (ou o 2FA), manda o código para o novo e só troca com ele; o antigo recebe aviso e a lista de convidados acompanha. `purpose: 'confirmar'` confirma o e-mail atual (`POST /v1/me/email/verify` manda o código) |
+| `POST /v1/me/password-setup` (`{ newPassword, email, code2fa? }`) | Conta do Google "entrar também com senha" escolhendo **outro** e-mail: a senha e o e-mail só mudam com o código mandado para o novo (`/v1/me/email/confirm`). Mesmo e-mail: `POST /v1/me/password` |
+| `POST /v1/me/2fa/setup`, `/enable` (`{ code }`), `/disable`, `/recovery` | Dois fatores (TOTP, RFC 6238): preparar devolve `secret` e `otpauth` (o QR); ligar confere um código e devolve 10 `recoveryCodes` (uma vez só); desligar e gerar códigos novos pedem o 2FA. Administrador não desliga o próprio. Sem `RAZZE_TOTP_KEY`: 503 `2fa_disabled` |
 | `POST /v1/feedback` | Feedback e bugs mandados pelo app (ícone na barrinha). `tipo`: `bug` (obrigatórios `area` e `titulo`), `ideia` (`titulo`) ou `nota` (`nota` de 0 a 10). Opcionais: `area`, `frequencia`, `impacto`, `uso` (opções fixas), `titulo` (140), `detalhes`/`passos` (2000), `gosta`/`incomoda` (500), `usa` (lista de opções), `contato` (booleano), `tecnico` (`versao`, `sistema`, `tema`, `naSala`) e `imagem` (`data:image/jpeg` ou `png` em base64, até 450 KB, conferida pela assinatura do arquivo). Campo desconhecido é recusado. Só esta rota aceita corpo de até 700 KB. Até 5 por hora e 20 por dia por conta |
 | `PUT /v1/me/activity` (`{ game, artist, title }`) | Atividade no perfil: o jogo e a música que a pessoa deixou ligados (cada campo até 80 caracteres; tudo vazio apaga; 12 envios por minuto). Só os amigos veem, em `/v1/friends` como `activity` (`null` sem nada); some 2 minutos depois do último envio |
 | `GET /v1/auth/google/nonce`, `POST /v1/auth/google/android` (`{ idToken, nonce }`) | Entrar com Google **no Android** (veja "Entrar com Google no Android"): o nonce (43 caracteres, vale 5 min e uma vez só; 30 por IP a cada 10 min) e o ID token do Credential Manager. O servidor confere a assinatura com as chaves públicas do Google, o emissor, `aud` = `RAZZE_GOOGLE_WEB_CLIENT_ID`, a validade, o e-mail confirmado e o nonce, e daí segue a mesma lógica de conta do login do PC (mesmas respostas: 200, 201, 202 `pending_approval`, 403, 409 `account_exists`). Campo desconhecido é recusado; corpo até 8 KB; o mesmo limite de 10 erros a cada 10 min por IP. Sem a variável: 503 `google_disabled` |
-| `GET /v1/auth/google/config`, `POST /v1/auth/google` (`{ code, codeVerifier, redirectUri }`) | Entrar com Google: a config diz se está ligado e o client ID; o login troca o código do Google (que voltou para `127.0.0.1` no PC) pela conta. Cria a conta se o e-mail (confirmado pelo Google) é novo; se já existe conta com esse e-mail, responde `account_exists` (409) e **não junta sozinho** (com `googleOnly` e sem `legacyPasswordLogin`, a mensagem pede ao administrador para liberar a senha, já que entrar com ela está bloqueado). 10 tentativas erradas a cada 10 min por IP |
-| `POST /v1/me/google`, `DELETE /v1/me/google` | Vincular o Google à conta logada e desvincular (só quem tem senha desvincula; quem entrou só pelo Google define a primeira senha em `POST /v1/me/password` sem a atual) |
+| `GET /v1/auth/google/config`, `POST /v1/auth/google` (`{ code, codeVerifier, redirectUri, escolherNome? }`) | Entrar com Google: a config diz se está ligado, o client ID, `emailConfirmation` e `twoFactor` (o que o servidor tem ligado); o login troca o código do Google (que voltou para `127.0.0.1` no PC) pela conta. Conta nova com `escolherNome: true` (app novo): responde `choose_handle` com `ticket`, `suggestion` e `email`, e só cria em `/v1/auth/google/finish`; sem ele (app antigo), cria com a sugestão. Se já existe conta com esse e-mail, responde `account_exists` (409) com o `handle` dela e um `ticket` para vincular depois de entrar com a senha, e **não junta sozinho**; conta de senha que ainda não confirmou o e-mail é apagada (o Google confirmou o dono). 10 tentativas erradas a cada 10 min por IP |
+| `POST /v1/me/google` (`{ code, codeVerifier, redirectUri }` ou `{ ticket }`; `move?`, `code2fa?`, `currentPassword?`), `DELETE /v1/me/google` (`{ currentPassword \| code2fa }`) | Vincular o Google à conta logada (troca o anterior, se houver; com 2FA pede o código) e desvincular (só quem tem senha; pede a senha ou o 2FA). Google de outra conta: 409 `google_taken` com o `handle`, `amigos`, `mensagens`, `redes`, `excluir` e `ticket`; `{ ticket, move: true }` + senha/2FA tira o Google de lá (a outra conta é **excluída** se só entrava por ele; com senha, só perde o Google e as sessões). Recusa mover de administrador e excluir conta dona de rede com gente. Fica no histórico (`identity.move`, `identity.link`, `identity.replace`, `identity.unlink`). As formas de entrar ficam na tabela `user_identities` (o `google_sub` antigo migra na primeira subida) |
 | `POST /v1/admin/users/:id/reset-code`, `POST /v1/auth/reset` (`{ email, code, password }`) | Esqueci a senha **sem e-mail**: o administrador gera um código (`ABCD-EFGH`, vale 1 hora, uso único, só o hash fica no banco; botão **Código de senha** em Administração › Pessoas, no app, e no painel web) e passa para a pessoa, que redefine a senha. 5 erros queimam o código; redefinir derruba as sessões da conta |
 | `POST /v1/messages` (`{ to, text }`) | Mandar mensagem direta para um amigo (até 2000 caracteres, ou até 9000 se for cifrada, `e2e1:<base64url>`; 30 mensagens a cada 10 s por conta). O app só manda cifrada ([spec](spec/mensagens-criptografadas.md)) |
 | `GET /v1/messages?after=<seq>` | Mensagens diretas (enviadas e recebidas) depois do número de sequência `after`, 200 por vez (`more` diz se há mais) |
@@ -118,7 +128,7 @@ funcionando com apps antigos; atualize **antes** de publicar o app novo.
    Guarde esse `.tgz` também fora da VPS (`scp` para o seu PC).
 5. **Trazer o código novo** (depois do merge do PR na `main`): `git pull`. Se a pasta não for um clone do repositório, copie a
    pasta `razze-api` do projeto para a VPS (`scp -r razze-api root@srv2015370.hstgr.cloud:~/`), **sem apagar o `.env`**.
-6. **Conferir o `.env`**: `API_DOMAIN` e `RAZZE_ADMIN_TOKEN` já existentes. As linhas `RAZZE_GOOGLE_CLIENT_ID` e
+6. **Conferir o `.env`**: `API_DOMAIN` e `RAZZE_ADMIN_TOKEN` já existentes. Para o e-mail e os dois fatores, veja "E-mail e dois fatores" abaixo (`RAZZE_SMTP_USER`, `RAZZE_SMTP_PASS`, `RAZZE_TOTP_KEY`). As linhas `RAZZE_GOOGLE_CLIENT_ID` e
    `RAZZE_GOOGLE_CLIENT_SECRET` são opcionais (veja "Entrar com Google"); vazias, o botão do Google fica escondido. O
    `RAZZE_PUBLIC_URL` já vem do Compose (`https://$API_DOMAIN`).
 7. **Subir a versão nova**: `docker compose up -d --build`, depois `docker compose logs --tail=50 razze-api`. Não deve haver erro;
@@ -141,6 +151,25 @@ funcionando com apps antigos; atualize **antes** de publicar o app novo.
    (`docker run --rm -v razze-api_razze-data:/data -v "$PWD":/backup busybox sh -c "rm -rf /data/* && tar xzf /backup/razze-data-AAAA-MM-DD.tgz -C /data"`), depois `docker compose start razze-api`.
 
 Depois da VPS atualizada: faça o teste "Conta, amigos e perfil" do `docs/roteiro-de-teste.md` e só então publique o app.
+
+## E-mail e dois fatores (opcional)
+
+[Spec](spec/email-e-dois-fatores.md). Sem as variáveis, o servidor funciona como antes (sem confirmação de e-mail; "esqueci a
+senha" só pelo código do administrador; sem 2FA).
+
+1. **E-mail pelo Gmail**: um Gmail só do app, com a **verificação em duas etapas** ligada; em
+   https://myaccount.google.com/apppasswords crie uma **senha de app** (16 letras). No `.env` da VPS:
+   `RAZZE_SMTP_USER=o-gmail-do-app@gmail.com` e `RAZZE_SMTP_PASS=a-senha-de-app` (com ou sem espaços). O envio é por
+   `smtp.gmail.com:465` (TLS), por um cliente SMTP próprio (`razze-api/email.js`, sem dependência). Outro provedor SMTP:
+   `RAZZE_SMTP_HOST`, `RAZZE_SMTP_PORT` (só TLS direto, como a 465) e `RAZZE_EMAIL_FROM`.
+   O Gmail aceita uns 500 envios por dia; se ele bloquear, o painel mostra "E-mail com erro" em Visão geral.
+2. **Dois fatores**: `RAZZE_TOTP_KEY=` com um valor gerado por `openssl rand -base64 36`. Ele cifra os segredos do app
+   autenticador no banco: **não troque depois** (quem tem o 2FA perderia o acesso) e guarde junto com o backup.
+3. `docker compose up -d` e confira: `curl -s https://srv2015370.hstgr.cloud/v1/auth/google/config` mostra
+   `"emailConfirmation":true` e `"twoFactor":true`.
+4. **Antes de ligar o `RAZZE_TOTP_KEY`**, avise os administradores: depois dele, o painel (web e no app) só entra com o 2FA
+   ligado. Cada um liga em Perfil › Conta Razze › Conta e segurança › Verificação em dois fatores (o token
+   `RAZZE_ADMIN_TOKEN` continua entrando no painel web para destravar).
 
 ## Entrar com Google (opcional)
 
@@ -212,11 +241,12 @@ Online confirma contato recente com a API; não prova conectividade P2P. As sala
 | `POST /v1/presence/heartbeat` | `{connections:[{networkId,deviceId}], room:null ou {id,networkId,host,porta,pessoas,senha}, internetRoom?:{servidor,codigo,pessoas,passe,host?}, salaAtual?:{modo,host,pessoas,voz}}` |
 | `DELETE /v1/presence` | Retirar a presença da sessão atual |
 | `GET /v1/rooms?networkId=ID` | `rooms`: salas visíveis das redes de que o usuário é membro; `internet`: salas do modo Internet dos amigos aceitos (`servidor, codigo, pessoas, passe, host, userId, lastSeen, amigos`) |
-| `GET /v1/admin/me`, `GET /v1/admin/overview` | Identidade administrativa e resumo |
+| `GET /v1/admin/me`, `GET /v1/admin/overview` | Identidade administrativa e resumo (com `email`: ligado e o último erro de envio, e `twoFactor`). Com `RAZZE_TOTP_KEY`, **administrador só entra no painel com o 2FA ligado** (403 `admin_2fa_required`; o token `RAZZE_ADMIN_TOKEN` continua valendo) |
 | `GET/PATCH /v1/admin/settings` | `requireApproval`, `registrationOpen`, `presenceTimeoutSeconds`, `googleOnly` (ninguém cria conta por senha; o administrador mantém a senha), `legacyPasswordLogin` (padrão ligado: com `googleOnly`, quem já tinha conta com senha ainda entra por ela; desligue quando todos tiverem vinculado o Google) e `onlyAllowlist` (só e-mails da lista de convidados criam conta) persistentes |
 | `GET/POST /v1/admin/allowlist` (`{ email, grupo: amigo|teste|admin, label? }`), `DELETE /v1/admin/allowlist/:email` | Lista de convidados: quem está nela entra já ativo (sem aprovação) com o grupo ou papel combinado; pôr na lista alguém que já criou conta (pendente) libera e ajusta, **só se o Google confirmou o e-mail dessa conta** (criada pelo Google ou que entrou/vinculou um Google do mesmo e-mail); senão a conta fica como está e a resposta traz `semGoogle: true`. Tirar da lista não apaga a conta. Até 500 e-mails |
 | `GET /v1/admin/analytics` | Só contagens: contas por situação e grupo, online agora, ativos hoje/7/30 dias, pico do dia, voltaram na semana, nunca abriram, amizades, mensagens dos últimos 7 dias, versões do app em uso e 14 dias de ativos, pico e cadastros. Nenhum e-mail |
-| `PATCH /v1/admin/users/:id` | Papel `user/admin`, grupo `amigo/teste`, status `pending/active/disabled` e `banReason` |
+| `PATCH /v1/admin/users/:id` | Papel `user/admin`, grupo `amigo/teste`, status `pending/active/disabled`, `banReason` e `handleName` (trocar o nome do identificador, sem o intervalo de 7 dias) |
+| `POST /v1/admin/users/:id/2fa-reset` | Desligar o 2FA de quem perdeu o celular e os códigos (confirme por outro canal que é a pessoa); avisa por e-mail e grava `2fa.reset`. Não vale para o próprio |
 | `DELETE /v1/admin/users/:id` | Excluir conta: só **desativada** (409 `user_not_disabled`) e nunca a própria (400). Apaga em cascata sessões, amizades, mensagens, chaves, feedback e as redes que ela criou; grava `user.delete` no histórico. O e-mail continua na lista de convidados |
 | `POST /v1/admin/users/:id/revoke-sessions` | Revogar todas as sessões e dispositivos do usuário |
 | `GET /v1/admin/clients`, `DELETE /v1/admin/clients/:id` | Consumo por sessão e desconexão individual |

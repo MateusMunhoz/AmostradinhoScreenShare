@@ -7,10 +7,13 @@ const fs = require('node:fs');
 const dgram = require('node:dgram');
 const net = require('node:net');
 const { DatabaseSync } = require('node:sqlite');
-const { createHash, createPublicKey, randomBytes, scrypt, timingSafeEqual, verify: verifySignature } = require('node:crypto');
+const { createHash, createPublicKey, randomBytes, randomInt, scrypt, timingSafeEqual, verify: verifySignature } = require('node:crypto');
 const { promisify } = require('node:util');
 const scryptAsync = promisify(scrypt);
 const { createControl } = require('./control');
+const ident = require('./identificador');
+const totp = require('./totp');
+const { enviarSmtp, configDoAmbiente, criarCorreio, EMAIL_RE } = require('./email');
 
 const TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const MAX_BODY_BYTES = 32 * 1024;
@@ -49,6 +52,20 @@ const GOOGLE_NONCE_MAX = 1000;
 const GOOGLE_NONCE_RE = /^[A-Za-z0-9_-]{43}$/;
 const GOOGLE_ANDROID_BODY_BYTES = 8 * 1024;
 const GOOGLE_CLOCK_SKEW_S = 60;
+// Identificador nome#1234 (docs/spec/identificador-nome-tag.md): trocar o nome no máximo a cada 7 dias
+const HANDLE_TROCA_MS = 7 * 24 * 60 * 60 * 1000;
+// Google confirmado esperando a pessoa escolher o nome ou entrar na conta que já tem para vincular (só na memória)
+const GOOGLE_TICKET_TTL_MS = 10 * 60 * 1000;
+const GOOGLE_TICKET_MAX = 1000;
+const TICKET_RE = /^[A-Za-z0-9_-]{43}$/;
+// Código por e-mail e verificação em dois fatores (docs/spec/email-e-dois-fatores.md)
+const EMAIL_CODE_TTL_MS = 15 * 60 * 1000;
+const EMAIL_CODE_TENTATIVAS = 5;
+const EMAIL_REENVIO_MS = 60 * 1000;
+const EMAIL_POR_HORA = 5;
+const CONFIRMAR_CADASTRO_MS = 24 * 60 * 60 * 1000;
+const DESAFIO_2FA_TTL_MS = 5 * 60 * 1000;
+const DESAFIO_2FA_TENTATIVAS = 5;
 const DEFAULT_DOWNLOAD_URL = 'https://github.com/MateusMunhoz/AmostradinhoScreenShare/releases/latest';
 // Sinais da conexão direta das mensagens privadas (oferta e resposta WebRTC, cifradas de ponta a ponta): só na
 // memória, entregues uma vez e apagados em 2 minutos. Nunca vão para o banco nem para o histórico
@@ -73,7 +90,8 @@ const FEEDBACK_TEXTOS = { titulo: 140, detalhes: 2000, passos: 2000, gosta: 500,
 const FEEDBACK_OBRIGATORIO = { bug: ['area', 'titulo'], ideia: ['titulo'], nota: ['nota'] };
 
 class ApiError extends Error {
-  constructor(status, code, message) { super(message); this.status = status; this.code = code; }
+  // extra: campos a mais no erro da resposta (ex.: o identificador da conta que já tem o e-mail)
+  constructor(status, code, message, extra) { super(message); this.status = status; this.code = code; this.extra = extra; }
 }
 
 function createApiServer(options = {}) {
@@ -137,6 +155,34 @@ function createApiServer(options = {}) {
   db.exec('CREATE INDEX IF NOT EXISTS idx_feedback_user ON feedback(user_id, created_at)');
   if (!userColumns.includes('bio')) db.exec("ALTER TABLE users ADD COLUMN bio TEXT NOT NULL DEFAULT ''");
   if (!userColumns.includes('status')) db.exec("ALTER TABLE users ADD COLUMN status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('pending', 'active', 'disabled'))");
+  // Identificador nome#1234: o nome como a pessoa escreveu, a chave em minúsculas (única junto com a tag) e quando trocou
+  if (!userColumns.includes('handle_name')) db.exec('ALTER TABLE users ADD COLUMN handle_name TEXT');
+  if (!userColumns.includes('handle_key')) db.exec('ALTER TABLE users ADD COLUMN handle_key TEXT');
+  if (!userColumns.includes('handle_tag')) db.exec('ALTER TABLE users ADD COLUMN handle_tag INTEGER');
+  if (!userColumns.includes('handle_changed_at')) db.exec('ALTER TABLE users ADD COLUMN handle_changed_at INTEGER');
+  db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_handle ON users(handle_key, handle_tag) WHERE handle_key IS NOT NULL');
+  // Cadastro por senha esperando o código do e-mail: até quando vale (NULL = conta confirmada ou de antes da confirmação)
+  if (!userColumns.includes('confirmar_ate')) db.exec('ALTER TABLE users ADD COLUMN confirmar_ate INTEGER');
+  // Formas de entrar além da senha (Google hoje; outros provedores depois são só linhas novas)
+  const migrarGoogle = !db.prepare("SELECT 1 AS sim FROM sqlite_master WHERE type = 'table' AND name = 'user_identities'").get();
+  db.exec('CREATE TABLE IF NOT EXISTS user_identities (provider TEXT NOT NULL, subject TEXT NOT NULL, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, email TEXT NOT NULL DEFAULT \'\', created_at INTEGER NOT NULL, PRIMARY KEY(provider, subject))');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_identities_user ON user_identities(user_id)');
+  // O Google que estava em users.google_sub passa para cá uma vez só (a coluna fica como estava, mas não é mais lida nem
+  // escrita: voltar para a versão anterior do servidor ainda acha os vínculos de antes)
+  if (migrarGoogle) db.prepare("INSERT OR IGNORE INTO user_identities(provider, subject, user_id, email, created_at) SELECT 'google', google_sub, id, email, created_at FROM users WHERE google_sub IS NOT NULL").run();
+  // Códigos mandados por e-mail (cadastro, trocar e-mail, confirmar o e-mail, esqueci a senha): só o hash; dados guarda a
+  // senha nova (já em hash) de quem define senha e e-mail juntos
+  db.exec("CREATE TABLE IF NOT EXISTS email_codes (user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, finalidade TEXT NOT NULL CHECK(finalidade IN ('cadastro', 'trocar-email', 'confirmar', 'senha')), email TEXT NOT NULL, code_hash TEXT NOT NULL, tentativas INTEGER NOT NULL DEFAULT 0, dados TEXT NOT NULL DEFAULT '{}', enviado_em INTEGER NOT NULL, expires_at INTEGER NOT NULL, PRIMARY KEY(user_id, finalidade))");
+  db.exec('CREATE TABLE IF NOT EXISTS email_envios (user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, at INTEGER NOT NULL)');
+  // Dois fatores: a chave cifrada (enabled_at NULL = ainda sendo ligada) e o último passo aceito (não vale o mesmo código duas vezes)
+  db.exec('CREATE TABLE IF NOT EXISTS two_factor (user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE, secret_enc TEXT NOT NULL, enabled_at INTEGER, last_step INTEGER NOT NULL DEFAULT -1)');
+  db.exec('CREATE TABLE IF NOT EXISTS recovery_codes (user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, code_hash TEXT NOT NULL, used_at INTEGER, PRIMARY KEY(user_id, code_hash))');
+  // Contas sem identificador (de antes dele) ganham um a partir do nome de exibição, com tag sorteada
+  for (const u of db.prepare('SELECT id, display_name AS nome, email FROM users WHERE handle_key IS NULL ORDER BY created_at').all()) {
+    const nome = ident.sugerirNome(u.nome, String(u.email).split('@')[0]);
+    const tag = ident.tagLivre(db, nome.toLowerCase());
+    if (tag) db.prepare('UPDATE users SET handle_name = ?, handle_key = ?, handle_tag = ? WHERE id = ?').run(nome, nome.toLowerCase(), tag, u.id);
+  }
 
   const hashPassword = async (password, salt) => (await scryptAsync(password, salt, 64)).toString('hex');
   const samePassword = async (user, password) => {
@@ -270,11 +316,19 @@ function createApiServer(options = {}) {
     if (!a || a.at <= now() - ACTIVITY_TTL_MS || (!a.game && !a.artist && !a.title)) return null;
     return { game: a.game, artist: a.artist, title: a.title };
   };
+  const googleDe = (userId) => db.prepare("SELECT subject, email FROM user_identities WHERE provider = 'google' AND user_id = ?").get(userId) || null;
+  const handleSql = "CASE WHEN handle_key IS NULL THEN NULL ELSE handle_name || '#' || substr('000' || handle_tag, -4) END";
   const publicUser = (id) => {
-    const u = db.prepare('SELECT id, email, display_name AS displayName, bio, role, created_at AS createdAt, google_sub AS googleSub, password_set AS passwordSet FROM users WHERE id = ?').get(id);
+    const u = db.prepare('SELECT id, email, display_name AS displayName, bio, role, created_at AS createdAt, password_set AS passwordSet, '
+      + 'handle_name AS handleName, handle_tag AS handleTag, handle_changed_at AS handleChangedAt, email_verificado AS emailVerified FROM users WHERE id = ?').get(id);
     if (!u) return null;
-    const { googleSub, passwordSet, ...rest } = u;
-    return { ...rest, googleLinked: !!googleSub, hasPassword: !!passwordSet };
+    const { passwordSet, handleName, handleTag, handleChangedAt, emailVerified, ...rest } = u;
+    const doisFatores = !!db.prepare('SELECT 1 AS sim FROM two_factor WHERE user_id = ? AND enabled_at IS NOT NULL').get(id);
+    return {
+      ...rest, handle: ident.formatar(handleName, handleTag), googleLinked: !!googleDe(id), hasPassword: !!passwordSet,
+      emailVerified: !!emailVerified, twoFactor: doisFatores,
+      handleChangeAt: handleChangedAt ? handleChangedAt + HANDLE_TROCA_MS : 0, // quando pode trocar o nome de novo
+    };
   };
   const newId = () => randomBytes(16).toString('hex');
   const feedbackTexto = (value, field, max) => {
@@ -383,30 +437,50 @@ function createApiServer(options = {}) {
     }
     return token;
   };
-  // A conta de quem o Google confirmou, igual para o PC (código) e o Android (ID token): acha pelo google_sub, cria a
-  // conta se o e-mail é novo (lista de convidados, aprovação) e não junta sozinho com conta de senha do mesmo e-mail
-  const entrarPeloGoogle = async (identity, plataforma) => {
-    let user = db.prepare('SELECT id, status FROM users WHERE google_sub = ?').get(identity.sub);
+  // A conta de quem o Google confirmou, igual para o PC (código) e o Android (ID token): acha pela identidade, cria a
+  // conta se o e-mail é novo (lista de convidados, aprovação) e não junta sozinho com conta de senha do mesmo e-mail.
+  // escolherNome: o app sabe mostrar a escolha do nome (e o "Já tem conta?") antes de criar; sem isso (app antigo), usa a
+  // sugestão. handleName: o nome escolhido (na volta, por /v1/auth/google/finish).
+  const entrarPeloGoogle = async (identity, plataforma, { escolherNome = false, handleName } = {}) => {
+    let user = db.prepare("SELECT u.id, u.status FROM user_identities i JOIN users u ON u.id = i.user_id WHERE i.provider = 'google' AND i.subject = ?").get(identity.sub);
     if (!user) {
-      if (db.prepare('SELECT 1 AS yes FROM users WHERE email = ?').get(identity.email)) {
-        // Não junta sozinho: quem criou a conta com esse e-mail pode não ser o dono dele. Entra com a senha e vincula;
-        // com a senha desligada (googleOnly sem legacyPasswordLogin) só o administrador destrava.
-        const semSenha = control.settings().googleOnly && !control.settings().legacyPasswordLogin;
-        throw new ApiError(409, 'account_exists', 'Já existe uma conta com o e-mail ' + identity.email + '. ' + (semSenha
+      limparNaoConfirmadas();
+      const existente = db.prepare('SELECT id, role, email_verificado AS verificado, confirmar_ate AS confirmarAte FROM users WHERE email = ?').get(identity.email);
+      // Cadastro por senha que ainda não confirmou o e-mail não prende o e-mail: o Google confirmou o dono, ele ganha
+      if (existente?.confirmarAte) db.prepare('DELETE FROM users WHERE id = ?').run(existente.id);
+      else if (existente) {
+        // Não junta sozinho: quem criou a conta com esse e-mail pode não ser o dono dele. Entra com a senha e vincula
+        // (o ticket deixa o app vincular este mesmo Google logo depois de entrar, sem abrir o Google de novo). Com a
+        // senha travada para ela (googleOnly sem legacyPasswordLogin e e-mail não confirmado), só o administrador destrava.
+        const handle = handleDe(existente.id);
+        const semSenha = control.settings().googleOnly && !control.settings().legacyPasswordLogin && !existente.verificado && existente.role !== 'admin';
+        throw new ApiError(409, 'account_exists', 'Esse e-mail já é da conta ' + (handle || identity.email) + '. ' + (semSenha
           ? 'Ela ainda não foi ligada ao Google. Peça ao administrador para liberar a entrada por senha; aí você entra com ela e vincula o Google em Conta.'
-          : 'Entre com a senha e vincule o Google em Conta.'));
+          : 'Entre com a senha e vincule o Google em Conta › Formas de entrar.'), { handle, ticket: novoTicket({ ...identity, plataforma }) });
       }
       const convidado = db.prepare('SELECT grupo FROM allowed_emails WHERE email = ?').get(identity.email);
       if (!convidado && control.settings().onlyAllowlist) throw new ApiError(403, 'not_allowed', 'Este e-mail não está na lista de convidados. Peça ao administrador para te adicionar.');
       if (!convidado && !control.settings().registrationOpen) throw new ApiError(403, 'registration_closed', 'Novos cadastros estão desativados.');
+      const displayName = (identity.name.replace(/\s+/g, ' ').trim() || identity.email.split('@')[0]).slice(0, 60) || 'Usuário';
+      const sugestao = ident.sugerirNome(identity.name, identity.email.split('@')[0]);
+      if (escolherNome && handleName === undefined) {
+        return { status: 200, value: { status: 'choose_handle', ticket: novoTicket({ ...identity, plataforma }), suggestion: sugestao, email: identity.email, displayName } };
+      }
+      const nome = handleName === undefined ? sugestao : nomeValido(handleName);
       const id = newId();
       const salt = randomBytes(16).toString('hex');
       const unusable = randomBytes(32).toString('hex'); // senha que ninguém conhece: a conta só entra pelo Google até definir uma
-      const displayName = (identity.name.replace(/\s+/g, ' ').trim() || identity.email.split('@')[0]).slice(0, 60) || 'Usuário';
       const requiresApproval = control.settings().requireApproval && !convidado; // quem está na lista de convidados entra direto
-      db.prepare('INSERT INTO users(id, email, display_name, password_salt, password_hash, status, google_sub, password_set, email_verificado, role, grupo, created_at) VALUES(?, ?, ?, ?, ?, ?, ?, 0, 1, ?, ?, ?)')
-        .run(id, identity.email, displayName, salt, await hashPassword(unusable, salt), requiresApproval ? 'pending' : 'active', identity.sub,
-          convidado?.grupo === 'admin' ? 'admin' : 'user', convidado && convidado.grupo !== 'admin' ? convidado.grupo : 'amigo', now());
+      const unusableHash = await hashPassword(unusable, salt); // antes da transação: nada de await com ela aberta
+      db.exec('BEGIN IMMEDIATE');
+      try {
+        db.prepare('INSERT INTO users(id, email, display_name, password_salt, password_hash, status, password_set, email_verificado, role, grupo, created_at) VALUES(?, ?, ?, ?, ?, ?, 0, 1, ?, ?, ?)')
+          .run(id, identity.email, displayName, salt, unusableHash, requiresApproval ? 'pending' : 'active',
+            convidado?.grupo === 'admin' ? 'admin' : 'user', convidado && convidado.grupo !== 'admin' ? convidado.grupo : 'amigo', now());
+        db.prepare("INSERT INTO user_identities(provider, subject, user_id, email, created_at) VALUES('google', ?, ?, ?, ?)").run(identity.sub, id, identity.email, now());
+        gravarHandle(id, nome);
+        db.exec('COMMIT');
+      } catch (error) { db.exec('ROLLBACK'); throw error; }
       if (requiresApproval) return { status: 202, value: { user: publicUser(id), status: 'pending_approval' } };
       return { status: 201, value: { user: publicUser(id), status: 'active', accessToken: issueToken(id, plataforma) } };
     }
@@ -519,7 +593,158 @@ function createApiServer(options = {}) {
     if (network.ownerId !== userId) throw new ApiError(403, 'forbidden', 'Somente o dono pode alterar esta rede.');
   };
 
-  const control = createControl({ db, options, now, hash, requireUser, readBody, send, ApiError, isMember, friendshipExists });
+  // ---- Identificador nome#1234 ----
+  const usuarioPorIdentificador = (texto) => {
+    const lido = ident.lerIdentificador(texto);
+    return lido ? db.prepare("SELECT id, status FROM users WHERE handle_key = ? AND handle_tag = ?").get(lido.nome.toLowerCase(), lido.tag) || null : null;
+  };
+  const handleDe = (userId) => { const u = db.prepare('SELECT ' + handleSql + ' AS handle FROM users WHERE id = ?').get(userId); return u?.handle || null; };
+  const nomeValido = (nome) => {
+    const problema = ident.problemaDoNome(nome);
+    if (problema) throw new ApiError(400, 'invalid_handle', problema);
+    return nome.trim();
+  };
+  // Grava o nome (e a tag: a atual se estiver livre no nome novo, senão sorteada). Corrida com outra conta sorteando a
+  // mesma tag: o índice único recusa e tenta de novo.
+  const gravarHandle = (userId, nome, { manterTag = 0, marcarTroca = false } = {}) => {
+    const chave = nome.toLowerCase();
+    for (let i = 0; i < 5; i++) {
+      const tag = ident.tagLivre(db, chave, { manterTag: i === 0 ? manterTag : 0, ignorarId: userId });
+      if (!tag) throw new ApiError(409, 'handle_full', 'Esse nome está muito usado; escolha outro.');
+      try {
+        db.prepare('UPDATE users SET handle_name = ?, handle_key = ?, handle_tag = ?' + (marcarTroca ? ', handle_changed_at = ?' : '') + ' WHERE id = ?')
+          .run(...[nome, chave, tag, ...(marcarTroca ? [now()] : []), userId]);
+        return tag;
+      } catch (error) { if (!/UNIQUE constraint failed/.test(String(error))) throw error; }
+    }
+    throw new ApiError(409, 'handle_full', 'Não deu para reservar esse nome agora. Tente de novo.');
+  };
+
+  // ---- E-mail ----
+  const smtp = options.smtp === undefined ? configDoAmbiente() : options.smtp;
+  const correio = criarCorreio({ enviar: options.sendEmail || (smtp ? (msg) => enviarSmtp(smtp, msg) : null), esperas: options.emailRetries });
+  const emailLigado = () => correio.ativo;
+  const mascarar = (email) => String(email).replace(/^(.)([^@]*)([^@])@/, (_m, a, meio, b) => a + '•'.repeat(Math.min(Math.max(meio.length, 1), 6)) + b + '@').replace(/^(.)@/, '$1•@');
+  const limparNaoConfirmadas = () => db.prepare('DELETE FROM users WHERE confirmar_ate IS NOT NULL AND confirmar_ate <= ?').run(now());
+  const ASSUNTOS = { cadastro: 'Confirme seu e-mail', 'trocar-email': 'Confirme o seu e-mail novo', confirmar: 'Confirme seu e-mail', senha: 'Código para criar uma senha nova' };
+  // Manda um código de 6 dígitos (vale 15 min, 5 tentativas). Reenviar só depois de 1 min e no máximo 5 por hora por conta.
+  const mandarCodigo = (userId, finalidade, email, dados = {}) => {
+    if (!emailLigado()) throw new ApiError(503, 'email_disabled', 'Este servidor ainda não manda e-mail. Fale com o administrador.');
+    const t = now();
+    const anterior = db.prepare('SELECT enviado_em AS em FROM email_codes WHERE user_id = ? AND finalidade = ?').get(userId, finalidade);
+    if (anterior && anterior.em > t - EMAIL_REENVIO_MS) throw new ApiError(429, 'rate_limited', 'Espere um minuto antes de pedir outro código.');
+    db.prepare('DELETE FROM email_envios WHERE at <= ?').run(t - 60 * 60 * 1000);
+    if (db.prepare('SELECT COUNT(*) AS n FROM email_envios WHERE user_id = ?').get(userId).n >= EMAIL_POR_HORA) {
+      throw new ApiError(429, 'rate_limited', 'Muitos códigos pedidos. Tente de novo daqui a uma hora.');
+    }
+    const codigo = String(randomInt(0, 1_000_000)).padStart(6, '0');
+    db.prepare('INSERT INTO email_codes(user_id, finalidade, email, code_hash, tentativas, dados, enviado_em, expires_at) VALUES(?, ?, ?, ?, 0, ?, ?, ?) '
+      + 'ON CONFLICT(user_id, finalidade) DO UPDATE SET email = excluded.email, code_hash = excluded.code_hash, tentativas = 0, dados = excluded.dados, enviado_em = excluded.enviado_em, expires_at = excluded.expires_at')
+      .run(userId, finalidade, email, hash(finalidade + ':' + codigo), JSON.stringify(dados), t, t + EMAIL_CODE_TTL_MS);
+    db.prepare('INSERT INTO email_envios(user_id, at) VALUES(?, ?)').run(userId, t);
+    const bonito = codigo.slice(0, 3) + ' ' + codigo.slice(3);
+    correio.mandar({ to: email, subject: ASSUNTOS[finalidade] + ' · Nebula',
+      text: 'Seu código do Nebula é ' + bonito + '.\n\nVale por 15 minutos. Se não foi você que pediu, ignore este e-mail.\n' });
+    return { enviadoPara: mascarar(email) };
+  };
+  // Confere o código; certo, apaga e devolve { email, dados }. Errado conta tentativa; vencido ou esgotado, apaga.
+  // manter: não apaga ainda (quem chama apaga depois de conferir o resto, como o 2FA no esqueci a senha)
+  const conferirCodigo = (userId, finalidade, texto, { manter = false } = {}) => {
+    const row = userId ? db.prepare('SELECT email, code_hash AS codeHash, tentativas, dados, expires_at AS expiresAt FROM email_codes WHERE user_id = ? AND finalidade = ?').get(userId, finalidade) : null;
+    const invalido = () => new ApiError(400, 'code_invalid', 'Código inválido ou vencido. Peça outro.');
+    if (!row || row.expiresAt <= now() || row.tentativas >= EMAIL_CODE_TENTATIVAS) {
+      if (row) db.prepare('DELETE FROM email_codes WHERE user_id = ? AND finalidade = ?').run(userId, finalidade);
+      throw invalido();
+    }
+    const dado = String(texto ?? '').replace(/\D/g, '');
+    const certo = Buffer.from(row.codeHash, 'hex');
+    const veio = Buffer.from(hash(finalidade + ':' + dado), 'hex');
+    if (dado.length !== 6 || !timingSafeEqual(certo, veio)) {
+      db.prepare('UPDATE email_codes SET tentativas = tentativas + 1 WHERE user_id = ? AND finalidade = ?').run(userId, finalidade);
+      throw invalido();
+    }
+    if (!manter) db.prepare('DELETE FROM email_codes WHERE user_id = ? AND finalidade = ?').run(userId, finalidade);
+    return { email: row.email, dados: JSON.parse(row.dados || '{}') };
+  };
+  // Aviso de segurança para o dono da conta (sem código); sem e-mail ligado, não faz nada
+  const avisar = (email, assunto, texto) => { if (emailLigado() && email) correio.mandar({ to: email, subject: assunto + ' · Nebula', text: texto + '\n\nSe não foi você, fale com o administrador do servidor.\n' }); };
+  const emailDaConta = (userId) => db.prepare('SELECT email, email_verificado AS ok FROM users WHERE id = ?').get(userId);
+  const avisarConta = (userId, assunto, texto) => { const c = emailDaConta(userId); if (c?.ok) avisar(c.email, assunto, texto); };
+
+  // ---- Dois fatores ----
+  const cofre = totp.criarCofre(options.totpKey ?? process.env.RAZZE_TOTP_KEY ?? '');
+  const doisFatores = (userId) => db.prepare('SELECT secret_enc AS secretEnc, enabled_at AS enabledAt, last_step AS lastStep FROM two_factor WHERE user_id = ?').get(userId) || null;
+  const doisFatoresLigado = (userId) => !!doisFatores(userId)?.enabledAt;
+  // Código do app (6 dígitos) ou de recuperação (ABCD-EFGH, uso único). Devolve 'app', 'recuperacao' ou ''.
+  const conferirSegundoFator = (userId, texto) => {
+    const tf = doisFatores(userId);
+    if (!tf?.enabledAt || !cofre.pronto) return '';
+    const dado = String(texto ?? '').trim();
+    if (/^\d[\d\s]{5,7}$/.test(dado)) {
+      const passo = totp.conferir(cofre.abrir(tf.secretEnc), dado, now(), tf.lastStep);
+      if (passo < 0) return '';
+      db.prepare('UPDATE two_factor SET last_step = ? WHERE user_id = ?').run(passo, userId);
+      return 'app';
+    }
+    const rec = totp.normalizarRecuperacao(dado);
+    if (rec.length !== 8) return '';
+    const usado = db.prepare('UPDATE recovery_codes SET used_at = ? WHERE user_id = ? AND code_hash = ? AND used_at IS NULL').run(now(), userId, hash('rec:' + rec));
+    if (!usado.changes) return '';
+    avisarConta(userId, 'Código de recuperação usado', 'Um código de recuperação da verificação em dois fatores da sua conta ' + (handleDe(userId) || '') + ' foi usado agora.');
+    return 'recuperacao';
+  };
+  // Ação sensível (trocar e-mail ou senha, mexer nas formas de entrar, desligar o 2FA): pede o código do 2FA ou, sem ele,
+  // a senha. Conta só do Google e sem 2FA passa: a sessão é a prova que existe.
+  const exigirConfirmacao = async (req, userId, body) => {
+    const falhou = enforceAuthLimit(req, 'sensivel', 10, 15 * 60 * 1000);
+    if (doisFatoresLigado(userId)) {
+      if (!body.code2fa) throw new ApiError(401, 'code2fa_required', 'Digite o código do app autenticador.');
+      if (!conferirSegundoFator(userId, body.code2fa)) { falhou(); throw new ApiError(401, 'code2fa_invalid', 'Código do app autenticador incorreto.'); }
+      return;
+    }
+    const u = db.prepare('SELECT password_set AS passwordSet, password_salt AS salt, password_hash AS passwordHash FROM users WHERE id = ?').get(userId);
+    if (!u.passwordSet) return;
+    if (typeof body.currentPassword !== 'string' || !body.currentPassword) throw new ApiError(401, 'password_required', 'Digite a sua senha para confirmar.');
+    if (!(await samePassword(u, body.currentPassword.slice(0, 200)))) { falhou(); throw new ApiError(401, 'invalid_credentials', 'A senha está incorreta.'); }
+  };
+  // Login por senha com 2FA ligado: a senha certa vira um desafio (5 min, 5 tentativas) que o código fecha
+  const desafios = new Map(); // hash -> { userId, plataforma, ate, tentativas }
+  const novoDesafio = (userId, plataforma) => {
+    const t = now();
+    for (const [k, d] of desafios) if (d.ate <= t) desafios.delete(k);
+    while (desafios.size >= 1000) desafios.delete(desafios.keys().next().value);
+    const token = randomBytes(32).toString('base64url');
+    desafios.set(hash(token), { userId, plataforma, ate: t + DESAFIO_2FA_TTL_MS, tentativas: 0 });
+    return token;
+  };
+
+  // ---- Google confirmado esperando a próxima etapa (escolher o nome, ou entrar e vincular, ou mover) ----
+  const tickets = new Map(); // hash -> { identity, ate }
+  const novoTicket = (identity) => {
+    const t = now();
+    for (const [k, v] of tickets) if (v.ate <= t) tickets.delete(k);
+    while (tickets.size >= GOOGLE_TICKET_MAX) tickets.delete(tickets.keys().next().value);
+    const token = randomBytes(32).toString('base64url');
+    tickets.set(hash(token), { identity, ate: t + GOOGLE_TICKET_TTL_MS });
+    return token;
+  };
+  const lerTicket = (token, gastar) => {
+    if (typeof token !== 'string' || !TICKET_RE.test(token)) return null;
+    const chave = hash(token);
+    const v = tickets.get(chave);
+    if (!v || v.ate <= now()) { tickets.delete(chave); return null; }
+    if (gastar) tickets.delete(chave);
+    return v.identity;
+  };
+  // O que a conta tem, para a pessoa decidir se pode perder (mover o Google para outra conta)
+  const resumoConta = (userId) => ({
+    handle: handleDe(userId),
+    amigos: db.prepare("SELECT COUNT(*) AS n FROM friend_requests WHERE status = 'accepted' AND (sender_id = ? OR receiver_id = ?)").get(userId, userId).n,
+    mensagens: db.prepare('SELECT COUNT(*) AS n FROM direct_messages WHERE sender_id = ? OR receiver_id = ?').get(userId, userId).n,
+    redes: db.prepare('SELECT COUNT(*) AS n FROM networks WHERE owner_id = ?').get(userId).n,
+  });
+
+  const control = createControl({ db, options, now, hash, requireUser, readBody, send, ApiError, isMember, friendshipExists, doisFatoresLigado, totpPronto: () => cofre.pronto, correio, handleSql, gravarHandle, nomeValido, conferirSegundoFator });
   const handler = async (req, res) => {
     try {
       let pathname;
@@ -550,48 +775,152 @@ function createApiServer(options = {}) {
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new ApiError(400, 'invalid_email', 'E-mail inválido.');
         const displayName = assertText(body.displayName, 'Nome', 1, 60);
         const password = assertText(body.password, 'Senha', 8, 200);
+        // App antigo não manda o nome do identificador: usa a sugestão (a pessoa troca depois)
+        const nome = body.handleName === undefined ? ident.sugerirNome(displayName, email.split('@')[0]) : nomeValido(body.handleName);
         const id = newId();
         const salt = randomBytes(16).toString('hex');
         const passwordHash = (await scryptAsync(password, salt, 64)).toString('hex');
         const requiresApproval = control.settings().requireApproval;
+        // Com e-mail ligado, a conta só vale depois do código (24 h); até lá não prende o e-mail nem entra
+        const confirmar = emailLigado();
+        limparNaoConfirmadas();
+        db.exec('BEGIN IMMEDIATE');
         try {
-          db.prepare('INSERT INTO users(id, email, display_name, password_salt, password_hash, status, created_at) VALUES(?, ?, ?, ?, ?, ?, ?)')
-            .run(id, email, displayName, salt, passwordHash, requiresApproval ? 'pending' : 'active', now());
-        } catch (error) {
-          if (/UNIQUE constraint failed: users.email/.test(String(error))) throw new ApiError(409, 'email_exists', 'Já existe uma conta com este e-mail.');
-          throw error;
-        }
+          const antiga = db.prepare('SELECT id, confirmar_ate AS confirmarAte FROM users WHERE email = ?').get(email);
+          if (antiga?.confirmarAte) db.prepare('DELETE FROM users WHERE id = ?').run(antiga.id); // quem confirmar primeiro fica
+          else if (antiga) throw new ApiError(409, 'email_exists', 'Já existe uma conta com este e-mail.');
+          db.prepare('INSERT INTO users(id, email, display_name, password_salt, password_hash, status, confirmar_ate, created_at) VALUES(?, ?, ?, ?, ?, ?, ?, ?)')
+            .run(id, email, displayName, salt, passwordHash, requiresApproval ? 'pending' : 'active', confirmar ? now() + CONFIRMAR_CADASTRO_MS : null, now());
+          gravarHandle(id, nome);
+          db.exec('COMMIT');
+        } catch (error) { db.exec('ROLLBACK'); throw error; }
         const user = publicUser(id);
+        if (confirmar) return send(res, 202, { user, status: 'confirm_email', ...mandarCodigo(id, 'cadastro', email) });
         if (requiresApproval) return send(res, 202, { user, status: 'pending_approval' });
         return send(res, 201, { user, status: 'active', accessToken: issueToken(id) });
+      }
+      // Código do cadastro: confirma o e-mail e entra (ou espera a aprovação)
+      if (method === 'POST' && pathname === '/v1/auth/confirm-email') {
+        const failed = enforceAuthLimit(req, 'confirmar', 20, 15 * 60 * 1000);
+        const body = await readBody(req);
+        const email = assertText(body.email, 'E-mail', 3, 254).toLowerCase();
+        limparNaoConfirmadas();
+        const user = db.prepare('SELECT id, status FROM users WHERE email = ? AND confirmar_ate IS NOT NULL').get(email);
+        try { conferirCodigo(user?.id, 'cadastro', body.code); } catch (error) { failed(); throw error; }
+        db.prepare('UPDATE users SET confirmar_ate = NULL, email_verificado = 1 WHERE id = ?').run(user.id);
+        if (user.status === 'pending') return send(res, 202, { user: publicUser(user.id), status: 'pending_approval' });
+        return send(res, 200, { user: publicUser(user.id), status: 'active', accessToken: issueToken(user.id) });
+      }
+      if (method === 'POST' && pathname === '/v1/auth/confirm-email/resend') {
+        enforceAuthLimit(req, 'reenviar', 10, 15 * 60 * 1000)();
+        const body = await readBody(req);
+        const email = assertText(body.email, 'E-mail', 3, 254).toLowerCase();
+        limparNaoConfirmadas();
+        const user = db.prepare('SELECT id FROM users WHERE email = ? AND confirmar_ate IS NOT NULL').get(email);
+        return send(res, 200, user ? mandarCodigo(user.id, 'cadastro', email) : { enviadoPara: mascarar(email) });
       }
 
       if (method === 'POST' && pathname === '/v1/auth/login') {
         const failedLogin = enforceAuthLimit(req, 'login', 10, 10 * 60 * 1000);
         const body = await readBody(req);
-        const email = assertText(body.email, 'E-mail', 3, 254).toLowerCase();
+        // E-mail ou identificador (nome#1234); "email" é o nome antigo do campo
+        const login = assertText(body.login ?? body.email, 'E-mail ou identificador', 3, 254);
         const password = assertText(body.password, 'Senha', 1, 200);
-        const user = db.prepare('SELECT id, status, role, password_salt AS salt, password_hash AS passwordHash FROM users WHERE email = ?').get(email);
-        // Só Google: a senha continua valendo para o administrador (o painel /admin/ entra por ela)
-        if (control.settings().googleOnly && !control.settings().legacyPasswordLogin && user?.role !== 'admin') throw new ApiError(403, 'google_only', 'Este servidor só aceita entrar pelo Google. Use "Entrar com Google".');
-        const candidate = await scryptAsync(password, user?.salt || 'razze-invalid-user-salt', 64);
-        const stored = user ? Buffer.from(user.passwordHash, 'hex') : Buffer.alloc(64);
-        if (!user || stored.length !== candidate.length || !timingSafeEqual(stored, candidate)) {
+        limparNaoConfirmadas();
+        const porId = login.includes('#') ? usuarioPorIdentificador(login) : null;
+        const user = db.prepare('SELECT id, status, role, email_verificado AS verificado, confirmar_ate AS confirmarAte, password_salt AS salt, password_hash AS passwordHash FROM users WHERE '
+          + (porId ? 'id = ?' : 'email = ?')).get(porId ? porId.id : login.toLowerCase());
+        // Só Google vale para conta nova; quem tem senha e e-mail confirmado continua entrando por ela (o administrador
+        // também). Sem e-mail confirmado, só com legacyPasswordLogin.
+        if (control.settings().googleOnly && !control.settings().legacyPasswordLogin && user?.role !== 'admin' && !user?.verificado) throw new ApiError(403, 'google_only', 'Este servidor só aceita entrar pelo Google. Use "Entrar com Google".');
+        if (!(await samePassword(user, password))) {
           failedLogin();
-          throw new ApiError(401, 'invalid_credentials', 'E-mail ou senha incorretos.');
+          throw new ApiError(401, 'invalid_credentials', 'E-mail, identificador ou senha incorretos.');
         }
+        if (user.confirmarAte) throw new ApiError(403, 'email_unconfirmed', 'Confirme seu e-mail com o código que enviamos antes de entrar.', { email: login.includes('@') ? login.toLowerCase() : '' });
         if (user.status === 'pending') throw new ApiError(403, 'account_pending', 'Sua conta aguarda aprovação do servidor.');
         if (user.status !== 'active') throw new ApiError(403, 'account_disabled', 'Esta conta está desativada.');
+        if (doisFatoresLigado(user.id)) {
+          throw new ApiError(403, '2fa_required', 'Digite o código do app autenticador. Se esta tela não pede o código, atualize o app.', { challenge: novoDesafio(user.id, 'pc') });
+        }
         return send(res, 200, { user: publicUser(user.id), accessToken: issueToken(user.id) });
       }
+      // Segunda etapa do login com 2FA: o desafio da senha certa + o código do app (ou de recuperação)
+      if (method === 'POST' && pathname === '/v1/auth/login/2fa') {
+        const failed = enforceAuthLimit(req, 'login2fa', 20, 10 * 60 * 1000);
+        const body = await readBody(req);
+        const chave = typeof body.challenge === 'string' && /^[A-Za-z0-9_-]{43}$/.test(body.challenge) ? hash(body.challenge) : '';
+        const d = chave ? desafios.get(chave) : null;
+        if (!d || d.ate <= now()) { if (chave) desafios.delete(chave); failed(); throw new ApiError(401, 'challenge_expired', 'O tempo para digitar o código acabou. Entre com a senha de novo.'); }
+        if (!conferirSegundoFator(d.userId, body.code)) {
+          failed();
+          if (++d.tentativas >= DESAFIO_2FA_TENTATIVAS) { desafios.delete(chave); throw new ApiError(401, 'challenge_expired', 'Muitos códigos errados. Entre com a senha de novo.'); }
+          throw new ApiError(401, 'code2fa_invalid', 'Código incorreto. Confira o app autenticador.');
+        }
+        desafios.delete(chave);
+        const u = db.prepare('SELECT status FROM users WHERE id = ?').get(d.userId);
+        if (u?.status !== 'active') throw new ApiError(403, 'account_disabled', 'Esta conta está desativada.');
+        return send(res, 200, { user: publicUser(d.userId), accessToken: issueToken(d.userId, d.plataforma) });
+      }
+      // Esqueci a senha por e-mail: manda o código para o e-mail confirmado da conta. Responde igual exista a conta ou
+      // não (não serve para descobrir quem tem conta).
+      if (method === 'POST' && pathname === '/v1/auth/forgot') {
+        enforceAuthLimit(req, 'esqueci', 10, 15 * 60 * 1000)();
+        const body = await readBody(req);
+        const login = assertText(body.login, 'E-mail ou identificador', 3, 254);
+        if (!emailLigado()) throw new ApiError(503, 'email_disabled', 'Este servidor ainda não manda e-mail. Peça um código de senha ao administrador.');
+        const alvo = login.includes('#') ? usuarioPorIdentificador(login) : db.prepare('SELECT id FROM users WHERE email = ?').get(login.toLowerCase());
+        const conta = alvo ? db.prepare("SELECT id, email FROM users WHERE id = ? AND status = 'active' AND email_verificado = 1").get(alvo.id) : null;
+        if (conta) { try { mandarCodigo(conta.id, 'senha', conta.email); } catch (error) { if (error.status !== 429) throw error; } }
+        return send(res, 200, { ok: true, twoFactor: !!conta && doisFatoresLigado(conta.id) });
+      }
+      if (method === 'POST' && pathname === '/v1/auth/forgot/reset') {
+        const failed = enforceAuthLimit(req, 'esqueci-codigo', 20, 15 * 60 * 1000);
+        const body = await readBody(req);
+        const login = assertText(body.login, 'E-mail ou identificador', 3, 254);
+        const password = assertText(body.password, 'Senha', 8, 200);
+        const alvo = login.includes('#') ? usuarioPorIdentificador(login) : db.prepare('SELECT id FROM users WHERE email = ?').get(login.toLowerCase());
+        try { conferirCodigo(alvo?.id, 'senha', body.code, { manter: true }); } catch (error) { failed(); throw error; }
+        if (doisFatoresLigado(alvo.id)) {
+          if (!body.code2fa) throw new ApiError(401, 'code2fa_required', 'Digite também o código do app autenticador (ou um código de recuperação).');
+          if (!conferirSegundoFator(alvo.id, body.code2fa)) { failed(); throw new ApiError(401, 'code2fa_invalid', 'Código do app autenticador incorreto.'); }
+        }
+        const salt = randomBytes(16).toString('hex');
+        const passwordHash = await hashPassword(password, salt);
+        db.exec('BEGIN IMMEDIATE');
+        try {
+          db.prepare('UPDATE users SET password_salt = ?, password_hash = ?, password_set = 1 WHERE id = ?').run(salt, passwordHash, alvo.id);
+          db.prepare("DELETE FROM email_codes WHERE user_id = ? AND finalidade = 'senha'").run(alvo.id);
+          db.prepare('DELETE FROM sessions WHERE user_id = ?').run(alvo.id);
+          db.exec('COMMIT');
+        } catch (error) { db.exec('ROLLBACK'); throw error; }
+        avisarConta(alvo.id, 'Sua senha foi trocada', 'A senha da sua conta ' + (handleDe(alvo.id) || '') + ' foi trocada pelo "Esqueci a senha".');
+        return send(res, 200, { ok: true });
+      }
 
-      if (method === 'GET' && pathname === '/v1/auth/google/config') return send(res, 200, { enabled: !!googleClientId(), clientId: googleClientId(), webClientId: googleWebClientId(), googleOnly: !!control.settings().googleOnly, passwordLogin: !!control.settings().legacyPasswordLogin });
+      if (method === 'GET' && pathname === '/v1/auth/google/config') {
+        return send(res, 200, { enabled: !!googleClientId(), clientId: googleClientId(), webClientId: googleWebClientId(), googleOnly: !!control.settings().googleOnly,
+          passwordLogin: !!control.settings().legacyPasswordLogin, emailConfirmation: emailLigado(), twoFactor: cofre.pronto });
+      }
       if (method === 'POST' && pathname === '/v1/auth/google') {
         const failed = enforceAuthLimit(req, 'google', 10, 10 * 60 * 1000);
         const body = await readBody(req);
+        const escolherNome = body.escolherNome === true;
+        delete body.escolherNome;
         let identity;
         try { identity = await googleIdentity(body); } catch (error) { if (error.status !== 503) failed(); throw error; }
-        const result = await entrarPeloGoogle(identity, 'pc');
+        const result = await entrarPeloGoogle(identity, 'pc', { escolherNome });
+        return send(res, result.status, result.value);
+      }
+      // Volta da escolha do nome: o Google já confirmado (ticket) + o nome; cria a conta e entra
+      if (method === 'POST' && pathname === '/v1/auth/google/finish') {
+        const failed = enforceAuthLimit(req, 'google', 10, 10 * 60 * 1000);
+        const body = await readBody(req);
+        const identity = lerTicket(body.ticket, false);
+        if (!identity) { failed(); throw new ApiError(401, 'ticket_expired', 'O tempo para concluir acabou. Entre com o Google de novo.'); }
+        if (typeof body.handleName !== 'string') throw new ApiError(400, 'invalid_handle', 'Escolha um nome para o identificador.');
+        const result = await entrarPeloGoogle(identity, identity.plataforma || 'pc', { handleName: body.handleName });
+        lerTicket(body.ticket, true);
         return send(res, result.status, result.value);
       }
       // Android: o nonce antes de abrir a folha de contas do Google, e depois o ID token com ele
@@ -603,9 +932,11 @@ function createApiServer(options = {}) {
       if (method === 'POST' && pathname === '/v1/auth/google/android') {
         const failed = enforceAuthLimit(req, 'google', 10, 10 * 60 * 1000);
         const body = await readBody(req, GOOGLE_ANDROID_BODY_BYTES);
+        const escolherNome = body.escolherNome === true;
+        delete body.escolherNome;
         let identity;
         try { identity = await googleAndroidIdentity(body); } catch (error) { if (error.status !== 503) failed(); throw error; }
-        const result = await entrarPeloGoogle(identity, 'android');
+        const result = await entrarPeloGoogle(identity, 'android', { escolherNome });
         return send(res, result.status, result.value);
       }
 
@@ -692,22 +1023,78 @@ function createApiServer(options = {}) {
         else db.prepare('INSERT INTO user_activity(user_id, game, artist, title, updated_at) VALUES(?, ?, ?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET game=excluded.game, artist=excluded.artist, title=excluded.title, updated_at=excluded.updated_at').run(userId, game, artist, title, timestamp);
         return send(res, 200, { ok: true });
       }
+      // Vincular o Google: pelo código do Google (abre o navegador) ou pelo ticket de um Google já confirmado (o "Entrar e
+      // vincular" do cadastro). Google de outra conta: 409 com o que ela tem; move: true tira de lá (e exclui a outra conta
+      // se ela só entrava por ele).
       if (method === 'POST' && pathname === '/v1/me/google') {
         const failed = enforceAuthLimit(req, 'google', 10, 10 * 60 * 1000);
         const body = await readBody(req);
+        const mover = body.move === true;
         let identity;
-        try { identity = await googleIdentity(body); } catch (error) { if (error.status !== 503) failed(); throw error; }
-        const other = db.prepare('SELECT id FROM users WHERE google_sub = ? AND id <> ?').get(identity.sub, userId);
-        if (other) throw new ApiError(409, 'google_taken', 'Essa conta do Google já está ligada a outra conta.');
-        // Vincular um Google de outro e-mail não confirma o e-mail da conta
-        db.prepare('UPDATE users SET google_sub = ?, email_verificado = CASE WHEN email = ? THEN 1 ELSE email_verificado END WHERE id = ?').run(identity.sub, identity.email, userId);
+        if (body.ticket !== undefined) {
+          identity = lerTicket(body.ticket, false);
+          if (!identity) { failed(); throw new ApiError(401, 'ticket_expired', 'O tempo para concluir acabou. Entre com o Google de novo.'); }
+        } else {
+          const { move: _m, code2fa: _c, currentPassword: _p, ...login } = body;
+          try { identity = await googleIdentity(login); } catch (error) { if (error.status !== 503) failed(); throw error; }
+        }
+        if (doisFatoresLigado(userId) || mover) await exigirConfirmacao(req, userId, body);
+        const atual = googleDe(userId);
+        const dono = db.prepare("SELECT user_id AS id FROM user_identities WHERE provider = 'google' AND subject = ?").get(identity.sub);
+        if (dono && dono.id !== userId) {
+          const outra = db.prepare('SELECT id, role, password_set AS passwordSet, email FROM users WHERE id = ?').get(dono.id);
+          const resumo = resumoConta(outra.id);
+          const excluir = !outra.passwordSet;
+          // Excluir apaga em cascata as redes da outra conta: com gente dentro, não
+          const redesComGente = db.prepare('SELECT COUNT(*) AS n FROM networks n WHERE n.owner_id = ? AND EXISTS (SELECT 1 FROM network_members m WHERE m.network_id = n.id AND m.user_id <> ?)').get(outra.id, outra.id).n;
+          const bloqueio = outra.role === 'admin' ? 'É uma conta de administrador. Peça a outro administrador.'
+            : excluir && redesComGente ? 'Essa conta é dona de redes com outras pessoas. Entre nela e exclua ou passe as redes antes.' : '';
+          if (!mover || bloqueio) {
+            throw new ApiError(409, 'google_taken', bloqueio || ('Esse Google é da conta ' + resumo.handle + '.'), {
+              ...resumo, excluir, bloqueio: bloqueio || null, ticket: body.ticket !== undefined ? body.ticket : novoTicket(identity),
+            });
+          }
+          if (body.ticket !== undefined) lerTicket(body.ticket, true);
+          db.exec('BEGIN IMMEDIATE');
+          try {
+            if (excluir) db.prepare('DELETE FROM users WHERE id = ?').run(outra.id);
+            else {
+              db.prepare("DELETE FROM user_identities WHERE provider = 'google' AND user_id = ?").run(outra.id);
+              db.prepare('DELETE FROM sessions WHERE user_id = ?').run(outra.id);
+            }
+            if (atual) db.prepare("DELETE FROM user_identities WHERE provider = 'google' AND user_id = ?").run(userId);
+            db.prepare("INSERT INTO user_identities(provider, subject, user_id, email, created_at) VALUES('google', ?, ?, ?, ?)").run(identity.sub, userId, identity.email, now());
+            db.prepare('UPDATE users SET email_verificado = CASE WHEN email = ? THEN 1 ELSE email_verificado END WHERE id = ?').run(identity.email, userId);
+            db.prepare("INSERT INTO audit_log(actor, action, target, detail, created_at) VALUES(?, 'identity.move', ?, ?, ?)").run(userId, userId, JSON.stringify({ de: outra.id, excluida: excluir }), now());
+            db.exec('COMMIT');
+          } catch (error) { db.exec('ROLLBACK'); throw error; }
+          if (!excluir) avisar(outra.email, 'O Google saiu da sua conta', 'O Google que entrava na conta ' + resumo.handle + ' foi movido para outra conta.');
+          return send(res, 200, { user: publicUser(userId), moved: true, deleted: excluir });
+        }
+        if (body.ticket !== undefined) lerTicket(body.ticket, true);
+        if (dono) return send(res, 200, { user: publicUser(userId) }); // já era desta conta
+        db.exec('BEGIN IMMEDIATE');
+        try {
+          // Vincular outro Google troca o antigo (uma conta Google por conta)
+          if (atual) db.prepare("DELETE FROM user_identities WHERE provider = 'google' AND user_id = ?").run(userId);
+          db.prepare("INSERT INTO user_identities(provider, subject, user_id, email, created_at) VALUES('google', ?, ?, ?, ?)").run(identity.sub, userId, identity.email, now());
+          // Vincular um Google de outro e-mail não confirma (nem troca) o e-mail da conta
+          db.prepare('UPDATE users SET email_verificado = CASE WHEN email = ? THEN 1 ELSE email_verificado END WHERE id = ?').run(identity.email, userId);
+          db.prepare("INSERT INTO audit_log(actor, action, target, detail, created_at) VALUES(?, ?, ?, '{}', ?)").run(userId, atual ? 'identity.replace' : 'identity.link', userId, now());
+          db.exec('COMMIT');
+        } catch (error) { db.exec('ROLLBACK'); throw error; }
+        avisarConta(userId, 'Google vinculado', 'Um Google (' + mascarar(identity.email) + ') agora entra na sua conta ' + (handleDe(userId) || '') + '.');
         return send(res, 200, { user: publicUser(userId) });
       }
       if (method === 'DELETE' && pathname === '/v1/me/google') {
-        const u = db.prepare('SELECT google_sub AS googleSub, password_set AS passwordSet FROM users WHERE id = ?').get(userId);
-        if (!u.googleSub) return send(res, 200, { user: publicUser(userId) });
+        const u = db.prepare('SELECT password_set AS passwordSet FROM users WHERE id = ?').get(userId);
+        if (!googleDe(userId)) return send(res, 200, { user: publicUser(userId) });
         if (!u.passwordSet) throw new ApiError(400, 'no_password', 'Defina uma senha antes de desvincular o Google, senão você perde o acesso.');
-        db.prepare('UPDATE users SET google_sub = NULL WHERE id = ?').run(userId);
+        const body = await readBody(req);
+        await exigirConfirmacao(req, userId, body);
+        db.prepare("DELETE FROM user_identities WHERE provider = 'google' AND user_id = ?").run(userId);
+        db.prepare("INSERT INTO audit_log(actor, action, target, detail, created_at) VALUES(?, 'identity.unlink', ?, '{}', ?)").run(userId, userId, now());
+        avisarConta(userId, 'Google desvinculado', 'O Google não entra mais na sua conta ' + (handleDe(userId) || '') + '.');
         return send(res, 200, { user: publicUser(userId) });
       }
       if (method === 'POST' && pathname === '/v1/me/password') {
@@ -719,6 +1106,10 @@ function createApiServer(options = {}) {
           const current = assertText(body.currentPassword, 'Senha atual', 1, 200);
           if (!(await samePassword(user, current))) { failed(); throw new ApiError(401, 'invalid_credentials', 'A senha atual está incorreta.'); }
         }
+        if (doisFatoresLigado(userId)) {
+          if (!body.code2fa) throw new ApiError(401, 'code2fa_required', 'Digite o código do app autenticador.');
+          if (!conferirSegundoFator(userId, body.code2fa)) { failed(); throw new ApiError(401, 'code2fa_invalid', 'Código do app autenticador incorreto.'); }
+        }
         const salt = randomBytes(16).toString('hex');
         const passwordHash = await hashPassword(next, salt);
         db.exec('BEGIN IMMEDIATE');
@@ -727,7 +1118,145 @@ function createApiServer(options = {}) {
           db.prepare('DELETE FROM sessions WHERE user_id = ? AND token_hash <> ?').run(userId, req.authSessionHash);
           db.exec('COMMIT');
         } catch (error) { db.exec('ROLLBACK'); throw error; }
+        avisarConta(userId, 'Sua senha foi trocada', 'A senha da sua conta ' + (handleDe(userId) || '') + ' foi ' + (user.passwordSet ? 'trocada' : 'criada') + '.');
         return send(res, 200, { ok: true });
+      }
+      // Conta do Google "entrar também com senha" escolhendo outro e-mail: guarda a senha (em hash) e manda o código para
+      // o e-mail novo; senha e e-mail só mudam com o código (POST /v1/me/email/confirm). Mesmo e-mail: use /v1/me/password.
+      if (method === 'POST' && pathname === '/v1/me/password-setup') {
+        const body = await readBody(req);
+        const senha = assertText(body.newPassword, 'Senha nova', 8, 200);
+        const email = assertText(body.email, 'E-mail', 3, 254).toLowerCase();
+        if (!EMAIL_RE.test(email)) throw new ApiError(400, 'invalid_email', 'E-mail inválido.');
+        const u = db.prepare('SELECT email, password_set AS passwordSet FROM users WHERE id = ?').get(userId);
+        if (u.passwordSet) throw new ApiError(400, 'has_password', 'Sua conta já tem senha. Troque o e-mail em Conta › E-mail.');
+        if (email === u.email) throw new ApiError(400, 'same_email', 'Esse já é o e-mail da conta: só defina a senha.');
+        await exigirConfirmacao(req, userId, body);
+        limparNaoConfirmadas();
+        if (db.prepare('SELECT 1 AS sim FROM users WHERE email = ? AND id <> ? AND confirmar_ate IS NULL').get(email, userId)) throw new ApiError(409, 'email_exists', 'Esse e-mail já é de outra conta.');
+        const salt = randomBytes(16).toString('hex');
+        return send(res, 202, { status: 'confirm_email', ...mandarCodigo(userId, 'trocar-email', email, { salt, passwordHash: await hashPassword(senha, salt) }) });
+      }
+      // Trocar o e-mail da conta: pede a senha (ou o 2FA), manda o código para o e-mail novo e só troca com ele
+      if (method === 'POST' && pathname === '/v1/me/email') {
+        const body = await readBody(req);
+        const email = assertText(body.email, 'E-mail', 3, 254).toLowerCase();
+        if (!EMAIL_RE.test(email)) throw new ApiError(400, 'invalid_email', 'E-mail inválido.');
+        const u = db.prepare('SELECT email, password_set AS passwordSet FROM users WHERE id = ?').get(userId);
+        if (!u.passwordSet) throw new ApiError(400, 'no_password', 'Primeiro use "Entrar também com senha" em Conta › Formas de entrar.');
+        if (email === u.email) throw new ApiError(400, 'same_email', 'Esse já é o e-mail da conta.');
+        await exigirConfirmacao(req, userId, body);
+        limparNaoConfirmadas();
+        if (db.prepare('SELECT 1 AS sim FROM users WHERE email = ? AND id <> ? AND confirmar_ate IS NULL').get(email, userId)) throw new ApiError(409, 'email_exists', 'Esse e-mail já é de outra conta.');
+        return send(res, 202, { status: 'confirm_email', ...mandarCodigo(userId, 'trocar-email', email) });
+      }
+      // Confirmar o e-mail atual (contas de antes da confirmação): manda o código para ele
+      if (method === 'POST' && pathname === '/v1/me/email/verify') {
+        const u = db.prepare('SELECT email, email_verificado AS ok FROM users WHERE id = ?').get(userId);
+        if (u.ok) return send(res, 200, { user: publicUser(userId) });
+        return send(res, 202, { status: 'confirm_email', ...mandarCodigo(userId, 'confirmar', u.email) });
+      }
+      // O código que chegou: confirma o e-mail atual ou troca para o novo (e define a senha, no caso do password-setup)
+      if (method === 'POST' && pathname === '/v1/me/email/confirm') {
+        const failed = enforceAuthLimit(req, 'confirmar', 20, 15 * 60 * 1000);
+        const body = await readBody(req);
+        const finalidade = body.purpose === 'confirmar' ? 'confirmar' : 'trocar-email';
+        let lido;
+        try { lido = conferirCodigo(userId, finalidade, body.code); } catch (error) { failed(); throw error; }
+        const antes = db.prepare('SELECT email, email_verificado AS ok FROM users WHERE id = ?').get(userId);
+        if (finalidade === 'confirmar') {
+          if (lido.email === antes.email) db.prepare('UPDATE users SET email_verificado = 1 WHERE id = ?').run(userId);
+          return send(res, 200, { user: publicUser(userId) });
+        }
+        limparNaoConfirmadas();
+        db.exec('BEGIN IMMEDIATE');
+        try {
+          const outra = db.prepare('SELECT id, confirmar_ate AS pendente FROM users WHERE email = ? AND id <> ?').get(lido.email, userId);
+          if (outra?.pendente) db.prepare('DELETE FROM users WHERE id = ?').run(outra.id);
+          else if (outra) throw new ApiError(409, 'email_exists', 'Esse e-mail já é de outra conta.');
+          db.prepare('UPDATE users SET email = ?, email_verificado = 1 WHERE id = ?').run(lido.email, userId);
+          // A entrada na lista de convidados acompanha a conta
+          db.prepare('UPDATE allowed_emails SET email = ? WHERE email = ? AND NOT EXISTS (SELECT 1 FROM allowed_emails WHERE email = ?)').run(lido.email, antes.email, lido.email);
+          if (lido.dados.passwordHash) {
+            db.prepare('UPDATE users SET password_salt = ?, password_hash = ?, password_set = 1 WHERE id = ?').run(lido.dados.salt, lido.dados.passwordHash, userId);
+            db.prepare('DELETE FROM sessions WHERE user_id = ? AND token_hash <> ?').run(userId, req.authSessionHash);
+          }
+          db.prepare("INSERT INTO audit_log(actor, action, target, detail, created_at) VALUES(?, 'user.email', ?, '{}', ?)").run(userId, userId, now());
+          db.exec('COMMIT');
+        } catch (error) { db.exec('ROLLBACK'); throw error; }
+        if (antes.ok) avisar(antes.email, 'O e-mail da sua conta foi trocado', 'O e-mail da sua conta ' + (handleDe(userId) || '') + ' foi trocado para ' + mascarar(lido.email) + '.');
+        return send(res, 200, { user: publicUser(userId) });
+      }
+      // Trocar o nome do identificador (a tag fica se estiver livre no nome novo); no máximo uma vez a cada 7 dias
+      if (method === 'PATCH' && pathname === '/v1/me/handle') {
+        const body = await readBody(req);
+        const nome = nomeValido(body.name);
+        const u = db.prepare('SELECT handle_key AS chave, handle_tag AS tag, handle_changed_at AS em FROM users WHERE id = ?').get(userId);
+        if (u.chave === nome.toLowerCase() && u.tag) {
+          db.prepare('UPDATE users SET handle_name = ? WHERE id = ?').run(nome, userId); // só maiúsculas/minúsculas: não conta como troca
+          return send(res, 200, { user: publicUser(userId) });
+        }
+        if (u.em && u.em + HANDLE_TROCA_MS > now()) {
+          throw new ApiError(429, 'handle_cooldown', 'Você trocou o nome há pouco. Dá para trocar de novo em ' + new Date(u.em + HANDLE_TROCA_MS).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) + '.');
+        }
+        db.exec('BEGIN IMMEDIATE');
+        try { gravarHandle(userId, nome, { manterTag: u.tag || 0, marcarTroca: true }); db.exec('COMMIT'); }
+        catch (error) { db.exec('ROLLBACK'); throw error; }
+        return send(res, 200, { user: publicUser(userId) });
+      }
+      // Dois fatores: preparar (chave nova + QR), ligar (com um código do app), desligar e gerar códigos de recuperação novos
+      if (method === 'POST' && pathname === '/v1/me/2fa/setup') {
+        if (!cofre.pronto) throw new ApiError(503, '2fa_disabled', 'A verificação em dois fatores ainda não está ligada neste servidor.');
+        const body = await readBody(req);
+        if (doisFatoresLigado(userId)) throw new ApiError(400, '2fa_on', 'A verificação em dois fatores já está ligada.');
+        await exigirConfirmacao(req, userId, body);
+        const chave = totp.novaChave();
+        db.prepare('INSERT INTO two_factor(user_id, secret_enc, enabled_at, last_step) VALUES(?, ?, NULL, -1) ON CONFLICT(user_id) DO UPDATE SET secret_enc = excluded.secret_enc, enabled_at = NULL, last_step = -1')
+          .run(userId, cofre.fechar(chave));
+        return send(res, 200, { secret: totp.base32(chave), otpauth: totp.enderecoOtpauth(chave, handleDe(userId) || 'conta') });
+      }
+      if (method === 'POST' && pathname === '/v1/me/2fa/enable') {
+        const failed = enforceAuthLimit(req, 'sensivel', 10, 15 * 60 * 1000);
+        const body = await readBody(req);
+        const tf = doisFatores(userId);
+        if (!tf || tf.enabledAt || !cofre.pronto) throw new ApiError(400, '2fa_not_started', 'Comece de novo: abra a verificação em dois fatores em Conta.');
+        const passo = totp.conferir(cofre.abrir(tf.secretEnc), body.code, now(), tf.lastStep);
+        if (passo < 0) { failed(); throw new ApiError(401, 'code2fa_invalid', 'Código incorreto. Confira se o relógio do celular está certo e tente o código novo.'); }
+        const codigos = totp.codigosDeRecuperacao();
+        db.exec('BEGIN IMMEDIATE');
+        try {
+          db.prepare('UPDATE two_factor SET enabled_at = ?, last_step = ? WHERE user_id = ?').run(now(), passo, userId);
+          db.prepare('DELETE FROM recovery_codes WHERE user_id = ?').run(userId);
+          for (const c of codigos) db.prepare('INSERT INTO recovery_codes(user_id, code_hash) VALUES(?, ?)').run(userId, hash('rec:' + totp.normalizarRecuperacao(c)));
+          db.prepare("INSERT INTO audit_log(actor, action, target, detail, created_at) VALUES(?, '2fa.enable', ?, '{}', ?)").run(userId, userId, now());
+          db.exec('COMMIT');
+        } catch (error) { db.exec('ROLLBACK'); throw error; }
+        avisarConta(userId, 'Verificação em dois fatores ligada', 'A verificação em dois fatores foi ligada na sua conta ' + (handleDe(userId) || '') + '.');
+        return send(res, 200, { user: publicUser(userId), recoveryCodes: codigos });
+      }
+      if (method === 'POST' && pathname === '/v1/me/2fa/disable') {
+        const body = await readBody(req);
+        if (!doisFatoresLigado(userId)) { db.prepare('DELETE FROM two_factor WHERE user_id = ?').run(userId); return send(res, 200, { user: publicUser(userId) }); }
+        if (db.prepare("SELECT role FROM users WHERE id = ?").get(userId).role === 'admin') throw new ApiError(400, 'admin_2fa', 'Administradores precisam da verificação em dois fatores.');
+        await exigirConfirmacao(req, userId, body);
+        db.prepare('DELETE FROM two_factor WHERE user_id = ?').run(userId);
+        db.prepare('DELETE FROM recovery_codes WHERE user_id = ?').run(userId);
+        db.prepare("INSERT INTO audit_log(actor, action, target, detail, created_at) VALUES(?, '2fa.disable', ?, '{}', ?)").run(userId, userId, now());
+        avisarConta(userId, 'Verificação em dois fatores desligada', 'A verificação em dois fatores foi desligada na sua conta ' + (handleDe(userId) || '') + '.');
+        return send(res, 200, { user: publicUser(userId) });
+      }
+      if (method === 'POST' && pathname === '/v1/me/2fa/recovery') {
+        const body = await readBody(req);
+        if (!doisFatoresLigado(userId)) throw new ApiError(400, '2fa_off', 'A verificação em dois fatores está desligada.');
+        await exigirConfirmacao(req, userId, body);
+        const codigos = totp.codigosDeRecuperacao();
+        db.exec('BEGIN IMMEDIATE');
+        try {
+          db.prepare('DELETE FROM recovery_codes WHERE user_id = ?').run(userId);
+          for (const c of codigos) db.prepare('INSERT INTO recovery_codes(user_id, code_hash) VALUES(?, ?)').run(userId, hash('rec:' + totp.normalizarRecuperacao(c)));
+          db.exec('COMMIT');
+        } catch (error) { db.exec('ROLLBACK'); throw error; }
+        return send(res, 200, { recoveryCodes: codigos });
       }
       if (method === 'POST' && pathname === '/v1/auth/logout') {
         const token = /^Bearer ([A-Za-z0-9_-]{30,})$/.exec(String(req.headers.authorization || ''))?.[1];
@@ -751,7 +1280,7 @@ function createApiServer(options = {}) {
 
       if (method === 'GET' && pathname === '/v1/friends') {
         const rows = db.prepare(
-          "SELECT DISTINCT u.id, u.email, u.display_name AS displayName, u.bio AS bio, k.public_key AS dmKey FROM friend_requests f JOIN users u ON (u.id = f.sender_id AND f.receiver_id = ?) OR (u.id = f.receiver_id AND f.sender_id = ?) LEFT JOIN dm_keys k ON k.user_id = u.id WHERE f.status = 'accepted' ORDER BY u.display_name COLLATE NOCASE"
+          "SELECT DISTINCT u.id, u.email, u.display_name AS displayName, " + handleSql.replace(/handle_/g, 'u.handle_') + " AS handle, u.bio AS bio, k.public_key AS dmKey FROM friend_requests f JOIN users u ON (u.id = f.sender_id AND f.receiver_id = ?) OR (u.id = f.receiver_id AND f.sender_id = ?) LEFT JOIN dm_keys k ON k.user_id = u.id WHERE f.status = 'accepted' ORDER BY u.display_name COLLATE NOCASE"
         ).all(userId, userId);
         const salas = control.salasAtuais(); // em que sala cada amigo online está (sem endereço; docs/spec/sala-do-amigo.md)
         return send(res, 200, { friends: control.enrichUsers(rows.map((r) => ({ ...r, dmKey: r.dmKey || null, activity: activityOf(r.id), sala: salas.get(r.id) || null }))) });
@@ -766,28 +1295,32 @@ function createApiServer(options = {}) {
       }
       if (method === 'GET' && pathname === '/v1/friends/requests') {
         const incoming = db.prepare(
-          "SELECT f.id, f.created_at AS createdAt, u.id AS userId, u.email, u.display_name AS displayName FROM friend_requests f JOIN users u ON u.id = f.sender_id WHERE f.receiver_id = ? AND f.status = 'pending' ORDER BY f.created_at"
+          "SELECT f.id, f.created_at AS createdAt, u.id AS userId, u.email, u.display_name AS displayName, " + handleSql.replace(/handle_/g, 'u.handle_') + " AS handle FROM friend_requests f JOIN users u ON u.id = f.sender_id WHERE f.receiver_id = ? AND f.status = 'pending' ORDER BY f.created_at"
         ).all(userId);
         const outgoing = db.prepare(
-          "SELECT f.id, f.created_at AS createdAt, u.id AS userId, u.email, u.display_name AS displayName FROM friend_requests f JOIN users u ON u.id = f.receiver_id WHERE f.sender_id = ? AND f.status = 'pending' ORDER BY f.created_at"
+          "SELECT f.id, f.created_at AS createdAt, u.id AS userId, u.email, u.display_name AS displayName, " + handleSql.replace(/handle_/g, 'u.handle_') + " AS handle FROM friend_requests f JOIN users u ON u.id = f.receiver_id WHERE f.sender_id = ? AND f.status = 'pending' ORDER BY f.created_at"
         ).all(userId);
         return send(res, 200, { incoming, outgoing });
       }
       if (method === 'POST' && pathname === '/v1/friends/requests') {
         const body = await readBody(req);
-        // Pela conta (userId: o Adicionar do perfil de quem está na sala), pelo nickname ou pelo e-mail
+        // Pela conta (userId: o Adicionar do perfil de quem está na sala) ou pelo identificador nome#1234. Nome sem tag é o
+        // jeito antigo (busca pelo nome de exibição) e fica só enquanto houver app antigo; e-mail não é mais aceito (dava
+        // para descobrir quem tem conta).
         const byId = typeof body.userId === 'string' && /^[a-f0-9]{32}$/.test(body.userId) ? body.userId : '';
         const nickname = byId ? '' : String(body.nickname || '').trim();
-        const targetName = byId || (nickname
-          ? assertText(nickname, 'Nickname', 1, 60)
-          : assertText(body.email, 'E-mail', 3, 254).toLowerCase());
-        const matches = byId
-          ? [db.prepare('SELECT id FROM users WHERE id = ? AND status = \'active\'').get(byId)].filter(Boolean)
-          : nickname
-            ? db.prepare('SELECT id FROM users WHERE display_name = ? COLLATE NOCASE AND status = \'active\'').all(targetName)
-            : [db.prepare('SELECT id FROM users WHERE email = ? AND status = \'active\'').get(targetName)].filter(Boolean);
-        if (!matches.length) throw new ApiError(404, 'user_not_found', byId ? 'Essa conta não existe mais ou está desativada.' : `Não existe uma conta ativa com o nickname “${targetName}”.`);
-        if (matches.length > 1) throw new ApiError(409, 'nickname_ambiguous', 'Esse nickname pertence a mais de uma conta. Peça à pessoa para escolher um nickname único.');
+        if (!byId && !nickname) throw new ApiError(400, 'invalid_input', body.email !== undefined ? 'Adicione pelo identificador (ex.: lucas#0420), não pelo e-mail.' : 'Digite o identificador da pessoa (ex.: lucas#0420).');
+        const targetName = byId || assertText(nickname, 'Identificador', 1, 60);
+        let matches;
+        if (byId) matches = [db.prepare('SELECT id FROM users WHERE id = ? AND status = \'active\'').get(byId)].filter(Boolean);
+        else if (nickname.includes('#')) {
+          const falhou = enforceAuthLimit(req, 'amigo-id', 30, 10 * 60 * 1000); // não varrer as tags de um nome
+          const alvo = usuarioPorIdentificador(nickname);
+          matches = alvo?.status === 'active' ? [alvo] : [];
+          if (!matches.length) falhou();
+        } else matches = db.prepare('SELECT id FROM users WHERE display_name = ? COLLATE NOCASE AND status = \'active\'').all(targetName);
+        if (!matches.length) throw new ApiError(404, 'user_not_found', byId ? 'Essa conta não existe mais ou está desativada.' : nickname.includes('#') ? `Não existe conta com o identificador “${targetName}”.` : `Não existe uma conta ativa com o nickname “${targetName}”. Peça o identificador completo (ex.: lucas#0420).`);
+        if (matches.length > 1) throw new ApiError(409, 'nickname_ambiguous', 'Esse nome pertence a mais de uma conta. Peça o identificador completo (ex.: lucas#0420).');
         const target = matches[0];
         if (target.id === userId) throw new ApiError(400, 'invalid_friend', 'Você não pode adicionar a própria conta.');
         if (friendshipExists(userId, target.id)) return send(res, 200, { status: 'accepted' });
@@ -855,7 +1388,7 @@ function createApiServer(options = {}) {
         const owner = publicUser(link.userId);
         const already = friendshipExists(userId, link.userId);
         if (!already && link.uses >= link.maxUses) { fail(); throw new ApiError(404, 'link_invalid', 'Este convite expirou ou não está mais disponível.'); }
-        return send(res, 200, { displayName: owner.displayName, own: link.userId === userId, alreadyFriends: already });
+        return send(res, 200, { displayName: owner.displayName, handle: owner.handle, own: link.userId === userId, alreadyFriends: already });
       }
       if (method === 'POST' && pathname === '/v1/friends/links/accept') {
         const fail = enforceAuthLimit(req, 'friendlink', 30, 10 * 60 * 1000);
@@ -874,7 +1407,7 @@ function createApiServer(options = {}) {
             db.prepare('UPDATE friend_links SET uses = uses + 1 WHERE id = ?').run(link.id);
           }
           db.exec('COMMIT');
-          return send(res, 200, { status: 'accepted', friend: { id: owner.id, displayName: owner.displayName } });
+          return send(res, 200, { status: 'accepted', friend: { id: owner.id, displayName: owner.displayName, handle: handleDe(owner.id) } });
         } catch (error) { db.exec('ROLLBACK'); throw error; }
       }
 
@@ -1089,7 +1622,7 @@ function createApiServer(options = {}) {
       if (res.headersSent) return res.destroy();
       const status = error instanceof ApiError ? error.status : 500;
       if (status === 500) console.error('[RazzeAPI]', error);
-      send(res, status, { error: { code: error instanceof ApiError ? error.code : 'internal_error', message: error instanceof ApiError ? error.message : 'Erro interno da API.' } });
+      send(res, status, { error: { ...(error instanceof ApiError && error.extra ? error.extra : {}), code: error instanceof ApiError ? error.code : 'internal_error', message: error instanceof ApiError ? error.message : 'Erro interno da API.' } });
     }
   };
 

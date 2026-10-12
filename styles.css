@@ -2576,6 +2576,26 @@ html[data-tips="off"] .tip { display: none !important; }
 .ob-dialog .actions { display: flex; justify-content: flex-end; gap: 10px; }
 .ob-dialog .link-btn { align-self: center; }
 
+/* ---------- Conta e segurança, e a janela de pergunta (renderer/conta-seguranca.js) ---------- */
+.conta-dialog-corpo { display: flex; flex-direction: column; gap: 12px; }
+.conta-dialog-corpo .hint { margin: 0; }
+.conta-dialog-corpo .field small { display: block; margin-top: 4px; }
+.conta-dialog-links { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.conta-dialog-links:empty { display: none; }
+.seg-dialog { width: min(560px, 100%); max-height: calc(100vh - 48px); overflow-y: auto; }
+.seg-corpo { display: flex; flex-direction: column; }
+.seg-item { display: flex; flex-direction: column; gap: 8px; padding: 14px 0; border-top: 1px solid var(--line); }
+.seg-item:first-child { border-top: 0; padding-top: 0; }
+.seg-item-topo { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.seg-item h3 { margin: 0; font-size: 15px; }
+.seg-valor { color: var(--text-2); font-size: 14px; overflow-wrap: anywhere; }
+.seg-item .hint { margin: 0; }
+.seg-acoes { display: flex; gap: 8px; flex-wrap: wrap; }
+.seg-qr { align-self: center; width: 200px; height: 200px; border-radius: 10px; overflow: hidden; }
+.seg-qr svg { display: block; width: 100%; height: auto; }
+.seg-chave { user-select: all; overflow-wrap: anywhere; }
+.seg-codigos { margin: 0; padding: 12px 12px 12px 36px; columns: 2; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); user-select: all; }
+
 /* ---------- Início: amigos e entrar na conta ---------- */
 .home-signin {
   display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px;

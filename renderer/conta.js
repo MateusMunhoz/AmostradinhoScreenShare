@@ -1,7 +1,7 @@
 'use strict';
-// Conta: trocar a senha, esqueci a senha (com o código que o administrador gera, sem e-mail) e a frase do perfil.
-// Script clássico: só declara; quem liga é renderer/inicio.js (setupConta). Usa: util (toast, load/save),
-// conectividade (razzeUser), primeira-entrada (erroDoServico).
+// Conta: trocar a senha, esqueci a senha com o código que o administrador gera (o por e-mail fica em
+// conta-seguranca.js) e a frase do perfil. Script clássico: só declara; quem liga é renderer/inicio.js (setupConta).
+// Usa: util (toast, load/save), conectividade (razzeUser), primeira-entrada (erroDoServico), conta-seguranca (entrarComSenha).
 
 const BIO_MAX = 128;
 const senha = { modo: 'trocar', ocupado: false };
@@ -21,6 +21,10 @@ function abrirSenha(modo, email = '') {
   const semSenha = !esqueci && typeof razzeUser !== 'undefined' && !!razzeUser && razzeUser.hasPassword === false;
   senha.semSenha = semSenha;
   $('senhaCurrentField').hidden = esqueci || semSenha;
+  // Com a verificação em dois fatores, trocar a senha logado pede também o código do app
+  senha.doisFatores = !esqueci && typeof razzeUser !== 'undefined' && !!razzeUser?.twoFactor;
+  $('senhaCode2faField').hidden = !senha.doisFatores;
+  $('senhaCode2fa').value = '';
   $('senhaSubmit').textContent = esqueci ? 'Redefinir senha' : 'Trocar senha';
   for (const id of ['senhaCode', 'senhaCurrent', 'senhaNew', 'senhaNew2']) $(id).value = '';
   $('senhaEmail').value = email || '';
@@ -40,6 +44,7 @@ async function enviarSenha() {
   const email = $('senhaEmail').value.trim();
   if (esqueci && (!email || !$('senhaCode').value.trim())) { $('senhaStatus').textContent = 'Preencha o e-mail e o código.'; return; }
   if (!esqueci && !senha.semSenha && !$('senhaCurrent').value) { $('senhaStatus').textContent = 'Digite a senha atual.'; return $('senhaCurrent').focus(); }
+  if (senha.doisFatores && !$('senhaCode2fa').value.trim()) { $('senhaStatus').textContent = 'Digite o código do app autenticador.'; return $('senhaCode2fa').focus(); }
   senha.ocupado = true;
   $('senhaSubmit').disabled = true;
   $('senhaStatus').textContent = 'Enviando…';
@@ -50,9 +55,8 @@ async function enviarSenha() {
       fecharSenha();
       // Entra sozinho com a senha nova: a pessoa acabou de digitar e não precisa pedir e-mail e senha de novo
       try {
-        const r = await window.api.razzeLogin(email, nova);
-        razzeUser = r.user;
-        await refreshRazzeState();
+        const r = await entrarComSenha(email, nova); // com 2FA, pede o código do app
+        if (r?.status !== 'active') throw new Error('não entrou');
         if (!$('onboarding').hidden) fecharPrimeiraEntrada();
         else void retomarConviteAmigo();
         toast('Senha redefinida. Você já está dentro.');
@@ -60,9 +64,10 @@ async function enviarSenha() {
         toast('Senha redefinida. Entre com a senha nova.');
       }
     } else {
-      await window.api.razzeChangePassword(senha.semSenha ? '' : $('senhaCurrent').value, nova);
+      await window.api.razzeChangePassword(senha.semSenha ? '' : $('senhaCurrent').value, nova, senha.doisFatores ? $('senhaCode2fa').value.trim() : '');
       fecharSenha();
-      toast('Senha trocada.');
+      if (typeof renderSeguranca === 'function') { try { razzeUser = (await window.api.razzeMe()).user; } catch { /* fica como está */ } renderSeguranca(); }
+      toast(senha.semSenha ? 'Senha criada.' : 'Senha trocada.');
     }
   } catch (err) {
     $('senhaStatus').textContent = erroDoServico(err).replace(/Endpoint não encontrado\.?/i, 'Seu servidor ainda não tem essa opção.');
@@ -73,7 +78,8 @@ async function enviarSenha() {
 }
 
 // ---------- Entrar com Google ----------
-const google = { ligado: false, ocupado: false, soGoogle: false, senhaAntiga: false, comSenha: false };
+// emailConfirmacao e doisFatores: o que o servidor tem ligado (docs/spec/email-e-dois-fatores.md)
+const google = { ligado: false, ocupado: false, soGoogle: false, senhaAntiga: false, comSenha: false, emailConfirmacao: false, doisFatores: false };
 
 // Servidor só com Google: o formulário de e-mail e senha some (CSS .so-google .legacy-login) e o Google vira o botão principal.
 // Quem ainda tem conta com senha abre o formulário por "Tenho uma conta com e-mail e senha" (só entrar; criar não existe mais).
@@ -95,52 +101,29 @@ async function googleAtualizar() {
     google.ligado = !!cfg?.enabled;
     google.soGoogle = !!cfg?.googleOnly;
     google.senhaAntiga = cfg?.passwordLogin !== false;
+    google.emailConfirmacao = !!cfg?.emailConfirmation;
+    google.doisFatores = !!cfg?.twoFactor;
   } catch { google.ligado = false; google.soGoogle = false; }
   googleAplicarModo();
   $('obGoogle').hidden = !google.ligado;
   $('razzeGoogle').hidden = !google.ligado;
-  const logado = typeof razzeUser !== 'undefined' && !!razzeUser;
-  $('razzeGoogleLink').hidden = !google.ligado || !logado;
-  if (logado) $('razzeGoogleLink').textContent = razzeUser.googleLinked ? 'Desvincular Google' : 'Vincular Google';
 }
 
-async function googleEntrar(statusEl, depois) {
+// Entrar com Google (conta nova escolhe o identificador; o fluxo fica em conta-seguranca.js). mostrarSenha abre o
+// formulário de e-mail e senha desta tela com um aviso: "Entrar e vincular" e e-mail que já tem conta.
+async function googleEntrar(statusEl, depois, focoSenha) {
   if (google.ocupado) return;
   google.ocupado = true;
   statusEl.textContent = 'Abrindo o navegador… escolha a conta do Google e volte para cá.';
-  try {
-    const r = await window.api.razzeGoogleLogin();
-    if (r.status === 'pending_approval') {
-      statusEl.textContent = 'Pedido enviado. Avise o administrador para aprovar; quando ele aprovar, toque em Entrar com Google de novo. Enquanto isso, use sem conta.';
-      return;
-    }
-    razzeUser = r.user;
-    await refreshRazzeState();
-    statusEl.textContent = '';
-    depois();
-    toast('Você entrou com o Google.');
-  } catch (err) {
-    statusEl.textContent = 'Não deu: ' + erroDoServico(err);
-  } finally { google.ocupado = false; }
-}
-
-// Vincular e desvincular, na Conta Razze do Perfil
-async function googleVincular() {
-  if (google.ocupado || typeof razzeUser === 'undefined' || !razzeUser) return;
-  google.ocupado = true;
-  $('razzeGoogleLink').disabled = true;
-  try {
-    const r = razzeUser.googleLinked ? await window.api.razzeGoogleUnlink() : await window.api.razzeGoogleLink();
-    razzeUser = r.user;
-    toast(razzeUser.googleLinked ? 'Google vinculado à sua conta.' : 'Google desvinculado.');
-    await refreshRazzeState();
-  } catch (err) {
-    toast('Não deu: ' + erroDoServico(err), 'error');
-  } finally {
-    google.ocupado = false;
-    $('razzeGoogleLink').disabled = false;
-    void googleAtualizar();
-  }
+  const mostrarSenha = (texto) => {
+    google.comSenha = true;
+    googleAplicarModo();
+    statusEl.textContent = texto;
+    focoSenha?.();
+  };
+  try { await googleEntrarFluxo(statusEl, depois, mostrarSenha); }
+  catch (err) { statusEl.textContent = 'Não deu: ' + erroDoServico(err); }
+  finally { google.ocupado = false; }
 }
 
 // ---------- Frase do perfil ----------
@@ -568,13 +551,11 @@ function setupConta() {
     if (e.key === 'Escape') fecharSenha();
     else if (e.key === 'Enter' && e.target.tagName !== 'BUTTON') { e.preventDefault(); void enviarSenha(); }
   });
-  $('obGoogle').onclick = () => void googleEntrar($('obStatus'), fecharPrimeiraEntrada);
-  $('razzeGoogle').onclick = () => void googleEntrar($('razzeAccountStatus'), () => {});
-  $('razzeGoogleLink').onclick = () => void googleVincular();
+  $('obGoogle').onclick = () => void googleEntrar($('obStatus'), fecharPrimeiraEntrada, () => { entradaAba(false); $('obEmail').focus(); });
+  $('razzeGoogle').onclick = () => void googleEntrar($('razzeAccountStatus'), () => {}, () => { setRazzeAuthTab(false); $('razzeEmail').focus(); });
   for (const id of ['obLegacy', 'razzeLegacy']) $(id).onclick = () => { google.comSenha = true; googleAplicarModo(); };
   void googleAtualizar();
-  $('razzeChangePassword').onclick = () => abrirSenha('trocar');
-  $('razzeForgot').onclick = () => abrirSenha('esqueci', $('razzeEmail').value.trim());
+  $('razzeForgot').onclick = () => void esqueciSenha($('razzeEmail').value.trim());
   $('profileBio').oninput = renderBio;
   $('profileBio').onblur = () => { if (limparBio($('profileBio').value) !== bioAtual) void salvarBio(); };
   $('profileBio').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); $('profileBio').blur(); } });
