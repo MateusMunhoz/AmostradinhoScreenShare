@@ -282,7 +282,7 @@ function renderConnectivitySettings() {
   refreshRazzeState();
 }
 
-// Sair da conta (Perfil › Conta Razze e Conta e segurança): desliga as redes Razze antes; devolve se saiu
+// Sair da conta (rodapé da aba Conta do Perfil): desliga as redes Razze antes; devolve se saiu
 async function sairDaConta() {
   const disconnected = await window.api.razzeWireGuardDisconnectAll();
   if (!disconnected.ok) {
@@ -317,7 +317,7 @@ async function loadRazzeState() {
     $('razzeAuth').hidden = on;
     $('razzeAccount').hidden = !on;
     $('razzeStepNetworks').hidden = !on;
-    if (!on) { setFriendsData({}); dmStop(); razzeUser = null; anunciarContaNaSala(); }
+    if (!on) { setFriendsData({}); dmStop(); razzeUser = null; anunciarContaNaSala(); if (typeof renderSeguranca === 'function') renderSeguranca(); }
   };
   account(state.authenticated);
   $('profileAccountHint').textContent = state.authenticated ? '' : state.configured ? 'Entre na sua conta para ter amigos, mensagens privadas e redes Razze.' : 'Para entrar, escolha Razze (WireGuard) em Configurações › Rede e salve o endereço do servidor.';

@@ -28,8 +28,8 @@ function openNetworkDialog() {
 }
 // Entrar na conta: no Perfil, na parte Conta Razze
 function openRazzeLogin() {
-  if ($('profilePane').hidden) openProfilePopup();
-  $('profileAccount').scrollIntoView({ block: 'start' });
+  if ($('profilePane').hidden) openProfilePopup('conta');
+  else setProfileTab('conta');
   if (!$('razzeAuth').hidden && !$('razzeLogin').disabled) $('razzeEmail').focus();
 }
 

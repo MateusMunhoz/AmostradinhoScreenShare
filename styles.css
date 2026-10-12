@@ -1551,7 +1551,8 @@ button.sky-card-info:hover:not(:disabled) .sky-card-go { color: var(--accent); }
 /* Perfil e preferências são diálogos sobrepostos; nunca dividem os painéis da sala. */
 .utility-popup { z-index: 30 !important; }
 .utility-popup .dialog { --text: var(--surface-text); --text-2: var(--surface-text-2); --muted: var(--surface-muted); background: var(--panel); color: var(--text); overflow-y: auto; }
-.profile-dialog { width: min(420px,100%); }
+.profile-dialog { width: min(800px,100%); }
+.utility-popup .profile-dialog { height: min(720px, calc(100vh - 48px - var(--titlebar))); overflow: hidden; } /* quem rola é a parte da direita, como em Configurações */
 .utility-popup .general-settings { width: min(940px,100%); }
 #navProfile { padding: 2px 5px; background: transparent; }
 #navProfileAvatar { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-size: 14px; font-weight: 700; }
@@ -2498,13 +2499,13 @@ html[data-tips="off"] .tip { display: none !important; }
 .profile-seg { display: inline-flex; padding: 3px; border-radius: 10px; background: var(--sunken); border: 1px solid var(--line); }
 .profile-seg button { height: 30px; padding: 0 14px; border: 0; border-radius: 7px; background: none; color: var(--text-2); font: inherit; font-size: 13px; cursor: pointer; }
 .profile-seg button[aria-checked="true"] { background: var(--accent); color: var(--accent-ink, var(--bg)); font-weight: 600; }
-.profile-dialog > .field { margin-top: 6px; }
+.profile-panel > .field { margin-top: 6px; }
 .profile-name-box { position: relative; display: block; }
 .profile-name-box input { width: 100%; box-sizing: border-box; }
 .profile-lock { position: absolute; right: 12px; top: 50%; translate: 0 -50%; display: none; color: var(--muted); }
 .profile-name-box:has(input:disabled) .profile-lock { display: flex; }
 .profile-name-box input:disabled { border-style: dashed; opacity: 1; color: var(--text); padding-right: 36px; cursor: default; }
-.profile-dialog > * { flex-shrink: 0; } /* a prévia e as linhas não encolhem quando falta altura: o painel rola */
+.profile-dialog > *, .profile-panel > * { flex-shrink: 0; } /* a prévia e as linhas não encolhem quando falta altura: o painel rola */
 
 /* O cartão de perfil também sobe do pé da lista de Pessoas da sala */
 #peoplePop > .sky-focus.sky-page, #peoplePop > .sky-focus.sky-page.has-bg { position: sticky; inset: auto; bottom: -12px; z-index: 3; flex: none;
@@ -2582,8 +2583,6 @@ html[data-tips="off"] .tip { display: none !important; }
 .conta-dialog-corpo .field small { display: block; margin-top: 4px; }
 .conta-dialog-links { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .conta-dialog-links:empty { display: none; }
-.seg-dialog .seg-sair { margin-right: auto; }
-.seg-dialog { width: min(560px, 100%); max-height: calc(100vh - 48px); overflow-y: auto; }
 .seg-corpo { display: flex; flex-direction: column; }
 .seg-item { display: flex; flex-direction: column; gap: 8px; padding: 14px 0; border-top: 1px solid var(--line); }
 .seg-item:first-child { border-top: 0; padding-top: 0; }
@@ -2596,6 +2595,32 @@ html[data-tips="off"] .tip { display: none !important; }
 .seg-qr svg { display: block; width: 100%; height: auto; }
 .seg-chave { user-select: all; overflow-wrap: anywhere; }
 .seg-codigos { margin: 0; padding: 12px 12px 12px 36px; columns: 2; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); user-select: all; }
+
+/* ---------- Perfil em abas (docs/spec/perfil-em-abas.md) ---------- */
+.profile-dialog > .profile-layout { flex: 1 1 auto; flex-shrink: 1; min-height: 0; }
+.profile-main { overflow-y: auto; padding-right: 8px; }
+.profile-nav-titulo { display: inline-flex; align-items: center; }
+.profile-tab-dot { display: inline-block; width: 8px; height: 8px; margin-left: 8px; border-radius: 50%; background: var(--warn); vertical-align: middle; }
+.profile-tab-dot[hidden], .profile-panel[hidden], .profile-inline[hidden], .profile-card-edit[hidden], .profile-card-id[hidden], .conta-pendente[hidden], .profile-rodape[hidden] { display: none; }
+.profile-panel { display: flex; flex-direction: column; gap: 16px; max-width: 560px; } /* no largo, os campos não esticam a tela toda */
+.profile-card-edit { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; max-width: 100%; margin-left: -6px; padding: 2px 6px;
+  border: 0; border-radius: 6px; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.profile-card-edit:hover { background: var(--panel-2); }
+.profile-card-edit:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.profile-pen { flex: none; width: 13px; height: 13px; fill: none; stroke: var(--muted); stroke-width: 2; stroke-linejoin: round; }
+.profile-card-bio:empty::before { content: "Escreva uma frase"; color: var(--muted); }
+.profile-inline { display: flex; flex-direction: column; gap: 4px; margin: 2px 0 4px; }
+.profile-inline .hint { margin: 0; }
+.profile-card-id { display: flex; align-items: center; gap: 8px; margin: 2px 0; font-size: 13px; color: var(--text-2); }
+.profile-card-id .btn { height: 26px; padding: 0 10px; font-size: 12px; }
+.profile-row > span.profile-row-texto { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.profile-row-texto .hint { margin: 0; font-size: 12px; }
+.profile-mais { align-self: flex-start; font-size: 13px; }
+.conta-pendente { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--warn); border-radius: 10px;
+  background: color-mix(in srgb, var(--warn) 8%, transparent); font-size: 13px; line-height: 1.4; }
+.conta-pendente svg { flex: none; width: 18px; height: 18px; fill: none; stroke: var(--warn); stroke-width: 2; stroke-linecap: round; }
+.conta-pendente span { flex: 1; }
+.profile-rodape { position: sticky; bottom: 0; display: flex; margin-top: auto; padding: 12px 0 2px; border-top: 1px solid var(--line); background: var(--panel); }
 
 /* ---------- Início: amigos e entrar na conta ---------- */
 .home-signin {
@@ -2690,7 +2715,6 @@ button.home-chip:hover { color: var(--text); }
 .home-friend-name { display: flex; flex-direction: column; gap: 1px; }
 .home-friend-name strong { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .home-friend-bio { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.profile-card-info #profileCardBio:empty { display: none; }
 .ob-dialog .field[hidden] { display: none; }
 
 /* ---------- Recorte da foto e do fundo (renderer/recorte.js) ---------- */

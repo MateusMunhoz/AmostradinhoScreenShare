@@ -135,7 +135,7 @@ A sala em que você está não entra na lista: ela fica só na faixa de cima, co
 ### Salas dos amigos (modo Internet)
 
 No modo Internet, a lista da tela inicial vira **Salas dos seus amigos**: as salas que os seus amigos do Razze
-abriram pela internet. Basta estar logado na conta Razze (no seu **Perfil**, em **Conta Razze**); a VPN Razze não precisa estar ligada.
+abriram pela internet. Basta estar logado na conta Razze (no seu **Perfil**, aba **Conta**); a VPN Razze não precisa estar ligada.
 Quando há uma sala aberta (de amigo ou, nos outros modos, na sua rede), ela sobe para cima dos amigos com o selo
 **AO VIVO**, quantas pessoas, se a voz está ligada, o jogo do dono e os rostos dos seus amigos que já estão dentro, e
 **Entrar**. **Criar sala** e **Entrar numa sala** ficam sempre no mesmo lugar, acima da lista.
@@ -394,36 +394,36 @@ No pé do Início fica a versão ("Nebula 1.18.10 · atualizado"), com **Procura
   adicionam e você pode entrar com ele no lugar do e-mail. O nome tem só letras sem acento e números (2 a 32) e é escolhido ao
   criar a conta; o número depois do `#` é sorteado. Contas de antes ganharam um a partir do nome: ao abrir o app, a janela
   **Escolha seu identificador** pede o nome (ou **Manter** o gerado) e volta a cada abertura até a pessoa escolher. O nome de exibição (o que aparece no Início e na sala) continua livre, com espaço e acento.
-- **Conta e segurança:** Perfil › Conta Razze › **Conta e segurança** junta tudo da conta: o identificador (**Copiar**, **Trocar o
+- **Aba Conta:** **Perfil › Conta** junta tudo da conta: o identificador (**Copiar**, **Trocar o
   nome**, uma vez a cada 7 dias; o número fica se estiver livre), o e-mail (**Confirmar**, **Trocar e-mail**: o código vai para o
   novo e o antigo recebe um aviso), a senha (**Trocar senha** ou, em conta do Google, **Entrar também com senha**, que pode usar
   outro e-mail), o Google (**Vincular**, **Trocar Google**, **Desvincular**) e a **verificação em dois fatores**.
-- **Sair da conta:** no rodapé de **Conta e segurança** ou embaixo de Perfil › Conta Razze. Desliga as redes Razze conectadas
+- **Sair da conta:** no rodapé da aba **Conta** do Perfil, sempre à vista. Desliga as redes Razze conectadas
   antes; amigos, mensagens e salas dos amigos somem até entrar de novo.
 - **Confirmar o e-mail:** com o e-mail ligado no servidor, criar conta por senha manda um código de 6 dígitos para o e-mail (vale
   15 minutos; **Mandar outro código** depois de 1 minuto). Sem o código a conta não entra e some em 24 horas, liberando o e-mail.
-- **Verificação em dois fatores:** em Conta e segurança, **Ligar** mostra um QR code para o app autenticador do celular (Google
+- **Verificação em dois fatores:** na aba Conta, **Ligar** mostra um QR code para o app autenticador do celular (Google
   Authenticator, Microsoft Authenticator, 2FAS…) e pede um código dele. Depois aparecem **10 códigos de recuperação**, uma vez só:
   guarde (**Copiar** ou **Salvar em arquivo**). Com ela ligada, entrar com a senha pede também o código do app, e trocar e-mail,
   senha ou Google pede o código. Perdeu o celular e os códigos? Peça ao administrador para desligar. Entrar pelo Google não pede.
-- **Entrar com Google:** no passo 3 da primeira entrada e no **Perfil**, em **Conta Razze**, **Entrar com Google** abre o navegador, você escolhe a conta
+- **Entrar com Google:** no passo 3 da primeira entrada e no **Perfil**, aba **Conta**, **Entrar com Google** abre o navegador, você escolhe a conta
   e volta ao app. O botão só aparece se o servidor tiver o Google ligado. Conta nova escolhe o **identificador** antes de ser
   criada; quem já tem conta toca em **Já tenho conta no Nebula: entrar e vincular este Google**, entra com a senha e o Google é
   vinculado em seguida. Se já existe uma conta com o mesmo e-mail, o app diz qual é (o identificador) e faz o mesmo. Vincular um
   Google que já é de outra conta mostra o que ela tem e oferece **mover**: se ela só entrava por esse Google, ela é excluída
   (amizades e mensagens dela não passam); se tem senha, só perde o Google.
-- **Servidor só com Google:** quando o administrador liga essa opção, o passo 3 e o Perfil › Conta Razze mostram só **Entrar com Google** (sem formulário de e-mail e senha, e sem **Criar conta**). Quem já tinha conta com senha toca em **Tenho uma conta com e-mail e senha** para entrar como antes. Conta nova de um e-mail que não está na lista de convidados fica **pendente**: avise o administrador e, depois que ele aprovar, toque em **Entrar com Google** de novo. Sem conta, o app continua funcionando por código e senha da sala.
-- **Administração (só administradores):** em Perfil › Conta Razze, na sua conta, o botão **Administração** abre uma tela com **Visão geral** (online agora, ativos em 1, 7 e 30 dias, pico, contas novas, quem voltou, amizades, mensagens, versões em uso e 14 dias de gráfico), **Pedidos** (aprovar ou recusar contas pendentes), **Convidados** (e-mails que entram direto, com grupo Amigo, Teste ou Administrador), **Pessoas** (filtro Todos, Amigos, Teste, Admin, Pendentes e Desativados; mudar grupo, tornar administrador, desativar; quem ainda não vinculou o Google aparece com **Sem Google**: vincule todos antes de desligar a senha antiga), **Feedback** (o que chegou pelo ícone de feedback: filtro Abertos, Bugs, Sugestões, Avaliações, Resolvidos e Todos; ver o print, marcar como Novo, Visto ou Resolvido e apagar; o número na aba conta os novos) e **Servidor** (interruptores de só Google, senha antiga, aprovação e lista de convidados). Quem não é administrador não vê o botão, e o servidor recusa as chamadas dele.
-- **Trocar a senha:** Perfil › Conta Razze › Conta e segurança › **Trocar senha** (pede a senha atual e, com dois fatores, o código; mínimo 8 caracteres).
-- **Esqueci a senha:** na tela de entrar (Perfil › Conta Razze ou o passo 3 da primeira entrada), **Esqueci a senha**. Com o e-mail
+- **Servidor só com Google:** quando o administrador liga essa opção, o passo 3 e o Perfil › Conta mostram só **Entrar com Google** (sem formulário de e-mail e senha, e sem **Criar conta**). Quem já tinha conta com senha toca em **Tenho uma conta com e-mail e senha** para entrar como antes. Conta nova de um e-mail que não está na lista de convidados fica **pendente**: avise o administrador e, depois que ele aprovar, toque em **Entrar com Google** de novo. Sem conta, o app continua funcionando por código e senha da sala.
+- **Administração (só administradores):** em Perfil › Conta, na sua conta, o botão **Administração** abre uma tela com **Visão geral** (online agora, ativos em 1, 7 e 30 dias, pico, contas novas, quem voltou, amizades, mensagens, versões em uso e 14 dias de gráfico), **Pedidos** (aprovar ou recusar contas pendentes), **Convidados** (e-mails que entram direto, com grupo Amigo, Teste ou Administrador), **Pessoas** (filtro Todos, Amigos, Teste, Admin, Pendentes e Desativados; mudar grupo, tornar administrador, desativar; quem ainda não vinculou o Google aparece com **Sem Google**: vincule todos antes de desligar a senha antiga), **Feedback** (o que chegou pelo ícone de feedback: filtro Abertos, Bugs, Sugestões, Avaliações, Resolvidos e Todos; ver o print, marcar como Novo, Visto ou Resolvido e apagar; o número na aba conta os novos) e **Servidor** (interruptores de só Google, senha antiga, aprovação e lista de convidados). Quem não é administrador não vê o botão, e o servidor recusa as chamadas dele.
+- **Trocar a senha:** Perfil › Conta › **Trocar senha** (pede a senha atual e, com dois fatores, o código; mínimo 8 caracteres).
+- **Esqueci a senha:** na tela de entrar (Perfil › Conta ou o passo 3 da primeira entrada), **Esqueci a senha**. Com o e-mail
   ligado no servidor, digite o e-mail ou o identificador: o código vai para o e-mail confirmado da conta e, com ele (e o código do
   app, com dois fatores), você escolhe a senha nova e já entra. Sem e-mail no servidor (ou em **Tenho um código do
-  administrador**): peça um código ao **administrador**, que o gera em Perfil › Conta Razze › **Administração › Pessoas** (botão **Código de senha**; também no painel web `/admin/`). Digite o e-mail, o
+  administrador**): peça um código ao **administrador**, que o gera em Perfil › Conta › **Administração › Pessoas** (botão **Código de senha**; também no painel web `/admin/`). Digite o e-mail, o
   código (vale 1 hora e funciona uma vez) e a senha nova. Depois de redefinir, o app já entra na conta sozinho.
 - **Excluir uma conta (administrador):** Administração › Pessoas › **Desativar** e, na linha da conta desativada, **Excluir**. Apaga também
   as amizades, mensagens e salas dela e não dá para desfazer. O app pergunta se o e-mail sai da lista de convidados; sem isso, a pessoa
   cria a conta de novo ao entrar com o Google. Cada pessoa mostra **Google** ou **Só senha**, para ver quem ainda não vinculou.
-- **Frase do perfil:** no seu perfil, **Frase** (até 128 caracteres). Os amigos veem embaixo do seu nome no Início, e quem está na sala vê no seu cartão (ao abrir o seu perfil na voz); ela só passa entre os dois, na hora em que o cartão abre. Sem conta,
+- **Frase do perfil:** no cartão do seu perfil, clique na frase (ou em "Escreva uma frase") e escreva (até 128 caracteres; Enter ou clicar fora salva). Os amigos veem embaixo do seu nome no Início, e quem está na sala vê no seu cartão (ao abrir o seu perfil na voz); ela só passa entre os dois, na hora em que o cartão abre. Sem conta,
   ela fica salva neste PC e vai para o servidor quando você entrar.
 
 ## Feedback e bugs
@@ -438,7 +438,7 @@ No rodapé, **Enviar dados técnicos** (marcado) manda a versão do app, o siste
 
 ## Atividade no perfil
 
-Em **Configurações › Atividade** (ou pelo botão **Configurar a atividade** em Seu perfil), cada coisa que aparece no seu perfil é
+Em **Configurações › Atividade** (ou no próprio perfil: a aba **Perfil** tem os interruptores do jogo, da música e da sala, e o link para o resto), cada coisa que aparece no seu perfil é
 uma escolha sua. O jogo e a música vêm **ligados por padrão** (dá para desligar já na primeira entrada, no passo **Quem é você?**,
 ou aqui a qualquer hora); os jogos da Steam só aparecem depois que você marca cada um:
 
@@ -468,7 +468,7 @@ Embaixo, o perfil mostra **Jogou recentemente** (os últimos 3 jogos, com a imag
 
 No **envelope**, no começo da barra de baixo, tudo fica num painel só: em cima, **Online agora** (a foto de cada amigo
 online; clicar abre a conversa) e, embaixo, as **Conversas**. Precisa de conta Razze: sem ela, o envelope não aparece e a
-conta se faz no **Perfil**, em **Conta Razze**.
+conta se faz no **Perfil**, aba **Conta**.
 
 O botão de **adicionar amigo**, ao lado da busca, mostra o número de pedidos que chegaram (também somado no envelope) e
 sobe o painel **Adicionar amigo** por cima das conversas, com três abas: **Recebidos** (com **Aceitar**), **Enviados**
@@ -611,7 +611,7 @@ Prefere tudo do outro lado? **Configurações › Aparência › Espelhar a inte
 
 **Largura do chat e da voz:** passe o mouse no vão entre o painel e o vídeo até aparecer uma linha; arraste para alargar ou estreitar (de 300 a 520 px, e nunca mais que pouco mais da metade da janela). O vídeo se ajusta e a largura fica salva. Dois cliques na linha voltam ao tamanho automático. Pelo teclado: Tab até a linha e as setas.
 
-O botão **Perfil** (no alto da barrinha) abre **Seu perfil**: em cima, uma prévia de como os outros te veem na voz (o fundo, a foto, o nome na fonte escolhida, a conta e a frase, como no cartão da voz). Foto e fundo se trocam só por ela: clicar na foto troca a foto e **Trocar fundo** (ou **Escolher fundo**) fica no canto do fundo. Embaixo, **Aparência** (as linhas Foto e Fundo só aparecem quando há **Ajustar** ou a lixeira, que tira a foto ou o fundo; e a fonte do nome) e **Nome**, que só pode ser editado fora da sala (na sala aparece com um cadeado). Nele também fica o **Fundo do perfil**: uma imagem (recortada em quadrado) ou um GIF de até 1 MB, que aparece atrás do seu perfil para quem clicar em você na voz; **Tirar fundo** volta ao normal. Ao escolher a foto ou uma imagem de fundo, abre o **editor de recorte**: arraste a imagem para enquadrar e use o zoom (roda do mouse, controle, setas e + / -); na foto a bolinha mostra o resultado, e no fundo a faixa tracejada é a parte que mais aparece no cartão. **Ajustar** abre de novo o editor com o enquadramento anterior, sem escolher a imagem outra vez (GIF não corta, então não tem Ajustar). O GIF só se mexe com o perfil aberto. Dentro da sala, Voz, Chat e Pessoas são as abas do painel (veja **Sala**).
+O botão **Perfil** (no alto da barrinha) abre **Seu perfil**, com duas partes na barra da esquerda (como em Configurações; em janela estreita ficam em cima): **Perfil** (como os outros te veem) e **Conta** (a conta Razze: entrar ou criar, o identificador, e-mail, senha, Google, dois fatores e **Sair da conta**). Abre na última aba usada, ou na **Conta** quando falta algo nela (e-mail para confirmar, identificador para escolher), e aí a aba mostra uma bolinha e um aviso com o botão para resolver. Na aba Perfil, em cima, uma prévia de como os outros te veem na voz (o fundo, a foto, o nome na fonte escolhida, a conta e a frase, como no cartão da voz). Foto e fundo se trocam só por ela: clicar na foto troca a foto e **Trocar fundo** (ou **Escolher fundo**) fica no canto do fundo. O nome e a frase também se trocam no cartão: o lápis ao lado abre o campo ali mesmo (Enter ou Esc fecha); o nome só pode ser trocado fora da sala. O identificador aparece no cartão com **Copiar**. Embaixo, **Aparência** (as linhas Foto e Fundo só aparecem quando há **Ajustar** ou a lixeira, que tira a foto ou o fundo; e a fonte do nome) e **O que os amigos veem** (interruptores do jogo, da música e de em que sala estou, os mesmos de Configurações › Atividade). Nele também fica o **Fundo do perfil**: uma imagem (recortada em quadrado) ou um GIF de até 1 MB, que aparece atrás do seu perfil para quem clicar em você na voz; **Tirar fundo** volta ao normal. Ao escolher a foto ou uma imagem de fundo, abre o **editor de recorte**: arraste a imagem para enquadrar e use o zoom (roda do mouse, controle, setas e + / -); na foto a bolinha mostra o resultado, e no fundo a faixa tracejada é a parte que mais aparece no cartão. **Ajustar** abre de novo o editor com o enquadramento anterior, sem escolher a imagem outra vez (GIF não corta, então não tem Ajustar). O GIF só se mexe com o perfil aberto. Dentro da sala, Voz, Chat e Pessoas são as abas do painel (veja **Sala**).
 
 O painel **Voz** mostra os participantes, seus controles de volume e botões para entrar, sair, mutar e silenciar as vozes. Mostrar ou ocultar esse painel não liga nem desliga o microfone. Da mesma forma, ocultar **Transmissão** não encerra uma transmissão em andamento; use o botão **Parar** para encerrá-la.
 

@@ -228,7 +228,7 @@ async function googleEntrarFluxo(statusEl, depois, mostrarSenha) {
     fim = await perguntar({
       titulo: 'Seu identificador',
       texto: 'É por ele que os amigos te adicionam (' + r.email + '). Use só letras sem acento e números; o número depois do # é sorteado.',
-      campos: [{ id: 'nome', rotulo: 'Nome', valor: r.suggestion, max: 32, dica: 'Dá para trocar depois em Conta e segurança.' }],
+      campos: [{ id: 'nome', rotulo: 'Nome', valor: r.suggestion, max: 32, dica: 'Dá para trocar depois em Perfil › Conta.' }],
       ok: 'Criar conta',
       extras: [{ rotulo: 'Já tenho conta no Nebula: entrar e vincular este Google', acao: () => 'vincular' }],
       enviar: (v) => { const p = problemaDoNomeId(v.nome); if (p) throw new Error(p); return window.api.razzeGoogleFinish(v.nome); },
@@ -300,7 +300,7 @@ async function esqueciSenha(login) {
   } catch { toast('Senha trocada. Entre com a senha nova.'); }
 }
 
-// ---------- Conta e segurança (o painel) ----------
+// ---------- aba Conta do Perfil ----------
 function segLinha(titulo, valor, botoes = [], dica = '') {
   const sec = document.createElement('section');
   sec.className = 'seg-item';
@@ -337,10 +337,32 @@ function segLinha(titulo, valor, botoes = [], dica = '') {
 const atualizarUsuario = (u) => { if (u) razzeUser = u; void refreshRazzeState(); };
 const dataCurta = (ms) => new Date(ms).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' });
 
+// O que falta na conta, para o aviso no alto da aba Conta e a bolinha na aba (um de cada vez, o mais importante antes)
+function pendenciaDaConta() {
+  if (!logadoAgora()) return null;
+  const u = razzeUser;
+  if (u.handleChosen === false && u.handle) return { texto: 'Escolha o nome do seu identificador. Hoje ele é ' + u.handle + '.', botao: 'Escolher', acao: escolherIdentificador };
+  if (!u.emailVerified && google.emailConfirmacao) return { texto: 'Confirme seu e-mail para poder recuperar a senha por ele.', botao: 'Enviar código', acao: confirmarEmailAtual };
+  return null;
+}
+const contaPrecisaAtencao = () => !!pendenciaDaConta();
+
+// Aba Conta do Perfil: o identificador no cartão, o aviso do que falta, as linhas da conta e o Sair no rodapé
 function renderSeguranca() {
-  if ($('segurancaDialog').hidden) return;
   const box = $('segurancaCorpo');
-  if (!logadoAgora()) { box.replaceChildren(); $('segurancaDialog').hidden = true; return; }
+  const logado = logadoAgora();
+  const pend = pendenciaDaConta();
+  $('profileTabDot').hidden = !pend;
+  $('contaPendente').hidden = !pend;
+  if (pend) {
+    $('contaPendenteTexto').textContent = pend.texto;
+    $('contaPendenteBtn').textContent = pend.botao;
+    $('contaPendenteBtn').onclick = () => void pend.acao();
+  }
+  $('profileContaRodape').hidden = !logado;
+  $('profileCardIdLinha').hidden = !(logado && razzeUser.handle);
+  $('profileCardId').textContent = logado ? razzeUser.handle || '' : '';
+  if (!logado) { box.replaceChildren(); return; }
   const u = razzeUser;
   const podeTrocarNome = !u.handleChangeAt || u.handleChangeAt <= Date.now();
   const linhas = [
@@ -369,15 +391,14 @@ function renderSeguranca() {
   box.replaceChildren(...linhas);
 }
 
-async function abrirSeguranca() {
-  if (!logadoAgora()) return;
-  try { const { user } = await window.api.razzeMe(); razzeUser = user; } catch { /* mostra o que tem */ }
-  if (typeof googleAtualizar === 'function') await googleAtualizar();
-  $('segurancaDialog').hidden = false;
+// Abriu a aba Conta: busca a conta e o que o servidor tem ligado (e-mail, Google, 2FA) antes de desenhar
+async function atualizarAbaConta() {
+  if (logadoAgora()) {
+    try { const { user } = await window.api.razzeMe(); razzeUser = user; } catch { /* mostra o que tem */ }
+    if (typeof googleAtualizar === 'function') await googleAtualizar();
+  }
   renderSeguranca();
-  $('segurancaFechar').focus();
 }
-function fecharSeguranca() { $('segurancaDialog').hidden = true; }
 
 async function trocarNomeId() {
   const r = await perguntar({
@@ -504,10 +525,7 @@ async function novosCodigos() {
 }
 
 function setupContaSeguranca() {
-  $('razzeSeguranca').onclick = () => void abrirSeguranca();
-  $('segurancaFechar').onclick = fecharSeguranca;
-  $('segurancaSair').onclick = async () => { if (await sairDaConta()) fecharSeguranca(); };
-  $('segurancaDialog').addEventListener('keydown', (e) => { if (e.key === 'Escape' && $('contaDialog').hidden) fecharSeguranca(); });
+  $('profileCardIdCopy').onclick = () => void copiarIdentificador();
   for (const id of ['friendsIdCopy', 'homeFriendsId']) if ($(id)) $(id).onclick = () => { if (id === 'homeFriendsId') setHomeConvidarOpen(false); void copiarIdentificador(); };
 }
 
