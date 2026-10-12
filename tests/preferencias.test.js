@@ -181,10 +181,11 @@ test('largura do chat e da voz: automática, limitada e mantida ao trocar de tem
   assert.equal(P.normalize({}).appearance.paneWidth, 0);
   assert.equal(P.normalize({ appearance: { paneWidth: 520.4 } }).appearance.paneWidth, 520);
   assert.equal(P.normalize({ appearance: { paneWidth: 50 } }).appearance.paneWidth, 300);
-  assert.equal(P.normalize({ appearance: { paneWidth: 5000 } }).appearance.paneWidth, 900);
+  assert.equal(P.normalize({ appearance: { paneWidth: 5000 } }).appearance.paneWidth, 520);
+  assert.equal(P.normalize({ appearance: { paneWidth: 900 } }).appearance.paneWidth, 520, 'largura salva antes do limite de 520 px');
   assert.equal(P.normalize({ appearance: { paneWidth: '600' } }).appearance.paneWidth, 0);
   assert.equal(P.normalize({ appearance: { paneWidth: -1 } }).appearance.paneWidth, 0);
-  assert.equal(P.applyTheme({ appearance: { paneWidth: 600 } }, 'neon').appearance.paneWidth, 600);
+  assert.equal(P.applyTheme({ appearance: { paneWidth: 480 } }, 'neon').appearance.paneWidth, 480);
 });test('Tema Top Gun: cores de MFD e as chamadas de rádio como sons', () => {
   const fs = require('node:fs'), path = require('node:path');
   const tg = P.skins.find(k => k.id === 'topgun');

@@ -153,9 +153,8 @@ function memberRow(id, name, sharing) {
   if (!id && sharing && state.myId) {
     const watching = state.in.has(state.myId);
     const btn = document.createElement('button');
-    btn.className = 'btn small';
-    btn.textContent = watching ? 'Parar de ver' : 'Ver';
-    btn.title = watching ? 'Tirar a sua tela da sala' : 'Ver a sua própria transmissão, como um quadro na sala';
+    btn.className = watching ? 'watch-btn on' : 'watch-btn';
+    setIcon(btn, watching ? 'monitorStop' : 'monitorPlay', watching ? 'Tirar a sua tela da sala' : 'Ver a sua própria transmissão, como um quadro na sala');
     btn.onclick = toggleSelfView;
     li.append(btn);
   }
@@ -163,10 +162,10 @@ function memberRow(id, name, sharing) {
   if (id && sharing) {
     const watching = state.in.has(id);
     const btn = document.createElement('button');
-    btn.className = watching ? 'btn small' : 'btn small primary';
-    btn.textContent = watching ? 'Parar' : 'Assistir';
+    btn.className = watching ? 'watch-btn on' : 'watch-btn';
+    setIcon(btn, watching ? 'monitorStop' : 'monitorPlay', watching ? `Parar de assistir ${name}` : `Assistir ${name}`);
     btn.onclick = () => (watching ? stopWatching(id) : watch(id));
-    if (!watching && !canWatch(id)) { btn.disabled = true; btn.title = closedShareText(id); }
+    if (!watching && !canWatch(id)) { btn.disabled = true; btn.title = closedShareText(id); btn.setAttribute('aria-label', closedShareText(id)); }
     li.append(btn);
   }
   return li;

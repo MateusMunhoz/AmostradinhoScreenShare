@@ -46,6 +46,26 @@ app.whenReady().then(async () => {
     await run(`enterRoom({ id: '1', features: ['chat', 'voice', 'handoff'], members: [{ id: '2', name: 'Ana', sharing: true, version: '1.9.2' }], chat: [{ id: '1', from: '2', name: 'Ana', ts: Date.now(), text: 'oi' }] }, false, '127.0.0.1', 8765)`);
     await sleep(300);
     check('Entra na sala de mentira: lista e chat', await run(`!$('room').hidden && document.querySelectorAll('#members .member').length === 2 && $('chatList').querySelectorAll('.msg').length === 1`));
+    check('Barra da chamada: fora da voz não aparece', await run(`(() => { callbarAcordar(); return !$('callbar').classList.contains('on'); })()`));
+    check('Barra da chamada: na voz aparece, com microfone, fone, transmitir e sair, e esses somem do painel', await run(`(() => {
+      const antes = voice.session; voice.session = 'teste';
+      $('voiceMute').hidden = $('voiceDeafen').hidden = false;
+      renderCallbar(); callbarAcordar();
+      const r = $('callbar').classList.contains('on') && document.body.classList.contains('callbar-on')
+        && ['cbMic', 'cbDeafen', 'cbShare', 'cbLeave'].every((id) => $(id).getClientRects().length > 0)
+        && $('voiceMute').matches('.callbar-on .seu-sinal #voiceMute') && $('cbShare').textContent.includes('Transmitir');
+      voice.session = antes; setCallbar(false); renderCallbar();
+      return r && !document.body.classList.contains('callbar-on');
+    })()`));
+    check('Falando com o microfone desligado: aviso aparece e some ao ligar', await run(`(() => {
+      const [sessao, mudo, mic] = [voice.session, voice.muted, micNow];
+      voice.session = 'teste'; voice.muted = true; micNow = { porta: { open: true } };
+      avisoMutado(1000); const cedo = $('mutadoAviso').hidden;
+      avisoMutado(1600); const viu = !$('mutadoAviso').hidden;
+      voice.muted = false; avisoMutado(1700); const sumiu = $('mutadoAviso').hidden;
+      voice.session = sessao; voice.muted = mudo; micNow = mic; mutadoFala.desde = 0; mutadoFala.ate = 0;
+      return cedo && viu && sumiu;
+    })()`));
     await run(`(() => { openStats(); $('statsTabStream').click(); })()`);
     check('Estatísticas abrem nas configurações, nas duas abas', await run(`!$('generalSettingsDialog').hidden && settingsOpenOn('stats') && !$('settingsPanel-stats').hidden && !$('statsStream').hidden && document.querySelectorAll('#streamRows .stream-card').length === 1`));
     await run(`(() => { $('statsTabPerf').click(); openVoiceDialog(); })()`);

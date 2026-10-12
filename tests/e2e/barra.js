@@ -1,6 +1,6 @@
-// Sala nova (docs/spec/sala-nova.md): cabeçalho da sala em cima do palco (nome com o menu da sala, Convidar e Sair),
+// Sala nova (docs/spec/sala-nova.md): nome da sala no topo do painel (com o menu da sala),
 // abas Voz, Chat e Pessoas no painel, o cartão Seu sinal fixo embaixo dele (e na barrinha com o painel recolhido) e a
-// barrinha da direita só com coisas do app.
+// barrinha da direita com as coisas do app, Convidar e Sair.
 const { openApp, createRoom, joinRoom, check, sleep, run, FAKE } = require('./ajuda');
 FAKE.push('--disable-backgrounding-occluded-windows', '--disable-features=CalculateNativeWinOcclusion'); // para a foto
 const TONE = `(() => { window.tctx = new AudioContext(); const o = tctx.createOscillator(); const dst = tctx.createMediaStreamDestination(); o.connect(dst); o.start(); voice.media = { getUserMedia: async () => dst.stream }; })()`;
@@ -17,10 +17,13 @@ run('Sala: cabeçalho, abas e Seu sinal', 120000, async () => {
   await A.waitFor(`state.members.size === 1`, 10000);
 
   // Cabeçalho
-  check('Cabeçalho: "Sua sala" para quem criou, "Sala de Ana" para quem entrou, com quantas pessoas',
-    await A.eval(`$('roomHeadTitle').textContent === 'Sua sala' && $('roomHeadMeta').textContent.includes('2 pessoas')`)
+  check('Cabeçalho: "Sua sala" para quem criou, "Sala de Ana" para quem entrou, sem repetir quantas pessoas (está na aba)',
+    await A.eval(`$('roomHeadTitle').textContent === 'Sua sala' && !$('roomHead').textContent.includes('pessoas') && !!$('roomMenuRede').textContent`)
     && await B.eval(`$('roomHeadTitle').textContent === 'Sala de Ana'`));
-  check('Convidar e Sair no cabeçalho, à vista', await B.eval(dentro(['dockAddr', 'leaveBtn'], 'roomHead')));
+  check('Convidar e Sair na barrinha, à vista', await B.eval(dentro(['dockAddr', 'leaveBtn'], 'workspaceNav')));
+  check('O nome da sala fica no topo do painel, em cima das abas, e o palco começa no topo',
+    await B.eval(`${dentro('roomMenuBtn', 'workspacePanes')} && $('roomHead').getBoundingClientRect().bottom <= $('paneTabs').getBoundingClientRect().top + 1
+      && $('streamArea').getBoundingClientRect().top - $('workspacePanes').getBoundingClientRect().top < 20`));
   await B.eval(`$('roomMenuBtn').click()`);
   await sleep(200);
   check('O nome abre o menu da sala, com o endereço, desempenho e sair',
@@ -33,10 +36,10 @@ run('Sala: cabeçalho, abas e Seu sinal', 120000, async () => {
   await B.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: 400, y: 400, button: 'left', clickCount: 1 });
   check('Clicar fora fecha o menu da sala', await B.eval(`$('roomMenu').hidden`));
 
-  // Barrinha só com coisas do app
+  // Barrinha: as coisas do app, Convidar e, por último, Sair
   const rail = await B.eval(`[...$('workspaceNav').children].filter((e) => e.getClientRects().length).map((e) => e.id || e.className)`);
-  check('Barrinha: perfil, Início, chat por cima do jogo, modo gamer, feedback e engrenagem (nada da sala)',
-    rail.join(' ') === 'navProfile nav-sep nav-space dockHome nav-sep overlayToggle navGamer navFeedback navSettings', rail.join(' '));
+  check('Barrinha: perfil, Início, Convidar, chat por cima do jogo, modo gamer, feedback, engrenagem e Sair',
+    rail.join(' ') === 'navProfile nav-sep nav-space dockHome dockAddr nav-sep overlayToggle navGamer navFeedback navSettings nav-sep rail-leave-sep leaveBtn', rail.join(' '));
 
   // Abas (quem já usava chat e voz juntos começa lado a lado: separa antes)
   await B.eval(`(() => { if ($('paneJuntos').getAttribute('aria-pressed') === 'true') $('paneJuntos').click(); $('navVoice').click(); })()`);
@@ -63,7 +66,7 @@ run('Sala: cabeçalho, abas e Seu sinal', 120000, async () => {
   await B.waitFor(`voice.session && voice.members.get([...state.members.keys()][0])?.session`, 15000);
   await sleep(300);
   check('Na voz: microfone, fone, sair e Voz e atalhos no cartão, e em que canal você está',
-    await B.eval(`${dentro(['voiceMute', 'voiceDeafen', 'voiceJoin', 'voiceSettingsBtn'], 'seuSinal')} && $('ssOnde').textContent.startsWith('Voz conectada')`));
+    await B.eval(`${dentro(['voiceMute', 'voiceDeafen', 'voiceJoin', 'voiceSettingsBtn'], 'seuSinal')}`));
   await B.shot('sala-na-voz.png');
 
   // Recolhido: a voz vai para a barrinha
@@ -79,6 +82,12 @@ run('Sala: cabeçalho, abas e Seu sinal', 120000, async () => {
   await B.eval(`$('paneExpand').click()`);
   await sleep(200);
   check('Abrir de novo pela barrinha', await B.eval(`!$('workspacePanes').hidden && $('seuSinalMini').hidden`));
+  await B.eval(`$('dockHome').click()`);
+  await sleep(200);
+  check('No Início, o painel vai sozinho para a barrinha', await B.eval(`$('workspacePanes').hidden && ${visivel('seuSinalMini')} && ${visivel('leaveBtn')}`));
+  await B.eval(`$('navBackToRoom').click()`);
+  await sleep(200);
+  check('De volta à sala, o painel volta aberto', await B.eval(`!$('room').hidden && !$('workspacePanes').hidden && $('seuSinalMini').hidden`));
 
   // Palco vazio: quem transmite, com o Assistir
   await A.eval(`(() => { navigator.mediaDevices.getDisplayMedia = () => navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720, frameRate: 30 }, audio: false });

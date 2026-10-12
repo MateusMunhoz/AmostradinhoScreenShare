@@ -103,6 +103,9 @@ const ICON = {
   spotify: svg('M12 2a10 10 0 1 0 0 20 10 10 0 1 0 0-20zM7 9.5c3.3-1 7-.7 10 1M7.6 12.6c2.7-.8 5.6-.5 8 .9M8.2 15.5c2.1-.6 4.3-.4 6 .7'), // o símbolo do Spotify, numa cor só: a música vem dele
   game: svg('M6 11h4M8 9v4M15 12h.01M18 10h.01M17.3 5H6.7a4 4 0 0 0-4 3.6L2 15a3 3 0 0 0 5.4 2l1.3-2h6.6l1.3 2A3 3 0 0 0 22 15l-.7-6.4A4 4 0 0 0 17.3 5z'), // controle: jogando
   monitor: svg('M3 4h18v12H3zM8 20h8M12 16v4'),       // tela: transmitindo
+  // Monitor do Assistir na lista: a tela (.tela) e o símbolo de dentro (.miolo) são pintados pelo CSS (.watch-btn)
+  monitorPlay: `<svg viewBox="0 0 24 24" aria-hidden="true"><path class="tela" d="M5.5 4.5h13A2.5 2.5 0 0 1 21 7v6a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 13V7a2.5 2.5 0 0 1 2.5-2.5z"/><path d="M9 19.5h6M12 15.5v4"/><path class="miolo" d="M10.8 8.4v3.2l2.8-1.6z"/></svg>`,
+  monitorStop: `<svg viewBox="0 0 24 24" aria-hidden="true"><path class="tela" d="M5.5 4.5h13A2.5 2.5 0 0 1 21 7v6a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 13V7a2.5 2.5 0 0 1 2.5-2.5z"/><path d="M9 19.5h6M12 15.5v4"/><rect class="miolo" x="10.7" y="8.7" width="2.6" height="2.6" rx=".6"/></svg>`,
   clock: svg('M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2'), // relógio: há quanto tempo
   play: svg('M7 4v16l13-8z'),
   youtube: svg('M6.5 5.5h11a4 4 0 0 1 4 4v5a4 4 0 0 1-4 4h-11a4 4 0 0 1-4-4v-5a4 4 0 0 1 4-4zM10 9.5v5l4.5-2.5z'), // a música (do YouTube), sem o título do vídeo

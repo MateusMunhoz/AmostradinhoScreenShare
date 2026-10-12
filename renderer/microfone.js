@@ -133,6 +133,20 @@ function tickGate(mic) {
     mic.gateOpen = mic.porta.open;
     mic.gate.gain.setTargetAtTime(mic.gateOpen ? 1 : 0, mic.ctx.currentTime, mic.gateOpen ? 0.004 : 0.04);
   }
+  if (mic === micNow) avisoMutado(now);
+}
+
+// Falando com o microfone desligado: o microfone continua aberto (só a faixa da chamada fica parada), então a porta de
+// voz ainda mede. Meio segundo de voz mostra o aviso, que fica até 3 s depois de parar de falar.
+const mutadoFala = { desde: 0, ate: 0 };
+function avisoMutado(now) {
+  const mudo = !!voice.session && voice.muted;
+  if (mudo && micNow?.porta?.open) {
+    mutadoFala.desde ||= now;
+    if (now - mutadoFala.desde > 500) mutadoFala.ate = now + 3000;
+  } else mutadoFala.desde = 0;
+  const show = mudo && now < mutadoFala.ate;
+  if ($('mutadoAviso').hidden === show) $('mutadoAviso').hidden = !show;
 }
 
 function closeMic(mic) {
@@ -143,7 +157,7 @@ function closeMic(mic) {
   saveNoiseFloors(mic);
   try { mic.node?.port.postMessage('destroy'); } catch {}
   mic.ctx?.close().catch(() => {});
-  if (micNow === mic) micNow = null;
+  if (micNow === mic) { micNow = null; mutadoFala.ate = 0; $('mutadoAviso').hidden = true; }
 }
 
 // Trocar o filtro no meio da conversa: abre o microfone de novo e troca a faixa em cada conexão, sem cair
@@ -285,7 +299,7 @@ function renderVoiceMe() {
   if (!label) return;
   label.textContent = voiceCfg.mode === 'ptt'
     ? (voiceCfg.pttVk ? `Segure ${voiceCfg.pttLabel}` : 'Escolha a tecla') // apertada, só as barrinhas acendem
-    : 'Na voz';
+    : typeof channelName === 'function' ? channelName(voice.channel || '') : 'Na voz'; // o canal em que você está (subsalas.js)
   $('voiceMe').classList.toggle('ptt-open', voiceCfg.mode === 'ptt' && ptt.down);
 }
 

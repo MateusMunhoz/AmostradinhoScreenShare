@@ -284,7 +284,7 @@ function renderVoice() {
   $('voiceDock').classList.toggle('active', active || voice.pending);
   if (active || voice.pending) {
     join.className = 'btn icon voice-leave';
-    setIcon(join, 'phoneOff', voice.pending ? 'Cancelar entrada na voz' : 'Sair da voz');
+    setIcon(join, 'leave', voice.pending ? 'Cancelar entrada na voz' : 'Sair da voz');
   } else renderVoiceJoin();
   $('voiceMute').hidden = $('voiceDeafen').hidden = $('voiceMe').hidden = !active;
   setIcon($('voiceMute'), voice.muted ? 'micOff' : 'mic', voice.muted ? 'Ligar o microfone' : 'Desligar o microfone');

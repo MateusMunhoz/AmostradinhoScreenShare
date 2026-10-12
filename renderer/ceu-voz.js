@@ -1052,7 +1052,7 @@ function setMapPinned(on) {
 function renderMapPin() {
   const b = $('mapPin');
   b.hidden = !mapFocusFits();
-  setIcon(b, 'pin', mapFocus.pinned ? 'Soltar o mapa (o chat volta)' : 'Fixar o mapa aberto');
+  b.title = mapFocus.pinned ? 'Soltar o mapa (o chat volta)' : 'Fixar o mapa aberto'; // a chavinha "Fixar" está no index.html
   b.setAttribute('aria-pressed', String(mapFocus.pinned));
 }
 $('mapPin').onclick = () => setMapPinned(!mapFocus.pinned);
@@ -1377,11 +1377,13 @@ function renderSkyPage(box, { id, me, pid, name, sharing, micOff, deafOn, v, cha
   if (bioDe(pid)) who.append(el('p', 'sky-focus-bio', bioDe(pid)));
   head.append(who, where);
   const list = el('div', 'sky-page-actions');
-  const act = (icon, label, onclick, { pressed, disabled } = {}) => {
-    const b = el('button', 'sky-page-act');
+  // A principal (mensagem ou amizade) leva o nome escrito; as outras são só o ícone, com o nome na dica
+  const act = (icon, label, onclick, { pressed, disabled, principal } = {}) => {
+    const b = el('button', 'sky-page-act' + (principal ? ' principal' : ''));
     b.type = 'button';
     b.innerHTML = ICON[icon];
-    b.append(label);
+    if (principal) b.append(label);
+    else { b.title = label; b.setAttribute('aria-label', label); }
     if (pressed !== undefined) b.setAttribute('aria-pressed', String(pressed));
     if (disabled) b.disabled = true;
     b.onclick = onclick;
@@ -1392,18 +1394,25 @@ function renderSkyPage(box, { id, me, pid, name, sharing, micOff, deafOn, v, cha
   if (!me) {
     const fb = friendButton(id, nameOf(id));
     const done = fb.getAttribute('aria-disabled') === 'true';
-    const label = fb.title.startsWith('Você e') ? 'Vocês já são amigos' : fb.title.startsWith('Pedido') ? 'Pedido de amizade enviado'
-      : fb.title.startsWith('Aceitar') ? 'Aceitar o pedido de amizade' : 'Adicionar como amigo';
-    const add = act(done && fb.title.startsWith('Você e') ? 'userCheck' : 'userPlus', label, async () => {
-      add.disabled = true;
-      await fb.onclick();
-      skyFocusKey = '';
-      renderSkyProfile();
-    }, { disabled: done });
-    add.title = fb.title;
-    // Já são amigos: Mandar mensagem abre a conversa direta (mensagens.js); o amigo é achado pela conta (voz.js)
+    const amigos = done && fb.title.startsWith('Você e');
+    // Já são amigos: vira o selo "Amigos" ao lado do nome, e a principal é Mandar mensagem (mensagens.js; o amigo é
+    // achado pela conta, voz.js). Ainda não: a principal é o pedido de amizade
     const friend = amigoDe(id);
-    if (friend && typeof openDm === 'function') act('chat', 'Mandar mensagem', () => { closeSkyProfile(); void openDm(friend.id); });
+    if (amigos) {
+      const selo = el('span', 'sky-page-amigos', 'Amigos');
+      selo.title = fb.title;
+      nameRow.append(selo);
+      if (friend && typeof openDm === 'function') act('chat', 'Mandar mensagem', () => { closeSkyProfile(); void openDm(friend.id); }, { principal: true });
+    } else {
+      const label = fb.title.startsWith('Pedido') ? 'Pedido de amizade enviado' : fb.title.startsWith('Aceitar') ? 'Aceitar o pedido de amizade' : 'Adicionar como amigo';
+      const add = act('userPlus', label, async () => {
+        add.disabled = true;
+        await fb.onclick();
+        skyFocusKey = '';
+        renderSkyProfile();
+      }, { disabled: done, principal: true });
+      add.title = fb.title;
+    }
     if (voiceNow) act(v.muted ? 'muted' : 'volume', v.muted ? 'Ouvir de novo' : 'Silenciar para mim', () => setVol(id, { muted: !v.muted }), { pressed: v.muted });
   }
   if (canMove && !me) { // no seu perfil não: você muda de canal clicando no canal da lista

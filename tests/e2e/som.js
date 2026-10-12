@@ -30,13 +30,13 @@ run('Som das transmissões', 150000, async () => {
   await createRoom(A, { name: 'Ana', port: PORT });
   await A.eval(SHARE(true));
   await A.waitFor(`state.sharing`, 15000);
-  check('Ana transmite com som: o Ao vivo não diz "sem som"', await A.eval(`state.stream.getAudioTracks().length === 1 && !$('liveText').textContent.includes('sem som')`));
+  check('Ana transmite com som: a pílula não avisa "sem som"', await A.eval(`state.stream.getAudioTracks().length === 1 && !$('liveText').classList.contains('live-silent') && !$('liveText').title.includes('sem o som')`));
 
   const C = await openApp('somC', 9642, { fake: true });
   await joinRoom(C, { name: 'Carla', addr: `127.0.0.1:${PORT}` });
   await C.eval(SHARE(false));
   await C.waitFor(`state.sharing`, 15000);
-  check('Carla transmite sem som: o Ao vivo diz "sem som"', await C.eval(`$('liveText').textContent.includes('sem som') && $('liveText').classList.contains('live-silent')`));
+  check('Carla transmite sem som: a dica da pílula avisa', await C.eval(`$('liveText').title.includes('sem o som') && $('liveText').classList.contains('live-silent')`));
 
   const B = await openApp('somB', 9643, { fake: true });
   await joinRoom(B, { name: 'Bia', addr: `127.0.0.1:${PORT}` });

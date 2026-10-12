@@ -15,12 +15,12 @@ run('Ver a própria transmissão', 120000, async () => {
 
   const me = await A.eval('state.myId');
   const myRow = `[...document.querySelectorAll('#members .member')].find((li) => li.dataset.person === '${me}')`;
-  check('Minha linha na lista tem "Ver"', await A.eval(`[...${myRow}.querySelectorAll('button')].some((b) => b.textContent === 'Ver')`));
+  check('Minha linha na lista tem o monitor de ver', await A.eval(`[...${myRow}.querySelectorAll('button')].some((b) => b.title.startsWith('Ver a sua'))`));
   await A.eval(`$('selfViewBtn').click()`);
   await A.waitFor(`state.in.get('${me}')?.tile.video.videoWidth > 0`, 10000);
   check('Ana se vê: um quadro com o vídeo da própria captura', await A.eval(`state.in.get('${me}').self && !$('tiles').hidden`));
   check('Quadro sem som e sem o controle de volume', await A.eval(`(() => { const t = state.in.get('${me}').tile; return t.video.muted && t.vol.hidden && !t.video.srcObject.getAudioTracks().length; })()`));
-  check('Botão do olho marcado e a linha diz "Parar de ver"', await A.eval(`$('selfViewBtn').getAttribute('aria-pressed') === 'true' && [...${myRow}.querySelectorAll('button')].some((b) => b.textContent === 'Parar de ver')`));
+  check('Botão do olho marcado e a linha tem o de tirar', await A.eval(`$('selfViewBtn').getAttribute('aria-pressed') === 'true' && [...${myRow}.querySelectorAll('button')].some((b) => b.title === 'Tirar a sua tela da sala')`));
   check('Nenhum pedido de vídeo foi para a sala (sem conexão consigo mesma)', await A.eval(`state.out.size === 1`));
 
   await A.eval(`togglePip('${me}')`);
