@@ -9,7 +9,7 @@ O **Seu perfil** era uma coluna só, com duas telas de altura, misturando como v
 
 ## Escopo
 - Entra: Perfil e Conta numa barra à esquerda, como em Configurações (em janela estreita, viram uma linha em cima; o lado direito rola sozinho); nome e frase editados no próprio cartão; identificador com Copiar no cartão; interruptores de
-  jogo, música e sala no Perfil; a janela Conta e segurança vira a aba Conta, com o aviso do que falta e Sair da conta no rodapé.
+  jogo, música e sala no Perfil; a janela Conta e segurança vira a aba Conta, com o aviso do que falta e Trocar de conta e Sair da conta no rodapé.
 - Fica de fora: mudanças no servidor; Steam e histórico continuam em Configurações › Atividade.
 
 ## Comportamento esperado

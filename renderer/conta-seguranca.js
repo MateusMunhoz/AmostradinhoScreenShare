@@ -526,6 +526,7 @@ async function novosCodigos() {
 
 function setupContaSeguranca() {
   $('profileCardIdCopy').onclick = () => void copiarIdentificador();
+  $('razzeTrocar').onclick = () => void trocarDeConta(); // renderer/primeira-entrada.js
   for (const id of ['friendsIdCopy', 'homeFriendsId']) if ($(id)) $(id).onclick = () => { if (id === 'homeFriendsId') setHomeConvidarOpen(false); void copiarIdentificador(); };
 }
 

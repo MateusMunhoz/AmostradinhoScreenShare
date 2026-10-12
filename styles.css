@@ -2620,7 +2620,7 @@ html[data-tips="off"] .tip { display: none !important; }
   background: color-mix(in srgb, var(--warn) 8%, transparent); font-size: 13px; line-height: 1.4; }
 .conta-pendente svg { flex: none; width: 18px; height: 18px; fill: none; stroke: var(--warn); stroke-width: 2; stroke-linecap: round; }
 .conta-pendente span { flex: 1; }
-.profile-rodape { position: sticky; bottom: 0; display: flex; margin-top: auto; padding: 12px 0 2px; border-top: 1px solid var(--line); background: var(--panel); }
+.profile-rodape { position: sticky; bottom: 0; display: flex; gap: 8px; margin-top: auto; padding: 12px 0 2px; border-top: 1px solid var(--line); background: var(--panel); }
 
 /* ---------- Início: amigos e entrar na conta ---------- */
 .home-signin {

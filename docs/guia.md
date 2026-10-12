@@ -398,6 +398,8 @@ No pé do Início fica a versão ("Nebula 1.18.10 · atualizado"), com **Procura
   nome**, uma vez a cada 7 dias; o número fica se estiver livre), o e-mail (**Confirmar**, **Trocar e-mail**: o código vai para o
   novo e o antigo recebe um aviso), a senha (**Trocar senha** ou, em conta do Google, **Entrar também com senha**, que pode usar
   outro e-mail), o Google (**Vincular**, **Trocar Google**, **Desvincular**) e a **verificação em dois fatores**.
+- **Trocar de conta:** no rodapé da aba **Conta** do Perfil. Sai desta conta e abre a tela **Sua conta** (a mesma da primeira
+  entrada, sem os outros passos) para entrar com outra ou **Criar conta** nova; **Agora não** continua sem conta.
 - **Sair da conta:** no rodapé da aba **Conta** do Perfil, sempre à vista. Desliga as redes Razze conectadas
   antes; amigos, mensagens e salas dos amigos somem até entrar de novo.
 - **Confirmar o e-mail:** com o e-mail ligado no servidor, criar conta por senha manda um código de 6 dígitos para o e-mail (vale
