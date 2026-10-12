@@ -57,7 +57,7 @@ test('criar link devolve segredo, código curto e endereço; o banco guarda só 
 test('quem recebe vê o nome, aceita e os dois viram amigos; uso único', async () => {
   const made = (await request('/v1/friends/links', { method: 'POST' }, ana.accessToken)).body;
   const preview = await request('/v1/friends/links/preview?token=' + made.token, {}, caio.accessToken);
-  assert.deepEqual(preview.body, { displayName: 'Ana', own: false, alreadyFriends: false });
+  assert.deepEqual(preview.body, { displayName: 'Ana', handle: ana.user.handle, own: false, alreadyFriends: false });
   const accepted = await request('/v1/friends/links/accept', { method: 'POST', body: { token: made.token } }, caio.accessToken);
   assert.equal(accepted.status, 200);
   assert.equal(accepted.body.status, 'accepted');

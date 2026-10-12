@@ -14,7 +14,9 @@ async function api(endpoint, method = 'GET', body) {
   const data = await response.json();
   if (!response.ok) {
     if (response.status === 401 && token) signedOut();
-    throw new Error(data.error?.message || 'Falha na requisição.');
+    const erro = new Error(data.error?.message || 'Falha na requisição.');
+    erro.code = data.error?.code; erro.challenge = data.error?.challenge;
+    throw erro;
   }
   return data;
 }
@@ -32,7 +34,18 @@ function formHandler(form, handler) {
   form.onsubmit = async event => { event.preventDefault(); const button = form.querySelector('button'); button.disabled = true;
     try { await handler(); } catch (e) { message(e.message, true); } finally { button.disabled = false; } };
 }
-formHandler($('loginForm'), async () => { const data = await api('auth/login', 'POST', { email: $('email').value, password: $('password').value }); await signIn(data.accessToken, false); });
+// Login por senha; com a verificação em dois fatores, pede o código do app autenticador (ou um de recuperação)
+formHandler($('loginForm'), async () => {
+  let data;
+  try { data = await api('auth/login', 'POST', { login: $('email').value, password: $('password').value }); }
+  catch (e) {
+    if (e.code !== '2fa_required') throw e;
+    const code = prompt('Código do app autenticador (ou um código de recuperação):');
+    if (!code) throw new Error('Entrada cancelada.');
+    data = await api('auth/login/2fa', 'POST', { challenge: e.challenge, code });
+  }
+  await signIn(data.accessToken, false);
+});
 formHandler($('tokenForm'), () => signIn($('token').value.trim(), true));
 $('logout').onclick = async () => { try { if (!bootstrap) await api('auth/logout', 'POST'); } finally { signedOut(); message('Você saiu do painel.'); } };
 $('nav').onclick = event => { const button = event.target.closest('[data-view]'); if (!button) return; view = button.dataset.view; message(''); render().catch(e => message(e.message, true)); };
@@ -59,7 +72,9 @@ async function render() {
     for (const [name, value] of [['Clientes conectados', data.connectedClients], ['Usuários online', data.online], ['Contas pendentes', data.pending], ['Redes cadastradas', data.networks], ['Salas abertas', data.rooms.length]]) {
       const card = el('div', undefined, 'panel stat'); card.append(el('span', name, 'muted'), el('strong', value)); stats.append(card);
     }
-    fragment.append(stats, el('p', 'Processo da API: ' + bytes(data.server.memoryBytes) + ' de memória · ativo há ' + Math.floor(data.server.uptimeSeconds / 60) + ' min.', 'muted'), el('h3', 'Salas anunciadas agora'), table(['Host', 'Rede', 'Pessoas', 'Último contato'], data.rooms.map(r => [r.host, r.networkName, r.pessoas, time(r.lastSeen)])));
+    const email = data.email || {};
+    fragment.append(stats, el('p', 'Processo da API: ' + bytes(data.server.memoryBytes) + ' de memória · ativo há ' + Math.floor(data.server.uptimeSeconds / 60) + ' min.', 'muted'),
+      el('p', 'E-mail: ' + (!email.ativo ? 'não configurado (sem confirmação de e-mail; senha só pelo código do administrador)' : email.ultimoErro ? 'com erro: ' + email.ultimoErro + ' (' + time(email.ultimoErroEm) + ')' : 'ligado') + ' · Dois fatores: ' + (data.twoFactor ? 'ligado' : 'falta RAZZE_TOTP_KEY'), email.ultimoErro ? 'muted error' : 'muted'), el('h3', 'Salas anunciadas agora'), table(['Host', 'Rede', 'Pessoas', 'Último contato'], data.rooms.map(r => [r.host, r.networkName, r.pessoas, time(r.lastSeen)])));
   } else if (view === 'clients') {
     const data = await api('admin/clients');
     fragment.append(el('h2', 'Clientes · ' + data.clients.filter(c => c.online).length + ' conectados'), el('p', 'Contadores por sessão: requisições autenticadas e bytes dos corpos HTTP da API. Não incluem cabeçalhos, TLS, STUN ou vídeo/voz P2P. Online significa contato recente com a API; não confirma conexão direta entre os PCs.', 'muted'));
@@ -71,7 +86,7 @@ async function render() {
     const { users } = await api('admin/users');
     fragment.append(el('h2', 'Usuários'), el('p', 'Aprovação automática vale para novos cadastros. Contas pendentes existentes devem ser aprovadas aqui.', 'muted'));
     const search = el('input'); search.placeholder = 'Buscar nome ou e-mail'; search.setAttribute('aria-label', 'Buscar usuário'); const box = el('div');
-    const draw = () => box.replaceChildren(table(['Nome / e-mail', 'Presença', 'Acesso', 'Google vinculado', 'Ações'], users.filter(u => (u.displayName + u.email).toLowerCase().includes(search.value.toLowerCase())).map(u => {
+    const draw = () => box.replaceChildren(table(['Nome / identificador / e-mail', 'Presença', 'Acesso', 'Google · 2FA', 'Ações'], users.filter(u => (u.displayName + (u.handle || '') + u.email).toLowerCase().includes(search.value.toLowerCase())).map(u => {
       const actions = el('div', undefined, 'actions');
       if (u.status === 'pending') actions.append(action('Aprovar', () => api('admin/users/' + u.id + '/approve', 'POST')));
       actions.append(action(u.role === 'admin' ? 'Remover administração' : 'Tornar administrador', async () => {
@@ -89,8 +104,17 @@ async function render() {
         const r = await api('admin/users/' + u.id + '/reset-code', 'POST');
         prompt('Passe este código a ' + u.displayName + ' (vale 1 hora):', r.code);
       }));
+      actions.append(action('Trocar identificador', async () => {
+        const nome = prompt('Novo nome do identificador de ' + u.displayName + ' (a tag fica se estiver livre):', (u.handle || '').split('#')[0]);
+        if (!nome) return false;
+        await api('admin/users/' + u.id, 'PATCH', { handleName: nome.trim() });
+      }));
+      if (u.twoFactor) actions.append(action('Desligar 2FA', async () => {
+        if (!confirm('Desligar a verificação em dois fatores de ' + u.displayName + '? Confirme por outro canal que é a própria pessoa pedindo.')) return false;
+        await api('admin/users/' + u.id + '/2fa-reset', 'POST');
+      }, true));
       actions.append(action('Revogar sessões', async () => { if (!confirm('Desconectar todas as sessões de ' + u.displayName + '?')) return false; await api('admin/users/' + u.id + '/revoke-sessions', 'POST'); }, true));
-      return [u.displayName + ' · ' + u.email, badge(u.online), (u.role === 'admin' ? 'Administrador' : 'Usuário') + ' / ' + ({ active: 'Ativo', pending: 'Pendente', disabled: 'Banido' }[u.status]) + (u.banReason ? ' · ' + u.banReason : ''), u.googleLinked ? 'Sim' : 'Não', actions];
+      return [u.displayName + ' · ' + (u.handle || '—') + ' · ' + u.email + (u.aguardandoEmail ? ' (esperando o código do e-mail)' : u.emailVerified ? '' : ' (e-mail não confirmado)'), badge(u.online), (u.role === 'admin' ? 'Administrador' : 'Usuário') + ' / ' + ({ active: 'Ativo', pending: 'Pendente', disabled: 'Banido' }[u.status]) + (u.banReason ? ' · ' + u.banReason : ''), (u.googleLinked ? 'Google' : 'Sem Google') + ' · ' + (u.twoFactor ? '2FA' : 'sem 2FA'), actions];
     })));
     search.oninput = draw; draw(); fragment.append(search, box);
   } else if (view === 'networks') {

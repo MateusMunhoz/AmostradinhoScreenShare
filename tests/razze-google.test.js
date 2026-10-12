@@ -44,7 +44,7 @@ const zerarLimite = () => { clock += 11 * 60 * 1000; };
 
 test('a configuração diz se o Google está ligado e qual é o cliente', async () => {
   const cfg = await request('/v1/auth/google/config');
-  assert.deepEqual(cfg.body, { enabled: true, clientId: CLIENT_ID, webClientId: '', googleOnly: false, passwordLogin: true });
+  assert.deepEqual(cfg.body, { enabled: true, clientId: CLIENT_ID, webClientId: '', googleOnly: false, passwordLogin: true, emailConfirmation: false, twoFactor: false });
 });
 
 test('conta nova pelo Google: cria, entra e a troca leva o verificador e o retorno do PC', async () => {
@@ -119,7 +119,8 @@ test('e-mail que já tem conta com senha não é juntado sozinho; vincula logado
   assert.equal(taken.status, 409);
   assert.equal(taken.body.error.code, 'google_taken');
   // desvincular: tem senha, pode
-  const livre = await request('/v1/me/google', { method: 'DELETE' }, agora.body.accessToken);
+  assert.equal((await request('/v1/me/google', { method: 'DELETE' }, agora.body.accessToken)).status, 401); // desvincular pede a senha
+  const livre = await request('/v1/me/google', { method: 'DELETE', body: { currentPassword: 'senha-bia-123' } }, agora.body.accessToken);
   assert.equal(livre.status, 200);
   assert.equal(livre.body.user.googleLinked, false);
 });
@@ -137,7 +138,7 @@ test('quem só tem Google define a primeira senha sem a atual e só então pode 
   assert.equal((await request('/v1/me/password', { method: 'POST', body: { newPassword: 'primeira-senha-1' } }, token)).status, 200);
   assert.equal((await request('/v1/auth/login', { method: 'POST', body: { email: 'duda@gmail.com', password: 'primeira-senha-1' } })).status, 200);
   const novo = (await request('/v1/auth/login', { method: 'POST', body: { email: 'duda@gmail.com', password: 'primeira-senha-1' } })).body.accessToken;
-  assert.equal((await request('/v1/me/google', { method: 'DELETE' }, novo)).status, 200);
+  assert.equal((await request('/v1/me/google', { method: 'DELETE', body: { currentPassword: 'primeira-senha-1' } }, novo)).status, 200);
   // com senha definida, trocar a senha volta a pedir a atual
   assert.equal((await request('/v1/me/password', { method: 'POST', body: { newPassword: 'outra-senha-123' } }, novo)).status, 400);
 });
@@ -148,7 +149,7 @@ test('sem cliente configurado o Google fica desligado', async () => {
   const address = await off.listen(0, '127.0.0.1');
   try {
     const url = 'http://127.0.0.1:' + address.port;
-    assert.deepEqual(await (await fetch(url + '/v1/auth/google/config')).json(), { enabled: false, clientId: '', webClientId: '', googleOnly: false, passwordLogin: true });
+    assert.deepEqual(await (await fetch(url + '/v1/auth/google/config')).json(), { enabled: false, clientId: '', webClientId: '', googleOnly: false, passwordLogin: true, emailConfirmation: false, twoFactor: false });
     const r = await fetch(url + '/v1/auth/google', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(pedido('codigo-ana-123')) });
     assert.equal(r.status, 503);
   } finally { await off.close(); }

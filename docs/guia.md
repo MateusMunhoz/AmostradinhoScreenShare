@@ -390,15 +390,33 @@ No pé do Início fica a versão ("Nebula 1.18.10 · atualizado"), com **Procura
 
 ## Senha e frase do perfil
 
+- **Identificador:** toda conta tem um identificador no formato **nome#1234** (ex.: `lucas#0420`). É por ele que os amigos te
+  adicionam e você pode entrar com ele no lugar do e-mail. O nome tem só letras sem acento e números (2 a 32) e é escolhido ao
+  criar a conta; o número depois do `#` é sorteado. Contas de antes ganharam um a partir do nome: ao abrir o app, a janela
+  **Escolha seu identificador** pede o nome (ou **Manter** o gerado) e volta a cada abertura até a pessoa escolher. O nome de exibição (o que aparece no Início e na sala) continua livre, com espaço e acento.
+- **Conta e segurança:** Perfil › Conta Razze › **Conta e segurança** junta tudo da conta: o identificador (**Copiar**, **Trocar o
+  nome**, uma vez a cada 7 dias; o número fica se estiver livre), o e-mail (**Confirmar**, **Trocar e-mail**: o código vai para o
+  novo e o antigo recebe um aviso), a senha (**Trocar senha** ou, em conta do Google, **Entrar também com senha**, que pode usar
+  outro e-mail), o Google (**Vincular**, **Trocar Google**, **Desvincular**) e a **verificação em dois fatores**.
+- **Confirmar o e-mail:** com o e-mail ligado no servidor, criar conta por senha manda um código de 6 dígitos para o e-mail (vale
+  15 minutos; **Mandar outro código** depois de 1 minuto). Sem o código a conta não entra e some em 24 horas, liberando o e-mail.
+- **Verificação em dois fatores:** em Conta e segurança, **Ligar** mostra um QR code para o app autenticador do celular (Google
+  Authenticator, Microsoft Authenticator, 2FAS…) e pede um código dele. Depois aparecem **10 códigos de recuperação**, uma vez só:
+  guarde (**Copiar** ou **Salvar em arquivo**). Com ela ligada, entrar com a senha pede também o código do app, e trocar e-mail,
+  senha ou Google pede o código. Perdeu o celular e os códigos? Peça ao administrador para desligar. Entrar pelo Google não pede.
 - **Entrar com Google:** no passo 3 da primeira entrada e no **Perfil**, em **Conta Razze**, **Entrar com Google** abre o navegador, você escolhe a conta
-  e volta ao app. O botão só aparece se o servidor tiver o Google ligado. Se já existe uma conta com o mesmo e-mail e senha, o app avisa:
-  entre com a senha e use **Vincular Google** (Perfil › Conta Razze). **Desvincular Google** só funciona se a conta tiver senha;
-  quem entrou só pelo Google define a primeira senha em **Trocar senha**, sem precisar da atual.
+  e volta ao app. O botão só aparece se o servidor tiver o Google ligado. Conta nova escolhe o **identificador** antes de ser
+  criada; quem já tem conta toca em **Já tenho conta no Nebula: entrar e vincular este Google**, entra com a senha e o Google é
+  vinculado em seguida. Se já existe uma conta com o mesmo e-mail, o app diz qual é (o identificador) e faz o mesmo. Vincular um
+  Google que já é de outra conta mostra o que ela tem e oferece **mover**: se ela só entrava por esse Google, ela é excluída
+  (amizades e mensagens dela não passam); se tem senha, só perde o Google.
 - **Servidor só com Google:** quando o administrador liga essa opção, o passo 3 e o Perfil › Conta Razze mostram só **Entrar com Google** (sem formulário de e-mail e senha, e sem **Criar conta**). Quem já tinha conta com senha toca em **Tenho uma conta com e-mail e senha** para entrar como antes. Conta nova de um e-mail que não está na lista de convidados fica **pendente**: avise o administrador e, depois que ele aprovar, toque em **Entrar com Google** de novo. Sem conta, o app continua funcionando por código e senha da sala.
 - **Administração (só administradores):** em Perfil › Conta Razze, na sua conta, o botão **Administração** abre uma tela com **Visão geral** (online agora, ativos em 1, 7 e 30 dias, pico, contas novas, quem voltou, amizades, mensagens, versões em uso e 14 dias de gráfico), **Pedidos** (aprovar ou recusar contas pendentes), **Convidados** (e-mails que entram direto, com grupo Amigo, Teste ou Administrador), **Pessoas** (filtro Todos, Amigos, Teste, Admin, Pendentes e Desativados; mudar grupo, tornar administrador, desativar; quem ainda não vinculou o Google aparece com **Sem Google**: vincule todos antes de desligar a senha antiga), **Feedback** (o que chegou pelo ícone de feedback: filtro Abertos, Bugs, Sugestões, Avaliações, Resolvidos e Todos; ver o print, marcar como Novo, Visto ou Resolvido e apagar; o número na aba conta os novos) e **Servidor** (interruptores de só Google, senha antiga, aprovação e lista de convidados). Quem não é administrador não vê o botão, e o servidor recusa as chamadas dele.
-- **Trocar a senha:** Perfil › Conta Razze › **Trocar senha** (pede a senha atual; mínimo 8 caracteres).
-- **Esqueci a senha:** na tela de entrar (Perfil › Conta Razze ou o passo 3 da primeira entrada), **Esqueci a senha**. O servidor não
-  manda e-mail: peça um código ao **administrador**, que o gera em Perfil › Conta Razze › **Administração › Pessoas** (botão **Código de senha**; também no painel web `/admin/`). Digite o e-mail, o
+- **Trocar a senha:** Perfil › Conta Razze › Conta e segurança › **Trocar senha** (pede a senha atual e, com dois fatores, o código; mínimo 8 caracteres).
+- **Esqueci a senha:** na tela de entrar (Perfil › Conta Razze ou o passo 3 da primeira entrada), **Esqueci a senha**. Com o e-mail
+  ligado no servidor, digite o e-mail ou o identificador: o código vai para o e-mail confirmado da conta e, com ele (e o código do
+  app, com dois fatores), você escolhe a senha nova e já entra. Sem e-mail no servidor (ou em **Tenho um código do
+  administrador**): peça um código ao **administrador**, que o gera em Perfil › Conta Razze › **Administração › Pessoas** (botão **Código de senha**; também no painel web `/admin/`). Digite o e-mail, o
   código (vale 1 hora e funciona uma vez) e a senha nova. Depois de redefinir, o app já entra na conta sozinho.
 - **Excluir uma conta (administrador):** Administração › Pessoas › **Desativar** e, na linha da conta desativada, **Excluir**. Apaga também
   as amizades, mensagens e salas dela e não dá para desfazer. O app pergunta se o e-mail sai da lista de convidados; sem isso, a pessoa
@@ -455,7 +473,8 @@ sobe o painel **Adicionar amigo** por cima das conversas, com três abas: **Rece
 (com **Cancelar**) e **Amigos** (a lista completa, online e offline). Abre em **Recebidos** quando chegou pedido; senão, em **Amigos**. Buscar no envelope um nome que não está na lista abre o painel sozinho, depois de uma pausa na digitação, com o nome já no campo. O **X**, clicar fora ou Esc volta para as conversas.
 O **balão** ao lado do nome abre a conversa.
 
-- **Adicionar:** no campo do alto do painel, digite o nickname exato e **Enviar** (ou Enter). Se der errado, o motivo aparece embaixo do campo. Quando der certo, o pedido vai para **Enviados**.
+- **Adicionar:** no campo do alto do painel, digite o **identificador** completo (`nome#1234`; maiúsculas não importam) e **Enviar** (ou Enter). Só o nome, sem o `#` e o número, não vale: peça o identificador completo. Se der errado, o motivo aparece embaixo do campo. Quando der certo, o pedido vai para **Enviados**; os pedidos mostram o identificador de quem pediu, para conferir antes de aceitar.
+- **Copiar meu identificador:** no painel **Adicionar amigo** ou no Início (**Convidar › Copiar meu identificador**), para mandar a quem quer te adicionar.
 - **Copiar meu link:** no Início (**Copiar meu link**) ou no painel **Adicionar amigo** (**Copiar meu link de convite**). O app
   copia uma mensagem pronta com o link e o código curto e avisa até quando vale (7 dias, 1 pessoa; até 5 links ativos).
   Os links ativos aparecem no painel Adicionar amigo, cada um com **Revogar**.
@@ -463,7 +482,7 @@ O **balão** ao lado do nome abre a conversa.
   seu amigo. Aceitar?**" e, aceitando, os dois viram amigos na hora. Sem conta, o app leva para a tela de conta e retoma o
   convite depois de entrar. Quem não tem o app instalado baixa pela página do link e depois **cola o link ou o código**
   (`ABCD-EFGH-JK`, com os hífens) no campo do painel **Adicionar amigo**. Cada link vale 7 dias e 1 pessoa. Se o servidor ainda não
-  tem links de amigo, o app avisa e o nickname continua funcionando.
+  tem links de amigo, o app avisa e o identificador continua funcionando.
 - **Ligar:** o **telefone** ao lado do balão (só com o amigo online). Veja [Ligar](#ligar).
 - **Convidar:** aparece só para quem está online, com você numa sala. Manda um **convite** nas mensagens diretas do
   amigo, que aparece como um cartão com **Entrar** (veja abaixo).

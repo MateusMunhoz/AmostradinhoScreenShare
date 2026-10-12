@@ -243,6 +243,11 @@ function endSession(endRoom) {
   sessoes.pararAnuncio({ passaAdiante: !endRoom && roomSize() > 1 });
 }
 
+// DevTools só no código desta pasta (npm run dev). No app instalado ficam desligadas em todas as janelas (a principal,
+// a flutuante e o chat do jogo, que herdam dela): o atalho Ctrl+Shift+I e o menu não abrem nada, e se algo abrir, fecha
+const DEVTOOLS = !app.isPackaged;
+if (!DEVTOOLS) app.on('web-contents-created', (_e, wc) => wc.on('devtools-opened', () => wc.closeDevTools()));
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1200,
@@ -262,6 +267,7 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      devTools: DEVTOOLS,
     },
   });
   win.webContents.once('did-finish-load', () => {
@@ -413,8 +419,27 @@ if (hasSingleInstance) app.whenReady().then(() => {
   });
   ipcMain.handle('razze-health', () => razze.health());
   ipcMain.handle('razze-me', () => razze.me());
-  ipcMain.handle('razze-register', async (_e, email, password, name) => { const result = await razze.register(String(email || ''), String(password || ''), String(name || '')); dmE2E?.reset(); return result; });
-  ipcMain.handle('razze-login', async (_e, email, password) => { const result = await razze.login(String(email || ''), String(password || '')); dmE2E?.reset(); void razzePresence.tick(); return result; });
+  // Entrou numa conta (senha, código do e-mail, 2FA ou Google): as mensagens e a presença recomeçam com ela
+  const entrouNaConta = (result) => { if (result?.status === 'active') { dmE2E?.reset(); void razzePresence.tick(); } return result; };
+  // Confirmação de ação sensível (docs/spec/email-e-dois-fatores.md): só a senha atual e/ou o código do 2FA, curtos
+  const confirmacao = (c) => ({
+    ...(c && typeof c.currentPassword === 'string' && c.currentPassword ? { currentPassword: c.currentPassword.slice(0, 200) } : {}),
+    ...(c && typeof c.code2fa === 'string' && c.code2fa.trim() ? { code2fa: c.code2fa.trim().slice(0, 20) } : {}),
+  });
+  ipcMain.handle('razze-register', async (_e, email, password, name, handleName) => {
+    const result = await razze.register(String(email || '').slice(0, 254), String(password || '').slice(0, 200), String(name || '').slice(0, 60), String(handleName || '').slice(0, 32));
+    dmE2E?.reset();
+    return result;
+  });
+  ipcMain.handle('razze-confirm-email', async (_e, code) => entrouNaConta(await razze.confirmEmail(String(code || '').slice(0, 12))));
+  ipcMain.handle('razze-resend-confirmation', () => razze.resendConfirmation());
+  ipcMain.handle('razze-login', async (_e, login, password) => entrouNaConta(await razze.login(String(login || '').slice(0, 254), String(password || '').slice(0, 200))));
+  ipcMain.handle('razze-login-2fa', async (_e, code) => entrouNaConta(await razze.login2fa(String(code || '').slice(0, 20))));
+  ipcMain.handle('razze-forgot', (_e, login) => razze.forgot(String(login || '').slice(0, 254)));
+  ipcMain.handle('razze-forgot-reset', (_e, b) => razze.forgotReset({
+    login: String(b?.login || '').slice(0, 254), code: String(b?.code || '').slice(0, 12), password: String(b?.password || '').slice(0, 200),
+    ...(b?.code2fa ? { code2fa: String(b.code2fa).trim().slice(0, 20) } : {}),
+  }));
   ipcMain.handle('razze-logout', async () => { await razzePresence.reset(); activeRazzeNetwork = ''; roomRazzeNetwork = ''; dmE2E?.reset(); return razze.logout(); });
   ipcMain.handle('razze-presence-state', () => razzePresence.snapshot());
   ipcMain.handle('razze-internet-room', (_e, value) => {
@@ -451,10 +476,25 @@ if (hasSingleInstance) app.whenReady().then(() => {
   ipcMain.handle('razze-remove-friend', (_e, id) => razze.removeFriend(String(id || '')));
   const abrirGoogle = (url) => { if (!String(url).startsWith('https://accounts.google.com/o/oauth2/')) throw new Error('Endereço não permitido.'); return shell.openExternal(url); };
   ipcMain.handle('razze-google-config', () => razze.googleConfig());
-  ipcMain.handle('razze-google-login', () => razze.googleLogin(abrirGoogle));
-  ipcMain.handle('razze-google-link', () => razze.googleLink(abrirGoogle));
-  ipcMain.handle('razze-google-unlink', () => razze.googleUnlink());
-  ipcMain.handle('razze-change-password', (_e, current, next) => razze.changePassword(String(current || '').slice(0, 200), String(next || '').slice(0, 200)));
+  ipcMain.handle('razze-google-login', async () => entrouNaConta(await razze.googleLogin(abrirGoogle)));
+  ipcMain.handle('razze-google-finish', async (_e, handleName) => entrouNaConta(await razze.googleFinish(String(handleName || '').slice(0, 32))));
+  ipcMain.handle('razze-google-link', (_e, c) => razze.googleLink(abrirGoogle, confirmacao(c)));
+  ipcMain.handle('razze-google-link-pending', (_e, c) => razze.googleLinkPending(confirmacao(c)));
+  ipcMain.handle('razze-google-pending', () => razze.temGooglePendente());
+  ipcMain.handle('razze-google-move', (_e, c) => razze.googleMove(confirmacao(c)));
+  ipcMain.handle('razze-google-unlink', (_e, c) => razze.googleUnlink(confirmacao(c)));
+  ipcMain.handle('razze-change-password', (_e, current, next, code2fa) => razze.changePassword(String(current || '').slice(0, 200), String(next || '').slice(0, 200), String(code2fa || '').trim().slice(0, 20)));
+  // Identificador, e-mail e dois fatores (renderer/conta-seguranca.js)
+  ipcMain.handle('razze-set-handle', (_e, name) => razze.setHandle(String(name || '').slice(0, 32)));
+  ipcMain.handle('razze-keep-handle', () => razze.keepHandle());
+  ipcMain.handle('razze-change-email', (_e, email, c) => razze.changeEmail({ email: String(email || '').slice(0, 254), ...confirmacao(c) }));
+  ipcMain.handle('razze-verify-email', () => razze.verifyEmail());
+  ipcMain.handle('razze-confirm-email-change', (_e, code, purpose) => razze.confirmEmailChange(String(code || '').slice(0, 12), purpose === 'confirmar' ? 'confirmar' : 'trocar-email'));
+  ipcMain.handle('razze-password-setup', (_e, newPassword, email, c) => razze.passwordSetup({ newPassword: String(newPassword || '').slice(0, 200), email: String(email || '').slice(0, 254), ...confirmacao(c) }));
+  ipcMain.handle('razze-2fa-setup', (_e, c) => razze.twoFactorSetup(confirmacao(c)));
+  ipcMain.handle('razze-2fa-enable', (_e, code) => razze.twoFactorEnable(String(code || '').slice(0, 12)));
+  ipcMain.handle('razze-2fa-disable', (_e, c) => razze.twoFactorDisable(confirmacao(c)));
+  ipcMain.handle('razze-2fa-recovery', (_e, c) => razze.twoFactorRecovery(confirmacao(c)));
   ipcMain.handle('razze-reset-password', (_e, email, code, password) => razze.resetPassword(String(email || '').slice(0, 254), String(code || '').slice(0, 20), String(password || '').slice(0, 200)));
   // Atividade no perfil: só lê o que a página pediu (jogo e/ou Spotify) e devolve o nome do jogo e a faixa
   ipcMain.handle('atividade-ler', (_e, opcoes) => lerAtividade({ jogos: !!opcoes?.jogos, musica: !!opcoes?.musica, steam: limparIdsSteam(opcoes?.steam) }));

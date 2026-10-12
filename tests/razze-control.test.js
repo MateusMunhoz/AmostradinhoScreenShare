@@ -22,7 +22,7 @@ async function fixture(t, opts = {}) {
 test('heartbeat: amigos online, redes e salas privadas; expiração e logout por sessão', async t => {
   const { req, register, advance } = await fixture(t);
   const a = await register('Alice'), b = await register('Bob'), stranger = await register('Eve');
-  const friend = await req('friends/requests', 'POST', { email: b.user.email }, a.accessToken);
+  const friend = await req('friends/requests', 'POST', { nickname: b.user.handle }, a.accessToken);
   await req('friends/requests/' + friend.id + '/accept', 'POST', undefined, b.accessToken);
   const { network } = await req('networks', 'POST', { name: 'Privada' }, a.accessToken);
   const invitation = await req('networks/' + network.id + '/invites', 'POST', {}, a.accessToken);
@@ -135,7 +135,7 @@ test('configurações persistem após reiniciar e presença exige nova confirma�
 test('sala do modo Internet: só os amigos aceitos veem, sem rede nem VPN, e some ao fechar ou expirar', async t => {
   const { req, register, advance } = await fixture(t);
   const a = await register('Ana'), b = await register('Bia'), stranger = await register('Eve');
-  const friend = await req('friends/requests', 'POST', { email: b.user.email }, a.accessToken);
+  const friend = await req('friends/requests', 'POST', { nickname: b.user.handle }, a.accessToken);
   await req('friends/requests/' + friend.id + '/accept', 'POST', undefined, b.accessToken);
   const passe = 'x'.repeat(43);
   const internetRoom = { servidor: 'ws://203.0.113.5:8765', codigo: 'ABC234', pessoas: 2, passe };
@@ -161,7 +161,7 @@ test('sala do modo Internet: só os amigos aceitos veem, sem rede nem VPN, e som
 test('em que sala a pessoa está: só os amigos veem, sem endereço; some ao sair, ao expirar e não vaza para os membros da rede', async t => {
   const { req, register, advance } = await fixture(t);
   const a = await register('Ana'), b = await register('Bia'), stranger = await register('Eve');
-  const friend = await req('friends/requests', 'POST', { email: b.user.email }, a.accessToken);
+  const friend = await req('friends/requests', 'POST', { nickname: b.user.handle }, a.accessToken);
   await req('friends/requests/' + friend.id + '/accept', 'POST', undefined, b.accessToken);
   const salaAtual = { modo: 'radmin', host: 'Caio', pessoas: 4, voz: true };
   assert.equal((await req('presence/heartbeat', 'POST', { salaAtual }, a.accessToken)).status, 200);
@@ -205,7 +205,7 @@ test('pedido de amizade pela conta (userId): acha pela id, mesmo com nickname re
 test('mensagens criptografadas: chave pública por conta, entregue só aos amigos; texto cifrado longo aceito', async t => {
   const { req, register } = await fixture(t);
   const a = await register('Ana'), b = await register('Bia'), stranger = await register('Eve');
-  const friend = await req('friends/requests', 'POST', { email: b.user.email }, a.accessToken);
+  const friend = await req('friends/requests', 'POST', { nickname: b.user.handle }, a.accessToken);
   await req('friends/requests/' + friend.id + '/accept', 'POST', undefined, b.accessToken);
   const key = Buffer.alloc(32, 7).toString('base64');
   assert.equal((await req('me/dm-key', 'PUT', { publicKey: 'curta' }, a.accessToken)).status, 400);
@@ -223,7 +223,7 @@ test('mensagens criptografadas: chave pública por conta, entregue só aos amigo
 test('sinais da conexão direta: só entre amigos, só cifrados, entregues uma vez e apagados em 2 minutos', async t => {
   const { req, register, advance } = await fixture(t);
   const a = await register('Ana'), b = await register('Bia'), stranger = await register('Eve');
-  const friend = await req('friends/requests', 'POST', { email: b.user.email }, a.accessToken);
+  const friend = await req('friends/requests', 'POST', { nickname: b.user.handle }, a.accessToken);
   await req('friends/requests/' + friend.id + '/accept', 'POST', undefined, b.accessToken);
   const sinal = 'e2e1:' + 'B'.repeat(200);
   assert.equal((await req('signals', 'POST', { to: b.user.id, text: sinal }, a.accessToken)).status, 201);
@@ -291,7 +291,7 @@ test('excluir conta: só desativada, nunca a própria; apaga em cascata e fica n
   const { req, register } = await fixture(t);
   const admin = await register('Admin'), calopsita = await register('Calopsita'), amiga = await register('Amiga');
   await req('admin/users/' + admin.user.id, 'PATCH', { role: 'admin' }, ROOT);
-  const pedido = await req('friends/requests', 'POST', { email: amiga.user.email }, calopsita.accessToken);
+  const pedido = await req('friends/requests', 'POST', { nickname: amiga.user.handle }, calopsita.accessToken);
   await req('friends/requests/' + pedido.id + '/accept', 'POST', undefined, amiga.accessToken);
   await req('networks', 'POST', { name: 'Da Calopsita' }, calopsita.accessToken);
   assert.equal((await req('admin/users/' + calopsita.user.id, 'DELETE', undefined, calopsita.accessToken)).status, 403); // quem não é admin
@@ -312,7 +312,7 @@ test('sala do modo Internet anunciada por vários membros: uma só, com o host e
   const { req, register } = await fixture(t);
   const [ana, beto, caio, duda] = [await register('Ana'), await register('Beto'), await register('Caio'), await register('Duda')];
   const amigos = async (x, y) => {
-    const r = await req('friends/requests', 'POST', { email: y.user.email }, x.accessToken);
+    const r = await req('friends/requests', 'POST', { nickname: y.user.handle }, x.accessToken);
     await req('friends/requests/' + r.id + '/accept', 'POST', undefined, y.accessToken);
   };
   await amigos(ana, caio); await amigos(beto, caio); await amigos(beto, duda);

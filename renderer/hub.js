@@ -126,7 +126,7 @@ function syncFriendsAddButton() { $('razzeAddFriend').disabled = !$('razzeFriend
 // Erro do envio aparece embaixo do campo (vazio = sem erro)
 function showFriendsAddError(text) {
   const hint = $('friendsAddHint');
-  hint.textContent = text || 'Nickname exato, link ou código de convite (ABCD-EFGH-JK).';
+  hint.textContent = text || 'Identificador (ex.: lucas#0420), link ou código de convite (ABCD-EFGH-JK).';
   hint.classList.toggle('erro', !!text);
   hint.setAttribute('role', text ? 'alert' : 'note');
   $('razzeFriendNickname').setAttribute('aria-invalid', String(!!text));
@@ -176,8 +176,8 @@ function renderFriends() {
   const empty = $('friendsEmpty');
   empty.hidden = groups.length > 0;
   empty.textContent = view === 'in' ? 'Nenhum pedido de amizade chegou.'
-    : view === 'out' ? 'Nenhum pedido esperando resposta. Digite um nickname acima para enviar.'
-    : 'Você ainda não tem amigos. Digite o nickname de alguém acima.';
+    : view === 'out' ? 'Nenhum pedido esperando resposta. Digite um identificador (nome#1234) acima para enviar.'
+    : 'Você ainda não tem amigos. Digite o identificador de alguém acima (nome#1234).';
   if (keep) focusFriendControl(keep);
 }
 
@@ -211,6 +211,7 @@ function friendRow(f, isOnline) {
   const naSala = isOnline && typeof textoSalaDoAmigo === 'function' ? textoSalaDoAmigo(f) : '';
   const info = hubInfo(f.displayName, naSala || (isOnline ? 'Online' : friendsData.error ? 'Indisponível' : 'Offline'));
   if (naSala) info.lastChild.title = naSala; // cortado com "…" quando não cabe
+  if (f.handle) info.firstChild.title = f.handle; // o identificador ao passar o mouse no nome
   info.lastChild.dataset.friendPresence = f.id; // o teste da Razze confere o texto por aqui
   info.lastChild.classList.toggle('on', isOnline);
   li.append(hubAvatar(f.displayName, isOnline), info,
@@ -256,14 +257,15 @@ function friendRow(f, isOnline) {
 function incomingRow(r) {
   const li = document.createElement('li');
   li.className = 'hub-room hub-request';
-  li.append(hubAvatar(r.displayName), hubInfo(r.displayName, 'Quer ser seu amigo'),
+  // O identificador junto: dá para conferir quem é antes de aceitar
+  li.append(hubAvatar(r.displayName), hubInfo(r.displayName, (r.handle ? r.handle + ' · ' : '') + 'Quer ser seu amigo'),
     hubButton('Aceitar', () => acceptFriend(r), 'btn small primary', `Aceitar o pedido de ${r.displayName}`));
   return li;
 }
 function outgoingRow(r) {
   const li = document.createElement('li');
   li.className = 'hub-room hub-request';
-  li.append(hubAvatar(r.displayName), hubInfo(r.displayName, 'Aguardando resposta'),
+  li.append(hubAvatar(r.displayName), hubInfo(r.displayName, (r.handle ? r.handle + ' · ' : '') + 'Aguardando resposta'),
     hubButton('Cancelar', () => cancelFriendRequest(r), 'btn small', `Cancelar o pedido para ${r.displayName}`));
   return li;
 }

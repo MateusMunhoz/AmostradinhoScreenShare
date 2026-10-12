@@ -117,7 +117,8 @@
             <button id="razzeTabRegister" type="button" role="tab" aria-selected="false">Criar conta</button>
           </div>
           <label class="field" id="razzeNameField" hidden><span>Seu nome na rede</span><input id="razzeDisplayName" type="text" maxlength="60" autocomplete="name"></label>
-          <label class="field legacy-login"><span>E-mail</span><input id="razzeEmail" type="email" autocomplete="username"></label>
+          <label class="field" id="razzeHandleField" hidden><span>Identificador (só letras sem acento e números)</span><input id="razzeHandleName" type="text" maxlength="32" autocomplete="off" spellcheck="false" placeholder="Ex.: lucas"><small class="hint">É por ele que os amigos te adicionam. O número depois do # é sorteado.</small></label>
+          <label class="field legacy-login"><span id="razzeEmailLabel">E-mail ou identificador</span><input id="razzeEmail" type="text" autocomplete="username" spellcheck="false"></label>
           <label class="field legacy-login"><span>Senha</span><input id="razzePassword" type="password" autocomplete="current-password"></label>
           <button id="razzeLogin" class="btn primary legacy-login" type="button">Entrar</button>
           <button id="razzeRegister" class="btn primary legacy-login" type="button" hidden>Criar conta</button>
@@ -130,8 +131,7 @@
           <span class="net-account-text"><strong id="razzeAccountName"></strong><span class="hint" id="razzeAccountEmail"></span></span>
           <div class="net-account-actions">
             <button id="razzeAdminOpen" class="btn small primary" type="button" hidden>Administração</button>
-            <button id="razzeGoogleLink" class="btn small" type="button" hidden>Vincular Google</button>
-            <button id="razzeChangePassword" class="btn small" type="button">Trocar senha</button>
+            <button id="razzeSeguranca" class="btn small" type="button">Conta e segurança</button>
             <button id="razzeLogout" class="btn small" type="button">Sair da conta</button>
           </div>
         </div>
@@ -292,12 +292,13 @@
         </div>
         <div id="friendsAddForm" class="hub-add-form">
           <div class="dm-add-row">
-            <input id="razzeFriendNickname" class="hub-filter" type="text" maxlength="300" autocomplete="off" placeholder="Nickname ou código" aria-label="Nickname ou código de convite" aria-describedby="friendsAddHint">
+            <input id="razzeFriendNickname" class="hub-filter" type="text" maxlength="300" autocomplete="off" placeholder="nome#1234 ou código" aria-label="Identificador ou código de convite" aria-describedby="friendsAddHint">
             <button id="razzeAddFriend" class="btn small primary" type="button" disabled>Enviar</button>
           </div>
-          <p id="friendsAddHint" class="hub-add-hint">Nickname exato, link ou código de convite (ABCD-EFGH-JK).</p>
+          <p id="friendsAddHint" class="hub-add-hint">Identificador (ex.: lucas#0420), link ou código de convite (ABCD-EFGH-JK).</p>
           <div class="hub-add-link">
             <button id="friendsLinkCopy" class="btn small hub-link-copy" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/></svg>Copiar meu link de convite</button>
+            <button id="friendsIdCopy" class="btn small hub-link-copy" type="button">Copiar meu identificador</button>
             <ul id="friendsLinks" class="hub-links" aria-label="Seus links de convite ativos"></ul>
           </div>
         </div>
@@ -482,7 +483,8 @@
                   <button class="btn small home-convidar" id="homeConvidar" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="homeConvidarMenu">Convidar</button>
                   <span id="homeConvidarMenu" class="home-menu" role="menu" aria-label="Convidar" hidden>
                     <button id="homeFriendsLink" type="button" role="menuitem">Copiar meu link<small>Quem abrir vira seu amigo</small></button>
-                    <button id="homeFriendsAdd" type="button" role="menuitem">Adicionar amigo<small>Pelo nickname ou e-mail</small></button>
+                    <button id="homeFriendsAdd" type="button" role="menuitem">Adicionar amigo<small>Pelo identificador (nome#1234)</small></button>
+                    <button id="homeFriendsId" type="button" role="menuitem">Copiar meu identificador<small>Para mandar a quem quer te adicionar</small></button>
                   </span>
                 </span>
               </span>
@@ -1322,7 +1324,8 @@
           <button id="obTabLogin" type="button" role="tab" aria-selected="true">Entrar</button>
           <button id="obTabRegister" type="button" role="tab" aria-selected="false">Criar conta</button>
         </div>
-        <label class="field legacy-login"><span>E-mail</span><input id="obEmail" type="email" autocomplete="username"></label>
+        <label class="field" id="obHandleField" hidden><span>Identificador (só letras sem acento e números)</span><input id="obHandleName" type="text" maxlength="32" autocomplete="off" spellcheck="false" placeholder="Ex.: lucas"><small class="hint">É por ele que os amigos te adicionam. O número depois do # é sorteado.</small></label>
+        <label class="field legacy-login"><span id="obEmailLabel">E-mail ou identificador</span><input id="obEmail" type="text" autocomplete="username" spellcheck="false"></label>
         <label class="field legacy-login"><span>Senha</span><input id="obPassword" type="password" autocomplete="current-password"></label>
         <p id="obStatus" class="hint" role="status" aria-live="polite"></p>
         <div class="actions">
@@ -1430,9 +1433,10 @@
     <div class="ob-dialog" role="dialog" aria-modal="true" aria-labelledby="senhaTitle">
       <h2 id="senhaTitle">Trocar a senha</h2>
       <p id="senhaIntro" class="hint"></p>
-      <label class="field" id="senhaEmailField"><span>E-mail da conta</span><input id="senhaEmail" type="email" autocomplete="username"></label>
+      <label class="field" id="senhaEmailField"><span>E-mail da conta</span><input id="senhaEmail" type="text" autocomplete="username" spellcheck="false"></label>
       <label class="field" id="senhaCodeField"><span>Código que o administrador te passou</span><input id="senhaCode" class="mono" autocomplete="off" spellcheck="false" placeholder="ABCD-EFGH"></label>
       <label class="field" id="senhaCurrentField"><span>Senha atual</span><input id="senhaCurrent" type="password" autocomplete="current-password"></label>
+      <label class="field" id="senhaCode2faField" hidden><span>Código do app autenticador</span><input id="senhaCode2fa" class="mono" autocomplete="one-time-code" spellcheck="false" placeholder="123 456"></label>
       <label class="field"><span>Senha nova (mínimo 8 caracteres)</span><input id="senhaNew" type="password" autocomplete="new-password"></label>
       <label class="field"><span>Repita a senha nova</span><input id="senhaNew2" type="password" autocomplete="new-password"></label>
       <p id="senhaStatus" class="hint" role="status" aria-live="polite"></p>
@@ -1440,6 +1444,25 @@
         <button class="btn ghost" id="senhaCancel" type="button">Cancelar</button>
         <button class="btn primary" id="senhaSubmit" type="button">Trocar senha</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Conta e segurança: identificador, e-mail, senha, Google e dois fatores (renderer/conta-seguranca.js) -->
+  <div id="segurancaDialog" class="ob-modal" hidden>
+    <div class="ob-dialog seg-dialog" role="dialog" aria-modal="true" aria-labelledby="segurancaTitulo">
+      <h2 id="segurancaTitulo">Conta e segurança</h2>
+      <div id="segurancaCorpo" class="seg-corpo"></div>
+      <div class="actions"><button class="btn primary" id="segurancaFechar" type="button">Fechar</button></div>
+    </div>
+  </div>
+  <!-- Pergunta da conta: código do e-mail, do 2FA, nome do identificador, senha (renderer/conta-seguranca.js) -->
+  <div id="contaDialog" class="ob-modal" hidden>
+    <div class="ob-dialog" role="dialog" aria-modal="true" aria-labelledby="contaDialogTitulo">
+      <h2 id="contaDialogTitulo"></h2>
+      <div id="contaDialogCorpo" class="conta-dialog-corpo"></div>
+      <p id="contaDialogStatus" class="hint" role="status" aria-live="polite"></p>
+      <div class="actions" id="contaDialogAcoes"></div>
+      <div id="contaDialogLinks" class="conta-dialog-links"></div>
     </div>
   </div>
 
@@ -1509,6 +1532,7 @@
   <script src="renderer/mensagens-direto.js"></script>
   <script src="renderer/primeira-entrada.js"></script>
   <script src="renderer/conta.js"></script>
+  <script src="renderer/conta-seguranca.js"></script>
   <script src="renderer/admin.js"></script>
   <script src="renderer/feedback.js"></script>
   <script src="renderer/recorte.js"></script>

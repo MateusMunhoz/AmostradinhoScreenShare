@@ -44,8 +44,8 @@ Discord mudando preço e verificação de idade). Os códigos dos itens (A, P, D
 | 10 | **Manutenção:** e2e antigos (9 falhas de 03/10), docs, CI | Saúde do código | Em aberto |
 
 **Futuro (mantido, sem data):**
-- Desligar o `legacyPasswordLogin` quando todas as contas tiverem vinculado o Google (`withGoogle` igual às contas ativas
-  no painel). Até lá, quem tem conta antiga entra por senha.
+- ~~Desligar o `legacyPasswordLogin`~~: saiu do plano em 12/10/2026. A senha continua, com e-mail confirmado e verificação em
+  dois fatores ([spec](spec/email-e-dois-fatores.md)); o `legacyPasswordLogin` só vale para contas com e-mail ainda não confirmado.
 - Instalador do Windows e licença do projeto ([spec/licenca.md](spec/licenca.md)).
 - D1 Jogar junto e D3 Linux (abaixo): ficam no plano, fora da fila.
 - Red Room, constelação de amigos, estrela cadente e enquete (abaixo).

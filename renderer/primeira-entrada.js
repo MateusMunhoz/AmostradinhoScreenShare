@@ -62,6 +62,9 @@ function entradaAba(registrar) {
   $('obTabLogin').setAttribute('aria-selected', String(!registrar));
   $('obTabRegister').setAttribute('aria-selected', String(registrar));
   $('obSubmit').textContent = registrar ? 'Criar conta' : 'Entrar';
+  $('obHandleField').hidden = !registrar;
+  $('obEmailLabel').textContent = registrar ? 'E-mail' : 'E-mail ou identificador';
+  if (registrar && !$('obHandleName').value) $('obHandleName').value = sugerirNomeId($('name').value);
   $('obPassword').autocomplete = registrar ? 'new-password' : 'current-password';
   $('obStatus').textContent = '';
 }
@@ -75,18 +78,23 @@ async function entradaEnviarConta() {
   $('obSubmit').disabled = true;
   $('obStatus').textContent = entrada.registrar ? 'Criando a conta…' : 'Entrando…';
   try {
+    let r;
     if (entrada.registrar) {
-      const r = await window.api.razzeRegister(email, senha, $('name').value.trim() || email);
-      if (r.status === 'pending_approval') {
-        $('obStatus').textContent = 'Conta criada. O administrador do servidor ainda precisa aprovar; enquanto isso, use como sala rápida.';
-        $('obPassword').value = '';
-        return;
-      }
+      const nomeId = $('obHandleName').value.trim();
+      const problema = problemaDoNomeId(nomeId);
+      if (problema) { $('obStatus').textContent = problema; $('obHandleName').focus(); return; }
+      r = await cadastrar(email, senha, $('name').value.trim() || email, nomeId);
+      if (!r) { $('obStatus').textContent = 'Falta confirmar o e-mail. Toque em Entrar para receber outro código.'; entradaAba(false); return; }
+      // Servidor sem e-mail: a conta já vale, entra com a senha
+      if (r.status === 'active' && !r.state) r = await entrarComSenha(email, senha);
+    } else r = await entrarComSenha(email, senha);
+    if (r?.status === 'pending_approval') {
+      $('obStatus').textContent = 'Conta criada. O administrador do servidor ainda precisa aprovar; enquanto isso, use como sala rápida.';
+      $('obPassword').value = '';
+      return;
     }
-    const r = await window.api.razzeLogin(email, senha);
-    razzeUser = r.user;
+    if (r?.status !== 'active') { $('obStatus').textContent = ''; return; }
     $('obPassword').value = '';
-    await refreshRazzeState();
     fecharPrimeiraEntrada();
     toast('Você entrou. Seus amigos aparecem no Início.');
   } catch (e) {
@@ -339,7 +347,7 @@ function setupPrimeiraEntrada() {
   $('obTabRegister').onclick = () => entradaAba(true);
   $('obSubmit').onclick = entradaEnviarConta;
   $('obPassword').addEventListener('keydown', (e) => { if (e.key === 'Enter') entradaEnviarConta(); });
-  $('obForgot').onclick = () => abrirSenha('esqueci', $('obEmail').value.trim());
+  $('obForgot').onclick = () => void esqueciSenha($('obEmail').value.trim());
   $('obSkip').onclick = () => { save('modoUso', 'rapida'); fecharPrimeiraEntrada(); };
   $('obDialog').addEventListener('keydown', (e) => { if (e.key === 'Escape' && entrada.passo > 1) entradaIrPara(entrada.passo - 1); });
   $('goQuick').onclick = () => foraDaSala('criar outra sala', abrirMinhaSala);

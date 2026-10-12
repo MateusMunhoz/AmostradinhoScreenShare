@@ -5,7 +5,8 @@ const path = require('node:path');
 const { randomBytes, timingSafeEqual } = require('node:crypto');
 
 // Administração e presença compartilham a autenticação da API, sem depender do Electron.
-function createControl({ db, options, now, hash, requireUser, readBody, send, ApiError, isMember, friendshipExists = () => false }) {
+function createControl({ db, options, now, hash, requireUser, readBody, send, ApiError, isMember, friendshipExists = () => false,
+  doisFatoresLigado = () => false, totpPronto = () => false, correio = null, handleSql = 'NULL', gravarHandle = null, nomeValido = null }) {
   const columns = db.prepare('PRAGMA table_info(users)').all().map(c => c.name);
   if (!columns.includes('role')) db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user' CHECK(role IN ('user', 'admin'))");
   if (!columns.includes('ban_reason')) db.exec("ALTER TABLE users ADD COLUMN ban_reason TEXT NOT NULL DEFAULT ''");
@@ -44,7 +45,7 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
   const defaults = { requireApproval: options.requireApproval !== false, registrationOpen: true, presenceTimeoutSeconds: 70, googleOnly: false, onlyAllowlist: false, legacyPasswordLogin: true };
   const settings = () => Object.assign({}, defaults, Object.fromEntries(db.prepare('SELECT key, value FROM server_settings').all().map(r => [r.key, JSON.parse(r.value)])));
   const tokenHash = req => hash(String(req.headers.authorization || '').replace(/^Bearer /, ''));
-  const user = id => db.prepare('SELECT id, email, display_name AS displayName, status, role, grupo, ban_reason AS banReason, created_at AS createdAt FROM users WHERE id = ?').get(id);
+  const user = id => db.prepare('SELECT id, email, display_name AS displayName, ' + handleSql + ' AS handle, status, role, grupo, ban_reason AS banReason, created_at AS createdAt FROM users WHERE id = ?').get(id);
   const DAY_OFFSET_MS = 3 * 60 * 60 * 1000; // o dia das estatísticas vira à meia-noite de Brasília
   const dayOf = t => new Date(t - DAY_OFFSET_MS).toISOString().slice(0, 10);
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -63,6 +64,8 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
         timingSafeEqual(Buffer.from(supplied), Buffer.from(configured))) return 'bootstrap';
     const id = requireUser(req);
     if (user(id)?.role !== 'admin') throw new ApiError(403, 'admin_required', 'Esta conta não é administradora.');
+    // Administrador só usa o painel com a verificação em dois fatores ligada (quando o servidor tem RAZZE_TOTP_KEY)
+    if (totpPronto() && !doisFatoresLigado(id)) throw new ApiError(403, 'admin_2fa_required', 'Ligue a verificação em dois fatores em Conta para usar o painel de administração.');
     return id;
   }
   function presence() {
@@ -228,7 +231,7 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
 
   // Consultas fixas: nunca expõem hashes de senhas/tokens nem executam SQL recebido pela API.
   const views = {
-    users: 'SELECT id, email, display_name, status, role, grupo, ban_reason, created_at FROM users',
+    users: 'SELECT id, email, display_name, handle_name, handle_tag, email_verificado, status, role, grupo, ban_reason, created_at FROM users',
     allowed_emails: 'SELECT email, grupo, label, added_by, created_at FROM allowed_emails',
     networks: 'SELECT * FROM networks', network_members: 'SELECT * FROM network_members',
     wireguard_devices: 'SELECT network_id, device_id, user_id, name, assigned_ip, updated_at FROM wireguard_devices',
@@ -257,7 +260,7 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
         total: one('SELECT COUNT(*) AS n FROM users'), active: one("SELECT COUNT(*) AS n FROM users WHERE status = 'active'"),
         pending: one("SELECT COUNT(*) AS n FROM users WHERE status = 'pending'"), disabled: one("SELECT COUNT(*) AS n FROM users WHERE status = 'disabled'"),
         admins: one("SELECT COUNT(*) AS n FROM users WHERE role = 'admin'"), amigos: grupos.amigo || 0, teste: grupos.teste || 0,
-        withGoogle: one('SELECT COUNT(*) AS n FROM users WHERE google_sub IS NOT NULL'), allowlist: one('SELECT COUNT(*) AS n FROM allowed_emails'),
+        withGoogle: one("SELECT COUNT(DISTINCT user_id) AS n FROM user_identities WHERE provider = 'google'"), allowlist: one('SELECT COUNT(*) AS n FROM allowed_emails'),
         allowlistJoined: one('SELECT COUNT(*) AS n FROM allowed_emails a JOIN users u ON u.email = a.email'),
       },
       usage: {
@@ -305,6 +308,7 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
       server: { uptimeSeconds: Math.floor(process.uptime()), memoryBytes: process.memoryUsage().rss },
       networks: db.prepare('SELECT COUNT(*) AS n FROM networks').get().n,
       rooms: rooms(null), settings: settings(),
+      email: correio ? { ativo: correio.ativo, ...correio.estado() } : { ativo: false }, twoFactor: totpPronto(),
     });
     if (pathname === '/v1/admin/settings') {
       if (method === 'GET') return result({ settings: settings() });
@@ -323,8 +327,14 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
       }
     }
     // googleLinked: para saber quem ainda precisa vincular o Google antes de desligar legacyPasswordLogin
-    if (method === 'GET' && pathname === '/v1/admin/users') return result({ users: enrichUsers(db.prepare('SELECT id, email, display_name AS displayName, status, role, grupo, ban_reason AS banReason, created_at AS createdAt, google_sub IS NOT NULL AS googleLinked FROM users ORDER BY created_at DESC').all().map(u => ({ ...u, googleLinked: !!u.googleLinked }))) });
-    const target = /^\/v1\/admin\/users\/([a-f0-9]{32})(?:\/(approve|revoke-sessions|reset-code))?$/.exec(pathname);
+    if (method === 'GET' && pathname === '/v1/admin/users') {
+      return result({ users: enrichUsers(db.prepare('SELECT id, email, display_name AS displayName, ' + handleSql + ' AS handle, status, role, grupo, ban_reason AS banReason, created_at AS createdAt, '
+        + 'email_verificado AS emailVerified, confirmar_ate IS NOT NULL AS aguardandoEmail, '
+        + "EXISTS (SELECT 1 FROM user_identities i WHERE i.user_id = users.id AND i.provider = 'google') AS googleLinked, "
+        + 'EXISTS (SELECT 1 FROM two_factor t WHERE t.user_id = users.id AND t.enabled_at IS NOT NULL) AS twoFactor FROM users ORDER BY created_at DESC').all()
+        .map(u => ({ ...u, googleLinked: !!u.googleLinked, twoFactor: !!u.twoFactor, emailVerified: !!u.emailVerified, aguardandoEmail: !!u.aguardandoEmail }))) });
+    }
+    const target = /^\/v1\/admin\/users\/([a-f0-9]{32})(?:\/(approve|revoke-sessions|reset-code|2fa-reset))?$/.exec(pathname);
     if (target) {
       const previous = user(target[1]);
       if (!previous) throw new ApiError(404, 'not_found', 'Usuário não encontrado.');
@@ -344,6 +354,19 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
           audit(actor, 'user.reset-code', previous.id);
         });
         return result({ code: code.slice(0, 4) + '-' + code.slice(4), expiresAt });
+      }
+      // A pessoa perdeu o celular e os códigos de recuperação: desliga o 2FA dela (confirme por outro canal que é ela)
+      if (method === 'POST' && target[2] === '2fa-reset') {
+        if (previous.id === actor) bad('Use outro administrador para desligar o seu.');
+        transaction(() => {
+          db.prepare('DELETE FROM two_factor WHERE user_id=?').run(previous.id);
+          db.prepare('DELETE FROM recovery_codes WHERE user_id=?').run(previous.id);
+          audit(actor, '2fa.reset', previous.id);
+        });
+        const conta = db.prepare('SELECT email, email_verificado AS ok FROM users WHERE id=?').get(previous.id);
+        if (correio?.ativo && conta?.ok) correio.mandar({ to: conta.email, subject: 'Verificação em dois fatores desligada · Nebula',
+          text: 'O administrador desligou a verificação em dois fatores da sua conta ' + (previous.handle || '') + '. Ligue de novo em Conta.\n\nSe não foi você que pediu, fale com o administrador.\n' });
+        return result({ ok: true });
       }
       if (method === 'POST' && target[2] === 'revoke-sessions') {
         transaction(() => {
@@ -367,7 +390,14 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
       if (method === 'PATCH' && !target[2]) {
         const body = await readBody(req);
         adminActor(req);
-        if (!Object.keys(body).length || Object.keys(body).some(k => !['role', 'status', 'banReason', 'grupo'].includes(k))) bad('Alteração de usuário inválida.');
+        if (!Object.keys(body).length || Object.keys(body).some(k => !['role', 'status', 'banReason', 'grupo', 'handleName'].includes(k))) bad('Alteração de usuário inválida.');
+        // Trocar o nome do identificador pelo painel (sem o intervalo de 7 dias)
+        if (body.handleName !== undefined) {
+          const nome = nomeValido(body.handleName);
+          const atual = db.prepare('SELECT handle_tag AS tag FROM users WHERE id=?').get(previous.id);
+          transaction(() => { gravarHandle(previous.id, nome, { manterTag: atual.tag || 0 }); db.prepare('UPDATE users SET handle_escolhido = 1 WHERE id=?').run(previous.id); audit(actor, 'user.handle', previous.id, { de: previous.handle }); });
+          if (Object.keys(body).length === 1) return result({ user: user(previous.id) });
+        }
         const role = body.role ?? previous.role, status = body.status ?? previous.status, grupo = body.grupo ?? previous.grupo;
         if (!['user', 'admin'].includes(role) || !['active', 'pending', 'disabled'].includes(status) || !['amigo', 'teste'].includes(grupo)) bad('Papel, grupo ou status inválido.');
         if (body.banReason !== undefined && (typeof body.banReason !== 'string' || body.banReason.length > 500)) bad('Motivo de banimento inválido.');

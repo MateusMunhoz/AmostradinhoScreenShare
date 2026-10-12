@@ -142,7 +142,7 @@ function admPessoaLinha(u, acoes) {
   const ini = admEl('span', 'avatar', (u.displayName || u.email || '?').trim().charAt(0).toUpperCase());
   ini.setAttribute('aria-hidden', 'true');
   const texto = admEl('span', 'adm-row-text');
-  texto.append(admEl('strong', '', u.displayName || u.email), admEl('span', 'hint', `${u.email} · desde ${admData(u.createdAt)}`));
+  texto.append(admEl('strong', '', u.displayName || u.email), admEl('span', 'hint', `${u.handle ? u.handle + ' · ' : ''}${u.email}${u.aguardandoEmail ? ' (esperando o código do e-mail)' : ''} · desde ${admData(u.createdAt)}`));
   const chips = admEl('span', 'adm-chips');
   chips.append(admEl('span', 'adm-chip' + (u.role === 'admin' ? ' adm-chip-admin' : ''), u.role === 'admin' ? 'Admin' : u.grupo === 'teste' ? 'Teste' : 'Amigo'));
   if (u.status === 'pending') chips.append(admEl('span', 'adm-chip adm-chip-warn', 'Pendente'));
@@ -151,6 +151,7 @@ function admPessoaLinha(u, acoes) {
   if (u.status === 'active' && u.googleLinked === false) chips.append(admEl('span', 'adm-chip adm-chip-warn', 'Sem Google'));
   // Quem já vinculou o Google dispensa senha; quem só tem senha ainda precisa vincular (ou receber um código de senha)
   if (u.status === 'active') chips.append(admEl('span', 'adm-chip', u.googleLinked ? 'Google' : 'Só senha'));
+  if (u.twoFactor) chips.append(admEl('span', 'adm-chip', '2FA'));
   if (u.online) chips.append(admEl('span', 'adm-chip adm-chip-ok', 'Online'));
   const botoes = admEl('span', 'adm-actions');
   botoes.append(...acoes);
@@ -160,6 +161,23 @@ function admPessoaLinha(u, acoes) {
 
 async function admAlterar(id, corpo, aviso) {
   try { await admChamar('PATCH', '/v1/admin/users/' + id, corpo); if (aviso) toast(aviso); } catch { /* o aviso de erro já saiu */ }
+  await admCarregar();
+}
+
+// Trocar o nome do identificador de alguém (sem o intervalo de 7 dias; a tag fica se estiver livre)
+async function admTrocarIdentificador(u) {
+  const r = await perguntar({
+    titulo: 'Identificador de ' + u.displayName, texto: 'Hoje: ' + (u.handle || '—') + '. Só letras sem acento e números; a tag fica se estiver livre no nome novo.',
+    campos: [{ id: 'nome', rotulo: 'Nome', valor: (u.handle || '').split('#')[0], max: 32 }], ok: 'Trocar',
+    enviar: (v) => { const p = problemaDoNomeId(v.nome); if (p) throw new Error(p); return window.api.razzeAdmin('PATCH', '/v1/admin/users/' + u.id, { handleName: v.nome }); },
+  });
+  if (r?.user) toast('Agora é ' + r.user.handle + '.');
+  await admCarregar();
+}
+// Quem perdeu o celular e os códigos de recuperação: desliga o 2FA (confirmar por outro canal que é a pessoa)
+async function admDesligar2fa(u) {
+  if (!(await appConfirm(`Desligar a verificação em dois fatores de ${u.displayName}? Antes, confirme por outro canal (mensagem, voz) que é ela mesma pedindo. Ela recebe um aviso por e-mail.`, { title: 'Desligar 2FA', ok: 'Desligar', danger: true }))) return;
+  try { await admChamar('POST', '/v1/admin/users/' + u.id + '/2fa-reset'); toast('2FA de ' + u.displayName + ' desligado.'); } catch { /* o aviso de erro já saiu */ }
   await admCarregar();
 }
 
@@ -296,7 +314,7 @@ function admLista() {
   if (!alvo) return;
   alvo.textContent = '';
   const q = adm.busca.trim().toLowerCase();
-  const gente = adm.dados.users.filter((u) => admFiltra(u, adm.filtro) && (!q || (u.displayName + ' ' + u.email).toLowerCase().includes(q)));
+  const gente = adm.dados.users.filter((u) => admFiltra(u, adm.filtro) && (!q || (u.displayName + ' ' + (u.handle || '') + ' ' + u.email).toLowerCase().includes(q)));
   if (!gente.length) { alvo.append(admEl('p', 'adm-empty', 'Ninguém neste filtro.')); return; }
   const ul = admEl('ul', 'adm-rows');
   for (const u of gente) {
@@ -318,6 +336,8 @@ function admLista() {
           await admAlterar(u.id, { role: virar ? 'admin' : 'user' }, virar ? u.displayName + ' agora é administradora.' : 'Acesso retirado.');
         }));
         acoes.push(admBtn('Código de senha', () => void admCodigoSenha(u)));
+        acoes.push(admBtn('Identificador', () => void admTrocarIdentificador(u)));
+        if (u.twoFactor) acoes.push(admBtn('Desligar 2FA', () => void admDesligar2fa(u), 'btn small danger'));
         acoes.push(admBtn('Desativar', async () => {
           if (!(await appConfirm(`Desativar ${u.displayName}? Ela sai de todos os PCs e não consegue entrar.`, { title: 'Desativar', ok: 'Desativar', danger: true }))) return;
           await admAlterar(u.id, { status: 'disabled', banReason: 'Desativada pelo administrador' }, u.displayName + ' foi desativada.');
