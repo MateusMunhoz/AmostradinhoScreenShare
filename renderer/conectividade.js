@@ -282,6 +282,24 @@ function renderConnectivitySettings() {
   refreshRazzeState();
 }
 
+// Sair da conta (Perfil › Conta Razze e Conta e segurança): desliga as redes Razze antes; devolve se saiu
+async function sairDaConta() {
+  const disconnected = await window.api.razzeWireGuardDisconnectAll();
+  if (!disconnected.ok) {
+    const msg = 'Desconecte todas as redes antes de sair da conta: ' + disconnected.errors.join('; ');
+    setRazzeStatus(msg);
+    toast(msg);
+    return false;
+  }
+  saveNetworkPreferences({ activeNetworkId: '' });
+  await window.api.razzeLogout();
+  razzeUser = null;
+  setRazzeStatus('Você saiu da conta.');
+  toast('Você saiu da conta.');
+  renderConnectivitySettings();
+  return true;
+}
+
 // Uma carga por vez: quem pede durante uma carga espera ela e mais uma rodada (o login pode ter mudado no meio)
 let razzeStateRun = null, razzeStateAgain = false;
 function refreshRazzeState() {
@@ -687,18 +705,7 @@ function setupConnectivitySettings() {
     } catch (error) { setRazzeStatus('Não foi possível criar a conta: ' + error.message); }
     finally { $('razzeRegister').disabled = false; }
   };
-  $('razzeLogout').onclick = async () => {
-    const disconnected = await window.api.razzeWireGuardDisconnectAll();
-    if (!disconnected.ok) {
-      setRazzeStatus('Desconecte todas as redes antes de sair da conta: ' + disconnected.errors.join('; '));
-      return;
-    }
-    saveNetworkPreferences({ activeNetworkId: '' });
-    await window.api.razzeLogout();
-    razzeUser = null;
-    setRazzeStatus('Você saiu da conta.');
-    renderConnectivitySettings();
-  };
+  $('razzeLogout').onclick = () => void sairDaConta();
   $('razzeCreateNetwork').onclick = async () => {
     const name = $('razzeNetworkName').value.trim();
     if (!name) { $('razzeNetworkName').focus(); return; }

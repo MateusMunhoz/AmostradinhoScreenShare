@@ -2,7 +2,7 @@
 // Conta: identificador nome#1234, código por e-mail, verificação em dois fatores e as formas de entrar
 // (docs/spec/identificador-nome-tag.md, docs/spec/email-e-dois-fatores.md). Script clássico: só declara; quem liga é
 // renderer/inicio.js (setupContaSeguranca). Usa: util (toast, copiar, load, save), qr (qrSvg), conectividade
-// (razzeUser, refreshRazzeState), primeira-entrada (erroDoServico), conta (google, googleAplicarModo, abrirSenha).
+// (razzeUser, refreshRazzeState, sairDaConta), primeira-entrada (erroDoServico), conta (google, googleAplicarModo, abrirSenha).
 
 // ---------- Nome do identificador (as mesmas regras do servidor, razze-api/identificador.js) ----------
 const ID_RESERVADOS = ['admin', 'administrador', 'nebula', 'razze', 'suporte', 'sistema', 'moderador', 'moderacao', 'staff', 'equipe', 'telap2p'];
@@ -506,6 +506,7 @@ async function novosCodigos() {
 function setupContaSeguranca() {
   $('razzeSeguranca').onclick = () => void abrirSeguranca();
   $('segurancaFechar').onclick = fecharSeguranca;
+  $('segurancaSair').onclick = async () => { if (await sairDaConta()) fecharSeguranca(); };
   $('segurancaDialog').addEventListener('keydown', (e) => { if (e.key === 'Escape' && $('contaDialog').hidden) fecharSeguranca(); });
   for (const id of ['friendsIdCopy', 'homeFriendsId']) if ($(id)) $(id).onclick = () => { if (id === 'homeFriendsId') setHomeConvidarOpen(false); void copiarIdentificador(); };
 }

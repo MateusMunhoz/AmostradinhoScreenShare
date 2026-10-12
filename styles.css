@@ -2582,6 +2582,7 @@ html[data-tips="off"] .tip { display: none !important; }
 .conta-dialog-corpo .field small { display: block; margin-top: 4px; }
 .conta-dialog-links { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .conta-dialog-links:empty { display: none; }
+.seg-dialog .seg-sair { margin-right: auto; }
 .seg-dialog { width: min(560px, 100%); max-height: calc(100vh - 48px); overflow-y: auto; }
 .seg-corpo { display: flex; flex-direction: column; }
 .seg-item { display: flex; flex-direction: column; gap: 8px; padding: 14px 0; border-top: 1px solid var(--line); }

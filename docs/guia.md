@@ -398,6 +398,8 @@ No pé do Início fica a versão ("Nebula 1.18.10 · atualizado"), com **Procura
   nome**, uma vez a cada 7 dias; o número fica se estiver livre), o e-mail (**Confirmar**, **Trocar e-mail**: o código vai para o
   novo e o antigo recebe um aviso), a senha (**Trocar senha** ou, em conta do Google, **Entrar também com senha**, que pode usar
   outro e-mail), o Google (**Vincular**, **Trocar Google**, **Desvincular**) e a **verificação em dois fatores**.
+- **Sair da conta:** no rodapé de **Conta e segurança** ou embaixo de Perfil › Conta Razze. Desliga as redes Razze conectadas
+  antes; amigos, mensagens e salas dos amigos somem até entrar de novo.
 - **Confirmar o e-mail:** com o e-mail ligado no servidor, criar conta por senha manda um código de 6 dígitos para o e-mail (vale
   15 minutos; **Mandar outro código** depois de 1 minuto). Sem o código a conta não entra e some em 24 horas, liberando o e-mail.
 - **Verificação em dois fatores:** em Conta e segurança, **Ligar** mostra um QR code para o app autenticador do celular (Google
