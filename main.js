@@ -243,6 +243,11 @@ function endSession(endRoom) {
   sessoes.pararAnuncio({ passaAdiante: !endRoom && roomSize() > 1 });
 }
 
+// DevTools só no código desta pasta (npm run dev). No app instalado ficam desligadas em todas as janelas (a principal,
+// a flutuante e o chat do jogo, que herdam dela): o atalho Ctrl+Shift+I e o menu não abrem nada, e se algo abrir, fecha
+const DEVTOOLS = !app.isPackaged;
+if (!DEVTOOLS) app.on('web-contents-created', (_e, wc) => wc.on('devtools-opened', () => wc.closeDevTools()));
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1200,
@@ -262,6 +267,7 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      devTools: DEVTOOLS,
     },
   });
   win.webContents.once('did-finish-load', () => {
