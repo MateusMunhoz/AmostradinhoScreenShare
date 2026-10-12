@@ -294,6 +294,18 @@ function channelHead(ch, sub) {
   return li;
 }
 
+// Canal sem ninguém: um espaço vazio com "Ninguém aqui", para mostrar que dá para entrar (clicar entra)
+function emptyVoiceSlot(join, label) {
+  const li = document.createElement('li');
+  li.className = 'voice-vazio';
+  const canJoin = voice.supported && !voice.pending;
+  const slot = document.createElement(canJoin ? 'button' : 'span');
+  slot.textContent = 'Ninguém aqui';
+  if (canJoin) { slot.type = 'button'; slot.title = label; slot.onclick = join; }
+  li.append(slot);
+  return li;
+}
+
 // Os canais no painel de voz, cada um com quem está nele
 // A linha de alguém na voz (null é você): nome, volume, Assistir… (memberRow em membros.js)
 function voiceRow(id) { return id ? memberRow(id, nameOf(id), !!state.members.get(id)?.sharing) : memberRow(null, getName(), state.sharing); }
@@ -302,6 +314,7 @@ function renderVoiceChannels(list) {
   for (const [ch, sub] of [['', null], ...state.subsalas.map((s) => [s.id, s])]) {
     list.append(channelHead(ch, sub));
     for (const id of voiceIdsIn(ch)) { const li = voiceRow(id); li.classList.add('in-channel'); makeVoiceDraggable(li, id, ch); list.append(li); }
+    if (!voiceIdsIn(ch).length) list.append(emptyVoiceSlot(() => voice.setChannel(ch), `Entrar na voz, em ${channelName(ch)}`));
     if (sub?.modo === 'lider') renderLiderSecoes(list);
   } // a música do canal fica no cabeçalho dele (channelHead › musicHeadButton)
   setupVoiceDrop(list);

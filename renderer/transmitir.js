@@ -648,9 +648,12 @@ function setShareOpen(open) {
   toast(open ? 'Transmissão aberta: qualquer um da sala pode assistir.' : `Agora só quem está em ${channelName(myVoiceChannel())} pode assistir.`);
 }
 // Menu "Quem pode assistir", sobe do ícone da barra Ao vivo: a sala toda ou só o seu canal (só nesta transmissão)
-function toggleShareOpenMenu(force) {
+// O menu abre ao lado do botão que foi clicado: o do painel (shareOpenBtn) ou o da barra das telas (cbAudience)
+let shareOpenAnchor = null;
+function toggleShareOpenMenu(force, anchor) {
   const open = force ?? !$('shareOpenMenu');
-  $('shareOpenBtn').setAttribute('aria-expanded', String(open));
+  if (open) shareOpenAnchor = anchor || $('shareOpenBtn');
+  for (const id of ['shareOpenBtn', 'cbAudience']) $(id)?.setAttribute('aria-expanded', String(open && shareOpenAnchor?.id === id));
   if (!open) return $('shareOpenMenu')?.remove();
   const menu = document.createElement('div');
   menu.id = 'shareOpenMenu';
@@ -687,7 +690,7 @@ function renderShareOpenMenu() {
     b.onclick = () => { toggleShareOpenMenu(false); if (open !== value) setShareOpen(value); };
     menu.append(b);
   }
-  const r = $('shareOpenBtn').getBoundingClientRect();
+  const r = (shareOpenAnchor || $('shareOpenBtn')).getBoundingClientRect();
   menu.style.left = `${Math.max(8, Math.min(r.left + r.width / 2 - menu.offsetWidth / 2, innerWidth - menu.offsetWidth - 8))}px`;
   menu.style.bottom = `${innerHeight - r.top + 8}px`;
 }
@@ -701,6 +704,9 @@ function syncShareOpen() {
   if (naLider) { setIcon(btn, 'globe', 'Na subsala Líder, a transmissão é sempre para a sala toda'); toggleShareOpenMenu(false); }
   // Só o ícone: globo = a sala toda; cadeado = só o seu canal. Clicar abre as duas opções (toggleShareOpenMenu)
   else setIcon(btn, open ? 'globe' : 'lock', open ? 'Quem pode assistir: a sala toda' : `Quem pode assistir: só ${channelName(myVoiceChannel())}`);
+  // O mesmo botão na barra das telas (cbAudience) acompanha o do painel
+  const cb = $('cbAudience');
+  if (cb) { cb.innerHTML = btn.innerHTML; cb.title = btn.title; cb.setAttribute('aria-label', btn.title); cb.disabled = btn.disabled; }
   renderShareOpenMenu();
   if (!state.sharing) return;
   for (const id of [...state.out.keys()]) {
@@ -794,12 +800,13 @@ function renderShareBox() {
   $('shareBtn').hidden = state.sharing;
   $('liveChip').hidden = !state.sharing;
   const selfOn = !!state.myId && state.in.has(state.myId);
-  const me = selfOn ? 'Parar de ver a sua transmissão' : 'Ver a sua transmissão no palco';
-  $('selfViewBtn').title = me;
-  $('selfViewBtn').setAttribute('aria-label', me);
   // Miniatura e nome do que está saindo (a imagem da lista de telas: a prévia ao vivo fica desligada, pesa no jogo)
   const src = state.sources.find((s) => s.id === state.sharingSource);
   $('liveSource').textContent = src ? sourceLabel(src) : 'Sua tela';
+  // Na pílula o nome da tela não aparece: vai na dica
+  const me = `${selfOn ? 'Parar de ver a sua transmissão' : 'Ver a sua transmissão no palco'} (${$('liveSource').textContent})`;
+  $('selfViewBtn').title = me;
+  $('selfViewBtn').setAttribute('aria-label', me);
   $('liveThumb').hidden = !src?.thumbnail;
   if (src?.thumbnail) $('liveThumb').src = src.thumbnail;
   $('selfViewBtn').setAttribute('aria-pressed', String(selfOn));
@@ -816,10 +823,15 @@ function renderWatchers() {
     : 'Ninguém está assistindo ainda. Só é enviado vídeo para quem clicar em Assistir.';
   const n = state.out.size;
   const who = [...state.out.keys()].map(nameOf);
-  $('liveText').textContent = n === 0 ? 'Ninguém assistindo' : n <= 2 ? `${joinNames(who)} assistindo` : `${who[0]} e mais ${n - 1} assistindo`;
-  // Sem o som do PC (desligado ou a captura falhou): fica à vista na barra, não só num aviso que some
+  // Na faixa, o olho e quantos assistem; os nomes ficam na dica
+  const quem = n === 0 ? 'Ninguém assistindo' : n <= 2 ? `${joinNames(who)} assistindo` : `${who[0]} e mais ${n - 1} assistindo`;
+  // O olho e o número só aparecem com alguém assistindo (o olho sozinho parecia o de mostrar senha)
+  $('liveText').innerHTML = ICON.eye;
+  $('liveText').append(String(n));
+  $('liveText').hidden = !n;
+  // Sem o som do PC (desligado ou a captura falhou): na pílula fica só quem assiste; o aviso vai na dica
   const silent = !!state.stream && !state.stream.getAudioTracks().length;
   $('liveText').classList.toggle('live-silent', silent);
-  if (silent) $('liveText').textContent += ', sem som';
-  $('liveText').title = silent ? 'Sua transmissão está sem o som do PC. Para ter som, pare e transmita de novo com "Som do PC" ligado.' : '';
+  $('liveText').title = quem + (silent ? '. Sua transmissão está sem o som do PC. Para ter som, pare e transmita de novo com "Som do PC" ligado.' : '');
+  $('liveText').setAttribute('aria-label', $('liveText').title);
 }

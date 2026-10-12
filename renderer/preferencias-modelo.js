@@ -205,7 +205,7 @@ const AppPreferences = (() => {
     return /^[\da-f]{6}$/i.test(s) ? '#' + s.toUpperCase() : null;
   }
   // Largura do chat e da voz arrastada pela alça (renderer/navegacao.js). 0 = automática (a do styles.css)
-  const paneLimits = { min: 300, max: 900 };
+  const paneLimits = { min: 300, max: 520 };
   function paneWidth(v) {
     return typeof v === 'number' && Number.isFinite(v) && v > 0 ? Math.max(paneLimits.min, Math.min(paneLimits.max, Math.round(v))) : 0;
   }

@@ -16,6 +16,8 @@ $('voiceJoin').onclick = () => {
 $('voiceJoinMore').onclick = () => ($('voiceJoinPop') ? closeVoiceJoinPop() : openVoiceJoinPop());
 setIcon($('voiceJoinMore'), 'chevronUp', 'Escolher o canal para entrar');
 $('voiceMute').onclick = () => voice.mute();
+$('mutadoIcone').innerHTML = ICON.micOff;
+$('mutadoLigar').onclick = () => { if (voice.muted) voice.mute(); mutadoFala.ate = 0; $('mutadoAviso').hidden = true; };
 $('paneVoiceSubsala').onclick = () => subsalaButtonClick($('paneVoiceSubsala'));
 $('voiceDeafen').onclick = () => voice.deafen();
 // Captura antes de qualquer outro atalho da página
@@ -391,7 +393,7 @@ function closeCloseDialog() {
   $('leaveBtn').focus();
 }
 $('leaveBtn').onclick = () => {
-  if (state.isOwner && state.members.size) openCloseDialog();
+  if (state.isOwner && state.members.size) { backToRoom(); openCloseDialog(); } // a pergunta fica na tela da sala
   else leaveRoom(state.isOwner ? 'Sala encerrada.' : null);
 };
 $('cancelClose').onclick = closeCloseDialog;
@@ -421,8 +423,14 @@ $('switchShareBtn').onclick = () => openShareDialog(true);
 setIcon($('switchShareBtn'), 'swap', 'Trocar a tela ou janela transmitida, sem parar');
 setIcon($('stopShareBtn'), 'stop', 'Parar de transmitir');
 $('shareOpenBtn').onclick = () => toggleShareOpenMenu();
-document.addEventListener('pointerdown', (e) => { if ($('shareOpenMenu') && !e.target.closest('#shareOpenMenu, #shareOpenBtn')) toggleShareOpenMenu(false); });
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && $('shareOpenMenu')) { toggleShareOpenMenu(false); $('shareOpenBtn').focus(); } });
+document.addEventListener('pointerdown', (e) => { if ($('shareOpenMenu') && !e.target.closest('#shareOpenMenu, #shareOpenBtn, #cbAudience')) toggleShareOpenMenu(false); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && $('shareOpenMenu')) { toggleShareOpenMenu(false); (shareOpenAnchor || $('shareOpenBtn')).focus(); } });
+// A janela de transmitir (e a de trocar a tela) fecha com um clique fora dela. Não contam outras janelas e menus por
+// cima, nem os botões que a abrem
+document.addEventListener('pointerdown', (e) => {
+  if ($('shareDialog').hidden || e.target.closest('.dialog, [role=menu], #shareBtn, #cbShare, #cbSwap, #switchShareBtn')) return;
+  closeShareDialog();
+});
 $('refreshSources').onclick = loadSources;
 $('refreshApps').onclick = loadAudioApps;
 // Desempenho, no menu da sala: o ícone das Estatísticas com o nome
@@ -430,6 +438,8 @@ setIcon($('openStatsRoom'), 'stats', 'Estatísticas: desempenho do PC e a transm
 $('openStatsRoom').append(rotuloMenu('Desempenho'));
 $('openStatsRoom').onclick = openStats;
 $('selfViewBtn').onclick = toggleSelfView;
+// A pílula toda abre a sua tela, não só o texto (o botão continua sendo o alvo do teclado e do leitor de tela)
+$('liveChip').onclick = (e) => { if (!e.target.closest('#selfViewBtn')) $('selfViewBtn').click(); };
 
 // Chat
 // Clicar fora fecha os balões da voz (o cartão de volume, que abre de dentro deles, conta como dentro)

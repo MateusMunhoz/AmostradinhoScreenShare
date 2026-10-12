@@ -304,6 +304,18 @@ button.home-acao { flex-direction: row; padding: 18px; border: 1px solid var(--l
   stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
 }
 .btn.wide { width: 100%; }
+/* Assistir da lista: só o monitor, sem borda nem fundo (fora do .btn, que os temas pintam). Branco; com o mouse
+   em cima, vai para o destaque e cresce um pouco; assistindo, fica no destaque com a tela acesa */
+.watch-btn { flex: none; width: 28px; height: 32px; padding: 0; border: 0; border-radius: 4px; background: none; box-shadow: none;
+  display: inline-grid; place-items: center; color: var(--text); cursor: pointer; transition: color .15s; }
+.watch-btn svg { transition: transform .15s ease-out; width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.watch-btn .miolo { fill: currentColor; }
+.watch-btn.on { color: var(--accent); }
+.watch-btn.on .tela { fill: color-mix(in srgb, var(--accent) 25%, transparent); }
+.watch-btn:hover:not(:disabled) { color: var(--accent); }
+.watch-btn:hover:not(:disabled) svg { transform: scale(1.15); }
+@media (prefers-reduced-motion: reduce) { .watch-btn svg { transition: none; } .watch-btn:hover:not(:disabled) svg { transform: none; } }
+.watch-btn:disabled { opacity: .45; cursor: default; }
 
 .bar { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; }
 .bar h2 { text-align: center; }
@@ -390,8 +402,12 @@ body:not(.workspace-in-room) #workspaceNav .rail-overlay { display: none; }
 .mic-off-icon { display: grid; place-items: center; color: var(--warn); }
 .mic-off-icon.jogo { color: var(--accent); } /* jogando (com música): o controle na fileira do microfone e do fone */
 .mic-off-icon svg, .vol-btn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.vol-btn { display: inline-flex; align-items: center; gap: 5px; padding: 0 8px; font-variant-numeric: tabular-nums; color: var(--muted); }
-.vol-btn.changed, .vol-btn[aria-expanded="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+/* O volume pesa menos que Ver, Assistir e Parar: sem caixa, só o ícone e o valor (em destaque quando mudou) */
+.vol-btn { display: inline-flex; align-items: center; gap: 5px; padding: 0 6px; font-variant-numeric: tabular-nums; color: var(--muted);
+  border-color: transparent; background: transparent; }
+.vol-btn:hover:not(:disabled) { border-color: transparent; background: var(--panel-2); color: var(--text); }
+.vol-btn.changed { color: var(--accent); }
+.vol-btn[aria-expanded="true"] { background: var(--accent-soft); color: var(--accent); }
 
 /* Cartão da pessoa */
 .person-card {
@@ -1199,6 +1215,7 @@ body:not(.workspace-in-room) .nav-sep { display: none; }
 #workspaceNav .rail-leave { color: #E26B6B; }
 #workspaceNav .rail-leave:hover:not(:disabled) { color: #F08F8F; border-color: rgba(226, 107, 107, .45); background: rgba(226, 107, 107, .1); }
 .rail-leave-sep:has(+ #leaveBtn[hidden]) { display: none; }
+#workspaceNav .dock-label { display: none; } /* Sair na barrinha: só o ícone (o nome fica na dica) */
 .workspace-tab { display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 0 8px; border-radius: 6px; border: 1px solid transparent; background: transparent; color: var(--surface-text); font: inherit; font-size: 12px; cursor: pointer; white-space: nowrap; position: relative; }
 .workspace-tab:hover { background: var(--panel-2); }
 /* Chat, Voz e Transmissão ligados é o normal: tingido e discreto, sem competir com as ações (desligado fica
@@ -1241,10 +1258,15 @@ body:not(.workspace-in-room) .nav-sep { display: none; }
 .voice-view button { display: grid; place-items: center; padding: 3px 7px; }
 /* Fixar o mapa: logo depois de Lista | Mapa (o espaço que empurra o Sair para a direita passa para ele) */
 .voice-view:has(+ .map-pin:not([hidden])) { margin-right: 0; }
-.map-pin { margin-right: auto; width: 28px; height: 28px; }
-.map-pin svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.map-pin[aria-pressed=true] { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
-.map-pin[aria-pressed=true] svg { fill: currentColor; }
+/* Fixar o mapa: uma chavinha com a palavra, sem fundo nem borda (fora do .btn, que os temas pintam) */
+.map-pin { margin-right: auto; height: 28px; padding: 0 2px; border: 0; background: none; display: inline-flex; align-items: center; gap: 6px;
+  font: inherit; font-size: 12px; font-weight: 600; color: var(--muted); cursor: pointer; transition: color .15s; }
+.map-pin:hover { color: var(--text); }
+.map-pin-chave { width: 26px; height: 16px; box-sizing: border-box; padding: 2px; border-radius: 999px; background: var(--panel-3); display: flex; transition: background-color .15s; }
+.map-pin-chave > span { width: 12px; height: 12px; border-radius: 50%; background: currentColor; transition: transform .15s ease-out; }
+.map-pin[aria-pressed=true] { color: var(--accent); }
+.map-pin[aria-pressed=true] .map-pin-chave { background: var(--accent); }
+.map-pin[aria-pressed=true] .map-pin-chave > span { background: var(--bg); transform: translateX(10px); }
 /* Fora de foco (no jogo, outra janela): o céu em cima da lista não é desenhado; na visão Mapa ele continua */
 .app-blurred #voiceSky:not(.map) { visibility: hidden; }
 .voice-view svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
@@ -1408,7 +1430,8 @@ button.sky-card-info:hover:not(:disabled) .sky-card-go { color: var(--accent); }
 .sky-ghost { position: fixed; z-index: 60; pointer-events: none; translate: 12px 10px; padding: 3px 9px; border: 1px solid var(--accent); border-radius: 6px;
   background: var(--panel); color: var(--text); font-size: 12px; white-space: nowrap; box-shadow: 0 6px 18px rgba(0, 0, 0, .35); }
 #voicePane > * { flex-shrink: 0; }
-#voicePane > #voicePaneMembers { flex: 0 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+#voicePane > #voicePaneMembers { flex: 0 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; /* sem barra à vista; a roda ainda rola */
+  padding-inline: 6px; margin-inline: -6px; } /* folga para o anel tracejado de quem transmite (inset -5px) não ser cortado pela rolagem */
 /* Chat e voz abertos juntos: a voz ocupa só o que precisa (até metade), o chat fica com o resto */
 .workspace-in-room.has-workspace-pane:not(.workspace-wide) #chatTab:not([hidden]) ~ #voicePane { flex: 0 1 auto; max-height: 50%; }
 /* Divisória entre o chat e a voz (setupPaneSplit): fica no vão entre os dois, só quando os dois estão abertos */
@@ -1547,7 +1570,6 @@ main { padding-top: 0; }
 .tile-noaudio { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--text-2); white-space: nowrap; }
 .tile-noaudio svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .tile.no-audio .tile-vol, .tile.no-audio .tile-mute { display: none; }
-.live-silent { font-weight: 600; }
 
 /* ── Aparência (Configurações gerais) ──────────────────────────────────────────────────────────────── */
 .settings-row { display: grid; gap: 7px; }
@@ -1911,6 +1933,12 @@ html[data-glass=liquid] .theme-swatches { border-radius: 10px; }
 .voice-channel-delete:hover { color: var(--warn); }
 .member.in-channel { padding-left: 14px; }
 /* Painel de voz: a linha de quem está na voz abre o perfil (o mesmo do mapa) */
+/* Canal sem ninguém: um espaço vazio com "Ninguém aqui", sem moldura; clicar entra */
+.voice-vazio { list-style: none; margin: 4px 0; }
+.voice-vazio > * { box-sizing: border-box; width: 100%; height: 48px; display: grid; place-items: center; border: 0;
+  border-radius: 8px; background: none; font: inherit; font-size: 13px; font-weight: 600; color: var(--muted); }
+.voice-vazio > button { cursor: pointer; transition: background-color .15s, color .15s; }
+.voice-vazio > button:hover { background: var(--panel-2); color: var(--accent); }
 #voicePaneMembers .member.in-voice { cursor: pointer; border-radius: 6px; }
 #voicePaneMembers .member.in-voice:not(.in-channel) { padding-inline: 6px; }
 #voicePaneMembers .member.in-voice:hover { background: var(--panel-2); }
@@ -1933,6 +1961,10 @@ html[data-glass=liquid] .theme-swatches { border-radius: 10px; }
 .has-dm-bar main { height: calc(100% - var(--dm-h)); }
 .has-dm-bar #workspacePanes { bottom: calc(16px + var(--dm-h)); }
 .has-dm-bar.workspace-wide #workspacePanes { bottom: calc(116px + var(--dm-h)); }
+/* Na sala, o painel (chat, voz e o Seu sinal) desce até o pé da janela; a barra de conversas acaba antes dele */
+.workspace-in-room.has-workspace-pane:not(.workspace-wide) #workspacePanes { bottom: 0; }
+.workspace-in-room.has-workspace-pane:not(.workspace-wide) .seu-sinal { border-bottom: 0; border-radius: 0; }
+.workspace-in-room.has-workspace-pane:not(.workspace-wide) .dm-bar { right: calc(var(--rail-w) + var(--workspace-width)); }
 .dm-bar { --text: var(--surface-text); --muted: var(--surface-muted); position: fixed; left: 0; right: var(--rail-w); bottom: 0; z-index: 12; height: var(--dm-h);
   display: flex; align-items: stretch; gap: 6px; padding: 0 10px 0 0; background: var(--panel); border-top: 1px solid var(--line); color: var(--text); }
 .dm-bar-label { position: relative; flex: none; display: inline-flex; align-items: center; justify-content: center; width: 44px; padding: 0; border: 0; border-right: 1px solid var(--line); background: transparent;
@@ -2244,7 +2276,6 @@ html[data-tips="off"] .tip { display: none !important; }
 .phone-qr-side p { margin: 0; }
 .phone-url { display: block; padding: 8px 10px; border-radius: 6px; background: var(--sunken); font-size: 12px; overflow-wrap: anywhere; user-select: all; }
 
-#liveText { display: none; }
 :root:not([data-skin]) #room .empty-stage::after { top: 18px; bottom: auto; }
 /* Entrar na voz (fora dela): as bolinhas de quem já está na voz e "Entrar", numa pílula; a setinha ao lado abre os
    canais com gente (renderVoiceJoin em renderer/voz.js) */
@@ -2376,13 +2407,20 @@ html[data-tips="off"] .tip { display: none !important; }
 .nomes-nota { margin: 0; color: var(--muted); font-style: italic; white-space: nowrap; }
 .person-card .pc-head .nomes-pessoa > div { flex-direction: row; } /* .pc-head div empilha; aqui é rótulo e nome lado a lado */
 .person-card .pc-head .nomes-pessoa .nomes-nota { font-size: 11px; }
-.sky-page-actions { display: flex; flex-direction: column; gap: 2px; padding: 8px; }
-.sky-page-act { display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 12px; border: 0; border-radius: 8px; background: none; color: var(--text);
-  font: inherit; font-size: 14px; text-align: left; cursor: pointer; }
-.sky-page-act:hover:not(:disabled) { background: color-mix(in srgb, var(--text) 7%, transparent); }
-.sky-page-act[aria-pressed=true] { color: var(--warn); }
+/* Ações numa linha só: a principal (mensagem ou amizade) ocupa a largura; silenciar e mudar de canal são só ícones */
+.sky-page-actions { display: flex; align-items: center; gap: 8px; padding: 12px 14px; }
+.sky-page-actions:empty { display: none; }
+.sky-page-act { flex: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 38px; height: 38px; padding: 0;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); box-shadow: var(--lift); color: var(--text); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.sky-page-act:hover:not(:disabled) { background: var(--panel-3); }
+.sky-page-act.principal { flex: 1 1 auto; width: auto; min-width: 0; padding: 0 14px; background: var(--primary); border-color: var(--primary); color: var(--primary-ink);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3); }
+.sky-page-act.principal:hover:not(:disabled) { background: var(--primary-hover); border-color: var(--primary-hover); }
+.sky-page-act[aria-pressed=true] { color: var(--warn); border-color: var(--warn); }
 .sky-page-act:disabled { opacity: .45; cursor: default; }
-.sky-page-act svg { flex: none; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.sky-page-act svg { flex: none; width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+/* Já são amigos: um selo ao lado do nome, no lugar da linha "Vocês já são amigos" */
+.sky-page-amigos { padding: 1px 7px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 11px; font-weight: 600; }
 .sky-page .sky-focus-vol { width: auto; margin: 4px 20px 16px; }
 
 /* Página do perfil: nome em destaque, canal e Ao vivo em selos na mesma linha, volume com nome, X sem fundo e sem
@@ -2391,6 +2429,8 @@ html[data-tips="off"] .tip { display: none !important; }
 .sky-page-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .sky-page-tags .live-pill { font-size: 10px; padding: 2px 8px; text-transform: uppercase; letter-spacing: .04em; }
 .sky-focus.sky-page { scrollbar-width: none; } /* sem barra de rolagem à vista (a roda do mouse ainda rola se faltar altura) */
+/* Com o perfil aberto, a lista da voz atrás dele também fica sem a barra de rolagem (a roda continua rolando) */
+#voicePane:has(> #skyFocus.sky-page:not([hidden])) > #voicePaneMembers { scrollbar-width: none; }
 .sky-page .sky-page-back { width: 32px; height: 32px; background: none; border-color: transparent; box-shadow: none; color: var(--text-2); }
 .sky-page .sky-page-back:hover { color: var(--text); background: color-mix(in srgb, var(--text) 8%, transparent); }
 .sky-page-label { margin: 8px 20px 0; font-size: 12px; color: var(--muted); }
@@ -2481,6 +2521,7 @@ html[data-tips="off"] .tip { display: none !important; }
 :root[data-mirror="on"] .workspace-brand { left: calc(24px + var(--rail-w)); }
 :root[data-mirror="on"] .update-banner { right: 16px; }
 :root[data-mirror="on"] .dm-bar { left: var(--rail-w); right: 0; }
+:root[data-mirror="on"] .workspace-in-room.has-workspace-pane:not(.workspace-wide) .dm-bar { left: calc(var(--rail-w) + var(--workspace-width)); right: 0; }
 :root[data-mirror="on"] .theme-decor { left: var(--rail-w); }
 :root[data-mirror="on"] .has-workspace-pane:not(.workspace-wide) main { padding-right: 0; padding-left: calc(var(--workspace-width) + 12px); }
 :root[data-mirror="on"] .voice-side main { padding-left: 0; padding-right: calc(var(--workspace-width) + 12px); }
@@ -2706,8 +2747,8 @@ button.home-chip:hover { color: var(--text); }
 .share-open-menu .som-text { display: flex; flex-direction: column; gap: 2px; font-size: 14px; }
 .share-open-menu small { font-size: 12px; color: var(--muted); }
 /* Sair da voz só com contorno laranja (enche ao passar o mouse): não se confunde com o Parar, que é cheio */
-.seu-sinal #voiceJoin.voice-leave { background: transparent !important; color: var(--warn) !important; box-shadow: inset 0 0 0 1.5px var(--warn) !important; }
-.seu-sinal #voiceJoin.voice-leave:hover:not(:disabled) { background: var(--warn) !important; color: var(--bg) !important; filter: none; }
+.seu-sinal #voiceJoin.voice-leave { background: transparent !important; border-color: transparent !important; color: var(--warn) !important; box-shadow: none !important; }
+.seu-sinal #voiceJoin.voice-leave:hover:not(:disabled) { background: color-mix(in srgb, var(--warn) 16%, transparent) !important; color: var(--warn) !important; filter: none; }
 /* Lista "Na voz": nomes do mesmo tamanho e peso (cada um na sua fonte); o perfil abre dentro dela */
 .vs-row .vs-name { font-size: 14px; font-weight: 500; line-height: 1.3; }
 #voiceStackPop > .sky-focus.sky-page, #voiceStackPop > .sky-focus.sky-page.has-bg { position: relative; inset: auto; flex: none; max-height: none;
@@ -2810,12 +2851,16 @@ button.home-chip:hover { color: var(--text); }
 :root[data-gamer="on"] .entrada-roda { animation: none; border-color: var(--accent); border-right-color: var(--line); }
 
 /* ---------- Sala nova (docs/spec/sala-nova.md): cabeçalho da sala, abas do painel e o cartão Seu sinal ---------- */
-/* Cabeçalho, em cima do palco: o nome da sala abre o menu da sala; à direita Grade/Destaque, Convidar e Sair.
-   Sem espaço, some a rede e as pessoas (apertado-1) e depois o texto dos botões (apertado-2): fitRoomHead */
-.room-head { flex: none; display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 44px; box-sizing: border-box; padding: 4px 0; }
+/* Cabeçalho do painel: o nome da sala (abre o menu da sala, com a rede dentro) e Grade/Destaque, em cima das abas. Só existe com o
+   painel aberto na sala. Sem espaço, o nome encolhe (apertado-1): fitRoomHead */
+.room-head { display: none; }
+.workspace-in-room.has-workspace-pane .room-head { --text: var(--surface-text); --muted: var(--surface-muted);
+  flex: none; display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 46px; box-sizing: border-box; padding: 4px 8px 2px 4px;
+  color: var(--text); border: 1px solid var(--line); border-bottom: 0; border-radius: 10px 10px 0 0; background: var(--panel); }
+.workspace-in-room.has-workspace-pane .room-head + .pane-tabs { border-radius: 0; }
 .room-menu-wrap { position: relative; display: flex; flex: 0 1 auto; min-width: 0; }
-/* O nome só encolhe (com reticências) depois que a rede e os textos dos botões já saíram */
-.room-head:not(.apertado-2) .room-menu-wrap { flex-shrink: 0; }
+/* O nome só encolhe (com reticências) quando não cabe (apertado-1) */
+.room-head:not(.apertado-1) .room-menu-wrap { flex-shrink: 0; }
 .room-name { display: inline-flex; align-items: center; gap: 7px; min-width: 0; max-width: 100%; height: 36px; padding: 0 10px; border: 1px solid transparent; border-radius: 8px;
   background: none; color: var(--text); font: inherit; font-size: 15px; font-weight: 650; cursor: pointer; }
 .room-name:hover, .room-name[aria-expanded=true] { background: var(--panel); border-color: var(--line); }
@@ -2823,16 +2868,8 @@ button.home-chip:hover { color: var(--text); }
 #roomHeadTitle { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .room-name svg { flex: none; width: 15px; height: 15px; fill: none; stroke: var(--muted); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .room-name-star { display: none; }
-.room-head-meta { flex: none; font-size: 12px; color: var(--muted); white-space: nowrap; }
 .room-head-space { flex: 1 1 0; min-width: 0; }
 .room-head > :not(.room-menu-wrap):not(.room-head-space) { flex: none; }
-.room-head-btn { display: inline-flex; align-items: center; gap: 6px; }
-.room-head-btn svg { flex: none; width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.room-head .room-leave { color: #E26B6B; }
-.room-head .room-leave:hover:not(:disabled) { color: #F08F8F; border-color: rgba(226, 107, 107, .45); background: rgba(226, 107, 107, .1); }
-.room-head.apertado-1 .room-head-meta { display: none; }
-.room-head.apertado-2 .room-head-btn .dock-label { display: none; }
-.room-head.apertado-2 .room-head-btn { width: 32px; padding: 0; justify-content: center; }
 /* Menu da sala: endereço e senha, quem pode entrar e, embaixo, desempenho e sair */
 .room-menu { --text: var(--surface-text); --text-2: var(--surface-text-2); --muted: var(--surface-muted);
   position: absolute; top: calc(100% + 6px); left: 0; z-index: 25; width: min(340px, calc(100vw - 40px)); box-sizing: border-box;
@@ -2841,6 +2878,8 @@ button.home-chip:hover { color: var(--text); }
 .room-menu-addr { display: flex; flex-direction: column; gap: 8px; }
 .room-menu-addr .addr { background: var(--sunken); }
 .room-menu-addr .warn { margin: 0; }
+.room-menu-rede { margin: 0; display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--muted); }
+.room-menu-rede strong { font-weight: 600; color: var(--text); }
 .room-menu-itens { display: flex; flex-direction: column; gap: 2px; padding-top: 8px; border-top: 1px solid var(--line); }
 .room-menu-item { display: flex; align-items: center; gap: 10px; min-height: 38px; padding: 0 10px; border: 0; border-radius: 6px;
   background: transparent; color: var(--text); font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
@@ -2848,6 +2887,7 @@ button.home-chip:hover { color: var(--text); }
 .room-menu-item svg { flex: none; width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .room-menu-item.danger { color: #E26B6B; }
 /* O palco começa logo embaixo do cabeçalho */
+/* O palco começa no topo (o nome da sala fica no painel) */
 #room .stage-col { gap: 8px; }
 
 /* Abas do painel: Voz, Chat e Pessoas, numa faixa que fecha o bloco em cima. O painel de chat e o de voz continuam
@@ -2876,15 +2916,13 @@ button.home-chip:hover { color: var(--text); }
 #workspacePanes > .people-pop { position: static; flex: 1 1 0; min-height: 0; max-height: none; z-index: auto; padding: 12px 14px;
   border: 1px solid var(--line); border-top: 0; border-radius: 0; background: var(--panel); box-shadow: none; }
 
-/* Seu sinal: fecha o bloco embaixo, em qualquer aba. Em cima, em que canal você está; no meio, a voz (Entrar, ou
-   microfone, fone, sair e Voz e atalhos); embaixo, Transmitir tela (ao vivo, o bloco Ao vivo) */
+/* Seu sinal: fecha o bloco embaixo, em qualquer aba. Em cima, a música que você ouve (se houver); no meio, a voz (Entrar, ou
+   microfone, fone, sair e Voz e atalhos); embaixo, Transmitir tela (transmitindo, a pílula Transmitindo tela no mesmo lugar) */
 .seu-sinal { flex: none; display: flex; flex-direction: column; gap: 8px; padding: 10px 12px 12px; color: var(--text);
   border: 1px solid var(--line); border-radius: 0 0 10px 10px; background: var(--panel); }
 .ss-linha { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.ss-estado { min-height: 20px; font-size: 12px; }
-.ss-rotulo { flex: none; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-.ss-onde { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
-.seu-sinal.na-voz .ss-onde { color: var(--ok); }
+.ss-estado { min-height: 20px; font-size: 12px; justify-content: flex-end; }
+.ss-estado:not(:has(> :not([hidden]))) { display: none; }
 .seu-sinal .rail-music-menu { top: auto; right: 0; bottom: calc(100% + 8px); }
 .ss-voz .voice-dock { flex: 1 1 auto; min-width: 0; }
 .seu-sinal .voice-dock.active { padding: 0; border: 0; border-radius: 0; background: none; }
@@ -2895,18 +2933,53 @@ button.home-chip:hover { color: var(--text); }
 .voice-in-call .pane-voice-actions:not(:has(> :not([hidden]):not(.pane-join):not(#paneVoiceSettings))) { display: none; }
 /* Lista e Mapa com o nome (com uma aba só, o seletor fica no lugar do título "Chat de voz") */
 .voice-view button:has(> span) { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; }
-/* Os avisos descem para não cobrir o cabeçalho da sala (Convidar e Sair) */
+/* Os avisos descem um pouco, longe da barra de título */
 .workspace-in-room .toast { top: 64px; }
-.seu-sinal .btn.icon { width: 36px; height: 36px; }
+/* Seu sinal: todos os botões redondos de 40 px e sem borda (como a pílula e o Entrar na voz), com o mesmo vão de 8 px
+   nas duas linhas, para os de baixo ficarem embaixo dos de cima */
+.seu-sinal .btn.icon { width: 40px; height: 40px; border-radius: 999px; }
+.seu-sinal .btn.icon:not(.danger):not(.voice-leave) { border-color: transparent; box-shadow: none; }
+.seu-sinal .voice-dock { gap: 8px; }
+/* Na voz, os botões da voz entram direto na linha (sem a caixa do dock) para o Sair ir para depois de Voz e atalhos */
+.seu-sinal .voice-dock.active { display: contents; }
+.seu-sinal .voice-dock.active #voiceJoin { order: 1; }
+.seu-sinal #voiceMe { font-family: var(--font-body); }
 .seu-sinal .ss-ajustes { flex: none; }
 .seu-sinal .ss-ajustes svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .ss-tx { flex-wrap: wrap; }
-.ss-tx .dock-share { flex: 1 1 auto; justify-content: center; }
-.ss-tx .live-chip { flex: 1 1 auto; min-width: 0; }
-.ss-tx .live-info { flex: 1 1 auto; }
-.ss-tx .live-info strong { max-width: none; }
+.ss-tx .dock-share { flex: 1 1 auto; justify-content: center; border-radius: 999px; } /* mesma forma, tamanho e lugar da pílula Transmitindo tela */
+/* Transmitindo: "Transmitindo tela" vira uma pílula suave (fundo translúcido do destaque, com o monitor aceso) no mesmo lugar e
+   com a mesma forma do botão Transmitir tela (clicar abre a sua tela no palco), e
+   quem pode assistir, trocar e parar vão para a linha da voz, depois de um traço */
+.ss-tx .live-chip { flex: 1 1 0; min-width: 0; height: 40px; gap: 8px; margin: 0; padding: 0 16px 0 14px;
+  border: 0; border-radius: 999px; background: var(--accent-soft); color: var(--text); cursor: pointer; transition: background-color .15s; }
+.ss-tx .live-chip:hover, .ss-tx .live-chip:has(#selfViewBtn[aria-pressed="true"]) { background: color-mix(in srgb, var(--accent) 24%, transparent); }
+/* Vendo a própria tela: quem acende é a pílula inteira, não um retângulo atrás do texto (#selfViewBtn[aria-pressed] lá em cima) */
+.ss-tx #selfViewBtn[aria-pressed="true"] { background: none; }
+.ss-tx .live-thumb { flex: 0 1 auto; min-width: 0; width: auto; height: 32px; border: 0; border-radius: 0; background: none; box-shadow: none; overflow: visible; }
+.ss-tx .live-thumb img { display: none; }
+.ss-tx .live-thumb .live-pill { position: static; gap: 6px; padding: 0; background: none; color: var(--accent); font-size: 14px; font-weight: 600; line-height: 1; letter-spacing: 0; text-transform: none; }
+.ss-tx .live-thumb .live-pill::before { display: none; }
+/* Sem espaço, quem encolhe é o texto da pílula (com reticências), não o olho nem o "sem som" */
+.ss-tx .live-thumb .live-pill { min-width: 0; max-width: 100%; }
+.ss-tx .live-pill-texto { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ss-tx .live-pill svg { flex: none; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.ss-tx .live-pill .tela { fill: color-mix(in srgb, var(--accent) 30%, transparent); }
+.ss-tx .live-thumb:hover, .ss-tx .live-thumb[aria-pressed=true] { border: 0; box-shadow: none; }
+.ss-tx .live-thumb:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.ss-tx .live-info { flex: 0 0 auto; margin-left: auto; flex-direction: row; align-items: center; gap: 8px; }
+.ss-tx .live-info strong { display: none; } /* o nome da tela vai na dica da pílula */
+.ss-tx .live-info #liveText { max-width: none; overflow: visible; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--text); font-variant-numeric: tabular-nums; }
+.ss-tx #liveText[hidden] { display: none; }
+.ss-tx .live-info #liveText svg { flex: none; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.ss-tx-acoes { flex: none; display: flex; align-items: center; gap: 8px; }
+.seu-sinal:not(:has(#liveChip:not([hidden]))) .ss-tx-acoes { display: none; }
+/* Parar é cheio de laranja; o Sair da voz, em cima, é só o ícone laranja: os dois não se confundem */
+.seu-sinal #stopShareBtn { background: var(--warn); border-color: var(--warn); color: var(--bg); }
+.seu-sinal #stopShareBtn:hover:not(:disabled) { background: color-mix(in srgb, var(--warn) 85%, var(--text)); }
+.ss-voz { flex-wrap: wrap; }
 .ss-tx .pip-chip { flex: 1 1 100%; }
-.workspace-wide :is(.pane-tabs, .seu-sinal) { grid-column: 1 / -1; }
+.workspace-wide :is(.room-head, .pane-tabs, .seu-sinal) { grid-column: 1 / -1; }
 .workspace-wide .seu-sinal { border-radius: 10px; }
 .workspace-wide .pane-tabs { border-radius: 10px; }
 
@@ -2959,3 +3032,85 @@ button.home-chip:hover { color: var(--text); }
 .lider-linha .btn { flex: none; }
 .pane-tab-pedidos { min-width: 16px; height: 16px; padding: 0 4px; box-sizing: border-box; border-radius: 999px; background: var(--accent); color: var(--accent-ink, #000);
   font-size: 10px; font-weight: 700; line-height: 16px; text-align: center; letter-spacing: 0; }
+
+/* ---------- Sala sem vãos (body.na-sala, syncWorkspace): o palco, o painel, a barrinha e a barra de conversas
+   encostam uns nos outros e nas bordas da janela. Sem linhas nem cantos redondos entre eles: só o tom separa
+   (o painel na cor dele, a barrinha e a barra de conversas um pouco mais escuras, o Seu sinal um pouco mais claro) */
+.na-sala #room { padding: 0; }
+.na-sala #room .room-grid, .na-sala #room .stage-col, .na-sala #room .stage-area { gap: 0; }
+.na-sala.has-workspace-pane:not(.workspace-wide) main { padding-right: var(--workspace-width); }
+:root[data-mirror="on"] .na-sala.has-workspace-pane:not(.workspace-wide) main { padding-right: 0; padding-left: var(--workspace-width); }
+.na-sala.has-workspace-pane:not(.workspace-wide) #workspacePanes { top: 0; right: var(--rail-w); bottom: 0; gap: 0; }
+:root[data-mirror="on"] .na-sala.has-workspace-pane:not(.workspace-wide) #workspacePanes { right: auto; left: var(--rail-w); }
+.na-sala.has-workspace-pane:not(.workspace-wide) :is(.room-head, .pane-tabs, .workspace-pane, .seu-sinal, #workspacePanes > .people-pop, .map-chat-strip) {
+  border: 0; border-radius: 0; }
+.na-sala.has-workspace-pane:not(.workspace-wide) .seu-sinal { background: color-mix(in srgb, var(--panel-2) 45%, var(--panel)); }
+.na-sala.has-workspace-pane:not(.workspace-wide) .pane-resize { left: -4px; }
+:root[data-mirror="on"] .na-sala.has-workspace-pane:not(.workspace-wide) .pane-resize { left: auto; right: -4px; }
+.na-sala #workspaceNav { border: 0; background: color-mix(in srgb, var(--panel) 55%, var(--bg)); }
+.na-sala .dm-bar { border-top: 0; background: color-mix(in srgb, var(--panel) 55%, var(--bg)); }
+/* As telas vão até a borda: sem moldura, e entre uma e outra só uma fresta */
+.na-sala #room :is(.tile, .empty-stage) { border: 0; border-radius: 0; }
+.na-sala #room .tiles { gap: 2px; }
+.na-sala #room .tiles.column { gap: 2px; }
+
+/* ---------- Barra da chamada (setupCallbar, navegacao.js): no pé das telas, no meio; só na voz ---------- */
+.callbar { --text: var(--surface-text); --muted: var(--surface-muted);
+  position: absolute; left: 50%; bottom: 16px; z-index: 4; display: flex; align-items: center; gap: 8px; padding: 8px;
+  border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--panel); box-shadow: var(--shadow-2); color: var(--text);
+  opacity: 0; translate: -50% 8px; pointer-events: none; transition: opacity .18s, translate .18s; }
+.callbar.on { opacity: 1; translate: -50% 0; pointer-events: auto; }
+/* Os botões são os .btn do app: elevados, com borda fina e o brilho de 1px no topo */
+.callbar .cb { height: 36px; min-width: 36px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 16px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); box-shadow: var(--lift); color: var(--text);
+  font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.callbar .cb:hover { background: var(--panel-3); }
+.callbar .cb:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.callbar .cb.icon { width: 36px; padding: 0; }
+.callbar .cb svg { width: 17px; height: 17px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+/* Microfone ou fone desligados: laranja (cuidado) */
+.callbar .cb.off { border-color: var(--warn); background: color-mix(in srgb, var(--warn) 14%, transparent); color: var(--warn); }
+/* Transmitir tela: o botão principal */
+.callbar .cb.share { border-color: var(--primary); background: var(--primary); color: var(--primary-ink); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3); }
+.callbar .cb.share:hover { border-color: var(--primary-hover); background: var(--primary-hover); }
+/* Ao vivo: um bloco com borda na cor de destaque; "Ao vivo" (ver a sua tela), Trocar tela e parar em gomos */
+.callbar .cb-live { display: flex; align-items: stretch; height: 36px; border: 1px solid var(--accent); border-radius: 6px; background: var(--accent-soft); overflow: hidden; }
+.callbar .cb-live[hidden] { display: none; }
+.callbar .cb-live-ver { display: inline-flex; align-items: center; gap: 8px; padding: 0 12px; border: 0; background: transparent; color: var(--text);
+  font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.callbar .cb-live-ver:hover, .callbar .cb.cb-seg:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.callbar .cb-live-ver:focus-visible, .callbar .cb.cb-seg:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.callbar .cb-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+.callbar .cb.cb-seg { height: auto; min-width: 0; padding: 0 12px; border: 0; border-left: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: 0; background: transparent; box-shadow: none; font-size: 13px; }
+.callbar .cb.cb-seg svg { width: 15px; height: 15px; }
+.callbar .cb.cb-seg.icon { width: 36px; padding: 0; }
+.callbar .cb.cb-parar { width: 36px; padding: 0; color: var(--warn); }
+.callbar .cb.cb-parar svg { width: 14px; height: 14px; }
+.callbar .cb.cb-parar:hover { background: var(--warn); color: var(--bg); }
+/* Sair da voz: contorno laranja de cuidado; com o mouse em cima, enche */
+.callbar .cb.leave { border-color: var(--warn); background: transparent; box-shadow: none; color: var(--warn); }
+.callbar .cb.leave:hover { background: var(--warn); color: var(--bg); }
+@media (prefers-reduced-motion: reduce) { .callbar { transition: none; } }
+:root[data-gamer="on"] .callbar { backdrop-filter: none; background: var(--panel); transition: none; }
+/* Com a barra à vista, os botões que ela repete saem do Seu sinal (microfone, fone, sair, quem pode assistir, trocar e parar):
+   apagam e encolhem até sumir (e voltam do mesmo jeito). Fica só Voz e atalhos (#voiceSettingsBtn) */
+.seu-sinal :is(#voiceMute, #voiceDeafen, #voiceJoin.voice-leave, #shareOpenBtn, #switchShareBtn, #stopShareBtn) { transition: opacity .18s, width .18s, margin .18s, visibility 0s; }
+.callbar-on .seu-sinal :is(#voiceMute, #voiceDeafen, #voiceJoin.voice-leave, #shareOpenBtn, #switchShareBtn, #stopShareBtn) { opacity: 0; width: 0; min-width: 0; margin-left: -8px; border-width: 0;
+  overflow: hidden; visibility: hidden; pointer-events: none; transition: opacity .18s, width .18s, margin .18s, visibility 0s .18s; }
+.seu-sinal .ss-tx-acoes { transition: gap .18s, margin .18s; }
+/* Ao lado da pílula, os três somem por inteiro (sem o vão entre eles nem o da pílula), e ela cresce no lugar */
+.callbar-on .seu-sinal .ss-tx-acoes { gap: 0; margin-left: -8px; }
+.callbar-on .seu-sinal .ss-tx-acoes :is(#shareOpenBtn, #switchShareBtn, #stopShareBtn) { margin-left: 0; }
+@media (prefers-reduced-motion: reduce) { .seu-sinal :is(#voiceMute, #voiceDeafen, #voiceJoin.voice-leave, #shareOpenBtn, #switchShareBtn, #stopShareBtn, .ss-tx-acoes) { transition: none !important; } }
+
+/* Aviso de quem fala com o microfone desligado: no pé das telas (em cima da barra, se ela estiver à vista), em laranja */
+.mutado-aviso { position: absolute; left: 50%; bottom: 16px; translate: -50% 0; z-index: 4; display: flex; align-items: center; gap: 10px;
+  padding: 5px 5px 5px 14px; border-radius: 999px; background: var(--panel); border: 1px solid var(--warn); color: var(--warn);
+  font-size: 13.5px; font-weight: 600; box-shadow: 0 10px 30px rgba(0, 0, 0, .45); white-space: nowrap; }
+.mutado-aviso[hidden] { display: none; }
+.callbar-on .mutado-aviso { bottom: 80px; }
+#mutadoIcone { display: flex; }
+#mutadoIcone svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+/* O palco vazio deixa o pé livre para a barra da chamada não cobrir os Assistir */
+.na-sala #room .empty-stage { padding-bottom: 84px; }

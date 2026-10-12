@@ -36,6 +36,8 @@ function setPainelSala(mudar = {}) {
   renderVoiceAvatars();
   closePersonCard();
   if (chat.open && paneFold.which !== 'chat') requestAnimationFrame(scrollChatToEnd);
+  // No Início o painel fica na barrinha: abrir o painel (pela barrinha ou pelo chat) volta para a sala
+  if (mudar.recolhido === false && state.myId && $('room').hidden) backToRoom();
 }
 let workspaceReady = false;
 let profileReturnFocus = null;
@@ -93,11 +95,11 @@ function setupUtilityPopup(id, close) {
 function saveWorkspaceViews() { save('workspaceViews.v1', JSON.stringify(workspaceViews)); }
 function syncWorkspace() {
   if (!workspaceReady) return;
-  // inCall: numa sala, mesmo no menu inicial; inRoom: com a tela da sala à vista. No menu, a barrinha e os painéis de
-  // chat e voz continuam (dá para conversar e mexer na voz sem voltar); só as telas ficam na sala.
+  // inCall: numa sala, mesmo no menu inicial; inRoom: com a tela da sala à vista. No menu, o painel de chat e voz vai
+  // sozinho para a barrinha, como recolhido (sem mudar o que ficou salvo: ao voltar para a sala, ele volta como estava).
   const inCall = !!state.myId, inRoom = !$('room').hidden && inCall;
   const settings = !$('generalSettingsDialog').hidden, profile = !$('profilePane').hidden;
-  const any = inCall && !painelSala.recolhido;
+  const any = inRoom && !painelSala.recolhido;
   const pessoas = any && painelSala.aba === 'pessoas';
   $('workspacePanes').hidden = !any;
   $('chatTab').hidden = !inCall || !workspaceViews.chat;
@@ -106,6 +108,7 @@ function syncWorkspace() {
   $('streamArea').hidden = inRoom && !workspaceViews.streams;
   document.body.classList.toggle('has-workspace-pane', any);
   document.body.classList.toggle('workspace-in-room', inCall);
+  document.body.classList.toggle('na-sala', inRoom); // a tela da sala sem vãos (styles.css)
   document.body.classList.toggle('workspace-wide', inRoom && !workspaceViews.streams && any);
   // Abas, painéis e o cartão Seu sinal formam um bloco só; o cartão fecha o bloco embaixo
   $('chatTab').classList.remove('pane-last');
@@ -117,6 +120,8 @@ function syncWorkspace() {
   if (mapFocus.on && !mapFocusFits()) setMapFocus(false); // o mapa em foco só existe com chat e voz lado a lado
   $('workspaceContext').textContent = inRoom ? 'Na sala' : 'Início';
   $('dockHome').hidden = !inRoom; // no menu, o Voltar para a sala fica no lugar do Início (renderHomeCall)
+  $('dockAddr').hidden = !inCall || !state.roomAddr;
+  $('leaveBtn').hidden = !inCall;
   $('navVoice').setAttribute('aria-pressed', String(workspaceViews.voice));
   $('navChat').setAttribute('aria-pressed', String(workspaceViews.chat));
   $('peopleBtn').setAttribute('aria-pressed', String(pessoas));
@@ -144,9 +149,9 @@ function syncWorkspace() {
   renderAmigos();
 }
 // ---------- Cabeçalho da sala ----------
-// Em cima do palco: o nome da sala (abre o menu da sala), a rede e quantas pessoas; à direita Grade/Destaque (com
-// telas), Convidar e Sair. Sem espaço, enxuga em etapas: 1) a rede e as pessoas; 2) os textos de Convidar e Sair.
-const HEAD_STEPS = ['apertado-1', 'apertado-2'];
+// No topo do painel, em cima das abas: o nome da sala (abre o menu da sala) e a rede; à direita Grade/Destaque (com
+// telas). Quantas pessoas fica na aba Pessoas; Convidar e Sair, na barrinha. Sem espaço, a rede sai (e depois o nome encolhe).
+const HEAD_STEPS = ['apertado-1'];
 function fitRoomHead() {
   const head = $('roomHead');
   if (!head.offsetParent) return;
@@ -165,8 +170,7 @@ function renderRoomHead() {
   if (!state.myId) { setRoomMenuOpen(false); return; }
   const dono = state.hostId === state.myId;
   $('roomHeadTitle').textContent = dono ? 'Sua sala' : `Sala de ${nameOf(state.hostId)}`;
-  const pessoas = state.members.size + 1;
-  $('roomHeadMeta').textContent = `${redeDaSala()} · ${pessoas === 1 ? 'só você' : `${pessoas} pessoas`}`;
+  $('roomMenuRede').textContent = redeDaSala(); // o modo de conexão fica dentro do menu da sala
   $('roomMenuBtn').title = 'Configurações da sala: endereço, senha e quem pode entrar';
   $('dockAddr').title = state.cloud ? 'Copiar o código da sala para mandar a quem vai entrar' : 'Copiar o endereço da sala para mandar a quem vai entrar';
 }
@@ -195,12 +199,11 @@ function setupRoomHead() {
 }
 
 // ---------- Seu sinal ----------
-// O cartão no pé do painel: em que canal você está (ou "Fora da voz"), os botões da voz e o Transmitir. Recolhido o
+// O cartão no pé do painel: a música que você ouve, os botões da voz e o Transmitir (o canal já aparece na aba Voz). Recolhido o
 // painel, a coluninha da barrinha repete microfone, fone, entrar/sair da voz e transmitir (os botões de verdade são os
 // do cartão: a coluninha só clica neles).
 function renderSeuSinal() {
   const na = !!voice.session;
-  $('ssOnde').textContent = voice.pending ? 'Entrando na voz…' : na ? `Voz conectada · ${channelName(voice.channel)}` : 'Fora da voz';
   $('seuSinal').classList.toggle('na-voz', na);
   $('seuSinal').classList.toggle('ao-vivo', !!state.sharing);
   $('miniMute').hidden = $('miniDeafen').hidden = !na;
@@ -208,12 +211,13 @@ function renderSeuSinal() {
   $('miniMute').setAttribute('aria-pressed', String(voice.muted));
   setIcon($('miniDeafen'), voice.deafened ? 'headphonesOff' : 'headphones', voice.deafened ? 'Ouvir as vozes' : 'Silenciar as vozes');
   $('miniDeafen').setAttribute('aria-pressed', String(voice.deafened));
-  setIcon($('miniVoice'), na || voice.pending ? 'phoneOff' : 'phone', na ? 'Sair da voz' : voice.pending ? 'Cancelar entrada na voz' : 'Entrar na voz');
+  setIcon($('miniVoice'), na || voice.pending ? 'leave' : 'phone', na ? 'Sair da voz' : voice.pending ? 'Cancelar entrada na voz' : 'Entrar na voz');
   $('miniVoice').disabled = !voice.supported;
   $('miniVoice').classList.toggle('mini-sair', na || voice.pending);
   setIcon($('miniShare'), state.sharing ? 'stop' : 'monitor', state.sharing ? 'Parar de transmitir' : 'Transmitir tela');
   $('miniShare').classList.toggle('ao-vivo', !!state.sharing);
   renderLiderLinha();
+  renderCallbar();
 }
 function setupSeuSinal() {
   setIcon($('paneExpand'), 'panelOpen', 'Abrir o painel da sala');
@@ -238,6 +242,66 @@ function setupSeuSinal() {
   $('miniVoice').onclick = () => $('voiceJoin').click();
   $('miniShare').onclick = () => (state.sharing ? $('stopShareBtn') : $('shareBtn')).click();
   setupLiderLinha();
+}
+
+// ---------- Barra da chamada ----------
+// Na voz, com a tela da sala à vista: mexer o mouse em cima das telas mostra a barra no pé delas, no meio; ela some
+// sozinha (TILE_IDLE_MS) e fica enquanto o mouse ou o foco está nela. Microfone, fone, transmitir e sair da voz: os
+// botões só clicam nos de verdade (os do Seu sinal), que somem do painel enquanto a barra está à vista.
+const callbar = { timer: 0 };
+function callbarPode() { return !!voice.session && !!state.myId && !$('room').hidden; }
+function setCallbar(on) {
+  on = on && callbarPode();
+  clearTimeout(callbar.timer);
+  $('callbar').classList.toggle('on', on);
+  document.body.classList.toggle('callbar-on', on);
+  if (on) $('callbar').hidden = false;
+}
+function callbarAcordar() {
+  if (!callbarPode()) return setCallbar(false);
+  setCallbar(true);
+  callbar.timer = setTimeout(function dormir() {
+    if ($('callbar').matches(':hover, :focus-within')) callbar.timer = setTimeout(dormir, TILE_IDLE_MS);
+    else setCallbar(false);
+  }, TILE_IDLE_MS);
+}
+function renderCallbar() {
+  if (!callbarPode()) setCallbar(false);
+  setIcon($('cbMic'), voice.muted ? 'micOff' : 'mic', voice.muted ? 'Ligar o microfone' : 'Desligar o microfone');
+  $('cbMic').setAttribute('aria-pressed', String(voice.muted));
+  $('cbMic').classList.toggle('off', voice.muted);
+  setIcon($('cbDeafen'), voice.deafened ? 'headphonesOff' : 'headphones', voice.deafened ? 'Ouvir as vozes' : 'Silenciar as vozes');
+  $('cbDeafen').setAttribute('aria-pressed', String(voice.deafened));
+  $('cbDeafen').classList.toggle('off', voice.deafened);
+  const live = !!state.sharing;
+  $('cbShare').hidden = live;
+  $('cbLive').hidden = !live;
+  $('cbLiveVer').setAttribute('aria-pressed', $('selfViewBtn').getAttribute('aria-pressed') || 'false');
+  setIcon($('cbLeave'), 'leave', 'Sair da voz');
+}
+function setupCallbar() {
+  const area = $('streamArea');
+  area.addEventListener('pointermove', (e) => { if (!e.target.closest?.('.modal')) callbarAcordar(); }, { passive: true });
+  area.addEventListener('pointerleave', () => setCallbar(false));
+  $('callbar').addEventListener('focusin', () => setCallbar(true));
+  $('callbar').addEventListener('focusout', () => setTimeout(() => { if (!$('callbar').matches(':hover, :focus-within')) callbarAcordar(); }));
+  // Só a transição da própria barra (os botões dentro dela também animam e o evento sobe deles)
+  $('callbar').addEventListener('transitionend', (e) => { if (e.target === $('callbar') && !$('callbar').classList.contains('on')) $('callbar').hidden = true; });
+  $('cbMic').onclick = () => $('voiceMute').click();
+  $('cbDeafen').onclick = () => $('voiceDeafen').click();
+  $('cbShare').innerHTML = `${ICON.monitor}<span>Transmitir tela</span>`;
+  $('cbShare').title = 'Escolher a tela ou a janela para transmitir';
+  $('cbShare').onclick = () => $('shareBtn').click();
+  $('cbLiveVer').title = 'Ver a sua tela';
+  $('cbLiveVer').onclick = () => { $('selfViewBtn').click(); renderCallbar(); };
+  $('cbAudience').onclick = () => toggleShareOpenMenu(undefined, $('cbAudience')); // o mesmo menu do painel, ao lado deste botão
+  $('cbSwap').innerHTML = `${ICON.swap}<span>Trocar tela</span>`;
+  $('cbSwap').title = 'Trocar a tela ou janela transmitida, sem parar';
+  $('cbSwap').onclick = () => $('switchShareBtn').click();
+  setIcon($('cbStop'), 'stop', 'Parar de transmitir');
+  $('cbStop').onclick = () => $('stopShareBtn').click();
+  $('cbLeave').onclick = () => { setCallbar(false); $('voiceJoin').click(); }; // na voz, o voiceJoin é o Sair
+  renderCallbar();
 }
 
 // Barrinha sem espaço (janela baixa, fonte larga): marca para o CSS apertar
@@ -300,7 +364,7 @@ function renderHomeCall() {
     sharing ? (sharing === 1 ? '1 transmitindo' : `${sharing} transmitindo`) : ''].filter(Boolean).join(' · ');
   // No saguão a barra flutuante não aparece: aqui ficam microfone, fone e sair da voz (sair da sala é pela barrinha)
   $('homeCallMute').hidden = $('homeCallDeafen').hidden = $('homeCallLeave').hidden = !voice.session;
-  setIcon($('homeCallLeave'), 'phoneOff', 'Sair da voz');
+  setIcon($('homeCallLeave'), 'leave', 'Sair da voz');
   setIcon($('homeCallMute'), voice.muted ? 'micOff' : 'mic', voice.muted ? 'Ligar o microfone' : 'Desligar o microfone');
   $('homeCallMute').setAttribute('aria-pressed', String(voice.muted));
   setIcon($('homeCallDeafen'), voice.deafened ? 'headphonesOff' : 'headphones', voice.deafened ? 'Ouvir as vozes' : 'Silenciar as vozes');
@@ -326,7 +390,7 @@ function renderVoicePane() {
   $('voicePaneStatus').textContent = !voice.supported ? 'Voz indisponível nesta sala.' : voice.pending ? 'Aguardando o microfone…' : '';
   $('voicePaneStatus').hidden = !$('voicePaneStatus').textContent;
   layoutVoicePane(active);
-  // Quem está transmitindo tem o botão Assistir na frente do nome; quem transmite fora da voz aparece embaixo
+  // Quem está transmitindo tem o botão Assistir na frente do nome; quem transmite fora da voz aparece embaixo, em "Fora da voz"
   const list = $('voicePaneMembers'); list.replaceChildren();
   const sharing = (id) => !!state.members.get(id)?.sharing;
   const map = voiceMapOn();
@@ -336,6 +400,7 @@ function renderVoicePane() {
   else {
     if (active) list.append(memberRow(null, getName(), state.sharing));
     for (const id of ids) list.append(memberRow(id, nameOf(id), sharing(id)));
+    if (!active && !ids.length) list.append(emptyVoiceSlot(() => $('voiceJoin').click(), 'Entrar na voz')); // subsalas.js
   }
   renderVoiceSky(); // o céu (pequeno, em cima da lista) ou o mapa (no lugar da lista): renderer/ceu-voz.js
   const outside = [...state.members.keys()].filter((id) => sharing(id) && !ids.includes(id));
@@ -343,7 +408,7 @@ function renderVoicePane() {
   if (outside.length) {
     const head = document.createElement('li');
     head.className = 'members-sub';
-    head.textContent = 'Transmitindo, fora da voz';
+    head.textContent = 'Fora da voz';
     list.append(head);
     for (const id of outside) list.append(id ? memberRow(id, nameOf(id), true) : memberRow(null, getName(), true));
   }
@@ -438,7 +503,7 @@ function setupPaneFold() {
 // ---------- Largura do chat e da voz ----------
 // Uma alça na borda do painel que dá para o vídeo (a esquerda; com a interface espelhada, a direita). Arrastar muda a
 // largura e o vídeo se ajusta; fica salva em appPreferences.appearance.paneWidth. Dois cliques voltam à automática.
-// Nunca passa de 55% da janela, para sobrar palco.
+// Vai de 300 a 520 px (AppPreferences.paneLimits) e nunca passa de 55% da janela, para sobrar palco.
 function savePaneWidth(px) {
   appPreferences.appearance = { ...appPreferences.appearance, paneWidth: AppPreferences.paneWidth(px) };
   saveAppPreferences();
@@ -510,6 +575,7 @@ function setupWorkspace() {
   $('navSettings').onclick = () => $('generalSettingsDialog').hidden ? openGeneralSettings() : closeGeneralSettings();
   setupRoomHead();
   setupSeuSinal();
+  setupCallbar();
   $('profileName').oninput = () => { if (state.myId) return; $('name').value = $('profileName').value; save('name', $('name').value); $('profileDisplayName').textContent = getName(); $('profileAvatar').textContent = $('navProfileAvatar').textContent = [...getName()][0].toUpperCase(); $('navProfile').title = $('navProfile').ariaLabel = 'Perfil de ' + getName(); };
   $('name').addEventListener('input', syncWorkspace);
   setupNameFont();

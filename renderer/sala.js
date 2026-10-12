@@ -341,7 +341,7 @@ function leaveRoom(reason, kind = 'info', endRoom = false) {
   if (reason) toast(reason, kind);
 }
 
-// Sair, no cabeçalho da sala e no fim do menu da sala (para quem criou a sala sozinho, Encerrar)
+// Sair, na barrinha e no fim do menu da sala (para quem criou a sala sozinho, Encerrar)
 function renderLeaveBtn() {
   const endsRoom = state.isOwner && !state.handoff;
   const tip = endsRoom ? 'Encerrar sala (sai todo mundo)' : 'Sair da sala';
