@@ -164,7 +164,7 @@ function renderGeneralSettings() {
   $('notificationVolume').value = appPreferences.sounds.volume;
   $('notificationVolumeValue').textContent = `${appPreferences.sounds.volume}%`;
 }
-// tab: a aba que abre (voice, shortcuts, skin, appearance, colors, sounds, activity, phone, dms, network, extras, perf, stream); sem ela, a última
+// tab: a aba que abre (voice, shortcuts, skin, appearance, colors, sounds, activity, phone, dms, network, extras, perf, stream, help); sem ela, a última
 function openGeneralSettings(tab) {
   if (typeof tab !== 'string') tab = null; // pelo onclick chega o evento
   if (!$('profilePane').hidden) closeProfilePopup();

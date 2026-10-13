@@ -96,8 +96,8 @@ async function openApp(tag, port, { fake = false, size = true, primeiraEntrada =
   // O padrão do app é o modo Internet; os testes de sala usam a Radmin/rede local (internet.js troca depois)
   await X.eval(`(() => { saveNetworkPreferences({ provider: 'radmin' }); renderConnectivitySettings(); setSessionWatch(sessionWatchWanted()); })()`);
   // Perfil novo abre a primeira entrada (renderer/primeira-entrada.js) por cima de tudo: os testes pulam, como quem
-  // já configurou o app (o modo "sala rápida", sem conta). Para testar a primeira entrada: { primeiraEntrada: true }
-  if (!primeiraEntrada) await X.eval(`(() => { if (!load('modoUso', '')) save('modoUso', 'rapida'); if (typeof fecharPrimeiraEntrada === 'function' && !$('onboarding').hidden) fecharPrimeiraEntrada(); })()`);
+  // já configurou o app (o modo "sala rápida", sem conta, e sem a oferta do passo a passo). Para testar a primeira entrada: { primeiraEntrada: true }
+  if (!primeiraEntrada) await X.eval(`(() => { if (!load('modoUso', '')) save('modoUso', 'rapida'); save('tourOferecido', '1'); if (typeof fecharPrimeiraEntrada === 'function' && !$('onboarding').hidden) fecharPrimeiraEntrada(); })()`);
   return X;
 }
 

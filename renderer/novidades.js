@@ -3,6 +3,22 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.19.3",
+    "date": "2026-10-12",
+    "items": [
+      "Passo a passo: roteiros da lista de amigos e do convite (fase 2)",
+      "Passo a passo guiado no Início (fase 1)",
+      "Rede: só a Internet por padrão; Radmin, rede local e Razze em \"Outras redes\"",
+      "Perfil › Conta: Trocar de conta",
+      "Perfil: partes Perfil e Conta na barra da esquerda, como em Configurações",
+      "butao sair da conta",
+      "Create protecoes-por-padrao.md",
+      "Identificador: pede para escolher o nome a quem ficou com o gerado",
+      "App instalado: DevTools desligadas em todas as janelas",
+      "Conta: identificador nome#1234, e-mail confirmado e verificação em dois fatores"
+    ]
+  },
+  {
     "version": "1.19.2",
     "date": "2026-10-12",
     "items": [
@@ -73,14 +89,6 @@ const NOVIDADES = [
     "date": "2026-10-07",
     "items": [
       "Admin: excluir conta e entrar sozinho depois do código de senha"
-    ]
-  },
-  {
-    "version": "1.18.4",
-    "date": "2026-10-07",
-    "items": [
-      "Admin: gerar código de senha dentro do app",
-      "Feedback e bugs: janela no app, rota na RazzeAPI e aba na Administração"
     ]
   }
 ];

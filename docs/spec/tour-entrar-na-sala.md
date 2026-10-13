@@ -101,13 +101,13 @@ Dependem de alguém do outro lado. O roteiro usa o que existir de verdade e, se 
 - Nada muda no servidor.
 
 ## Critérios de aceitação
-- [ ] Início › Como entrar numa sala? lista os quatro roteiros; a primeira entrada oferece uma vez.
-- [ ] Roteiro 1 completo em modo de ensaio sem entrar em sala; com código real, entra e acende Entrar na voz.
-- [ ] Roteiro 2 cria uma sala real, mostra código, senha e a caixinha, e termina com Ficar ou Encerrar.
-- [ ] Roteiros 3 e 4 usam amigos, salas e convites de verdade quando existem, e exemplos marcados quando não existem.
-- [ ] Esc e Sair fecham em qualquer passo sem deixar a tela travada; o destaque acompanha resize e rolagem.
-- [ ] Alvo que some mostra Recomeçar/Sair.
-- [ ] Nenhum exemplo chega ao servidor.
+- [x] Início › Como entrar numa sala? lista os quatro roteiros; a primeira entrada oferece uma vez.
+- [x] Roteiro 1 completo em modo de ensaio sem entrar em sala; com código real, entra e acende Entrar na voz.
+- [x] Roteiro 2 cria uma sala real, mostra código, senha e a caixinha, e termina com Ficar ou Encerrar.
+- [x] Roteiros 3 e 4 usam amigos, salas e convites de verdade quando existem, e exemplos marcados quando não existem.
+- [x] Esc e Sair fecham em qualquer passo sem deixar a tela travada; o destaque acompanha resize e rolagem.
+- [x] Alvo que some mostra Recomeçar/Sair.
+- [x] Nenhum exemplo chega ao servidor.
 
 ## Testes
 - Automáticos: `tests/e2e/tour.js` (novo), com o servidor do modo Internet local:
@@ -121,6 +121,15 @@ Dependem de alguém do outro lado. O roteiro usa o que existir de verdade e, se 
 ## Andamento
 - Fase 1 feita: mecanismo, roteiros 1 e 2 e o link no Início (`renderer/tour.js`, `tests/e2e/tour.js`). No roteiro 2, o passo
   "Chamar" acende o Convidar da barrinha e só cita a aba Amigos (o caminho completo pelo envelope fica para a fase 2).
+
+- Fase 2 feita: roteiros "Entrar pela lista de amigos" e "Entrar por um convite", e o Convidar da aba Amigos no roteiro do
+  host. Passos que não se aplicam (já tem conta, já tem amigos, sem convite de verdade) ficam de fora sozinhos. Mudança em
+  relação ao plano: sem convite de verdade, o cartão de exemplo aparece no próprio balão, e não numa conversa de exemplo nas
+  mensagens (uma conversa de mentira deixaria digitar e mandar mensagem para ninguém).
+
+- Fase 3 feita: a oferta no fim da primeira entrada (uma vez, chave `tourOferecido`; não aparece em Trocar de conta nem
+  com um convite de amigo esperando resposta) e o grupo **Configurações › Ajuda › Passo a passo**. Os testes e2e marcam a
+  oferta como vista em `openApp`; quem testa a primeira entrada usa `{ primeiraEntrada: true }` e recebe a oferta.
 
 ## Fases
 1. Mecanismo + roteiros 1 e 2 + link no Início.

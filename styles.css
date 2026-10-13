@@ -102,6 +102,9 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 .tour-abrir-wrap .link-btn { font-size: 13px; }
 .tour-lista { position: absolute; right: 0; top: calc(100% + 6px); z-index: 12; width: min(340px, 100%); display: flex; flex-direction: column; gap: 4px; padding: 6px;
   border: 1px solid var(--line-strong); border-radius: 12px; background: var(--panel); box-shadow: var(--shadow-2); }
+.tour-lista-ajuda { display: flex; flex-direction: column; gap: 6px; max-width: 520px; }
+.tour-lista-ajuda .tour-roteiro { border: 1px solid var(--line); }
+.tour-conteudo .tour-roteiro { width: 100%; border: 1px solid var(--line); margin-bottom: 4px; }
 .tour-roteiro { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 10px 12px; border: 0; border-radius: 8px; background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
 .tour-roteiro small { color: var(--muted); font-size: 12px; }
 .tour-roteiro:hover, .tour-roteiro:focus-visible { background: var(--panel-2); }
@@ -125,8 +128,12 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 .tour-pe { display: flex; justify-content: space-between; gap: 8px; padding-top: 6px; border-top: 1px solid var(--line); font-size: 12.5px; }
 #tourSair { margin-left: auto; }
 .tour.final .tour-pe { display: none; }
-.tour.final .tour-cima { height: 100%; }
-.tour.final :is(.tour-baixo, .tour-esq, .tour-dir, .tour-anel) { display: none; }
+.tour.final .tour-cima, .tour.sem-alvo .tour-cima { height: 100%; }
+.tour.final :is(.tour-baixo, .tour-esq, .tour-dir, .tour-anel), .tour.sem-alvo :is(.tour-baixo, .tour-esq, .tour-dir, .tour-anel) { display: none; }
+.tour-conteudo:empty { display: none; }
+.tour-conteudo .dm-invite { margin: 0; }
+.session.session-exemplo { border-style: dashed; }
+.session-exemplo-tag { align-self: flex-start; padding: 1px 7px; border: 1px dashed var(--line-strong); border-radius: 4px; font-size: 11px; color: var(--muted); }
 .tour.pausado > * { visibility: hidden; }
 .home-acoes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .home-acoes:has(#goJoin[hidden]) { grid-template-columns: minmax(0, 1fr); } /* "Entrar numa sala" aberto: o painel ocupa o lugar dele */
