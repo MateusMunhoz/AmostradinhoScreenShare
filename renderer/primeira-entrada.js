@@ -5,7 +5,7 @@
 // (razzeUser, refreshRazzeState), hub (friendsData, hubAvatar, openFriendsDialog), chamada (ligarPara, novaSenhaSala),
 // mensagens (openDm), fotos (setMyPhoto), sala (createRoom), conta (atvLigada, atvAgendar).
 
-const entrada = { passo: 1, modo: '', registrar: false, ocupado: false };
+const entrada = { passo: 1, modo: '', registrar: false, ocupado: false, troca: false };
 
 const modoDeUso = () => load('modoUso', '');
 
@@ -24,7 +24,26 @@ function abrirPrimeiraEntrada(passo = 1) {
   entradaIrPara(passo);
 }
 
+// Trocar de conta (Perfil › Conta): sai e abre a tela de conta da primeira entrada para entrar com outra ou criar uma
+// nova. Sem Voltar (não é a primeira vez) e "Agora não" continua sem conta, sem mudar como a pessoa usa o app.
+async function trocarDeConta() {
+  if (!(await sairDaConta())) return;
+  closeProfilePopup();
+  entrada.troca = true;
+  abrirPrimeiraEntrada(3);
+  entradaAba(false);
+  $('obEmail').value = $('obPassword').value = '';
+  $('obBack3').hidden = $('obDots').hidden = true; // sem os 3 passinhos: é só a conta
+  $('obSkip').textContent = 'Agora não, continuar sem conta';
+  $('obStatus').textContent = 'Você saiu da conta. Entre com outra ou crie uma nova.';
+}
+
 function fecharPrimeiraEntrada() {
+  if (entrada.troca) {
+    entrada.troca = false;
+    $('obBack3').hidden = $('obDots').hidden = false;
+    $('obSkip').textContent = 'Continuar sem conta por enquanto';
+  }
   $('onboarding').hidden = true;
   save('primeiraEntrada', '1');
   renderHomeAmigos();
@@ -348,7 +367,7 @@ function setupPrimeiraEntrada() {
   $('obSubmit').onclick = entradaEnviarConta;
   $('obPassword').addEventListener('keydown', (e) => { if (e.key === 'Enter') entradaEnviarConta(); });
   $('obForgot').onclick = () => void esqueciSenha($('obEmail').value.trim());
-  $('obSkip').onclick = () => { save('modoUso', 'rapida'); fecharPrimeiraEntrada(); };
+  $('obSkip').onclick = () => { if (!entrada.troca) save('modoUso', 'rapida'); fecharPrimeiraEntrada(); };
   $('obDialog').addEventListener('keydown', (e) => { if (e.key === 'Escape' && entrada.passo > 1) entradaIrPara(entrada.passo - 1); });
   $('goQuick').onclick = () => foraDaSala('criar outra sala', abrirMinhaSala);
   $('homeSigninBtn').onclick = () => abrirPrimeiraEntrada(3);

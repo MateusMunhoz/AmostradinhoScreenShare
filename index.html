@@ -70,15 +70,39 @@
     <section id="profilePane" class="modal global utility-popup" hidden>
       <div class="dialog profile-dialog" role="dialog" aria-modal="true" aria-labelledby="profileTitle" tabindex="-1">
       <div class="pane-head"><h2 id="profileTitle">Seu perfil</h2><button id="closeProfile" class="btn icon" type="button"></button></div>
-      <!-- Prévia: o seu perfil como os outros veem na voz (fundo, foto, nome, conta e frase, no estilo do cartão da voz).
-           Trocar foto e fundo é só por aqui: a câmera na foto e o botão no fundo -->
+      <!-- Duas partes (docs/spec/perfil-em-abas.md), na barra da esquerda como em Configurações (no estreito, vira uma linha
+           em cima): Perfil (como os outros te veem) e Conta (a conta Razze inteira, com o que era a janela Conta e segurança).
+           A bolinha na Conta avisa que falta algo (renderer/conta-seguranca.js) -->
+      <div class="settings-layout profile-layout">
+      <nav class="settings-nav" aria-label="Partes do perfil">
+        <button id="profileTabPerfil" type="button" aria-current="true" aria-controls="profilePanelPerfil">Perfil<small>Foto · Nome · Frase · Atividade</small></button>
+        <button id="profileTabConta" type="button" aria-current="false" aria-controls="profilePanelConta"><span class="profile-nav-titulo">Conta<span id="profileTabDot" class="profile-tab-dot" role="img" aria-label="falta algo" hidden></span></span><small>Identificador · E-mail · Segurança</small></button>
+      </nav>
+      <div class="settings-main profile-main">
+      <div id="profilePanelPerfil" class="profile-panel" role="region" aria-labelledby="profileTabPerfil">
+      <!-- Prévia: o seu perfil como os outros veem na voz. É nela que se troca foto, fundo, nome e frase -->
       <p class="profile-preview-label">Assim os outros te veem na voz</p>
       <div class="profile-card">
         <div id="profileBgPreview" class="profile-card-bg" role="img" aria-label="Seu fundo do perfil">
           <button id="profilePhotoBig" class="profile-card-photo" type="button" title="Trocar foto" aria-label="Trocar foto"><span id="profileAvatar" class="avatar"></span><span class="profile-card-cam" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span></button>
           <button id="profileBgPickTop" class="btn small profile-card-bgbtn" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/></svg><span>Trocar fundo</span></button>
         </div>
-        <div class="profile-card-info"><strong id="profileDisplayName"></strong><span id="profileCardConta" class="profile-card-conta"></span><span id="profileCardBio" class="profile-card-bio"></span></div>
+        <div class="profile-card-info">
+          <button id="profileNameBtn" class="profile-card-edit" type="button" title="Trocar o nome de exibição"><strong id="profileDisplayName"></strong><svg class="profile-pen" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button>
+          <!-- Nome: na sala fica travado (com o cadeado) -->
+          <div id="profileNameEdit" class="profile-inline" hidden>
+            <label class="field">Nome de exibição<span class="profile-name-box"><input id="profileName" maxlength="32" autocomplete="off"><span class="profile-lock" role="img" aria-label="Travado na sala"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span></span></label>
+            <p id="profileHint" class="hint"></p>
+          </div>
+          <span id="profileCardIdLinha" class="profile-card-id" hidden><span id="profileCardId"></span><button id="profileCardIdCopy" class="btn small" type="button">Copiar</button></span>
+          <span id="profileCardConta" class="profile-card-conta"></span>
+          <button id="profileBioBtn" class="profile-card-edit" type="button" title="Trocar a frase"><span id="profileCardBio" class="profile-card-bio"></span><svg class="profile-pen" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button>
+          <!-- Frase: até 128 caracteres; os amigos veem no Início (renderer/conta.js) -->
+          <div id="profileBioEdit" class="profile-inline" hidden>
+            <label class="field"><span>Uma frase no seu perfil <span id="bioCount" class="hint"></span></span><input id="profileBio" maxlength="128" autocomplete="off" placeholder="Ex.: jogo à noite e ouço rock"></label>
+          </div>
+          <p id="profileBioHint" class="hint"></p>
+        </div>
       </div>
       <!-- Aparência: foto (e o ajuste dela na bolinha), fundo (renderer/fundo-perfil.js) e a fonte do nome -->
       <h3 class="profile-sec">Aparência</h3>
@@ -91,23 +115,18 @@
       <p id="profilePhotoOld" class="hint photo-old" hidden>Foto de versão antiga: os outros a veem cortada. Escolha de novo.</p>
       <div class="profile-row"><span>Fundo<button type="button" class="tip" data-tip="Imagem ou GIF (até 1 MB) atrás do seu perfil, para quem clicar em você na voz. O GIF só se mexe com o perfil aberto." aria-label="Imagem ou GIF (até 1 MB) atrás do seu perfil, para quem clicar em você na voz. O GIF só se mexe com o perfil aberto."></button></span><span class="profile-row-actions"><button id="profileBgAdjust" class="btn small" type="button" hidden>Ajustar</button><button id="profileBgRemove" class="btn small icon ghost" type="button" title="Tirar fundo" aria-label="Tirar fundo" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 11v6M14 11v6M7 7l1 12h8l1-12M9 7V4h6v3"/></svg></button></span></div>
       <input id="profileBgFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
-      <label class="field"><span>Fonte do nome<button type="button" class="tip" data-tip="Todos na sala veem o seu nome nesta fonte." aria-label="Todos na sala veem o seu nome nesta fonte."></button></span><select id="profileNameFont"></select></label>
-      <!-- Nome: na sala fica travado (com o cadeado) -->
-      <h3 class="profile-sec">Nome</h3>
-      <label class="field">Nome de exibição<span class="profile-name-box"><input id="profileName" maxlength="32" autocomplete="off"><span class="profile-lock" role="img" aria-label="Travado na sala"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span></span></label>
-      <p id="profileHint" class="hint"></p>
-      <!-- Frase: até 128 caracteres; os amigos veem no Início (renderer/conta.js) -->
-      <h3 class="profile-sec">Frase</h3>
-      <label class="field"><span>Uma frase no seu perfil <span id="bioCount" class="hint"></span></span><input id="profileBio" maxlength="128" autocomplete="off" placeholder="Ex.: jogo à noite e ouço rock"></label>
-      <p id="profileBioHint" class="hint"></p>
-      <!-- Atividade: o que aparece no perfil fica no perfil; as escolhas, em Configurações › Atividade (renderer/conta.js) -->
-      <h3 class="profile-sec">Atividade</h3>
-      <p class="hint">O jogo e a música que você escolher mostrar aparecem no seu perfil.</p>
-      <button id="atvConfigurar" class="btn small" type="button">Configurar a atividade</button>
-      <!-- Conta Razze: entrar ou criar conta, ou quem está conectado (renderer/conectividade.js). As redes ficam em
-           Configurações › Rede; os amigos, no envelope das mensagens -->
-      <h3 class="profile-sec" id="profileAccountTitle">Conta Razze</h3>
-      <div id="profileAccount" class="profile-account" role="group" aria-labelledby="profileAccountTitle">
+      <label class="field profile-fonte"><span>Fonte do nome<button type="button" class="tip" data-tip="Todos na sala veem o seu nome nesta fonte." aria-label="Todos na sala veem o seu nome nesta fonte."></button></span><select id="profileNameFont"></select></label>
+      <!-- O que os amigos veem: as mesmas escolhas de Configurações › Atividade (renderer/conta.js liga as duas) -->
+      <h3 class="profile-sec">O que os amigos veem</h3>
+      <div class="profile-row"><span class="profile-row-texto"><span id="pfJogoLabel">Jogo que estou jogando</span><span class="hint">Ex.: “Jogando Valorant”</span></span><label class="switch"><input type="checkbox" id="pfJogo" role="switch" aria-labelledby="pfJogoLabel"><span class="track" aria-hidden="true"></span></label></div>
+      <div class="profile-row"><span class="profile-row-texto"><span id="pfMusicaLabel">Música que estou ouvindo</span><span class="hint">Spotify e outros players</span></span><label class="switch"><input type="checkbox" id="pfMusica" role="switch" aria-labelledby="pfMusicaLabel"><span class="track" aria-hidden="true"></span></label></div>
+      <div class="profile-row"><span class="profile-row-texto"><span id="pfSalaLabel">Em que sala estou</span><span class="hint">Ex.: “Na sala de Ana · 4 pessoas”</span></span><label class="switch"><input type="checkbox" id="pfSala" role="switch" aria-labelledby="pfSalaLabel"><span class="track" aria-hidden="true"></span></label></div>
+      <button id="atvConfigurar" class="link-btn profile-mais" type="button">Jogos da Steam e histórico: Configurações › Atividade</button>
+      </div>
+      <!-- Conta Razze: entrar ou criar conta, ou quem está conectado (renderer/conectividade.js) e, embaixo, o que era a
+           janela Conta e segurança (renderer/conta-seguranca.js). As redes ficam em Configurações › Rede; os amigos, no envelope -->
+      <div id="profilePanelConta" class="profile-panel" role="region" aria-labelledby="profileTabConta" hidden>
+      <div id="profileAccount" class="profile-account" role="group" aria-label="Conta Razze">
         <p id="razzeAccountStatus" class="razze-status" role="status" aria-live="polite"></p>
         <p id="profileAccountHint" class="hint"></p>
         <button id="profileOpenNetwork" class="btn small" type="button" hidden>Abrir Configurações › Rede</button>
@@ -129,12 +148,18 @@
         <div id="razzeAccount" class="net-row net-account" hidden>
           <span class="avatar" id="razzeAccountAvatar" aria-hidden="true"></span>
           <span class="net-account-text"><strong id="razzeAccountName"></strong><span class="hint" id="razzeAccountEmail"></span></span>
-          <div class="net-account-actions">
-            <button id="razzeAdminOpen" class="btn small primary" type="button" hidden>Administração</button>
-            <button id="razzeSeguranca" class="btn small" type="button">Conta e segurança</button>
-            <button id="razzeLogout" class="btn small" type="button">Sair da conta</button>
-          </div>
+          <button id="razzeAdminOpen" class="btn small primary" type="button" hidden>Administração</button>
         </div>
+      </div>
+      <div id="contaPendente" class="conta-pendente" role="status" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+        <span id="contaPendenteTexto"></span>
+        <button id="contaPendenteBtn" class="btn small" type="button"></button>
+      </div>
+      <div id="segurancaCorpo" class="seg-corpo"></div>
+      <div id="profileContaRodape" class="profile-rodape" hidden><button id="razzeTrocar" class="btn small" type="button">Trocar de conta</button><button id="razzeLogout" class="btn small danger" type="button">Sair da conta</button></div>
+      </div>
+      </div>
       </div>
       </div>
     </section>
@@ -366,7 +391,7 @@
               <span class="home-pop-kicker">Como os PCs se conectam</span>
               <div id="homeRedeOpcoes" class="home-rede-opcoes"></div>
               <div class="home-rede-pe">
-                <span class="hint">Trocar de rede tira você da sala atual.</span>
+                <span class="hint" id="homeRedePeTexto">Trocar de rede tira você da sala atual.</span>
                 <button class="link-btn" id="homeRedeAvancado" type="button">Avançado</button>
               </div>
             </section>
@@ -1073,12 +1098,17 @@
           <p class="net-summary" role="status"><span id="netSummaryDot" class="dot"></span><span id="netSummaryText"></span></p>
           <section class="settings-section" aria-labelledby="networkTitle">
             <h3 id="networkTitle">Como os PCs se conectam</h3>
-            <div class="seg net-seg" role="radiogroup" aria-labelledby="networkTitle">
+            <div class="seg net-seg" id="networkProviderSeg" role="radiogroup" aria-labelledby="networkTitle">
               <label><input type="radio" name="networkProvider" value="internet"><span>Internet (servidor)</span></label>
               <label><input type="radio" name="networkProvider" value="radmin"><span>Radmin ou rede local</span></label>
               <label><input type="radio" name="networkProvider" value="razze"><span>Razze (WireGuard)</span></label>
             </div>
             <p class="hint" id="networkHint"></p>
+            <!-- Outras redes: desligadas, o app usa só a Internet (renderer/conectividade.js: mudarOutrasRedes) -->
+            <div class="net-outras">
+              <span class="net-outras-texto"><strong id="outrasRedesLabel">Outras redes</strong><span class="hint" id="outrasRedesHint">Radmin, rede local e Razze (WireGuard). Desligadas, o app usa só a Internet.</span></span>
+              <label class="switch"><input type="checkbox" id="outrasRedes" role="switch" aria-labelledby="outrasRedesLabel" aria-describedby="outrasRedesHint"><span class="track" aria-hidden="true"></span></label>
+            </div>
           </section>
           <section id="internetSettings" class="settings-section" aria-labelledby="internetTitle" hidden>
             <h3 id="internetTitle">Servidor</h3>
@@ -1447,14 +1477,6 @@
     </div>
   </div>
 
-  <!-- Conta e segurança: identificador, e-mail, senha, Google e dois fatores (renderer/conta-seguranca.js) -->
-  <div id="segurancaDialog" class="ob-modal" hidden>
-    <div class="ob-dialog seg-dialog" role="dialog" aria-modal="true" aria-labelledby="segurancaTitulo">
-      <h2 id="segurancaTitulo">Conta e segurança</h2>
-      <div id="segurancaCorpo" class="seg-corpo"></div>
-      <div class="actions"><button class="btn danger seg-sair" id="segurancaSair" type="button">Sair da conta</button><button class="btn primary" id="segurancaFechar" type="button">Fechar</button></div>
-    </div>
-  </div>
   <!-- Pergunta da conta: código do e-mail, do 2FA, nome do identificador, senha (renderer/conta-seguranca.js) -->
   <div id="contaDialog" class="ob-modal" hidden>
     <div class="ob-dialog" role="dialog" aria-modal="true" aria-labelledby="contaDialogTitulo">

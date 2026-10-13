@@ -25,6 +25,7 @@ function novaSenhaSala() {
 // Por que um modo não dá para usar agora ('' se dá)
 async function motivoModoIndisponivel(modo) {
   if (modo === 'internet') return internetServerUrl() ? '' : 'falta o endereço do servidor (Configurações › Rede)';
+  if (!outrasRedesLigadas()) return 'ligue as outras redes em Configurações › Rede';
   if (modo !== 'razze') return '';
   try {
     const st = await window.api.razzeState();
@@ -227,8 +228,8 @@ async function atenderChamada(cv, quem) {
   }
   if (cv.modo !== selectedNetworkProvider()
     && !(await appConfirm(`A chamada de ${quem} é pelo modo ${MODO_NOME[cv.modo]}. Mudar para ele e atender?`, { title: 'Atender', ok: 'Mudar e atender' }))) return;
-  const motivo = cv.modo === 'razze' ? await motivoModoIndisponivel('razze') : '';
-  if (motivo) return toast(`Não dá para atender pelo modo Razze: ${motivo}.`, 'error');
+  const motivo = cv.modo !== 'internet' ? await motivoModoIndisponivel(cv.modo) : '';
+  if (motivo) return toast(`Não dá para atender pelo modo ${MODO_NOME[cv.modo]}: ${motivo}.`, 'error');
   if (cv.modo === 'razze' && cv.rede && cv.rede !== networkPreferences().activeNetworkId) {
     return toast(`Ligue a mesma rede Razze de ${quem} (Configurações › Rede) e atenda de novo.`, 'error');
   }

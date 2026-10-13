@@ -512,6 +512,10 @@ function syncBioComConta(user) {
   renderBio();
 }
 
+// Perfil › O que os amigos veem: as mesmas escolhas de Configurações › Atividade
+const PERFIL_ATIVIDADE = [['pfJogo', 'atvJogo'], ['pfMusica', 'atvMusica'], ['pfSala', 'atvSala']];
+function sincronizarAtividadePerfil() { for (const [pf, id] of PERFIL_ATIVIDADE) $(pf).checked = $(id).checked; }
+
 function setupConta() {
   $('atvJogo').checked = atvLigada('Jogo');
   $('atvMusica').checked = atvLigada('Musica');
@@ -541,6 +545,11 @@ function setupConta() {
   $('atvSalaEntrar').checked = salaEntrarLigada();
   $('atvSalaEntrar').onchange = () => { save('atividadeSalaEntrar', $('atvSalaEntrar').checked ? '1' : '0'); publicarSalaInternet(); };
   salaEntrarApagado();
+  for (const [pf, id] of PERFIL_ATIVIDADE) {
+    $(pf).onchange = () => { $(id).checked = $(pf).checked; $(id).onchange(); };
+    $(id).addEventListener('change', () => { $(pf).checked = $(id).checked; });
+  }
+  sincronizarAtividadePerfil();
   atv.amigos = setInterval(() => void atvAtualizarAmigos(), ATV_CADA_MS);
   window.addEventListener('beforeunload', () => { if (atv.ultimo && atv.ultimo !== '{"game":"","artist":"","title":""}') window.api.razzeSetActivity({}).catch(() => {}); });
   window.api?.aoMudarMusica?.(atvMusicaChegou);

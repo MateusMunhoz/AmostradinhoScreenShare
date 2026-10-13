@@ -168,7 +168,7 @@ senha" só pelo código do administrador; sem 2FA).
 3. `docker compose up -d` e confira: `curl -s https://srv2015370.hstgr.cloud/v1/auth/google/config` mostra
    `"emailConfirmation":true` e `"twoFactor":true`.
 4. **Antes de ligar o `RAZZE_TOTP_KEY`**, avise os administradores: depois dele, o painel (web e no app) só entra com o 2FA
-   ligado. Cada um liga em Perfil › Conta Razze › Conta e segurança › Verificação em dois fatores (o token
+   ligado. Cada um liga em Perfil › Conta › Verificação em dois fatores (o token
    `RAZZE_ADMIN_TOKEN` continua entrando no painel web para destravar).
 
 ## Entrar com Google (opcional)
@@ -183,7 +183,7 @@ nenhuma credencial: o client ID vem de `GET /v1/auth/google/config`. Sem as vari
 3. No `.env` da VPS: `RAZZE_GOOGLE_CLIENT_ID=...` e `RAZZE_GOOGLE_CLIENT_SECRET=...` (o segredo de app para computador não é secreto de
    verdade, mas o Google exige no pedido). Suba de novo: `docker compose up -d`.
 4. Conta: e-mail novo cria a conta (respeita a aprovação do administrador, se estiver ligada); e-mail que já tem conta com senha pede
-   entrar com a senha e **Vincular Google** no Perfil › Conta Razze.
+   entrar com a senha e **Vincular Google** no Perfil › Conta.
 
 ## Entrar com Google no Android
 

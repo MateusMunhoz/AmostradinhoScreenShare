@@ -44,15 +44,51 @@ let profileReturnFocus = null;
 function setUtilityBackground(inert) {
   for (const el of [document.querySelector('main'), document.querySelector('.workspace-header'), $('workspacePanes')]) el.inert = inert;
 }
-function openProfilePopup() {
+// aba: 'perfil' ou 'conta'; sem ela, a Conta quando falta algo nela (e-mail, identificador), senão a última usada
+function openProfilePopup(aba) {
   renderConnectivitySettings();
   if (!$('generalSettingsDialog').hidden) closeGeneralSettings();
   profileReturnFocus = document.activeElement;
   $('profilePane').hidden = false;
   syncWorkspace();
   setUtilityBackground(true);
-  // Na sala o nome está travado: o foco vai para o próprio painel (sem acender o anel no X)
-  ($('profileName').disabled ? $('profilePane').querySelector('.profile-dialog') : $('profileName')).focus();
+  if (typeof sincronizarAtividadePerfil === 'function') sincronizarAtividadePerfil();
+  const pendente = typeof contaPrecisaAtencao === 'function' && contaPrecisaAtencao();
+  setProfileTab(typeof aba === 'string' ? aba : pendente ? 'conta' : load('perfilAba', 'perfil'));
+  $('profilePane').querySelector('.profile-dialog').focus(); // o próprio painel (sem acender o anel no X)
+}
+function setProfileTab(aba) {
+  const conta = aba === 'conta';
+  $('profilePanelPerfil').hidden = conta;
+  $('profilePanelConta').hidden = !conta;
+  $('profileTabPerfil').setAttribute('aria-current', String(!conta));
+  $('profileTabConta').setAttribute('aria-current', String(conta));
+  $('profilePane').querySelector('.profile-main').scrollTop = 0;
+  save('perfilAba', conta ? 'conta' : 'perfil');
+  if (conta && typeof atualizarAbaConta === 'function') void atualizarAbaConta();
+}
+// Nome e frase se editam no próprio cartão: o lápis abre o campo, e sair dele (Enter, Esc, clicar fora) fecha
+function setupEdicaoNoCartao() {
+  for (const [btn, box, input] of [['profileNameBtn', 'profileNameEdit', 'profileName'], ['profileBioBtn', 'profileBioEdit', 'profileBio']]) {
+    $(btn).onclick = () => {
+      if ($(input).disabled) return toast('Só dá para trocar o nome fora da sala.');
+      $(btn).hidden = true;
+      $(box).hidden = false;
+      $(input).focus();
+    };
+    const fechar = () => { $(box).hidden = true; $(btn).hidden = false; };
+    $(input).addEventListener('blur', fechar);
+    $(input).addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== 'Escape') return;
+      e.preventDefault();
+      e.stopPropagation(); // o Esc fecha só o campo, não o perfil
+      $(input).blur(); // a frase salva no blur (renderer/conta.js)
+      fechar();
+      $(btn).focus();
+    });
+  }
+  $('profileTabPerfil').onclick = () => setProfileTab('perfil');
+  $('profileTabConta').onclick = () => setProfileTab('conta');
 }
 function closeProfilePopup() {
   $('profilePane').hidden = true;
@@ -144,6 +180,7 @@ function syncWorkspace() {
   paintAvatar($('navProfileAvatar'));
   $('navProfile').title = $('navProfile').ariaLabel = 'Perfil de ' + getName();
   $('profileHint').textContent = state.myId ? 'Só dá para trocar fora da sala.' : 'Aparece para todo mundo na sala e nas mensagens.';
+  $('profileNameBtn').title = state.myId ? 'Só dá para trocar o nome fora da sala' : 'Trocar o nome de exibição';
   renderVoicePane();
   renderHomeCall();
   renderAmigos();
@@ -579,6 +616,7 @@ function setupWorkspace() {
   $('profileName').oninput = () => { if (state.myId) return; $('name').value = $('profileName').value; save('name', $('name').value); $('profileDisplayName').textContent = getName(); $('profileAvatar').textContent = $('navProfileAvatar').textContent = [...getName()][0].toUpperCase(); $('navProfile').title = $('navProfile').ariaLabel = 'Perfil de ' + getName(); };
   $('name').addEventListener('input', syncWorkspace);
   setupNameFont();
+  setupEdicaoNoCartao();
   setupHomeCall();
   for (const [proxy, original] of [['paneVoiceJoin','voiceJoin'],['paneVoiceSettings','voiceSettingsBtn']]) $(proxy).onclick = () => $(original).click();
   $('streamPeople').onclick = () => setPainelSala({ aba: 'pessoas', recolhido: false });
