@@ -30,6 +30,8 @@ Tudo o que dá para fazer no Nebula, com os detalhes. Para começar do zero, vej
   está feito. Sem isso, mostram um exemplo marcado: a **Sala de Exemplo** na lista do Início, com a etiqueta "Exemplo do passo
   a passo", e o cartão de convite de exemplo no próprio balão. O Entrar deles só explica; os exemplos não vão ao servidor e
   somem quando o passo a passo fecha.
+  Os mesmos roteiros ficam em **Configurações › Ajuda**, e no fim da primeira entrada o app oferece uma vez (**Agora não**
+  fecha; com conta, os de amigos vêm primeiro).
 - **Já numa sala:** Criar sala e Entrar numa sala continuam ligados; o app pergunta antes de tirar você da sala em que está.
 - **Carregando:** criando ou entrando (pelo endereço, pelo código, na sala de um amigo, por um convite ou numa chamada), aparece **Entrando na sala…** com o passo da conexão até a sala abrir. Enquanto isso, clicar de novo não abre outra conexão. **Cancelar** (ou Esc) desiste da entrada.
 - **Tamanho:** até 12 pessoas.
