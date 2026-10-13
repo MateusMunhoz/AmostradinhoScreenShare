@@ -3,6 +3,13 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.19.4",
+    "date": "2026-10-12",
+    "items": [
+      "Passo a passo: docs da fase 3 (oferta na primeira entrada e Configurações › Ajuda)"
+    ]
+  },
+  {
     "version": "1.19.3",
     "date": "2026-10-12",
     "items": [
@@ -82,13 +89,6 @@ const NOVIDADES = [
     "date": "2026-10-07",
     "items": [
       "Atividade: jogo e música ligados por padrão, escolha na primeira entrada; Apex em DirectX 12"
-    ]
-  },
-  {
-    "version": "1.18.5",
-    "date": "2026-10-07",
-    "items": [
-      "Admin: excluir conta e entrar sozinho depois do código de senha"
     ]
   }
 ];
