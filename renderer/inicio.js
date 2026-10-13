@@ -348,6 +348,7 @@ setupConta(); // senha e frase do perfil (renderer/conta.js)
 setupContaSeguranca(); // identificador, e-mail, Google e dois fatores (renderer/conta-seguranca.js)
 setupAdmin(); // administração, só para administradores (renderer/admin.js)
 setupFeedback(); // feedback e bugs, ícone na barrinha (renderer/feedback.js)
+setupApoio(); // apoiar com Pix: coração na barrinha e botão no topo do Início (renderer/apoio.js)
 // Tela de carregando ao entrar na sala (renderer/sala.js): Cancelar ou Esc fecham a conexão que está esperando
 $('entradaCancelar').onclick = cancelarEntrada;
 $('entradaCarregando').addEventListener('keydown', (e) => {
