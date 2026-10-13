@@ -122,6 +122,11 @@ Dependem de alguém do outro lado. O roteiro usa o que existir de verdade e, se 
 - Fase 1 feita: mecanismo, roteiros 1 e 2 e o link no Início (`renderer/tour.js`, `tests/e2e/tour.js`). No roteiro 2, o passo
   "Chamar" acende o Convidar da barrinha e só cita a aba Amigos (o caminho completo pelo envelope fica para a fase 2).
 
+- Fase 2 feita: roteiros "Entrar pela lista de amigos" e "Entrar por um convite", e o Convidar da aba Amigos no roteiro do
+  host. Passos que não se aplicam (já tem conta, já tem amigos, sem convite de verdade) ficam de fora sozinhos. Mudança em
+  relação ao plano: sem convite de verdade, o cartão de exemplo aparece no próprio balão, e não numa conversa de exemplo nas
+  mensagens (uma conversa de mentira deixaria digitar e mandar mensagem para ninguém).
+
 ## Fases
 1. Mecanismo + roteiros 1 e 2 + link no Início.
 2. Roteiros 3 e 4 com os exemplos.

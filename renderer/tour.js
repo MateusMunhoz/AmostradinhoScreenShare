@@ -1,9 +1,11 @@
 'use strict';
 // Passo a passo guiado (docs/spec/tour-entrar-na-sala.md): escurece a janela, acende o botão do passo e avança quando a
 // pessoa faz a ação de verdade. Os alvos são os elementos de sempre do app; renomear um deles quebra o roteiro (o e2e
-// tests/e2e/tour.js pega). Fase 1: "Entrar com código e senha" e "Criar sala e chamar os amigos".
+// tests/e2e/tour.js pega). Roteiros: código e senha, criar sala, lista de amigos e convite. Os dois últimos usam o que existe
+// de verdade (amigo numa sala, convite nas mensagens) e, sem isso, um exemplo marcado que só existe na tela.
 // Script clássico: só declara; quem liga é renderer/inicio.js (setupTour). Usa: util ($, show, toast), estado (state),
-// conectividade (selectedNetworkProvider), inicio (setJoinOpen), chamada (novaSenhaSala), sala (leaveRoom).
+// conectividade (selectedNetworkProvider, razzeUser), inicio (setJoinOpen), chamada (novaSenhaSala), sala (leaveRoom),
+// sessoes (sessoes, renderSessoes), hub (friendsData, setFriendsAddOpen), mensagens (dm, setDmPanel), salas-amigos (cartaoConvite).
 
 const TOUR_EXEMPLO = { codigo: 'ABC234', senha: 'pizza-azul-marte' };
 const tour = { id: '', i: 0, timer: 0, ultimoRect: '', sumiuDesde: 0, final: null, redeInicial: true };
@@ -15,12 +17,29 @@ function tourPorTexto(texto, raiz = document) {
 const tourVisivel = (el) => !!el && el.getClientRects().length > 0;
 const tourNaInternet = () => selectedNetworkProvider() === 'internet';
 
-const ROTEIROS = {
-  codigo: {
-    titulo: 'Entrar com código e senha',
-    resumo: 'Sem conta: com o código e a senha que o host te passou.',
-    passos: [
-      {
+const tourLogado = () => typeof razzeUser !== 'undefined' && !!razzeUser;
+const tourNaSala = () => !!state.myId && !$('room').hidden;
+// Um amigo de verdade com sala aberta pela internet (a lista do Início), sem contar o exemplo
+const tourSalaReal = () => (tourNaInternet() ? sessoes.amigos.find((s) => !ehMinhaSala(s)) || null : null);
+// Um convite de verdade que chegou nas mensagens (a última mensagem de uma conversa), de quem
+function tourConviteReal() {
+  if (!tourLogado() || typeof dm !== 'object' || !dm.account) return null;
+  for (const c of dm.convs.values()) {
+    const cv = c.last && c.last.from !== dm.account && !c.last.locked ? lerConvite(c.last.text) : null;
+    if (cv && !cv.chamada) return c.id;
+  }
+  return null;
+}
+// A sala de exemplo na lista do Início: o mesmo cartão das salas dos amigos, com a etiqueta; não vai a servidor nenhum
+function tourMostrarSalaExemplo() {
+  sessoes.exemplo = { id: 'exemplo', exemplo: true, host: 'Exemplo', pessoas: 3, senha: false, codigo: 'EXEMPL', servidor: '', passe: '', userId: '', amigos: [] };
+  renderSessoes();
+}
+function tourLimparExemplos() {
+  if (typeof sessoes === 'object' && sessoes.exemplo) { sessoes.exemplo = null; renderSessoes(); }
+}
+
+const passoRede = () => ({
         alvo: () => $('homeRede'),
         antes: () => { if ($('home').hidden) show('home'); tour.redeInicial = tourNaInternet(); },
         titulo: () => tour.redeInicial ? 'A rede está em Internet' : 'Escolha a rede Internet',
@@ -29,7 +48,22 @@ const ROTEIROS = {
           : 'O botão Rede, no topo do Início, diz como os PCs se conectam. Clique nele e escolha Internet: o passo segue sozinho.',
         botao: () => (tour.redeInicial ? 'Entendi' : ''),
         esperar: () => !tour.redeInicial && tourNaInternet(),
-      },
+});
+const passoVoz = () => ({
+  alvo: () => tourPorTexto('Entrar na voz'),
+  pular: () => !tourNaSala(),
+  titulo: 'Você está na sala',
+  texto: 'Para conversar, entre na voz. Para mostrar a sua tela, Transmitir tela, logo embaixo.',
+  botao: 'Concluir',
+  aoClicarAlvo: true,
+});
+
+const ROTEIROS = {
+  codigo: {
+    titulo: 'Entrar com código e senha',
+    resumo: 'Sem conta: com o código e a senha que o host te passou.',
+    passos: [
+      passoRede(),
       {
         alvo: () => ($('joinPanel').hidden ? $('goJoin') : $('joinPanel')),
         antes: () => { if (typeof setRedeMenuOpen === 'function') setRedeMenuOpen(false); },
@@ -59,13 +93,88 @@ const ROTEIROS = {
         } : null),
         esperar: () => !!state.myId && !$('room').hidden,
       },
+      passoVoz(),
+    ],
+  },
+  amigos: {
+    titulo: 'Entrar pela lista de amigos',
+    resumo: 'Com conta: a sala do amigo aparece no Início e entra com um clique.',
+    passos: [
+      passoRede(),
       {
-        alvo: () => tourPorTexto('Entrar na voz'),
-        titulo: 'Você está na sala',
-        texto: 'Para conversar, entre na voz. Para mostrar a sua tela, Transmitir tela, logo embaixo.',
-        botao: 'Concluir',
-        aoClicarAlvo: true,
+        pular: () => tourLogado(),
+        antes: () => openProfilePopup('conta'),
+        alvo: () => $('razzeAuth'),
+        titulo: 'Entre na sua conta',
+        texto: 'A lista de amigos precisa de conta. Entre com o e-mail ou o identificador e a senha, crie uma conta ou use o Google. O passo segue quando você entrar.',
+        botao: 'Pular e ver com um exemplo',
+        esperar: () => tourLogado(),
+        depois: () => { if (!$('profilePane').hidden) closeProfilePopup(); },
       },
+      {
+        pular: () => !tourLogado() || friendsData.friends.length > 0,
+        antes: () => { setDmPanel(true, 'friends'); setFriendsAddOpen(true); },
+        alvo: () => [$('razzeFriendNickname'), $('razzeAddFriend')],
+        titulo: 'Adicione um amigo',
+        texto: 'Digite o identificador completo do amigo (nome#1234) e Enviar. Quando ele aceitar, a sala dele aparece no seu Início. Também dá para mandar o seu link de convite: quem abre já vira amigo.',
+        botao: 'Entendi',
+        depois: () => { setFriendsAddOpen(false); setDmPanel(false); },
+      },
+      {
+        antes: () => { if ($('home').hidden) show('home'); if (!tourSalaReal()) tourMostrarSalaExemplo(); },
+        alvo: () => [...$('sessionList').querySelectorAll('.session')].find((li) => (tourSalaReal() ? !li.classList.contains('session-exemplo') : li.classList.contains('session-exemplo')))?.querySelector('.session-entrar'),
+        titulo: () => (tourSalaReal() ? `A sala de ${tourSalaReal().host}` : 'A sala do amigo aparece aqui'),
+        texto: () => (tourSalaReal()
+          ? 'Quando um amigo abre uma sala, ela aparece em Salas dos seus amigos com o selo AO VIVO. Entrar entra direto, sem senha: a lista dá um passe que só os amigos recebem.'
+          : 'Nenhum amigo está numa sala agora, então este cartão é um exemplo. Quando um amigo abrir uma sala, ela aparece assim, com o selo AO VIVO. Entrar entra direto, sem senha.'),
+        interceptar: () => (tourSalaReal() ? null : () => tourTerminar('Assim se entra pela lista',
+          'Com a sala de um amigo de verdade, esse Entrar abre a sala na hora, sem código nem senha. Se o passe não valer mais (o amigo fechou a sala para os amigos), abre o Entrar numa sala com o código preenchido: só falta a senha.')),
+        esperar: () => tourNaSala(),
+      },
+      passoVoz(),
+    ],
+  },
+  convite: {
+    titulo: 'Entrar por um convite',
+    resumo: 'O amigo te chamou: o cartão chega nas mensagens.',
+    passos: [
+      passoRede(),
+      {
+        pular: () => !tourConviteReal(),
+        alvo: () => $('dmBarLabel'),
+        titulo: 'Você tem um convite',
+        texto: 'O convite chega como mensagem direta de quem te chamou. Abra as mensagens.',
+        esperar: () => !$('dmPanel').hidden || (tourConviteReal() && dmIsOpen(tourConviteReal())),
+      },
+      {
+        pular: () => !tourConviteReal() || dmIsOpen(tourConviteReal()),
+        alvo: () => [...$('dmPanelConvList').children].find((li) => li.textContent.includes(friendName(tourConviteReal()))),
+        titulo: 'A conversa do convite',
+        texto: 'Abra a conversa com quem te convidou.',
+        esperar: () => dmIsOpen(tourConviteReal()),
+      },
+      {
+        pular: () => !tourConviteReal(),
+        alvo: () => [...document.querySelectorAll('.dm-slot.open .dm-invite button')].at(-1),
+        titulo: 'O cartão do convite',
+        texto: 'O cartão mostra a sala, quantas pessoas e o modo da rede. O app só entra quando você clica. Se você já estiver numa sala, ele pergunta antes de sair dela.',
+        esperar: () => tourNaSala(),
+      },
+      {
+        pular: () => !!tourConviteReal(),
+        semAlvo: true,
+        titulo: 'O convite chega assim',
+        texto: 'Você não tem um convite agora, então este é um exemplo. Quando um amigo usar Convidar, este cartão aparece na conversa com ele, nas mensagens (o envelope, no canto de baixo). Pela internet ele entra sem senha. Clique em Entrar no cartão.',
+        conteudo: () => {
+          const cv = { modo: 'internet', servidor: '', codigo: 'EXEMPL', passe: 'x', pessoas: 3 };
+          const card = cartaoConvite(cv, false, 'Exemplo');
+          card.classList.add('tour-exemplo');
+          card.querySelector('button').onclick = () => tourTerminar('Assim se entra por um convite',
+            'Com um convite de verdade, esse Entrar abre a sala na hora. Convite antigo, que não vale mais, abre o Entrar numa sala já preenchido: só falta a senha.');
+          return card;
+        },
+      },
+      passoVoz(),
     ],
   },
   host: {
@@ -118,12 +227,20 @@ const ROTEIROS = {
         depois: () => { if (!$('roomMenu').hidden) $('roomMenuBtn').click(); },
       },
       {
+        pular: () => !tourLogado() || !friendsData.friends.some((f) => f.online),
+        antes: () => { setDmPanel(true, 'friends'); setFriendsAddOpen(true); friendsFilter.view = 'all'; renderFriends(); },
+        alvo: () => tourPorTexto('Convidar', $('razzeFriends')),
+        titulo: 'Convidar um amigo',
+        texto: 'Na aba Amigos, cada amigo online tem Convidar: o convite chega nas mensagens dele e ele entra com um clique, sem senha.',
+        aoClicarAlvo: true,
+        botao: 'Pular',
+        depois: () => { setFriendsAddOpen(false); setDmPanel(false); },
+      },
+      {
         alvo: () => $('dockAddr'),
         titulo: 'Chamar a galera',
-        texto: () => 'Convidar, na barrinha da direita, copia o código da sala para você mandar por onde quiser. '
-          + (typeof razzeUser !== 'undefined' && razzeUser
-            ? 'Com amigos no Nebula, também dá para usar Convidar na aba Amigos do envelope: o convite chega nas mensagens e eles entram com um clique.'
-            : 'Com uma conta (Perfil › Conta), seus amigos veem a sala na lista e entram com um clique.'),
+        texto: () => 'Convidar, na barrinha da direita, copia o código da sala para você mandar por onde quiser, junto com a senha. '
+          + (tourLogado() ? 'Os seus amigos também veem a sala na lista do Início.' : 'Com uma conta (Perfil › Conta), seus amigos veem a sala na lista e entram com um clique.'),
         aoClicarAlvo: true,
         botao: 'Pular',
       },
@@ -147,6 +264,7 @@ const tourValor = (v) => (typeof v === 'function' ? v() : v);
 function iniciarTour(id) {
   if (!ROTEIROS[id]) return;
   setTourLista(false);
+  tourLimparExemplos();
   tour.id = id;
   tour.final = null;
   $('tour').hidden = false;
@@ -156,9 +274,12 @@ function iniciarTour(id) {
   tour.timer = setInterval(tourAtualizar, 150); // acompanha o alvo (rolagem, resize, painel que abre) e espera a ação
 }
 
-function tourIr(i) {
+function tourIr(i, sentido = 1) {
   tourPassoAtual()?.depois?.();
   const passos = ROTEIROS[tour.id].passos;
+  // Passos que não se aplicam agora (já tem conta, já tem amigos, não há convite de verdade...) ficam de fora
+  while (i >= 0 && i < passos.length && passos[i].pular?.()) i += sentido;
+  if (i < 0) i = 0;
   if (i >= passos.length) {
     const f = ROTEIROS[tour.id].final?.();
     return f ? tourTerminar(f.titulo, f.texto, f.botoes) : tourTerminar('Pronto', 'Você chegou ao fim do passo a passo.');
@@ -170,7 +291,7 @@ function tourIr(i) {
   p.antes?.();
   tourDesenharBalao();
   tourAtualizar();
-  setTimeout(() => { const el = tourAlvos()[0]; if (el && !el.contains(document.activeElement)) (el.matches('button, input') ? el : el.querySelector('button, input') || $('tourBalao'))?.focus(); }, 0);
+  setTimeout(() => { if (p.semAlvo) return $('tourBalao').focus(); const el = tourAlvos()[0]; if (el && !el.contains(document.activeElement)) (el.matches('button, input') ? el : el.querySelector('button, input') || $('tourBalao'))?.focus(); }, 0);
 }
 
 function tourAlvos() {
@@ -183,7 +304,10 @@ function tourAlvos() {
 function tourDesenharBalao() {
   const p = tourPassoAtual();
   const r = ROTEIROS[tour.id];
-  $('tourNum').textContent = `${r.titulo} · passo ${tour.i + 1} de ${r.passos.length}`;
+  const contam = r.passos.filter((x, k) => k === tour.i || !x.pular?.());
+  $('tourNum').textContent = `${r.titulo} · passo ${contam.indexOf(p) + 1} de ${contam.length}`;
+  $('tourConteudo').replaceChildren(...(p.conteudo ? [p.conteudo()] : []));
+  $('tour').classList.toggle('sem-alvo', !!p.semAlvo);
   $('tourTitulo').textContent = tourValor(p.titulo);
   $('tourTexto').textContent = tourValor(p.texto);
   const acoes = [];
@@ -191,7 +315,7 @@ function tourDesenharBalao() {
   const ok = tourValor(p.botao);
   if (ok) acoes.push(tourBotao(ok, () => tourIr(tour.i + 1), true));
   $('tourAcoes').replaceChildren(...acoes);
-  $('tourVoltar').hidden = tour.i === 0;
+  $('tourVoltar').hidden = !r.passos.slice(0, tour.i).some((x) => !x.pular?.());
   $('tourSair').textContent = 'Sair do passo a passo';
   $('tourSair').hidden = false;
 }
@@ -207,11 +331,12 @@ function tourBotao(rotulo, acao, principal = false) {
 // A cada 150 ms: pausa por baixo de uma confirmação ou do "Entrando na sala…", acompanha o alvo e confere a ação
 function tourAtualizar() {
   if (!tour.id || tour.final) return;
-  const pausado = !!document.querySelector('.modal.app-confirm') || !$('entradaCarregando').hidden;
+  const pausado = !!document.querySelector('.modal.app-confirm') || !$('entradaCarregando').hidden || !$('contaDialog').hidden || !$('onboarding').hidden;
   $('tour').classList.toggle('pausado', pausado);
   if (pausado) return;
   const p = tourPassoAtual();
   if (p.esperar && p.esperar()) return tourIr(tour.i + 1);
+  if (p.semAlvo) return tourCentralizar();
   const alvos = tourAlvos();
   if (!alvos.length) {
     tour.sumiuDesde ||= Date.now();
@@ -273,11 +398,16 @@ function tourTerminar(titulo, texto, botoes = [{ rotulo: 'Fechar', principal: tr
   $('tourVoltar').hidden = true;
   $('tourSair').hidden = true;
   $('tourAcoes').replaceChildren(...botoes.map((b) => tourBotao(b.rotulo, () => { sairDoTour(); b.acao?.(); }, b.principal)));
+  $('tourConteudo').replaceChildren();
+  tourCentralizar();
+  $('tourAcoes').lastElementChild?.focus();
+}
+// O balão no meio da camada (o fim, ou um passo sem alvo)
+function tourCentralizar() {
   const box = $('tourBalao');
   const o = $('tour').getBoundingClientRect();
   box.style.setProperty('--bx', Math.round((o.width - box.offsetWidth) / 2) + 'px');
   box.style.setProperty('--by', Math.round((o.height - box.offsetHeight) / 2) + 'px');
-  $('tourAcoes').lastElementChild?.focus();
 }
 
 function sairDoTour() {
@@ -287,8 +417,9 @@ function sairDoTour() {
   tour.id = '';
   tour.final = null;
   $('tour').hidden = true;
-  $('tour').classList.remove('final', 'pausado');
+  $('tour').classList.remove('final', 'pausado', 'sem-alvo');
   document.body.classList.remove('tour-ligado');
+  tourLimparExemplos();
 }
 
 // Clique no alvo: o passo segue depois que o próprio app tratou o clique. "interceptar" troca o clique por outra coisa
@@ -330,7 +461,7 @@ function setupTour() {
   $('tourAbrir').onclick = () => setTourLista($('tourLista').hidden);
   document.addEventListener('pointerdown', (e) => { if (!$('tourLista').hidden && !e.target.closest('.tour-abrir-wrap')) setTourLista(false); });
   $('tourLista').addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.stopPropagation(); setTourLista(false); $('tourAbrir').focus(); } });
-  $('tourVoltar').onclick = () => { if (tour.i > 0) tourIr(tour.i - 1); };
+  $('tourVoltar').onclick = () => { if (tour.i > 0) tourIr(tour.i - 1, -1); };
   $('tourSair').onclick = sairDoTour;
   document.addEventListener('click', tourClique, true);
   // Esc sai do passo a passo (e não fecha mais nada por baixo); com uma confirmação aberta, o Esc é dela

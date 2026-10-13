@@ -13,6 +13,7 @@ const sessoes = {
   provider: '',
   razze: [],
   amigos: [],                  // modo Internet: as salas dos amigos do Razze (salas-amigos.js)
+  exemplo: null,               // a sala de exemplo do passo a passo (renderer/tour.js): só na tela, nunca entra
   rede: [],                    // do anúncio pela rede: { id, host, porta, pessoas, senha, versao, endereco }
   diretas: new Map(),          // da pergunta direta: id -> { ...o mesmo, visto }
   sondaTimer: null,
@@ -116,7 +117,7 @@ function ehMinhaSala(s) {
 // As duas fontes juntas, pelo id (o anúncio pela rede vale mais: é o mais atual), sem a sala em que você está
 function listaSessoes() {
   const porNome = (a, b) => a.host.localeCompare(b.host, 'pt-BR');
-  if (selectedNetworkProvider() === 'internet') return sessoes.amigos.filter((s) => !ehMinhaSala(s)).sort(porNome);
+  if (selectedNetworkProvider() === 'internet') return [...sessoes.amigos.filter((s) => !ehMinhaSala(s)).sort(porNome), ...(sessoes.exemplo ? [sessoes.exemplo] : [])];
   if (selectedNetworkProvider() === 'razze') return sessoes.razze.filter((s) => s.networkId === networkPreferences().activeNetworkId && !ehMinhaSala(s)).sort(porNome);
   const agora = Date.now();
   for (const [id, s] of sessoes.diretas) if (agora - s.visto > SONDA_VALIDADE) sessoes.diretas.delete(id);
@@ -167,7 +168,7 @@ function rostoDe(nome) {
 function sessionRow(s) {
   const { dono, dentro } = amigosDaSala(s);
   const li = document.createElement('li');
-  li.className = 'session';
+  li.className = 'session' + (s.exemplo ? ' session-exemplo' : '');
   const dot = rostoDe(s.host);
   dot.removeAttribute('title');
   dot.setAttribute('aria-hidden', 'true');
@@ -187,6 +188,12 @@ function sessionRow(s) {
   meta.textContent = `${s.pessoas} ${s.pessoas === 1 ? 'pessoa' : 'pessoas'}${s.codigo ? ' · pela internet' : ''}${com ? ' · ' + com : ''}${voz}${s.senha ? ', com senha' : ''}`;
   if (s.senha) meta.insertAdjacentHTML('afterbegin', ICON.lock);
   info.append(vivo, name, meta);
+  if (s.exemplo) {
+    const tag = document.createElement('span');
+    tag.className = 'session-exemplo-tag';
+    tag.textContent = 'Exemplo do passo a passo';
+    info.append(tag);
+  }
   if (dono?.activity?.game) {
     const jogo = document.createElement('span');
     jogo.className = 'session-game';
@@ -212,6 +219,7 @@ function sessionRow(s) {
 
 // Entrar: preenche o endereço; com senha, abre o "Entrar numa sala" para digitar
 function enterSession(s) {
+  if (s.exemplo) return; // o passo a passo trata o clique
   if (s.codigo) return entrarSalaAmigo(s); // sala de amigo pela internet (salas-amigos.js)
   $('roomAddr').value = `${s.endereco}:${s.porta}`;
   save('roomAddr', $('roomAddr').value);

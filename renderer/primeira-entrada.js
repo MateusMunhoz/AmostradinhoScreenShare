@@ -148,7 +148,7 @@ function renderHomeTopo() {
 
   const logado = !!razzeUser;
   const online = logado ? friendsData.friends.filter((f) => f.online) : [];
-  const salas = typeof listaSessoes === 'function' && sessoes.observando ? listaSessoes() : [];
+  const salas = typeof listaSessoes === 'function' && sessoes.observando ? listaSessoes().filter((s) => !s.exemplo) : []; // sem a sala de exemplo do passo a passo
   const resumo = $('homeResumo');
   resumo.textContent = '';
   if (state.myId) { // a sala em que você está já é a faixa de cima (docs/spec/inicio-novo.md)
