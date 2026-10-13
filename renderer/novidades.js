@@ -3,6 +3,13 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.20.0",
+    "date": "2026-10-12",
+    "items": [
+      "Apoio com Pix e spec do plano premium"
+    ]
+  },
+  {
     "version": "1.19.4",
     "date": "2026-10-12",
     "items": [
@@ -82,13 +89,6 @@ const NOVIDADES = [
     "date": "2026-10-07",
     "items": [
       "Perfil: abrir pela lista Na voz não trava mais os outros perfis"
-    ]
-  },
-  {
-    "version": "1.18.6",
-    "date": "2026-10-07",
-    "items": [
-      "Atividade: jogo e música ligados por padrão, escolha na primeira entrada; Apex em DirectX 12"
     ]
   }
 ];
