@@ -20,6 +20,12 @@ Tudo o que dá para fazer no Nebula, com os detalhes. Para começar do zero, vej
 
 - **Criar:** no Início, **Criar sala** abre a sala na hora (no modo Internet, com senha gerada). Para escolher a porta e a senha, clique em **Opções da sala**, dentro do mesmo cartão. O app mostra um endereço tipo `26.12.34.56:8765`. Mande para os amigos. Quem cria é o **host**, e aparece "Host" ao lado do nome.
 - **Entrar:** clique em **Entrar numa sala** (ao lado de Criar sala), cole o endereço (ou o código, no modo Internet) e clique em **Entrar**.
+- **Passo a passo:** no Início, embaixo de Criar sala e Entrar numa sala, **Como entrar numa sala?** abre os roteiros guiados
+  **Entrar com código e senha** e **Criar sala e chamar os amigos**. A janela escurece e o botão do passo fica aceso, com um
+  balão do lado; o passo segue quando você faz a ação de verdade (alguns só explicam, com **Entendi**). O de código tem
+  **Preencher exemplo**: com ele, o Entrar só ensaia e não entra em sala nenhuma; com um código de verdade, entra. O de
+  criar sala abre uma sala real e no fim pergunta se você fica nela ou encerra. Esc ou **Sair do passo a passo** fecha a
+  qualquer hora, e se o botão do passo sumir da tela o balão oferece **Recomeçar**.
 - **Já numa sala:** Criar sala e Entrar numa sala continuam ligados; o app pergunta antes de tirar você da sala em que está.
 - **Carregando:** criando ou entrando (pelo endereço, pelo código, na sala de um amigo, por um convite ou numa chamada), aparece **Entrando na sala…** com o passo da conexão até a sala abrir. Enquanto isso, clicar de novo não abre outra conexão. **Cancelar** (ou Esc) desiste da entrada.
 - **Tamanho:** até 12 pessoas.
