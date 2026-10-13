@@ -37,20 +37,26 @@ const VISIBILITY = { private: 'Privada', friends: 'Só amigos', public: 'Públic
 
 // O padrão é o modo Internet. Quem já usava o app antes (sem ter escolhido nada) continua na Radmin, como estava:
 // o clientId e o último endereço só existem depois de entrar numa sala.
+// outrasRedes: Radmin, rede local e Razze só aparecem depois de ligadas em Configurações › Rede (com confirmação).
+// Quem já estava numa delas quando a opção chegou fica com ela ligada.
 function networkPreferences() {
   try {
     if (!localStorage.getItem(NETWORK_PREF_KEY) && (localStorage.getItem('clientId') || localStorage.getItem('roomAddr'))) {
       localStorage.setItem(NETWORK_PREF_KEY, JSON.stringify({ provider: 'radmin' }));
     }
     const p = JSON.parse(localStorage.getItem(NETWORK_PREF_KEY) || '{}');
+    const escolhida = ['razze', 'radmin'].includes(p.provider) ? p.provider : 'internet';
+    const outrasRedes = typeof p.outrasRedes === 'boolean' ? p.outrasRedes : escolhida !== 'internet';
     return {
-      provider: ['razze', 'radmin'].includes(p.provider) ? p.provider : 'internet',
+      provider: outrasRedes ? escolhida : 'internet',
+      outrasRedes,
       apiUrl: typeof p.apiUrl === 'string' ? p.apiUrl : '',
       activeNetworkId: typeof p.activeNetworkId === 'string' ? p.activeNetworkId : '',
       internetUrl: typeof p.internetUrl === 'string' && p.internetUrl.trim() ? p.internetUrl : INTERNET_URL_PADRAO,
     };
-  } catch { return { provider: 'internet', apiUrl: '', activeNetworkId: '', internetUrl: INTERNET_URL_PADRAO }; }
+  } catch { return { provider: 'internet', outrasRedes: false, apiUrl: '', activeNetworkId: '', internetUrl: INTERNET_URL_PADRAO }; }
 }
+const outrasRedesLigadas = () => networkPreferences().outrasRedes;
 
 // Endereço do servidor do modo Internet, como o WebSocket precisa: "1.2.3.4:8765" vira ws://1.2.3.4:8765 e um
 // domínio sem porta vira wss:// (atrás do HTTPS). Vazio se não der para entender.
@@ -129,7 +135,9 @@ const redeMenu = { erro: {}, motivos: {} };
 function renderRedeMenu() {
   const atual = selectedNetworkProvider();
   const box = $('homeRedeOpcoes');
-  box.replaceChildren(...REDES_TOPO.map((r) => {
+  const outras = outrasRedesLigadas();
+  $('homeRedePeTexto').textContent = outras ? 'Trocar de rede tira você da sala atual.' : 'Radmin, rede local e Razze: ligue em Configurações › Rede.';
+  box.replaceChildren(...REDES_TOPO.filter((r) => outras || r.modo === 'internet' || r.modo === atual).map((r) => {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'home-rede-opcao' + (r.modo === atual ? ' atual' : '');
@@ -176,7 +184,7 @@ function setRedeMenuOpen(open) {
   $('homeRedeOpcoes').querySelector('.atual')?.focus();
   // O estado das outras redes (a Razze pergunta ao processo principal): chega depois e redesenha
   for (const r of REDES_TOPO) {
-    if (r.modo === selectedNetworkProvider()) continue;
+    if (r.modo === selectedNetworkProvider() || (!outrasRedesLigadas() && r.modo !== 'internet')) continue;
     void motivoModoIndisponivel(r.modo).then((m) => { redeMenu.motivos[r.modo] = m; if (!$('homeRedeMenu').hidden) renderRedeMenu(); });
   }
 }
@@ -219,6 +227,7 @@ function inviteTokenFromValue(value) {
 
 function saveNetworkPreferences(patch) {
   const next = { ...networkPreferences(), ...patch };
+  if (next.provider !== 'internet' && patch.outrasRedes === undefined) next.outrasRedes = true; // usar uma já é ter ligado
   localStorage.setItem(NETWORK_PREF_KEY, JSON.stringify(next));
   return next;
 }
@@ -237,6 +246,32 @@ async function requireSelectedNetwork() {
   if (!prefs.activeNetworkId) throw new Error('Conecte uma rede Razze em Configurações › Rede.');
   const tunnel = await window.api.razzeWireGuardStatus(prefs.activeNetworkId);
   if (!tunnel.connected) throw new Error('Conecte a rede Razze escolhida na aba Rede antes de criar ou entrar numa sala.');
+}
+
+// Ligar as outras redes pede confirmação: com elas a sala fica no PC de quem cria e os outros entram pelo endereço dele
+async function confirmarOutrasRedes() {
+  return appConfirm('Com elas, a sala fica no seu PC e os amigos entram pelo seu endereço (o IP da Radmin, da rede local ou da VPN Razze), '
+    + 'e quem está na mesma rede vê as salas abertas. A Razze instala e liga uma VPN WireGuard. A Internet continua sendo a recomendada. Ligar mesmo assim?',
+  { title: 'Ligar Radmin, rede local e Razze?', ok: 'Ligar outras redes' });
+}
+async function mudarOutrasRedes(ligar) {
+  if (ligar) {
+    if (!(await confirmarOutrasRedes())) { $('outrasRedes').checked = false; return; }
+    saveNetworkPreferences({ outrasRedes: true });
+    toast('Outras redes ligadas. Escolha em Como os PCs se conectam ou no topo do Início.');
+  } else {
+    const atual = selectedNetworkProvider();
+    if (atual !== 'internet') {
+      const sala = state.myId ? ' Você sai da sala atual.' : '';
+      if (!(await appConfirm(`Desligar as outras redes e voltar para a Internet?${sala}`, { title: 'Desligar outras redes', ok: 'Desligar' }))) { $('outrasRedes').checked = true; return; }
+      if (state.myId) leaveRoom();
+      if (atual === 'razze') await window.api.razzeWireGuardDisconnectAll().catch(() => {});
+    }
+    saveNetworkPreferences({ outrasRedes: false, provider: 'internet' });
+  }
+  renderConnectivitySettings();
+  renderRadmin();
+  setSessionWatch(sessionWatchWanted());
 }
 
 // ---------- A janela ----------
@@ -259,6 +294,8 @@ function setStepDone(id, done, n) {
 function renderConnectivitySettings() {
   const prefs = networkPreferences();
   document.querySelectorAll('input[name="networkProvider"]').forEach((r) => { r.checked = r.value === prefs.provider; });
+  $('outrasRedes').checked = prefs.outrasRedes;
+  $('networkProviderSeg').hidden = !prefs.outrasRedes; // só a Internet: não tem o que escolher
   $('razzeApiUrl').value = prefs.apiUrl;
   $('razzeSettings').hidden = prefs.provider !== 'razze';
   $('internetSettings').hidden = prefs.provider !== 'internet';
@@ -642,6 +679,7 @@ function setupConnectivitySettings() {
       setSessionWatch(sessionWatchWanted());
     };
   });
+  $('outrasRedes').onchange = () => void mudarOutrasRedes($('outrasRedes').checked);
   $('internetSaveServer').onclick = async () => {
     const url = normalizeInternetUrl($('internetUrl').value);
     if (!url) { $('internetStatus').textContent = 'Endereço inválido. Exemplo: ws://203.0.113.10:8765'; return; }
@@ -762,6 +800,7 @@ function setupConnectivitySettings() {
   });
   $('razzePassword').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); ($('razzeLogin').hidden ? $('razzeRegister') : $('razzeLogin')).click(); } });
   const acceptInviteLink = async (token) => {
+    if (!outrasRedesLigadas() && !(await confirmarOutrasRedes())) return toast('Convite da rede Razze ignorado: as outras redes estão desligadas.');
     $('razzeInviteToken').value = token;
     saveNetworkPreferences({ provider: 'razze' });
     openNetworkDialog();

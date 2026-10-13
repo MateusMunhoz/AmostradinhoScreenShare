@@ -257,6 +257,9 @@ button.home-acao { flex-direction: row; padding: 18px; border: 1px solid var(--l
 .home-rede-opcao-erro { font-size: 13px; color: var(--warn); line-height: 1.4; }
 .home-rede-pe { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 2px 6px 0; padding-top: 10px; border-top: 1px solid var(--line); }
 .home-rede-pe .hint { font-size: 12px; }
+.net-outras { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-top: 12px; border-top: 1px solid var(--line); }
+.net-outras-texto { display: flex; flex-direction: column; gap: 2px; }
+.net-outras-texto .hint { margin: 0; }
 .home-versao-painel { width: 380px; max-width: calc(100vw - 48px); padding: 18px; gap: 8px; }
 .home-versao-painel .home-pop-kicker { color: var(--warn); }
 .home-versao-titulo { margin: 0; font-size: 22px; font-weight: 700; }

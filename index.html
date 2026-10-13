@@ -391,7 +391,7 @@
               <span class="home-pop-kicker">Como os PCs se conectam</span>
               <div id="homeRedeOpcoes" class="home-rede-opcoes"></div>
               <div class="home-rede-pe">
-                <span class="hint">Trocar de rede tira você da sala atual.</span>
+                <span class="hint" id="homeRedePeTexto">Trocar de rede tira você da sala atual.</span>
                 <button class="link-btn" id="homeRedeAvancado" type="button">Avançado</button>
               </div>
             </section>
@@ -1098,12 +1098,17 @@
           <p class="net-summary" role="status"><span id="netSummaryDot" class="dot"></span><span id="netSummaryText"></span></p>
           <section class="settings-section" aria-labelledby="networkTitle">
             <h3 id="networkTitle">Como os PCs se conectam</h3>
-            <div class="seg net-seg" role="radiogroup" aria-labelledby="networkTitle">
+            <div class="seg net-seg" id="networkProviderSeg" role="radiogroup" aria-labelledby="networkTitle">
               <label><input type="radio" name="networkProvider" value="internet"><span>Internet (servidor)</span></label>
               <label><input type="radio" name="networkProvider" value="radmin"><span>Radmin ou rede local</span></label>
               <label><input type="radio" name="networkProvider" value="razze"><span>Razze (WireGuard)</span></label>
             </div>
             <p class="hint" id="networkHint"></p>
+            <!-- Outras redes: desligadas, o app usa só a Internet (renderer/conectividade.js: mudarOutrasRedes) -->
+            <div class="net-outras">
+              <span class="net-outras-texto"><strong id="outrasRedesLabel">Outras redes</strong><span class="hint" id="outrasRedesHint">Radmin, rede local e Razze (WireGuard). Desligadas, o app usa só a Internet.</span></span>
+              <label class="switch"><input type="checkbox" id="outrasRedes" role="switch" aria-labelledby="outrasRedesLabel" aria-describedby="outrasRedesHint"><span class="track" aria-hidden="true"></span></label>
+            </div>
           </section>
           <section id="internetSettings" class="settings-section" aria-labelledby="internetTitle" hidden>
             <h3 id="internetTitle">Servidor</h3>

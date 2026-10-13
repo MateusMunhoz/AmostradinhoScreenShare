@@ -78,13 +78,16 @@ Tudo o que dá para fazer no Nebula, com os detalhes. Para começar do zero, vej
 ### Como os PCs se conectam
 
 No botão **Rede**, no topo do Início: ele mostra a rede em uso e o estado dela (bolinha verde: pronta; laranja: falta
-algo, como "Radmin · sem IP 26.x" ou "Razze · desconectada"). Clicar abre as três redes, cada uma com o que muda; escolher
+algo, como "Radmin · sem IP 26.x" ou "Razze · desconectada"). Clicar abre as redes ligadas, cada uma com o que muda; escolher
 troca na hora. Se uma rede não dá para usar agora (sem conta Razze, por exemplo), o motivo aparece na linha dela. Numa
 sala, o app pergunta antes, porque trocar de rede tira você da sala. **Avançado** abre **Configurações › Rede**, com o
 servidor, a conta e as redes Razze. O padrão é **Internet (servidor)**: sem VPN, a sala fica num servidor (VPS) e os amigos
 entram por código e senha, pela lista de salas dos amigos ou por um convite nas mensagens. Também dá para usar
-**Radmin ou rede local** e **Razze (WireGuard)**. Quem já usava o app antes do modo Internet virar o padrão, sem
-ter escolhido outro, continua na Radmin.
+**Radmin ou rede local** e **Razze (WireGuard)**, mas elas vêm **desligadas**: o menu mostra só a Internet. Para usar,
+em **Configurações › Rede**, ligue **Outras redes**; o app pede confirmação (com elas a sala fica no seu PC e os amigos entram
+pelo seu endereço). Desligar volta para a Internet (e sai da sala, se ela for por outra rede). Com elas desligadas, ligar
+ou atender por Radmin ou Razze avisa para ligar primeiro. Quem já usava o app antes do modo Internet virar o padrão, sem
+ter escolhido outro, continua na Radmin, com as outras redes já ligadas.
 
 ### VPN Nebula
 
