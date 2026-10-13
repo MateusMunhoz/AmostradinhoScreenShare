@@ -450,6 +450,11 @@
               <span class="home-acao-textos"><strong>Entrar numa sala</strong><small id="goJoinSub"></small></span>
             </button>
           </div>
+          <!-- Passo a passo guiado (renderer/tour.js, docs/spec/tour-entrar-na-sala.md) -->
+          <div class="tour-abrir-wrap">
+            <button class="link-btn" id="tourAbrir" type="button" aria-expanded="false" aria-controls="tourLista">Como entrar numa sala?</button>
+            <div id="tourLista" class="tour-lista" role="group" aria-label="Passo a passo" hidden></div>
+          </div>
           <div id="joinPanel" class="join-panel" hidden>
             <strong id="joinPanelTitle">Entrar com endereço</strong>
             <label class="field">
@@ -1477,6 +1482,18 @@
     </div>
   </div>
 
+  <!-- Passo a passo: as 4 faixas escuras deixam um buraco no alvo (só ele recebe clique), o anel e o balão (renderer/tour.js) -->
+  <div id="tour" class="tour" hidden>
+    <div class="tour-sombra tour-cima"></div><div class="tour-sombra tour-baixo"></div><div class="tour-sombra tour-esq"></div><div class="tour-sombra tour-dir"></div>
+    <div class="tour-anel" aria-hidden="true"></div>
+    <section id="tourBalao" class="tour-balao" role="dialog" aria-modal="false" aria-labelledby="tourTitulo" aria-describedby="tourTexto" tabindex="-1">
+      <span id="tourNum" class="tour-num"></span>
+      <h2 id="tourTitulo"></h2>
+      <p id="tourTexto" aria-live="polite"></p>
+      <div id="tourAcoes" class="tour-acoes"></div>
+      <div class="tour-pe"><button id="tourVoltar" class="link-btn" type="button">Voltar</button><button id="tourSair" class="link-btn" type="button">Sair do passo a passo</button></div>
+    </section>
+  </div>
   <!-- Pergunta da conta: código do e-mail, do 2FA, nome do identificador, senha (renderer/conta-seguranca.js) -->
   <div id="contaDialog" class="ob-modal" hidden>
     <div class="ob-dialog" role="dialog" aria-modal="true" aria-labelledby="contaDialogTitulo">
@@ -1559,6 +1576,7 @@
   <script src="renderer/feedback.js"></script>
   <script src="renderer/recorte.js"></script>
   <script src="renderer/navegacao.js"></script>
+  <script src="renderer/tour.js"></script>
   <script src="renderer/inicio.js"></script>
 </body>
 </html>

@@ -97,6 +97,37 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 .home-lado:not(:has(> :not([hidden]))) { display: none; } /* sem conta e sem novidade: a coluna some */
 /* Criar e entrar: dois cartões do mesmo tamanho, sempre aqui e ligados. Criar é o destaque; "Opções da sala" fica
    dentro dele, como link */
+/* Passo a passo (renderer/tour.js): o link embaixo de Criar/Entrar e a lista dos roteiros */
+.tour-abrir-wrap { position: relative; display: flex; justify-content: flex-end; margin-top: 8px; }
+.tour-abrir-wrap .link-btn { font-size: 13px; }
+.tour-lista { position: absolute; right: 0; top: calc(100% + 6px); z-index: 12; width: min(340px, 100%); display: flex; flex-direction: column; gap: 4px; padding: 6px;
+  border: 1px solid var(--line-strong); border-radius: 12px; background: var(--panel); box-shadow: var(--shadow-2); }
+.tour-roteiro { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 10px 12px; border: 0; border-radius: 8px; background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.tour-roteiro small { color: var(--muted); font-size: 12px; }
+.tour-roteiro:hover, .tour-roteiro:focus-visible { background: var(--panel-2); }
+.tour { position: fixed; inset: 0; z-index: 55; pointer-events: none; --tx: 0px; --ty: 0px; --tw: 0px; --th: 0px; }
+.tour-sombra { position: absolute; background: rgba(5, 7, 10, .62); pointer-events: auto; }
+.tour-cima { left: 0; right: 0; top: 0; height: var(--ty); }
+.tour-baixo { left: 0; right: 0; top: calc(var(--ty) + var(--th)); bottom: 0; }
+.tour-esq { left: 0; top: var(--ty); width: var(--tx); height: var(--th); }
+.tour-dir { left: calc(var(--tx) + var(--tw)); right: 0; top: var(--ty); height: var(--th); }
+.tour-anel { position: absolute; left: var(--tx); top: var(--ty); width: var(--tw); height: var(--th); border-radius: 10px; box-shadow: 0 0 0 3px var(--ok); animation: tour-pulsa 1.6s ease-in-out infinite; }
+@keyframes tour-pulsa { 50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--ok) 40%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .tour-anel { animation: none; } }
+.tour-balao { position: absolute; left: var(--bx, 50%); top: var(--by, 50%); width: min(340px, calc(100vw - 24px)); pointer-events: auto; display: flex; flex-direction: column; gap: 8px;
+  padding: 14px 16px; border: 1px solid var(--line-strong); border-radius: 12px; background: var(--panel); color: var(--text); box-shadow: var(--shadow-3); }
+.tour-balao:focus { outline: none; }
+.tour-num { font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.tour-balao h2 { margin: 0; font-size: 16px; }
+.tour-balao p { margin: 0; font-size: 13.5px; line-height: 1.45; color: var(--text-2); }
+.tour-acoes { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.tour-acoes:empty { display: none; }
+.tour-pe { display: flex; justify-content: space-between; gap: 8px; padding-top: 6px; border-top: 1px solid var(--line); font-size: 12.5px; }
+#tourSair { margin-left: auto; }
+.tour.final .tour-pe { display: none; }
+.tour.final .tour-cima { height: 100%; }
+.tour.final :is(.tour-baixo, .tour-esq, .tour-dir, .tour-anel) { display: none; }
+.tour.pausado > * { visibility: hidden; }
 .home-acoes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .home-acoes:has(#goJoin[hidden]) { grid-template-columns: minmax(0, 1fr); } /* "Entrar numa sala" aberto: o painel ocupa o lugar dele */
 @container inicio (max-width: 560px) { .home-acoes { grid-template-columns: minmax(0, 1fr); } }

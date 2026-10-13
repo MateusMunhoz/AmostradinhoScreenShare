@@ -355,6 +355,7 @@ $('entradaCarregando').addEventListener('keydown', (e) => {
   else if (e.key === 'Tab') { e.preventDefault(); $('entradaCancelar').focus(); } // só tem o Cancelar
 });
 setupPrimeiraEntrada(); // primeira entrada e amigos no Início (renderer/primeira-entrada.js)
+setupTour(); // passo a passo guiado (renderer/tour.js)
 $('goJoin').onclick = () => foraDaSala('entrar em outra sala', () => setJoinOpen(true));
 $('cancelJoin').onclick = () => setJoinOpen(false);
 $('rejoinBtn').onclick = () => {
