@@ -1,7 +1,7 @@
 'use strict';
 // Passo a passo guiado (docs/spec/tour-entrar-na-sala.md): escurece a janela, acende o botão do passo e avança quando a
 // pessoa faz a ação de verdade. Os alvos são os elementos de sempre do app; renomear um deles quebra o roteiro (o e2e
-// tests/e2e/tour.js pega). Roteiros: código e senha, criar sala, lista de amigos e convite. Os dois últimos usam o que existe
+// tests/e2e/tour.js pega). Abre pelo Início, por Configurações › Ajuda e na oferta do fim da primeira entrada. Roteiros: código e senha, criar sala, lista de amigos e convite. Os dois últimos usam o que existe
 // de verdade (amigo numa sala, convite nas mensagens) e, sem isso, um exemplo marcado que só existe na tela.
 // Script clássico: só declara; quem liga é renderer/inicio.js (setupTour). Usa: util ($, show, toast), estado (state),
 // conectividade (selectedNetworkProvider, razzeUser), inicio (setJoinOpen), chamada (novaSenhaSala), sala (leaveRoom),
@@ -445,19 +445,47 @@ function setTourLista(open) {
   if (open) $('tourLista').querySelector('button')?.focus();
 }
 
+// Um roteiro da lista (Início, Configurações › Ajuda e a oferta da primeira entrada): o nome e uma linha do que faz
+function tourBotaoRoteiro(id, aoEscolher = () => iniciarTour(id)) {
+  const r = ROTEIROS[id];
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'tour-roteiro';
+  b.dataset.roteiro = id;
+  const t = document.createElement('strong');
+  t.textContent = r.titulo;
+  const s = document.createElement('small');
+  s.textContent = `${r.resumo} ${r.passos.length} passos.`;
+  b.append(t, s);
+  b.onclick = aoEscolher;
+  return b;
+}
+
+// Fim da primeira entrada: oferece o passo a passo uma vez só (depois, pelo Início ou por Configurações › Ajuda). É o
+// balão do fim, sem alvo, com os roteiros dentro; com conta, os de amigos vêm primeiro.
+function oferecerTour() {
+  if (load('tourOferecido') === '1' || tour.id) return;
+  save('tourOferecido', '1');
+  const ordem = tourLogado() ? ['amigos', 'convite', 'codigo', 'host'] : ['codigo', 'host', 'amigos', 'convite'];
+  tour.id = 'oferta';
+  tour.final = { titulo: 'oferta' };
+  $('tour').hidden = false;
+  $('tour').classList.add('final');
+  document.body.classList.add('tour-ligado');
+  $('tourNum').textContent = 'Passo a passo';
+  $('tourTitulo').textContent = 'Quer ver como entrar numa sala?';
+  $('tourTexto').textContent = 'O app te guia na própria tela: acende o botão certo e segue quando você clica. Escolha um. Dá para ver depois em "Como entrar numa sala?", no Início.';
+  $('tourConteudo').replaceChildren(...ordem.map((id) => tourBotaoRoteiro(id, () => { sairDoTour(); iniciarTour(id); })));
+  $('tourVoltar').hidden = $('tourSair').hidden = true;
+  $('tourAcoes').replaceChildren(tourBotao('Agora não', sairDoTour));
+  tourCentralizar();
+  $('tourConteudo').querySelector('button').focus();
+}
+
 function setupTour() {
-  $('tourLista').replaceChildren(...Object.entries(ROTEIROS).map(([id, r]) => {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'tour-roteiro';
-    const t = document.createElement('strong');
-    t.textContent = r.titulo;
-    const s = document.createElement('small');
-    s.textContent = `${r.resumo} ${r.passos.length} passos.`;
-    b.append(t, s);
-    b.onclick = () => iniciarTour(id);
-    return b;
-  }));
+  $('tourLista').replaceChildren(...Object.keys(ROTEIROS).map((id) => tourBotaoRoteiro(id)));
+  // Configurações › Ajuda: a mesma lista; fecha as configurações e começa no Início
+  $('tourListaAjuda').replaceChildren(...Object.keys(ROTEIROS).map((id) => tourBotaoRoteiro(id, () => { closeGeneralSettings(); iniciarTour(id); })));
   $('tourAbrir').onclick = () => setTourLista($('tourLista').hidden);
   document.addEventListener('pointerdown', (e) => { if (!$('tourLista').hidden && !e.target.closest('.tour-abrir-wrap')) setTourLista(false); });
   $('tourLista').addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.stopPropagation(); setTourLista(false); $('tourAbrir').focus(); } });

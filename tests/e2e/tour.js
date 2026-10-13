@@ -1,6 +1,7 @@
 // Passo a passo guiado (docs/spec/tour-entrar-na-sala.md), com um servidor do modo Internet local. Ana faz o roteiro
 // "Criar sala" de verdade; Bia faz "Entrar com código e senha" em ensaio (o Entrar não entra) e depois com o código da
-// Ana (entra de fato). Também: clique fora do alvo não chega no app, Esc sai, alvo que some oferece Recomeçar.
+// Ana (entra de fato). Davi passa pela primeira entrada e recebe a oferta (uma vez só) e abre um roteiro por
+// Configurações › Ajuda. Também: clique fora do alvo não chega no app, Esc sai, alvo que some oferece Recomeçar.
 const { openApp, check, sleep, run } = require('./ajuda');
 const { createInternetServer } = require('../../servidor-internet/server');
 
@@ -192,6 +193,31 @@ run('Passo a passo guiado', 240000, async () => {
     await C.eval(`document.querySelector('.dm-slot.open .dm-invite button').click()`);
     await C.waitFor(`tour.i === 5 && !$('room').hidden`, 15000).catch(() => {});
     check('Entrou na sala da Ana pelo convite', await C.eval(`state.cloud?.code === ${JSON.stringify(codigo)}`) && (await passo(C)) === 'convite:5');
+
+    // ---------- Primeira entrada (Davi): a oferta, uma vez, e Configurações › Ajuda ----------
+    const D = await openApp('tourD', 9794, { primeiraEntrada: true });
+    await D.eval(useInternet);
+    await D.eval(`(() => { $('obModeQuick').click(); $('obName').value = 'Davi'; $('obNext2').click(); })()`);
+    await sleep(400);
+    check('Fim da primeira entrada: a oferta com os quatro roteiros e Agora não', await D.eval(`$('onboarding').hidden && !$('tour').hidden && $('tour').classList.contains('final')
+      && $('tourConteudo').querySelectorAll('.tour-roteiro').length === 4 && $('tourConteudo').firstElementChild.dataset.roteiro === 'codigo'
+      && [...$('tourAcoes').children].some((b) => b.textContent === 'Agora não')`));
+    await D.shot('tour-oferta.png');
+    await D.eval(`$('tourConteudo').querySelector('[data-roteiro=codigo]').click()`);
+    await noPasso(D, 'codigo:0');
+    check('Escolher na oferta começa o roteiro', (await passo(D)) === 'codigo:0' && await anelEm(D, '#homeRede'));
+    await D.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
+    await sleep(200);
+    await D.eval(`(() => { abrirPrimeiraEntrada(3); $('obSkip').click(); })()`);
+    await sleep(300);
+    check('A oferta não aparece de novo', await D.eval(`$('tour').hidden && $('onboarding').hidden`));
+    await D.eval(`openGeneralSettings('help')`);
+    await sleep(300);
+    check('Configurações › Ajuda lista os quatro roteiros', await D.eval(`!$('settingsPanel-help').hidden && $('tourListaAjuda').querySelectorAll('.tour-roteiro').length === 4`));
+    await D.shot('tour-ajuda.png');
+    await D.eval(`$('tourListaAjuda').querySelector('[data-roteiro=host]').click()`);
+    await noPasso(D, 'host:0');
+    check('Escolher em Ajuda fecha as configurações e começa o roteiro', await D.eval(`$('generalSettingsDialog').hidden`) && (await passo(D)) === 'host:0' && await anelEm(D, '#goCreate'));
   } finally {
     await server.close?.();
   }

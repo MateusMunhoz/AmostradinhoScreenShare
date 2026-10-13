@@ -3,7 +3,7 @@
 // Mensagem, e "Abrir minha sala" em um clique. Plano e motivos: docs/auditoria-fluxo.md.
 // Script clássico: só declara; quem liga é renderer/inicio.js (setupPrimeiraEntrada). Usa: util, conectividade
 // (razzeUser, refreshRazzeState), hub (friendsData, hubAvatar, openFriendsDialog), chamada (ligarPara, novaSenhaSala),
-// mensagens (openDm), fotos (setMyPhoto), sala (createRoom), conta (atvLigada, atvAgendar).
+// mensagens (openDm), fotos (setMyPhoto), sala (createRoom), conta (atvLigada, atvAgendar), tour (oferecerTour).
 
 const entrada = { passo: 1, modo: '', registrar: false, ocupado: false, troca: false };
 
@@ -39,6 +39,8 @@ async function trocarDeConta() {
 }
 
 function fecharPrimeiraEntrada() {
+  // A primeira vez de verdade (não Trocar de conta, nem o "Entrar" do Início de quem já passou por aqui)
+  const primeiraVez = !entrada.troca && load('primeiraEntrada') !== '1';
   if (entrada.troca) {
     entrada.troca = false;
     $('obBack3').hidden = $('obDots').hidden = false;
@@ -49,6 +51,8 @@ function fecharPrimeiraEntrada() {
   renderHomeAmigos();
   void retomarConviteAmigo();
   if (!$('home').hidden) $('goQuick').focus();
+  // A oferta do passo a passo (tour.js), uma vez; com um convite de amigo esperando, a pergunta dele vem antes e a oferta fica para o Início
+  if (primeiraVez && !$('home').hidden && !load('amigoPendente', '')) oferecerTour();
 }
 
 function entradaEscolher(modo) {

@@ -864,6 +864,7 @@
           <button type="button" data-group="rede">Rede<small>Conexão · Servidores · Redes Razze</small></button>
           <button type="button" data-group="extras">Recursos extras<small>Comando de voz</small></button>
           <button type="button" data-group="stats">Estatísticas<small>Desempenho · Transmissão</small></button>
+          <button type="button" data-group="ajuda">Ajuda<small>Passo a passo</small></button>
         </nav>
         <div class="settings-main">
         <p class="hint" id="settingsSaveStatus" role="status">Salvo neste dispositivo. As escolhas continuam ao reabrir o app.</p>
@@ -881,6 +882,7 @@
           <button id="settingsTab-extras" type="button" role="tab" data-group="extras" data-tab="extras" aria-controls="settingsPanel-extras">Recursos extras</button>
           <button id="statsTabPerf" type="button" role="tab" data-group="stats" data-tab="perf" data-panel="stats" aria-controls="settingsPanel-stats">Desempenho</button>
           <button id="statsTabStream" type="button" role="tab" data-group="stats" data-tab="stream" data-panel="stats" aria-controls="settingsPanel-stats">Transmissão</button>
+          <button id="settingsTab-help" type="button" role="tab" data-group="ajuda" data-tab="help" aria-controls="settingsPanel-help">Passo a passo</button>
         </div>
         <section id="settingsPanel-voice" class="settings-section voice-dialog" role="tabpanel" aria-labelledby="settingsTab-voice" hidden>
           <section class="vd-section">
@@ -1238,6 +1240,12 @@
             <label class="check-line"><input type="checkbox" id="atvSalaEntrar" aria-describedby="atvSalaEntrarHint"><span>Deixar meus amigos entrarem na sala em que estou</span></label>
             <p id="atvSalaEntrarHint" class="hint">Ligado por padrão. Nas salas pela internet, os amigos veem um Entrar e entram sem senha (se quem hospeda deixar). Desligado, eles continuam vendo em que sala você está, sem o Entrar.</p>
           </div>
+        </section>
+        <!-- Ajuda: os roteiros do passo a passo guiado (renderer/tour.js), os mesmos do "Como entrar numa sala?" do Início -->
+        <section id="settingsPanel-help" class="settings-section" role="tabpanel" aria-labelledby="settingsTab-help" hidden>
+          <h3>Passo a passo</h3>
+          <p class="hint">O app te guia na própria tela: acende o botão certo e segue quando você clica. Esc ou Sair do passo a passo para a qualquer hora.</p>
+          <div id="tourListaAjuda" class="tour-lista-ajuda" role="group" aria-label="Roteiros do passo a passo"></div>
         </section>
         <!-- Recursos extras: só funcionam para quem liga; nada é baixado antes (renderer/comando-voz.js) -->
         <section id="settingsPanel-extras" class="settings-section extras-panel" role="tabpanel" aria-labelledby="settingsTab-extras" hidden>
