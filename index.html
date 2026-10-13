@@ -58,6 +58,8 @@
       <!-- Chat por cima do jogo (renderer/overlay.js): só na sala -->
       <button id="overlayToggle" type="button" class="workspace-tab rail-overlay" aria-pressed="false"></button>
       <button id="navGamer" type="button" class="workspace-tab rail-gamer" aria-label="Modo gamer" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 11h4M8 9v4M15 12h.01M18 10h.01M17.3 5H6.7a4 4 0 0 0-4 3.6l-.9 7.8A2.5 2.5 0 0 0 6.2 18l1.6-1.6a2 2 0 0 1 1.4-.4h5.6a2 2 0 0 1 1.4.4l1.6 1.6a2.5 2.5 0 0 0 4.4-1.6l-.9-7.8a4 4 0 0 0-4-3.6z"/></svg></button>
+      <!-- Apoiar com Pix (renderer/apoio.js): só aparece com a chave Pix preenchida -->
+      <button id="navApoio" type="button" class="workspace-tab rail-apoio" aria-label="Apoiar o Nebula" title="Apoiar o Nebula" aria-haspopup="dialog" aria-expanded="false" aria-controls="apoioDialog" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21.2l7.8-7.7 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></svg></button>
       <!-- Feedback e bugs (renderer/feedback.js): abre a janela de perguntas, que vai para a RazzeAPI -->
       <button id="navFeedback" type="button" class="workspace-tab" aria-label="Feedback e bugs" title="Feedback e bugs" aria-haspopup="dialog" aria-expanded="false" aria-controls="feedbackDialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M12 7v4M12 14h.01"/></svg></button>
       <button id="navSettings" type="button" class="workspace-tab settings-tab" aria-label="Configurações" title="Configurações" aria-haspopup="dialog" aria-expanded="false" aria-controls="generalSettingsDialog"><span class="nav-icon" aria-hidden="true"></span></button>
@@ -360,6 +362,11 @@
         </div>
         <!-- Topo do Início (docs/spec/inicio-novo.md): a versão nova, quando tem, e a rede em uso, sempre à vista -->
         <div class="home-top-acoes">
+          <!-- Apoiar com Pix (renderer/apoio.js): sempre à vista quando a chave Pix está preenchida -->
+          <button class="home-apoio" id="homeApoio" type="button" aria-haspopup="dialog" aria-controls="apoioDialog" title="Apoiar o Nebula com Pix" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21.2l7.8-7.7 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></svg>
+            <span>Apoiar</span>
+          </button>
           <span class="home-pop-wrap">
             <button class="home-versao-nova" id="homeVersaoNova" type="button" aria-label="Nova versão: ver e atualizar" title="Nova versão: ver e atualizar" aria-expanded="false" aria-controls="homeVersaoPainel" hidden>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>
@@ -1397,6 +1404,31 @@
     </div>
   </div>
 
+  <!-- Apoiar com Pix (renderer/apoio.js): QR, Pix copia e cola e a chave. Nada passa pelo app -->
+  <div id="apoioDialog" class="modal global utility-popup" hidden>
+    <div class="dialog apoio-dialog" role="dialog" aria-modal="true" aria-labelledby="apoioTitle" aria-describedby="apoioSub">
+      <div class="dialog-head">
+        <div><h2 id="apoioTitle">Apoie o Nebula</h2><p class="hint" id="apoioSub">Transmitir, a voz e a conexão pelo servidor continuam de graça para todo mundo. O apoio ajuda a pagar o servidor e o tempo da equipe.</p></div>
+        <button id="apoioClose" class="btn icon" type="button"></button>
+      </div>
+      <div id="apoioValores" class="apoio-valores" role="group" aria-label="Valor"></div>
+      <div class="apoio-corpo">
+        <div id="apoioQr" class="apoio-qr"></div>
+        <div class="apoio-info">
+          <p class="apoio-passos">Abra o app do seu banco, escolha <strong>Pix › Ler QR code</strong> ou <strong>Pix copia e cola</strong>.</p>
+          <span class="hint" id="apoioValorHint"></span>
+          <label class="field"><span>Pix copia e cola</span><input id="apoioCodigo" class="mono" readonly spellcheck="false"></label>
+          <button id="apoioCopiar" class="btn primary" type="button">Copiar código Pix</button>
+          <div class="apoio-chave">
+            <span class="hint">Chave aleatória · <span id="apoioNome"></span></span>
+            <code id="apoioChave" class="mono"></code>
+            <button id="apoioCopiarChave" class="link-btn" type="button">Copiar chave</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Feedback e bugs (renderer/feedback.js): três abas de perguntas curtas; vai para a RazzeAPI (POST /v1/feedback) -->
   <div id="feedbackDialog" class="modal global utility-popup" hidden>
     <form class="dialog fb-dialog" id="feedbackForm" role="dialog" aria-modal="true" aria-labelledby="feedbackTitle" novalidate>
@@ -1583,6 +1615,7 @@
   <script src="renderer/conta-seguranca.js"></script>
   <script src="renderer/admin.js"></script>
   <script src="renderer/feedback.js"></script>
+  <script src="renderer/apoio.js"></script>
   <script src="renderer/recorte.js"></script>
   <script src="renderer/navegacao.js"></script>
   <script src="renderer/tour.js"></script>

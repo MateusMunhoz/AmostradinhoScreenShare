@@ -85,7 +85,7 @@ Tudo o que dá para fazer no Nebula, com os detalhes. Para começar do zero, vej
   o aviso laranja **Você está falando com o microfone desligado**, com **Ligar**. Ele some uns 3 s depois que você
   para de falar.
 - **Perfil de alguém:** o mesmo cartão em todo lugar (Pessoas da sala, voz em lista e voz no mapa): fundo, foto, nome, onde a pessoa está, as ações (assistir, adicionar como amigo, mandar mensagem para amigos, silenciar e mudar de canal na voz) e o volume.
-- **Barrinha da direita:** em cima, o perfil; no pé, **Início** (vai para o saguão sem sair da sala), **Convidar** (copia o endereço ou o código da sala), o **chat por cima do jogo**, o **modo gamer** (o controle), **Feedback e bugs** (o balão com exclamação), a engrenagem e, por último, depois de uma linha, **Sair** em vermelho (para o host sozinho, **Encerrar**). Convidar e Sair só aparecem numa sala. No saguão, com a sala aberta, o pé mostra **Voltar para a sala** no lugar do Início, com o número de mensagens novas; sair por ali, sendo o host com gente na sala, volta para a sala para perguntar se passa a sala adiante.
+- **Barrinha da direita:** em cima, o perfil; no pé, **Início** (vai para o saguão sem sair da sala), **Convidar** (copia o endereço ou o código da sala), o **chat por cima do jogo**, o **modo gamer** (o controle), **Apoiar** (o coração), **Feedback e bugs** (o balão com exclamação), a engrenagem e, por último, depois de uma linha, **Sair** em vermelho (para o host sozinho, **Encerrar**). Convidar e Sair só aparecem numa sala. No saguão, com a sala aberta, o pé mostra **Voltar para a sala** no lugar do Início, com o número de mensagens novas; sair por ali, sendo o host com gente na sala, volta para a sala para perguntar se passa a sala adiante.
 
 ### Como os PCs se conectam
 
@@ -452,6 +452,10 @@ O balão com exclamação na barrinha da direita, logo acima da engrenagem, abre
 - **Avaliar o app:** a nota de 0 a 10 (quanto você indicaria para um amigo), o que você mais usa, o que mais gosta e o que mais incomoda.
 
 No rodapé, **Enviar dados técnicos** (marcado) manda a versão do app, o sistema, o tema e se você estava numa sala; **Pode me chamar para tirar dúvidas** avisa o administrador que ele pode falar com você sobre isso. Clicar de novo numa opção marcada desmarca. Dá para mandar até 5 por hora. Quem lê é o administrador, na aba **Feedback** da Administração.
+
+## Apoiar o Nebula
+
+O coração na barrinha e o botão **Apoiar** no topo do Início abrem a janela de apoio com Pix: escolha um valor (R$ 5, 10, 20 ou 50) ou **Outro** (você digita o valor no banco), e leia o QR code no app do banco ou use **Copiar código Pix** em **Pix copia e cola**. Antes de confirmar, o banco mostra quem recebe: confira se é **CRISTIAN D VILELA**. É opcional: transmitir, a voz e a conexão pelo servidor continuam de graça. O Pix vai direto do seu banco para a conta, sem passar pelo app.
 
 ## Atividade no perfil
 
