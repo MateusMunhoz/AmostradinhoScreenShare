@@ -288,14 +288,18 @@ Clique em **Entrar na voz**, na barra de baixo, para ligar o microfone padrão d
 - **Quem está transmitindo**, no perfil, ganha um anel azul e o selo **Ao vivo** na foto, e uma barra no pé do perfil
   ("Rafa está transmitindo") com o botão **Assistir** (ou **Parar**, se você já está assistindo).
 - **Quem está falando** ganha 3 barrinhas verdes que mexem ao lado do nome, sem texto. Isso aparece na lista de pessoas, na tela dessa pessoa (a borda pisca em verde), nas janelas flutuantes e no chat por cima do jogo. Microfone desligado aparece com um ícone laranja.
-- **Volume de cada pessoa:** o botão de volume ao lado do nome abre um cartão com:
-  - **Voz** (0 a 200%, para ouvir quem tem o microfone baixo);
-  - **Som da transmissão** (0 a 100%, começa em 0%);
-  - **Silenciar para mim** e **Voltar ao padrão** (voz em 100% e a transmissão sem som).
+- **Volume de cada pessoa:** o botão de volume ao lado do nome é uma pílula: só o alto-falante, com contorno na cor
+  de destaque quando o volume mudou (o valor só aparece no cartão, nunca na lista), e **Mudo** quando você silenciou a pessoa. Clicar abre um cartão no
+  desenho do perfil: em cima, o fundo do perfil (ou a cor da pessoa) com a foto e a amizade no canto; o nome, com a
+  conta embaixo, e onde ela está; e o volume:
+  - **Voz** (0 a 200%, com uma marca no 100%), com o alto-falante redondo de **Silenciar para mim** ao lado;
+  - **Som da transmissão** (0 a 100%, começa em 0%), quando você assiste;
+  - **Voltar a 100%** (ou **Voltar ao padrão**), que só aparece quando algo mudou.
 
-  Só muda o que você ouve. O botão mostra o valor quando não está no padrão. O app lembra o volume de cada pessoa para a próxima sala: pela conta Razze dela (vale mesmo se ela trocar o nome na sala ou o nick da conta); sem conta, pelo nome da sala.
-- **Painel recolhido:** na barra de baixo, ao lado de **Entrar na voz**, ficam até três fotos de quem está na voz (quem fala acende em verde) e quantos são ("6 na voz"). Clicar abre uma lista para cima com cada pessoa (clicar nela abre o volume; a roda do mouse em cima também muda), **Entrar na voz** (se você está fora) e **Abrir o painel da voz**. Esc ou um clique fora fecha.
-- **Roda do mouse:** em cima do nome na barra da voz ou do botão de volume na lista, muda a voz da pessoa (ou o som da tela, se ela não estiver na voz), de 5 em 5%. Em cima da tela da pessoa ou da janela flutuante (no modo de ajuste), muda o som da tela. Um balãozinho mostra o valor.
+  No pé, **Mandar mensagem** (para amigos) e o botão que abre o perfil inteiro. Só muda o que você ouve ("Só para
+  você"). O volume só muda com esse cartão aberto: a roda do mouse no botão ou no nome não mexe nele. O app lembra o volume de cada pessoa para a próxima sala: pela conta Razze dela (vale mesmo se ela trocar o nome na sala ou o nick da conta); sem conta, pelo nome da sala.
+- **Painel recolhido:** na barra de baixo, ao lado de **Entrar na voz**, ficam até três fotos de quem está na voz (quem fala acende em verde) e quantos são ("6 na voz"). Clicar abre uma lista para cima com cada pessoa (clicar nela abre o perfil, com o volume), **Entrar na voz** (se você está fora) e **Abrir o painel da voz**. Esc ou um clique fora fecha.
+- **Roda do mouse:** em cima do controle do cartão de volume, muda de 5 em 5%. Em cima da tela da pessoa ou da janela flutuante (no modo de ajuste), muda o som da tela, com um balãozinho mostrando o valor. A voz de alguém só muda com o cartão aberto.
 - **Sons da voz:** dois tons subindo quando alguém entra na voz (ou você), dois descendo quando sai, e um toque curto quando você muta ou desmuta o microfone. Os de quem entra e sai só tocam enquanto você está na voz; quem muta do outro lado e o apertar para falar não tocam. O som e o volume de cada um ficam em **Configurações** (a engrenagem no topo).
 - **Microfone negado:** se o Windows negar o microfone, permita o acesso para aplicativos de desktop nas configurações de privacidade.
 - **Voz e transmissão juntas:** se a captura que exclui o som do app falhar durante a conversa, a tela é transmitida sem áudio do PC, para não retransmitir as vozes. Se uma transmissão já estiver capturando todo o som do PC, pare, entre na voz e recomece a transmissão.
@@ -388,7 +392,7 @@ Na primeira vez que o app abre, uma tela de cada vez (três no máximo):
 
 Quem já usava o app não vê essa tela. Quem escolheu *Com amigos* e ainda não entrou vê no Início uma faixa **Entrar na conta**.
 
-No **Início**, com conta, a coluna da direita mostra **Amigos online** (até 5, com **Mensagem** e **Ligar** em ícones), **Convidar** (um menu com **Copiar meu link** e **Adicionar amigo**) e **Ver todos** (abre **Adicionar amigo** no envelope).
+No **Início**, com conta, a coluna da direita mostra **Amigos online** (até 5, com o envelope de convidar para a sala, **Mensagem** e **Ligar** em ícones; com mais de 5, **Ver todos os N online** mostra a lista inteira ali mesmo, e **Mostrar menos** volta), **Convidar** (um menu com **Copiar meu link** e **Adicionar amigo**) e **Ver todos** (abre **Adicionar amigo** no envelope).
 Cada amigo mostra em etiquetas onde está, o jogo e a música (clique na música para ver a faixa). Passando o mouse na linha
 aparece **Chamar para minha sala**: manda o convite da sala em que você está pelas mensagens; fora de sala, abre a sua antes.
 
@@ -497,8 +501,8 @@ sobe o painel **Adicionar amigo** por cima das conversas, com três abas: **Rece
 O **balão** ao lado do nome abre a conversa.
 
 - **Adicionar:** no campo do alto do painel, digite o **identificador** completo (`nome#1234`; maiúsculas não importam) e **Enviar** (ou Enter). Só o nome, sem o `#` e o número, não vale: peça o identificador completo. Se der errado, o motivo aparece embaixo do campo. Quando der certo, o pedido vai para **Enviados**; os pedidos mostram o identificador de quem pediu, para conferir antes de aceitar.
-- **Copiar meu identificador:** no painel **Adicionar amigo** ou no Início (**Convidar › Copiar meu identificador**), para mandar a quem quer te adicionar.
-- **Copiar meu link:** no Início (**Copiar meu link**) ou no painel **Adicionar amigo** (**Copiar meu link de convite**). O app
+- **Copiar meu identificador:** no painel **Adicionar amigo** (**Copiar ID**, ao lado de **Copiar link**) ou no Início (**Convidar › Copiar meu identificador**), para mandar a quem quer te adicionar.
+- **Copiar meu link:** no Início (**Copiar meu link**) ou no painel **Adicionar amigo** (**Copiar link**). O app
   copia uma mensagem pronta com o link e o código curto e avisa até quando vale (7 dias, 1 pessoa; até 5 links ativos).
   Os links ativos aparecem no painel Adicionar amigo, cada um com **Revogar**.
 - **Convite por link:** quem recebe o link (`https://…/a/…`, ou o `telap2p://amigo/…`) abre o app, vê "**Fulano quer ser
@@ -558,7 +562,7 @@ O **telefone** no chip da conversa (ou ao lado do nome, na aba **Amigos** de **A
 - **App antigo:** vê o convite comum, e o texto da mensagem traz o código ou o endereço e a senha.
 
 - **Abrir:** clique no **envelope**, no começo da barra de baixo: o painel abre para cima com quem está online, a busca e as conversas (a última mensagem e as não lidas). Ou clique na foto de um amigo em **Online agora**.
-- **Barra de conversas:** fica embaixo da tela. Cada conversa aberta vira um chip: a foto da pessoa (a inicial na cor dela), com a bolinha verde quando está online, o número de não lidas no canto e apagada quando está offline. Com o mouse em cima, um balão mostra o nome, o **telefone** e o **X**. Clicar no chip abre a janela (aí o nome e os botões ficam na barra dela); o **—** minimiza de volta para o chip; o **X** tira da barra.
+- **Barra de conversas:** fica embaixo da tela. Cada conversa aberta vira um chip: a foto da pessoa (a inicial na cor dela), com a bolinha verde quando está online, o número de não lidas no canto e apagada quando está offline. Com o mouse em cima, um balão mostra o nome, o **telefone** e o **X**. Clicar no chip abre a janela, presa ao envelope e descendo até o pé da tela (uma por vez: clicar em outra conversa troca o conteúdo no mesmo lugar): o nome e os botões ficam no topo dela e a conversa ocupa o resto, sem moldura; o **—** minimiza de volta para o chip; o **X** tira da barra.
 - **Muitas conversas:** as que não cabem na largura vão para o **+N** no canto direito (fica destacado se alguma tem mensagem não lida). Clicar nele lista as escondidas; escolher uma traz ela de volta para a barra.
 - **Ordem:** arraste um chip para a esquerda ou para a direita de outro (ou **Alt+←** / **Alt+→** com ele selecionado). A ordem fica salva.
 - **Histórico:** fica salvo neste PC, um arquivo por amigo. Fechar a conversa no X não apaga nada: ao abrir de novo, tudo volta.
