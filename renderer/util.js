@@ -61,6 +61,7 @@ const ICON = {
   refresh: svg('M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6'),
   reset: svg('M3 12a9 9 0 1 0 2.64-6.36M3 3v6h6'), // seta voltando: voltar ao padrão
   info: svg('M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 16v-5M12 8h.01'),
+  envelope: svg('M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM3 7l9 6 9-6'), // carta: convite para a sala
   userPlus: svg('M15 20a6 6 0 0 0-12 0M9 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M16 11h6'),
   userMinus: svg('M15 20a6 6 0 0 0-12 0M9 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM16 11h6'),
   more: svg('M5 12h.01M12 12h.01M19 12h.01'), // "⋯": três pontos (traço redondo)

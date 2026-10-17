@@ -324,8 +324,10 @@
           </div>
           <p id="friendsAddHint" class="hub-add-hint">Identificador (ex.: lucas#0420), link ou código de convite (ABCD-EFGH-JK).</p>
           <div class="hub-add-link">
-            <button id="friendsLinkCopy" class="btn small hub-link-copy" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/></svg>Copiar meu link de convite</button>
-            <button id="friendsIdCopy" class="btn small hub-link-copy" type="button">Copiar meu identificador</button>
+            <div class="hub-copy-row">
+              <button id="friendsLinkCopy" class="btn small hub-link-copy" type="button" title="Copiar meu link de convite: quem abrir vira seu amigo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/></svg>Copiar link</button>
+              <button id="friendsIdCopy" class="btn small hub-link-copy" type="button" title="Copiar meu identificador (nome#1234), para quem quer te adicionar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 9h11v11H9zM5 15H4V4h11v1"/></svg>Copiar ID</button>
+            </div>
             <ul id="friendsLinks" class="hub-links" aria-label="Seus links de convite ativos"></ul>
           </div>
         </div>
@@ -528,6 +530,8 @@
             </div>
             <ul id="homeFriendsList" class="home-friends-list"></ul>
             <p id="homeFriendsEmpty" class="hint"></p>
+            <!-- Mais de 5 online: mostra todos ali mesmo (e volta para 5) -->
+            <button class="link-btn home-friends-mais" id="homeFriendsMais" type="button" aria-controls="homeFriendsList" aria-expanded="false" hidden></button>
           </section>
           <!-- Depois de atualizar: o primeiro item da versão; "Ver todas" abre a lista completa (renderer/atualizacao.js) -->
           <section id="homeNovo" class="home-novo" aria-labelledby="homeNovoTitulo" hidden>

@@ -17,7 +17,7 @@ run('Nomes no perfil: o da sala e o da conta', 90000, async () => {
   await B.eval(`openPersonCard('${idA}', document.querySelector('#room') || document.body)`);
   await sleep(400);
   const texto = await B.eval(`$('personCard').innerText`);
-  check('O perfil mostra o nome da sala e o da conta', texto.includes('Na sala') && texto.includes('Cris') && texto.includes('Nome da conta') && texto.includes('Naitsi') && texto.includes('informado pelo app da pessoa'), JSON.stringify(texto));
+  check('O perfil mostra o nome da sala e o da conta', texto.includes('Cris') && texto.includes('conta Naitsi') && (await B.eval(`$('personCard').querySelector('.pc-conta').title`)).includes('informado pelo app da pessoa'), JSON.stringify(texto));
   check('Adicionar usa o nome do servidor', await B.eval(`$('personCard').querySelector('.pc-friend').title`) === 'Adicionar Naitsi como amigo');
   await B.shot('nomes-perfil.png');
   // Volume: o de antes (pelo nome "Cris") vale e, ao mexer, passa a ficar pela conta

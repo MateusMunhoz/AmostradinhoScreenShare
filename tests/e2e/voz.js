@@ -44,10 +44,10 @@ run('Voz, volume e chat por cima do jogo', 150000, async () => {
   await B.eval(`(() => { const i = $('personCard').querySelector('input[type=range]'); i.value = '150'; i.dispatchEvent(new Event('input')); i.dispatchEvent(new Event('change')); })()`);
   await sleep(200);
   check('Voz da Ana em 150%: ganho 1,5 e salvo pelo nome', await B.eval(`Math.abs(mixer.nodes.get('${anaId}').gain.gain.value - 1.5) < 0.01 && JSON.parse(localStorage.getItem('volumes')).Ana.voice === 150`));
-  check('Botão mostra 150%', await B.eval(`${row}.querySelector('.vol-btn').textContent.includes('150%')`));
+  check('Botão não mostra o valor, só que mudou', await B.eval(`!${row}.querySelector('.vol-btn').textContent.includes('%') && ${row}.querySelector('.vol-btn').classList.contains('changed')`));
   await B.eval(`[...$('personCard').querySelectorAll('button')].find((b) => /^Silenciar .* para mim$/.test(b.getAttribute('aria-label') || '')).click()`);
   await sleep(200);
-  check('Silenciar para mim: ganho 0 e "mudo"', await B.eval(`mixer.nodes.get('${anaId}').gain.gain.value === 0 && ${row}.querySelector('.vol-btn').textContent.includes('mudo')`));
+  check('Silenciar para mim: ganho 0 e "mudo"', await B.eval(`mixer.nodes.get('${anaId}').gain.gain.value === 0 && /mudo/i.test(${row}.querySelector('.vol-btn').textContent)`));
   await B.eval(`[...$('personCard').querySelectorAll('button')].find((b) => (b.getAttribute('aria-label') || '').startsWith('Voltar ao padrão')).click()`);
   await sleep(200);
   check('Voltar ao padrão (voz em 100%)', await B.eval(`mixer.nodes.get('${anaId}').gain.gain.value === 1 && !localStorage.getItem('volumes').includes('Ana')`));
@@ -65,18 +65,22 @@ run('Voz, volume e chat por cima do jogo', 150000, async () => {
   check('Ana silenciada para mim: também não aparece falando', await B.eval(`!speaking.has('${anaId}')`));
   await B.eval(`setVol('${anaId}', { muted: false })`);
 
-  // Roda do mouse no botão de volume da lista: muda a voz (a Ana está na voz), de 5 em 5
+  // Roda do mouse: no botão de volume da lista não muda nada; no controle do cartão, de 5 em 5
   const wheel = (sel, dy) => `(() => { const el = ${sel}; const r = el.getBoundingClientRect(); el.dispatchEvent(new WheelEvent('wheel', { deltaY: ${dy}, clientX: r.x + 5, clientY: r.y + 5, bubbles: true, cancelable: true })); })()`;
   await B.eval(`$('peopleBtn').click()`);
   await B.eval(wheel(`${row}.querySelector('.vol-btn')`, -100));
-  await B.eval(wheel(`${row}.querySelector('.vol-btn')`, -100));
-  check('Roda para cima no volume da lista: voz 110%', await B.eval(`volOf('${anaId}').voice === 110 && Math.abs(mixer.nodes.get('${anaId}').gain.gain.value - 1.1) < 0.01`));
-  check('Balão mostra o volume novo', await B.eval(`$('volBubble')?.textContent === 'Voz de Ana: 110%' && $('volBubble').style.display === 'block'`));
-  await B.eval(wheel(`${row}.querySelector('.vol-btn')`, 30));
+  check('Roda no botão de volume da lista: a voz não muda', await B.eval(`volOf('${anaId}').voice === 100`));
+  await B.eval(`${row}.querySelector('.vol-btn').click()`);
+  await sleep(200);
+  const slider = `$('personCard').querySelector('input[type=range]')`;
+  await B.eval(wheel(slider, -100));
+  await B.eval(wheel(slider, -100));
+  check('Roda para cima no controle do cartão: voz 110%', await B.eval(`volOf('${anaId}').voice === 110 && Math.abs(mixer.nodes.get('${anaId}').gain.gain.value - 1.1) < 0.01`));
+  await B.eval(wheel(slider, 30));
   check('Touchpad: passos pequenos só contam somados', await B.eval(`volOf('${anaId}').voice === 110`));
-  await B.eval(wheel(`${row}.querySelector('.vol-btn')`, 70));
+  await B.eval(wheel(slider, 70));
   check('Somou um clique: 105%', await B.eval(`volOf('${anaId}').voice === 105`));
-  await B.eval(`(() => { setVol('${anaId}', { voice: 100 }); setPeopleOpen(false); })()`);
+  await B.eval(`(() => { setVol('${anaId}', { voice: 100 }); closePersonCard(); setPeopleOpen(false); })()`);
 
   // Sons de mutar: o seu toca; o de quem mutou do outro lado, não
   await B.eval(`cueLog.length = 0`);

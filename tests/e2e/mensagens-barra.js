@@ -79,10 +79,10 @@ run('Barra de mensagens abre para cima', 90000, async () => {
   await A.waitFor(`dm.bar.some((b) => b.id === '${BIA}' && b.open)`, 5000);
   check('Clicar na conversa abre a janela dela na barra e fecha a lista', await A.eval(`$('dmPanel').hidden && !document.querySelector('.dm-slot.open .dm-window').hidden && dm.convs.get('${BIA}').unread === 0`));
 
-  // Muitas conversas abertas: as que não cabem vão para o "+N", e nada passa da borda da janela
+  // Muitas conversas na barra (uma aberta por vez): as que não cabem vão para o "+N", e nada passa da borda da janela
   const ids = ['d', 'e', 'f', 'g', 'h'].map((ch) => ch.repeat(32));
   await A.eval(`(() => {
-    ['i', 'j'].forEach((ch, i) => { const id = ch.repeat(32); friendsData.friends.push({ id, displayName: 'Extra ' + (i + 1), online: false }); dmPutInBar(id, false); });
+    Array.from({ length: 30 }, (_, i) => 'x' + String(i).padStart(31, '0')).forEach((id, i) => { friendsData.friends.push({ id, displayName: 'Extra ' + (i + 1), online: false }); dmPutInBar(id, false); });
     ${JSON.stringify(ids)}.forEach((id, i) => { friendsData.friends.push({ id, displayName: 'Amigo ' + (i + 1), online: i % 2 === 0 }); dmPutInBar(id, i < 3); });
     dmConv('${'h'.repeat(32)}').unread = 3;
     renderDm();

@@ -248,6 +248,7 @@ button.home-acao { flex-direction: row; padding: 18px; border: 1px solid var(--l
 }
 .link-btn:disabled { color: var(--muted); cursor: default; text-decoration: none; }
 .link-btn:hover:not(:disabled) { color: var(--text); }
+.home-friends-mais { align-self: flex-start; margin-top: 4px; font-size: 13px; }
 
 /* Topo do Início (docs/spec/inicio-novo.md): a marca à esquerda; à direita, "Nova versão" (só com versão nova) e a rede
    em uso, sempre à vista. Cada um abre o seu painel logo abaixo (.home-pop), um de cada vez */
@@ -454,24 +455,27 @@ body:not(.workspace-in-room) #workspaceNav .rail-overlay { display: none; }
 .mic-off-icon { display: grid; place-items: center; color: var(--warn); }
 .mic-off-icon.jogo { color: var(--accent); } /* jogando (com música): o controle na fileira do microfone e do fone */
 .mic-off-icon svg, .vol-btn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-/* O volume pesa menos que Ver, Assistir e Parar: sem caixa, só o ícone e o valor (em destaque quando mudou) */
-.vol-btn { display: inline-flex; align-items: center; gap: 5px; padding: 0 6px; font-variant-numeric: tabular-nums; color: var(--muted);
-  border-color: transparent; background: transparent; }
+/* O volume pesa menos que Ver, Assistir e Parar: uma pílula sem caixa, só o ícone; contorno quando mudou (o valor só no cartão) */
+.vol-btn { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 8px; border-radius: 999px; font-variant-numeric: tabular-nums;
+  font-weight: 600; color: var(--muted); border-color: transparent; background: transparent; box-shadow: none; }
 .vol-btn:hover:not(:disabled) { border-color: transparent; background: var(--panel-2); color: var(--text); }
-.vol-btn.changed { color: var(--accent); }
+.vol-btn.changed { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.vol-btn.muted { padding: 0 10px; border-color: var(--line-strong); } /* silenciada é escolha sua: cinza, não laranja */
 .vol-btn[aria-expanded="true"] { background: var(--accent-soft); color: var(--accent); }
 
-/* Cartão da pessoa */
+/* Cartão da pessoa (o volume dela para você), no desenho do perfil da lista: a faixa com o fundo do perfil (ou a cor
+   da pessoa) e a foto encaixada nela; o nome com a conta embaixo; o volume numa linha; as ações no pé (voz.js › renderPersonCard) */
 .person-card {
-  position: fixed; z-index: 30; width: 300px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px;
-  padding: 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel-2); box-shadow: 0 12px 32px rgba(0, 0, 0, .5);
+  position: fixed; z-index: 30; width: 320px; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden;
+  padding: 0; border-radius: 12px; border: 1px solid var(--line); background: var(--panel-2); box-shadow: 0 12px 32px rgba(0, 0, 0, .5);
 }
-.person-card .pc-head { display: flex; align-items: center; gap: 12px; }
-.person-card .pc-head .avatar { width: 40px; height: 40px; font-size: 16px; background-color: var(--person); }
-/* Cartão da pessoa: foto grande no topo; com foto, clicar abre ela inteira */
-.person-card .pc-head .avatar.pc-photo { width: 72px; height: 72px; font-size: 28px; }
+.pc-banner { position: relative; flex: none; height: 64px; background: color-mix(in srgb, var(--person, var(--accent)) 35%, var(--sunken)); }
+.person-card.has-bg .pc-banner { background: var(--fundo) center / cover no-repeat, var(--sunken); }
+.pc-banner > .avatar, .pc-banner > .pc-photo-btn { position: absolute; left: 16px; bottom: -30px; }
+.person-card .avatar.pc-photo { width: 64px; height: 64px; font-size: 26px; background-color: var(--person); box-shadow: 0 0 0 4px var(--panel-2); }
+.person-card .avatar.pc-photo.speaking { box-shadow: 0 0 0 3px var(--panel-2), 0 0 0 5px var(--ok); }
 .pc-photo-btn { flex: none; padding: 0; border: 0; border-radius: 50%; background: none; cursor: zoom-in; }
-.pc-photo-btn:hover .avatar { filter: brightness(1.1); box-shadow: 0 0 0 3px var(--person); }
+.pc-photo-btn:hover .avatar { filter: brightness(1.1); }
 .pc-photo-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 /* Foto ou nome de outra pessoa: abre o perfil */
 [data-profile] { cursor: pointer; }
@@ -499,22 +503,53 @@ body:not(.workspace-in-room) #workspaceNav .rail-overlay { display: none; }
 .mention-item .avatar { width: 22px; height: 22px; font-size: 11px; }
 .mention-item.active, .mention-item:hover { background: var(--panel-3); }
 .mention-all { background: var(--accent) !important; color: var(--accent-ink) !important; }
-.person-card .pc-head div { display: flex; flex-direction: column; }
-.person-card .pc-head strong { font-size: 15px; }
-.person-card .pc-head span { font-size: 12px; color: var(--muted); }
-.person-card .pc-slider { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
-.person-card .pc-slider > span { display: flex; justify-content: space-between; }
-.person-card .pc-val { color: var(--muted); font-variant-numeric: tabular-nums; }
-.person-card input[type="range"] { accent-color: var(--person); }
-.person-card .pc-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-/* Adicionar amigo: no canto do cabeçalho; já amigos ou pedido enviado, só informa. O "i" fica no fim da linha */
-.person-card .pc-friend { margin-left: auto; align-self: flex-start; }
+/* Amizade: no canto da faixa; já amigos ou pedido enviado, só informa */
+.person-card .pc-friend { position: absolute; top: 10px; right: 10px; width: 32px; height: 32px; padding: 0; border-radius: 50%; border-color: transparent;
+  background: color-mix(in srgb, var(--panel) 70%, transparent); box-shadow: none; }
 .person-card .pc-friend.done { color: var(--ok); cursor: default; }
 .person-card .pc-friend.accent { border-color: var(--accent); color: var(--accent); }
-.person-card .pc-info { margin-left: auto; color: var(--muted); cursor: help; }
-.person-card .pc-info:hover { color: var(--text); }
-.person-card .warn-on { border-color: var(--warn); color: var(--warn); background: rgba(224, 185, 106, .12); }
-.person-card .hint { margin: 0; font-size: 12px; line-height: 1.45; }
+.pc-head { display: flex; align-items: flex-end; gap: 8px; padding: 38px 16px 0; }
+.pc-who { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.pc-who strong { font-size: 16px; font-weight: 700; overflow-wrap: anywhere; }
+.pc-conta { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pc-where { flex: none; margin-bottom: 2px; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 11px; font-weight: 600; }
+.pc-where.off { background: color-mix(in srgb, var(--text) 8%, transparent); color: var(--muted); }
+.pc-vol { display: flex; flex-direction: column; gap: 8px; margin: 14px 16px 0; padding: 12px 0 14px; border-top: 1px solid var(--line); }
+.pc-slider { display: flex; align-items: center; gap: 10px; }
+.pc-round { flex: none; display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 1px solid var(--line); border-radius: 50%;
+  background: var(--panel); box-shadow: var(--lift); color: var(--text); cursor: pointer; }
+.pc-round:hover { background: var(--panel-3); }
+.pc-round:focus-visible, .pc-reset:focus-visible, .pc-act-main:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.pc-round[aria-pressed=true] { color: var(--warn); border-color: var(--warn); }
+.pc-lead { flex: none; display: grid; place-items: center; width: 36px; color: var(--muted); }
+:is(.pc-round, .pc-lead, .pc-reset, .pc-act-main) svg { flex: none; width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.pc-reset svg { width: 13px; height: 13px; }
+/* O controle: a parte cheia na cor de destaque; na voz, uma marca no meio (100%, o padrão) */
+.pc-track { position: relative; flex: 1; min-width: 0; display: flex; }
+.pc-track.notch::after { content: ""; position: absolute; left: 50%; top: 50%; width: 2px; height: 14px; translate: -50% -50%; border-radius: 1px;
+  background: var(--muted); opacity: .6; pointer-events: none; }
+.pc-track input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 22px; margin: 0; background: transparent; cursor: pointer; }
+.pc-track input[type="range"]::-webkit-slider-runnable-track { height: 6px; border-radius: 3px;
+  background: linear-gradient(var(--accent), var(--accent)) 0 0 / var(--fill, 50%) 100% no-repeat, var(--panel-3); }
+.pc-track input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; margin-top: -5px; border-radius: 50%;
+  background: var(--text); box-shadow: 0 0 0 4px var(--accent-soft); }
+.pc-track input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 4px; }
+.person-card.is-muted .pc-track input[type="range"] { opacity: .45; }
+.pc-val { flex: none; width: 44px; text-align: right; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); }
+.pc-val.changed { color: var(--accent); }
+.pc-val.off { color: var(--muted); font-weight: 600; }
+.pc-vol-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 26px; padding-left: 46px; }
+.pc-only { font-size: 11px; color: var(--muted); cursor: help; }
+.pc-reset { display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 9px; border: 1px solid var(--line); border-radius: 999px;
+  background: transparent; color: var(--text); font: inherit; font-size: 12px; cursor: pointer; }
+.pc-reset:hover { background: var(--panel-3); }
+.person-card .hint { flex: 1; margin: 0; font-size: 12px; line-height: 1.45; color: var(--muted); }
+.pc-actions { display: flex; gap: 8px; padding: 0 16px 16px; }
+.pc-actions .pc-round { width: 38px; height: 38px; margin-left: auto; }
+.pc-act-main { flex: 1; min-width: 0; height: 38px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--primary);
+  border-radius: 999px; background: var(--primary); color: var(--primary-ink); font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3); }
+.pc-act-main:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
 .dock-share { display: inline-flex; align-items: center; gap: 8px; height: 40px; }
 
 /* Faixa da chamada no saguão (você saiu da tela da sala pelo Início, mas continua nela) */
@@ -1994,7 +2029,8 @@ html[data-glass=liquid] .theme-swatches { border-radius: 10px; }
 .voice-vazio > button:hover { background: var(--panel-2); color: var(--accent); }
 #voicePaneMembers .member.in-voice { cursor: pointer; border-radius: 6px; }
 #voicePaneMembers .member.in-voice:not(.in-channel) { padding-inline: 6px; }
-#voicePaneMembers .member.in-voice:hover { background: var(--panel-2); }
+/* Em cima do botão de volume, só ele acende (a linha, que abre o perfil, fica parada) */
+#voicePaneMembers .member.in-voice:hover:not(:has(.vol-btn:hover)) { background: var(--panel-2); }
 /* Microfone e fone desligados no fim da linha: na mesma coluna do botão de música do canal (26 px, 6 px da borda) */
 #voicePaneMembers .member.in-voice { padding-right: 6px; }
 #voicePaneMembers .member .mic-off-icon { flex: none; width: 26px; height: 26px; }
@@ -2020,7 +2056,7 @@ html[data-glass=liquid] .theme-swatches { border-radius: 10px; }
 .workspace-in-room.has-workspace-pane:not(.workspace-wide) .dm-bar { right: calc(var(--rail-w) + var(--workspace-width)); }
 .dm-bar { --text: var(--surface-text); --muted: var(--surface-muted); position: fixed; left: 0; right: var(--rail-w); bottom: 0; z-index: 12; height: var(--dm-h);
   display: flex; align-items: stretch; gap: 6px; padding: 0 10px 0 0; background: var(--panel); border-top: 1px solid var(--line); color: var(--text); }
-.dm-bar-label { position: relative; flex: none; display: inline-flex; align-items: center; justify-content: center; width: 44px; padding: 0; border: 0; border-right: 1px solid var(--line); background: transparent;
+.dm-bar-label { position: relative; flex: none; display: inline-flex; align-items: center; justify-content: center; width: 44px; padding: 0; border: 0; background: transparent;
   color: var(--muted); font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
 .dm-bar-label svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .dm-bar-label .hub-badge { position: absolute; top: 2px; right: 2px; min-width: 15px; height: 15px; padding: 0 4px; font-size: 9.5px; pointer-events: none; }
@@ -2070,7 +2106,11 @@ html[data-glass=liquid] .theme-swatches { border-radius: 10px; }
 .dm-add-row .btn { flex: none; height: 36px; }
 .dm-add-row .btn:disabled { opacity: .5; cursor: default; }
 /* Copiar meu link: botão secundário à esquerda, com ícone */
-.hub-add-link .hub-link-copy { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line-strong); background: transparent; }
+/* Copiar link e Copiar ID lado a lado, dividindo a largura; se o texto não couber (fonte maior), o segundo desce
+   para a linha de baixo em vez de cortar */
+.hub-copy-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.hub-copy-row .hub-link-copy { flex: 1 1 auto; justify-content: center; white-space: nowrap; }
+.hub-add-link .hub-link-copy { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line-strong); background: transparent; }
 .hub-link-copy svg { width: 15px; height: 15px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 /* Lista vazia: some e o aviso fica logo embaixo das abas */
 .dm-add-sheet .hub-friend-list:empty { display: none; }
@@ -2094,18 +2134,22 @@ html[data-glass=liquid] .theme-swatches { border-radius: 10px; }
 .dm-bar-hint strong { color: var(--text); font-weight: 600; }
 .dm-bar-hint .hub-badge { margin-left: 8px; }
 .dm-bar-hint[hidden] { display: none; }
-/* Cada conversa fechada é só a foto (34 px); aberta, a vaga cresce para a janela e a barra dela */
+/* Cada conversa fechada é só a foto (34 px). Só uma abre por vez, presa ao envelope (44 px): a janela desce até o pé
+   da barra, com o nome e os botões no topo; a vaga dela some e as outras fotos vão para depois da janela */
 .dm-slots { display: flex; align-items: stretch; gap: 6px; min-width: 0; }
 .dm-slot { position: relative; flex: 0 0 34px; display: flex; }
-.dm-slot.open { flex: 0 0 340px; }
+.dm-bar { --dm-win-h: min(460px, calc(100vh - 180px)); }
+.dm-slots:has(> .dm-slot.open:not([hidden])) { padding-left: 334px; } /* 340 da janela, menos o vão de 6 depois do envelope */
+.dm-slot.open { position: static; flex: 0 0 0; margin-right: -6px; }
 .dm-chip { position: relative; flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; cursor: pointer; user-select: none; }
 .dm-chip:focus-visible { outline: none; }
-.dm-slot.open .dm-chip { justify-content: flex-start; padding: 0 4px 0 10px; border-left: 1px solid var(--line); border-right: 1px solid var(--line);
-  background: var(--panel); box-shadow: inset 0 2px 0 var(--accent); }
+.dm-slot.open .dm-chip { position: absolute; z-index: 1; left: 44px; width: 340px; top: calc(-1 * var(--dm-win-h)); height: 44px; box-sizing: border-box; justify-content: flex-start;
+  padding: 0 6px 0 12px; border-bottom: 1px solid var(--line); border-radius: 10px 10px 0 0; box-shadow: inset 0 2px 0 var(--accent); }
 /* A foto: a inicial na cor da pessoa; status no canto de baixo, não lidas no de cima. Offline fica apagada */
 .dm-av { position: relative; flex: none; display: grid; }
 .dm-av .avatar { width: 26px; height: 26px; font-size: 11px; font-weight: 700; background-color: var(--person, var(--primary)); color: var(--bg); transition: box-shadow .15s; }
-.dm-slot.open .dm-av .avatar { width: 22px; height: 22px; font-size: 10px; }
+.dm-slot.open .dm-av .avatar { width: 26px; height: 26px; font-size: 11px; }
+.dm-slot.open .dm-name { font-weight: 600; }
 .dm-chip:hover .dm-av .avatar, .dm-chip:focus-visible .dm-av .avatar { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--line-strong); }
 .dm-slot.open .dm-chip .dm-av .avatar { box-shadow: none; }
 .dm-chip.offline .dm-av .avatar { background-color: var(--panel-3); color: var(--muted); }
@@ -2132,17 +2176,31 @@ html[data-glass=liquid] .theme-swatches { border-radius: 10px; }
 .dm-locked { color: var(--muted); font-style: italic; }
 .dm-plain { margin-left: 6px; padding: 0 5px; font-size: 10.5px; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; white-space: nowrap; }
 .dm-key-changed { margin: 0 0 4px; padding: 6px 9px; font-size: 12px; color: var(--warn); background: var(--panel-2); border-left: 3px solid var(--warn); border-radius: 4px; }
-.dm-window { position: absolute; left: 0; right: 0; bottom: 100%; height: min(460px, calc(100vh - 180px)); display: flex; flex-direction: column; gap: 8px; padding: 10px 12px 12px;
+.dm-window { position: absolute; left: 44px; width: 340px; bottom: 0; height: calc(var(--dm-win-h) + 100%); box-sizing: border-box; display: flex; flex-direction: column; gap: 8px; padding: 50px 12px 12px;
   background: var(--panel); border: 1px solid var(--line); border-bottom: 0; border-radius: 10px 10px 0 0; box-shadow: 0 -12px 36px rgba(0, 0, 0, .45); }
 .dm-window[hidden] { display: none; }
-.dm-window .chat-list { flex: 1; min-height: 0; }
+/* Trocou de conversa: a moldura fica parada e só o conteúdo (nome, mensagens, campo) entra esmaecendo */
+.dm-slot.dm-trocou :is(.dm-window > *, .dm-chip-extra, .dm-av) { animation: dm-trocar .16s ease-out; }
+@keyframes dm-trocar { from { opacity: 0; transform: translateY(4px); } }
+@media (prefers-reduced-motion: reduce) { .dm-slot.dm-trocou :is(.dm-window > *, .dm-chip-extra, .dm-av) { animation: none; } }
+/* A conversa ocupa a janela de lado a lado, sem a moldura do chat da sala */
+.dm-window .chat-list { flex: 1; min-height: 0; margin: 0 -12px; padding: 2px 12px 8px; border: 0; border-radius: 0; }
+/* Sem barra de rolagem à vista na conversa nem no campo (a roda do mouse e o teclado ainda rolam) */
+.dm-window :is(.chat-list, textarea) { scrollbar-width: none; }
 .dm-empty { margin: 0; font-size: 12.5px; }
 .dm-status { margin: 0; font-size: 12px; color: var(--warn); }
 .dm-status:empty { display: none; }
-.dm-form textarea { flex: 1; min-width: 0; resize: none; max-height: 120px; min-height: 40px; padding: 9px 11px; box-sizing: border-box; font: inherit; font-family: var(--font-console); font-size: 13px;
-  color: var(--text); background: var(--sunken); border: 1px solid var(--line); border-radius: 6px; }
-.dm-form textarea:focus { border-color: var(--accent); outline: none; }
-.dm-form .btn.icon { width: 40px; height: 40px; }
+/* O campo é uma faixa no pé da janela, de ponta a ponta: o clipe e o enviar, redondos, com a mesma altura do texto (30 px);
+   a linha de cima acende ao escrever. O enviar só acende com texto no campo (sem texto, o placeholder aparece) */
+.dm-form { align-items: flex-end; gap: 2px; margin: 0 -12px -12px; padding: 4px 6px; border-top: 1px solid var(--line); background: var(--sunken); }
+.dm-form:focus-within { border-top-color: var(--accent); }
+.dm-form textarea { flex: 1; min-width: 0; resize: none; max-height: 120px; min-height: 30px; padding: 6px 4px; box-sizing: border-box; font: inherit; font-family: var(--font-console);
+  font-size: 13px; line-height: 18px; color: var(--text); background: transparent; border: 0; border-radius: 0; }
+.dm-form textarea:focus { outline: none; }
+.dm-form .btn.icon { width: 30px; height: 30px; padding: 0; border: 0; border-radius: 50%; box-shadow: none; }
+.dm-form .dm-attach { background: transparent; color: var(--muted); }
+.dm-form .dm-attach:hover:not(:disabled) { background: var(--panel-3); color: var(--text); }
+.dm-form:has(textarea:placeholder-shown) .dm-send { background: var(--panel-2); color: var(--muted); }
 /* Conexão direta (renderer/mensagens-direto.js): o modo em cima do campo e o clipe, que só acende com ela */
 .dm-modo { flex: none; margin: 0; font-size: 11.5px; line-height: 1.35; color: var(--muted); }
 .dm-modo[data-modo="direto"] { color: var(--ok); }
@@ -2451,15 +2509,6 @@ html[data-tips="off"] .tip { display: none !important; }
 .hist-capa { flex: none; width: 26px; height: 26px; display: grid; place-items: center; overflow: hidden; border-radius: 4px; background: var(--accent-soft); color: var(--accent); }
 .hist-musica-txt { flex: 1; min-width: 0; font-size: 11.5px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hist-musica-txt strong { color: var(--text); }
-/* Os nomes da pessoa no perfil: o da sala e o da conta Razze (voz.js › nomesDe) */
-.nomes-pessoa { display: grid; gap: 2px; margin: 4px 0 0; font-size: 12px; }
-.nomes-pessoa > div { display: flex; gap: 6px; min-width: 0; }
-.nomes-pessoa dt { flex: none; color: var(--muted); }
-.nomes-pessoa dt::after { content: ":"; }
-.nomes-pessoa dd { margin: 0; min-width: 0; overflow-wrap: anywhere; color: var(--text); }
-.nomes-nota { margin: 0; color: var(--muted); font-style: italic; white-space: nowrap; }
-.person-card .pc-head .nomes-pessoa > div { flex-direction: row; } /* .pc-head div empilha; aqui é rótulo e nome lado a lado */
-.person-card .pc-head .nomes-pessoa .nomes-nota { font-size: 11px; }
 /* Ações numa linha só: a principal (mensagem ou amizade) ocupa a largura; silenciar e mudar de canal são só ícones */
 .sky-page-actions { display: flex; align-items: center; gap: 8px; padding: 12px 14px; }
 .sky-page-actions:empty { display: none; }

@@ -35,9 +35,9 @@ function setVol(id, patch) {
 }
 
 // ---------- Volume com a roda do mouse ----------
-// Em cima da tela de alguém (som da transmissão), da janela flutuante, do nome na barra da voz, do botão de
-// volume na lista ou do controle no cartão: cada "clique" da roda muda 5%. O touchpad manda muitos passos
-// pequenos: eles se somam até dar um clique.
+// Em cima da tela de alguém (som da transmissão), da janela flutuante ou do controle no cartão da pessoa: cada
+// "clique" da roda muda 5%. A voz de alguém só muda com o cartão aberto (nem a roda no botão de volume muda).
+// O touchpad manda muitos passos pequenos: eles se somam até dar um clique.
 const WHEEL_STEP = 5;
 const wheelAcc = new Map();
 function wheelSteps(key, e) {
@@ -523,10 +523,9 @@ function renderVoiceStackPop() {
       s.setAttribute('aria-label', label);
       row.append(s);
     }
-    row.title = `${nameOf(id)}: volume (a roda do mouse em cima também muda)`;
+    row.title = `Perfil e volume de ${nameOf(id)}`;
     // O mesmo perfil das outras listas, aberto dentro desta; a mesma pessoa de novo fecha
     row.onclick = (e) => (skyFocusId === id && skyFocusFrom === 'pilula' ? closeSkyProfile() : openSkyProfile(id, e.detail === 0 ? row : e, 'pilula'));
-    onWheelVolume(row, id, 'voice');
     list.append(row);
   }
   const actions = el('div', 'vsp-actions');
@@ -579,6 +578,8 @@ function openPersonCard(id, anchor, byKeyboard = false) {
   const card = $('personCard');
   if (!card.hidden && card.dataset.for === id) return closePersonCard();
   card.dataset.for = id;
+  // De qual lista abriu: o botão do perfil abre o perfil inteiro nela (ceu-voz.js › SKY_HOMES)
+  card.dataset.from = anchor.closest?.('#peoplePop') ? 'pessoas' : anchor.closest?.('#voiceStackPop') ? 'pilula' : '';
   card.style.setProperty('--person', personColor(id));
   renderPersonCard();
   card.hidden = false;
@@ -599,6 +600,7 @@ function closePersonCard() {
   if (card.hidden) return;
   card.hidden = true;
   delete card.dataset.for;
+  card.style.removeProperty('--fundo'); // o GIF do fundo para de vez com o cartão fechado
 }
 // ---------- Os nomes de quem está na sala ----------
 // Cada pessoa tem o nome que escolheu no app (o da sala) e, se entrou na conta Razze, o nome da conta no servidor,
@@ -612,33 +614,6 @@ function amigoDe(id) {
   const conta = contaDe(id);
   return friendsData.friends.find((f) => (conta ? f.id === conta.id : mesmoNome(f.displayName, nameOf(id)))) || null;
 }
-// "Na sala" e "Conta Razze" no perfil (null sem conta)
-function nomesDe(id) {
-  const conta = contaDe(id);
-  if (!conta) return null;
-  const eu = id === state.myId, amigo = !eu && amigoDe(id);
-  const linha = (rotulo, valor, nota) => {
-    const row = document.createElement('div');
-    const dt = document.createElement('dt');
-    dt.textContent = rotulo;
-    const dd = document.createElement('dd');
-    dd.textContent = valor;
-    row.append(dt, dd);
-    if (!nota) return row;
-    const n = document.createElement('div'); // a nota numa linha só dela, embaixo do nome
-    n.className = 'nomes-nota';
-    const ndd = document.createElement('dd');
-    ndd.textContent = nota;
-    n.append(ndd);
-    return [row, n];
-  };
-  const dl = document.createElement('dl');
-  dl.className = 'nomes-pessoa';
-  dl.append(linha('Nome na sala', eu ? getName() : nameOf(id)),
-    ...[].concat(linha('Nome da conta', amigo ? amigo.displayName : conta.nome, eu || amigo ? '' : 'informado pelo app da pessoa')));
-  return dl;
-}
-
 // Amizade (conta Razze). Já amigos ou pedido enviado: o botão só informa; pedido recebido: aceita; senão, manda o
 // pedido pela conta da pessoa (o nome do servidor, não o da sala); sem conta na sala, pelo nome da sala, como antes.
 // Sem conta sua, abre o Perfil, na Conta Razze, para entrar.
@@ -684,66 +659,91 @@ function renderPersonCard() {
   const v = volOf(id);
   const name = nameOf(id);
   const watching = state.in.has(id);
+  const sharing = !!state.members.get(id)?.sharing;
   const focused = document.activeElement && card.contains(document.activeElement) ? document.activeElement.getAttribute('aria-label') : null;
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text) e.textContent = text; return e; };
   card.replaceChildren();
-  const head = document.createElement('div');
-  head.className = 'pc-head';
-  const who = document.createElement('div');
-  const strong = document.createElement('strong');
-  strong.textContent = name;
-  paintName(strong, id);
-  const sub = document.createElement('span');
-  sub.textContent = v.muted ? 'Silenciada para você' : [inVoice(id) && 'Na voz', state.members.get(id)?.sharing && 'Transmitindo'].filter(Boolean).join(' · ') || 'Na sala';
-  who.append(strong, sub);
-  const nomes = nomesDe(id);
-  if (nomes) who.append(nomes);
+  card.classList.toggle('is-muted', v.muted);
+  // Em cima, como no perfil da lista (ceu-voz.js › renderSkyPage): a faixa com o fundo do perfil (ou a cor da pessoa),
+  // a foto encaixada nela e a amizade no canto
+  const bg = profileBgOf(id);
+  card.classList.toggle('has-bg', !!bg);
+  if (bg) card.style.setProperty('--fundo', `url("${bg}")`); else card.style.removeProperty('--fundo');
+  const banner = el('div', 'pc-banner');
+  banner.append(friendButton(id, name));
   const av = avatar(name, id);
   av.dataset.person = id;
   av.classList.add('pc-photo');
   av.classList.toggle('speaking', speaking.has(id));
-  // Com foto: a bolinha (encaixada, sem esticar); clicar nela abre a foto em tela cheia (a inteira, quando houver)
+  // Com foto: clicar nela abre a foto em tela cheia (a inteira, quando houver)
   if (photoHashOf(id)) {
-    const photoBtn = document.createElement('button');
+    const photoBtn = el('button', 'pc-photo-btn');
     photoBtn.type = 'button';
-    photoBtn.className = 'pc-photo-btn';
     photoBtn.setAttribute('aria-label', `Ver a foto de ${name} em tela cheia`);
     photoBtn.title = 'Ver em tela cheia';
     photoBtn.append(av);
     photoBtn.onclick = () => openPhotoViewer(id, name, photoBtn);
-    head.append(photoBtn, who);
-  } else head.append(av, who);
-  head.append(friendButton(id, name));
+    banner.append(photoBtn);
+  } else banner.append(av);
+  card.append(banner);
+  // O nome, a conta Razze embaixo ("conta Flyleaf") e, à direita, onde a pessoa está
+  const head = el('div', 'pc-head');
+  const who = el('div', 'pc-who');
+  who.append(paintName(el('strong', '', name), id));
+  const conta = contaDe(id), amigo = amigoDe(id);
+  if (conta) {
+    const c = el('span', 'pc-conta', `conta ${amigo ? amigo.displayName : conta.nome}`);
+    c.title = amigo ? 'Nome da conta' : 'Nome da conta (informado pelo app da pessoa)';
+    who.append(c);
+  }
+  // Silenciada para você é escolha sua, não da pessoa: fica cinza, não laranja
+  const where = v.muted ? 'Silenciada para você' : [inVoice(id) && 'Na voz', sharing && 'Transmitindo'].filter(Boolean).join(' · ') || 'Na sala';
+  head.append(who, el('span', 'pc-where' + (v.muted ? ' off' : ''), where));
   card.append(head);
-  // O "i" de que só muda para você fica ao lado do primeiro controle que aparece
-  let tipDone = false;
-  const tipText = `Volume e silenciar só mudam o que você ouve. ${name} e o resto da sala não percebem.`;
+  // O volume: silenciar, o controle (com a marca do padrão na voz) e o valor, numa linha só
+  const vol = el('div', 'pc-vol');
+  const mute = el('button', 'pc-round pc-mute');
+  mute.type = 'button';
+  setIcon(mute, v.muted ? 'muted' : 'volume', v.muted ? `Ouvir ${name} de novo` : `Silenciar ${name} para mim`);
+  mute.setAttribute('aria-pressed', String(v.muted));
+  mute.onclick = () => { setVol(id, { muted: !v.muted }); renderPersonCard(); card.querySelector('.pc-mute')?.focus(); };
+  let lead = mute; // o silenciar fica na primeira linha; a segunda leva o ícone da tela
   const slider = (label, key, max, show) => {
     if (!show) return;
-    const row = document.createElement('label');
-    row.className = 'pc-slider';
-    const top = document.createElement('span');
-    const text = document.createElement('span');
-    text.textContent = label;
-    if (!tipDone) { text.append(tipButton(tipText)); tipDone = true; }
-    const val = document.createElement('span');
-    val.className = 'pc-val';
-    val.textContent = v.muted ? 'mudo' : `${v[key]}%`;
-    top.append(text, val);
+    const row = el('div', 'pc-slider');
+    if (!lead) {
+      lead = el('span', 'pc-lead');
+      lead.innerHTML = ICON.monitor;
+      lead.title = label;
+    }
+    const track = el('div', 'pc-track' + (key === 'voice' ? ' notch' : ''));
     const input = document.createElement('input');
     input.type = 'range';
     input.min = '0'; input.max = String(max); input.step = '5';
     input.value = String(v[key]);
     input.setAttribute('aria-label', `${label} de ${name}`);
+    const def = key === 'voice' ? DEFAULT_VOICE : DEFAULT_SCREEN;
+    const out = el('output', 'pc-val');
+    let moved = false;
+    const paint = () => {
+      input.style.setProperty('--fill', `${(Number(input.value) / max) * 100}%`);
+      const off = v.muted && !moved;
+      out.textContent = off ? 'Mudo' : `${input.value}%`;
+      out.classList.toggle('off', off);
+      out.classList.toggle('changed', !off && Number(input.value) !== def);
+    };
     // Enquanto arrasta, só muda o som; o cartão não é redesenhado (o controle não perde o foco)
     input.oninput = () => {
-      val.textContent = `${input.value}%`;
-      const next = { ...volOf(id), [key]: Number(input.value), muted: false };
-      volumes[volKey(id)] = next;
+      moved = true;
+      paint();
+      volumes[volKey(id)] = { ...volOf(id), [key]: Number(input.value), muted: false };
       mixer.apply(id);
       applyScreenVolume(id);
     };
-    input.onchange = () => setVol(id, { [key]: Number(input.value), muted: false });
-    // A roda do mouse em cima do controle anda de 5 em 5 (o controle do Chromium não reage à roda)
+    // Soltou: grava e redesenha (o Voltar ao padrão aparece ou some; o foco volta ao controle)
+    input.onchange = () => { setVol(id, { [key]: Number(input.value), muted: false }); renderPersonCard(); };
+    // A roda do mouse em cima do controle anda de 5 em 5 (o controle do Chromium não reage à roda). Só aqui dentro:
+    // fora do cartão, a roda não muda o volume de ninguém
     input.addEventListener('wheel', (e) => {
       e.preventDefault();
       const steps = wheelSteps(`${id}|${key}`, e);
@@ -752,33 +752,55 @@ function renderPersonCard() {
       input.oninput();
       input.onchange();
     }, { passive: false });
-    row.append(top, input);
-    card.append(row);
+    paint();
+    track.append(input);
+    row.append(lead, track, out);
+    lead = null;
+    vol.append(row);
   };
   slider('Voz', 'voice', 200, inVoice(id));
   slider('Som da transmissão', 'screen', 100, watching);
-  if (!inVoice(id) && !watching) {
-    const p = document.createElement('p');
-    p.className = 'hint';
-    p.textContent = 'O volume vale quando entrar na voz ou na tela.';
-    p.append(tipButton(tipText));
-    card.append(p);
+  if (lead) {
+    const row = el('div', 'pc-slider');
+    row.append(lead, el('p', 'hint', 'O volume vale quando entrar na voz ou na tela.'));
+    vol.append(row);
   }
-  const actions = document.createElement('div');
-  actions.className = 'pc-actions';
-  const mute = document.createElement('button');
-  mute.type = 'button';
-  // Só ícones: o nome de cada um aparece ao passar o mouse (e é o que o leitor de tela lê)
-  mute.className = 'btn small icon' + (v.muted ? ' warn-on' : '');
-  setIcon(mute, 'muted', v.muted ? `Ouvir ${name} de novo` : `Silenciar ${name} para mim`);
-  mute.setAttribute('aria-pressed', String(v.muted));
-  mute.onclick = () => { setVol(id, { muted: !v.muted }); renderPersonCard(); card.querySelector('.pc-actions .btn')?.focus(); };
-  const reset = document.createElement('button');
-  reset.type = 'button';
-  reset.className = 'btn small icon';
-  setIcon(reset, 'reset', `Voltar ao padrão: voz em ${DEFAULT_VOICE}% e a transmissão sem som`);
-  reset.onclick = () => { setVol(id, { voice: DEFAULT_VOICE, screen: DEFAULT_SCREEN, muted: false }); renderPersonCard(); };
-  actions.append(mute, reset);
-  card.append(actions);
+  const foot = el('div', 'pc-vol-foot');
+  const only = el('span', 'pc-only', 'Só para você');
+  only.title = `Volume e silenciar só mudam o que você ouve. ${name} e o resto da sala não percebem.`;
+  foot.append(only);
+  // Voltar ao padrão só aparece quando algo mudou
+  if (v.voice !== DEFAULT_VOICE || v.screen !== DEFAULT_SCREEN) {
+    const reset = el('button', 'pc-reset');
+    reset.type = 'button';
+    reset.innerHTML = ICON.reset;
+    reset.append(watching ? 'Voltar ao padrão' : `Voltar a ${DEFAULT_VOICE}%`);
+    const tip = `Voltar ao padrão: voz em ${DEFAULT_VOICE}% e a transmissão sem som`;
+    reset.title = tip;
+    reset.setAttribute('aria-label', tip);
+    reset.onclick = () => { setVol(id, { voice: DEFAULT_VOICE, screen: DEFAULT_SCREEN, muted: false }); renderPersonCard(); card.querySelector('.pc-mute')?.focus(); };
+    foot.append(reset);
+  }
+  vol.append(foot);
+  card.append(vol);
+  // No pé: Mandar mensagem (amigos) e o perfil inteiro, na lista de onde o cartão abriu (some com ele já aberto)
+  const actions = el('div', 'pc-actions');
+  if (amigo && typeof openDm === 'function') {
+    const dm = el('button', 'pc-act-main');
+    dm.type = 'button';
+    dm.innerHTML = ICON.chat;
+    dm.append('Mandar mensagem');
+    dm.onclick = () => { closePersonCard(); void openDm(amigo.id); };
+    actions.append(dm);
+  }
+  const from = card.dataset.from || null;
+  if (skyFocusId !== id && (from || inVoice(id))) {
+    const open = el('button', 'pc-round');
+    open.type = 'button';
+    setIcon(open, 'user', `Abrir o perfil de ${name}`);
+    open.onclick = () => { closePersonCard(); openSkyProfile(id, open, from); };
+    actions.append(open);
+  }
+  if (actions.childElementCount) card.append(actions);
   if (focused) card.querySelector(`[aria-label="${CSS.escape(focused)}"]`)?.focus();
 }

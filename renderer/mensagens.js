@@ -79,6 +79,8 @@ async function dmStart(account) {
   }
   for (const [id, n] of Object.entries(unread)) if (/^[a-f0-9]{32}$/.test(id)) dmConv(id).unread = Math.max(0, Number(n) || 0);
   dm.bar = (Array.isArray(bar) ? bar : []).filter((b) => /^[a-f0-9]{32}$/.test(String(b?.id))).map((b) => ({ id: b.id, open: !!b.open, pinned: !!b.pinned }));
+  let aberta = false; // uma janela aberta por vez (de antes podiam ser várias): fica a primeira
+  for (const b of dm.bar) { if (b.open && aberta) b.open = false; aberta ||= b.open; }
   for (const b of dm.bar) { const c = dmConv(b.id); if (b.open) await dmLoadConv(c); }
   renderDm();
   window.api.dmRetencao(dmRetencaoDias(), account).catch(() => {});
@@ -164,12 +166,15 @@ function dmPutInBar(id, open) {
   let b = dm.bar.find((x) => x.id === id);
   if (!b) { b = { id, open }; dm.bar.push(b); }
   else if (open) b.open = true;
+  if (open) for (const x of dm.bar) if (x !== b) x.open = false; // uma janela aberta por vez
   return b;
 }
+// Uma janela por vez, presa ao envelope: abrir outra conversa troca o conteúdo no mesmo lugar, com um esmaecer curto
 async function openDm(id) {
   if (!dm.account) return;
   const c = dmConv(id);
   await dmLoadConv(c);
+  const trocou = dm.bar.some((b) => b.open && b.id !== id);
   dmPutInBar(id, true);
   dmBringIntoView(id);
   c.unread = 0;
@@ -177,6 +182,12 @@ async function openDm(id) {
   diretoGarantir(id);
   setDmPanel(false);
   renderDm();
+  if (trocou && c.el) {
+    c.el.slot.classList.remove('dm-trocou');
+    void c.el.slot.offsetWidth; // recomeça a animação se trocar de novo no meio dela
+    c.el.slot.classList.add('dm-trocou');
+    c.el.slot.addEventListener('animationend', () => c.el.slot.classList.remove('dm-trocou'), { once: true });
+  }
   c.el?.input.focus();
   dmScrollEnd(c, true);
 }
@@ -198,6 +209,9 @@ function toggleDmPin(id) {
 // avisos não contam como "fora" (podem ter sido abertos por algo dentro da janela, como o Entrar de um convite).
 function minimizeDmOutside(target) {
   if (target.closest?.('dialog, .dialog, #tipBubble, .toast')) return;
+  // Num chip de outra conversa (ou no "+N"), quem troca é o clique, que abre a outra no lugar (openDm). Minimizar já
+  // aqui, no pointerdown, tirava a janela, as fotos andavam para a esquerda e o clique caía fora do chip
+  if (target.closest?.('.dm-chip, #dmMoreMenu')) return;
   let changed = false;
   for (const b of dm.bar) {
     if (!b.open || b.pinned) continue;
@@ -261,7 +275,7 @@ function dmElements(c) {
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void dmSend(c); } if (e.key === 'Escape') { e.preventDefault(); minimizeDm(c.id); } });
   const sendBtn = document.createElement('button');
   sendBtn.type = 'submit';
-  sendBtn.className = 'btn primary icon';
+  sendBtn.className = 'btn primary icon dm-send';
   setIcon(sendBtn, 'send', 'Enviar');
   form.onsubmit = (e) => { e.preventDefault(); void dmSend(c); };
   // Clipe, colar e arrastar: só com a conexão direta (arquivo nunca vai pelo servidor)
@@ -302,7 +316,7 @@ function dmElements(c) {
   };
   dmDraggable(slot, chip, c.id);
   // Fechada, a conversa é só a foto (bolinha de status e não lidas no canto); nome, ligar e fechar sobem num balão com
-  // o mouse em cima. Aberta, viram a barra de baixo da janela (CSS: .dm-chip-extra)
+  // o mouse em cima. Aberta, a foto, o nome e os botões viram a barra do topo da janela (CSS: .dm-slot.open .dm-chip)
   const av = document.createElement('span');
   av.className = 'dm-av';
   const dot = document.createElement('span');
@@ -400,7 +414,7 @@ function renderDmWindow(c, open) {
   el.pin.title = el.pin.ariaLabel = pinned ? 'Destravar: clicar fora volta a minimizar' : 'Travar aberta: clicar fora não minimiza';
   el.min.hidden = !open;
   el.win.hidden = !open;
-  el.input.placeholder = `Mensagem para ${friendName(c.id)}`;
+  el.input.placeholder = 'Mensagem'; // o nome já está no topo da janela (e o texto longo quebrava em duas linhas)
   if (!open) return;
   renderDiretoJanela(c);
   queueMicrotask(() => diretoGarantir(c.id));
@@ -459,7 +473,7 @@ function renderDmBarHint() {
 }
 
 // ---------- Largura: o que não cabe vai para o "+N" ----------
-// Aberta, uma conversa ocupa 340px; minimizada, pelo menos 160px (as larguras do CSS de .dm-slot)
+// Aberta, a conversa ocupa 340px logo depois do envelope; minimizada, 34px (as larguras do CSS de .dm-slot)
 const DM_W_OPEN = 340, DM_W_CHIP = 34, DM_GAP = 6, DM_W_MORE = 44;
 function dmVisibleCount() {
   const avail = $('dmBar').clientWidth - $('dmBarLabel').offsetWidth - 10 - DM_GAP;
@@ -583,8 +597,10 @@ function fillDmList(prefix = 'dmPanel') {
     li.onclick = () => void openDm(id);
     li.onkeydown = (e) => { if (e.key === 'Enter') void openDm(id); };
     const last = c?.last;
-    const preview = last ? dmPreview(last) : friendsData.friends.some((f) => f.id === id) ? 'Nenhuma mensagem ainda' : '';
+    // Sem mensagem: só o nome, sem linha embaixo
+    const preview = last ? dmPreview(last) : '';
     const info = hubInfo(name, preview);
+    if (!preview) info.querySelector('.hub-room-meta').remove();
     li.append(hubAvatar(name, friendOnline(id)), info);
     if (last) {
       const d = new Date(last.createdAt);

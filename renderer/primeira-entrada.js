@@ -264,6 +264,8 @@ async function chamarParaMinhaSala(f) {
   await convidarPorMensagem(f, toast);
 }
 
+// Com mais de 5 online, o Início mostra 5; "Ver todos os N online" abre a lista inteira ali mesmo
+let homeFriendsTodos = false;
 function renderHomeAmigos() {
   if (!$('homeFriends')) return;
   renderHomeTopo();
@@ -276,7 +278,7 @@ function renderHomeAmigos() {
   $('homeFriendsTitle').textContent = online.length ? `Amigos online · ${online.length}` : 'Amigos';
   const lista = $('homeFriendsList');
   lista.textContent = '';
-  for (const f of online.slice(0, 5)) {
+  for (const f of homeFriendsTodos ? online : online.slice(0, 5)) {
     const li = document.createElement('li');
     li.className = 'home-friend';
     const nome = document.createElement('span');
@@ -327,8 +329,8 @@ function renderHomeAmigos() {
     if (chips.childNodes.length) nome.append(chips);
     const acoes = document.createElement('span');
     acoes.className = 'home-friend-actions';
-    // "Chamar para minha sala" é um ícone (a dica diz o resto): na coluna estreita, o nome e o que o amigo faz têm espaço
-    const chamar = homeIconBtn('userPlus', state.myId ? `Chamar ${f.displayName} para a sua sala (manda o convite)` : `Chamar ${f.displayName}: abre a sua sala e manda o convite`,
+    // "Chamar para minha sala" é o envelope do convite (a dica diz o resto): na coluna estreita, o nome e o que o amigo faz têm espaço
+    const chamar = homeIconBtn('envelope', state.myId ? `Chamar ${f.displayName} para a sua sala (manda o convite)` : `Chamar ${f.displayName}: abre a sua sala e manda o convite`,
       () => void chamarParaMinhaSala(f), 'home-friend-chamar');
     acoes.append(chamar,
       homeIconBtn('chat', `Mensagem para ${f.displayName}`, () => openDm(f.id)),
@@ -337,8 +339,11 @@ function renderHomeAmigos() {
     lista.append(li);
   }
   $('homeFriendsEmpty').textContent = !total ? 'Você ainda não tem amigos aqui. Adicione o primeiro.'
-    : !online.length ? 'Ninguém online agora.'
-    : online.length > 5 ? `e mais ${online.length - 5} online` : '';
+    : !online.length ? 'Ninguém online agora.' : '';
+  $('homeFriendsEmpty').hidden = !$('homeFriendsEmpty').textContent;
+  $('homeFriendsMais').hidden = online.length <= 5;
+  $('homeFriendsMais').textContent = homeFriendsTodos ? 'Mostrar menos' : `Ver todos os ${online.length} online`;
+  $('homeFriendsMais').setAttribute('aria-expanded', String(homeFriendsTodos));
   $('homeFriendsAll').hidden = !total;
 }
 
@@ -376,6 +381,7 @@ function setupPrimeiraEntrada() {
   $('goQuick').onclick = () => foraDaSala('criar outra sala', abrirMinhaSala);
   $('homeSigninBtn').onclick = () => abrirPrimeiraEntrada(3);
   $('homeFriendsAll').onclick = () => openFriendsDialog();
+  $('homeFriendsMais').onclick = () => { homeFriendsTodos = !homeFriendsTodos; renderHomeAmigos(); };
   $('homeFriendsLink').onclick = () => { setHomeConvidarOpen(false); copiarMeuLink(); };
   $('friendsLinkCopy').onclick = copiarMeuLink;
   $('homeFriendsAdd').onclick = () => { setHomeConvidarOpen(false); openFriendsDialog(); if (typeof setFriendsAddOpen === 'function') setFriendsAddOpen(true); };
