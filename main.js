@@ -550,6 +550,7 @@ if (hasSingleInstance) app.whenReady().then(() => {
 
   setPriority('above'); // a página manda a escolha salva assim que abre
   ipcMain.handle('set-priority', (_e, level) => setPriority(level));
+  ipcMain.handle('fechar-na-bandeja', (_e, on) => bandeja.setFecharNaBandeja(!!on));
   ipcMain.handle('stats-start', (e) => startStats(e.sender));
   ipcMain.handle('stats-stop', () => stopStats());
 

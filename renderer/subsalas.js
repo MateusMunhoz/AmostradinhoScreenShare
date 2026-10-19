@@ -239,6 +239,28 @@ function voiceIdsIn(ch) {
   return ids;
 }
 
+// Contador da call ao lado do nome do canal: há quanto tempo ele está ativo (voice.tempoDoCanal). Um relógio de 1 s só
+// roda enquanto houver contador na tela
+let relogioCall = null;
+function tempoDoCanalEl(ch) {
+  const ms = voice.tempoDoCanal(ch);
+  if (ms === null) return null;
+  const el = document.createElement('span');
+  el.className = 'voice-channel-tempo';
+  el.dataset.channel = ch;
+  el.textContent = formatarTempoCall(ms);
+  el.title = 'Há quanto tempo este canal está ativo';
+  if (!relogioCall) relogioCall = setInterval(() => {
+    const els = document.querySelectorAll('.voice-channel-tempo');
+    if (!els.length) { clearInterval(relogioCall); relogioCall = null; return; }
+    for (const e of els) {
+      const t = voice.tempoDoCanal(e.dataset.channel);
+      if (t === null) e.remove(); else e.textContent = formatarTempoCall(t);
+    }
+  }, 1000);
+  return el;
+}
+
 // Cabeçalho de um canal no painel de voz: nome, quantas pessoas, pôr música e apagar (subsala). Clicar no cabeçalho
 // (fora dos botões dele) entra no canal, se você não está nele
 function channelHead(ch, sub) {
@@ -256,14 +278,17 @@ function channelHead(ch, sub) {
   name.textContent = channelName(ch);
   li.append(icon, name);
   const n = voiceIdsIn(ch).length;
+  let conta = null;
   if (n) {
-    const conta = document.createElement('span');
+    conta = document.createElement('span');
     conta.className = 'voice-channel-n';
     conta.textContent = String(n);
     conta.title = `${n} ${n === 1 ? 'pessoa' : 'pessoas'} em ${channelName(ch)}`;
     conta.setAttribute('aria-label', conta.title);
     name.after(conta);
   }
+  const tempo = tempoDoCanalEl(ch);
+  if (tempo) li.append(tempo);
   // Subsala Líder: o selo, e AO VIVO com alguém transmitindo nela
   if (sub?.modo === 'lider') {
     li.classList.add('lider');
@@ -273,7 +298,7 @@ function channelHead(ch, sub) {
     selo.title = 'Subsala Líder: quem está nela fala para a sala toda';
     const aoVivo = voiceIdsIn(ch).some((id) => (id ? state.members.get(id)?.sharing : state.sharing));
     if (aoVivo) { selo.classList.add('ao-vivo'); selo.textContent = 'Líder · ao vivo'; }
-    name.after(selo);
+    (tempo || conta || name).after(selo);
   }
   if (!here && voice.supported && !voice.pending) {
     const label = voice.session ? `Ir para ${channelName(ch)}` : `Entrar na voz, em ${channelName(ch)}`;

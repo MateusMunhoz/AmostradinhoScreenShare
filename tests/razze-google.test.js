@@ -154,3 +154,15 @@ test('sem cliente configurado o Google fica desligado', async () => {
     assert.equal(r.status, 503);
   } finally { await off.close(); }
 });
+
+test('conta com senha desativada: o Google diz que está desativada, não manda entrar com a senha', async () => {
+  zerarLimite();
+  const reg = await request('/v1/auth/register', { method: 'POST', body: { email: 'otavio.desativado@gmail.com', displayName: 'Otavio', password: 'senha-otavio-123' } });
+  if (reg.status === 202) await request('/v1/admin/users/' + reg.body.user.id + '/approve', { method: 'POST' }, ADMIN);
+  const id = reg.body.user.id;
+  assert.equal((await request('/v1/admin/users/' + id, { method: 'PATCH', body: { status: 'disabled', banReason: 'Teste' } }, ADMIN)).status, 200);
+  contas.set('codigo-otavio-1', idToken({ sub: 'g-otavio', email: 'otavio.desativado@gmail.com', name: 'Otavio G' }));
+  const r = await entrarComGoogle('codigo-otavio-1');
+  assert.equal(r.status, 403);
+  assert.equal(r.body.error.code, 'account_disabled');
+});

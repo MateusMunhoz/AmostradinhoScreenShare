@@ -2051,6 +2051,7 @@ input[type="search"]::-webkit-search-cancel-button:hover { background: var(--tex
 .app-confirm-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
 /* Subsalas de voz no painel de voz (renderer/subsalas.js): cabeçalho de cada canal e quem está nele, recuado. Sem caixa:
    as barrinhas de som e o nome; no seu canal elas ficam azuis e altas, nos outros, cinza e baixas */
+.voice-channel-tempo { font-size: 11px; font-variant-numeric: tabular-nums; color: var(--muted, #8a93a6); white-space: nowrap; }
 .voice-channel { display: flex; align-items: center; gap: 8px; min-height: 30px; box-sizing: border-box; margin-top: 12px; padding: 2px 4px; border-radius: 6px; background: none; font-size: 12px; }
 .voice-channel:first-child { margin-top: 0; }
 .voice-channel strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; color: var(--text-2); }

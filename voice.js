@@ -1,5 +1,16 @@
 'use strict';
 
+// Contador da call: o host manda há quantos ms cada pessoa está no canal (sala-protocolo.js: idadeNaVoz). Guardamos o
+// instante de entrada neste relógio. 0 = não sei (servidor antigo, fora da voz ou valor absurdo: vem da rede, teto de 7 dias)
+function desdeDe(idade) { return Number.isFinite(idade) && idade >= 0 && idade <= 7 * 864e5 ? Date.now() - idade : 0; }
+// 65 s vira "01:05"; a partir de uma hora, "1:02:03"
+function formatarTempoCall(ms) {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(total / 3600), m = Math.floor(total / 60) % 60, s = total % 60;
+  const dois = (n) => String(n).padStart(2, '0');
+  return h ? `${h}:${dois(m)}:${dois(s)}` : `${dois(m)}:${dois(s)}`;
+}
+
 // Uma conexão bidirecional por par, independente das conexões das telas.
 // Canal: '' é a Voz geral; um número é uma subsala. Só quem está no mesmo canal se conecta (e se ouve).
 class VoiceChat {
@@ -22,7 +33,7 @@ class VoiceChat {
     this.leave(false);
     this.id = welcome?.id;
     this.supported = welcome?.features?.includes('voice') || false;
-    this.members = new Map((welcome?.members || []).map(m => [m.id, { session: m.voiceSession || '', channel: m.voiceSession ? String(m.voiceChannel || '') : '', muted: !!m.muted, deafened: !!m.deafened }]));
+    this.members = new Map((welcome?.members || []).map(m => [m.id, { session: m.voiceSession || '', channel: m.voiceSession ? String(m.voiceChannel || '') : '', muted: !!m.muted, deafened: !!m.deafened, desde: desdeDe(m.voiceIdade) }]));
     this.changed();
   }
   async join(channel = '') {
@@ -109,9 +120,18 @@ class VoiceChat {
     if (this.session) this.announce(); // os outros veem que você silenciou as vozes (fone)
     this.changed();
   }
-  update(id, session, muted, deafened = false, channel = '') {
+  // Há quanto tempo o canal está ativo, em ms: vale quem está nele há mais tempo (você incluído). null: canal vazio ou sem dado
+  tempoDoCanal(ch = '') {
+    let desde = 0;
+    const olha = (d) => { if (d && (!desde || d < desde)) desde = d; };
+    if (this.session && this.channel === ch) olha(this.desde);
+    for (const m of this.members.values()) if (m.session && (m.channel || '') === ch) olha(m.desde);
+    return desde ? Math.max(0, Date.now() - desde) : null;
+  }
+  update(id, session, muted, deafened = false, channel = '', idade) {
     channel = session ? String(channel || '') : '';
     if (id === this.id) {
+      this.desde = session ? desdeDe(idade) : 0; // contador da call (subsalas.js: tempoDoCanal)
       // O servidor pode mudar o seu canal (a subsala em que você estava foi apagada): segue o que ele diz
       if (session === this.session && session && channel !== this.channel) this.moveTo(channel);
       if (session === this.session && session) this.sync();
@@ -120,7 +140,7 @@ class VoiceChat {
     const before = this.members.get(id);
     const wasActive = !!before?.session;
     if (before?.session !== session || (before?.channel || '') !== channel) this.close(id);
-    this.members.set(id, { session, channel, muted, deafened: !!session && !!deafened });
+    this.members.set(id, { session, channel, muted, deafened: !!session && !!deafened, desde: session ? desdeDe(idade) : 0 });
     // Na voz, o som de entrar e sair vale para o seu canal: alguém chegou nele ou saiu dele (trocar de subsala conta)
     const wasHere = wasActive && (before.channel || '') === this.channel, isHere = !!session && channel === this.channel;
     if (this.session ? wasHere !== isHere : wasActive !== !!session) this.activity((this.session ? isHere : session) ? 'voiceJoin' : 'voiceLeave', id);
@@ -398,4 +418,4 @@ class LiderAudio {
   // Sem mixer (testes), o fone silenciado cala as vozes da Líder também
   deafen(on) { if (!this.mixer) for (const p of this.ouve.values()) p.audio.muted = !!on; }
 }
-if (typeof module !== 'undefined') module.exports = { VoiceChat, LiderAudio };
+if (typeof module !== 'undefined') module.exports = { VoiceChat, LiderAudio, formatarTempoCall };

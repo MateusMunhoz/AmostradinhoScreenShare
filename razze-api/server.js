@@ -448,10 +448,12 @@ function createApiServer(options = {}) {
     let user = db.prepare("SELECT u.id, u.status FROM user_identities i JOIN users u ON u.id = i.user_id WHERE i.provider = 'google' AND i.subject = ?").get(identity.sub);
     if (!user) {
       limparNaoConfirmadas();
-      const existente = db.prepare('SELECT id, role, email_verificado AS verificado, confirmar_ate AS confirmarAte FROM users WHERE email = ?').get(identity.email);
+      const existente = db.prepare('SELECT id, role, status, email_verificado AS verificado, confirmar_ate AS confirmarAte FROM users WHERE email = ?').get(identity.email);
       // Cadastro por senha que ainda não confirmou o e-mail não prende o e-mail: o Google confirmou o dono, ele ganha
       if (existente?.confirmarAte) db.prepare('DELETE FROM users WHERE id = ?').run(existente.id);
       else if (existente) {
+        // Conta desativada: dizer isso já aqui. Mandar "entre com a senha" prenderia a pessoa, que então ouviria "desativada"
+        if (existente.status === 'disabled') throw new ApiError(403, 'account_disabled', 'Esta conta está desativada.');
         // Não junta sozinho: quem criou a conta com esse e-mail pode não ser o dono dele. Entra com a senha e vincula
         // (o ticket deixa o app vincular este mesmo Google logo depois de entrar, sem abrir o Google de novo). Com a
         // senha travada para ela (googleOnly sem legacyPasswordLogin e e-mail não confirmado), só o administrador destrava.

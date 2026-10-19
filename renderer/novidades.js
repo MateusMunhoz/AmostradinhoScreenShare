@@ -3,9 +3,13 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
-    "version": "1.20.1",
-    "date": "2026-10-17",
+    "version": "1.20.2",
+    "date": "2026-10-19",
     "items": [
+      "Docs: roadmap conferido com o código, guia e spec de assistir pelo navegador",
+      "O X da janela minimiza; esconder na bandeja vira opção",
+      "Tempo da call ao lado de cada canal de voz",
+      "Login Google: conta desativada responde account_disabled",
       "Ajustes na voz, mensagens e membros"
     ]
   },

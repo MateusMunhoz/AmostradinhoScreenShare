@@ -22,3 +22,12 @@ test('mutar, ensurdecer e clipe só ficam ativos na sala', () => {
     assert.strictEqual(on.find((i) => i.id === id).enabled, true);
   }
 });
+
+test('o X minimiza por padrão, esconde na bandeja se a pessoa escolheu e fecha de verdade ao sair', () => {
+  const { acaoDoFechar } = require('../main/bandeja');
+  assert.strictEqual(acaoDoFechar({ saindo: false, temBandeja: true, naBandeja: false }), 'minimizar');
+  assert.strictEqual(acaoDoFechar({ saindo: false, temBandeja: true, naBandeja: true }), 'esconder');
+  assert.strictEqual(acaoDoFechar({ saindo: true, temBandeja: true, naBandeja: true }), 'fechar');
+  // Sem bandeja (Linux sem área de notificação) o X volta a fechar o app, como sempre foi
+  assert.strictEqual(acaoDoFechar({ saindo: false, temBandeja: false, naBandeja: true }), 'fechar');
+});
