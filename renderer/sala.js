@@ -486,7 +486,7 @@ async function rejoin(host, timeoutMs) {
     state.members.set(m.id, { name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs || [], shareInfo: m.shareInfo || null, avatar: m.avatar || '', avatarFull: m.avatarFull || '', nameFont: AppPreferences.cleanNameFont(m.nameFont), razze: limparContaSala(m.razze), lider: m.lider === true, back: true });
     if (!state.order.includes(m.id)) state.order.push(m.id);
     if (before && before.sharing && !m.sharing) stopWatching(m.id, false);
-    voice.update(m.id, m.voiceSession || '', !!m.muted, !!m.deafened, m.voiceChannel);
+    voice.update(m.id, m.voiceSession || '', !!m.muted, !!m.deafened, m.voiceChannel, m.voiceIdade);
   }
   // Quem ainda não voltou tem um tempo para voltar; depois disso, conta como quem saiu
   clearTimeout(state.graceTimer);
@@ -514,7 +514,7 @@ function onRoomMessage(m) {
       state.members.set(m.id, { name: m.name, sharing: !!m.sharing, version: m.version, addrs: m.addrs || [], shareInfo: m.shareInfo || null, avatar: m.avatar || '', avatarFull: m.avatarFull || '', nameFont: AppPreferences.cleanNameFont(m.nameFont), razze: limparContaSala(m.razze), lider: m.lider === true, back: true });
       if (!state.order.includes(m.id)) state.order.push(m.id);
       if (back && back.sharing && !m.sharing) stopWatching(m.id, false);
-      voice.update(m.id, m.voiceSession || '', !!m.muted, !!m.deafened, m.voiceChannel);
+      voice.update(m.id, m.voiceSession || '', !!m.muted, !!m.deafened, m.voiceChannel, m.voiceIdade);
       // Caiu da sala enquanto eu assistia e voltou transmitindo em até 1 min: volta a assistir sozinho
       const caiu = state.rewatch.get(m.id);
       state.rewatch.delete(m.id);
@@ -580,7 +580,7 @@ function onRoomMessage(m) {
       break;
     }
     case 'voice-state':
-      if (m.id === state.myId || state.members.has(m.id)) voice.update(m.id, m.session, m.muted, m.deafened, m.channel);
+      if (m.id === state.myId || state.members.has(m.id)) voice.update(m.id, m.session, m.muted, m.deafened, m.channel, m.idade);
       break;
     case 'subsalas':
       setSubsalas(m.list);

@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('api', {
   pipOpacity: (id, v) => ipcRenderer.invoke('pip-opacity', String(id), v),
   pipGroup: (id, patch) => ipcRenderer.invoke('pip-group', String(id), patch),
   roomKeys: (on) => ipcRenderer.invoke('room-keys', !!on),
+  fecharNaBandeja: (on) => ipcRenderer.invoke('fechar-na-bandeja', !!on),
   getShortcuts: () => ipcRenderer.invoke('get-shortcuts'),
   setShortcut: (action, accel) => ipcRenderer.invoke('set-shortcut', action, accel),
   ptt: (vk) => ipcRenderer.invoke('ptt', Number(vk) || 0),

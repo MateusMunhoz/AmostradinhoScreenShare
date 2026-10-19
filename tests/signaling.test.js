@@ -243,3 +243,45 @@ test('mudar a senha: só o host; todos recebem a nova, e a sessão passa a dizer
   await b.wait(m => m.type === 'senha' && m.password === '');
   assert.equal(roomInfo().senha, false);
 });
+
+test('voz leva a idade de quem está no canal, para o contador da call', async t => {
+  const probe = net.createServer();
+  await new Promise(r => probe.listen(0, '127.0.0.1', r));
+  const port = probe.address().port;
+  await new Promise(r => probe.close(r));
+  assert.equal((await startServer(port)).ok, true);
+  t.after(stopServer);
+  const a = await client(port); t.after(() => a.ws.terminate());
+  a.send({ type: 'voice-state', session: 'session-a' });
+  const anunciado = await a.wait(m => m.type === 'voice-state');
+  assert.equal(typeof anunciado.idade, 'number');
+  assert.ok(anunciado.idade >= 0 && anunciado.idade < 1000);
+  await new Promise(r => setTimeout(r, 60));
+  const b = await client(port); t.after(() => b.ws.terminate());
+  assert.ok(b.welcome.members[0].voiceIdade >= 50, 'quem já estava na voz chega com a idade');
+  // Trocar de canal sem sair da voz não reinicia a contagem de quem fica; sair e voltar reinicia
+  b.send({ type: 'voice-state', session: 'session-b' });
+  assert.equal((await b.wait(m => m.type === 'voice-state')).id, b.welcome.id);
+  a.send({ type: 'voice-state', session: '' });
+  const saiu = await a.wait(m => m.type === 'voice-state' && m.id === a.welcome.id);
+  assert.equal(saiu.idade, 0);
+});
+
+test('idade da voz recomeça ao trocar de canal e some ao sair da voz', async t => {
+  const probe = net.createServer();
+  await new Promise(r => probe.listen(0, '127.0.0.1', r));
+  const port = probe.address().port;
+  await new Promise(r => probe.close(r));
+  assert.equal((await startServer(port)).ok, true);
+  t.after(stopServer);
+  const a = await client(port); t.after(() => a.ws.terminate());
+  a.send({ type: 'subsala-create' });
+  await a.wait(m => m.type === 'subsalas');
+  a.send({ type: 'voice-state', session: 'sa', channel: '' });
+  await a.wait(m => m.type === 'voice-state');
+  await new Promise(r => setTimeout(r, 120));
+  a.send({ type: 'voice-state', session: 'sa', channel: '' }); // mesmo canal: a contagem segue
+  assert.ok((await a.wait(m => m.type === 'voice-state')).idade >= 100);
+  a.send({ type: 'voice-state', session: 'sa', channel: '1' }); // chegou noutro canal: recomeça
+  assert.ok((await a.wait(m => m.type === 'voice-state')).idade < 100);
+});
