@@ -169,6 +169,10 @@ $('shareOpenOn').checked = load('transmissaoAberta', '1') !== '0';
 // Dicas (o "i"): liga e desliga todas de uma vez (renderer/util.js)
 $('tipsOn').checked = document.documentElement.dataset.tips !== 'off';
 $('tipsOn').onchange = () => { save('dicas', $('tipsOn').checked ? '1' : '0'); document.documentElement.dataset.tips = $('tipsOn').checked ? 'on' : 'off'; };
+// X da janela: minimiza (padrão) ou esconde na bandeja (main/bandeja.js)
+$('fecharNaBandeja').checked = load('fecharNaBandeja', '0') === '1';
+window.api.fecharNaBandeja($('fecharNaBandeja').checked).catch(() => {});
+$('fecharNaBandeja').onchange = () => { save('fecharNaBandeja', $('fecharNaBandeja').checked ? '1' : '0'); window.api.fecharNaBandeja($('fecharNaBandeja').checked).catch(() => {}); };
 // Prioridade vale para o app inteiro e já na abertura, não só durante a transmissão
 setRadio('priority', load('priority', 'above'));
 if (!radioValue('priority')) setRadio('priority', 'above');

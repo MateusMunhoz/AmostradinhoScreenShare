@@ -11,6 +11,7 @@ let tray = null;
 let inCall = false;
 let hideWarned = false;
 let quitting = false;
+let fecharNaBandeja = false; // preferência (configurações): o X esconde na bandeja em vez de minimizar
 let actions = { restart: () => app.quit() };
 
 // O menu, separado do Electron para dar para testar. Cada item tem um `id` que vira ação em buildMenu.
@@ -105,13 +106,22 @@ function setTrayIcon(img) {
   buildMenu();
 }
 
-// Ligar no 'close' da janela principal: com a bandeja, o X esconde. Saindo de verdade (menu, atualização,
-// reiniciar, desligar o PC), deixa fechar.
+// O que o X da janela faz. Padrão: minimizar (o botão fica na barra de tarefas; o ícone da bandeja costuma ficar
+// escondido na seta ^ do Windows 11 e a pessoa achava que o app tinha fechado). Escolhendo "esconder na bandeja", some
+// da barra de tarefas. Saindo de verdade (menu, atualização, reiniciar, desligar o PC) ou sem bandeja, fecha.
+function acaoDoFechar({ saindo, temBandeja, naBandeja }) {
+  if (saindo || !temBandeja) return 'fechar';
+  return naBandeja ? 'esconder' : 'minimizar';
+}
+
+// Ligar no 'close' da janela principal
 function hideOnClose(win) {
   win.on('session-end', () => { quitting = true; }); // Windows desligando ou saindo da conta
   win.on('close', (event) => {
-    if (quitting || !tray || tray.isDestroyed()) return;
+    const acao = acaoDoFechar({ saindo: quitting, temBandeja: !!tray && !tray.isDestroyed(), naBandeja: fecharNaBandeja });
+    if (acao === 'fechar') return;
     event.preventDefault();
+    if (acao === 'minimizar') return win.minimize();
     win.hide();
     if (!hideWarned && process.platform === 'win32') {
       hideWarned = true;
@@ -125,5 +135,6 @@ function hideOnClose(win) {
 }
 
 function setQuitting() { quitting = true; }
+function setFecharNaBandeja(on) { fecharNaBandeja = !!on; }
 
-module.exports = { menuModel, createTray, setCall, setTrayIcon, hideOnClose, setQuitting };
+module.exports = { menuModel, acaoDoFechar, createTray, setCall, setTrayIcon, hideOnClose, setQuitting, setFecharNaBandeja };
