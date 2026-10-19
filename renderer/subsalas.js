@@ -270,13 +270,23 @@ function channelHead(ch, sub) {
   li.dataset.channel = ch;
   const icon = document.createElement('span');
   icon.className = 'voice-channel-icon';
-  // Sem caixa: as barrinhas de som (azuis e altas no seu canal, baixas e cinza nos outros) e o nome. Sem o número de
-  // pessoas: quem está no canal aparece logo embaixo
+  // Sem caixa: as barrinhas de som (azuis e altas no seu canal, baixas e cinza nos outros), o nome e quantas pessoas
+  // estão nele (some com o canal vazio: o "Ninguém aqui" embaixo já diz)
   icon.innerHTML = here ? ICON.ondas : ICON.ondasParadas;
   icon.setAttribute('aria-hidden', 'true');
   const name = document.createElement('strong');
   name.textContent = channelName(ch);
   li.append(icon, name);
+  const n = voiceIdsIn(ch).length;
+  let conta = null;
+  if (n) {
+    conta = document.createElement('span');
+    conta.className = 'voice-channel-n';
+    conta.textContent = String(n);
+    conta.title = `${n} ${n === 1 ? 'pessoa' : 'pessoas'} em ${channelName(ch)}`;
+    conta.setAttribute('aria-label', conta.title);
+    name.after(conta);
+  }
   const tempo = tempoDoCanalEl(ch);
   if (tempo) li.append(tempo);
   // Subsala Líder: o selo, e AO VIVO com alguém transmitindo nela
@@ -288,7 +298,7 @@ function channelHead(ch, sub) {
     selo.title = 'Subsala Líder: quem está nela fala para a sala toda';
     const aoVivo = voiceIdsIn(ch).some((id) => (id ? state.members.get(id)?.sharing : state.sharing));
     if (aoVivo) { selo.classList.add('ao-vivo'); selo.textContent = 'Líder · ao vivo'; }
-    (tempo || name).after(selo);
+    (tempo || conta || name).after(selo);
   }
   if (!here && voice.supported && !voice.pending) {
     const label = voice.session ? `Ir para ${channelName(ch)}` : `Entrar na voz, em ${channelName(ch)}`;

@@ -1157,6 +1157,7 @@ function leaveSkyProfile() {
 // A música no perfil: um vinil que sai de dentro da capa e gira (com a capa no selo); pausada, ele volta para dentro e
 // para. É a única animação contínua do perfil: só enquanto ele está aberto, só transform (CSS) e parada no modo gamer e
 // com "reduzir movimento" do Windows
+let histVisto = ''; // de quem é o mosaico de recentes que já fez a entrada
 let atvVinilVisto = { id: '', pausada: false }; // de quem é a música do perfil aberto e se estava pausada
 function atvVinil(el, capa, icone) {
   const caixa = el('span', 'atv-icon atv-vinil');
@@ -1204,7 +1205,7 @@ function renderSkyProfile() {
   const here = voiceChannelOf(pid);
   const canMove = channels.length > 1 && canDragVoice(pid);
   const bg = profileBgOf(pid); // o fundo do perfil da pessoa (renderer/fundo-perfil.js), se já chegou
-  const key = JSON.stringify([skyFocusFrom, voiceNow, id, name, sharing, state.in.has(id), micOff, deafOn, v?.muted, v?.voice, v?.screen, bg.length, bg.slice(-40), here, canMove, channels.map(channelName), photoHashOf(pid), bioDe(pid), atvDe(pid), [...(atvhDe(pid)?.jogos || []), ...(atvhDe(pid)?.musicas || [])].map((x) => [x.nome || x.artista, x.faixa, x.em]), contaDe(id), typeof friendsData === 'object' ? [friendsData.friends.length, friendsData.outgoing.length, friendsData.incoming.length] : 0]);
+  const key = JSON.stringify([skyFocusFrom, voiceNow, id, name, sharing, state.in.has(id), micOff, deafOn, v?.muted, v?.voice, v?.screen, bg.length, bg.slice(-40), here, canMove, channels.map(channelName), photoHashOf(pid), bioDe(pid), atvDe(pid), [...(atvhDe(pid)?.jogos || []), ...(atvhDe(pid)?.musicas || [])].map((x) => [x.nome || x.artista, x.faixa, x.em, (x.imagem || x.capa || '').length]), contaDe(id), typeof friendsData === 'object' ? [friendsData.friends.length, friendsData.outgoing.length, friendsData.incoming.length] : 0]);
   if (key === skyFocusKey && !box.hidden) return placeSkyProfile();
   skyFocusKey = key;
   box.replaceChildren();
@@ -1498,36 +1499,52 @@ function renderSkyPage(box, { id, me, pid, name, sharing, micOff, deafOn, v, cha
   if (hist) {
     const jogos = hist.jogos.filter((j) => j.nome !== atv?.jogo);
     const musicas = hist.musicas.filter((m) => !(m.artista === atv?.artista && m.faixa === (atv?.faixa || '')));
-    const secao = (titulo) => { const s = el('section', 'sky-page-hist'); s.append(el('h4', 'sky-page-hist-t', titulo)); box.append(s); return s; };
-    const imagem = (cls, src, icone) => {
-      const s = el('span', cls);
-      if (src) { const img = el('img'); img.src = src; img.alt = ''; s.append(img); } else s.innerHTML = ICON[icone];
-      return s;
-    };
-    if (jogos.length) {
-      const grade = el('div', 'hist-jogos');
-      for (const j of jogos) {
-        const card = el('div', 'hist-jogo');
-        card.title = j.nome;
-        card.append(imagem('hist-jogo-img', j.imagem, 'game'), el('span', 'hist-jogo-nome', j.nome), el('span', 'hist-quando', atvQuando(j.em)));
-        grade.append(card);
-      }
-      secao('Jogou recentemente').append(grade);
-    }
-    if (musicas.length) {
-      const s = secao('Ouviu recentemente');
-      for (const m of musicas) {
-        // Como a música de agora: clicar abre a busca dela no Spotify, no navegador
-        const b = el('button', 'hist-musica');
-        b.type = 'button';
-        b.title = (m.faixa ? `${m.faixa} — ${m.artista}` : m.artista) + ` · ${atvQuando(m.em)}\nAbrir no Spotify`;
-        b.onclick = () => window.api?.openLink?.('https://open.spotify.com/search/' + encodeURIComponent([m.faixa, m.artista].filter(Boolean).join(' ')));
-        const txt = el('span', 'hist-musica-txt');
-        txt.append(el('strong', '', m.faixa || m.artista));
-        if (m.faixa) txt.append(` · ${m.artista}`);
-        b.append(imagem('hist-capa', m.capa, 'music'), txt);
-        s.append(b);
-      }
+    // Um mosaico só, do mais novo ao mais velho: o primeiro ocupa o bloco grande (2x2) e os outros quatro fecham a grade
+    const itens = [...jogos.map((j) => ({ ...j, jogo: true })), ...musicas].sort((x, y) => (y.em || 0) - (x.em || 0)).slice(0, 5);
+    if (itens.length) {
+      const s = el('section', 'sky-page-hist');
+      s.append(el('h4', 'sky-page-hist-t', 'Atividade'));
+      const grade = el('div', 'hist-mosaico');
+      // A cascata de entrada só ao abrir o perfil (ou trocar de pessoa), não a cada vez que ele é redesenhado
+      if (box.hidden || histVisto !== id) grade.classList.add('entra');
+      histVisto = id;
+      itens.forEach((x, i) => {
+        const nome = x.jogo ? x.nome : (x.faixa || x.artista);
+        const quando = atvQuando(x.em);
+        const b = el(x.jogo ? 'div' : 'button', 'hist-bloco' + (i === 0 ? ' grande' : ''));
+        b.style.setProperty('--i', i);
+        const arte = el('span', 'hist-arte');
+        const src = x.jogo ? x.imagem : x.capa;
+        if (src) { const img = el('img'); img.src = src; img.alt = ''; arte.append(img); } else arte.innerHTML = ICON[x.jogo ? 'game' : 'music'];
+        // O ícone do .exe (PNG, 32-48 px) fica no tamanho dele, no meio do bloco, em vez de esticado e borrado
+        if (src?.startsWith('data:image/png')) arte.classList.add('icone');
+        const veu = el('span', 'hist-veu');
+        // No bloco grande o "quando" já está no selo de cima: embaixo fica só o artista
+        veu.append(el('strong', '', nome), el('small', '', [x.jogo ? '' : (x.faixa ? x.artista : ''), i === 0 ? '' : quando].filter(Boolean).join(' · ')));
+        b.append(arte, veu);
+        if (i === 0) {
+          const chip = el('span', 'hist-chip');
+          chip.innerHTML = ICON[x.jogo ? 'game' : 'music'];
+          chip.append(quando);
+          b.append(chip);
+        }
+        if (x.jogo) b.title = `${x.nome} · ${quando}`;
+        else {
+          // Como a música de agora: clicar abre a busca dela no Spotify, no navegador
+          // A nota no canto diz que é música; com o mouse em cima, vira a seta de abrir
+          if (i > 0) { const nota = el('span', 'hist-nota'); nota.innerHTML = ICON.music; b.append(nota); }
+          const ida = el('span', 'hist-abrir');
+          ida.innerHTML = ICON.chevron;
+          b.append(ida);
+          b.type = 'button';
+          b.title = `${x.faixa ? `${x.faixa} — ${x.artista}` : x.artista} · ${quando}
+Abrir no Spotify`;
+          b.onclick = () => window.api?.openLink?.('https://open.spotify.com/search/' + encodeURIComponent([x.faixa, x.artista].filter(Boolean).join(' ')));
+        }
+        grade.append(b);
+      });
+      s.append(grade);
+      box.append(s);
     }
   }
   if (list.childElementCount) box.append(list); // no seu perfil, sem outro canal, não sobra ação nenhuma

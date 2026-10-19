@@ -499,7 +499,11 @@ function renderComandoVozConfig() {
   $('vozIaModeloNuvem').value = ia.modeloNuvem;
   $('vozIaChave').placeholder = comandoVoz.iaEstado.temChave ? 'Chave guardada (digite outra para trocar)' : 'sk-ant-…';
   $('vozIaApagarChave').hidden = !comandoVoz.iaEstado.temChave;
-  window.api?.getShortcuts?.().then((k) => { $('vozCmdKey').textContent = accelLabel(k?.voiceCmd || ''); }).catch(() => {});
+  // Sem tecla (tirada em Atalhos): diz isso em vez de "segure Nenhum"
+  window.api?.getShortcuts?.().then((k) => {
+    $('vozCmdKey').textContent = k?.voiceCmd ? accelLabel(k.voiceCmd) : 'a tecla do comando';
+    $('vozCmdKey').classList.toggle('vazio', !k?.voiceCmd);
+  }).catch(() => {});
   $('vozCmdBaixar').hidden = !e?.baixando;
   const baixado = !!e && (e.programa || e.modelos.length > 0);
   $('vozCmdRemover').hidden = !baixado || !!e?.baixando || comandoVoz.ligado;

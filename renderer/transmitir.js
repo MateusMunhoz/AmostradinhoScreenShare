@@ -103,8 +103,7 @@ function renderShareSummary() {
   $('startBtn').disabled = !src || same;
   if (!$('startBtn').dataset.busy) $('startBtn').textContent = state.shareSwitching ? 'Trocar para esta' : 'Iniciar transmissão';
   const open = $('advToggle').getAttribute('aria-expanded') === 'true';
-  const prio = document.querySelector('input[name="priority"]:checked')?.nextElementSibling?.textContent || '';
-  $('advSummary').textContent = open ? '' : `${encodeText()} · prioridade ${prio.toLowerCase()}`;
+  $('advSummary').textContent = open ? '' : encodeText();
 }
 
 function setAdvanced(open) {
@@ -426,6 +425,7 @@ function stopSharing(reason) {
   stopTracks();
   state.shareInfo = null;
   state.shareInfoKey = '';
+  zerarMiniatura();
   send({ type: 'share', sharing: false });
   updateStage();
   renderShareBox();
@@ -834,4 +834,56 @@ function renderWatchers() {
   $('liveText').classList.toggle('live-silent', silent);
   $('liveText').title = quem + (silent ? '. Sua transmissão está sem o som do PC. Para ter som, pare e transmita de novo com "Som do PC" ligado.' : '');
   $('liveText').setAttribute('aria-label', $('liveText').title);
+}
+
+// ---------- Miniatura da tela (os cartões "Transmitindo" do painel da voz) ----------
+// Quem está na sala pede pela sala ({ side: 'mini', want }) e recebe { side: 'mini', hash, data }: um JPEG pequeno da
+// minha tela, feito na hora do pedido se o último tem mais de 15 s. Só para quem pode assistir (mayWatchMe), no máximo
+// um a cada 8 s para cada pessoa. O servidor da sala só repassa o sinal, como a foto de perfil (fotos.js)
+const MINI_W = 320, MINI_H = 180, MINI_MAX = 40 * 1024, MINI_IDADE = 15000, MINI_INTERVALO = 8000;
+const mini = { data: '', hash: '', em: 0, fazendo: null, respondido: new Map() };
+function zerarMiniatura() { Object.assign(mini, { data: '', hash: '', em: 0, fazendo: null }); mini.respondido.clear(); }
+// Um quadro da tela: da faixa de vídeo da captura; no NVENC (sem faixa no Chromium), da miniatura da fonte (get-sources)
+async function quadroDaTela() {
+  const track = state.stream?.getVideoTracks().find((t) => t.readyState === 'live');
+  if (track && typeof ImageCapture === 'function') return new ImageCapture(track).grabFrame();
+  const fonte = (await window.api.getSources()).find((s) => s.id === state.selectedSource);
+  if (!fonte?.thumbnail) return null;
+  const img = new Image();
+  img.src = fonte.thumbnail;
+  await img.decode();
+  return img;
+}
+async function fazerMiniatura() {
+  const quadro = await quadroDaTela();
+  if (!quadro || !state.sharing) return;
+  const canvas = document.createElement('canvas');
+  canvas.width = MINI_W;
+  canvas.height = MINI_H;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, MINI_W, MINI_H);
+  // Inteira, no meio (tela em pé ou janela estreita ficam com faixas pretas)
+  const w = quadro.width, h = quadro.height, esc = Math.min(MINI_W / w, MINI_H / h);
+  ctx.drawImage(quadro, (MINI_W - w * esc) / 2, (MINI_H - h * esc) / 2, w * esc, h * esc);
+  quadro.close?.();
+  for (const q of [0.7, 0.5, 0.35]) {
+    const blob = await new Promise((ok) => canvas.toBlob(ok, 'image/jpeg', q));
+    if (!blob || blob.size > MINI_MAX) continue;
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    Object.assign(mini, { data: toBase64(bytes), hash: await sha256(bytes), em: Date.now() });
+    return;
+  }
+}
+async function responderMiniatura(from, data) {
+  if (!state.sharing || !mayWatchMe(from)) return;
+  const ultima = mini.respondido.get(from) || 0;
+  if (Date.now() - ultima < MINI_INTERVALO) return;
+  mini.respondido.set(from, Date.now());
+  if (Date.now() - mini.em > MINI_IDADE) {
+    mini.fazendo ||= fazerMiniatura().catch(console.error).finally(() => { mini.fazendo = null; });
+    await mini.fazendo;
+  }
+  if (!mini.data || !state.sharing || data.want === mini.hash) return; // ela já tem esta
+  sendSignal(from, { side: 'mini', hash: mini.hash, data: mini.data });
 }

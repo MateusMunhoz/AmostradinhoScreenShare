@@ -134,7 +134,7 @@ applyAppTheme();
 function saveAppPreferences() {
   try {
     appPreferences = AppPreferences.write(localStorage, appPreferences);
-    $('settingsSaveStatus').textContent = 'Salvo neste dispositivo. As escolhas continuam ao reabrir o app.';
+    $('settingsSaveStatus').textContent = ''; // salvar é o normal: a linha só fala quando algo dá errado
   } catch { $('settingsSaveStatus').textContent = 'Não foi possível salvar neste dispositivo. As alterações valem apenas nesta sessão.'; }
   applyAppTheme();
   for (const p of state.pips.values()) if (!p.win.closed) applyAppTheme(p.win.document);
@@ -164,7 +164,7 @@ function renderGeneralSettings() {
   $('notificationVolume').value = appPreferences.sounds.volume;
   $('notificationVolumeValue').textContent = `${appPreferences.sounds.volume}%`;
 }
-// tab: a aba que abre (voice, shortcuts, skin, appearance, colors, sounds, activity, phone, dms, network, extras, perf, stream, help); sem ela, a última
+// tab: a aba que abre (voice, transmissao, shortcuts, sounds, skin, appearance, colors, activity, phone, network, extras, perf, stream, help); sem ela, a última
 function openGeneralSettings(tab) {
   if (typeof tab !== 'string') tab = null; // pelo onclick chega o evento
   if (!$('profilePane').hidden) closeProfilePopup();
@@ -430,7 +430,7 @@ function setupAppearance() {
     $('loadLocalFonts').disabled = false;
   };
 }
-// Configurações: os grupos na barra da esquerda (Voz e atalhos, Aparência, Sons, Celular, Estatísticas) e as abas do
+// Configurações: os grupos na barra da esquerda, em blocos (Uso diário, Aparência, Você e seus dados, Conexão, Ajuda), e as abas do
 // grupo no topo (só quando ele tem mais de uma). Cada grupo lembra a última aba; a janela lembra a última de todas.
 let settingsTabNow = null;
 const settingsTabs = () => [...document.querySelectorAll('.settings-tabs [role=tab]')];
@@ -465,9 +465,10 @@ function settingsGroupChanged(before, now) {
   if (before === 'voz') leaveVoiceSettings();
   if (before === 'stats') leaveStats();
   if (now === 'voz') enterVoiceSettings();
+  if (now === 'atalhos') enterShortcutSettings();
   if (now === 'stats') enterStats();
   if (now === 'rede') renderConnectivitySettings(); // Rede: o estado da conexão e da conta na hora
-  if (now === 'atividade') void renderSteamJogos(); // Atividade: os jogos da Steam deste PC (conta.js)
+  if (now === 'privacidade') void renderSteamJogos(); // Privacidade: os jogos da Steam deste PC (conta.js)
   syncConnectionMap(); // o mapa de conexões (grupo Rede) só atualiza com ele à vista
 }
 function setupSettingsTabs() {
@@ -486,7 +487,8 @@ function setupSettingsTabs() {
   const groups = [...document.querySelectorAll('.settings-nav [data-group]')];
   for (const b of groups) {
     const g = b.dataset.group;
-    b.onclick = () => showSettingsTab(load('settingsTab:' + g) || tabs.find((t) => t.dataset.group === g).dataset.tab);
+    // A última aba do grupo, se ela ainda for dele (os grupos mudaram: Atalhos já foi aba de Voz)
+    b.onclick = () => { const ult = load('settingsTab:' + g); showSettingsTab(settingsGroupOf(ult) === g ? ult : tabs.find((t) => t.dataset.group === g).dataset.tab); };
     b.onkeydown = (e) => {
       const i = groups.indexOf(b);
       const next = { ArrowDown: i + 1, ArrowUp: i - 1, Home: 0, End: groups.length - 1 }[e.key];

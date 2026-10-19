@@ -186,7 +186,7 @@ run('Passo a passo guiado', 240000, async () => {
     check('Convite de verdade: acende o envelope', await anelEm(C, '#dmBarLabel'));
     await C.eval(`$('dmBarLabel').click()`);
     await noPasso(C, 'convite:2');
-    await C.eval(`$('dmPanelConvList').firstElementChild.click()`);
+    await C.eval(`$('dmPanelConvList').querySelector('.hub-conv').click()`);
     await noPasso(C, 'convite:3');
     check('Conversa aberta: acende o Entrar do cartão', await anelEm(C, '.dm-slot.open .dm-invite button'));
     await C.shot('tour-convite-real.png');

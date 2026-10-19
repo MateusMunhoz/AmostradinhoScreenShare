@@ -147,6 +147,7 @@ test('números do painel: contas, uso por dia, pico, versões e quem nunca abriu
   assert.ok(a.accounts.total >= 5);
   assert.equal(a.accounts.admins >= 2, true);
   assert.deepEqual(a.versions.map((v) => v.version).sort(), ['1.18.0', '1.18.1']);
+  assert.ok(a.versions.every((v) => v.n === v.people.length && v.people.every((p) => p.id && p.displayName)), 'cada versão diz quem está nela');
   assert.equal(a.daily.length, 14);
   assert.equal(a.daily.at(-1).active, 2);
   assert.ok(a.daily.at(-1).signups >= 1);

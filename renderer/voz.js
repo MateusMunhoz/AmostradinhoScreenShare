@@ -292,7 +292,8 @@ function renderVoice() {
   setIcon($('voiceDeafen'), voice.deafened ? 'headphonesOff' : 'headphones', voice.deafened ? 'Ouvir as vozes' : 'Silenciar as vozes');
   $('voiceDeafen').setAttribute('aria-pressed', String(voice.deafened));
   if (state.myId) $('voiceMe').dataset.person = state.myId;
-  setIcon($('voiceSettingsBtn'), 'sliders', 'Voz e atalhos: supressão de ruído, eco, apertar para falar e teclas');
+  if (active) paintAvatar($('voiceMeAvatar')); // a sua foto no Seu sinal (repaintAllAvatars a troca depois)
+  setIcon($('voiceSettingsBtn'), 'sliders', 'Ajustes da voz: supressão de ruído, eco e apertar para falar');
   applyMicGate();
   syncPtt();
   renderVoiceMe();

@@ -2,7 +2,7 @@
 // do perfil (main/atividade.js). Só players de música da lista abaixo: navegador e outros apps não aparecem.
 // Uso: midia.exe   (sem argumentos)
 // Saída (uma linha JSON por mudança): {"tocando":false} ou
-//   {"tocando":true,"app":"Spotify.exe","faixa":"...","artista":"...","album":"...","capa":"<JPEG 96x96 em base64>"}
+//   {"tocando":true,"app":"Spotify.exe","faixa":"...","artista":"...","album":"...","capa":"<JPEG de até 192x192 em base64>"}
 // Não fica perguntando: dorme até o Windows avisar que a faixa ou o play/pause mudou (e confere a cada 30 s por
 // garantia). Termina sozinho quando o app fecha (stdin acaba).
 #include <windows.h>
@@ -63,7 +63,9 @@ static std::string json(std::string s) {
   return o;
 }
 
-// A capa: cortada no meio em quadrado, 96x96, JPEG. Vazia se não tem ou não deu para ler.
+// A capa: cortada no meio em quadrado, JPEG de até 20 KB (o limite que o app, inclusive as versões antigas, aceita).
+// Tenta 192x192 (o bloco grande do perfil fica nítido) e, se passar do limite, baixa a qualidade e depois o tamanho.
+// Vazia se não tem ou não deu para ler.
 static std::string capaBase64(GlobalSystemMediaTransportControlsSessionMediaProperties const& p) {
   try {
     const auto ref = p.Thumbnail();
@@ -72,28 +74,34 @@ static std::string capaBase64(GlobalSystemMediaTransportControlsSessionMediaProp
     const auto dec = BitmapDecoder::CreateAsync(entrada).get();
     const uint32_t w = dec.PixelWidth(), h = dec.PixelHeight();
     if (!w || !h) return {};
-    const double esc = 96.0 / (w < h ? w : h);
-    const uint32_t sw = (std::max)(96u, static_cast<uint32_t>(std::lround(w * esc)));
-    const uint32_t sh = (std::max)(96u, static_cast<uint32_t>(std::lround(h * esc)));
-    BitmapTransform t;
-    t.ScaledWidth(sw);
-    t.ScaledHeight(sh);
-    t.Bounds({ (sw - 96) / 2, (sh - 96) / 2, 96, 96 }); // o corte vale depois da escala
-    t.InterpolationMode(BitmapInterpolationMode::Fant);
-    const auto bmp = dec.GetSoftwareBitmapAsync(BitmapPixelFormat::Bgra8, BitmapAlphaMode::Ignore, t,
-      ExifOrientationMode::RespectExifOrientation, ColorManagementMode::DoNotColorManage).get();
-    InMemoryRandomAccessStream saida;
-    BitmapPropertySet opcoes;
-    opcoes.Insert(L"ImageQuality", BitmapTypedValue(box_value(0.8f), winrt::Windows::Foundation::PropertyType::Single));
-    const auto enc = BitmapEncoder::CreateAsync(BitmapEncoder::JpegEncoderId(), saida, opcoes).get();
-    enc.SetSoftwareBitmap(bmp);
-    enc.FlushAsync().get();
-    const auto tam = static_cast<uint32_t>(saida.Size());
-    if (!tam || tam > 20000) return {};
-    saida.Seek(0);
-    Buffer buf(tam);
-    const auto lido = saida.ReadAsync(buf, tam, InputStreamOptions::None).get();
-    return utf8(winrt::Windows::Security::Cryptography::CryptographicBuffer::EncodeToBase64String(lido));
+    const uint32_t menor = w < h ? w : h;
+    const struct { uint32_t lado; float qualidade; } tentativas[] = { { 192, 0.8f }, { 192, 0.6f }, { 128, 0.7f }, { 96, 0.8f } };
+    for (const auto [alvo, qualidade] : tentativas) {
+      const uint32_t lado = (std::min)(alvo, (std::max)(96u, menor)); // não amplia capa pequena além do que ela tem
+      const double esc = static_cast<double>(lado) / menor;
+      const uint32_t sw = (std::max)(lado, static_cast<uint32_t>(std::lround(w * esc)));
+      const uint32_t sh = (std::max)(lado, static_cast<uint32_t>(std::lround(h * esc)));
+      BitmapTransform t;
+      t.ScaledWidth(sw);
+      t.ScaledHeight(sh);
+      t.Bounds({ (sw - lado) / 2, (sh - lado) / 2, lado, lado }); // o corte vale depois da escala
+      t.InterpolationMode(BitmapInterpolationMode::Fant);
+      const auto bmp = dec.GetSoftwareBitmapAsync(BitmapPixelFormat::Bgra8, BitmapAlphaMode::Ignore, t,
+        ExifOrientationMode::RespectExifOrientation, ColorManagementMode::DoNotColorManage).get();
+      InMemoryRandomAccessStream saida;
+      BitmapPropertySet opcoes;
+      opcoes.Insert(L"ImageQuality", BitmapTypedValue(box_value(qualidade), winrt::Windows::Foundation::PropertyType::Single));
+      const auto enc = BitmapEncoder::CreateAsync(BitmapEncoder::JpegEncoderId(), saida, opcoes).get();
+      enc.SetSoftwareBitmap(bmp);
+      enc.FlushAsync().get();
+      const auto tam = static_cast<uint32_t>(saida.Size());
+      if (!tam || tam > 20000) continue;
+      saida.Seek(0);
+      Buffer buf(tam);
+      const auto lido = saida.ReadAsync(buf, tam, InputStreamOptions::None).get();
+      return utf8(winrt::Windows::Security::Cryptography::CryptographicBuffer::EncodeToBase64String(lido));
+    }
+    return {};
   } catch (...) {
     return {};
   }

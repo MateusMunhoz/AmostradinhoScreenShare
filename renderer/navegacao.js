@@ -8,7 +8,8 @@ const workspaceViews = (() => {
     streams: typeof saved?.streams === 'boolean' ? saved.streams : true };
 })();
 // Abas do painel: a aba aberta, "lado a lado" (Voz e Chat juntos, com a divisória de sempre) e recolhido (o painel
-// some e a sua voz vai para a barrinha). Quem já usava o chat e a voz juntos começa lado a lado. Os painéis de chat
+// some e a sua voz vai para a barrinha). Lado a lado não tem botão: com Voz ou Chat aberto, clicar no outro abre os dois;
+// com os dois abertos, clicar num fecha esse (clicarAbaSala). Quem já usava o chat e a voz juntos começa lado a lado. Os painéis de chat
 // e de voz são os de sempre: a aba só decide quais aparecem, por workspaceViews.chat e .voice (aplicarPainelSala).
 const painelSala = (() => {
   let s; try { s = JSON.parse(load('painelSala.v1', '{}')); } catch {}
@@ -52,7 +53,6 @@ function openProfilePopup(aba) {
   $('profilePane').hidden = false;
   syncWorkspace();
   setUtilityBackground(true);
-  if (typeof sincronizarAtividadePerfil === 'function') sincronizarAtividadePerfil();
   const pendente = typeof contaPrecisaAtencao === 'function' && contaPrecisaAtencao();
   setProfileTab(typeof aba === 'string' ? aba : pendente ? 'conta' : load('perfilAba', 'perfil'));
   $('profilePane').querySelector('.profile-dialog').focus(); // o próprio painel (sem acender o anel no X)
@@ -161,8 +161,6 @@ function syncWorkspace() {
   $('navVoice').setAttribute('aria-pressed', String(workspaceViews.voice));
   $('navChat').setAttribute('aria-pressed', String(workspaceViews.chat));
   $('peopleBtn').setAttribute('aria-pressed', String(pessoas));
-  $('paneJuntos').setAttribute('aria-pressed', String(painelSala.juntos));
-  setIcon($('paneJuntos'), 'splitRows', painelSala.juntos ? 'Separar: uma aba de cada vez' : 'Voz e Chat lado a lado (um em cima do outro)');
   $('navSettings').setAttribute('aria-expanded', String(settings));
   $('navProfile').setAttribute('aria-expanded', String(profile));
   fitNav();
@@ -256,14 +254,21 @@ function renderSeuSinal() {
   renderLiderLinha();
   renderCallbar();
 }
+// Voz ou Chat: vindo de Pessoas (ou do painel recolhido), abre só essa; com a outra aberta, abre as duas (lado a lado);
+// com as duas abertas, fecha a clicada e fica a outra. Clicar na única aberta não muda nada.
+function clicarAbaSala(aba) {
+  const outra = aba === 'voz' ? 'chat' : 'voz';
+  if (painelSala.recolhido || painelSala.aba === 'pessoas') setPainelSala({ aba, juntos: false, recolhido: false });
+  else if (painelSala.juntos) setPainelSala({ aba: outra, juntos: false });
+  else if (painelSala.aba !== aba) setPainelSala({ aba, juntos: true });
+}
 function setupSeuSinal() {
   setIcon($('paneExpand'), 'panelOpen', 'Abrir o painel da sala');
   setIcon($('paneRecolher'), 'panelClose', 'Recolher o painel (a sua voz fica na barrinha)');
   $('paneExpand').onclick = () => setPainelSala({ recolhido: false });
   $('paneRecolher').onclick = () => setPainelSala({ recolhido: true });
-  $('paneJuntos').onclick = () => setPainelSala(painelSala.juntos ? { juntos: false } : { juntos: true, aba: painelSala.aba === 'pessoas' ? 'voz' : painelSala.aba });
-  $('navVoice').onclick = () => setPainelSala({ aba: 'voz', recolhido: false });
-  $('navChat').onclick = () => setPainelSala({ aba: 'chat', recolhido: false });
+  $('navVoice').onclick = () => clicarAbaSala('voz');
+  $('navChat').onclick = () => clicarAbaSala('chat');
   $('peopleBtn').onclick = () => setPainelSala({ aba: 'pessoas', recolhido: false });
   // Setas trocam de aba (como numa lista de abas)
   $('paneTabs').addEventListener('keydown', (e) => {
@@ -272,7 +277,7 @@ function setupSeuSinal() {
     if (at < 0) return;
     e.preventDefault();
     const next = tabs[(at + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
-    next.focus(); next.click();
+    next.focus(); // só leva o foco: Enter ou espaço abre (clicar na outra aba juntaria as duas)
   });
   $('miniMute').onclick = () => $('voiceMute').click();
   $('miniDeafen').onclick = () => $('voiceDeafen').click();
@@ -310,10 +315,13 @@ function renderCallbar() {
   setIcon($('cbDeafen'), voice.deafened ? 'headphonesOff' : 'headphones', voice.deafened ? 'Ouvir as vozes' : 'Silenciar as vozes');
   $('cbDeafen').setAttribute('aria-pressed', String(voice.deafened));
   $('cbDeafen').classList.toggle('off', voice.deafened);
+  // O monitor: parado, transmite; ao vivo, cheio de azul, e com o mouse em cima vira o monitor cortado (parar)
   const live = !!state.sharing;
-  $('cbShare').hidden = live;
-  $('cbLive').hidden = !live;
-  $('cbLiveVer').setAttribute('aria-pressed', $('selfViewBtn').getAttribute('aria-pressed') || 'false');
+  setIcon($('cbShare'), 'monitor', live ? 'Parar de transmitir' : 'Escolher a tela ou a janela para transmitir');
+  if (live) $('cbShare').insertAdjacentHTML('beforeend', ICON.monitorOff);
+  $('cbShare').classList.toggle('ao-vivo', live);
+  $('cbSwap').hidden = !live;
+  $('cbAudience').hidden = !live;
   setIcon($('cbLeave'), 'leave', 'Sair da voz');
 }
 function setupCallbar() {
@@ -326,17 +334,10 @@ function setupCallbar() {
   $('callbar').addEventListener('transitionend', (e) => { if (e.target === $('callbar') && !$('callbar').classList.contains('on')) $('callbar').hidden = true; });
   $('cbMic').onclick = () => $('voiceMute').click();
   $('cbDeafen').onclick = () => $('voiceDeafen').click();
-  $('cbShare').innerHTML = `${ICON.monitor}<span>Transmitir tela</span>`;
-  $('cbShare').title = 'Escolher a tela ou a janela para transmitir';
-  $('cbShare').onclick = () => $('shareBtn').click();
-  $('cbLiveVer').title = 'Ver a sua tela';
-  $('cbLiveVer').onclick = () => { $('selfViewBtn').click(); renderCallbar(); };
+  $('cbShare').onclick = () => $(state.sharing ? 'stopShareBtn' : 'shareBtn').click();
   $('cbAudience').onclick = () => toggleShareOpenMenu(undefined, $('cbAudience')); // o mesmo menu do painel, ao lado deste botão
-  $('cbSwap').innerHTML = `${ICON.swap}<span>Trocar tela</span>`;
-  $('cbSwap').title = 'Trocar a tela ou janela transmitida, sem parar';
+  setIcon($('cbSwap'), 'swap', 'Trocar a tela ou janela transmitida, sem parar');
   $('cbSwap').onclick = () => $('switchShareBtn').click();
-  setIcon($('cbStop'), 'stop', 'Parar de transmitir');
-  $('cbStop').onclick = () => $('stopShareBtn').click();
   $('cbLeave').onclick = () => { setCallbar(false); $('voiceJoin').click(); }; // na voz, o voiceJoin é o Sair
   renderCallbar();
 }
@@ -348,7 +349,7 @@ function fitNav() {
   if (nav.scrollWidth > nav.clientWidth + 1) nav.classList.add('nav-tight');
 }
 
-// Seção da voz. Fora dela: Entrar como botão principal. Na voz: embaixo da lista, Voz e atalhos (só o ícone, o nome na
+// Seção da voz. Fora dela: Entrar como botão principal. Na voz: embaixo da lista, os ajustes da voz (só o ícone, o nome na
 // dica) e a Subsala. Microfone, fone e Sair não se repetem aqui: ficam no cartão Seu sinal, logo embaixo (e na faixa
 // do Início, no saguão).
 function layoutVoicePane(active) {
@@ -356,7 +357,7 @@ function layoutVoicePane(active) {
   const settings = $('paneVoiceSettings'), join = $('paneVoiceJoin');
   pane.classList.toggle('voice-in-call', active);
   settings.hidden = !active;
-  if (active) { setIcon(settings, 'sliders', 'Voz e atalhos'); actions.append(settings); }
+  if (active) { setIcon(settings, 'sliders', 'Ajustes da voz'); actions.append(settings); }
   join.disabled = !voice.supported;
   join.hidden = active;
   join.textContent = voice.pending ? 'Cancelar' : subsalasOn() ? 'Entrar na Voz geral' : 'Entrar na voz';
@@ -432,6 +433,11 @@ function renderVoicePane() {
   const sharing = (id) => !!state.members.get(id)?.sharing;
   const map = voiceMapOn();
   $('voicePane').classList.toggle('voice-map', map);
+  // Quem transmite vem em cima, em cartões com a miniatura da tela (assistir.js: pedirMiniaturas); na lista embaixo,
+  // a linha dessas pessoas fica enxuta, sem o Assistir e o "Transmitindo" (o cartão já diz)
+  const live = map ? [] : [...state.members.keys()].filter(sharing);
+  pedirMiniaturas(live);
+  if (live.length) list.append(voiceLiveCards(live));
   if (map) { /* no mapa, os canais e as pessoas estão no céu */ }
   else if (channels) renderVoiceChannels(list);
   else {
@@ -449,6 +455,58 @@ function renderVoicePane() {
     list.append(head);
     for (const id of outside) list.append(id ? memberRow(id, nameOf(id), true) : memberRow(null, getName(), true));
   }
+  for (const li of list.querySelectorAll('li.member.live')) {
+    if (!live.includes(li.dataset.person)) continue;
+    li.querySelector('.watch-btn')?.remove();
+    li.querySelector('.mstatus')?.setAttribute('hidden', '');
+  }
+}
+// Os cartões de quem transmite: a miniatura (ou a foto da pessoa na cor dela, enquanto não chega), o selo (Ao vivo,
+// Assistindo, Em pausa), o nome e o jogo. Clicar assiste; assistindo, para; em pausa (outra em destaque), volta para ela
+function voiceLiveCards(ids) {
+  const li = document.createElement('li');
+  li.className = 'voz-telas-li';
+  const head = document.createElement('span');
+  head.className = 'voz-telas-tit';
+  head.textContent = `Transmitindo · ${ids.length}`;
+  const grade = document.createElement('div');
+  grade.className = 'voz-telas';
+  for (const id of ids) {
+    const name = nameOf(id);
+    const watching = state.in.has(id);
+    const paused = watching && state.focus && state.focus !== id;
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'voz-tela' + (watching ? ' assistindo' : '');
+    b.dataset.person = id;
+    b.style.setProperty('--person', personColor(id));
+    const m = minis.get(id);
+    if (m?.url) { const img = document.createElement('img'); img.className = 'voz-tela-img'; img.src = m.url; img.alt = ''; b.append(img); }
+    else { const img = document.createElement('img'); img.className = 'voz-tela-img'; img.alt = ''; img.hidden = true; b.append(img, avatar(name, id)); }
+    const selo = document.createElement('span');
+    selo.className = 'voz-tela-selo' + (paused ? ' pausa' : watching ? ' vendo' : '');
+    selo.textContent = paused ? 'Em pausa' : watching ? 'Assistindo' : 'Ao vivo';
+    const rot = document.createElement('span');
+    rot.className = 'voz-tela-rot';
+    const nome = document.createElement('strong');
+    nome.textContent = name;
+    rot.append(nome);
+    const jogo = atvDe(id)?.jogo;
+    if (jogo) { const j = document.createElement('span'); j.textContent = jogo; rot.append(j); }
+    const play = document.createElement('span');
+    play.className = 'voz-tela-play';
+    play.innerHTML = watching && !paused ? ICON.monitorStop : ICON.play;
+    b.append(selo, rot, play);
+    const fechada = !watching && !canWatch(id);
+    const acao = fechada ? closedShareText(id) : paused ? `Voltar para a tela de ${name}` : watching ? `Parar de assistir ${name}` : `Assistir ${name}`;
+    b.title = acao;
+    b.setAttribute('aria-label', acao + (jogo ? `, jogando ${jogo}` : ''));
+    b.disabled = fechada;
+    b.onclick = () => (paused ? setFocus(id) : watching ? stopWatching(id) : watch(id));
+    grade.append(b);
+  }
+  li.append(head, grade);
+  return li;
 }
 // ---------- Divisória entre o chat e a voz ----------
 // Arrastar a linha entre os dois muda quanto da coluna é da voz (o chat fica com o resto). Setas também mexem, e o

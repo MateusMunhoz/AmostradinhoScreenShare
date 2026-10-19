@@ -539,3 +539,47 @@ function onVisibility() {
   }
   syncPreview();
 }
+
+// ---------- Miniaturas de quem transmite (cartões do painel da voz) ----------
+// Pede a cada 15 s, só com o painel da voz à vista, a quem está transmitindo; o que chega é conferido como a foto de
+// perfil (só o que eu pedi, JPEG pequeno, o hash bate, até 640x360) e vira um blob: na tela
+const minis = new Map(); // id -> { url, hash, pedidoEm }
+let minisTimer = 0;
+function pedirMiniaturas(ids) {
+  for (const [id, m] of minis) if (!ids.includes(id)) { if (m.url) URL.revokeObjectURL(m.url); minis.delete(id); }
+  if (!ids.length) { clearInterval(minisTimer); minisTimer = 0; return; }
+  const agora = Date.now();
+  for (const id of ids) {
+    const m = minis.get(id) || { url: '', hash: '', pedidoEm: 0 };
+    minis.set(id, m);
+    if (agora - m.pedidoEm < 15000) continue;
+    m.pedidoEm = agora;
+    sendSignal(id, { side: 'mini', want: m.hash || true });
+  }
+  if (!minisTimer) minisTimer = setInterval(() => {
+    if ($('voicePane').hidden || document.hidden) return;
+    pedirMiniaturas([...state.members].filter(([, x]) => x.sharing).map(([id]) => id));
+  }, 15000);
+}
+async function receberMiniatura(from, data) {
+  const m = minis.get(from);
+  if (!m || Date.now() - m.pedidoEm > 30000 || !state.members.get(from)?.sharing) return; // só o que eu pedi
+  if (typeof data.hash !== 'string' || !/^[0-9a-f]{64}$/.test(data.hash) || data.hash === m.hash) return;
+  if (typeof data.data !== 'string' || data.data.length > Math.ceil(MINI_MAX / 3) * 4 || !/^[A-Za-z0-9+/]+={0,2}$/.test(data.data)) return;
+  let bytes;
+  try { bytes = fromBase64(data.data); } catch { return; }
+  if (bytes[0] !== 0xff || bytes[1] !== 0xd8 || await sha256(bytes) !== data.hash) return; // JPEG, e o que veio é o que diz
+  const blob = new Blob([bytes], { type: 'image/jpeg' });
+  try {
+    const bmp = await createImageBitmap(blob);
+    const ok = bmp.width <= 640 && bmp.height <= 360;
+    bmp.close();
+    if (!ok) return;
+  } catch { return; }
+  if (m.url) URL.revokeObjectURL(m.url);
+  m.url = URL.createObjectURL(blob);
+  m.hash = data.hash;
+  // Troca só a imagem do cartão, sem redesenhar o painel
+  const img = $('voicePaneMembers').querySelector(`.voz-tela[data-person="${CSS.escape(from)}"] img.voz-tela-img`);
+  if (img) { img.src = m.url; img.hidden = false; img.nextElementSibling?.classList.contains('avatar') && img.nextElementSibling.remove(); }
+}

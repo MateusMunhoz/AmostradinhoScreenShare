@@ -131,7 +131,22 @@ function admGeral(corpo) {
   versoes.append(admEl('h3', '', 'Versões em uso'));
   if (a.versions.length) {
     const lista = admEl('ul', 'adm-list');
-    for (const v of a.versions) lista.append(admEl('li', '', `${v.version} · ${v.n} ${v.n === 1 ? 'pessoa' : 'pessoas'}`));
+    for (const v of a.versions) {
+      // A versão e quantas pessoas; embaixo, quem (o identificador no mouse). Servidor antigo não manda a lista: só o número
+      const li = admEl('li', 'adm-versao');
+      li.append(admEl('strong', '', v.version), admEl('span', 'hint', ` · ${v.n} ${v.n === 1 ? 'pessoa' : 'pessoas'}`));
+      if (Array.isArray(v.people) && v.people.length) {
+        const quem = admEl('span', 'adm-versao-quem');
+        for (const p of v.people) {
+          const chip = admEl('span', 'adm-versao-pessoa', String(p.displayName || p.handle || '?'));
+          if (p.handle) chip.title = p.handle;
+          quem.append(chip);
+        }
+        if (v.n > v.people.length) quem.append(admEl('span', 'hint', `+${v.n - v.people.length}`));
+        li.append(quem);
+      }
+      lista.append(li);
+    }
     versoes.append(lista);
   } else versoes.append(admEl('p', 'hint', 'Aparece quando as pessoas abrirem uma versão com este painel.'));
   corpo.append(versoes);

@@ -525,11 +525,21 @@ function renderDiretoJanela(c) {
   const modo = diretoModo(c.id);
   const nome = friendName(c.id);
   el.modo.dataset.modo = modo;
-  el.modo.textContent = modo === 'direto' ? `Conexão direta com ${nome}: texto e arquivos vão direto, sem passar pelo servidor.`
-    : modo === 'conectando' ? `Ligando a conexão direta com ${nome}…`
-    : direto.unsupported ? 'Pelo servidor (criptografado). O servidor Razze ainda não tem a conexão direta: arquivos não vão.'
-    : friendOnline(c.id) ? 'Pelo servidor (criptografado). A conexão direta não deu: arquivos não vão por enquanto.'
-    : `Pelo servidor (criptografado): ${nome} está offline. Arquivos só vão com os dois online.`;
+  // Embaixo do nome, no topo: online/offline, o cadeado e por onde vão (direto ou pelo servidor)
+  if (el.sub) {
+    const online = friendOnline(c.id);
+    el.sub.dataset.on = String(online);
+    el.sub.innerHTML = ICON.lock;
+    el.sub.prepend(online ? 'online · ' : 'offline · ');
+    el.sub.append(modo === 'direto' ? 'conexão direta' : modo === 'conectando' ? 'conectando…' : 'pelo servidor');
+    el.sub.title = `Criptografada de ponta a ponta. ${modo === 'direto' ? `Conexão direta com ${nome}: texto e arquivos vão direto, sem passar pelo servidor.` : 'Pelo servidor, que guarda por 30 dias.'}`;
+  }
+  // O aviso embaixo só quando muda algo para quem usa: arquivos que não vão agora
+  el.modo.textContent = modo === 'direto' || modo === 'conectando' ? ''
+    : direto.unsupported ? 'O servidor Razze ainda não tem a conexão direta: arquivos não vão.'
+    : friendOnline(c.id) ? 'A conexão direta não deu: arquivos não vão por enquanto.'
+    : 'Arquivos só vão com vocês dois online.';
+  if (el.modo.textContent) el.modo.insertAdjacentHTML('afterbegin', ICON.attach);
   el.attach.disabled = modo !== 'direto';
   setIcon(el.attach, 'attach', modo === 'direto' ? 'Anexar imagem ou arquivo' : 'Arquivos só pela conexão direta');
 }
