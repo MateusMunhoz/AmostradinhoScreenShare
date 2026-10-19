@@ -46,3 +46,18 @@ test('idade absurda vinda da rede não vira contador (teto de 7 dias)', () => {
   v.update('c', 's-c', false, false, '', 6 * 86_400_000);
   assert.ok(v.tempoDoCanal('') >= 6 * 86_400_000);
 });
+
+test('sozinho no canal: a sua idade vinda do host redesenha a lista', () => {
+  let redesenhos = 0;
+  const v = new VoiceChat({ send() {}, changed() { redesenhos++; }, error() {}, media: {}, makePeer: () => ({}), makeAudio: () => ({}) });
+  v.id = 'eu';
+  v.session = 's-eu';
+  v.channel = '';
+  v.sync = () => {};
+  assert.equal(v.tempoDoCanal(''), null);
+  v.update('eu', 's-eu', false, false, '', 0);
+  assert.equal(redesenhos, 1, 'sem redesenhar, o contador não aparece');
+  assert.ok(v.tempoDoCanal('') < 1_000);
+  v.update('eu', 's-eu', true, false, '', 5_000);
+  assert.equal(redesenhos, 1, 'o relógio de 1 s já atualiza o número');
+});

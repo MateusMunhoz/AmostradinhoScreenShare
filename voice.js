@@ -131,7 +131,10 @@ class VoiceChat {
   update(id, session, muted, deafened = false, channel = '', idade) {
     channel = session ? String(channel || '') : '';
     if (id === this.id) {
-      this.desde = session ? desdeDe(idade) : 0; // contador da call (subsalas.js: tempoDoCanal)
+      const desde = session ? desdeDe(idade) : 0; // contador da call (subsalas.js: tempoDoCanal)
+      const contadorNovo = !this.desde !== !desde; // sozinho no canal, só esta mensagem faz o contador aparecer
+      this.desde = desde;
+      if (contadorNovo) this.changed();
       // O servidor pode mudar o seu canal (a subsala em que você estava foi apagada): segue o que ele diz
       if (session === this.session && session && channel !== this.channel) this.moveTo(channel);
       if (session === this.session && session) this.sync();
