@@ -1,6 +1,6 @@
 # Roadmap
 
-*Reorganizado em 07/10/2026 (versão 1.18.3). Revisar todo mês; a concorrência muda rápido (TeamSpeak 6 ainda em beta,
+*Reorganizado em 07/10/2026 (versão 1.18.3); estado e tabela conferidos com o código em 19/10/2026 (versão 1.20.x). Revisar todo mês; a concorrência muda rápido (TeamSpeak 6 ainda em beta,
 Discord mudando preço e verificação de idade). Os códigos dos itens (A, P, D) vêm da análise de concorrência de 28/09:
 **A**gora, **P**róximo e **D**epois; o B0 é a meta que puxa tudo. Os números não indicam ordem: a ordem está em
 "Ordem de trabalho".*
@@ -13,6 +13,20 @@ Discord mudando preço e verificação de idade). Os códigos dos itens (A, P, D
 - **O que vale hoje:** código e senha da sala seguem funcionando sem conta; a **conta é opcional e só pelo Google**, para
   amigos, mensagens e salas deles; a VPS (RazzeAPI + sala por Internet + TURN) é o caminho padrão para quem instala.
   Nada de coleta de dados.
+
+## Estado em 19/10/2026
+
+**Já saiu (1.18.4 a 1.20.1), conferido com o código:**
+- **Excluir conta pelo painel** (só depois de desativar; nunca a própria) e **mensagem de conta desativada** em todos os
+  logins, inclusive o Google de e-mail já cadastrado com senha (antes ele mandava "entre com a senha", que respondia "desativada").
+- **Identificador nome#1234, e-mail confirmado e verificação em dois fatores**; login Google no Android (1 sessão de PC e 1 de Android).
+- **Sala nova** (cabeçalho, abas Voz/Chat/Pessoas, cartão "Seu sinal"), **Início novo**, **Modo Líder** (3 fases), tema **Cloud**,
+  perfil em abas, passo a passo guiado, apoio com Pix, volume geral das vozes, barra flutuante de mic/fone/sair.
+- **Rede:** só Internet por padrão; Radmin, rede local e Razze ficam em "Outras redes".
+- **Tempo da call** ao lado de cada canal de voz; o **X minimiza** (ou esconde na bandeja, por opção).
+
+**Ainda não começado (conferido):** HTTPS/`wss://` na sala (`INTERNET_URL_PADRAO` segue `ws://`), atraso medido (A2), histórico em
+disco (P2), assistir pelo navegador (D2, só rascunho de spec) e o repasse de vídeo (P3).
 
 ## Estado em 07/10/2026
 
@@ -34,10 +48,10 @@ Discord mudando preço e verificação de idade). Os códigos dos itens (A, P, D
 |---|---|---|---|
 | 1 | **Limpeza do Git e do PC** (branches mergeadas, stashes, backups) | Ninguém mais trabalha nelas | Comandos entregues; o humano roda |
 | 2 | **Subir o que só existe no PC** (PR de `docs/roteiro-administracao`, a spec nova e este roadmap) | A equipe não vê o que está só local | Pronto para PR |
-| 3 | **Conta: excluir pelo painel e mensagem de conta desativada** | Hoje uma conta desativada prende a pessoa: o Google responde "já existe conta", a senha responde "desativada" e não existe excluir | Não começado (mexe em `razze-api/`) |
+| 3 | **Conta: excluir pelo painel e mensagem de conta desativada** | Uma conta desativada prendia a pessoa | **Feito** (19/10/2026): excluir no painel do app e mensagem em todos os logins. Falta só o painel web antigo (`razze-api/admin/`), que segue sem excluir usuário |
 | 4 | **HTTPS (wss) na VPS**, Caddy na frente da porta 8765 | Destrava o A1 e o D2 | Não começado (precisa de quem tem SSH) |
 | 5 | **A1 revisado:** o app passa a usar `wss://` no modo Internet | Chat e senha da sala hoje vão em `ws://` puro | Depende do 4 |
-| 6 | **D2 Assistir pelo navegador** (celular, só assistir) | Convidar sem pedir download; porta de entrada do B0 | Spec em [spec/assistir-no-navegador.md](spec/assistir-no-navegador.md) |
+| 6 | **D2 Assistir pelo navegador** (celular, só assistir) | Convidar sem pedir download; porta de entrada do B0 | Rascunho de spec em [spec/assistir-no-navegador.md](spec/assistir-no-navegador.md); depende do 4 |
 | 7 | **A2 Atraso medido** | Dá o número para comparar com o Discord e serve de régua para o B0 e o D1 | Não começado |
 | 8 | **P2 Histórico** | O chat não some quando a sala fecha | Não começado |
 | 9 | **B0 Briefing 50+** (com P3, espectadores repassando) | Meta maior; ainda vai ser testado | Spec pronta; testes pendentes |

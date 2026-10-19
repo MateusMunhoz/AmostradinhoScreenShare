@@ -307,6 +307,8 @@ Clique em **Entrar na voz**, na barra de baixo, para ligar o microfone padrão d
 
 ### Subsalas de voz
 
+- **Tempo da call:** ao lado do nome de cada canal com gente (**Voz geral** ou subsala) aparece há quanto tempo ele está ativo, como `12:34` ou `1:02:03`. Conta desde quem está há mais tempo no canal; quem sai e volta, ou muda de canal, entra de novo "agora". Precisa de uma sala (host ou servidor) na versão que manda a idade; com sala mais antiga o contador não aparece. Quando o host da sala troca (ou o servidor reinicia), a contagem recomeça do zero para quem continua na voz.
+
 No painel **Chat de voz**, a voz fica dividida em canais: a **Voz geral** e as subsalas.
 
 - **Canal vazio:** um canal sem ninguém mostra um espaço vazio com **Ninguém aqui**; clicar nele entra no canal.
@@ -759,7 +761,7 @@ no celular, e nada passa pela internet: o celular precisa estar no mesmo Wi-Fi d
 
 O Nebula fica com um ícone na bandeja do Windows (perto do relógio), na cor do tema.
 
-- **O X da janela esconde, não fecha:** a call, a transmissão e as janelas flutuantes continuam. Na primeira vez, um aviso lembra onde o app ficou.
+- **O X da janela minimiza, não fecha:** o botão continua na barra de tarefas e a call, a transmissão e as janelas flutuantes seguem. Quem prefere o jeito do Discord liga, em **Configurações › Aparência**, **Ao clicar no X, esconder o Nebula na bandeja**: aí o X tira o botão da barra de tarefas e deixa só o ícone perto do relógio (no Windows 11 ele pode ficar escondido na seta **^**; arraste-o para a barra para fixar). Na primeira vez, um aviso lembra onde o app ficou. Sem ícone na bandeja (alguns Linux), o X fecha o app.
 - **Clique no ícone:** abre a janela de novo.
 - **Botão direito no ícone:** **Abrir o Nebula**, **Procurar atualização…**, **Mutar / desmutar microfone** e **Ensurdecer / voltar a ouvir** (só na sala), **Reiniciar o Nebula** e **Sair do Nebula**, que fecha de vez.
 
