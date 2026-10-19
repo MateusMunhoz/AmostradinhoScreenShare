@@ -88,7 +88,7 @@ const rodar = (comando) => new Promise((resolve) => {
 // O midia.exe fica aberto só enquanto a música está ligada: dorme até o Windows avisar que a faixa mudou e escreve uma
 // linha JSON. Aqui fica a última; a página lê a cada 30 s (lerAtividade). Sem ele (apagado, Windows antigo, caiu três
 // vezes), volta ao título da janela do Spotify.
-const CAPA_MAX = 28000; // base64 de um JPEG 96x96 (o midia.exe já recusa acima de 20 KB)
+const CAPA_MAX = 28000; // base64 de um JPEG de até 20 KB (o midia.exe já recusa acima disso)
 
 // A capa como data: URL, só se for mesmo JPEG em base64 e pequeno; senão ''
 function limparCapa(b64) {
@@ -230,7 +230,7 @@ const lerRegistroSteam = () => new Promise((resolve) => {
     (erro, saida) => resolve(registroSteam(erro ? '' : saida)));
 });
 
-// A imagem do jogo, quadrada, 96x96, JPEG em data: URL ('' se não tem). A capa da biblioteca (em pé) é cortada no alto,
+// A imagem do jogo, quadrada, até 192x192, JPEG em data: URL ('' se não tem). A capa da biblioteca (em pé) é cortada no alto,
 // onde ficam a arte e o nome; o banner, no meio; o ícone pequeno (32x32) é o último recurso.
 let nativeImage;
 function imagemQuadrada(arquivo, noAlto) {
@@ -241,9 +241,14 @@ function imagemQuadrada(arquivo, noAlto) {
     if (img.isEmpty()) return '';
     const { width: w, height: h } = img.getSize();
     const l = Math.min(w, h);
-    const q = img.crop({ x: Math.floor((w - l) / 2), y: noAlto ? 0 : Math.floor((h - l) / 2), width: l, height: l }).resize({ width: 96, height: 96, quality: 'good' });
-    const jpg = q.toJPEG(80);
-    return jpg.length && jpg.length <= 20000 ? 'data:image/jpeg;base64,' + jpg.toString('base64') : '';
+    const quadrado = img.crop({ x: Math.floor((w - l) / 2), y: noAlto ? 0 : Math.floor((h - l) / 2), width: l, height: l });
+    // 192x192 deixa o bloco grande do perfil nítido; se passar de 20 KB (o limite que o app aceita), baixa a qualidade e o tamanho
+    for (const [alvo, qualidade] of [[192, 80], [192, 60], [128, 70], [96, 80]]) {
+      const lado = Math.min(alvo, Math.max(96, l)); // não amplia imagem pequena além do que ela tem
+      const jpg = quadrado.resize({ width: lado, height: lado, quality: 'best' }).toJPEG(qualidade);
+      if (jpg.length && jpg.length <= 20000) return 'data:image/jpeg;base64,' + jpg.toString('base64');
+    }
+    return '';
   } catch {
     return '';
   }
@@ -309,14 +314,14 @@ async function jogosDaSteam({ recarregar = false } = {}) {
   return ordem();
 }
 
-// O jogo da Steam aberto agora, se a pessoa marcou: { nome, pasta } ou null
+// O jogo da Steam aberto agora, se a pessoa marcou: { nome, pasta, imagem } ou null
 async function jogoDaSteamAberto(permitidos) {
   if (!permitidos.length) return null;
   const { rodando } = await lerRegistroSteam();
   if (!rodando || !permitidos.includes(rodando)) return null;
   if (!steam.jogos.has(rodando)) await jogosDaSteam({ recarregar: true });
   const j = steam.jogos.get(rodando);
-  return j ? { nome: j.nome, pasta: j.pasta || '' } : null;
+  return j ? { nome: j.nome, pasta: j.pasta || '', imagem: j.imagem || '' } : null;
 }
 
 // ---------- O ícone do jogo (perfil) ----------
@@ -366,6 +371,11 @@ function mesmoJogo(a, b) {
   return x.length >= 4 && y.length >= 4 && (x.startsWith(y) || y.startsWith(x));
 }
 
+// A capa de um jogo instalado na Steam, pelo nome ('' se não está lá ou não tem capa)
+async function capaNaSteam(nome) {
+  try { return (await jogosDaSteam()).find((j) => mesmoJogo(j.nome, nome))?.imagem || ''; } catch { return ''; }
+}
+
 // opcoes: { jogos: boolean, musica: boolean, steam: ids marcados }. Só lê o que foi pedido.
 async function lerAtividade(opcoes = {}) {
   const vazio = { jogo: '', jogoImagem: '', musica: null };
@@ -377,7 +387,9 @@ async function lerAtividade(opcoes = {}) {
   if (daSteam) r.jogo = daSteam.nome;
   const lista = (opcoes.jogos && !daSteam) || (opcoes.musica && !windows.ok) ? nomesDeProcessos(await rodar('tasklist /fo csv /nh')) : new Set();
   if (opcoes.jogos && !daSteam) r.jogo = jogoAberto(lista);
-  if (r.jogo) r.jogoImagem = await iconeDoJogo(r.jogo, daSteam ? { pasta: daSteam.pasta } : { exe: exeAberto(lista) });
+  // A capa da biblioteca da Steam (192x192, nítida no bloco grande do perfil), também para jogo achado pelo .exe que
+  // está instalado na Steam (Deadlock fora da lista marcada); sem capa, o ícone do .exe
+  if (r.jogo) r.jogoImagem = daSteam?.imagem || await capaNaSteam(r.jogo) || await iconeDoJogo(r.jogo, daSteam ? { pasta: daSteam.pasta } : { exe: exeAberto(lista) });
   if (windows.ok) r.musica = windows.musica;
   else if (opcoes.musica && lista.has('spotify.exe')) r.musica = musicaDoSpotify(await rodar('tasklist /v /fo csv /nh /fi "IMAGENAME eq Spotify.exe"'));
   return r;

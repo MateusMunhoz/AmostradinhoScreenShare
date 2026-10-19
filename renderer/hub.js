@@ -126,7 +126,7 @@ function syncFriendsAddButton() { $('razzeAddFriend').disabled = !$('razzeFriend
 // Erro do envio aparece embaixo do campo (vazio = sem erro)
 function showFriendsAddError(text) {
   const hint = $('friendsAddHint');
-  hint.textContent = text || 'Identificador (ex.: lucas#0420), link ou código de convite (ABCD-EFGH-JK).';
+  hint.textContent = text || ''; // sem erro, nada: o campo já diz o que aceita
   hint.classList.toggle('erro', !!text);
   hint.setAttribute('role', text ? 'alert' : 'note');
   $('razzeFriendNickname').setAttribute('aria-invalid', String(!!text));
@@ -148,10 +148,22 @@ function renderFriends() {
   const labels = { in: 'Recebidos', out: 'Enviados', all: 'Amigos' };
   for (const b of $('friendsViews').querySelectorAll('button')) {
     const v = b.dataset.view, sel = v === friendsFilter.view;
-    b.textContent = counts[v] ? `${labels[v]} · ${counts[v]}` : labels[v];
+    // O número de cada aba num selo ao lado do nome
+    b.textContent = labels[v];
+    if (counts[v]) { const n = document.createElement('span'); n.className = 'dm-add-n'; n.textContent = String(counts[v]); b.append(n); }
     b.setAttribute('aria-selected', String(sel));
     b.tabIndex = sel ? 0 : -1;
   }
+
+  // Seu identificador no chip de copiar: o nome e, mais apagado, o #número
+  const handle = typeof razzeUser !== 'undefined' && razzeUser?.handle ? String(razzeUser.handle) : '';
+  const corte = handle.lastIndexOf('#');
+  const idText = $('friendsIdText');
+  $('friendsIdCopy').previousElementSibling.hidden = !handle; // "Você é" só com o identificador ao lado
+  if (!handle) idText.textContent = 'Copiar ID';
+  else if (corte > 0) { const tag = document.createElement('span'); tag.className = 'dm-add-tag'; tag.textContent = handle.slice(corte); idText.replaceChildren(handle.slice(0, corte), tag); }
+  else idText.textContent = handle;
+  $('friendsIdCopy').setAttribute('aria-label', handle ? `Copiar seu identificador ${handle}` : 'Copiar seu identificador');
 
   const groups = [];
   const view = friendsFilter.view;
@@ -207,35 +219,41 @@ function friendRow(f, isOnline) {
     li.append(hubInfo(`Remover ${f.displayName}?`, 'Precisa de um novo pedido para voltar.'), no, yes);
     return li;
   }
-  // Online: em que sala o amigo está, se ele anunciou (salas-amigos.js: textoSalaDoAmigo)
+  // Embaixo do nome: em que sala o amigo está (salas-amigos.js: textoSalaDoAmigo), o que está jogando ou ouvindo
+  // (a atividade da RazzeAPI), ou só Online/Offline
   const naSala = isOnline && typeof textoSalaDoAmigo === 'function' ? textoSalaDoAmigo(f) : '';
-  const info = hubInfo(f.displayName, naSala || (isOnline ? 'Online' : friendsData.error ? 'Indisponível' : 'Offline'));
-  if (naSala) info.lastChild.title = naSala; // cortado com "…" quando não cabe
+  const atv = isOnline && !naSala && f.activity ? (f.activity.game ? 'Jogando ' + f.activity.game : f.activity.artist ? 'Ouvindo ' + (f.activity.title || f.activity.artist) : '') : '';
+  const info = hubInfo(f.displayName, naSala || atv || (isOnline ? 'Online' : friendsData.error ? 'Indisponível' : 'Offline'));
+  if (naSala || atv) info.lastChild.title = naSala || atv; // cortado com "…" quando não cabe
   if (f.handle) info.firstChild.title = f.handle; // o identificador ao passar o mouse no nome
   info.lastChild.dataset.friendPresence = f.id; // o teste da Razze confere o texto por aqui
   info.lastChild.classList.toggle('on', isOnline);
-  li.append(hubAvatar(f.displayName, isOnline), info,
-    hubIconButton(ICON.chat, `Mandar mensagem para ${f.displayName}`, () => openDm(f.id), 'hub-talk', 'talk:' + f.id),
-    hubIconButton(ICON.phone, `Ligar para ${f.displayName} (cria uma sala só para vocês e entra na voz)`, () => void ligarPara(f.id), 'hub-talk hub-call', 'call:' + f.id));
-  // Convidar só faz sentido para quem está online
+  info.lastChild.classList.toggle('sala', !!naSala);
+  const open = friendsUi.menu === f.id;
+  li.classList.toggle('aberto', open);
+  // Ligar e o "⋯" aparecem com o mouse (ou o foco) na linha; a mensagem fica sempre
+  const extra = document.createElement('span');
+  extra.className = 'hub-extra';
+  extra.append(hubIconButton(ICON.phone, `Ligar para ${f.displayName} (cria uma sala só para vocês e entra na voz)`, () => void ligarPara(f.id), 'hub-talk hub-call', 'call:' + f.id));
+  li.append(hubAvatar(f.displayName, isOnline), info, extra);
   if (isOnline) {
     // A sala pela internet em que o amigo está e que ele deixa entrar: Entrar, sem código nem senha (salas-amigos.js)
     const salaDele = typeof salaDoAmigo === 'function' ? salaDoAmigo(f) : null;
     if (salaDele) li.append(hubButton('Entrar', () => void entrarPeloAmigo(f), 'btn small primary hub-entrar', `Entrar na sala de ${salaDele.host}, onde ${f.displayName} está`));
+    // Convidar só com você numa sala, e não para quem já está nela
     const inRoom = !!state.myId && !!state.roomAddr;
-    const invite = hubButton('Convidar', () => convidarPorMensagem(f), 'btn small' + (inRoom ? ' primary' : ''),
-      inRoom ? `Mandar um convite para a sua sala nas mensagens de ${f.displayName}` : 'Entre numa sala para convidar');
-    invite.disabled = !inRoom;
-    li.append(invite);
+    if (inRoom && !naSala.startsWith('Na sua sala')) {
+      li.append(hubButton('Convidar', () => convidarPorMensagem(f), 'btn small hub-convidar', `Mandar um convite para a sua sala nas mensagens de ${f.displayName}`));
+    }
   }
-  const open = friendsUi.menu === f.id;
+  li.append(hubIconButton(ICON.chat, `Mandar mensagem para ${f.displayName}`, () => openDm(f.id), 'hub-talk', 'talk:' + f.id));
   const more = hubIconButton(ICON.more, `Mais opções para ${f.displayName}`, () => {
     setFriendMenu(open ? null : f.id);
     focusFriendControl((open ? 'more:' : 'remove:') + f.id);
   }, 'hub-more', 'more:' + f.id);
   more.setAttribute('aria-haspopup', 'menu');
   more.setAttribute('aria-expanded', String(open));
-  li.append(more);
+  extra.append(more);
   if (open) {
     const menu = document.createElement('div');
     menu.className = 'hub-menu';

@@ -41,23 +41,25 @@ run('Sala: cabeçalho, abas e Seu sinal', 120000, async () => {
   check('Barrinha: perfil, Início, Convidar, chat por cima do jogo, modo gamer, feedback, engrenagem e Sair',
     rail.join(' ') === 'navProfile nav-sep nav-space dockHome dockAddr nav-sep overlayToggle navGamer navFeedback navSettings nav-sep rail-leave-sep leaveBtn', rail.join(' '));
 
-  // Abas (quem já usava chat e voz juntos começa lado a lado: separa antes)
-  await B.eval(`(() => { if ($('paneJuntos').getAttribute('aria-pressed') === 'true') $('paneJuntos').click(); $('navVoice').click(); })()`);
+  // Abas: com uma aberta, clicar na outra abre as duas; com as duas, clicar numa fecha essa
+  await B.eval(`setPainelSala({ aba: 'voz', juntos: false, recolhido: false })`);
   await sleep(200);
   check('Aba Voz: só a voz', await B.eval(`!$('voicePane').hidden && $('chatTab').hidden && $('peoplePop').hidden && $('navVoice').getAttribute('aria-pressed') === 'true'`));
   await B.eval(`$('navChat').click()`);
+  await sleep(300);
+  check('Voz aberta + clicar em Chat: os dois lado a lado, com a divisória', await B.eval(`!$('voicePane').hidden && !$('chatTab').hidden && getComputedStyle(document.querySelector('.pane-split')).display !== 'none'`));
+  await B.eval(`$('navVoice').click()`);
   await sleep(200);
-  check('Aba Chat: só o chat', await B.eval(`$('voicePane').hidden && !$('chatTab').hidden && $('peoplePop').hidden && $('navChat').getAttribute('aria-pressed') === 'true'`));
+  check('Clicar em Voz de novo fecha a Voz: só o chat', await B.eval(`$('voicePane').hidden && !$('chatTab').hidden && $('peoplePop').hidden && $('navChat').getAttribute('aria-pressed') === 'true'`));
   await B.eval(`$('peopleBtn').click()`);
   await sleep(200);
   check('Aba Pessoas: a lista no lugar do chat e da voz', await B.eval(`$('voicePane').hidden && $('chatTab').hidden && !$('peoplePop').hidden && $('members').querySelectorAll('.member').length === 2`));
   check('Seu sinal fica embaixo em qualquer aba, com Entrar na voz e Transmitir', await B.eval(`${visivel('seuSinal')} && ${dentro(['voiceJoin', 'shareBtn'], 'seuSinal')}`));
-  await B.eval(`$('paneJuntos').click()`);
-  await sleep(300);
-  check('Lado a lado: Voz e Chat juntos, com a divisória', await B.eval(`!$('voicePane').hidden && !$('chatTab').hidden && getComputedStyle(document.querySelector('.pane-split')).display !== 'none'`));
+  await B.eval(`$('navChat').click()`);
+  await sleep(200);
+  check('De Pessoas, clicar em Chat abre só o chat', await B.eval(`$('voicePane').hidden && !$('chatTab').hidden && $('peoplePop').hidden`));
   await B.eval(`(() => { $('navVoice').focus(); $('paneTabs').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true })); })()`);
-  check('Setas trocam de aba', await B.eval(`document.activeElement === $('navChat')`));
-  await B.eval(`$('paneJuntos').click()`);
+  check('Setas levam o foco para a outra aba', await B.eval(`document.activeElement === $('navChat')`));
   await B.shot('sala-abas.png');
 
   // Voz pelo cartão

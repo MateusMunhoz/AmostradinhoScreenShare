@@ -163,10 +163,6 @@ function renderHomeTopo() {
     vivo.textContent = salas.length === 1 ? `${salas[0].host} abriu uma sala` : `${salas.length} salas abertas agora`;
     resumo.append(vivo);
     if (salas.length === 1) resumo.append(` · ${salas[0].pessoas} ${salas[0].pessoas === 1 ? 'pessoa' : 'pessoas'}`);
-  } else if (logado) {
-    const jogando = online.find((f) => f.activity?.game);
-    resumo.textContent = !online.length ? 'Nenhum amigo online agora.'
-      : `${online.length} ${online.length === 1 ? 'amigo online' : 'amigos online'}${jogando ? ` · ${jogando.displayName} está jogando ${jogando.activity.game}` : ''}`;
   }
   resumo.hidden = !resumo.textContent;
   renderHomeCeu(logado, online);

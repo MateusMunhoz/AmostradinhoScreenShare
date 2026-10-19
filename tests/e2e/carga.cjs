@@ -47,15 +47,21 @@ app.whenReady().then(async () => {
     await sleep(300);
     check('Entra na sala de mentira: lista e chat', await run(`!$('room').hidden && document.querySelectorAll('#members .member').length === 2 && $('chatList').querySelectorAll('.msg').length === 1`));
     check('Barra da chamada: fora da voz não aparece', await run(`(() => { callbarAcordar(); return !$('callbar').classList.contains('on'); })()`));
-    check('Barra da chamada: na voz aparece, com microfone, fone, transmitir e sair, e esses somem do painel', await run(`(() => {
+    check('Barra da chamada: na voz aparece, com microfone, fone, transmitir e sair, e esses somem do painel; ao vivo, o monitor vira parar', await run(`(() => {
       const antes = voice.session; voice.session = 'teste';
       $('voiceMute').hidden = $('voiceDeafen').hidden = false;
       renderCallbar(); callbarAcordar();
       const r = $('callbar').classList.contains('on') && document.body.classList.contains('callbar-on')
         && ['cbMic', 'cbDeafen', 'cbShare', 'cbLeave'].every((id) => $(id).getClientRects().length > 0)
-        && $('voiceMute').matches('.callbar-on .seu-sinal #voiceMute') && $('cbShare').textContent.includes('Transmitir');
+        && $('voiceMute').matches('.callbar-on .seu-sinal #voiceMute') && $('cbShare').title.includes('transmitir')
+        && $('cbSwap').hidden && $('cbAudience').hidden;
+      // Ao vivo: o mesmo monitor vira o Parar (com o monitor cortado para o hover) e aparecem trocar e quem pode assistir
+      const sharing = state.sharing; state.sharing = state.sharing || {}; renderCallbar();
+      const live = $('cbShare').classList.contains('ao-vivo') && $('cbShare').title === 'Parar de transmitir'
+        && $('cbShare').querySelectorAll('svg').length === 2 && !$('cbSwap').hidden && !$('cbAudience').hidden;
+      state.sharing = sharing;
       voice.session = antes; setCallbar(false); renderCallbar();
-      return r && !document.body.classList.contains('callbar-on');
+      return r && live && !$('cbShare').classList.contains('ao-vivo') && !document.body.classList.contains('callbar-on');
     })()`));
     check('Falando com o microfone desligado: aviso aparece e some ao ligar', await run(`(() => {
       const [sessao, mudo, mic] = [voice.session, voice.muted, micNow];
@@ -69,9 +75,13 @@ app.whenReady().then(async () => {
     await run(`(() => { openStats(); $('statsTabStream').click(); })()`);
     check('Estatísticas abrem nas configurações, nas duas abas', await run(`!$('generalSettingsDialog').hidden && settingsOpenOn('stats') && !$('settingsPanel-stats').hidden && !$('statsStream').hidden && document.querySelectorAll('#streamRows .stream-card').length === 1`));
     await run(`(() => { $('statsTabPerf').click(); openVoiceDialog(); })()`);
-    check('Voz e atalhos abre no mesmo lugar, com as duas abas', await run(`voiceSettingsOpen() && !$('settingsPanel-voice').hidden && $('settingsPanel-stats').hidden && !$('settingsTab-shortcuts').hidden && $('statsTabPerf').hidden`));
-    await run(`$('settingsTab-shortcuts').click()`);
-    check('Aba Atalhos troca o painel', await run(`!$('settingsPanel-shortcuts').hidden && $('settingsPanel-voice').hidden && voiceSettingsOpen()`));
+    check('Voz abre no mesmo lugar, sem barra de abas', await run(`voiceSettingsOpen() && !$('settingsPanel-voice').hidden && $('settingsPanel-stats').hidden && document.querySelector('.settings-tabs').hidden`));
+    await run(`document.querySelector('.settings-nav [data-group=atalhos]').click()`);
+    check('Atalhos é um grupo à parte', await run(`!$('settingsPanel-shortcuts').hidden && $('settingsPanel-voice').hidden && settingsOpenOn('atalhos')`));
+    await run(`document.querySelector('.settings-nav [data-group=transmissao]').click()`);
+    check('Transmissão tem o clipe e a prioridade', await run(`!$('settingsPanel-transmissao').hidden && !!$('settingsPanel-transmissao').querySelector('input[name=clipSeconds]') && !!$('settingsPanel-transmissao').querySelector('input[name=priority]')`));
+    await run(`document.querySelector('.settings-nav [data-group=privacidade]').click()`);
+    check('Privacidade junta atividade e mensagens', await run(`!$('settingsPanel-activity').hidden && $('settingsPanel-activity').contains($('atvSala')) && $('settingsPanel-activity').contains($('dmRetencaoLabel'))`));
     await run(`document.querySelector('.settings-nav [data-group=sons]').click()`);
     check('Grupo de uma aba só esconde as abas do topo', await run(`!$('settingsPanel-sounds').hidden && document.querySelector('.settings-tabs').hidden && !voiceSettingsOpen()`));
     await run(`$('generalSettingsDialog').querySelector('.dialog').dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))`);

@@ -278,7 +278,9 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
         messagesLast7: one('SELECT COUNT(*) AS n FROM direct_messages WHERE created_at >= ?', t - 7 * DAY),
         openRooms: rooms(null).length + friendRooms(null).length, networks: one('SELECT COUNT(*) AS n FROM networks'),
       },
-      versions: db.prepare("SELECT app_version AS version, COUNT(*) AS n FROM sessions WHERE expires_at > ? AND app_version <> '' GROUP BY app_version ORDER BY n DESC LIMIT 12").all(t),
+      // Por versão: quantas pessoas (contas distintas, não sessões) e quem são (até 50 por versão, em ordem de nome)
+      versions: db.prepare("SELECT app_version AS version, COUNT(DISTINCT user_id) AS n FROM sessions WHERE expires_at > ? AND app_version <> '' GROUP BY app_version ORDER BY n DESC LIMIT 12").all(t)
+        .map(v => ({ ...v, people: db.prepare('SELECT DISTINCT u.id, u.display_name AS displayName, ' + handleSql + " AS handle FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.expires_at > ? AND s.app_version = ? ORDER BY u.display_name COLLATE NOCASE LIMIT 50").all(t, v.version) })),
       daily: range.map(day => ({ day, active: activeByDay.get(day) || 0, peak: peakByDay.get(day) || 0, signups: signups.get(day) || 0 })),
     };
   }

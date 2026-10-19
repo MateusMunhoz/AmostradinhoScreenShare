@@ -147,7 +147,7 @@ window.api.onPip((m) => {
     }
   }
   else if (m.type === 'closed' && state.pips.has(m.id)) { const p = state.pips.get(m.id); state.pips.delete(m.id); pipClosed(p); }
-  else if (m.type === 'shortcut-busy') toast(`Outro programa já usa ${accelLabel(m.accel)}, então esse atalho não funciona agora. Dá para trocar em Voz e atalhos (a engrenagem na barra).`, 'error');
+  else if (m.type === 'shortcut-busy') toast(`Outro programa já usa ${accelLabel(m.accel)}, então esse atalho não funciona agora. Dá para trocar em Configurações › Atalhos (a engrenagem na barra).`, 'error');
 });
 
 // ---------- Início ----------
@@ -173,14 +173,16 @@ $('tipsOn').onchange = () => { save('dicas', $('tipsOn').checked ? '1' : '0'); d
 setRadio('priority', load('priority', 'above'));
 if (!radioValue('priority')) setRadio('priority', 'above');
 window.api.setPriority(radioValue('priority'));
+$('settingsPanel-transmissao').addEventListener('change', (e) => {
+  if (e.target.name !== 'priority') return;
+  save('priority', e.target.value);
+  window.api.setPriority(gamerOn() ? 'normal' : e.target.value); // no modo gamer fica normal até desligar (modo-gamer.js)
+});
 
 // Qualquer mudança na janela de transmitir atualiza o resumo do rodapé
 $('shareDialog').addEventListener('change', (e) => {
   const t = e.target;
-  if (t.name === 'priority') {
-    save('priority', t.value);
-    window.api.setPriority(gamerOn() ? 'normal' : t.value); // no modo gamer fica normal até desligar (modo-gamer.js)
-  } else if (t.name === 'encodeMode') {
+  if (t.name === 'encodeMode') {
     // Sem o mouse só dá no NVENC direto: voltar para "Uma por pessoa" traz o mouse de volta
     if (t.value === 'per' && !$('cursorOn').checked) { $('cursorOn').checked = true; save('mostrarMouse', '1'); }
     syncEncodeNote();

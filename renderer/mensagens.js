@@ -197,7 +197,6 @@ function minimizeDm(id) {
   dmSaveBar();
   renderDm();
 }
-async function toggleDm(id) { if (dmIsOpen(id)) minimizeDm(id); else await openDm(id); }
 function toggleDmPin(id) {
   const b = dm.bar.find((x) => x.id === id);
   if (!b) return;
@@ -211,7 +210,7 @@ function minimizeDmOutside(target) {
   if (target.closest?.('dialog, .dialog, #tipBubble, .toast')) return;
   // Num chip de outra conversa (ou no "+N"), quem troca é o clique, que abre a outra no lugar (openDm). Minimizar já
   // aqui, no pointerdown, tirava a janela, as fotos andavam para a esquerda e o clique caía fora do chip
-  if (target.closest?.('.dm-chip, #dmMoreMenu')) return;
+  if (target.closest?.('.dm-chip, #dmMoreMenu, #dmTrilho')) return;
   let changed = false;
   for (const b of dm.bar) {
     if (!b.open || b.pinned) continue;
@@ -309,9 +308,10 @@ function dmElements(c) {
   chip.className = 'dm-chip';
   chip.tabIndex = 0;
   chip.setAttribute('role', 'button');
-  chip.onclick = () => void toggleDm(c.id);
+  // Aberta, o chip é o topo da janela: clicar nele (na pessoa) não fecha, só leva ao campo; quem minimiza é o "—"
+  chip.onclick = () => { if (dmIsOpen(c.id)) c.el.input.focus(); else void openDm(c.id); };
   chip.onkeydown = (e) => {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); void toggleDm(c.id); }
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (dmIsOpen(c.id)) c.el.input.focus(); else void openDm(c.id); }
     if (e.altKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { e.preventDefault(); dmMoveBy(c.id, e.key === 'ArrowLeft' ? -1 : 1); chip.focus(); }
   };
   dmDraggable(slot, chip, c.id);
@@ -326,23 +326,43 @@ function dmElements(c) {
   av.append(dot, badge);
   const name = document.createElement('span');
   name.className = 'dm-name';
+  // Aberta, embaixo do nome: online/offline e por onde vão as mensagens (renderDiretoJanela)
+  const sub = document.createElement('span');
+  sub.className = 'dm-sub';
+  const nomeBox = document.createElement('span');
+  nomeBox.className = 'dm-nome-box';
+  nomeBox.append(name, sub);
   const call = dmIconButton('dm-chip-btn dm-call-btn', ICON.phone, 'Ligar (cria uma sala só para vocês e entra na voz)', () => void ligarPara(c.id));
   const pin = dmIconButton('dm-chip-btn dm-pin', ICON.pin, 'Travar aberta', () => toggleDmPin(c.id));
   const min = dmIconButton('dm-chip-btn dm-min', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12"/></svg>', 'Minimizar', () => minimizeDm(c.id));
   const close = dmIconButton('dm-chip-btn', ICON.close, 'Fechar a conversa (o histórico fica salvo neste PC)', () => closeDm(c.id));
   const extra = document.createElement('span');
   extra.className = 'dm-chip-extra';
-  extra.append(name, call, pin, min, close);
+  extra.append(nomeBox, call, pin, min, close);
   chip.append(av, extra);
   slot.append(win, chip);
-  c.el = { slot, win, list, empty, status, input, chip, av, dot, name, badge, pin, min, modo, attach };
+  c.el = { slot, win, list, empty, status, input, chip, av, dot, name, sub, badge, pin, min, modo, attach };
   return c.el;
 }
 
+// Entre mensagens de dias diferentes: uma linha com Hoje, Ontem ou a data
+function dmDiaEl(t) {
+  const li = document.createElement('li');
+  li.className = 'dm-dia';
+  li.setAttribute('role', 'separator');
+  const d = new Date(t), hoje = new Date();
+  const dia = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const dias = Math.round((dia(hoje) - dia(d)) / 864e5);
+  li.textContent = dias <= 0 ? 'Hoje' : dias === 1 ? 'Ontem'
+    : d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', ...(d.getFullYear() !== hoje.getFullYear() && { year: 'numeric' }) });
+  return li;
+}
+// Na conversa privada: o nome e a hora em cima de cada bloco, o texto embaixo; as seguidas (mesma pessoa, menos de 5 min)
+// só com o texto, e a hora aparece à direita com o mouse em cima
 function dmMessageEl(c, m, prev) {
   const mine = m.from === dm.account;
   const li = document.createElement('li');
-  li.className = 'msg' + (mine ? ' mine' : '') + (prev && prev.from === m.from && m.createdAt - prev.createdAt < 5 * 60 * 1000 ? ' grouped' : '');
+  li.className = 'msg dm-msg' + (mine ? ' mine' : '') + (prev && prev.from === m.from && m.createdAt - prev.createdAt < 5 * 60 * 1000 && new Date(prev.createdAt).toDateString() === new Date(m.createdAt).toDateString() ? ' grouped' : '');
   li.style.setProperty('--person', personColor(mine ? 'me' : c.id));
   const d = new Date(m.createdAt);
   const when = document.createElement('time');
@@ -355,9 +375,6 @@ function dmMessageEl(c, m, prev) {
   who.className = 'msg-who';
   who.textContent = mine ? (razzeUser?.displayName || 'Você') : friendName(c.id);
   if (mine) who.dataset.nameOf = 'me';
-  const sep = document.createElement('span');
-  sep.className = 'msg-sep';
-  sep.textContent = ' : ';
   const text = document.createElement('span');
   text.className = 'msg-text';
   const convite = !m.locked && lerConvite(m.text); // convite para uma sala: vira um cartão com Entrar (salas-amigos.js)
@@ -366,7 +383,12 @@ function dmMessageEl(c, m, prev) {
     text.textContent = 'Mensagem criptografada para outro PC: não dá para abrir aqui.';
     text.title = 'Ela foi cifrada para a chave de outro PC desta conta (ou de antes de trocar de PC).';
   } else if (!convite) textWithLinks(text, m.text);
-  if (convite || (m.file && !m.text)) line.append(who); else line.append(who, sep, text);
+  // O nome sai da linha do texto e vai para o cabeçalho do bloco, junto com a hora
+  const head = document.createElement('p');
+  head.className = 'dm-msg-head';
+  const whenHead = when.cloneNode(true);
+  head.append(who, whenHead);
+  if (!(convite || (m.file && !m.text))) line.append(text);
   if (m.plain) {
     const tag = document.createElement('span');
     tag.className = 'dm-plain';
@@ -382,7 +404,8 @@ function dmMessageEl(c, m, prev) {
     note.textContent = `A chave de segurança de ${friendName(c.id)} mudou. Acontece quando a pessoa troca de PC ou reinstala o app; se não foi isso, confirme com ela por outro meio.`;
     body.append(note);
   }
-  body.append(line);
+  body.append(head);
+  if (line.childNodes.length) body.append(line);
   if (convite) body.append(cartaoConvite(convite, mine, friendName(c.id), m.createdAt));
   if (m.file) body.append(diretoCartao(c, m));
   li.append(when, body);
@@ -394,7 +417,7 @@ function renderDmWindow(c, open) {
   const online = friendOnline(c.id);
   el.slot.classList.toggle('open', open);
   el.chip.classList.toggle('has-unread', c.unread > 0);
-  el.chip.title = open ? `Minimizar a conversa com ${friendName(c.id)}` : `Abrir a conversa com ${friendName(c.id)}`;
+  el.chip.title = open ? '' : `Abrir a conversa com ${friendName(c.id)}`;
   el.chip.setAttribute('aria-expanded', String(open));
   el.dot.classList.toggle('on', online);
   el.dot.title = online ? 'Online' : 'Offline';
@@ -420,7 +443,11 @@ function renderDmWindow(c, open) {
   queueMicrotask(() => diretoGarantir(c.id));
   if (c.shown !== c.messages.length) {
     const atEnd = el.list.scrollHeight - el.list.scrollTop - el.list.clientHeight < 80;
-    el.list.replaceChildren(...c.messages.map((m, i) => dmMessageEl(c, m, c.messages[i - 1])));
+    el.list.replaceChildren(...c.messages.flatMap((m, i) => {
+      const prev = c.messages[i - 1];
+      const novoDia = !prev || new Date(prev.createdAt).toDateString() !== new Date(m.createdAt).toDateString();
+      return novoDia ? [dmDiaEl(m.createdAt), dmMessageEl(c, m, prev)] : [dmMessageEl(c, m, prev)];
+    }));
     c.shown = c.messages.length;
     if (atEnd || !el.list.dataset.scrolled) { el.list.scrollTop = el.list.scrollHeight; el.list.dataset.scrolled = '1'; }
   }
@@ -446,13 +473,65 @@ function renderDmBar() {
   $('dmBarHint').hidden = dm.bar.length > 0;
   renderDmBarHint();
   fitDmBar();
+  renderDmTrilho();
 }
 
-// Barra vazia: no lugar da instrução, a última conversa ("Flyleaf: bora jogar?"); clicar abre ela. Sem nenhuma, a dica
+// Com uma conversa aberta: a coluna do envelope vira um trilho em pé, colado na janela, com todas as conversas da barra
+// (a aberta marcada; não lidas e online no canto) e o "+" que abre o envelope. O envelope some enquanto isso. As da barra deitada somem enquanto isso
+function renderDmTrilho() {
+  const trilho = $('dmTrilho');
+  const aberta = dm.bar.find((b) => b.open && !dm.convs.get(b.id)?.el?.slot.hidden);
+  trilho.hidden = !aberta;
+  $('dmBar').classList.toggle('com-janela', !!aberta);
+  if (!aberta) return;
+  // Redesenha a cada busca de mensagens: o foco do teclado volta para o mesmo botão
+  const foco = trilho.contains(document.activeElement) ? document.activeElement.dataset.id : '';
+  const itens = dm.bar.map((b) => {
+    const c = dmConv(b.id);
+    const nome = friendName(b.id);
+    const online = friendOnline(b.id);
+    const bt = document.createElement('button');
+    bt.type = 'button';
+    bt.className = 'dm-trilho-p' + (b.id === aberta.id ? ' ativa' : '');
+    bt.dataset.id = b.id;
+    bt.title = nome;
+    bt.setAttribute('aria-label', `${nome}${online ? ', online' : ''}${c.unread ? `, ${c.unread} não ${c.unread === 1 ? 'lida' : 'lidas'}` : ''}`);
+    if (b.id === aberta.id) bt.setAttribute('aria-current', 'true');
+    bt.append(hubAvatar(nome, online));
+    if (c.unread) { const n = document.createElement('span'); n.className = 'hub-badge'; n.textContent = c.unread > 99 ? '99+' : String(c.unread); bt.append(n); }
+    // Na pessoa da conversa aberta, o clique não fecha: só volta ao campo de escrever
+    bt.onclick = () => { if (b.id === aberta.id) c.el.input.focus(); else void openDm(b.id); };
+    return bt;
+  });
+  const mais = document.createElement('button');
+  mais.type = 'button';
+  mais.className = 'dm-trilho-mais';
+  mais.title = 'Outra conversa';
+  mais.setAttribute('aria-label', 'Abrir outra conversa');
+  mais.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+  // Abrir o envelope minimiza a conversa (mesmo travada): o painel sobe no lugar dela, sem os dois um por cima do outro
+  mais.onclick = () => {
+    for (const b of dm.bar) b.open = false;
+    dmSaveBar();
+    renderDm();
+    $('dmBarLabel').click();
+  };
+  mais.dataset.id = '+';
+  const lista = document.createElement('div');
+  lista.className = 'dm-trilho-lista';
+  lista.append(...itens);
+  // O "+" fica fora da lista que rola: sempre à vista no pé do trilho, mesmo com muitas conversas
+  trilho.replaceChildren(lista, mais);
+  if (foco) trilho.querySelector(`[data-id="${CSS.escape(foco)}"]`)?.focus();
+}
+
+// Barra vazia: no lugar da instrução, a última conversa ("Flyleaf · bora jogar?"); clicar abre ela. Sem nenhuma, a dica.
+// O nome é com quem é a conversa (bolinha verde se está online); a última mensagem sendo sua, a linha fica apagada
 function renderDmBarHint() {
   const hint = $('dmBarHint');
   const ultima = [...dm.convs.values()].filter((c) => c.last).sort((a, b) => (b.last.createdAt || 0) - (a.last.createdAt || 0))[0];
   hint.textContent = '';
+  hint.classList.toggle('minha', !!ultima && ultima.last.from === dm.account);
   if (!ultima) {
     hint.textContent = 'Clique no envelope para abrir uma conversa privada';
     hint.onclick = () => $('dmBarLabel').click();
@@ -460,8 +539,24 @@ function renderDmBarHint() {
     return;
   }
   const quem = document.createElement('strong');
-  quem.textContent = friendName(ultima.id) + ':';
-  hint.append(quem, ' ' + dmPreview(ultima.last));
+  quem.textContent = friendName(ultima.id);
+  if (friendOnline(ultima.id)) {
+    const on = document.createElement('span');
+    on.className = 'dm-bar-on';
+    on.setAttribute('aria-label', 'online');
+    quem.append(on);
+  }
+  const sep = document.createElement('span');
+  sep.className = 'dm-bar-sep';
+  sep.textContent = ' · ';
+  hint.append(quem, sep);
+  if (ultima.last.from === dm.account) {
+    const v = document.createElement('span');
+    v.className = 'dm-voce';
+    v.textContent = 'você: ';
+    hint.append(v);
+  }
+  hint.append(dmPreview({ ...ultima.last, from: '' }));
   if (ultima.unread) {
     const n = document.createElement('span');
     n.className = 'hub-badge';
@@ -580,6 +675,21 @@ function dmDraggable(slot, chip, id) {
 function dmPreview(last) {
   return `${last.from === dm.account ? 'você: ' : ''}${last.locked ? 'Mensagem criptografada' : last.file && !last.text ? (CHAT_IMAGE_TYPES.includes(last.file.mime) ? 'Imagem' : `Arquivo: ${last.file.name}`) : lerConvite(last.text) ? (lerConvite(last.text).chamada ? 'Chamada' : 'Convite para a sala') : last.text.replace(/\s+/g, ' ')}`;
 }
+// O grupo de uma conversa pela data da última mensagem: Hoje, Ontem, Esta semana, Antes (sem mensagem: Amigos)
+function dmGrupo(t, agora = new Date()) {
+  if (!t) return 'Amigos';
+  const dia = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const dias = Math.round((dia(agora) - dia(new Date(t))) / 864e5);
+  return dias <= 0 ? 'Hoje' : dias === 1 ? 'Ontem' : dias < 7 ? 'Esta semana' : 'Antes';
+}
+// A hora ao lado da conversa, no jeito do grupo: 22:14 (hoje e ontem), seg (esta semana), 10 out (antes; de outro ano, 10 out 2025)
+function dmHora(t, grupo) {
+  const d = new Date(t);
+  if (grupo === 'Hoje' || grupo === 'Ontem') return `${two(d.getHours())}:${two(d.getMinutes())}`;
+  if (grupo === 'Esta semana') return d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
+  const outroAno = d.getFullYear() !== new Date().getFullYear(); // "10 out 2025" para não confundir com este ano
+  return d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', ...(outroAno && { year: 'numeric' }) }).replace(/\./g, '').replace(/ de /g, ' ');
+}
 function fillDmList(prefix = 'dmPanel') {
   const box = $(prefix + 'ConvList');
   $(prefix + 'Unsupported').hidden = !dm.unsupported;
@@ -589,51 +699,137 @@ function fillDmList(prefix = 'dmPanel') {
   const rows = [...ids].map((id) => ({ id, c: dm.convs.get(id), name: friendName(id) }))
     .filter((r) => !needle || semAcento(r.name).includes(needle))
     .sort((a, b) => (b.c?.last?.createdAt || 0) - (a.c?.last?.createdAt || 0) || a.name.localeCompare(b.name, 'pt-BR'));
-  box.replaceChildren(...rows.map(({ id, c, name }) => {
+  const itens = [];
+  let grupoAntes = '';
+  for (const { id, c, name } of rows) {
+    const last = c?.last;
+    const grupo = dmGrupo(last?.createdAt);
+    // O título do grupo entra antes da primeira conversa dele (na busca, sem títulos)
+    if (!needle && grupo !== grupoAntes) {
+      const h = document.createElement('li');
+      h.className = 'dm-grupo';
+      h.setAttribute('aria-hidden', 'true');
+      h.textContent = grupo;
+      itens.push(h);
+      grupoAntes = grupo;
+    }
     const li = document.createElement('li');
     li.className = 'hub-room hub-conv' + (c?.unread ? ' has-unread' : '');
     li.tabIndex = 0;
     li.setAttribute('role', 'button');
     li.onclick = () => void openDm(id);
     li.onkeydown = (e) => { if (e.key === 'Enter') void openDm(id); };
-    const last = c?.last;
     // Sem mensagem: só o nome, sem linha embaixo
-    const preview = last ? dmPreview(last) : '';
-    const info = hubInfo(name, preview);
-    if (!preview) info.querySelector('.hub-room-meta').remove();
-    li.append(hubAvatar(name, friendOnline(id)), info);
-    if (last) {
-      const d = new Date(last.createdAt);
-      const t = document.createElement('time');
-      t.className = 'hub-conv-time';
-      t.textContent = d.toDateString() === new Date().toDateString() ? `${two(d.getHours())}:${two(d.getMinutes())}` : `${two(d.getDate())}/${two(d.getMonth() + 1)}`;
-      li.append(t);
+    const info = hubInfo(name, '');
+    const meta = info.querySelector('.hub-room-meta');
+    if (!last) meta.remove();
+    else {
+      // "você:" mais apagado; a mensagem que não deu para abrir vira o cadeado e "mensagem"
+      if (last.from === dm.account) { const v = document.createElement('span'); v.className = 'dm-voce'; v.textContent = 'você:'; meta.append(v); }
+      if (last.locked) { meta.insertAdjacentHTML('beforeend', ICON.lock); meta.append('mensagem'); }
+      else meta.append(dmPreview({ ...last, from: '' }));
     }
-    if (c?.unread) { const n = document.createElement('span'); n.className = 'hub-badge'; n.textContent = String(c.unread); li.append(n); }
-    return li;
-  }));
+    li.append(hubAvatar(name, friendOnline(id)), info);
+    if (last || c?.unread) {
+      const lado = document.createElement('span');
+      lado.className = 'dm-conv-lado';
+      if (last) {
+        const t = document.createElement('time');
+        t.className = 'hub-conv-time';
+        t.textContent = dmHora(last.createdAt, grupo);
+        lado.append(t);
+      }
+      if (c?.unread) { const n = document.createElement('span'); n.className = 'hub-badge'; n.textContent = String(c.unread); lado.append(n); }
+      li.append(lado);
+    }
+    itens.push(li);
+  }
+  box.replaceChildren(...itens);
   $(prefix + 'ConvEmpty').hidden = rows.length > 0;
   $(prefix + 'ConvEmpty').textContent = needle ? `Ninguém com “${dm.filter.trim()}”.` : 'Clique em Adicionar amigo, no alto, para conversar com alguém.';
   if (prefix === 'dmPanel') fillDmOnline(needle);
 }
-// Online agora: uma fileira com os amigos online em cima das conversas; clicar abre a conversa. Some durante a busca
+// Online agora: uma fileira com os amigos online em cima das conversas; clicar abre a conversa. Some durante a busca.
+// Quem está jogando ou ouvindo (a atividade da RazzeAPI) ganha um anel; com o mouse em cima, abre um cartão com o quê
 function fillDmOnline(needle) {
   const on = needle ? [] : friendsData.friends.filter((f) => friendOnline(f.id));
   $('dmOnline').hidden = !on.length;
-  $('dmOnlineTitle').textContent = `Online agora · ${on.length}`;
+  $('dmOnlineCount').textContent = String(on.length);
+  dmOnlineCartao(null);
   $('dmOnlineList').replaceChildren(...on.map((f) => {
     const li = document.createElement('li');
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'dm-online-person';
-    b.title = `Conversar com ${f.displayName}`;
+    const atv = dmAtividade(f);
+    if (atv) b.classList.add('ativo');
+    else b.title = `Conversar com ${f.displayName}`;
+    b.setAttribute('aria-label', atv ? `${f.displayName}, ${atv.jogo ? 'jogando' : 'ouvindo'} ${atv.nome}` : `Conversar com ${f.displayName}`);
     const name = document.createElement('span');
     name.textContent = f.displayName;
-    b.append(hubAvatar(f.displayName), name);
+    b.append(hubAvatar(f.displayName, true), name);
     b.onclick = () => void openDm(f.id);
+    if (atv) {
+      b.onmouseenter = b.onfocus = () => dmOnlineCartao(b, atv);
+      b.onmouseleave = b.onblur = () => dmOnlineCartao(null);
+    }
     li.append(b);
     return li;
   }));
+  requestAnimationFrame(dmOnlineBordas);
+}
+// Marca de que lado da fileira ainda tem gente escondida (o CSS põe o degradê só nesse lado)
+function dmOnlineBordas() {
+  const l = $('dmOnlineList');
+  l.classList.toggle('mais-esq', l.scrollLeft > 1);
+  l.classList.toggle('mais-dir', l.scrollLeft + l.clientWidth < l.scrollWidth - 1);
+}
+// A atividade de um amigo (texto da RazzeAPI): { jogo: true, nome } ou { nome: faixa, artista }; null se nada
+function dmAtividade(f) {
+  const a = f.activity;
+  if (a?.game) return { jogo: true, nome: String(a.game) };
+  if (a?.artist) return { nome: String(a.title || a.artist), artista: a.title ? String(a.artist) : '' };
+  return null;
+}
+// A capa do jogo, se ele também está na Steam deste PC (a RazzeAPI só manda o nome); a lista é relida no máximo a cada minuto
+let dmCapas = null, dmCapasEm = 0;
+async function dmCapaDoJogo(nome) {
+  if (!window.api?.atividadeSteamJogos) return '';
+  if (!dmCapas || Date.now() - dmCapasEm > 60000) {
+    dmCapasEm = Date.now();
+    try { dmCapas = new Map((await window.api.atividadeSteamJogos(false)).map((j) => [String(j.nome).toLowerCase(), j.imagem || ''])); } catch { dmCapas = new Map(); }
+  }
+  return dmCapas.get(nome.toLowerCase()) || '';
+}
+// O cartão que desce da pessoa: capa, "Jogando"/"Ouvindo", o nome e o artista. Fica fora da fileira (que rola de lado)
+function dmOnlineCartao(b, atv) {
+  const pop = $('dmOnlinePop');
+  if (!b) { pop.hidden = true; return; }
+  const capa = document.createElement('span');
+  capa.className = 'dm-pop-capa' + (atv.jogo ? ' jogo' : '');
+  capa.innerHTML = ICON[atv.jogo ? 'game' : 'music'];
+  const txt = document.createElement('span');
+  txt.className = 'dm-pop-txt';
+  const tipo = document.createElement('small');
+  tipo.textContent = atv.jogo ? 'Jogando' : 'Ouvindo';
+  const nome = document.createElement('strong');
+  nome.textContent = atv.nome;
+  txt.append(tipo, nome);
+  if (atv.artista) { const a = document.createElement('span'); a.textContent = atv.artista; txt.append(a); }
+  pop.replaceChildren(capa, txt);
+  const caixa = $('dmOnline').getBoundingClientRect(), r = b.getBoundingClientRect();
+  pop.hidden = false;
+  const left = Math.max(0, Math.min(r.left - caixa.left - 8, caixa.width - pop.offsetWidth));
+  pop.style.left = left + 'px';
+  pop.style.top = (r.bottom - caixa.top + 8) + 'px';
+  pop.style.setProperty('--seta', `${r.left - caixa.left - left + r.width / 2 - 5}px`);
+  if (atv.jogo) void dmCapaDoJogo(atv.nome).then((src) => {
+    if (!src || pop.hidden || !capa.isConnected) return;
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = '';
+    capa.replaceChildren(img);
+  });
 }
 // O envelope: mensagens não lidas mais pedidos de amizade
 function renderDmBadge() {
@@ -724,6 +920,15 @@ function setupDm() {
     if (!$('dmFriends').hidden) voltarConversas();
     else { setDmPanel(false); $('dmBarLabel').focus(); }
   });
+  // A fileira Online não tem barra: a roda do mouse rola de lado (e o cartão de atividade some, para não ficar no lugar errado)
+  $('dmOnlineList').addEventListener('wheel', (e) => {
+    const l = $('dmOnlineList');
+    if (!e.deltaY || l.scrollWidth <= l.clientWidth) return;
+    e.preventDefault();
+    l.scrollLeft += e.deltaY;
+    dmOnlineCartao(null);
+  }, { passive: false });
+  $('dmOnlineList').addEventListener('scroll', dmOnlineBordas, { passive: true });
   // Buscou um nome que não está na lista: depois de uma pausa na digitação, abre Adicionar amigo com o nome já no campo
   let buscaSemNinguem = 0;
   $('dmPanelFilter').oninput = () => {

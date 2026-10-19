@@ -67,13 +67,13 @@ isso (chamam `watch`, `state`, `speaking`... direto na página).
 | 13 | `modo-gamer.js` | Modo gamer (o controle na barrinha): prioridade normal, vidro opaco, sem animações, sem céu e sem luz ambiente, sem mudar as escolhas salvas |
 | 14 | `qr.js` | Gerador de QR code próprio (modo byte, correção M, versões 1 a 10), em SVG |
 | 15 | `celular-modelo.js` | Configurações no celular, sem interface: o que vai no arquivo, a validação ao trazer e a cifra (PBKDF2 + AES-GCM) |
-| 16 | `celular.js` | Configurações › Celular: guardar e trazer, com QR e senha ([spec](spec/config-no-celular.md)) |
+| 16 | `celular.js` | Configurações › Backup no celular: guardar e trazer, com QR e senha ([spec](spec/config-no-celular.md)) |
 | 17 | `conectividade.js` | Rede: Radmin ou rede local, VPN Razze (WireGuard) ou modo Internet (VPS) |
 | 18 | `sala.js` | Criar, entrar e sair, mensagens do servidor, sinalização, troca de host |
 | 19 | `voz.js` | Volume por pessoa, mixer, quem fala, atenuação, barra da voz, cartão da pessoa (cria o `voice`) |
 | 20 | `porta-microfone.js` | Sensibilidade sem Web Audio (`MicGate`): ruído de fundo pelo percentil 10 dos últimos ~4 s, barulho constante, calibração, histerese, chance de voz (VAD) do RNNoise. Também roda em `require` nos testes |
 | — | `rnnoise-vad-worklet.js` | Roda no AudioWorklet antes de `vendor/noise/rnnoiseWorklet.js`: embrulha o wasm para pegar a chance de voz e registra o processador `…/rnnoise#vad`, que a manda pelo `port` |
-| 21 | `microfone.js` | Microfone escolhido, RNNoise, eco, sensibilidade, ouvir a própria voz, apertar para falar, grupo "Voz e atalhos" das Configurações |
+| 21 | `microfone.js` | Microfone escolhido, RNNoise, eco, sensibilidade, ouvir a própria voz, apertar para falar, grupos Voz e Atalhos das Configurações |
 | 22 | `subsalas.js` | Subsalas de voz: criar e apagar (Subsala_1, Subsala_2…), entrar numa subsala e a lista por canal no painel de voz |
 | 23 | `membros.js` | Painel da sala: endereço e lista de pessoas |
 | 24 | `clipe-mp4.js`, `clipes.js` | Clipe dos últimos segundos com som: buffer dos pedaços H.264 (do modo "uma vez só", ou recodificados no "uma por pessoa"), som em AAC/Opus, MP4 com o `mp4-muxer` de `vendor/`, duração, atalho, tesoura e aviso ([spec](spec/clipes.md)) |

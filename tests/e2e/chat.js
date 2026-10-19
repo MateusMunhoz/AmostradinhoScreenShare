@@ -15,7 +15,7 @@ run('Chat', 170000, async () => {
   await B.waitFor(`salaAtualEnviada !== ''`, 5000);
   check('Convidada anuncia aos amigos: host, modo e pessoas, sem endereço', await B.eval(`(() => { const s = JSON.parse(salaAtualEnviada); return s.host === 'Ana' && s.modo === 'radmin' && s.pessoas === 2 && s.voz === false && !/127\\.0\\.0\\.1|18793/.test(salaAtualEnviada); })()`));
   await B.eval(`(() => { $('atvSala').checked = false; $('atvSala').onchange(); })()`);
-  check('Desligar em Perfil › Atividade tira na hora', await B.eval(`salaAtualEnviada === '' && localStorage.getItem('atividadeSala') === '0'`));
+  check('Desligar em Configurações › Privacidade tira na hora', await B.eval(`salaAtualEnviada === '' && localStorage.getItem('atividadeSala') === '0'`));
   await B.eval(`(() => { $('atvSala').checked = true; $('atvSala').onchange(); })()`);
   check('O amigo aparece "Na sala de Ana" e, na mesma sala, "Na sua sala"', await B.eval(`(() => {
     const longe = textoSalaDoAmigo({ online: true, sala: { modo: 'radmin', host: 'Caio', pessoas: 4, voz: true } });

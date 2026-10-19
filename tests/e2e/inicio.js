@@ -12,7 +12,7 @@ run('Início novo', 150000, async () => {
   await O.eval('renderRadmin()'); // o openApp troca a rede direto na preferência, sem passar pela tela
   await O.waitFor(`['Radmin', 'Rede local'].includes($('radminTitle').textContent)`, 5000);
   check('Rede à vista no topo, com estado e nome', await O.eval(`!$('homeRede').hidden && ['Radmin', 'Rede local'].includes($('radminTitle').textContent) && !!$('radminDetail').textContent`));
-  check('Criar e Entrar à vista e ligados', await O.eval(`!$('goQuick').disabled && !$('goJoin').disabled && !$('goJoin').hidden && $('goCreate').textContent === 'Opções da sala'`));
+  check('Criar e Entrar à vista e ligados', await O.eval(`!$('goQuick').disabled && !$('goJoin').disabled && !$('goJoin').hidden && $('goCreate').getAttribute('aria-label') === 'Opções da sala'`));
   check('O título das salas diz a rede', await O.eval(`/^Salas abertas na (Radmin|rede local)$/.test($('sessionsTitle').textContent)`));
 
   // Menu da rede: abre, mostra as três, a em uso marcada; Razze sem conta não troca e diz por quê; Esc fecha

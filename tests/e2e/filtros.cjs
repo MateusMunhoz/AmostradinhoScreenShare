@@ -122,16 +122,18 @@ app.whenReady().then(async () => {
     await sleep(100);
     check('Botão lateral do mouse (Mouse 4) como tecla de falar', (await run(`voiceCfg.pttVk === 5`)) && ptt.includes(5));
 
-    // Janela Voz e atalhos
-    await run(`openVoiceDialog()`);
+    // Configurações › Atalhos
+    await run(`openGeneralSettings('shortcuts')`);
     await sleep(300);
-    check('Janela "Voz e atalhos" com 4 atalhos', await run(`voiceSettingsOpen() && $('shortcutRows').querySelectorAll('.vd-row').length === 4 && $('shortcutRows').textContent.includes('Ctrl+Enter')`));
+    check('Configurações › Atalhos com 4 atalhos', await run(`settingsOpenOn('atalhos') && $('shortcutRows').querySelectorAll('.vd-row').length === 4 && $('shortcutRows').textContent.includes('Ctrl+Enter')`));
     await sleep(1200);
     fs.writeFileSync(path.join(OUT, 'voz-e-atalhos.png'), (await win.webContents.capturePage()).toPNG());
     check('Atalho sem Ctrl/Alt é recusado', await run(`(() => { const a = accelFromEvent(new KeyboardEvent('keydown', { code: 'KeyK', key: 'k', shiftKey: true })); return !a.strong && !a.fkey; })()`));
     check('Ctrl+Alt+K vira CommandOrControl+Alt+K', await run(`accelFromEvent(new KeyboardEvent('keydown', { code: 'KeyK', key: 'k', ctrlKey: true, altKey: true })).accel === 'CommandOrControl+Alt+K'`));
 
     // Ouvir a própria voz, na voz: usa o mesmo microfone da conversa e o som chega na saída
+    await run(`openVoiceDialog()`);
+    await sleep(300);
     await run(`$('micTestBtn').click()`);
     await sleep(300);
     const t1 = await run(`({ on: micTest.on, same: micTest.mic === micNow, tap: !!micTest.tap, own: !!micTest.own, txt: $('micTestBtn').textContent, pressed: $('micTestBtn').getAttribute('aria-pressed') })`);

@@ -7,7 +7,7 @@ const centerOf = (app, sel) => app.eval(`(() => { const r = document.querySelect
 const mouse = (app, type, [x, y]) => app.send('Input.dispatchMouseEvent', { type, x, y, button: type === 'mouseMoved' ? 'none' : 'left', buttons: type === 'mousePressed' ? 1 : 0, clickCount: 1 });
 async function clickAt(app, p) { await mouse(app, 'mouseMoved', p); await sleep(60); await mouse(app, 'mousePressed', p); await mouse(app, 'mouseReleased', p); await sleep(250); }
 
-run('Barra de mensagens abre para cima', 90000, async () => {
+run('Barra de mensagens abre para cima', 120000, async () => {
   const A = await openApp('dmBarra', 9497);
   await A.waitFor(`typeof setDmPanel === 'function'`);
   await sleep(800);
@@ -24,21 +24,37 @@ run('Barra de mensagens abre para cima', 90000, async () => {
   check('Clicar em Mensagens abre o painel para cima, colado na barra', await A.eval(`!$('dmPanel').hidden`) && Math.abs(geo.pBottom - geo.bTop) < 2 && Math.abs(geo.pLeft - geo.lLeft) < 2 && geo.h > 150, JSON.stringify(geo));
   check('Sem o HUB: a barra começa na borda esquerda da janela', await A.eval(`!$('hubRail') && $('dmBar').getBoundingClientRect().left === 0`));
   check('Abre nas conversas, sem abas e sem Adicionar amigo por cima', await A.eval(`!$('dmPanel').querySelector('.dm-panel-head [role="tablist"]') && !$('dmConvs').hidden && $('dmFriends').hidden && $('dmAddOpen').getAttribute('aria-expanded') === 'false'`));
-  check('Online agora: a Bia, em cima das conversas', await A.eval(`!$('dmOnline').hidden && $('dmOnlineList').children.length === 1 && $('dmOnlineList').textContent.includes('Bia')`));
+  check('Online: a Bia, em cima das conversas', await A.eval(`!$('dmOnline').hidden && $('dmOnlineList').children.length === 1 && $('dmOnlineList').textContent.includes('Bia')`));
+  check('Jogando: anel na foto e, com o mouse em cima, o cartão com o jogo', await A.eval(`(() => {
+    friendsData.friends[0].activity = { game: 'Deadlock', artist: '', title: '' };
+    renderDmPanel();
+    const b = $('dmOnlineList').querySelector('.dm-online-person');
+    b.dispatchEvent(new MouseEvent('mouseenter'));
+    const ok = b.classList.contains('ativo') && !$('dmOnlinePop').hidden && $('dmOnlinePop').textContent.includes('Deadlock') && $('dmOnlinePop').textContent.includes('Jogando');
+    b.dispatchEvent(new MouseEvent('mouseleave'));
+    const some = $('dmOnlinePop').hidden;
+    friendsData.friends[0].activity = null;
+    renderDmPanel();
+    return ok && some;
+  })()`));
   check('Lista: Bia (com a prévia e 2 não lidas) antes do Caio', await A.eval(`(() => {
-    const rows = [...$('dmPanelConvList').children];
+    const rows = [...$('dmPanelConvList').querySelectorAll('.hub-conv')];
     return rows.length === 2 && rows[0].textContent.includes('Bia') && rows[0].textContent.includes('oi, bora jogar?') && rows[0].querySelector('.hub-badge')?.textContent === '2' && rows[1].textContent.includes('Caio');
   })()`));
   check('O botão fica marcado como aberto e a busca recebe o foco', await A.eval(`$('dmBarLabel').getAttribute('aria-expanded') === 'true' && document.activeElement === $('dmPanelFilter')`));
   await A.eval(`(() => { const f = $('dmPanelFilter'); f.value = 'cai'; f.dispatchEvent(new Event('input')); })()`);
-  check('Buscar filtra a lista', await A.eval(`$('dmPanelConvList').children.length === 1 && $('dmPanelConvList').textContent.includes('Caio')`));
+  check('Buscar filtra a lista', await A.eval(`$('dmPanelConvList').querySelectorAll('.hub-conv').length === 1 && $('dmPanelConvList').textContent.includes('Caio')`));
+  // O X de limpar a busca: clicar um pouco fora do desenho do X (a 6 px do centro) ainda limpa
+  const campo = await A.eval(`(() => { const r = $('dmPanelFilter').getBoundingClientRect(); return [r.right - 18 - 8, r.top + r.height / 2 + 6]; })()`);
+  await clickAt(A, campo);
+  check('O X da busca é fácil de acertar: clicar perto dele limpa o campo', await A.eval(`$('dmPanelFilter').value === ''`), await A.eval(`$('dmPanelFilter').value`));
   await A.eval(`(() => { const f = $('dmPanelFilter'); f.value = ''; f.dispatchEvent(new Event('input')); })()`);
   await A.shot('mensagens-barra.png');
   // Buscar alguém que não está na lista: depois da pausa, abre Adicionar amigo com o nome no campo
   await A.eval(`(() => { const f = $('dmPanelFilter'); f.value = 'zeca'; f.dispatchEvent(new Event('input')); })()`);
   check('Busca sem ninguém ainda não abre Adicionar amigo durante a digitação', await A.eval(`$('dmFriends').hidden`));
   await sleep(1100);
-  check('Depois da pausa, abre Adicionar amigo com o nome no campo, Enviar ativo e a busca limpa', await A.eval(`!$('dmFriends').hidden && $('razzeFriendNickname').value === 'zeca' && document.activeElement === $('razzeFriendNickname') && !$('razzeAddFriend').disabled && $('dmPanelFilter').value === '' && $('dmPanelConvList').children.length === 2`));
+  check('Depois da pausa, abre Adicionar amigo com o nome no campo, Enviar ativo e a busca limpa', await A.eval(`!$('dmFriends').hidden && $('razzeFriendNickname').value === 'zeca' && document.activeElement === $('razzeFriendNickname') && !$('razzeAddFriend').disabled && $('dmPanelFilter').value === '' && $('dmPanelConvList').querySelectorAll('.hub-conv').length === 2`));
   const fechar = await A.eval(`(() => { const a = $('dmAddOpen').getBoundingClientRect(), b = $('dmAddClose').getBoundingClientRect(), c = $('dmPanelClose').getBoundingClientRect(); return [a.width, a.height, b.width, b.height, c.width, c.height]; })()`);
   check('Os X têm o tamanho do botão de adicionar amigo', fechar.every((v) => v === fechar[0]), JSON.stringify(fechar));
   await A.shot('mensagens-barra-busca-adicionar.png');
@@ -75,9 +91,19 @@ run('Barra de mensagens abre para cima', 90000, async () => {
   check('Clicar fora fecha', await A.eval(`$('dmPanel').hidden`));
 
   await clickAt(A, await centerOf(A, '#dmBarLabel'));
-  await clickAt(A, await centerOf(A, '#dmPanelConvList > li'));
+  await clickAt(A, await centerOf(A, '#dmPanelConvList > .hub-conv'));
   await A.waitFor(`dm.bar.some((b) => b.id === '${BIA}' && b.open)`, 5000);
   check('Clicar na conversa abre a janela dela na barra e fecha a lista', await A.eval(`$('dmPanel').hidden && !document.querySelector('.dm-slot.open .dm-window').hidden && dm.convs.get('${BIA}').unread === 0`));
+  await sleep(300); // o trilho sobe numa animação curta
+  check('Com a janela aberta, o envelope vira um trilho colado nela, com a conversa marcada, e os dois descem até o chão, sem o envelope e sem linha no pé', await A.eval(`(() => {
+    const t = $('dmTrilho').getBoundingClientRect(), w = document.querySelector('.dm-slot.open .dm-window').getBoundingClientRect();
+    const f = document.querySelector('.dm-slot.open .dm-form').getBoundingClientRect(), e = $('dmTrilho').getBoundingClientRect();
+    return !$('dmTrilho').hidden && Math.abs(t.right - w.left) < 2 && Math.abs(t.top - w.top) < 2 && !!$('dmTrilho').querySelector('.dm-trilho-p.ativa')
+      && Math.abs(f.bottom - e.bottom) < 2 && Math.abs(w.bottom - innerHeight) < 2 && Math.abs(t.bottom - w.bottom) < 2
+      && getComputedStyle($('dmBarLabel')).visibility === 'hidden' && getComputedStyle(document.querySelector('.dm-slot.open .dm-form')).boxShadow === 'none';
+  })()`), await A.eval(`(() => { const r = (el) => { const b = el.getBoundingClientRect(); return [b.left, b.top, b.right, b.bottom].map(Math.round); };
+    return JSON.stringify({ trilho: r($('dmTrilho')), janela: r(document.querySelector('.dm-slot.open .dm-window')), campo: r(document.querySelector('.dm-slot.open .dm-form')), }); })()`));
+  await A.shot('mensagens-barra-trilho.png');
 
   // Muitas conversas na barra (uma aberta por vez): as que não cabem vão para o "+N", e nada passa da borda da janela
   const ids = ['d', 'e', 'f', 'g', 'h'].map((ch) => ch.repeat(32));
@@ -85,6 +111,7 @@ run('Barra de mensagens abre para cima', 90000, async () => {
     Array.from({ length: 30 }, (_, i) => 'x' + String(i).padStart(31, '0')).forEach((id, i) => { friendsData.friends.push({ id, displayName: 'Extra ' + (i + 1), online: false }); dmPutInBar(id, false); });
     ${JSON.stringify(ids)}.forEach((id, i) => { friendsData.friends.push({ id, displayName: 'Amigo ' + (i + 1), online: i % 2 === 0 }); dmPutInBar(id, i < 3); });
     dmConv('${'h'.repeat(32)}').unread = 3;
+    dm.bar.forEach((b) => { b.open = false; }); // o "+N" é da barra sem janela aberta (com ela, as conversas ficam no trilho)
     renderDm();
   })()`);
   await sleep(200);
@@ -105,6 +132,17 @@ run('Barra de mensagens abre para cima', 90000, async () => {
   await A.waitFor(`dm.bar.find((b) => b.id === '${'h'.repeat(32)}').open && !dm.convs.get('${'h'.repeat(32)}').el.slot.hidden`, 5000);
   const b2 = await A.eval(bar);
   check('Escolher uma no "+N" traz ela para a barra, aberta, sem passar da borda', b2.right <= b2.width && b2.order.indexOf('Amigo 5') < b2.shown, JSON.stringify(b2));
+  // O trilho recebe o clique de verdade (antes o pointerdown fora da janela minimizava e o trilho sumia debaixo do mouse)
+  await sleep(300);
+  await clickAt(A, await centerOf(A, '#dmTrilho .dm-trilho-p:not(.ativa)'));
+  check('Clicar em outra pessoa no trilho troca a conversa aberta', await A.eval(`(() => { const a = dm.bar.find((b) => b.open); return !!a && a.id !== '${'h'.repeat(32)}' && !$('dmTrilho').hidden; })()`));
+  const aberta = await A.eval(`dm.bar.find((b) => b.open).id`);
+  await clickAt(A, await centerOf(A, '#dmTrilho .dm-trilho-p.ativa'));
+  await clickAt(A, await centerOf(A, '.dm-slot.open .dm-name'));
+  check('Clicar na pessoa da conversa aberta (no trilho ou no topo) não fecha a janela', await A.eval(`dm.bar.find((b) => b.open)?.id === '${aberta}' && document.activeElement === dm.convs.get('${aberta}').el.input`));
+  await clickAt(A, await centerOf(A, '#dmTrilho .dm-trilho-mais'));
+  check('O + do trilho minimiza a conversa e abre o painel no lugar dela, sem os dois um por cima do outro', await A.eval(`!$('dmPanel').hidden && !dm.bar.some((b) => b.open) && $('dmTrilho').hidden`));
+  await clickAt(A, await centerOf(A, '#dmBarLabel'));
   // Mudar a ordem: arrastar o primeiro chip para depois do segundo
   const order0 = (await A.eval(bar)).order;
   await A.eval(`(() => {

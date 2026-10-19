@@ -128,7 +128,7 @@ app.whenReady().then(async()=>{
       // Perfil e configurações são janelas por cima: abrir uma fecha a outra; os painéis da sala continuam
       await run(`openProfilePopup();openGeneralSettings();`);
       await check('Configurações abrem por cima, fecham o perfil e mantêm os painéis',`$('profilePane').hidden && !$('generalSettingsDialog').hidden && !$('chatTab').hidden && !$('voicePane').hidden && !$('streamArea').hidden`);
-      await run(`closeGeneralSettings();$('navChat').click();if(painelSala.juntos)$('paneJuntos').click();`);
+      await run(`closeGeneralSettings();setPainelSala({ aba: 'chat', juntos: false, recolhido: false });`);
       win.setSize(1600,950);await new Promise(r=>setTimeout(r,250));
       fs.writeFileSync(path.join(root,'.test-profile','workspace-room.png'),(await win.webContents.capturePage()).toPNG());
       await run(`leaveRoom();void 0;`);

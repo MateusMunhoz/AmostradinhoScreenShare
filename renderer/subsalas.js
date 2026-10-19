@@ -248,13 +248,22 @@ function channelHead(ch, sub) {
   li.dataset.channel = ch;
   const icon = document.createElement('span');
   icon.className = 'voice-channel-icon';
-  // Sem caixa: as barrinhas de som (azuis e altas no seu canal, baixas e cinza nos outros) e o nome. Sem o número de
-  // pessoas: quem está no canal aparece logo embaixo
+  // Sem caixa: as barrinhas de som (azuis e altas no seu canal, baixas e cinza nos outros), o nome e quantas pessoas
+  // estão nele (some com o canal vazio: o "Ninguém aqui" embaixo já diz)
   icon.innerHTML = here ? ICON.ondas : ICON.ondasParadas;
   icon.setAttribute('aria-hidden', 'true');
   const name = document.createElement('strong');
   name.textContent = channelName(ch);
   li.append(icon, name);
+  const n = voiceIdsIn(ch).length;
+  if (n) {
+    const conta = document.createElement('span');
+    conta.className = 'voice-channel-n';
+    conta.textContent = String(n);
+    conta.title = `${n} ${n === 1 ? 'pessoa' : 'pessoas'} em ${channelName(ch)}`;
+    conta.setAttribute('aria-label', conta.title);
+    name.after(conta);
+  }
   // Subsala Líder: o selo, e AO VIVO com alguém transmitindo nela
   if (sub?.modo === 'lider') {
     li.classList.add('lider');

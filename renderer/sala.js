@@ -656,6 +656,9 @@ function handleSignal(from, data) {
     onFileSignal(from, data);
   } else if (data.side === 'foto') {
     onPhotoSignal(from, data);
+  } else if (data.side === 'mini') { // a miniatura da tela: pedido (want) para quem transmite, ou a imagem que chegou
+    if (data.want !== undefined) void responderMiniatura(from, data);
+    else void receberMiniatura(from, data);
   } else if (data.side === 'fundo') {
     onProfileBgSignal(from, data).catch(console.error);
   } else if (data.side === 'bio') {

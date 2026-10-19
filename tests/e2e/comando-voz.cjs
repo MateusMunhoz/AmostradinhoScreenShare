@@ -84,8 +84,8 @@ app.whenReady().then(async () => {
     await run(`enterRoom({ id: '1', features: ['chat', 'voice', 'handoff'], members: [{ id: '2', name: 'Mateus', sharing: true, version: '1.15.6' }, { id: '3', name: 'Ana', sharing: false, version: '1.15.6' }], chat: [] }, false, '127.0.0.1', 8765)`);
     await sleep(500);
     check('Na sala, a tecla do comando é ligada', teclas.at(-1) === true, JSON.stringify(teclas));
-    check('Voz e atalhos mostra a tecla do comando', await run(`(() => { openVoiceDialog(); return true; })()`) && await until(`$('shortcutRows').textContent.includes('Comando de voz')`, 2000));
-    await run(`closeVoiceDialog()`);
+    check('Atalhos mostra a tecla do comando', await run(`(() => { openGeneralSettings('shortcuts'); return true; })()`) && await until(`$('shortcutRows').textContent.includes('Comando de voz')`, 2000));
+    await run(`closeGeneralSettings()`);
 
     // Segura a tecla pelo tempo da frase e solta
     await run(`onComandoVozTecla(true)`);

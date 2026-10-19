@@ -12,15 +12,15 @@ Tudo o que dá para fazer no Nebula, com os detalhes. Para começar do zero, vej
 - [Chat por cima do jogo](#chat-por-cima-do-jogo)
 - [Voz](#voz)
 - [Voz e atalhos](#voz-e-atalhos)
-- [Estatísticas](#estatísticas)
+- [Diagnóstico](#diagnóstico)
 - [Tema](#tema)
 - [Atualizações](#atualizações)
 
 ## Sala
 
-- **Criar:** no Início, **Criar sala** abre a sala na hora (no modo Internet, com senha gerada). Para escolher a porta e a senha, clique em **Opções da sala**, dentro do mesmo cartão. O app mostra um endereço tipo `26.12.34.56:8765`. Mande para os amigos. Quem cria é o **host**, e aparece "Host" ao lado do nome.
+- **Criar:** no Início, **Criar sala** abre a sala na hora (no modo Internet, com senha gerada). Para escolher a porta e a senha, clique em **Opções** (a casinha com engrenagem), à direita na mesma linha. O app mostra um endereço tipo `26.12.34.56:8765`. Mande para os amigos. Quem cria é o **host**, e aparece "Host" ao lado do nome.
 - **Entrar:** clique em **Entrar numa sala** (ao lado de Criar sala), cole o endereço (ou o código, no modo Internet) e clique em **Entrar**.
-- **Passo a passo:** no Início, embaixo de Criar sala e Entrar numa sala, **Como entrar numa sala?** abre os roteiros guiados
+- **Passo a passo:** no Início, na última linha do painel de Criar sala e Entrar numa sala, **Como entrar numa sala?** abre os roteiros guiados
   **Entrar com código e senha**, **Criar sala e chamar os amigos**, **Entrar pela lista de amigos** e **Entrar por um convite**. A janela escurece e o botão do passo fica aceso, com um
   balão do lado; o passo segue quando você faz a ação de verdade (alguns só explicam, com **Entendi**). O de código tem
   **Preencher exemplo**: com ele, o Entrar só ensaia e não entra em sala nenhuma; com um código de verdade, entra. O de
@@ -52,35 +52,37 @@ Tudo o que dá para fazer no Nebula, com os detalhes. Para começar do zero, vej
 
   Clicar fora ou apertar Esc fecha o menu.
 - **Painel da sala, com abas:** **Voz**, **Chat** e **Pessoas** (com o total e uma bolinha verde quando alguém fala).
-  - **Voz:** os canais e quem está em cada um, com **Lista** e **Mapa**, **Pôr música** e as subsalas.
+  - **Voz:** os canais e quem está em cada um, com **Pôr música** e as subsalas. **Lista** e **Mapa** são os dois ícones à direita das abas (só com a Voz à vista).
   - **Chat:** as mensagens; a aba mostra quantas chegaram.
   - **Pessoas:** quem está na sala, com **Assistir** e o volume de cada pessoa, e os detalhes da sua transmissão.
-  - **Lado a lado** (o ícone de duas faixas, à direita das abas): Voz e Chat juntos, um em cima do outro, com a
-    divisória para arrastar.
-  - **Recolher** (o último ícone): o painel some e as telas ocupam a largura toda. A sua voz e o Transmitir vão para a
+  - **Lado a lado:** com a Voz ou o Chat aberto, clicar na outra aba abre os dois, um em cima do outro, com a
+    divisória para arrastar. Com os dois abertos, clicar numa aba fecha essa e fica a outra.
+  - **Recolher** (o último ícone, na caixa do Lista e Mapa): o painel some e as telas ocupam a largura toda. A sua voz e o Transmitir vão para a
     barrinha da direita (o primeiro ícone ali abre o painel de novo).
   - No **Início**, o painel vai sozinho para a barrinha, como recolhido. Abrir o painel por ali volta para a sala, e
     na sala ele volta como estava.
   - Sem vãos: as telas, o painel, a barrinha e a barra de conversas encostam uns nos outros e nas bordas da janela,
     sem linhas nem cantos redondos entre eles; só o tom separa. O painel desce até o pé da janela, e a barra de
     conversas fica só embaixo das telas.
-  - As setas do teclado trocam de aba. A aba aberta, o lado a lado e o recolhido ficam salvos.
+  - As setas do teclado levam o foco de uma aba para outra; Enter ou espaço abre. A aba aberta, o lado a lado e o
+    recolhido ficam salvos.
 - **Seu sinal:** o cartão no pé do painel, à vista em qualquer aba:
   - fora da voz, **Entrar na voz** (com as bolinhas de quem já está conversando, entra no canal com mais gente; com
-    gente em mais de uma subsala, a setinha ao lado abre a lista desses canais); dentro, microfone, fone, sair da voz
-    e **Voz e atalhos**;
+    gente em mais de uma subsala, a setinha ao lado abre a lista desses canais); dentro, a sua foto (com o anel verde quando você
+    fala), **Você** e o canal, e microfone, fone, os **ajustes da voz** e sair da voz;
   - **Transmitir tela**. Transmitindo, a pílula **Transmitindo tela** aparece no lugar do botão, com a mesma forma, com o monitor aceso e, à direita, o olho com
     quantos assistem (o olho só aparece com alguém assistindo; parar o mouse em cima mostra os nomes; clicar em qualquer parte da pílula abre a sua tela no palco, e a dica dela diz qual tela é), e ao lado dela, redondos, **Quem pode assistir**, **Trocar** e **Parar** (cheio de laranja; o **Sair da voz**, em cima, é só o ícone laranja). Na voz, à esquerda dos botões aparece o canal em que você está (**Voz geral** ou o nome da subsala);
   - as janelas flutuantes abertas e a música que você está ouvindo (clicar mostra **Pausar** ou **Continuar** e **Sair
     da música**).
 - **Palco vazio:** com alguém transmitindo, aparece **Transmitindo agora** com um **Assistir** para cada pessoa.
-- **Barra da chamada:** na voz, mexer o mouse em cima das telas mostra uma barra no pé delas, no meio: **microfone**,
-  **fone**, **Transmitir tela** e **Sair da voz** (a porta com seta, em laranja). Transmitindo, o Transmitir vira o bloco
-  **Ao vivo**: clicar em "Ao vivo" mostra a sua tela, e dentro dele ficam **quem pode assistir** (o mesmo menu do
-  cartão), **trocar a tela** (sem parar) e **parar**. Ela some
+- **Barra da chamada:** na voz, mexer o mouse em cima das telas mostra uma barra no pé delas, no meio, só com ícones,
+  em blocos: **microfone** e **fone** num, **transmitir** (o monitor) no outro, e **Sair da voz** (a porta com seta, em
+  laranja) sozinho. Transmitindo, o monitor fica cheio na cor de ao vivo e, com o mouse em cima, fica laranja e cortado:
+  clicar para a transmissão. Ao lado dele aparecem **trocar a tela** (sem parar) e **quem pode assistir** (o mesmo menu
+  do cartão). O nome de cada botão aparece na dica. Ela some
   sozinha uns 2,5 s depois que o mouse para (com o mouse ou o foco nela, fica). Fora da voz, ela não aparece. Enquanto
   ela está à vista, os botões que ela repete (microfone, fone, sair, quem pode assistir, trocar e parar) somem do
-  **Seu sinal** no painel, com uma transição curta; fica só **Voz e atalhos**.
+  **Seu sinal** no painel, com uma transição curta; ficam só os **ajustes da voz**.
 - **Falando com o microfone desligado:** na voz, meio segundo falando com o microfone desligado mostra no pé das telas
   o aviso laranja **Você está falando com o microfone desligado**, com **Ligar**. Ele some uns 3 s depois que você
   para de falar.
@@ -171,7 +173,7 @@ Quando há uma sala aberta (de amigo ou, nos outros modos, na sua rede), ela sob
 - **Amigos de quem estiver na sala também podem entrar** (Criar sala, marcado por padrão): os amigos de qualquer
   pessoa da sala entram com um clique, mesmo que você não os conheça. O host liga e desliga no painel da sala (ao lado
   da senha); desligar não tira ninguém, só impede que entre gente nova sem a senha. Mudar a senha troca o passe.
-- **Fechar a sala para os seus amigos sem sumir:** em **Configurações › Atividade**, desligue **Deixar meus amigos
+- **Fechar a sala para os seus amigos sem sumir:** em **Configurações › Privacidade**, desligue **Deixar meus amigos
   entrarem na sala em que estou**. Eles continuam vendo "Na sala de Ciclano", sem o Entrar.
 - **Quanto tempo fica:** enquanto você está na sala. Saiu (ou fechou o app), ela some da lista dos amigos na hora;
   se o PC cair, em até 70 segundos. Se você sair e a sala continuar com os outros, o seu convite para de valer.
@@ -191,7 +193,8 @@ Se o host sai, ou se o app dele fecha ou trava, a sala não acaba.
 ## Transmitir
 
 - **Várias ao mesmo tempo:** qualquer pessoa pode clicar em **Transmitir minha tela**, e várias podem transmitir juntas.
-- **O que transmitir:** na janela de transmitir, escolha a tela inteira ou uma janela, a qualidade e o áudio. Um clique
+- **O que transmitir:** na janela de transmitir, escolha a tela inteira ou uma janela (à esquerda), a qualidade e o
+  áudio (à direita; numa janela estreita, um embaixo do outro). Um clique
   fora dela fecha sem mudar nada (trocando a tela, a transmissão continua com a de antes).
 - **Sem prévia:** a prévia da sua própria tela não aparece na sala. Você vê o que escolheu ao começar.
 - **Só para o seu canal:** na janela de transmitir, **Outros canais podem assistir** diz se quem está em outra subsala (ou na Voz geral, se você está numa subsala) pode assistir. Vem ligado e fica salvo. Durante a transmissão, o ícone ao lado de **Trocar** (globo = a sala toda, cadeado = só o seu canal) abre **Quem pode assistir**, com as duas opções; a escolha muda só a transmissão atual; a próxima começa como está na janela. Fechada, quem está fora do seu canal vê o **Assistir** desligado, e quem já assistia de fora para de ver (também quando você ou a pessoa muda de canal).
@@ -201,7 +204,7 @@ Se o host sai, ou se o app dele fecha ou trava, a sala não acaba.
 ### Áudio e apps ignorados
 
 - **Todo o som do PC:** o app captura tudo, mesmo se você escolher só uma janela. O som das telas que você está assistindo no app nunca vai para a sua transmissão, então ninguém se ouve de volta.
-- **Ignorar o som destes apps:** marque quantos apps quiser (Discord, Spotify...). O Discord já vem marcado na primeira vez. O jogo, o vídeo e o resto do som vão para a transmissão, mas o som desses apps não vai. Com o Discord marcado, a voz de vocês na call não vai, e ninguém se escuta com atraso.
+- **Ignorar o som destes apps:** clique nos apps que quiser (Discord, Spotify...); o marcado acende, com um pontinho. O Discord já vem marcado na primeira vez. O jogo, o vídeo e o resto do som vão para a transmissão, mas o som desses apps não vai. Com o Discord marcado, a voz de vocês na call não vai, e ninguém se escuta com atraso.
   - **A lista** mostra o nome de cada programa (ex.: "Wallpaper Engine" em vez de `wallpaper64.exe`) e esconde processos do Windows e de drivers.
   - **Apps abertos depois:** um app marcado fica de fora mesmo se abrir depois de a transmissão começar. Um app novo, não marcado, entra no som em até 2 segundos.
   - **Sons do Windows:** nesse modo, os sons de notificação do Windows não vão para a transmissão.
@@ -229,11 +232,11 @@ Qualidade, codificação e jogo em tela cheia estão em [Desempenho](desempenho.
 
 Salva os últimos segundos de uma transmissão, com o som dela, num arquivo de vídeo, como o replay do ShadowPlay: aconteceu algo legal, você aperta e o que **já passou** fica guardado.
 
-- **Como salvar:** **Ctrl+Shift+C** (dá para trocar em [Voz e atalhos](#voz-e-atalhos); funciona com o jogo na frente), a **tesoura** na barra de cima da transmissão ou **Salvar clipe da transmissão** no [ícone da bandeja](#ícone-na-bandeja).
-- **Quanto tempo:** 15 s, 30 s (padrão), 1 min ou 2 min, em **Voz e atalhos › Clipe**. Mais tempo usa mais memória (2 min em 1080p: uns 100 a 200 MB por transmissão).
+- **Como salvar:** **Ctrl+Shift+C** (dá para trocar em **Configurações › Atalhos**; funciona com o jogo na frente), a **tesoura** na barra de cima da transmissão ou **Salvar clipe da transmissão** no [ícone da bandeja](#ícone-na-bandeja).
+- **Quanto tempo:** 15 s, 30 s (padrão), 1 min ou 2 min, em **Configurações › Transmissão › Clipe**. Mais tempo usa mais memória (2 min em 1080p: uns 100 a 200 MB por transmissão).
 - **Qual transmissão:** a que está em destaque; sem destaque, a que você assiste. A sua própria transmissão também vale: transmitindo seu jogo, o atalho salva a sua jogada (com placa NVIDIA, mesmo sem ninguém assistindo; nas outras, só com alguém assistindo).
 - **Onde fica:** `Vídeos\Tela P2P\Clipes`, em MP4, com o nome de quem transmitia e a hora. O aviso tem **Mostrar na pasta**.
-- **Som:** o som da transmissão (o jogo, a música) vai junto. A voz da call só entra com **Gravar a voz da call nos clipes** ligado (em **Voz e atalhos › Clipe**, desligado por padrão): aí vai o que você ouve na voz, no volume que você deu a cada um, e o seu microfone (mutado não entra). Avise quem está na call. No [modo gamer](#modo-gamer) a voz não é gravada.
+- **Som:** o som da transmissão (o jogo, a música) vai junto. A voz da call só entra com **Gravar a voz da call nos clipes** ligado (em **Configurações › Transmissão › Clipe**, desligado por padrão): aí vai o que você ouve na voz, no volume que você deu a cada um, e o seu microfone (mutado não entra). Avise quem está na call. No [modo gamer](#modo-gamer) a voz não é gravada.
 - **Qualidade:** no modo **Uma vez só** (o padrão), a mesma que chegou para você, sem perder nada. No modo **Uma por pessoa**, o app codifica o vídeo de novo só para o clipe: pela placa de vídeo no tamanho que chega ou, sem ela, pelo processador em até 720p a 30 quadros, para pesar pouco. O clipe começa no último quadro inteiro antes do tempo escolhido: pode ter alguns segundos a mais.
 - **Vídeo pausado não entra:** com o app minimizado ou coberto pelo jogo, o vídeo de quem você assiste para de chegar, e o clipe recomeça quando ele volta. Para clipar alguém enquanto joga, deixe a transmissão numa [janela flutuante](#janela-flutuante).
 ## Janela flutuante
@@ -312,6 +315,7 @@ No painel **Chat de voz**, a voz fica dividida em canais: a **Voz geral** e as s
 - **Canal vazio:** um canal sem ninguém mostra um espaço vazio com **Ninguém aqui**; clicar nele entra no canal.
 - **Criar:** fora da voz, clique em **+ Nova subsala**, ao lado de **Entrar na Voz geral**; na voz, em **+ Subsala**, na faixa de baixo do painel. Para sair da voz, use a porta com seta do cartão **Seu sinal**. O botão pergunta o modo: **Padrão** (só quem está nela se ouve) ou **Líder** (quem está nela fala para a sala toda; veja **Modo Líder**, logo abaixo). A subsala é criada e você já entra nela. Os nomes são sempre `Subsala_1`, `Subsala_2`, e assim por diante: a nova recebe o número seguinte ao da maior que existe.
 - **Cada canal:** o nome com barrinhas de som na frente: azuis e altas no canal em que você está, cinza e baixas nos outros. Quem está no canal aparece logo embaixo.
+- **Quantas pessoas:** ao lado do nome de cada canal (Voz geral e subsalas), um número diz quantas pessoas estão nele (verde no seu); canal vazio fica sem número.
 - **Entrar:** clique no nome do canal. Fora da voz, isso liga o microfone já naquele canal; na voz, você muda de canal sem sair.
 - **Quem ouve quem:** só quem está no mesmo canal se ouve. O chat de texto e as transmissões continuam valendo para a sala toda.
 - **Apagar:** passe o mouse na subsala e clique no **X** que aparece no canto (o "Pôr música" desliza para dar espaço; pelo teclado, ele aparece com o foco no canal). Quem estava nela volta para a Voz geral.
@@ -396,15 +400,18 @@ No **Início**, com conta, a coluna da direita mostra **Amigos online** (até 5,
 Cada amigo mostra em etiquetas onde está, o jogo e a música (clique na música para ver a faixa). Passando o mouse na linha
 aparece **Chamar para minha sala**: manda o convite da sala em que você está pelas mensagens; fora de sala, abre a sua antes.
 
-O topo diz **Bom dia/Boa tarde/Boa noite** e o seu nome (o lápis ao lado muda o nome; sem nome, aparece o campo), com um
-resumo do momento: quantos amigos estão online, quem está jogando ou quem abriu uma sala. Ao lado, numa janela larga,
-uma constelação parada: você no meio e os amigos online em volta; quem está numa sala brilha na cor de "ao vivo".
+Na coluna da direita, em cima dos amigos, fica o seu cartão: a foto, **Bom dia/Boa tarde/Boa noite** e o seu nome (o
+lápis ao lado muda o nome; sem nome, aparece o campo) e, se alguém abriu uma sala, quem abriu. No cartão dos amigos, embaixo do título e numa janela larga, uma constelação parada:
+você no meio e os amigos online em volta; quem está numa sala brilha na cor de "ao vivo". Janela estreita: a coluna da
+direita desce para baixo das salas.
 No modo Internet, **Criar sala** diz quais amigos online vão ver a sala. Numa sala, a linha embaixo do nome vira "O que
 você quer fazer agora?".
-**Última sala** (só fora de sala) mostra de quem era, quando e o modo (o endereço fica na dica), com **Entrar de novo**;
-se ela está aberta na lista, vira só informação. A barra de baixo mostra a última conversa: clicar abre ela.
-**Criar sala** cria a sala em um clique (com senha gerada e visível para os amigos); **Opções da sala**, dentro do mesmo
-cartão, abre a tela com porta, senha e visibilidade.
+**Última sala** (só fora de sala), no mesmo painel das salas, mostra de quem era, quando e o modo (o endereço fica na dica), com **Entrar de novo**;
+se ela está aberta na lista, vira só informação. A barra de baixo mostra a última conversa: clicar abre ela. Uma bolinha verde ao lado do nome diz que a pessoa está online; se a última mensagem foi sua, a linha fica mais apagada.
+**Criar sala** e **Entrar numa sala** são as duas linhas de um mesmo painel (o conteúdo do Início fica no meio da altura
+da janela). **Criar sala** cria a sala em um clique (com senha gerada e visível para os amigos); **Opções** (a casinha com
+engrenagem), à direita na mesma linha, abre a tela com porta, senha e visibilidade. Sem sala aberta de amigos, embaixo aparece um painel
+com a frase no lugar da lista.
 No pé do Início fica a versão ("Nebula 1.18.10 · atualizado"), com **Procurar atualização** e **Novidades**.
 
 ## Senha e frase do perfil
@@ -463,7 +470,7 @@ O coração na barrinha e o botão **Apoiar** no topo do Início abrem a janela 
 
 ## Atividade no perfil
 
-Em **Configurações › Atividade** (ou no próprio perfil: a aba **Perfil** tem os interruptores do jogo, da música e da sala, e o link para o resto), cada coisa que aparece no seu perfil é
+Em **Configurações › Privacidade** (a aba **Perfil** do seu perfil tem um link para lá), cada coisa que aparece no seu perfil é
 uma escolha sua. O jogo e a música vêm **ligados por padrão** (dá para desligar já na primeira entrada, no passo **Quem é você?**,
 ou aqui a qualquer hora); os jogos da Steam só aparecem depois que você marca cada um:
 
@@ -487,22 +494,26 @@ Numa sala, quem está nela também vê (com ou sem conta): no seu perfil aparece
 **Jogando** (o nome do jogo, há quanto tempo você joga e o ícone do próprio programa do jogo, nítido e sem recorte), e na sua linha da lista vem a música (o símbolo do Spotify, de qualquer player, e só o artista; a faixa aparece com o mouse em cima) ou o jogo embaixo do nome; com os dois, a linha mostra a música
 e um controle azul, junto dos ícones de microfone e fone, avisa que você está jogando (o nome do jogo aparece com o mouse em cima). Passa direto de PC para PC, não fica guardado e atualiza em até 30 s.
 
-Embaixo, o perfil mostra **Jogou recentemente** (os últimos 3 jogos, com a imagem e "hoje", "ontem", "há 3 dias") e **Ouviu recentemente** (as últimas 3 músicas, com a capa; clicar abre no Spotify), sem repetir o que está tocando ou jogando agora. A lista fica guardada no seu PC (uns 30 KB, não cresce, só dos últimos 30 dias) e vai só para quem abre o seu perfil. Segue as caixinhas de jogo e de música; em **Configurações › Atividade**, **Mostrar os últimos 3 jogos e 3 músicas no perfil** desliga só essa parte e apaga o que estava guardado.
+Embaixo, o perfil mostra **Atividade**: um mosaico com os últimos jogos e músicas (até 5, dos 3 jogos e 3 músicas guardados), do mais novo ao mais velho. O mais novo fica no bloco grande, com o nome e "hoje", "ontem" ou "há 3 dias"; nos outros, o nome aparece com o mouse em cima. Clicar numa música abre no Spotify. Não repete o que está tocando ou jogando agora. A lista fica guardada no seu PC (uns 30 KB, não cresce, só dos últimos 30 dias) e vai só para quem abre o seu perfil. Segue as caixinhas de jogo e de música; em **Configurações › Atividade**, **Mostrar os últimos 3 jogos e 3 músicas no perfil** desliga só essa parte e apaga o que estava guardado.
 
 ## Amigos
 
-No **envelope**, no começo da barra de baixo, tudo fica num painel só: em cima, **Online agora** (a foto de cada amigo
-online; clicar abre a conversa) e, embaixo, as **Conversas**. Precisa de conta Razze: sem ela, o envelope não aparece e a
+No **envelope**, no começo da barra de baixo, tudo fica num painel só: em cima, **Online** (a foto de cada amigo
+online, com a bolinha verde; clicar abre a conversa) e, embaixo, as **Conversas**. Quem está jogando ou ouvindo música tem
+um anel na foto: com o mouse em cima, abre um cartão com o jogo (e a capa, se o jogo também está na sua Steam) ou a música
+e o artista. A fileira rola de lado com a roda do mouse. As conversas ficam em grupos (**Hoje**, **Ontem**, **Esta
+semana**, **Antes** e, sem mensagem, **Amigos**); a hora segue o grupo (22:14, seg, 10 out). Não lida fica com o nome
+forte e o número ao lado; a mensagem que não deu para abrir aparece como um cadeado e "mensagem". Precisa de conta Razze: sem ela, o envelope não aparece e a
 conta se faz no **Perfil**, aba **Conta**.
 
 O botão de **adicionar amigo**, ao lado da busca, mostra o número de pedidos que chegaram (também somado no envelope) e
-sobe o painel **Adicionar amigo** por cima das conversas, com três abas: **Recebidos** (com **Aceitar**), **Enviados**
-(com **Cancelar**) e **Amigos** (a lista completa, online e offline). Abre em **Recebidos** quando chegou pedido; senão, em **Amigos**. Buscar no envelope um nome que não está na lista abre o painel sozinho, depois de uma pausa na digitação, com o nome já no campo. O **X**, clicar fora ou Esc volta para as conversas.
+sobe o painel **Adicionar amigo** por cima das conversas, com três abas, cada uma com o número num selo: **Recebidos** (com **Aceitar**), **Enviados**
+(com **Cancelar**) e **Amigos** (a lista completa, online e offline). Embaixo do nome de cada amigo aparece em que sala ele está, o que está jogando ou ouvindo, ou só Online/Offline; a mensagem fica sempre à vista, e o **telefone** e o **⋯** aparecem com o mouse em cima da linha. Abre em **Recebidos** quando chegou pedido; senão, em **Amigos**. Buscar no envelope um nome que não está na lista abre o painel sozinho, depois de uma pausa na digitação, com o nome já no campo. O **X**, clicar fora ou Esc volta para as conversas.
 O **balão** ao lado do nome abre a conversa.
 
-- **Adicionar:** no campo do alto do painel, digite o **identificador** completo (`nome#1234`; maiúsculas não importam) e **Enviar** (ou Enter). Só o nome, sem o `#` e o número, não vale: peça o identificador completo. Se der errado, o motivo aparece embaixo do campo. Quando der certo, o pedido vai para **Enviados**; os pedidos mostram o identificador de quem pediu, para conferir antes de aceitar.
-- **Copiar meu identificador:** no painel **Adicionar amigo** (**Copiar ID**, ao lado de **Copiar link**) ou no Início (**Convidar › Copiar meu identificador**), para mandar a quem quer te adicionar.
-- **Copiar meu link:** no Início (**Copiar meu link**) ou no painel **Adicionar amigo** (**Copiar link**). O app
+- **Adicionar:** no campo do alto do painel, digite o **identificador** completo (`nome#1234`; maiúsculas não importam) e clique na seta dentro do campo (ou Enter). Só o nome, sem o `#` e o número, não vale: peça o identificador completo. Se der errado, o motivo aparece embaixo do campo. Quando der certo, o pedido vai para **Enviados**; os pedidos mostram o identificador de quem pediu, para conferir antes de aceitar.
+- **Copiar meu identificador:** no painel **Adicionar amigo** (o chip com o seu identificador, em **Você é**, ao lado de **Link**) ou no Início (**Convidar › Copiar meu identificador**), para mandar a quem quer te adicionar.
+- **Copiar meu link:** no Início (**Copiar meu link**) ou no painel **Adicionar amigo** (o chip **Link**). O app
   copia uma mensagem pronta com o link e o código curto e avisa até quando vale (7 dias, 1 pessoa; até 5 links ativos).
   Os links ativos aparecem no painel Adicionar amigo, cada um com **Revogar**.
 - **Convite por link:** quem recebe o link (`https://…/a/…`, ou o `telap2p://amigo/…`) abre o app, vê "**Fulano quer ser
@@ -534,7 +545,7 @@ Conversa com um amigo (conta Razze), dentro ou fora da sala.
 - **Clicar fora** da janelinha minimiza a conversa. O **alfinete** no chip trava a janela aberta (clique de novo
   para destravar). A escolha fica salva.
 
-- **Convite para a sala:** o **Convidar** da aba **Amigos** (em **Adicionar amigo**) manda um cartão "Convite para a sala de [nome]", com
+- **Convite para a sala:** o **Convidar** da aba **Amigos** (em **Adicionar amigo**; aparece só com você numa sala e para quem não está nela) manda um cartão "Convite para a sala de [nome]", com
   quantas pessoas estão, o modo e um **Entrar**. Só entra quando você clica, nunca sozinho.
   - **Pela internet:** entra direto, sem senha (o convite leva um passe que só abre aquela sala enquanto quem
     convidou está nela). Se o passe não valer mais, abre o **Entrar numa sala** já preenchido para a senha.
@@ -561,21 +572,21 @@ O **telefone** no chip da conversa (ou ao lado do nome, na aba **Amigos** de **A
 - **Os dois veem a senha** no menu da sala (o nome da sala, no cabeçalho), para passar a outra pessoa ou mudar.
 - **App antigo:** vê o convite comum, e o texto da mensagem traz o código ou o endereço e a senha.
 
-- **Abrir:** clique no **envelope**, no começo da barra de baixo: o painel abre para cima com quem está online, a busca e as conversas (a última mensagem e as não lidas). Ou clique na foto de um amigo em **Online agora**.
-- **Barra de conversas:** fica embaixo da tela. Cada conversa aberta vira um chip: a foto da pessoa (a inicial na cor dela), com a bolinha verde quando está online, o número de não lidas no canto e apagada quando está offline. Com o mouse em cima, um balão mostra o nome, o **telefone** e o **X**. Clicar no chip abre a janela, presa ao envelope e descendo até o pé da tela (uma por vez: clicar em outra conversa troca o conteúdo no mesmo lugar): o nome e os botões ficam no topo dela e a conversa ocupa o resto, sem moldura; o **—** minimiza de volta para o chip; o **X** tira da barra.
+- **Abrir:** clique no **envelope**, no começo da barra de baixo: o painel abre para cima com quem está online, a busca e as conversas (a última mensagem e as não lidas). Ou clique na foto de um amigo em **Online**.
+- **Barra de conversas:** fica embaixo da tela. Cada conversa aberta vira um chip: a foto da pessoa (a inicial na cor dela), com a bolinha verde quando está online, o número de não lidas no canto e apagada quando está offline. Com o mouse em cima, um balão mostra o nome, o **telefone** e o **X**. Clicar no chip abre a janela, presa ao envelope e descendo até o pé da tela (uma por vez: clicar em outra conversa troca o conteúdo no mesmo lugar): o nome e os botões ficam no topo dela e a conversa ocupa o resto, sem moldura; o **—** minimiza de volta para o chip; o **X** tira da barra. Com uma conversa aberta, a coluna do envelope sobe colada na janela e vira um **trilho** com as conversas da barra em pé (a aberta marcada, com a bolinha de online e as não lidas no canto): clicar numa troca a conversa, clicar na aberta (ou no nome no topo da janela) só leva ao campo de escrever, sem fechar, e o **+** minimiza a conversa e abre o painel do envelope no lugar dela. A janela e o trilho descem até o pé da tela; o envelope, as fotos deitadas da barra e o **+N** somem enquanto a conversa está aberta (as conversas estão todas no trilho). O campo de escrever é uma pílula com o clipe e o enviar dentro.
 - **Muitas conversas:** as que não cabem na largura vão para o **+N** no canto direito (fica destacado se alguma tem mensagem não lida). Clicar nele lista as escondidas; escolher uma traz ela de volta para a barra.
 - **Ordem:** arraste um chip para a esquerda ou para a direita de outro (ou **Alt+←** / **Alt+→** com ele selecionado). A ordem fica salva.
 - **Histórico:** fica salvo neste PC, um arquivo por amigo. Fechar a conversa no X não apaga nada: ao abrir de novo, tudo volta.
-- **Conexão direta:** com os dois online, abrir a conversa liga uma conexão direta entre os PCs, só da conversa (não tira ninguém da sala em que está). A linha acima do campo diz o modo: **Conexão direta** (texto e arquivos vão direto) ou **Pelo servidor** (só texto, criptografado). Funciona com a Razze, a Radmin e a rede local; no modo Internet, com o STUN do servidor da aba Rede (atrás de algumas redes, não dá e fica pelo servidor).
+- **Conexão direta:** com os dois online, abrir a conversa liga uma conexão direta entre os PCs, só da conversa (não tira ninguém da sala em que está). Embaixo do nome, no topo da janela, aparece online ou offline, o cadeado e o modo: **conexão direta** (texto e arquivos vão direto) ou **pelo servidor** (só texto, criptografado). Quando arquivos não vão agora, um aviso curto com o clipe aparece acima do campo (por exemplo, "Arquivos só vão com vocês dois online."). As mensagens ficam em blocos: o nome e a hora em cima, o texto embaixo; as seguidas da mesma pessoa só com o texto, e a hora aparece com o mouse em cima. Entre dias diferentes aparece uma linha com **Hoje**, **Ontem** ou a data. O campo é uma pílula com o clipe e o enviar dentro. Funciona com a Razze, a Radmin e a rede local; no modo Internet, com o STUN do servidor da aba Rede (atrás de algumas redes, não dá e fica pelo servidor).
 - **Amigo offline:** a mensagem fica no servidor Razze por até 30 dias e chega quando ele abrir o app.
-- **Prazo do histórico** (Configurações › **Mensagens privadas**): **Guardar para sempre** (padrão) ou **Apagar depois de 30 dias**. Vale só para este PC; com 30 dias, o que passou do prazo (mensagens e imagens guardadas) sai na hora.
-- **Backup no celular:** na mesma aba, **Levar as mensagens no backup do celular** (desligado por padrão). Ligado, o **Guardar no celular** leva o texto das conversas da conta Razze, cifrado com a senha do backup (imagens e arquivos não vão). Ao trazer, se for a mesma conta Razze, junta com o histórico deste PC sem apagar nada. O arquivo tem até 16 MB: passando disso, vão as mensagens mais novas e o app avisa.
+- **Prazo do histórico** (Configurações › **Privacidade**): **Guardar para sempre** (padrão) ou **Apagar depois de 30 dias**. Vale só para este PC; com 30 dias, o que passou do prazo (mensagens e imagens guardadas) sai na hora.
+- **Backup no celular:** em Configurações › **Backup no celular**, **Levar as mensagens privadas no backup** (desligado por padrão). Ligado, o **Guardar no celular** leva o texto das conversas da conta Razze, cifrado com a senha do backup (imagens e arquivos não vão). Ao trazer, se for a mesma conta Razze, junta com o histórico deste PC sem apagar nada. O arquivo tem até 16 MB: passando disso, vão as mensagens mais novas e o app avisa.
 - **Mensagem nova:** a conversa aparece na barra, minimizada, com o número de mensagens não lidas. O total aparece no envelope da barra.
 - **Arquivos e imagens:** pelo clipe, colando (Ctrl+V) ou arrastando para a janela, até 200 MB, sem metadados (como no chat da sala). Só pela conexão direta: arquivo nunca passa pelo servidor, então sem ela o clipe fica apagado. Imagem de até 8 MB chega sozinha, aparece na conversa e fica guardada, protegida, neste PC; outro arquivo chega com **Baixar**, que traz direto do PC de quem mandou enquanto o app dele estiver aberto, e depois **Salvar**.
 
 ## Voz e atalhos
 
-Fica nas **Configurações** (a engrenagem), no grupo **Voz e atalhos**, com as abas **Voz** e **Atalhos**. 
+Ficam nas **Configurações** (a engrenagem), nos grupos **Voz** e **Atalhos**. O botão de ajustes no **Seu sinal** abre a **Voz**. 
 
 - **Testar o microfone:** **Ouvir minha voz** toca no seu fone o som do seu microfone, do jeito que a sala ouve: depois da supressão de ruído e da sensibilidade. Funciona fora da voz (abre o microfone só para o teste) e dentro dela; na voz, desligue o microfone para testar sem os outros ouvirem. Dá para mexer nos filtros enquanto ouve. Use fone de ouvido: com caixa de som, o microfone pega o próprio som e apita. O teste para ao fechar a janela.
 - **Supressão de ruído:**
@@ -603,9 +614,9 @@ Fica nas **Configurações** (a engrenagem), no grupo **Voz e atalhos**, com as 
 
   O app recusa combinações sem Ctrl ou Alt (menos F1 a F24), para não atrapalhar quando você digita, e avisa se outro programa já usa a combinação.
 
-## Estatísticas
+## Diagnóstico
 
-Fica nas **Configurações**, no grupo **Estatísticas** (abas **Desempenho** e **Transmissão**). Os números só são medidos com o grupo à vista.
+Fica nas **Configurações**, no grupo **Diagnóstico** (abas **Desempenho** e **Transmissão**). Os números só são medidos com o grupo à vista.
 
 - **Medição:** enquanto você está numa sala, o app mede tudo uma vez por segundo, com a janela aberta ou não, e guarda os últimos 10 minutos. Dá para jogar e abrir depois para ver como foi.
 Tem duas abas: **Desempenho** e **Transmissão**.
@@ -630,7 +641,7 @@ A configuração de outra pessoa só aparece se ela e o host estiverem na versã
 
 ## Tema
 
-Abra **Configurações** pela engrenagem no pé da barrinha da direita. A barrinha fica na borda direita da janela, no início e dentro de uma sala. À esquerda da janela ficam os grupos (**Voz e atalhos**, **Aparência**, **Sons**, **Celular** e **Estatísticas**); em cima, as abas do grupo escolhido. Tema, **Janela e fonte** (transparência e fonte) e Cores ficam juntos em **Aparência**. Cada grupo lembra a última aba aberta.
+Abra **Configurações** pela engrenagem no pé da barrinha da direita. A barrinha fica na borda direita da janela, no início e dentro de uma sala. À esquerda da janela ficam os grupos, em blocos: **Uso diário** (**Voz**, **Transmissão**, **Atalhos**), **Personalizar** (**Aparência**, **Sons**), **Você e seus dados** (**Privacidade**, **Backup no celular**, **Rede**) e **Mais** (**Recursos extras**, **Diagnóstico**, **Ajuda**: passo a passo e as dicas); em cima, as abas do grupo escolhido, quando ele tem mais de uma. Tema, **Janela e fonte** (transparência, efeitos e fonte) e **Cores** (os temas prontos de cores e as cores de cada parte) ficam juntos em **Aparência**. Cada grupo lembra a última aba aberta.
 
 Prefere tudo do outro lado? **Configurações › Aparência › Espelhar a interface** troca os lados: a barrinha, o chat e a voz vão para a esquerda. O resto continua igual, e a escolha fica salva (trocar de tema não desfaz).
 
@@ -638,7 +649,7 @@ Prefere tudo do outro lado? **Configurações › Aparência › Espelhar a inte
 
 O botão **Perfil** (no alto da barrinha) abre **Seu perfil**, com duas partes na barra da esquerda (como em Configurações; em janela estreita ficam em cima): **Perfil** (como os outros te veem) e **Conta** (a conta Razze: entrar ou criar, o identificador, e-mail, senha, Google, dois fatores e **Sair da conta**). Abre na última aba usada, ou na **Conta** quando falta algo nela (e-mail para confirmar, identificador para escolher), e aí a aba mostra uma bolinha e um aviso com o botão para resolver. Na aba Perfil, em cima, uma prévia de como os outros te veem na voz (o fundo, a foto, o nome na fonte escolhida, a conta e a frase, como no cartão da voz). Foto e fundo se trocam só por ela: clicar na foto troca a foto e **Trocar fundo** (ou **Escolher fundo**) fica no canto do fundo. O nome e a frase também se trocam no cartão: o lápis ao lado abre o campo ali mesmo (Enter ou Esc fecha); o nome só pode ser trocado fora da sala. O identificador aparece no cartão com **Copiar**. Embaixo, **Aparência** (as linhas Foto e Fundo só aparecem quando há **Ajustar** ou a lixeira, que tira a foto ou o fundo; e a fonte do nome) e **O que os amigos veem** (interruptores do jogo, da música e de em que sala estou, os mesmos de Configurações › Atividade). Nele também fica o **Fundo do perfil**: uma imagem (recortada em quadrado) ou um GIF de até 1 MB, que aparece atrás do seu perfil para quem clicar em você na voz; **Tirar fundo** volta ao normal. Ao escolher a foto ou uma imagem de fundo, abre o **editor de recorte**: arraste a imagem para enquadrar e use o zoom (roda do mouse, controle, setas e + / -); na foto a bolinha mostra o resultado, e no fundo a faixa tracejada é a parte que mais aparece no cartão. **Ajustar** abre de novo o editor com o enquadramento anterior, sem escolher a imagem outra vez (GIF não corta, então não tem Ajustar). O GIF só se mexe com o perfil aberto. Dentro da sala, Voz, Chat e Pessoas são as abas do painel (veja **Sala**).
 
-O painel **Voz** mostra os participantes, seus controles de volume e botões para entrar, sair, mutar e silenciar as vozes. Mostrar ou ocultar esse painel não liga nem desliga o microfone. Da mesma forma, ocultar **Transmissão** não encerra uma transmissão em andamento; use o botão **Parar** para encerrá-la.
+O painel **Voz** mostra os participantes, seus controles de volume e botões para entrar, sair, mutar e silenciar as vozes. Quem está transmitindo aparece em cima, em **Transmitindo**, num cartão com uma miniatura da tela (atualizada a cada 15 s, só para quem pode assistir; quem tem uma versão antiga do app aparece com a foto) e o selo **Ao vivo**, **Assistindo** ou **Em pausa**: clicar assiste, clicar de novo para, e em pausa volta para aquela tela. Na lista, a linha dessa pessoa fica sem o botão de assistir, e o volume de cada um aparece com o mouse em cima (ou sempre, se você mudou ou silenciou). Mostrar ou ocultar esse painel não liga nem desliga o microfone. Da mesma forma, ocultar **Transmissão** não encerra uma transmissão em andamento; use o botão **Parar** para encerrá-la.
 
 - **Principal:** fundo do aplicativo.
 - **Secundária:** painéis e cartões.
@@ -672,7 +683,7 @@ Fontes do próprio Windows: Segoe UI Variable no app e Tahoma no chat.
 O controle na barrinha da direita (logo acima da engrenagem) liga o **modo gamer**, para o jogo ter o máximo do PC
 enquanto o Nebula fica aberto. Ligado, o controle fica aceso e o app:
 
-- baixa a própria prioridade para **normal** (a escolhida em Transmissão volta ao desligar);
+- baixa a própria prioridade para **normal** (a escolhida em Configurações › Transmissão volta ao desligar);
 - fica **opaco**, sem o vidro e o desfoque;
 - para todas as animações e esconde o céu estrelado do fundo, o céu em cima da lista da voz e a luz ambiente das
   transmissões;
@@ -689,7 +700,7 @@ que precisa.
 - **Ligar:** Configurações gerais (a engrenagem) › **Recursos extras** › **Comando de voz**. O app pede para baixar o
   reconhecimento de fala (Whisper), uns 70 MB no modo **Leve** ou 200 MB no **Preciso** (entende melhor, demora um
   pouco mais). Depois disso funciona sem internet. Desligar não apaga o download; o botão **Apagar o download** apaga.
-- **Usar:** numa sala, segure **Ctrl+Shift+V** (dá para trocar em **Voz e atalhos**), fale e solte. Aparece
+- **Usar:** numa sala, segure **Ctrl+Shift+V** (dá para trocar em **Configurações › Atalhos**), fale e solte. Aparece
   **Ouvindo…** em cima da janela e, depois de soltar, **Entendendo…** (cerca de 1 s). Enquanto você segura, a call não
   ouve você. Um toque rápido na tecla (como o Ctrl+Shift+V de colar texto) não faz nada.
   - **Na voz,** pode falar junto com a tecla: o microfone do comando já fica aberto e guarda o último meio segundo, só
@@ -742,7 +753,7 @@ que precisa.
 Guarde suas configurações no celular e traga de volta em qualquer PC. Funciona com Android e iPhone, sem instalar nada
 no celular, e nada passa pela internet: o celular precisa estar no mesmo Wi-Fi do PC.
 
-- **Guardar:** Configurações (a engrenagem) › **Celular** › **Guardar no celular**. Escolha uma senha (ela não
+- **Guardar:** Configurações (a engrenagem) › **Backup no celular** › **Guardar no celular**. Escolha uma senha (ela não
   fica guardada em lugar nenhum), leia o QR code com a câmera do celular e toque em **Baixar arquivo**. O celular
   guarda um arquivo `.tp2p` cifrado: sem a senha, ninguém abre.
 - **Trazer:** em outro PC, **Celular** › **Trazer do celular**, leia o QR e escolha o arquivo no celular. Digite a senha

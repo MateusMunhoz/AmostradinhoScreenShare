@@ -301,17 +301,30 @@ async function esqueciSenha(login) {
 }
 
 // ---------- aba Conta do Perfil ----------
-function segLinha(titulo, valor, botoes = [], dica = '') {
+// aviso: o que pede atenção (ex.: e-mail não confirmado), embaixo do valor. O resto do estado os próprios botões já dizem
+function segLinha(titulo, valor, botoes = [], dica = '', aviso = '') {
   const sec = document.createElement('section');
   sec.className = 'seg-item';
+  const cab = document.createElement('div');
+  cab.className = 'seg-cab';
   const topo = document.createElement('div');
   topo.className = 'seg-item-topo';
   const h = document.createElement('h3');
   h.textContent = titulo;
-  const v = document.createElement('span');
-  v.className = 'seg-valor';
-  v.textContent = valor;
-  topo.append(h, v);
+  topo.append(h);
+  cab.append(topo);
+  if (valor) {
+    const v = document.createElement('span');
+    v.className = 'seg-valor';
+    v.textContent = valor;
+    cab.append(v);
+  }
+  if (aviso) {
+    const a = document.createElement('span');
+    a.className = 'seg-aviso';
+    a.textContent = aviso;
+    cab.append(a);
+  }
   const acoes = document.createElement('div');
   acoes.className = 'seg-acoes';
   for (const [rotulo, acao, extra] of botoes) {
@@ -328,9 +341,9 @@ function segLinha(titulo, valor, botoes = [], dica = '') {
     };
     acoes.append(b);
   }
-  sec.append(topo);
-  if (dica) { const d = document.createElement('p'); d.className = 'hint'; d.textContent = dica; sec.append(d); }
+  sec.append(cab);
   if (botoes.length) sec.append(acoes);
+  if (dica) { const d = document.createElement('p'); d.className = 'hint'; d.textContent = dica; sec.append(d); }
   return sec;
 }
 
@@ -360,6 +373,7 @@ function renderSeguranca() {
     $('contaPendenteBtn').onclick = () => void pend.acao();
   }
   $('profileContaRodape').hidden = !logado;
+  $('profileTabContaSub').textContent = logado ? 'Identificador · E-mail · Segurança' : 'Entrar ou criar conta';
   $('profileCardIdLinha').hidden = !(logado && razzeUser.handle);
   $('profileCardId').textContent = logado ? razzeUser.handle || '' : '';
   if (!logado) { box.replaceChildren(); return; }
@@ -370,18 +384,19 @@ function renderSeguranca() {
       ['Copiar', copiarIdentificador],
       ['Trocar o nome', trocarNomeId, { desligado: !podeTrocarNome, titulo: podeTrocarNome ? '' : 'Dá para trocar de novo em ' + dataCurta(u.handleChangeAt) }],
     ], 'É por ele que os amigos te adicionam. ' + (podeTrocarNome ? 'O nome pode ser trocado a cada 7 dias.' : 'Dá para trocar de novo em ' + dataCurta(u.handleChangeAt) + '.')),
-    segLinha('E-mail', u.email + (u.emailVerified ? ' · confirmado' : ' · não confirmado'), [
+    segLinha('E-mail', u.email, [
       ...(!u.emailVerified && google.emailConfirmacao ? [['Confirmar', confirmarEmailAtual]] : []),
       ...(u.hasPassword && google.emailConfirmacao ? [['Trocar e-mail', trocarEmail]] : []),
-    ], !google.emailConfirmacao ? 'Este servidor ainda não manda e-mail.' : u.hasPassword ? '' : 'Para trocar o e-mail, primeiro use "Entrar também com senha".'),
-    segLinha('Senha', u.hasPassword ? 'definida' : 'sem senha (entra pelo Google)', [
+    ], !google.emailConfirmacao ? 'Este servidor ainda não manda e-mail.' : u.hasPassword ? '' : 'Para trocar o e-mail, primeiro use "Entrar também com senha".',
+    u.emailVerified ? '' : 'Ainda não confirmado'),
+    segLinha('Senha', '', [
       u.hasPassword ? ['Trocar senha', () => abrirSenha('trocar')] : ['Entrar também com senha', entrarTambemComSenha],
-    ]),
-    segLinha('Google', u.googleLinked ? 'vinculado' : 'não vinculado', !google.ligado ? [] : u.googleLinked
+    ], u.hasPassword ? '' : 'Hoje você entra pelo Google.'),
+    segLinha('Google', '', !google.ligado ? [] : u.googleLinked
       ? [['Trocar Google', vincularGoogle], ...(u.hasPassword ? [['Desvincular', desvincularGoogle, { perigo: true }]] : [])]
       : [['Vincular Google', vincularGoogle]],
     u.googleLinked && !u.hasPassword ? 'Para desvincular o Google, primeiro defina uma senha.' : ''),
-    segLinha('Verificação em dois fatores', u.twoFactor ? 'ligada' : 'desligada', !google.doisFatores ? [] : u.twoFactor
+    segLinha('Verificação em dois fatores', '', !google.doisFatores ? [] : u.twoFactor
       ? [['Novos códigos de recuperação', novosCodigos], ...(u.role === 'admin' ? [] : [['Desligar', desligar2fa, { perigo: true }]])]
       : [['Ligar', ligar2fa]],
     !google.doisFatores ? 'Este servidor ainda não tem a verificação em dois fatores.'

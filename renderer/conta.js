@@ -207,7 +207,7 @@ function atvAgendar() {
   void atvTick(true); // também manda o vazio quando acabou de desligar
 }
 
-// ---------- Jogos da Steam (Configurações › Atividade) ----------
+// ---------- Jogos da Steam (Configurações › Privacidade) ----------
 // Os jogos instalados na Steam só aparecem no perfil se a pessoa marcar. A escolha fica neste PC:
 // atividadeSteam = { "<número do jogo>": true (mostrar) | false (não mostrar) }; jogo que não está ali é novo (ainda não
 // escolhido) e não aparece. Achou jogo novo: um aviso leva para a escolha (atvProcurarNovos).
@@ -305,7 +305,7 @@ function atvAgendarProcura() {
 // O jogo e a música aparecem no perfil e na linha de quem está na sala. Passa de PC para PC como a frase: quem vê a
 // linha de alguém pergunta uma vez ({ side: 'atv', want: true }) e cada um avisa todos quando a sua muda
 // ({ side: 'atv', jogo, jogoDesde, artista, faixa, album, capa, pausada }). Pausada: o perfil mostra a música parada. Nada muda no protocolo da sala; só na memória, só desta sala.
-// A capa é um JPEG 96x96 em data: URL (main/atividade.js), uns 5 KB: vai só quando a faixa muda ou alguém pergunta.
+// A capa é um JPEG de até 192x192 e 20 KB em data: URL (main/atividade.js): vai só quando a faixa muda ou alguém pergunta.
 const ATV_TEXTO_MAX = 80;
 const ATV_CAPA_MAX = 28100;
 const ATV_DESDE_MAX_MS = 48 * 3600 * 1000;
@@ -379,7 +379,7 @@ function resetAtvDaSala() { atvDaSala.clear(); atvPedidas.clear(); atvhDaSala.cl
 // ---------- O que jogou e ouviu por último (perfil) ----------
 // Os últimos 3 jogos e as últimas 3 músicas ficam neste PC (atividadeHist: uns 30 KB com as imagens, e não cresce) e vão
 // só para quem abre o seu perfil ({ side: 'atvh', want: true } -> { side: 'atvh', jogos, musicas }), como a frase. Segue as
-// caixinhas de jogo e música e a do histórico (Configurações › Atividade); desligar o histórico apaga o guardado.
+// caixinhas de jogo e música e a do histórico (Configurações › Privacidade); desligar o histórico apaga o guardado.
 // Nada muda no protocolo da sala. A resposta tem no máximo 6 imagens de 28 KB: cabe nos 256 KB de uma mensagem.
 const ATVH_MAX = 3;
 const ATVH_DIAS = 30;
@@ -405,8 +405,25 @@ function limparHist(d, agora = Date.now()) {
 }
 let atvHist = null; // lido do disco na primeira vez que precisa (atvhGuardado)
 function atvhGuardado() {
-  if (!atvHist) { try { atvHist = limparHist(JSON.parse(load('atividadeHist', '{}') || '{}')); } catch { atvHist = limparHist({}); } }
+  if (!atvHist) {
+    try { atvHist = limparHist(JSON.parse(load('atividadeHist', '{}') || '{}')); } catch { atvHist = limparHist({}); }
+    atvhCapasDaSteam();
+  }
   return atvHist;
+}
+// Jogos guardados com o ícone do .exe (PNG pequeno, de antes) ganham a capa da biblioteca da Steam, se o jogo está lá
+async function atvhCapasDaSteam() {
+  const comIcone = atvHist.jogos.filter((j) => !j.imagem.startsWith('data:image/jpeg'));
+  if (!comIcone.length || !window.api?.atividadeSteamJogos) return;
+  let steam = [];
+  try { steam = await window.api.atividadeSteamJogos(false); } catch { return; }
+  const capas = new Map((Array.isArray(steam) ? steam : []).map((j) => [String(j?.nome || '').toLowerCase(), atvLimparImagem(j?.imagem)]));
+  let mudou = false;
+  for (const j of comIcone) {
+    const capa = capas.get(j.nome.toLowerCase());
+    if (capa?.startsWith('data:image/jpeg')) { j.imagem = capa; mudou = true; }
+  }
+  if (mudou) save('atividadeHist', JSON.stringify(atvHist));
 }
 
 // "hoje", "ontem", "há 3 dias", "há 2 semanas"
@@ -512,10 +529,6 @@ function syncBioComConta(user) {
   renderBio();
 }
 
-// Perfil › O que os amigos veem: as mesmas escolhas de Configurações › Atividade
-const PERFIL_ATIVIDADE = [['pfJogo', 'atvJogo'], ['pfMusica', 'atvMusica'], ['pfSala', 'atvSala']];
-function sincronizarAtividadePerfil() { for (const [pf, id] of PERFIL_ATIVIDADE) $(pf).checked = $(id).checked; }
-
 function setupConta() {
   $('atvJogo').checked = atvLigada('Jogo');
   $('atvMusica').checked = atvLigada('Musica');
@@ -545,11 +558,6 @@ function setupConta() {
   $('atvSalaEntrar').checked = salaEntrarLigada();
   $('atvSalaEntrar').onchange = () => { save('atividadeSalaEntrar', $('atvSalaEntrar').checked ? '1' : '0'); publicarSalaInternet(); };
   salaEntrarApagado();
-  for (const [pf, id] of PERFIL_ATIVIDADE) {
-    $(pf).onchange = () => { $(id).checked = $(pf).checked; $(id).onchange(); };
-    $(id).addEventListener('change', () => { $(pf).checked = $(id).checked; });
-  }
-  sincronizarAtividadePerfil();
   atv.amigos = setInterval(() => void atvAtualizarAmigos(), ATV_CADA_MS);
   window.addEventListener('beforeunload', () => { if (atv.ultimo && atv.ultimo !== '{"game":"","artist":"","title":""}') window.api.razzeSetActivity({}).catch(() => {}); });
   window.api?.aoMudarMusica?.(atvMusicaChegou);

@@ -77,8 +77,8 @@
            A bolinha na Conta avisa que falta algo (renderer/conta-seguranca.js) -->
       <div class="settings-layout profile-layout">
       <nav class="settings-nav" aria-label="Partes do perfil">
-        <button id="profileTabPerfil" type="button" aria-current="true" aria-controls="profilePanelPerfil">Perfil<small>Foto · Nome · Frase · Atividade</small></button>
-        <button id="profileTabConta" type="button" aria-current="false" aria-controls="profilePanelConta"><span class="profile-nav-titulo">Conta<span id="profileTabDot" class="profile-tab-dot" role="img" aria-label="falta algo" hidden></span></span><small>Identificador · E-mail · Segurança</small></button>
+        <button id="profileTabPerfil" type="button" aria-current="true" aria-controls="profilePanelPerfil">Perfil<small>Foto · Nome · Frase</small></button>
+        <button id="profileTabConta" type="button" aria-current="false" aria-controls="profilePanelConta"><span class="profile-nav-titulo">Conta<span id="profileTabDot" class="profile-tab-dot" role="img" aria-label="falta algo" hidden></span></span><small id="profileTabContaSub">Identificador · E-mail · Segurança</small></button>
       </nav>
       <div class="settings-main profile-main">
       <div id="profilePanelPerfil" class="profile-panel" role="region" aria-labelledby="profileTabPerfil">
@@ -118,12 +118,8 @@
       <div class="profile-row"><span>Fundo<button type="button" class="tip" data-tip="Imagem ou GIF (até 1 MB) atrás do seu perfil, para quem clicar em você na voz. O GIF só se mexe com o perfil aberto." aria-label="Imagem ou GIF (até 1 MB) atrás do seu perfil, para quem clicar em você na voz. O GIF só se mexe com o perfil aberto."></button></span><span class="profile-row-actions"><button id="profileBgAdjust" class="btn small" type="button" hidden>Ajustar</button><button id="profileBgRemove" class="btn small icon ghost" type="button" title="Tirar fundo" aria-label="Tirar fundo" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 11v6M14 11v6M7 7l1 12h8l1-12M9 7V4h6v3"/></svg></button></span></div>
       <input id="profileBgFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
       <label class="field profile-fonte"><span>Fonte do nome<button type="button" class="tip" data-tip="Todos na sala veem o seu nome nesta fonte." aria-label="Todos na sala veem o seu nome nesta fonte."></button></span><select id="profileNameFont"></select></label>
-      <!-- O que os amigos veem: as mesmas escolhas de Configurações › Atividade (renderer/conta.js liga as duas) -->
-      <h3 class="profile-sec">O que os amigos veem</h3>
-      <div class="profile-row"><span class="profile-row-texto"><span id="pfJogoLabel">Jogo que estou jogando</span><span class="hint">Ex.: “Jogando Valorant”</span></span><label class="switch"><input type="checkbox" id="pfJogo" role="switch" aria-labelledby="pfJogoLabel"><span class="track" aria-hidden="true"></span></label></div>
-      <div class="profile-row"><span class="profile-row-texto"><span id="pfMusicaLabel">Música que estou ouvindo</span><span class="hint">Spotify e outros players</span></span><label class="switch"><input type="checkbox" id="pfMusica" role="switch" aria-labelledby="pfMusicaLabel"><span class="track" aria-hidden="true"></span></label></div>
-      <div class="profile-row"><span class="profile-row-texto"><span id="pfSalaLabel">Em que sala estou</span><span class="hint">Ex.: “Na sala de Ana · 4 pessoas”</span></span><label class="switch"><input type="checkbox" id="pfSala" role="switch" aria-labelledby="pfSalaLabel"><span class="track" aria-hidden="true"></span></label></div>
-      <button id="atvConfigurar" class="link-btn profile-mais" type="button">Jogos da Steam e histórico: Configurações › Atividade</button>
+      <!-- O que os amigos veem (jogo, música, em que sala está) mora em Configurações › Privacidade -->
+      <button id="atvConfigurar" class="link-btn profile-mais" type="button">O que os amigos veem: Configurações › Privacidade</button>
       </div>
       <!-- Conta Razze: entrar ou criar conta, ou quem está conectado (renderer/conectividade.js) e, embaixo, o que era a
            janela Conta e segurança (renderer/conta-seguranca.js). As redes ficam em Configurações › Rede; os amigos, no envelope -->
@@ -191,20 +187,20 @@
       <span class="room-head-space"></span>
       <div id="stageLayout" class="seg stage-layout" role="group" aria-label="Arrumação das telas" hidden><button type="button" data-layout="grid" title="Todas do mesmo tamanho, como no Google Meet">Grade</button><button type="button" data-layout="spotlight" title="Uma grande e as outras numa coluna ao lado">Destaque</button></div>
     </header>
-    <!-- Abas do painel da sala: Voz, Chat e Pessoas. "Lado a lado" junta Voz e Chat (com a divisória de sempre);
-         recolher esconde o painel e a sua voz vai para a barrinha (renderer/navegacao.js: painelSala) -->
+    <!-- Abas do painel da sala: Voz, Chat e Pessoas. Com Voz ou Chat aberto, clicar no outro abre os dois lado a lado
+         (com a divisória de sempre); recolher esconde o painel e a sua voz vai para a barrinha (renderer/navegacao.js: painelSala) -->
     <div id="paneTabs" class="pane-tabs" role="group" aria-label="Painel da sala">
       <button id="navVoice" type="button" class="pane-tab" aria-pressed="true" aria-controls="voicePane"><span class="pane-tab-star" aria-hidden="true">✦</span><span>Voz</span><span class="pane-tab-pedidos" id="navVoicePedidos" hidden></span></button>
       <button id="navChat" type="button" class="pane-tab" aria-pressed="false" aria-controls="chatTab"><span class="pane-tab-star" aria-hidden="true">✦</span><span>Chat</span><span id="navUnread" class="unread" hidden></span></button>
       <button id="peopleBtn" type="button" class="pane-tab" aria-pressed="false" aria-controls="peoplePop"><span class="pane-tab-star" aria-hidden="true">✦</span><span>Pessoas</span><span id="memberCount" class="pane-tab-n">1</span><span class="people-speak" id="peopleSpeak" title="Alguém está falando" hidden></span></button>
       <span class="pane-tabs-space"></span>
-      <button id="paneJuntos" type="button" class="btn icon small ghost pane-tabs-btn" aria-pressed="false"></button>
-      <button id="paneRecolher" type="button" class="btn icon small ghost pane-tabs-btn"></button>
+      <!-- Lista ou Mapa da voz (renderer/ceu-voz.js, só com a aba Voz à vista) e, na mesma caixa, recolher o painel -->
+      <div class="voice-view" role="group" aria-label="Lista ou mapa da voz, e recolher o painel"><button id="voiceViewList" type="button" title="Lista: canais e pessoas em linhas" aria-label="Lista"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><button id="voiceViewMap" type="button" title="Mapa: canais como sóis e pessoas como planetas" aria-label="Mapa"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0zM5 7.6c1.5.2 2.3 1.2 2.1 2.4-.2 1.3.9 1.9 1.9 2.4 1 .6.8 2-.3 2.4-1 .4-1.4 1.4-1 2.5M14.2 3.4c-.7 1.2-.2 2.4 1 2.9 1.3.5 2 1.4 1.4 2.6M20.8 13.4c-1.3-.5-2.7.1-3.1 1.3-.4 1.3-1.5 1.8-2.6 1.5"/></svg></button><button id="paneRecolher" type="button" class="pane-recolher"></button></div>
     </div>
     <!-- Mapa em foco (renderer/ceu-voz.js): o chat encolhe e fica só esta faixa; clicar traz o chat de volta -->
     <button id="mapChatStrip" class="map-chat-strip" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Chat escondido enquanto você olha o mapa</span><span id="mapChatUnread" class="map-chat-unread" hidden></span></button>
     <section id="voicePane" class="workspace-pane" aria-labelledby="voicePaneTitle" hidden>
-      <div class="pane-head"><h2 id="voicePaneTitle">Chat de voz</h2><div class="voice-view" role="group" aria-label="Como ver a voz"><button id="voiceViewList" type="button" title="Lista: canais e pessoas em linhas" aria-label="Lista"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span>Lista</span></button><button id="voiceViewMap" type="button" title="Mapa: canais como sóis e pessoas como planetas" aria-label="Mapa"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0zM5 7.6c1.5.2 2.3 1.2 2.1 2.4-.2 1.3.9 1.9 1.9 2.4 1 .6.8 2-.3 2.4-1 .4-1.4 1.4-1 2.5M14.2 3.4c-.7 1.2-.2 2.4 1 2.9 1.3.5 2 1.4 1.4 2.6M20.8 13.4c-1.3-.5-2.7.1-3.1 1.3-.4 1.3-1.5 1.8-2.6 1.5"/></svg><span>Mapa</span></button></div><button id="mapPin" class="map-pin" type="button" aria-pressed="false" hidden><span class="map-pin-chave" aria-hidden="true"><span></span></span>Fixar</button></div>
+      <div class="pane-head"><h2 id="voicePaneTitle">Chat de voz</h2><button id="mapPin" class="map-pin" type="button" aria-pressed="false" hidden><span class="map-pin-chave" aria-hidden="true"><span></span></span>Fixar</button></div>
       <p id="voicePaneStatus" class="hint"></p>
       <!-- Céu da voz: cada canal é um sol e quem está nele orbita como planeta. Na visão Mapa, fica grande no lugar da lista (renderer/ceu-voz.js) -->
       <div id="voiceSkyBox" class="voice-sky-box" hidden>
@@ -240,11 +236,14 @@
         <button type="button" class="btn small" id="ssLiderOuvir"></button>
         <button type="button" class="btn small ss-lider-pedir" id="ssLiderPedir"></button>
       </div>
+      <div class="ss-cartao">
       <div class="ss-linha ss-voz">
         <div class="voice-dock" id="voiceDock" role="group" aria-label="Conversa por voz">
           <div class="voice-avatars" id="voiceAvatars" hidden></div>
           <span class="voice-me" id="voiceMe" hidden>
-            <span class="eq" aria-hidden="true"><span></span><span></span><span></span></span><span id="voiceMeText">Na voz</span>
+            <span class="avatar voice-me-ava" id="voiceMeAvatar" aria-hidden="true"></span>
+            <span class="eq" aria-hidden="true"><span></span><span></span><span></span></span>
+            <span class="voice-me-textos"><span class="voice-me-voce">Você</span><span id="voiceMeText">Na voz</span></span>
           </span>
           <button class="btn icon" id="voiceMute" type="button" aria-pressed="false" hidden></button>
           <button class="btn icon" id="voiceDeafen" type="button" aria-pressed="false" hidden></button>
@@ -254,7 +253,7 @@
         <button id="voiceSettingsBtn" type="button" class="btn icon ss-ajustes"></button>
       </div>
       <div class="ss-linha ss-tx">
-        <button class="btn primary dock-share" id="shareBtn" type="button" title="Escolher a tela ou a janela para transmitir">
+        <button class="btn dock-share" id="shareBtn" type="button" title="Escolher a tela ou a janela para transmitir">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v12H3zM8 21h8M12 17v4"/></svg>Transmitir tela
         </button>
         <div class="live-chip" id="liveChip" hidden>
@@ -275,6 +274,7 @@
           <kbd>Ctrl+Shift+E</kbd>
           <button class="btn icon ghost" id="pipChipClose" type="button"></button>
         </div>
+      </div>
       </div>
     </section>
   </aside>
@@ -302,8 +302,9 @@
       </div>
       <section id="dmConvs" class="dm-panel-pane">
         <div id="dmOnline" class="dm-online" hidden>
-          <h3 id="dmOnlineTitle" class="hub-section"></h3>
+          <h3 class="hub-section dm-online-head"><span id="dmOnlineTitle">Online</span><span id="dmOnlineCount" class="dm-online-count"></span></h3>
           <ul id="dmOnlineList" class="dm-online-list" aria-labelledby="dmOnlineTitle"></ul>
+          <div id="dmOnlinePop" class="dm-online-pop" aria-hidden="true" hidden></div>
         </div>
         <h3 class="hub-section">Conversas</h3>
         <p id="dmPanelUnsupported" class="warn" hidden>O servidor Razze ainda não tem mensagens diretas. Quem cuida do servidor precisa atualizar a RazzeAPI.</p>
@@ -318,15 +319,16 @@
           <button id="dmAddClose" type="button" class="dm-chip-btn" title="Voltar para as conversas" aria-label="Voltar para as conversas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
         </div>
         <div id="friendsAddForm" class="hub-add-form">
-          <div class="dm-add-row">
-            <input id="razzeFriendNickname" class="hub-filter" type="text" maxlength="300" autocomplete="off" placeholder="nome#1234 ou código" aria-label="Identificador ou código de convite" aria-describedby="friendsAddHint">
-            <button id="razzeAddFriend" class="btn small primary" type="button" disabled>Enviar</button>
+          <div class="dm-add-row dm-add-campo">
+            <input id="razzeFriendNickname" type="text" maxlength="300" autocomplete="off" placeholder="nome#1234, link ou código" aria-label="Identificador, link ou código de convite (ABCD-EFGH-JK)" aria-describedby="friendsAddHint">
+            <button id="razzeAddFriend" class="dm-add-enviar" type="button" title="Enviar pedido de amizade" aria-label="Enviar pedido de amizade" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
           </div>
-          <p id="friendsAddHint" class="hub-add-hint">Identificador (ex.: lucas#0420), link ou código de convite (ABCD-EFGH-JK).</p>
+          <p id="friendsAddHint" class="hub-add-hint"></p>
           <div class="hub-add-link">
             <div class="hub-copy-row">
-              <button id="friendsLinkCopy" class="btn small hub-link-copy" type="button" title="Copiar meu link de convite: quem abrir vira seu amigo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/></svg>Copiar link</button>
-              <button id="friendsIdCopy" class="btn small hub-link-copy" type="button" title="Copiar meu identificador (nome#1234), para quem quer te adicionar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 9h11v11H9zM5 15H4V4h11v1"/></svg>Copiar ID</button>
+              <span class="dm-add-voce">Você é</span>
+              <button id="friendsIdCopy" class="dm-add-chip" type="button" title="Copiar meu identificador, para quem quer te adicionar"><span id="friendsIdText">Copiar ID</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 9h11v11H9zM5 15H4V4h11v1"/></svg></button>
+              <button id="friendsLinkCopy" class="dm-add-chip" type="button" title="Copiar meu link de convite: quem abrir vira seu amigo"><svg class="dm-add-link-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/></svg>Link</button>
             </div>
             <ul id="friendsLinks" class="hub-links" aria-label="Seus links de convite ativos"></ul>
           </div>
@@ -341,6 +343,8 @@
         <p id="friendsEmpty" class="hint" hidden></p>
       </section>
     </div>
+    <!-- Com uma conversa aberta, a coluna do envelope sobe junto com a janela: as conversas em pé, para trocar (renderDmTrilho) -->
+    <nav id="dmTrilho" class="dm-trilho" aria-label="Conversas abertas" hidden></nav>
     <div id="dmSlots" class="dm-slots"></div>
     <!-- Sem conversas na barra: a última conversa (clicar abre) ou a dica (renderDmBarHint em renderer/mensagens.js) -->
     <button id="dmBarHint" type="button" class="dm-bar-hint">Clique no envelope para abrir uma conversa privada</button>
@@ -421,29 +425,10 @@
           <button class="btn icon home-call-leave" id="homeCallLeave" type="button" hidden></button>
           <button class="btn primary" id="homeCallBack" type="button">Voltar para a sala</button>
         </div>
-        <!-- Duas colunas (docs/spec/inicio-novo.md): à esquerda saudação, criar/entrar e salas; à direita, os amigos e o
-             "Novo na versão". Janela estreita: a da direita desce -->
+        <!-- Duas colunas (docs/spec/inicio-novo.md): à esquerda criar/entrar e salas; à direita você (a saudação), os amigos
+             e o "Novo na versão". Janela estreita: a da direita desce -->
         <div class="home-colunas">
         <div class="home-col">
-        <div class="home-hello">
-          <span id="homeAvatar" class="avatar home-avatar" aria-hidden="true"></span>
-          <!-- Com nome: "Boa noite, Naitsi" e o lápis abre o campo; sem nome, o slogan e o campo à vista. Embaixo, o
-               resumo dos amigos (renderHomeTopo em renderer/primeira-entrada.js) -->
-          <div class="home-hello-text">
-            <div class="home-title-row">
-              <h1 class="home-title" id="homeTitle">Sua tela, direto no PC dos amigos.</h1>
-              <button class="btn icon small ghost" id="homeNameEdit" type="button" hidden></button>
-            </div>
-            <p id="homeResumo" class="home-resumo" hidden></p>
-            <label class="home-name" id="homeNameLabel">
-              <span>Você entra como</span>
-              <input id="name" maxlength="32" placeholder="Seu nome" autocomplete="off" spellcheck="false">
-            </label>
-          </div>
-          <!-- Constelação: você e os amigos online, parada (sem animação) -->
-          <svg id="homeCeu" class="home-ceu" viewBox="0 0 220 84" role="img" hidden></svg>
-        </div>
-
         <!-- Criar e entrar: sempre aqui, com o mesmo peso e habilitados (numa sala, perguntam antes de sair dela) -->
         <div class="home-card" id="homeCard">
           <div class="home-acoes">
@@ -452,17 +437,18 @@
                 <span class="home-acao-icone" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span>
                 <span class="home-acao-textos"><strong>Criar sala</strong><small id="goQuickSub" class="go-quick-sub"></small></span>
               </button>
-              <button class="link-btn home-acao-opcoes" id="goCreate" type="button">Opções da sala</button>
+              <!-- Opções da sala: um gomo da linha do Criar, com a casinha com engrenagem (o roomGear de renderer/util.js) -->
+              <button class="link-btn home-acao-opcoes" id="goCreate" type="button" title="Opções da sala" aria-label="Opções da sala"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7M5 9.5V20h7M17.5 15.5a2 2 0 1 0 0 4 2 2 0 1 0 0-4zM17.5 13v1.2M17.5 20.8V22M13 17.5h1.2M20.8 17.5H22M14.3 14.3l.85.85M19.85 19.85l.85.85M14.3 20.7l.85-.85M19.85 15.15l.85-.85"/></svg><span>Opções</span></button>
             </div>
             <button class="home-acao home-acao-btn" id="goJoin" type="button" aria-expanded="false" aria-controls="joinPanel">
               <span class="home-acao-icone" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 4h5v16h-5M10 16l4-4-4-4M4 12h10"/></svg></span>
               <span class="home-acao-textos"><strong>Entrar numa sala</strong><small id="goJoinSub"></small></span>
             </button>
-          </div>
-          <!-- Passo a passo guiado (renderer/tour.js, docs/spec/tour-entrar-na-sala.md) -->
-          <div class="tour-abrir-wrap">
-            <button class="link-btn" id="tourAbrir" type="button" aria-expanded="false" aria-controls="tourLista">Como entrar numa sala?</button>
-            <div id="tourLista" class="tour-lista" role="group" aria-label="Passo a passo" hidden></div>
+            <!-- Passo a passo guiado (renderer/tour.js, docs/spec/tour-entrar-na-sala.md) -->
+            <div class="tour-abrir-wrap">
+              <button class="link-btn" id="tourAbrir" type="button" aria-expanded="false" aria-controls="tourLista">Como entrar numa sala?</button>
+              <div id="tourLista" class="tour-lista" role="group" aria-label="Passo a passo" hidden></div>
+            </div>
           </div>
           <div id="joinPanel" class="join-panel" hidden>
             <strong id="joinPanelTitle">Entrar com endereço</strong>
@@ -484,15 +470,15 @@
             <h2 class="sessions-title" id="sessionsTitle">Salas abertas</h2>
             <ul id="sessionList" class="session-list" aria-live="polite"></ul>
             <p id="sessionsEmpty" class="sessions-empty"></p>
-          </section>
-          <div id="lastRoom" class="last-room" hidden>
-            <div class="last-room-info">
-              <strong id="lastRoomName"></strong>
-              <span class="hint" id="lastRoomMeta">Última sala</span>
-              <code id="lastRoomAddr" hidden></code>
+            <div id="lastRoom" class="last-room" hidden>
+              <div class="last-room-info">
+                <strong id="lastRoomName"></strong>
+                <span class="hint" id="lastRoomMeta">Última sala</span>
+                <code id="lastRoomAddr" hidden></code>
+              </div>
+              <button class="btn" id="rejoinBtn" type="button">Entrar de novo</button>
             </div>
-            <button class="btn" id="rejoinBtn" type="button">Entrar de novo</button>
-          </div>
+          </section>
         </div>
         <!-- Novidades: aparece sozinho depois de atualizar; "Novidades" no rodapé abre de novo (renderNews em renderer/atualizacao.js) -->
         <section id="homeNews" class="home-news" aria-labelledby="homeNewsTitle" hidden>
@@ -509,6 +495,23 @@
         </div>
 
         <aside class="home-lado" aria-label="Amigos">
+          <!-- Você: foto, saudação e o resumo, em cima dos amigos -->
+          <section class="home-hello" aria-label="Você">
+            <span id="homeAvatar" class="avatar home-avatar" aria-hidden="true"></span>
+            <!-- Com nome: "Boa noite, Naitsi" e o lápis abre o campo; sem nome, o slogan e o campo à vista. Embaixo, o
+                 resumo dos amigos (renderHomeTopo em renderer/primeira-entrada.js) -->
+            <div class="home-hello-text">
+              <div class="home-title-row">
+                <h1 class="home-title" id="homeTitle">Sua tela, direto no PC dos amigos.</h1>
+                <button class="btn icon small ghost" id="homeNameEdit" type="button" hidden></button>
+              </div>
+              <p id="homeResumo" class="home-resumo" hidden></p>
+              <label class="home-name" id="homeNameLabel">
+                <span>Você entra como</span>
+                <input id="name" maxlength="32" placeholder="Seu nome" autocomplete="off" spellcheck="false">
+              </label>
+            </div>
+          </section>
           <section id="homeSignin" class="home-signin" hidden>
             <span>Entre na sua conta para ver seus amigos e ligar com um clique.</span>
             <button class="btn small primary" id="homeSigninBtn" type="button">Entrar na conta</button>
@@ -528,6 +531,8 @@
                 </span>
               </span>
             </div>
+            <!-- Constelação: você e os amigos online, parada (sem animação) -->
+            <svg id="homeCeu" class="home-ceu" viewBox="0 0 220 84" role="img" hidden></svg>
             <ul id="homeFriendsList" class="home-friends-list"></ul>
             <p id="homeFriendsEmpty" class="hint"></p>
             <!-- Mais de 5 online: mostra todos ali mesmo (e volta para 5) -->
@@ -620,17 +625,17 @@
             <div id="stageScroll" class="stage-scroll" hidden><button type="button" data-dir="-1"></button><div class="stage-scroll-track" role="scrollbar" aria-orientation="horizontal" aria-controls="tiles" aria-label="Rolar a faixa de telas" aria-valuemin="0" aria-valuemax="100" tabindex="0"><div class="stage-scroll-thumb"></div></div><button type="button" data-dir="1"></button></div>
             <!-- Janela de transmitir: fica só em cima das transmissões, sem cobrir a barra de baixo -->
             <!-- Barra da chamada (renderer/navegacao.js: setupCallbar): na voz, aparece no pé das telas com o mouse em cima
-                 delas e some sozinha. Microfone, fone, transmitir e sair da voz; enquanto está à vista, os do painel somem -->
+                 delas e some sozinha. Só ícones, em blocos: voz (microfone, fone), transmissão (o monitor transmite e,
+                 ao vivo, para; trocar e quem pode assistir só ao vivo) e sair da voz; enquanto está à vista, os do painel somem -->
             <div id="callbar" class="callbar" role="toolbar" aria-label="Chamada" hidden>
-              <button id="cbMic" type="button" class="cb icon" aria-pressed="false"></button>
-              <button id="cbDeafen" type="button" class="cb icon" aria-pressed="false"></button>
-              <button id="cbShare" type="button" class="cb share"></button>
-              <!-- Ao vivo: ver a sua tela, quem pode assistir, trocar a tela sem parar e parar, num bloco só -->
-              <div id="cbLive" class="cb-live" role="group" aria-label="Sua transmissão" hidden>
-                <button id="cbLiveVer" type="button" class="cb-live-ver" aria-pressed="false"><span class="cb-dot" aria-hidden="true"></span>Ao vivo</button>
-                <button id="cbAudience" type="button" class="cb icon cb-seg" aria-haspopup="menu" aria-expanded="false"></button>
-                <button id="cbSwap" type="button" class="cb cb-seg"></button>
-                <button id="cbStop" type="button" class="cb cb-seg cb-parar"></button>
+              <div class="cb-grupo" role="group" aria-label="Voz">
+                <button id="cbMic" type="button" class="cb icon" aria-pressed="false"></button>
+                <button id="cbDeafen" type="button" class="cb icon" aria-pressed="false"></button>
+              </div>
+              <div class="cb-grupo" role="group" aria-label="Sua transmissão">
+                <button id="cbShare" type="button" class="cb icon"></button>
+                <button id="cbSwap" type="button" class="cb icon" hidden></button>
+                <button id="cbAudience" type="button" class="cb icon" aria-haspopup="menu" aria-expanded="false" hidden></button>
               </div>
               <button id="cbLeave" type="button" class="cb icon leave"></button>
             </div>
@@ -745,12 +750,6 @@
                           <label><input type="radio" name="encodeMode" value="per"><span>Uma por pessoa</span></label>
                         </div>
                         <p id="encodeNote" class="hint" hidden></p>
-                        <span class="hint" id="priorityLabel">Prioridade do app</span>
-                        <div class="seg" role="radiogroup" aria-labelledby="priorityLabel">
-                          <label><input type="radio" name="priority" value="normal"><span>Normal</span></label>
-                          <label><input type="radio" name="priority" value="above"><span>Acima do normal</span></label>
-                          <label><input type="radio" name="priority" value="high"><span>Alta</span></label>
-                        </div>
                       </div>
                     </div>
                   </div>
@@ -866,34 +865,39 @@
       <div class="dialog-head"><h2 id="generalSettingsTitle">Configurações</h2><button id="closeGeneralSettings" class="btn icon" type="button"></button></div>
       <div class="settings-layout">
         <nav class="settings-nav" aria-label="Grupos das configurações">
-          <button type="button" data-group="voz">Voz e atalhos<small>Voz · Atalhos</small></button>
-          <button type="button" data-group="aparencia">Aparência<small>Tema · Janela e fonte · Cores</small></button>
+          <p class="settings-nav-bloco">Uso diário</p>
+          <button type="button" data-group="voz">Voz<small>Microfone · Como falar</small></button>
+          <button type="button" data-group="transmissao">Transmissão<small>Clipes · Prioridade</small></button>
+          <button type="button" data-group="atalhos">Atalhos<small>Teclas no jogo</small></button>
+          <p class="settings-nav-bloco">Personalizar</p>
+          <button type="button" data-group="aparencia">Aparência<small>Tema · Janela · Cores</small></button>
           <button type="button" data-group="sons">Sons<small>Avisos sonoros</small></button>
-          <button type="button" data-group="atividade">Atividade<small>Jogos · Música</small></button>
-          <button type="button" data-group="celular">Celular<small>Mudar as configurações pelo celular</small></button>
-          <button type="button" data-group="mensagens">Mensagens privadas<small>Histórico · Backup no celular</small></button>
-          <button type="button" data-group="rede">Rede<small>Conexão · Servidores · Redes Razze</small></button>
+          <p class="settings-nav-bloco">Você e seus dados</p>
+          <button type="button" data-group="privacidade">Privacidade<small>Amigos · Mensagens</small></button>
+          <button type="button" data-group="backup">Backup no celular<small>Guardar · Trazer</small></button>
+          <button type="button" data-group="rede">Rede<small>Conexão · Servidores</small></button>
+          <p class="settings-nav-bloco">Mais</p>
           <button type="button" data-group="extras">Recursos extras<small>Comando de voz</small></button>
-          <button type="button" data-group="stats">Estatísticas<small>Desempenho · Transmissão</small></button>
-          <button type="button" data-group="ajuda">Ajuda<small>Passo a passo</small></button>
+          <button type="button" data-group="stats">Diagnóstico<small>Desempenho do PC</small></button>
+          <button type="button" data-group="ajuda">Ajuda<small>Passo a passo · Dicas</small></button>
         </nav>
         <div class="settings-main">
-        <p class="hint" id="settingsSaveStatus" role="status">Salvo neste dispositivo. As escolhas continuam ao reabrir o app.</p>
+        <p class="hint" id="settingsSaveStatus" role="status"></p>
         <div class="settings-tabs" role="tablist" aria-label="Seções do grupo">
           <button id="settingsTab-voice" type="button" role="tab" data-group="voz" data-tab="voice" aria-controls="settingsPanel-voice">Voz</button>
-          <button id="settingsTab-shortcuts" type="button" role="tab" data-group="voz" data-tab="shortcuts" aria-controls="settingsPanel-shortcuts">Atalhos</button>
+          <button id="settingsTab-shortcuts" type="button" role="tab" data-group="atalhos" data-tab="shortcuts" aria-controls="settingsPanel-shortcuts">Atalhos</button>
           <button id="settingsTab-skin" type="button" role="tab" data-group="aparencia" data-tab="skin" aria-controls="settingsPanel-skin">Tema</button>
           <button id="settingsTab-appearance" type="button" role="tab" data-group="aparencia" data-tab="appearance" aria-controls="settingsPanel-appearance">Janela e fonte</button>
           <button id="settingsTab-colors" type="button" role="tab" data-group="aparencia" data-tab="colors" aria-controls="settingsPanel-colors">Cores</button>
+          <button id="settingsTab-transmissao" type="button" role="tab" data-group="transmissao" data-tab="transmissao" aria-controls="settingsPanel-transmissao">Transmissão</button>
           <button id="settingsTab-sounds" type="button" role="tab" data-group="sons" data-tab="sounds" aria-controls="settingsPanel-sounds">Sons</button>
-          <button id="settingsTab-activity" type="button" role="tab" data-group="atividade" data-tab="activity" aria-controls="settingsPanel-activity">Atividade</button>
-          <button id="settingsTab-phone" type="button" role="tab" data-group="celular" data-tab="phone" aria-controls="settingsPanel-phone">Celular</button>
-          <button id="settingsTab-dms" type="button" role="tab" data-group="mensagens" data-tab="dms" aria-controls="settingsPanel-dms">Mensagens privadas</button>
+          <button id="settingsTab-activity" type="button" role="tab" data-group="privacidade" data-tab="activity" aria-controls="settingsPanel-activity">Privacidade</button>
+          <button id="settingsTab-phone" type="button" role="tab" data-group="backup" data-tab="phone" aria-controls="settingsPanel-phone">Backup no celular</button>
           <button id="settingsTab-network" type="button" role="tab" data-group="rede" data-tab="network" aria-controls="settingsPanel-network">Rede</button>
           <button id="settingsTab-extras" type="button" role="tab" data-group="extras" data-tab="extras" aria-controls="settingsPanel-extras">Recursos extras</button>
           <button id="statsTabPerf" type="button" role="tab" data-group="stats" data-tab="perf" data-panel="stats" aria-controls="settingsPanel-stats">Desempenho</button>
           <button id="statsTabStream" type="button" role="tab" data-group="stats" data-tab="stream" data-panel="stats" aria-controls="settingsPanel-stats">Transmissão</button>
-          <button id="settingsTab-help" type="button" role="tab" data-group="ajuda" data-tab="help" aria-controls="settingsPanel-help">Passo a passo</button>
+          <button id="settingsTab-help" type="button" role="tab" data-group="ajuda" data-tab="help" aria-controls="settingsPanel-help">Ajuda</button>
         </div>
         <section id="settingsPanel-voice" class="settings-section voice-dialog" role="tabpanel" aria-labelledby="settingsTab-voice" hidden>
           <section class="vd-section">
@@ -972,6 +976,10 @@
             <div id="shortcutRows" class="vd-shortcuts"></div>
             <button class="btn small ghost" id="shortcutReset" type="button">Voltar aos atalhos padrão</button>
           </section>
+        </section>
+        <!-- Transmissão: o que vale para todas as transmissões. As escolhas de cada uma (tela, qualidade, som, mouse,
+             codificação) ficam na janela Transmitir -->
+        <section id="settingsPanel-transmissao" class="settings-section voice-dialog" role="tabpanel" aria-labelledby="settingsTab-transmissao" hidden>
           <section class="vd-section">
             <h3 id="clipSecondsLabel">Clipe<button type="button" class="tip" data-tip="O atalho do clipe (ou a tesoura na transmissão) salva os últimos segundos, com o som da transmissão, em Vídeos › Tela P2P › Clipes." aria-label="O atalho do clipe (ou a tesoura na transmissão) salva os últimos segundos, com o som da transmissão, em Vídeos › Tela P2P › Clipes."></button></h3>
             <div class="seg" role="radiogroup" aria-labelledby="clipSecondsLabel">
@@ -983,6 +991,14 @@
             <p class="hint">Mais tempo usa mais memória: 2 min de uma transmissão em 1080p ficam em uns 100 a 200 MB.</p>
             <label class="check-line"><input type="checkbox" id="clipVoice"><span>Gravar a voz da call nos clipes<small class="hint">O que você ouve na voz e o seu microfone. Avise quem está na call. Fica desligado no modo gamer.</small></span></label>
           </section>
+          <section class="vd-section">
+            <h3 id="priorityLabel">Prioridade do app<button type="button" class="tip" data-tip="Quanto o Windows dá do processador para o app quando o PC está apertado. Vale para o app inteiro, mas pesa mais ao transmitir. No modo gamer fica normal." aria-label="Quanto o Windows dá do processador para o app quando o PC está apertado. Vale para o app inteiro, mas pesa mais ao transmitir. No modo gamer fica normal."></button></h3>
+            <div class="seg" role="radiogroup" aria-labelledby="priorityLabel">
+              <label><input type="radio" name="priority" value="normal"><span>Normal</span></label>
+              <label><input type="radio" name="priority" value="above"><span>Acima do normal</span></label>
+              <label><input type="radio" name="priority" value="high"><span>Alta</span></label>
+            </div>
+          </section>
         </section>
         <section id="settingsPanel-skin" class="settings-section" role="tabpanel" aria-labelledby="settingsTab-skin" hidden>
           <h3 id="skinTitle">Tema<button type="button" class="tip" data-tip="Muda o desenho do app inteiro, não só as cores. Voltar ao Padrão devolve as suas cores." aria-label="Muda o desenho do app inteiro, não só as cores. Voltar ao Padrão devolve as suas cores."></button></h3>
@@ -990,8 +1006,6 @@
         </section>
         <section id="settingsPanel-appearance" class="settings-section" role="tabpanel" aria-labelledby="settingsTab-appearance" hidden>
           <h3 id="appearanceTitle">Aparência</h3>
-          <label class="vd-check"><input type="checkbox" id="tipsOn"> Mostrar as dicas (o ícone <span class="tip-sample" aria-hidden="true">i</span> que explica ao passar o mouse)</label>
-          <div class="settings-row"><span id="themesLabel" class="settings-label">Temas prontos</span><div id="themeList" class="theme-list" role="radiogroup" aria-labelledby="themesLabel"></div><small id="themeHint" class="hint"></small></div>
           <p class="hint" id="glassLabel">Material das janelas</p>
           <div class="seg glass-seg" role="radiogroup" aria-labelledby="glassLabel">
             <label><input type="radio" name="glass" value="opaque"><span class="glass-swatch" data-glass-swatch="opaque" aria-hidden="true"></span><span>Opaco</span></label>
@@ -1019,6 +1033,7 @@
           <p class="hint" id="fontStatus" role="status"></p>
         </section>
         <section id="settingsPanel-colors" class="settings-section" role="tabpanel" aria-labelledby="settingsTab-colors" hidden>
+          <div class="settings-row"><span id="themesLabel" class="settings-label">Temas prontos</span><div id="themeList" class="theme-list" role="radiogroup" aria-labelledby="themesLabel"></div><small id="themeHint" class="hint"></small></div>
           <h3 id="colorsTitle">Cores do layout<button type="button" class="tip" data-tip="Um código como #3366FF ou a amostra. Muda na hora." aria-label="Um código como #3366FF ou a amostra. Muda na hora."></button></h3>
           <div class="settings-colors"><div class="settings-color"><label for="hex-main">Principal<small>Fundo do aplicativo</small></label><div class="settings-color-input"><input type="color" id="color-main" aria-label="Escolher cor: Principal"><input type="text" id="hex-main" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-main"></div><small id="error-main" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-secondary">Secundária<small>Painéis e cartões</small></label><div class="settings-color-input"><input type="color" id="color-secondary" aria-label="Escolher cor: Secundária"><input type="text" id="hex-secondary" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-secondary"></div><small id="error-secondary" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-detail1">Detalhes 1<small>Botões e destaques</small></label><div class="settings-color-input"><input type="color" id="color-detail1" aria-label="Escolher cor: Detalhes 1"><input type="text" id="hex-detail1" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-detail1"></div><small id="error-detail1" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-detail2">Detalhes 2<small>Indicadores e avisos</small></label><div class="settings-color-input"><input type="color" id="color-detail2" aria-label="Escolher cor: Detalhes 2"><input type="text" id="hex-detail2" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-detail2"></div><small id="error-detail2" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><p class="settings-colors-sub"><strong>Cores de detalhe</strong><small>Em cinza: calculada a partir das cores principais. Escolha uma cor para usar a sua; apague o código para voltar ao automático.</small></p><div class="settings-color"><label for="hex-text">Texto<small>Letras do app</small></label><div class="settings-color-input"><input type="color" id="color-text" aria-label="Escolher cor: Texto"><input type="text" id="hex-text" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-text"></div><small id="error-text" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-live">Ao vivo<small>Quem transmite e o botão Transmitir</small></label><div class="settings-color-input"><input type="color" id="color-live" aria-label="Escolher cor: Ao vivo"><input type="text" id="hex-live" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-live"></div><small id="error-live" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-speaking">Quem fala<small>Borda e barrinhas de quem fala</small></label><div class="settings-color-input"><input type="color" id="color-speaking" aria-label="Escolher cor: Quem fala"><input type="text" id="hex-speaking" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-speaking"></div><small id="error-speaking" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-warn">Avisos<small>Erros e alertas</small></label><div class="settings-color-input"><input type="color" id="color-warn" aria-label="Escolher cor: Avisos"><input type="text" id="hex-warn" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-warn"></div><small id="error-warn" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div><div class="settings-color"><label for="hex-line">Bordas<small>Linhas dos painéis e campos</small></label><div class="settings-color-input"><input type="color" id="color-line" aria-label="Escolher cor: Bordas"><input type="text" id="hex-line" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="error-line"></div><small id="error-line" class="color-error" hidden>Use 3 ou 6 dígitos hexadecimais.</small></div></div>
           <button id="resetColors" class="btn small" type="button">Restaurar cores padrão</button>
@@ -1054,8 +1069,18 @@
         <!-- Celular (renderer/celular.js): guardar as configurações num arquivo cifrado no celular e trazer de volta em
              qualquer PC, pelo Wi-Fi, com QR code e senha (docs/spec/config-no-celular.md) -->
         <section id="settingsPanel-phone" class="settings-section phone-panel" role="tabpanel" aria-labelledby="settingsTab-phone" hidden>
-          <h3>Configurações no celular</h3>
+          <h3>Backup no celular</h3>
           <p class="hint">Guarde tema, nome, foto, voz, volumes e atalhos num arquivo no seu celular e traga de volta em qualquer PC. O celular precisa estar no mesmo Wi-Fi do PC; nada passa pela internet. A conta Razze não vai junto: entre nela de novo.</p>
+          <div class="extra-card">
+            <div class="group-head">
+              <span class="group-title" id="dmBackupLabel">Levar as mensagens privadas no backup</span>
+              <label class="switch">
+                <input type="checkbox" id="dmBackup" role="switch" aria-labelledby="dmBackupLabel" aria-describedby="dmBackupHint">
+                <span class="track" aria-hidden="true"></span>
+              </label>
+            </div>
+            <p id="dmBackupHint" class="hint">Ligado, o Guardar no celular leva também o texto das conversas da sua conta Razze, cifrado com a mesma senha. Imagens e arquivos não vão. Ao trazer de volta, junta com o histórico do PC, sem apagar nada.</p>
+          </div>
           <div id="phoneActions" class="phone-actions">
             <button id="phoneSave" class="btn primary" type="button">Guardar no celular</button>
             <button id="phoneLoad" class="btn" type="button">Trazer do celular</button>
@@ -1087,27 +1112,6 @@
               <div class="phone-buttons"><button id="phoneSummaryCancel" class="btn small" type="button">Cancelar</button><button id="phoneApply" class="btn small primary" type="button">Aplicar</button></div>
             </div>
             <p id="phoneStatus" class="hint phone-status" role="status" aria-live="polite"></p>
-          </div>
-        </section>
-        <section id="settingsPanel-dms" class="settings-section dms-panel" role="tabpanel" aria-labelledby="settingsTab-dms" hidden>
-          <h3>Mensagens privadas</h3>
-          <p class="hint">Vale só para este PC. O servidor Razze guarda o texto por 30 dias de qualquer jeito, para chegar a quem está offline; imagens e arquivos nunca passam por ele.</p>
-          <div class="settings-row"><span class="settings-label" id="dmRetencaoLabel">Histórico neste PC</span>
-            <div class="seg" role="radiogroup" aria-labelledby="dmRetencaoLabel" aria-describedby="dmRetencaoHint">
-              <label><input type="radio" name="dmRetencao" value="sempre"><span>Guardar para sempre</span></label>
-              <label><input type="radio" name="dmRetencao" value="30"><span>Apagar depois de 30 dias</span></label>
-            </div>
-          </div>
-          <p id="dmRetencaoHint" class="hint"></p>
-          <div class="extra-card">
-            <div class="group-head">
-              <span class="group-title" id="dmBackupLabel">Levar as mensagens no backup do celular</span>
-              <label class="switch">
-                <input type="checkbox" id="dmBackup" role="switch" aria-labelledby="dmBackupLabel" aria-describedby="dmBackupHint">
-                <span class="track" aria-hidden="true"></span>
-              </label>
-            </div>
-            <p id="dmBackupHint" class="hint">Ligado, o Guardar no celular (Configurações › Celular) leva também o texto das conversas da sua conta Razze, cifrado com a mesma senha. Imagens e arquivos não vão. Ao trazer de volta, junta com o histórico do PC, sem apagar nada.</p>
           </div>
         </section>
         <!-- Rede: como os PCs se conectam, servidores, redes Razze e o mapa de conexões (renderer/conectividade.js).
@@ -1206,17 +1210,26 @@
           <p id="streamEmpty" class="hint">Ninguém está transmitindo agora.</p>
         </div>
         </section>
-        <!-- Atividade: o que aparece no seu perfil (jogo, música, em que sala está) e os jogos da Steam que podem aparecer
-             (renderer/conta.js; main/atividade.js) -->
+        <!-- Privacidade: o que aparece no seu perfil (jogo, música, em que sala está), os jogos da Steam que podem aparecer
+             (renderer/conta.js; main/atividade.js) e o histórico das mensagens privadas neste PC -->
         <section id="settingsPanel-activity" class="settings-section activity-panel" role="tabpanel" aria-labelledby="settingsTab-activity" hidden>
-          <h3>Atividade</h3>
+          <h3>O que os amigos veem</h3>
           <p class="hint">O que aparece no seu perfil para quem está na mesma sala e para os seus amigos (com a conta).</p>
           <div class="extra-card">
-            <label class="check-line"><input type="checkbox" id="atvJogo"><span>Mostrar o jogo que estou jogando</span></label>
-            <label class="check-line"><input type="checkbox" id="atvMusica"><span>Mostrar a música que estou ouvindo (Spotify e outros players)</span></label>
-            <label class="check-line"><input type="checkbox" id="atvHist"><span>Mostrar os últimos 3 jogos e 3 músicas no perfil (desligar apaga o que está guardado)</span></label>
+            <div class="switch-linha">
+              <span class="switch-linha-texto"><span id="atvJogoLabel">Jogo que estou jogando</span></span>
+              <label class="switch"><input type="checkbox" id="atvJogo" role="switch" aria-labelledby="atvJogoLabel"><span class="track" aria-hidden="true"></span></label>
+            </div>
+            <div class="switch-linha">
+              <span class="switch-linha-texto"><span id="atvMusicaLabel">Música que estou ouvindo</span><span class="hint" id="atvMusicaHint">Spotify e outros players</span></span>
+              <label class="switch"><input type="checkbox" id="atvMusica" role="switch" aria-labelledby="atvMusicaLabel" aria-describedby="atvMusicaHint"><span class="track" aria-hidden="true"></span></label>
+            </div>
+            <div class="switch-linha">
+              <span class="switch-linha-texto"><span id="atvHistLabel">Últimos 3 jogos e 3 músicas no perfil</span><span class="hint" id="atvHistHint">Desligar apaga o que está guardado.</span></span>
+              <label class="switch"><input type="checkbox" id="atvHist" role="switch" aria-labelledby="atvHistLabel" aria-describedby="atvHistHint"><span class="track" aria-hidden="true"></span></label>
+            </div>
             <p id="atvPreview" class="hint" role="status" aria-live="polite"></p>
-            <p class="hint">Desligado por padrão. Vai só o nome do jogo e a imagem dele, e a faixa com a capa: nenhum outro programa é lido, nem o que toca no navegador. Vale no Windows.</p>
+            <p class="hint">Ligado por padrão. Vai só o nome do jogo e a imagem dele, e a faixa com a capa: nenhum outro programa é lido, nem o que toca no navegador. Vale no Windows.</p>
           </div>
           <div class="extra-card">
             <div class="group-head">
@@ -1243,17 +1256,32 @@
               </div>
             </div>
           </div>
+          <!-- Sua sala (renderer/salas-amigos.js, docs/spec/sala-do-amigo.md e entrar-pelos-amigos.md): ligados por padrão -->
+          <h3>Sua sala</h3>
           <div class="extra-card">
-            <!-- Em que sala estou (renderer/salas-amigos.js, docs/spec/sala-do-amigo.md): ligado por padrão -->
-            <label class="check-line"><input type="checkbox" id="atvSala" aria-describedby="atvSalaHint"><span>Mostrar aos amigos em que sala estou</span></label>
-            <p id="atvSalaHint" class="hint">Ligado por padrão. Vai só o nome de quem hospeda a sala, o modo (Radmin, Razze ou Internet), quantas pessoas e se você está na voz: nenhum endereço. Salas escondidas e chamadas não aparecem.</p>
-            <!-- Deixar entrar (docs/spec/entrar-pelos-amigos.md): fecha a sala para os amigos sem parar de mostrar -->
-            <label class="check-line"><input type="checkbox" id="atvSalaEntrar" aria-describedby="atvSalaEntrarHint"><span>Deixar meus amigos entrarem na sala em que estou</span></label>
-            <p id="atvSalaEntrarHint" class="hint">Ligado por padrão. Nas salas pela internet, os amigos veem um Entrar e entram sem senha (se quem hospeda deixar). Desligado, eles continuam vendo em que sala você está, sem o Entrar.</p>
+            <div class="switch-linha">
+              <span class="switch-linha-texto"><span id="atvSalaLabel">Mostrar aos amigos em que sala estou</span><span class="hint" id="atvSalaHint">Vai só o nome de quem hospeda a sala, o modo (Radmin, Razze ou Internet), quantas pessoas e se você está na voz: nenhum endereço. Salas escondidas e chamadas não aparecem.</span></span>
+              <label class="switch"><input type="checkbox" id="atvSala" role="switch" aria-labelledby="atvSalaLabel" aria-describedby="atvSalaHint"><span class="track" aria-hidden="true"></span></label>
+            </div>
+            <div class="switch-linha">
+              <span class="switch-linha-texto"><span id="atvSalaEntrarLabel">Deixar meus amigos entrarem</span><span class="hint" id="atvSalaEntrarHint">Nas salas pela internet, os amigos veem um Entrar e entram sem senha (se quem hospeda deixar). Desligado, eles continuam vendo em que sala você está, sem o Entrar.</span></span>
+              <label class="switch"><input type="checkbox" id="atvSalaEntrar" role="switch" aria-labelledby="atvSalaEntrarLabel" aria-describedby="atvSalaEntrarHint"><span class="track" aria-hidden="true"></span></label>
+            </div>
           </div>
+          <h3>Mensagens privadas</h3>
+          <p class="hint">Vale só para este PC. O servidor Razze guarda o texto por 30 dias de qualquer jeito, para chegar a quem está offline; imagens e arquivos nunca passam por ele.</p>
+          <div class="settings-row"><span class="settings-label" id="dmRetencaoLabel">Histórico neste PC</span>
+            <div class="seg" role="radiogroup" aria-labelledby="dmRetencaoLabel" aria-describedby="dmRetencaoHint">
+              <label><input type="radio" name="dmRetencao" value="sempre"><span>Guardar para sempre</span></label>
+              <label><input type="radio" name="dmRetencao" value="30"><span>Apagar depois de 30 dias</span></label>
+            </div>
+          </div>
+          <p id="dmRetencaoHint" class="hint"></p>
         </section>
         <!-- Ajuda: os roteiros do passo a passo guiado (renderer/tour.js), os mesmos do "Como entrar numa sala?" do Início -->
         <section id="settingsPanel-help" class="settings-section" role="tabpanel" aria-labelledby="settingsTab-help" hidden>
+          <h3>Dicas</h3>
+          <label class="vd-check"><input type="checkbox" id="tipsOn"> Mostrar as dicas (o ícone <span class="tip-sample" aria-hidden="true">i</span> que explica ao passar o mouse)</label>
           <h3>Passo a passo</h3>
           <p class="hint">O app te guia na própria tela: acende o botão certo e segue quando você clica. Esc ou Sair do passo a passo para a qualquer hora.</p>
           <div id="tourListaAjuda" class="tour-lista-ajuda" role="group" aria-label="Roteiros do passo a passo"></div>
@@ -1270,7 +1298,7 @@
                 <span class="track" aria-hidden="true"></span>
               </label>
             </div>
-            <p id="vozCmdHint" class="hint">Numa sala, segure <kbd id="vozCmdKey">Ctrl+Shift+V</kbd> e fale, até dentro do jogo: “abre a live do Fulano no canto esquerdo de cima”, “parar de assistir o Fulano”, “ir para a subsala 2”, “desligar o microfone”. Enquanto você segura, a call não ouve. A voz é entendida neste PC e não sai dele. A tecla dá para trocar em Voz e atalhos.</p>
+            <p id="vozCmdHint" class="hint">Numa sala, segure <kbd id="vozCmdKey">Ctrl+Shift+V</kbd> e fale, até dentro do jogo: “abre a live do Fulano no canto esquerdo de cima”, “parar de assistir o Fulano”, “ir para a subsala 2”, “desligar o microfone”. Enquanto você segura, a call não ouve. A voz é entendida neste PC e não sai dele. A tecla dá para trocar em Configurações › Atalhos.</p>
             <div class="settings-row"><span class="settings-label" id="vozCmdModeloLabel">Reconhecimento de fala</span>
               <div class="seg" role="radiogroup" aria-labelledby="vozCmdModeloLabel">
                 <label><input type="radio" name="vozCmdModelo" value="leve"><span>Leve · 60 MB</span></label>
@@ -1364,7 +1392,7 @@
         <div class="ob-atv">
           <label class="check-line"><input type="checkbox" id="obAtvJogo" checked><span>Mostrar no meu perfil o jogo que estou jogando</span></label>
           <label class="check-line"><input type="checkbox" id="obAtvMusica" checked><span>Mostrar no meu perfil a música que estou ouvindo</span></label>
-          <p class="hint">Dá para mudar depois em Configurações › Atividade.</p>
+          <p class="hint">Dá para mudar depois em Configurações › Privacidade.</p>
         </div>
         <div class="actions">
           <button class="btn ghost" id="obBack2" type="button">Voltar</button>

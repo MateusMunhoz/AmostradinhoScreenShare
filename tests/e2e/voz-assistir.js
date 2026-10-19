@@ -1,5 +1,5 @@
-// Painel Voz: quem está transmitindo tem o botão Assistir na frente do nome (na voz ou numa seção
-// "Fora da voz"); clicar começa a assistir e o botão vira Parar.
+// Painel Voz: quem está transmitindo aparece num cartão em cima da lista, com a miniatura da tela (pedida pela sala);
+// clicar no cartão começa a assistir e ele vira Parar. A linha da pessoa fica sem o botão (o cartão já faz).
 const { openApp, createRoom, joinRoom, check, sleep, run, FAKE } = require('./ajuda');
 FAKE.push('--disable-backgrounding-occluded-windows', '--disable-features=CalculateNativeWinOcclusion'); // para a foto
 
@@ -9,6 +9,7 @@ const SHARE = `(() => {
 })()`;
 const TONE = `(() => { window.tctx = new AudioContext(); const o = tctx.createOscillator(); const dst = tctx.createMediaStreamDestination(); o.connect(dst); o.start(); voice.media = { getUserMedia: async () => dst.stream }; })()`;
 const ROW = (id) => `document.querySelector('#voicePaneMembers .member[data-person="${id}"]')`;
+const CARD = (id) => `document.querySelector('#voicePaneMembers .voz-tela[data-person="${id}"]')`;
 
 run('Assistir pelo painel Voz', 90000, async () => {
   const A = await openApp('vaA', 9541, { fake: true });
@@ -21,8 +22,10 @@ run('Assistir pelo painel Voz', 90000, async () => {
   await B.eval(`setPainelSala({ aba: 'voz', juntos: false, recolhido: false })`);
   await B.waitFor(`!!${ROW(anaId)}`, 5000);
   check('Ana transmite fora da voz: aparece em "Fora da voz"', await B.eval(`$('voicePaneMembers').querySelector('.members-sub')?.textContent === 'Fora da voz'`));
-  const btn = `[...${ROW(anaId)}.querySelectorAll('button')].find((b) => /Assistir|Parar de assistir/.test(b.title))`;
-  check('Botão Assistir na frente do nome', await B.eval(`${btn}?.title === 'Assistir Ana'`));
+  const btn = CARD(anaId);
+  check('Cartão "Transmitindo" com Assistir, e a linha da Ana sem o botão', await B.eval(`${btn}?.title === 'Assistir Ana' && !${ROW(anaId)}.querySelector('.watch-btn')`));
+  await B.waitFor(`${btn}?.querySelector('img.voz-tela-img')?.src.startsWith('blob:') && !${btn}.querySelector('img.voz-tela-img').hidden`, 10000);
+  check('A miniatura da tela da Ana chega pela sala e aparece no cartão', await B.eval(`${btn}.querySelector('img.voz-tela-img').naturalWidth === 320`));
   await B.eval(`${btn}.click()`);
   await B.waitFor(`state.in.size === 1 && [...state.in.values()][0].tile.video.videoWidth > 0`, 20000);
   check('Clicar começa a assistir, e o botão vira Parar', await B.eval(`${btn}?.title === 'Parar de assistir Ana'`));
@@ -31,7 +34,7 @@ run('Assistir pelo painel Voz', 90000, async () => {
   await A.eval(`$('voiceJoin').click()`);
   await B.waitFor(`voice.members.get('${anaId}')?.session`, 10000);
   await sleep(300);
-  check('Ana entra na voz: continua com o botão, agora na lista da voz', await B.eval(`!$('voicePaneMembers').querySelector('.members-sub') && ${btn}?.title === 'Parar de assistir Ana'`));
+  check('Ana entra na voz: o cartão continua, agora com ela na lista da voz', await B.eval(`!$('voicePaneMembers').querySelector('.members-sub') && ${btn}?.title === 'Parar de assistir Ana'`));
   await B.eval(`${btn}.click()`);
   await sleep(500);
   check('Parar tira a tela e volta o Assistir', await B.eval(`state.in.size === 0 && ${btn}?.title === 'Assistir Ana'`));

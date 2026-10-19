@@ -353,16 +353,18 @@ function keyLabel(e) {
   return e.key.length === 1 ? e.key.toUpperCase() : e.key;
 }
 
-// Voz e atalhos é um grupo das configurações (abas Voz e Atalhos): abrir leva até ele; o medidor e o teste do
-// microfone só correm com ele à vista (enterVoiceSettings/leaveVoiceSettings, chamados por showSettingsTab)
+// Voz e Atalhos são grupos das configurações: abrir leva até eles; o medidor e o teste do microfone só correm com a
+// Voz à vista (enterVoiceSettings/leaveVoiceSettings, chamados por showSettingsTab)
 const voiceSettingsOpen = () => settingsOpenOn('voz');
 function openVoiceDialog(tab = 'voice') { openGeneralSettings(tab); }
 function closeVoiceDialog() { if (voiceSettingsOpen()) closeGeneralSettings(); }
 function enterVoiceSettings() {
   renderVoiceDialog();
   renderMicList();
-  window.api.getShortcuts().then((k) => { shortcutKeys = k || {}; renderShortcutRows(); }).catch(() => {});
   meterLoop();
+}
+function enterShortcutSettings() {
+  window.api.getShortcuts().then((k) => { shortcutKeys = k || {}; renderShortcutRows(); }).catch(() => {});
 }
 function leaveVoiceSettings() {
   stopCapture();
@@ -428,22 +430,22 @@ function renderShortcutRows() {
     keysBox.className = 'vd-keys';
     const kbd = document.createElement('kbd');
     kbd.textContent = accelLabel(shortcutKeys[action]);
+    kbd.classList.toggle('vazio', !shortcutKeys[action]); // "Nenhum" não é tecla: sem a moldura
     const change = document.createElement('button');
     change.type = 'button';
     change.className = 'btn small';
     change.textContent = 'Trocar';
     change.setAttribute('aria-label', `Trocar o atalho de: ${name}`);
     change.onclick = () => startCapture({ kind: 'shortcut', action, btn: change });
-    keysBox.append(kbd, change);
-    if (shortcutKeys[action]) {
-      const off = document.createElement('button');
-      off.type = 'button';
-      off.className = 'btn small ghost';
-      off.textContent = 'Tirar';
-      off.setAttribute('aria-label', `Tirar o atalho de: ${name}`);
-      off.onclick = () => applyShortcut(action, '');
-      keysBox.append(off);
-    }
+    // O Tirar ocupa o lugar mesmo sem atalho (invisível), para o Trocar ficar na mesma coluna em todas as linhas
+    const off = document.createElement('button');
+    off.type = 'button';
+    off.className = 'btn small ghost' + (shortcutKeys[action] ? '' : ' vd-tirar-vazio');
+    off.textContent = 'Tirar';
+    off.setAttribute('aria-label', `Tirar o atalho de: ${name}`);
+    off.disabled = !shortcutKeys[action];
+    off.onclick = () => applyShortcut(action, '');
+    keysBox.append(kbd, change, off);
     row.append(label, keysBox);
     box.append(row);
   }
