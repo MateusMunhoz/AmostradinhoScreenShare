@@ -3,6 +3,17 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.20.2",
+    "date": "2026-10-19",
+    "items": [
+      "Docs: roadmap conferido com o código, guia e spec de assistir pelo navegador",
+      "O X da janela minimiza; esconder na bandeja vira opção",
+      "Tempo da call ao lado de cada canal de voz",
+      "Login Google: conta desativada responde account_disabled",
+      "Ajustes na voz, mensagens e membros"
+    ]
+  },
+  {
     "version": "1.20.0",
     "date": "2026-10-12",
     "items": [
@@ -82,13 +93,6 @@ const NOVIDADES = [
       "Temas: \"Nebula\" e o nome do tema lado a lado em todos",
       "Sala: tela de carregando ao entrar e uma entrada por vez",
       "Voz: volume geral das vozes nas configurações"
-    ]
-  },
-  {
-    "version": "1.18.7",
-    "date": "2026-10-07",
-    "items": [
-      "Perfil: abrir pela lista Na voz não trava mais os outros perfis"
     ]
   }
 ];
