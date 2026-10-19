@@ -169,7 +169,7 @@ function newMember(ws, msg, resume, subsalas = null) {
   return {
     ws, client: cleanClient(msg.client), name: String(msg.name || 'Anônimo').slice(0, 32), sharing: !!(resume && msg.sharing),
     version: /^\d+\.\d+\.\d+$/.test(msg.version) ? msg.version : '', addrs: cleanAddrs(msg.addrs),
-    voiceSession, voiceChannel, muted: !!voiceSession && msg.muted === true, deafened: !!voiceSession && msg.deafened === true, shareInfo,
+    voiceSession, voiceChannel, voiceDesde: voiceSession ? Date.now() : 0, muted: !!voiceSession && msg.muted === true, deafened: !!voiceSession && msg.deafened === true, shareInfo,
     avatar: cleanHash(msg.avatar), avatarFull: cleanHash(msg.avatarFull), nameFont: cleanNameFont(msg.nameFont), razze: cleanRazze(msg.razze),
     lider: msg.lider === true, // o app conhece o Modo Líder (quem não conhece não ouve a Líder de fora dela)
   };
@@ -177,7 +177,7 @@ function newMember(ws, msg, resume, subsalas = null) {
 
 // O que os outros ficam sabendo de cada pessoa
 function memberInfo(id, m) {
-  return { id, name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs, voiceSession: m.voiceSession, voiceChannel: m.voiceChannel || '', muted: m.muted, deafened: m.deafened, shareInfo: m.shareInfo, avatar: m.avatar, avatarFull: m.avatarFull, nameFont: m.nameFont, razze: m.razze || null, lider: !!m.lider };
+  return { id, name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs, voiceSession: m.voiceSession, voiceChannel: m.voiceChannel || '', voiceIdade: idadeNaVoz(m), muted: m.muted, deafened: m.deafened, shareInfo: m.shareInfo, avatar: m.avatar, avatarFull: m.avatarFull, nameFont: m.nameFont, razze: m.razze || null, lider: !!m.lider };
 }
 
 // Conversa da sala: guarda as últimas mensagens e numera as novas
@@ -195,7 +195,10 @@ function createChat(seedChat) {
   };
 }
 
-const voiceStateOf = (id, m) => ({ type: 'voice-state', id, session: m.voiceSession, channel: m.voiceChannel || '', muted: m.muted, deafened: m.deafened });
+// Há quantos ms a pessoa está neste canal de voz (0 fora da voz). Vai a idade, e não a hora, para o contador da call
+// não depender do relógio de cada PC (renderer/subsalas.js: tempoDoCanal)
+function idadeNaVoz(m) { return m.voiceSession && m.voiceDesde ? Math.max(0, Date.now() - m.voiceDesde) : 0; }
+const voiceStateOf = (id, m) => ({ type: 'voice-state', id, session: m.voiceSession, channel: m.voiceChannel || '', idade: idadeNaVoz(m), muted: m.muted, deafened: m.deafened });
 
 // Modo Líder: quem fala para a sala toda (está na voz, dentro da Líder ou com a palavra) e quem decide os pedidos
 // (transmitindo dentro da Líder)
@@ -219,8 +222,11 @@ function memberGone({ subsalas, broadcast }, id) {
 function handleMemberMessage({ members, broadcast, chat, subsalas = null, musicas = null }, id, me, msg) {
   if (msg.type === 'voice-state') {
     if (typeof msg.session !== 'string' || !/^[\w-]{0,64}$/.test(msg.session)) return;
+    const antes = me.voiceSession ? me.voiceChannel || '' : null;
     me.voiceSession = msg.session;
     me.voiceChannel = msg.session && subsalas?.has(cleanChannel(msg.channel)) ? cleanChannel(msg.channel) : '';
+    if (!me.voiceSession) me.voiceDesde = 0;
+    else if (antes !== me.voiceChannel) me.voiceDesde = Date.now(); // entrou na voz ou chegou noutro canal
     me.muted = !!msg.session && msg.muted === true;
     me.deafened = !!msg.session && msg.deafened === true; // fone silenciado: os outros veem na lista da voz
     broadcast(voiceStateOf(id, me));
@@ -236,6 +242,7 @@ function handleMemberMessage({ members, broadcast, chat, subsalas = null, musica
     for (const [mid, m] of members) {
       if (m.voiceChannel !== sub) continue;
       m.voiceChannel = '';
+      m.voiceDesde = Date.now();
       broadcast(voiceStateOf(mid, m));
     }
     if (musicas?.map.delete(sub)) broadcast(musicas.msg()); // a música da subsala apagada para
@@ -248,6 +255,7 @@ function handleMemberMessage({ members, broadcast, chat, subsalas = null, musica
     const ch = cleanChannel(msg.channel);
     if (!target?.voiceSession || (ch && !subsalas.has(ch)) || (target.voiceChannel || '') === ch) return;
     target.voiceChannel = ch;
+    target.voiceDesde = Date.now();
     broadcast(voiceStateOf(String(msg.id), target));
     liderConfere(subsalas, broadcast, String(msg.id), target);
   } else if (msg.type === 'lider-pedir' && subsalas) {
