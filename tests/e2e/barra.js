@@ -38,8 +38,8 @@ run('Sala: cabeçalho, abas e Seu sinal', 120000, async () => {
 
   // Barrinha: as coisas do app, Convidar e, por último, Sair
   const rail = await B.eval(`[...$('workspaceNav').children].filter((e) => e.getClientRects().length).map((e) => e.id || e.className)`);
-  check('Barrinha: perfil, Início, Convidar, chat por cima do jogo, modo gamer, feedback, engrenagem e Sair',
-    rail.join(' ') === 'navProfile nav-sep nav-space dockHome dockAddr nav-sep overlayToggle navGamer navFeedback navSettings nav-sep rail-leave-sep leaveBtn', rail.join(' '));
+  check('Barrinha: perfil, Início, Convidar, chat por cima do jogo, modo gamer, apoio, feedback, engrenagem e Sair',
+    rail.join(' ') === 'navProfile nav-sep nav-space dockHome dockAddr nav-sep overlayToggle navGamer navApoio navFeedback navSettings nav-sep rail-leave-sep leaveBtn', rail.join(' '));
 
   // Abas: com uma aberta, clicar na outra abre as duas; com as duas, clicar numa fecha essa
   await B.eval(`setPainelSala({ aba: 'voz', juntos: false, recolhido: false })`);
