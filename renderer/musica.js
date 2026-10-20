@@ -469,7 +469,14 @@ function musicHeadButton(ch) {
     b.className = 'voice-channel-song' + (e.playing ? '' : ' paused');
     b.setAttribute('aria-pressed', String(open));
     b.title = `${titulo}\n${e.playing ? 'Tocando' : 'Pausada'} · posta por ${e.by === state.myId ? 'você' : nameOf(e.by)}\n`
-      + (open ? 'Parar de ouvir (a música continua para os outros)' : 'Ouvir junto, no mesmo ponto');
+      + (open ? 'Volume, pausar ou sair da música' : 'Ouvir junto, no mesmo ponto');
+    // Ouvindo: a pílula abre o menu da música (o que antes ficava no botão em cima do cartão "Você")
+    if (open) {
+      const aberto = navMusicFrom?.ch === ch && !$('navMusicMenu').hidden;
+      if (aberto) navMusicFrom.anchor = b; // a lista redesenha a pílula: o menu segue preso à nova
+      b.setAttribute('aria-haspopup', 'menu');
+      b.setAttribute('aria-expanded', String(aberto));
+    }
     const barras = document.createElement('span');
     barras.className = 'song-eq';
     barras.setAttribute('aria-hidden', 'true');
@@ -478,8 +485,13 @@ function musicHeadButton(ch) {
     nome.className = 'song-title';
     nome.textContent = titulo;
     b.append(barras, nome);
-    b.setAttribute('aria-label', `${open ? 'Parar de ouvir' : 'Ouvir'}: ${titulo}`);
-    b.onclick = (ev) => { ev.stopPropagation(); toggleListenMusic(ch); };
+    b.setAttribute('aria-label', `${open ? 'Música' : 'Ouvir'}: ${titulo}`);
+    b.onclick = (ev) => {
+      ev.stopPropagation();
+      if (!open) return toggleListenMusic(ch);
+      if (navMusicFrom?.ch === ch && !$('navMusicMenu').hidden) closeNavMusic(true);
+      else openNavMusic(b, ch);
+    };
     return b;
   }
   if (!state.musicaOn || ch !== myVoiceChannel()) return null;
@@ -491,19 +503,17 @@ function musicHeadButton(ch) {
   return b;
 }
 
-// ---------- Na barrinha da direita: a música que você está ouvindo ----------
-// Aparece enquanto você ouve uma música (a tela dela está no palco). Clicar abre um menu com Pausar ou Continuar (para
-// todos, como no player; só quem pode controlar) e Sair (para de ouvir; a música continua para os outros).
+// ---------- O menu da música que você está ouvindo ----------
+// Abre pela pílula do canal (musicHeadButton) enquanto você ouve (a tela dela está no palco): o volume (só seu), Pausar
+// ou Continuar (para todos, como no player; só quem pode controlar) e Sair (para de ouvir; a música continua para os outros).
 function listenedMusic() {
   for (const [key, link] of state.in) if (link.music) { const ch = key.slice('musica:'.length); return { key, ch, e: state.musicas.get(ch), link }; }
   return null;
 }
+let navMusicFrom = null; // { ch, anchor }: a pílula que abriu o menu
 function renderNavMusic() {
-  const m = listenedMusic(), btn = $('navMusic');
-  $('navMusicWrap').hidden = !m?.e;
-  if (!m?.e) { closeNavMusic(); return; }
-  setIcon(btn, 'music', `${m.link.tile.name || musicTitle(m.e)} · ${m.e.playing ? 'tocando' : 'pausada'}`);
-  btn.dataset.playing = String(!!m.e.playing);
+  const m = listenedMusic();
+  if (!m?.e || (navMusicFrom && navMusicFrom.ch !== m.ch)) { closeNavMusic(); return; }
   // Menu aberto: redesenha com o estado novo, menos enquanto o volume está sendo arrastado
   if (!$('navMusicMenu').hidden && document.activeElement?.id !== 'navMusicVol') buildNavMusic();
 }
@@ -552,17 +562,28 @@ function buildNavMusic() {
       () => { const e = state.musicas.get(m.ch); if (e && canControlMusic(e)) musicCtl(e, e.playing ? 'pause' : 'play', { pos: musicPos(e) }); }, !can),
     item('leave', 'Sair da música', 'Para de ouvir (a música continua para os outros)', () => { closeNavMusic(); stopWatching(m.key, false); }));
 }
-function openNavMusic() {
+// Embaixo da pílula (ou em cima, sem espaço), alinhado à direita dela; "fixed" conta a partir do body, como o musicPop
+function openNavMusic(anchor, ch) {
+  const menu = $('navMusicMenu');
+  navMusicFrom = { ch, anchor };
   buildNavMusic();
-  $('navMusicMenu').hidden = false;
-  $('navMusic').setAttribute('aria-expanded', 'true');
-  $('navMusicMenu').querySelector('button:not(:disabled)')?.focus();
+  menu.hidden = false;
+  anchor.setAttribute('aria-expanded', 'true');
+  const r = anchor.getBoundingClientRect(), w = menu.offsetWidth, h = menu.offsetHeight;
+  const left = Math.min(Math.max(8, r.right - w), innerWidth - w - 8);
+  const top = r.bottom + 6 + h < innerHeight - 8 ? r.bottom + 6 : Math.max(8, r.top - 6 - h);
+  menu.style.left = '0px'; menu.style.top = '0px';
+  const o = menu.getBoundingClientRect();
+  menu.style.left = `${left - o.left}px`;
+  menu.style.top = `${top - o.top}px`;
+  menu.querySelector('button:not(:disabled)')?.focus();
 }
 function closeNavMusic(focusButton = false) {
   if ($('navMusicMenu').hidden) return;
   $('navMusicMenu').hidden = true;
-  $('navMusic').setAttribute('aria-expanded', 'false');
-  if (focusButton) $('navMusic').focus();
+  const anchor = navMusicFrom?.anchor;
+  navMusicFrom = null;
+  if (anchor?.isConnected) { anchor.setAttribute('aria-expanded', 'false'); if (focusButton) anchor.focus(); }
 }
 
 // ---------- Balão de colar o link ----------
@@ -606,9 +627,8 @@ function submitMusicPop() {
 }
 
 function setupMusica() {
-  $('navMusic').onclick = () => ($('navMusicMenu').hidden ? openNavMusic() : closeNavMusic(true));
   $('navMusicMenu').addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeNavMusic(true); } });
-  document.addEventListener('pointerdown', (e) => { if (!e.target.closest?.('#navMusicWrap')) closeNavMusic(); });
+  document.addEventListener('pointerdown', (e) => { if (!e.target.closest?.('#navMusicMenu, .voice-channel-song')) closeNavMusic(); });
   $('musicPopForm').onsubmit = (e) => { e.preventDefault(); submitMusicPop(); };
   $('musicPopCancel').onclick = closeMusicPop;
   document.addEventListener('pointerdown', (e) => {

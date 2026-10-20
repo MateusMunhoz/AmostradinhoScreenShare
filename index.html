@@ -222,11 +222,6 @@
          para a barrinha: seuSinalMini). Os botões são os de sempre, com os mesmos ids (renderer/voz.js, transmitir.js) -->
     <section id="seuSinal" class="seu-sinal" aria-label="Sua voz e sua transmissão" hidden>
       <div class="ss-linha ss-estado">
-        <!-- Música que você está ouvindo (renderer/musica.js): clicar abre Pausar/Continuar e Sair -->
-        <div class="rail-music" id="navMusicWrap" hidden>
-          <button id="navMusic" type="button" class="btn icon small ghost" aria-haspopup="menu" aria-expanded="false" aria-controls="navMusicMenu"></button>
-          <div class="rail-music-menu" id="navMusicMenu" role="menu" aria-label="Música" hidden></div>
-        </div>
       </div>
       <!-- Subsala Líder (docs/spec/modo-lider.md): ouvir quem fala para a sala toda e o volume dela (renderLiderLinha) -->
       <div class="ss-linha ss-lider" id="ssLider" hidden>
@@ -278,6 +273,8 @@
       </div>
     </section>
   </aside>
+  <!-- A música que você está ouvindo: a pílula do canal abre este menu (volume, Pausar ou Continuar, Sair; renderer/musica.js) -->
+  <div class="rail-music-menu" id="navMusicMenu" role="menu" aria-label="Música" hidden></div>
   <!-- Música junto: colar o link do YouTube para pôr (ou trocar) a música de um canal (renderer/musica.js) -->
   <div id="musicPop" class="music-pop" role="dialog" aria-labelledby="musicPopTitle" hidden>
     <form id="musicPopForm">
