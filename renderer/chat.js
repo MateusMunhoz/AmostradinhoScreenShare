@@ -61,8 +61,6 @@ function renderUnread() {
   const n = chat.unread;
   $('navUnread').hidden = !n;
   $('navUnread').textContent = n > 99 ? '99+' : String(n);
-  $('chatFoldUnread').hidden = !n; // chat recolhido: as novas no título (setupPaneFold)
-  $('chatFoldUnread').textContent = n === 1 ? '1 nova' : `${n > 99 ? '99+' : n} novas`;
   $('mapChatUnread').hidden = !n;
   $('mapChatUnread').textContent = n === 1 ? '1 nova' : `${n > 99 ? '99+' : n} novas`;
   $('navChat').title = n ? `Chat · ${n} ${n === 1 ? 'mensagem nova' : 'mensagens novas'}` : 'Chat';

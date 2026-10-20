@@ -1598,25 +1598,7 @@ button.sky-card-info:hover:not(:disabled) .sky-card-go { color: var(--accent); }
    um pouco da lista e o campo de escrever (--chat-min, o mesmo CHAT_MIN_PX de navegacao.js): a voz encolhe antes */
 .workspace-in-room.has-workspace-pane:not(.workspace-wide) .voice-sized:not(.map-focus) #chatTab:not([hidden]) ~ #voicePane.workspace-pane { flex: 0 1 calc(var(--voice-split) * 100%); max-height: none; }
 #workspacePanes { --chat-min: 220px; }
-.workspace-in-room.has-workspace-pane:not(.workspace-wide) .voice-sized:not(.fold-chat):not(.map-focus) #chatTab:not([hidden]):has(~ #voicePane:not([hidden])) { min-height: var(--chat-min); }
-/* Recolher (setPaneFold): a seta no título; recolhido, o painel vira só o título e o outro ocupa a coluna */
-.pane-fold { display: none; flex: none; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 5px; background: none; color: var(--muted); cursor: pointer; place-items: center; }
-.pane-fold:hover { background: var(--panel-2); color: var(--text); }
-.pane-fold:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-.pane-fold svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform .15s; }
-.pane-fold[aria-expanded=false] svg { transform: rotate(-90deg); }
-.pane-fold-unread { display: none; }
-.workspace-in-room.has-workspace-pane:not(.workspace-wide) #chatTab:not([hidden]) ~ #voicePane:not([hidden]) .pane-fold,
-.workspace-in-room.has-workspace-pane:not(.workspace-wide) #chatTab:not([hidden]):has(~ #voicePane:not([hidden])) .pane-fold { display: grid; }
-.workspace-in-room.has-workspace-pane:not(.workspace-wide) .fold-chat #chatTab:not([hidden]):has(~ #voicePane:not([hidden])) { flex: none; cursor: pointer; }
-.fold-chat #chatTab:has(~ #voicePane:not([hidden])) > :not(.chat-head) { display: none !important; }
-.fold-chat #chatTab .chat-head { margin: 0; }
-.fold-chat #chatTab .pane-fold-unread:not([hidden]) { display: inline; margin-left: auto; padding: 1px 8px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); font-size: 12px; }
-.workspace-in-room.has-workspace-pane:not(.workspace-wide) #workspacePanes.fold-chat #chatTab:not([hidden]) ~ #voicePane.workspace-pane { flex: 1 1 0; max-height: none; }
-.workspace-in-room.has-workspace-pane:not(.workspace-wide) #workspacePanes.fold-voice #chatTab:not([hidden]) ~ #voicePane.workspace-pane { flex: none; max-height: none; cursor: pointer; }
-.fold-voice #chatTab:not([hidden]) ~ #voicePane > :not(.pane-head) { display: none !important; }
-.fold-voice #voicePane .pane-head { margin: 0; }
-.fold-chat #chatTab:not([hidden]) + .pane-split, .fold-voice #chatTab:not([hidden]) + .pane-split { display: none !important; }
+.workspace-in-room.has-workspace-pane:not(.workspace-wide) .voice-sized:not(.map-focus) #chatTab:not([hidden]):has(~ #voicePane:not([hidden])) { min-height: var(--chat-min); }
 /* No Mapa, a voz divide o espaço com o chat meio a meio (o mapa cresce para preencher) */
 .workspace-in-room.has-workspace-pane:not(.workspace-wide) #chatTab:not([hidden]) ~ #voicePane.voice-map { flex: 1 1 0; max-height: none; }
 .profile-summary { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; overflow-wrap: anywhere; }
