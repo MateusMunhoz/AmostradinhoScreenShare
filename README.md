@@ -1,14 +1,101 @@
-# Nebula (AmostradinhoScreenShare)
+<p align="center">
+  <img src="assets/icone/tela-p2p.png" width="96" alt="Ícone do Nebula">
+</p>
+
+<h1 align="center">Nebula</h1>
+
+<p align="center">
+  <b>Transmita a tela e converse por voz com os amigos, direto de um PC para o outro.</b><br>
+  Sem servidor pago, sem limite de qualidade de plano, feito para rodar junto com o jogo.
+</p>
+
+<p align="center">
+  <a href="https://github.com/MateusMunhoz/AmostradinhoScreenShare/releases/latest"><b>Baixar a versão mais nova</b></a>
+  &nbsp;·&nbsp; <a href="docs/guia.md">Guia de uso</a>
+  &nbsp;·&nbsp; <a href="#problemas-comuns">Problemas comuns</a>
+</p>
+
+<p align="center">
+  <img src="docs/imagens/sala.webp" alt="Sala do Nebula com duas transmissões ao vivo, chat e chat de voz" width="900">
+</p>
 
 Antes chamado **Tela P2P**: quem já usa continua com as configurações, o histórico e os convites de antes ([o que mudou](docs/spec/nebula.md)).
 
-Transmita a tela e converse por voz com os amigos, de PC para PC, pela Radmin VPN, pela VPN WireGuard Razze ou pelo modo Internet (sem VPN, com um servidor numa VPS). No modo Radmin, não precisa de servidor pago: o app de quem cria a sala apresenta as pessoas, e o vídeo, o áudio e a voz vão direto de um PC para o outro.
+## O que é
 
-**Baixar:** pegue o arquivo da versão mais nova em [Releases](https://github.com/MateusMunhoz/AmostradinhoScreenShare/releases/latest). Depois disso, o próprio app avisa quando sair uma versão nova, e um botão atualiza.
+O Nebula é um app para Windows (e Linux) para assistir junto: cada um transmite a própria tela, todo mundo vê todo mundo e conversa por voz e chat, como numa call do Discord, mas com a imagem indo direto de um PC para o outro.
 
-- **Windows, instalado:** `Nebula.Instalador.exe`. Instala só para você (sem pedir administrador) ou para todos do PC, cria atalhos na área de trabalho e no menu Iniciar e aparece em Aplicativos instalados para desinstalar. Desinstalar não apaga suas configurações nem o histórico das mensagens.
-- **Windows, portátil:** `Nebula.exe`. Não instala nada: é só abrir (pode ficar num pendrive).
-- **Linux (Ubuntu, Mint, com X11):** `Tela-P2P.AppImage`. Veja [Linux](#linux).
+- **Várias telas ao mesmo tempo**, com o som do PC, em até 4K (ou 1080p a 60 fps).
+- **Voz com supressão de ruído por IA**, apertar para falar e volume por pessoa.
+- **Feito para quem joga:** janelas flutuantes por cima do jogo, chat sem sair do jogo e um modo gamer que deixa o app leve.
+- **A sala não cai quando o host sai:** outra pessoa assume sozinha.
+- **Temas completos**, que mudam o app inteiro, não só as cores.
+
+## Como funciona
+
+```mermaid
+flowchart LR
+    subgraph Rede["Radmin VPN, VPN Razze ou modo Internet"]
+        H["PC de quem criou a sala<br/>(apresenta as pessoas)"]
+        A["PC da Ana"]
+        B["PC do Bruno"]
+    end
+    H -. "quem está na sala" .-> A
+    H -. "quem está na sala" .-> B
+    A <== "vídeo, áudio e voz (WebRTC)" ==> B
+    A <== " " ==> H
+    B <== " " ==> H
+```
+
+1. Os PCs ficam na mesma rede: pela **Radmin VPN** (grátis), pela **VPN WireGuard Razze** ou pelo **modo Internet**, sem VPN, com um servidor numa VPS.
+2. Uma pessoa cria a sala. O app dela vira o ponto de encontro: só apresenta quem está na sala.
+3. Depois de apresentadas, as pessoas se conectam **direto**, por WebRTC. O vídeo, o áudio e a voz não passam por nenhum servidor, então não há mensalidade nem limite de qualidade imposto por terceiros. No modo Internet, quando a rede de alguém não deixa a conexão direta (CGNAT, 4G), o vídeo passa pelo TURN da VPS, sempre criptografado de ponta a ponta.
+
+## Por dentro do app
+
+### Tela inicial
+
+Criar uma sala, entrar numa sala pelo endereço ou clicar numa das salas abertas na sua rede. O app avisa quando sai versão nova e atualiza com um clique.
+
+<p align="center"><img src="docs/imagens/inicio.webp" alt="Tela inicial do Nebula" width="820"></p>
+
+### Transmitir e assistir
+
+Várias pessoas transmitem ao mesmo tempo. Na **Grade**, todas as telas aparecem lado a lado; no **Destaque**, uma fica grande e as outras numa coluna ao lado. Dá para trocar a tela ou a janela no meio da transmissão sem parar, deixar o som do Discord de fora e abrir qualquer tela numa **janela flutuante** por cima do jogo, com o clique passando direto.
+
+<p align="center"><img src="docs/imagens/destaque.webp" alt="Modo destaque: uma transmissão grande e o chat ao lado" width="820"></p>
+
+### Chat e voz
+
+- **Chat** com arquivos de até 200 MB. Também tem uma versão por cima do jogo: **Ctrl+Enter** escreve sem sair dele.
+- **Voz** com supressão de ruído por IA, cancelamento de eco, ouvir a própria voz para testar o microfone, apertar para falar, volume de cada pessoa e indicador de quem está falando.
+- **Subsalas**, cada uma com o seu canal de voz.
+- **Mapa da voz:** cada canal vira um sistema solar, e quem está nele aparece como planeta.
+- **Música junto (YouTube):** cole o link no canal de voz e quem clicar em Ouvir escuta no mesmo ponto. A sala sincroniza tocar, pausar, pular e trocar.
+
+<p align="center"><img src="docs/imagens/voz-mapa.webp" alt="Chat de voz no modo mapa, com os canais como sistemas solares" width="820"></p>
+
+### Temas
+
+A aba **Tema** muda o desenho do app inteiro: fundo, bordas, fontes, sons e até o jeito do chat e da voz. Além do Padrão, vêm prontos o Arasaka, o E.V.A by Asock, o Du'Sol, o Di'Luna, a Renascença, o Top Gun e o Cloud.
+
+<p align="center"><img src="docs/imagens/temas.webp" alt="A mesma sala em seis temas: E.V.A, Arasaka, Du'Sol, Di'Luna, Top Gun e Renascença" width="900"></p>
+
+### Configurações
+
+Aparência em Opaco, Transparente ou Líquido (vidro no estilo do iOS; no Windows 11 a área de trabalho aparece desfocada atrás do app), temas de cores, quatro cores por hexadecimal, luz ambiente nos vídeos, fonte da interface (incluindo as instaladas no PC), sons de cada evento com prévia e volume, atalhos e desempenho. Tudo fica salvo no PC.
+
+<p align="center"><img src="docs/imagens/configuracoes-temas.webp" alt="Configurações, na aba Tema" width="820"></p>
+
+## Baixar
+
+Pegue o arquivo da versão mais nova em [Releases](https://github.com/MateusMunhoz/AmostradinhoScreenShare/releases/latest). Depois disso, o próprio app avisa quando sair uma versão nova, e um botão atualiza. As atualizações são assinadas: o app só instala o que foi publicado pela equipe.
+
+| Sistema | Arquivo | Como é |
+|---|---|---|
+| Windows, instalado | `Nebula.Instalador.exe` | Instala só para você (sem pedir administrador) ou para todos do PC, cria atalhos e aparece em Aplicativos instalados. Desinstalar não apaga as configurações nem o histórico das mensagens. |
+| Windows, portátil | `Nebula.exe` | Não instala nada: é só abrir (pode ficar num pendrive). |
+| Linux (Ubuntu, Mint, com X11) | `Tela-P2P.AppImage` | Veja [Linux](#linux). |
 
 ## Começar
 
@@ -16,17 +103,6 @@ Transmita a tela e converse por voz com os amigos, de PC para PC, pela Radmin VP
 2. **Criar a sala (uma pessoa):** abra o app, confira no topo que a **Rede** está na Radmin (clique para trocar), digite seu nome e clique em **Criar sala**. Mande para os amigos o endereço que aparece (tipo `26.12.34.56:8765`).
 3. **Entrar (os outros):** a sala aparece em **Salas abertas na Radmin**, na tela inicial: clique em **Entrar**. Se não aparecer, clique em **Entrar numa sala**, cole o endereço e clique em **Entrar**.
 4. **Firewall:** na primeira vez, o Windows pergunta se o app pode acessar a rede. Marque **redes privadas e públicas** e permita, em todos os PCs.
-
-## O que dá para fazer
-
-- **Transmitir e assistir:** várias pessoas transmitindo ao mesmo tempo, com o som do PC. Dá para trocar a tela ou janela no meio da transmissão, sem parar. Dá para deixar de fora o som do Discord e de outros apps. Com várias telas abertas, uma fica em destaque e as outras numa coluna ao lado.
-- **Ver enquanto joga:** janelas flutuantes, uma por pessoa, sempre por cima do jogo e com o clique passando direto.
-- **Chat:** mensagens e arquivos até 200 MB. Também tem uma versão por cima do jogo: **Ctrl+Enter** escreve sem sair do jogo.
-- **Voz:** supressão de ruído com IA, ouvir a própria voz para testar o microfone, cancelamento de eco, apertar para falar, volume de cada pessoa e indicador de quem está falando.
-- **Música junto (YouTube):** cole o link de um vídeo do YouTube no seu canal de voz (uma música por subsala) e quem clicar em Ouvir escuta junto, no mesmo ponto. A música vira uma tela no palco, ao lado das transmissões. Cada pessoa toca no player oficial do YouTube; a sala só sincroniza tocar, pausar, pular e trocar. Precisa de internet, e alguns vídeos não podem tocar fora do YouTube (quem publicou bloqueia).
-- **Configurações gerais:** aparência em Opaco, Transparente ou Líquido (vidro no estilo do iOS; no Windows 11 a área de trabalho aparece desfocada atrás do app), temas prontos de cores (o material e as bordas podem ser trocados sem sair do tema), aba Tema com o **Arasaka** e o **E.V.A by Asock** (cockpit do EVA-01: roxo e laranja, HUD, letreiros em japonês, chat em terminal, letreiro lateral e o rosto do EVA-01 como ícone), luz ambiente nos vídeos (as barras pretas pegam as cores da transmissão), fonte da interface (incluindo fontes de outros idiomas, as instaladas no PC e as que vêm com o app: Chakra Petch, Share Tech Mono e Love Letter Typewriter, a de Serial Experiments Lain), versão instalada no pé do painel, quatro cores por hexadecimal e sons de entrada/saída da sala, entrada/saída da voz e mensagens, com prévia, volume por evento, volume geral e silêncio do chat. As escolhas ficam salvas neste PC.
-- **Barra superior fixa:** perfil e configurações sempre acessíveis; na sala, chat, voz e transmissão podem ficar abertos juntos, dividindo o espaço. Ocultar o painel de voz não desliga o microfone.
-- **A sala não cai quando o host sai:** outra pessoa assume sozinha.
 
 Detalhes de cada coisa no [Guia de uso](docs/guia.md).
 
@@ -42,7 +118,8 @@ chmod +x Tela-P2P.AppImage
 
 No Ubuntu 22.04 e no Mint 21, troque `libfuse2t64` por `libfuse2`. O `wireguard-tools` e o `pkexec` são para a VPN Razze; o `xinput`, para o apertar para falar.
 
-O que muda em relação ao Windows:
+<details>
+<summary>O que muda em relação ao Windows</summary>
 
 - **Radmin:** não existe no Linux. Pela internet, use a VPN Razze (ou a rede local).
 - **Som do PC na transmissão:** vai o som inteiro do PC (pelo PulseAudio ou PipeWire), inclusive o das telas que você assiste. Não dá para deixar apps de fora, e com a voz ligada a tela vai sem som (senão a voz da call iria junto).
@@ -50,18 +127,7 @@ O que muda em relação ao Windows:
 - **VPN Razze:** o túnel é do próprio Linux. Ao conectar, o sistema pede a sua senha uma vez. Ele não volta sozinho depois de reiniciar o PC: clique em **Conectar** de novo.
 - **Apertar para falar:** precisa de sessão X11 (no Wayland, o sistema não deixa ler a tecla com o app fora de foco).
 
-## Documentação
-
-| Para | Leia |
-|------|------|
-| Usar tudo (sala, transmitir, janelas flutuantes, chat, voz, atalhos, estatísticas) | [docs/guia.md](docs/guia.md) |
-| Jogar e transmitir sem pesar (qualidade, NVENC, tela cheia, Windows 10) | [docs/desempenho.md](docs/desempenho.md) |
-| Mexer no código, testar e publicar | [docs/desenvolvimento.md](docs/desenvolvimento.md) |
-| Trabalhar em equipe com o Claude Code (issue, spec, PR, CI, versão nova) | [docs/fluxo-com-ia.md](docs/fluxo-com-ia.md) |
-| Testar numa call com gente de verdade | [docs/roteiro-de-teste.md](docs/roteiro-de-teste.md) |
-| RazzeAPI, VPN WireGuard e implantação numa VPS | [docs/razze-api.md](docs/razze-api.md) |
-| Modo Internet (sem VPN: salas por código + senha, STUN e TURN numa VPS) | [servidor-internet/README.md](servidor-internet/README.md) |
-| O que vem por aí e como fazer (Discord e TeamSpeak como referência) | [docs/roadmap.md](docs/roadmap.md) |
+</details>
 
 ## Problemas comuns
 
@@ -78,6 +144,21 @@ O que muda em relação ao Windows:
 | A janela flutuante ou o chat não aparecem por cima do jogo | Coloque o jogo em modo janela sem bordas (tela cheia exclusiva fica por cima de tudo). |
 | Borda amarela em volta da transmissão (Windows 10) | Já resolvido. Se alguma janela de jogo sair preta, transmita a Tela inteira. |
 
-## Quem fez
+## Documentação
 
-Projeto de [MateusMunhoz](https://github.com/MateusMunhoz), com o chat de voz feito pelo Cristian ([Nyon0k](https://github.com/Nyon0k)). Usa [RNNoise](https://github.com/xiph/rnnoise) (supressão de ruído). As licenças estão em `vendor/` e `native/third_party/`.
+| Para | Leia |
+|------|------|
+| Usar tudo (sala, transmitir, janelas flutuantes, chat, voz, atalhos, estatísticas) | [docs/guia.md](docs/guia.md) |
+| Jogar e transmitir sem pesar (qualidade, NVENC, tela cheia, Windows 10) | [docs/desempenho.md](docs/desempenho.md) |
+| Mexer no código, testar e publicar | [docs/desenvolvimento.md](docs/desenvolvimento.md) |
+| Trabalhar em equipe com o Claude Code (issue, spec, PR, CI, versão nova) | [docs/fluxo-com-ia.md](docs/fluxo-com-ia.md) |
+| Testar numa call com gente de verdade | [docs/roteiro-de-teste.md](docs/roteiro-de-teste.md) |
+| RazzeAPI, VPN WireGuard e implantação numa VPS | [docs/razze-api.md](docs/razze-api.md) |
+| Modo Internet (sem VPN: salas por código + senha, STUN e TURN numa VPS) | [servidor-internet/README.md](servidor-internet/README.md) |
+| O que vem por aí e como fazer (Discord e TeamSpeak como referência) | [docs/roadmap.md](docs/roadmap.md) |
+
+## Feito com
+
+Electron, WebRTC e Node.js na interface e nas conexões; C++ nos ajudantes nativos do Windows (captura de áudio por app, captura de vídeo com NVENC e teclas globais); Node.js, Docker e WireGuard na RazzeAPI.
+
+<sub>As imagens deste README são de uma sala de teste com três cópias do app conectadas de verdade. As transmissões mostram vídeos de exemplo desenhados para os prints.</sub>
