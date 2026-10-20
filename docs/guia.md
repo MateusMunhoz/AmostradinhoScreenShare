@@ -257,6 +257,7 @@ Para ver uma transmissão enquanto joga.
 ## Chat
 
 - **Mensagens:** Enter envia e Shift+Enter quebra a linha. Links abrem no navegador.
+- **Vídeos do YouTube:** um link de vídeo (`youtube.com/watch`, `youtu.be`, `shorts`) ganha, embaixo da mensagem, a capa, o título e o canal. Clicar na capa abre no YouTube; **Tocar na voz** põe o vídeo como música do seu canal, como o `/musica` (fora da voz, na Voz geral). Com o chat sozinho no painel vira um cartão com a capa grande; lado a lado com a voz (ou com pouco espaço), uma linha com a capa pequena. Vídeo privado, removido ou sem internet: fica só o link. Para desligar: **Configurações › Privacidade › Chat da sala**.
 - **Organização:** cada linha fica no formato do console do jogo, "21:02 Nome : mensagem", com o nome na cor da pessoa. Mensagens seguidas da mesma pessoa ficam juntas, sem repetir o nome. As que chegam enquanto você não está olhando ganham a linha "N mensagens novas" e o botão "Ir para as mensagens novas".
 - **Arquivos:** use o clipe, arraste para o chat ou cole com **Ctrl+V** (um print da tela ou um arquivo copiado), até 200 MB. O print colado ganha um nome com a hora, tipo `imagem-colada-21-07-45.png`.
   - **Baixar:** quem clica em **Baixar** recebe direto de quem mandou, vê a barra de progresso (dá para cancelar) e depois clica em **Salvar**.

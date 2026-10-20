@@ -16,6 +16,7 @@ const { chatBounds, setupChatOverlay, chatComposeRequest } = require('./main/cha
 const { keys, setShortcut, setRoomKeys, setPtt, setVoiceCmdKey } = require('./main/atalhos');
 const comandoVoz = require('./main/comando-voz');
 const { criarIa, buscarYoutube } = require('./main/comando-voz-ia');
+const { previaYoutube } = require('./main/youtube-previa');
 let vozCmd = null; // comando de voz: Whisper baixado só por quem liga (criado quando o app fica pronto)
 const sessoes = require('./main/sessoes');
 const celular = require('./main/celular');
@@ -601,6 +602,7 @@ if (hasSingleInstance) app.whenReady().then(() => {
   ipcMain.handle('voz-ia-entender', (_e, texto, ctx, opcoes) => vozIa.entender(String(texto || '').slice(0, 500), ctx && typeof ctx === 'object' ? ctx : {}, opcoesIa(opcoes)));
   ipcMain.handle('voz-ia-testar', (_e, opcoes) => vozIa.testar(opcoesIa(opcoes)));
   ipcMain.handle('voz-cmd-youtube', (_e, busca) => buscarYoutube(String(busca || '').slice(0, 100))); // "toca Evidências"
+  ipcMain.handle('youtube-previa', (_e, id) => previaYoutube(id)); // link do YouTube no chat: título, canal e capa
   ipcMain.handle('open-link', (_e, url) => {
     if (typeof url === 'string' && /^https?:\/\/[^\s]+$/i.test(url)) shell.openExternal(url);
   });

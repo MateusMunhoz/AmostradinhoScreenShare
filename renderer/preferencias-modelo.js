@@ -124,7 +124,9 @@ const AppPreferences = (() => {
       shareStart: 'suaveTransmitiu', shareStop: 'suaveParouTransmitir', mention: 'suaveMencao', liderPedido: 'suaveMao', liderPalavra: 'suavePalavra',
       chatMuted: false, volume: 50, levels: { enter: 100, join: 100, leave: 100, chat: 100, mention: 100, voiceJoin: 100, voiceLeave: 100, mute: 100, unmute: 100, deafen: 100, undeafen: 100, shareStart: 100, shareStop: 100, liderPedido: 100, liderPalavra: 100 } },
     // Mensagens privadas: histórico neste PC para sempre ou por 30 dias; levar o histórico no backup do celular
-    mensagens: { retencao: 'sempre', backup: false } };
+    mensagens: { retencao: 'sempre', backup: false },
+    // Chat da sala: prévia (capa, título e canal) dos links do YouTube, buscada pelo processo principal
+    chat: { previaYoutube: true } };
   // Temas prontos (Aparência > Temas): cores e material de uma vez. As cores de detalhe que não aparecem aqui
   // voltam ao automático. Mantêm a leitura do app: destaque = você/ao vivo, detalhe 2 = quem fala.
   const themes = [
@@ -213,9 +215,10 @@ const AppPreferences = (() => {
     // Sem cores salvas: o tema padrão inteiro. Com cores, a opcional que faltar fica no automático ('').
     const base = raw?.colors ? { ...defaults.colors, ...Object.fromEntries(optionalColors.map(k => [k, ''])) } : defaults.colors;
     const result = { colors: { ...base }, appearance: { ...defaults.appearance }, font: { ...defaults.font },
-      nameFont: cleanNameFont(raw?.nameFont), sounds: { ...defaults.sounds, levels: { ...defaults.sounds.levels } }, mensagens: { ...defaults.mensagens } };
+      nameFont: cleanNameFont(raw?.nameFont), sounds: { ...defaults.sounds, levels: { ...defaults.sounds.levels } }, mensagens: { ...defaults.mensagens }, chat: { ...defaults.chat } };
     if (['sempre', '30'].includes(raw?.mensagens?.retencao)) result.mensagens.retencao = raw.mensagens.retencao;
     if (typeof raw?.mensagens?.backup === 'boolean') result.mensagens.backup = raw.mensagens.backup;
+    if (typeof raw?.chat?.previaYoutube === 'boolean') result.chat.previaYoutube = raw.chat.previaYoutube;
     if (borderModes.includes(raw?.appearance?.border)) result.appearance.border = raw.appearance.border;
     if (glassModes.includes(raw?.appearance?.glass)) result.appearance.glass = raw.appearance.glass;
     const level = raw?.appearance?.level;
