@@ -476,7 +476,7 @@ function joinVoiceIn(ch) {
 }
 
 // ---------- Lista que sobe do "N na voz" ----------
-// Quem está na voz (clicar abre o volume da pessoa; a roda do mouse em cima muda o volume), Entrar na voz (se você
+// Quem está na voz (clicar abre o perfil da pessoa, com o volume), Entrar na voz (se você
 // está fora) e o painel da voz. Fecha com Esc ou clique fora (inicio.js)
 function openVoiceStackPop() {
   const pop = document.createElement('div');

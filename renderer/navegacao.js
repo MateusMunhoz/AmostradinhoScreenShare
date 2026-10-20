@@ -36,7 +36,7 @@ function setPainelSala(mudar = {}) {
   renderUnread();
   renderVoiceAvatars();
   closePersonCard();
-  if (chat.open && paneFold.which !== 'chat') requestAnimationFrame(scrollChatToEnd);
+  if (chat.open) requestAnimationFrame(scrollChatToEnd);
   // No Início o painel fica na barrinha: abrir o painel (pela barrinha ou pelo chat) volta para a sala
   if (mudar.recolhido === false && state.myId && $('room').hidden) backToRoom();
 }
@@ -376,7 +376,7 @@ function layoutVoicePane(active) {
 // faixa mostra a sala, quem está nela, a sua voz e o Voltar (com as mensagens novas).
 function goHomeKeepCall() { if (state.myId) show('home'); }
 function backToRoom() { if (state.myId) { show('room'); markChatSeenIfVisible(); } }
-function markChatSeenIfVisible() { if (chat.open && chatAtBottom() && !mapFocus.on && paneFold.which !== 'chat') markRead(); }
+function markChatSeenIfVisible() { if (chat.open && chatAtBottom() && !mapFocus.on) markRead(); }
 function renderHomeCall() {
   const inCall = !!state.myId;
   renderRoomHead();
@@ -524,9 +524,12 @@ function setupPaneSplit(host) {
   bar.setAttribute('aria-valuemin', String(SPLIT_MIN * 100));
   bar.setAttribute('aria-valuemax', String(SPLIT_MAX * 100));
   host.insertBefore(bar, $('voicePane'));
+  // A fração é da altura da coluna, mas a coluna também tem o "Você" e o Transmitir embaixo: o máximo é o que o chat
+  // e a voz dividem entre si, menos o mínimo do chat
   const apply = (f) => {
     if (f == null) { host.style.removeProperty('--voice-split'); host.classList.remove('voice-sized'); bar.removeAttribute('aria-valuenow'); return; }
-    const max = host.clientHeight ? Math.max(SPLIT_MIN, Math.min(SPLIT_MAX, 1 - (CHAT_MIN_PX + bar.offsetHeight) / host.clientHeight)) : SPLIT_MAX;
+    const juntos = $('chatTab').offsetHeight + $('voicePane').offsetHeight;
+    const max = host.clientHeight && juntos ? Math.max(SPLIT_MIN, Math.min(SPLIT_MAX, (juntos - CHAT_MIN_PX) / host.clientHeight)) : SPLIT_MAX;
     f = Math.min(max, Math.max(SPLIT_MIN, f));
     host.style.setProperty('--voice-split', String(f));
     host.classList.add('voice-sized');
@@ -541,15 +544,23 @@ function setupPaneSplit(host) {
     e.preventDefault();
     bar.setPointerCapture(e.pointerId);
     bar.classList.add('dragging');
-    const move = (ev) => { const r = host.getBoundingClientRect(); apply((r.bottom - ev.clientY) / r.height); };
+    // A voz fica com a altura do mouse até o pé dela (não até o pé da coluna): a linha acompanha o mouse desde o clique
+    const fundo = $('voicePane').getBoundingClientRect().bottom;
+    const move = (ev) => {
+      if (!(ev.buttons & 1)) return up(); // soltou fora da janela: não fica arrastando sozinho
+      apply((fundo - ev.clientY) / host.clientHeight);
+    };
     const up = () => {
+      if (!bar.classList.contains('dragging')) return;
       bar.classList.remove('dragging');
       bar.removeEventListener('pointermove', move);
+      if (bar.hasPointerCapture(e.pointerId)) bar.releasePointerCapture(e.pointerId);
       save('voiceSplit', host.style.getPropertyValue('--voice-split'));
     };
     bar.addEventListener('pointermove', move);
     bar.addEventListener('pointerup', up, { once: true });
     bar.addEventListener('pointercancel', up, { once: true });
+    bar.addEventListener('lostpointercapture', up, { once: true });
   });
   bar.addEventListener('keydown', (e) => {
     const step = e.key === 'ArrowUp' ? 0.05 : e.key === 'ArrowDown' ? -0.05 : 0;
@@ -558,41 +569,6 @@ function setupPaneSplit(host) {
     save('voiceSplit', String(apply(current() + step)));
   });
   bar.addEventListener('dblclick', () => { apply(null); save('voiceSplit', ''); });
-}
-
-// ---------- Recolher o chat ou a voz ----------
-// A seta no título recolhe o painel numa faixa (só o título; o chat mostra as mensagens novas) e o outro ocupa a
-// coluna. Um recolhido de cada vez; fica salvo neste PC. Só vale com os dois abertos juntos (CSS).
-const paneFold = { which: ['chat', 'voice'].includes(load('paneFold', '')) ? load('paneFold', '') : '' };
-function setPaneFold(which) {
-  paneFold.which = which;
-  save('paneFold', which);
-  const host = $('workspacePanes');
-  host.classList.toggle('fold-chat', which === 'chat');
-  host.classList.toggle('fold-voice', which === 'voice');
-  for (const [pane, btn] of [['chat', $('chatFold')], ['voice', $('voiceFold')]]) {
-    const folded = which === pane, name = pane === 'chat' ? 'o chat' : 'a voz';
-    btn.setAttribute('aria-expanded', String(!folded));
-    btn.title = btn.ariaLabel = folded ? `Abrir ${name}` : `Recolher ${name}`;
-  }
-  if (which !== 'chat') { scrollChatToEnd(); markChatSeenIfVisible(); }
-}
-function setupPaneFold() {
-  const make = (id, pane, head) => {
-    const b = document.createElement('button');
-    b.id = id;
-    b.type = 'button';
-    b.className = 'pane-fold';
-    b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
-    b.onclick = () => setPaneFold(paneFold.which === pane ? '' : pane);
-    head.prepend(b);
-  };
-  make('chatFold', 'chat', $('chatTab').querySelector('.chat-head'));
-  make('voiceFold', 'voice', $('voicePane').querySelector('.pane-head'));
-  // Clicar no título recolhido também abre
-  $('chatTab').querySelector('.chat-head').addEventListener('click', (e) => { if (paneFold.which === 'chat' && !e.target.closest('button')) setPaneFold(''); });
-  $('voicePane').querySelector('.pane-head').addEventListener('click', (e) => { if (paneFold.which === 'voice' && !e.target.closest('button')) setPaneFold(''); });
-  setPaneFold(paneFold.which);
 }
 
 // ---------- Largura do chat e da voz ----------
@@ -654,7 +630,6 @@ function setupWorkspace() {
   host.insertBefore($('chatTab'), $('voicePane'));
   $('chatTab').classList.add('workspace-pane');
   setupPaneSplit(host);
-  setupPaneFold();
   host.append($('peoplePop'));
   setupPaneResize(host);
   host.append($('seuSinal')); // o cartão fecha o bloco embaixo, em qualquer aba

@@ -808,6 +808,35 @@ kbd { font-family: Consolas, monospace; font-size: 11px; color: var(--muted); bo
 .file-bar > span { display: block; height: 100%; width: 0; background: var(--accent); }
 .file-card img { max-width: 100%; max-height: 200px; border-radius: 6px; object-fit: contain; align-self: flex-start; }
 .file-card img.chat-image { cursor: zoom-in; }
+/* Prévia de link do YouTube (renderer/chat.js: previaYoutubeNoChat). Com espaço: cartão com a capa em cima; baixo ou estreito
+   (lado a lado com a voz, painel fino): linha com a capa pequena ao lado */
+.chat-list { container: chat / size; } /* a altura dela vem do painel, não das mensagens */
+.yt-previa { display: flex; flex-direction: column; width: 300px; max-width: 100%; margin: 4px 0 2px; box-sizing: border-box; overflow: hidden;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); box-shadow: var(--lift); font-family: var(--font-body); }
+.yt-capa { position: relative; display: grid; place-items: center; aspect-ratio: 16 / 9; width: 100%; padding: 0; border: 0; border-radius: 0;
+  background: var(--sunken); cursor: pointer; overflow: hidden; }
+.yt-capa img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.yt-play { position: relative; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+  background: color-mix(in srgb, var(--bg) 70%, transparent); transition: transform .15s ease-out; }
+.yt-play svg { width: 16px; height: 16px; margin-left: 2px; fill: var(--text); stroke: none; }
+.yt-capa:hover .yt-play, .yt-capa:focus-visible .yt-play { transform: scale(1.08); }
+.yt-capa:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.yt-info { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 8px 10px 10px; min-width: 0; }
+.yt-titulo { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 13px; line-height: 1.35; color: var(--text); }
+.yt-canal { font-size: 12px; color: var(--muted); }
+.yt-tocar { display: inline-flex; align-items: center; margin-top: 6px; height: 26px; padding: 0 10px; font-size: 12px; gap: 5px; }
+.yt-tocar svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+@container chat (max-width: 299px) or (max-height: 420px) {
+  .yt-previa { flex-direction: row; align-items: center; gap: 10px; width: 100%; padding: 6px; }
+  .yt-capa { width: 96px; flex: none; border-radius: 5px; }
+  .yt-play { width: 26px; height: 26px; }
+  .yt-play svg { width: 11px; height: 11px; }
+  .yt-info { padding: 0; }
+  .yt-titulo { -webkit-line-clamp: 1; display: block; white-space: nowrap; text-overflow: ellipsis; max-width: 100%; }
+  .yt-tocar { margin-top: 4px; height: 24px; }
+}
+@media (prefers-reduced-motion: reduce) { .yt-play { transition: none; } }
+:root[data-gamer="on"] .yt-play { transition: none; }
 .file-card img.chat-image:hover { filter: brightness(1.08); }
 .file-card img.chat-image:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 /* Imagem: só ela, sem o cartão; o selo "Só nesta sala" aparece com o mouse em cima ou com o foco */
@@ -1322,11 +1351,8 @@ body:not(.workspace-in-room) .nav-sep { display: none; }
 /* Pessoas na sala: o ícone com o total embaixo; a bolinha verde quando alguém fala */
 #workspaceNav .rail-people { flex-direction: column; gap: 1px; height: 46px; font-size: 11px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
 #workspaceNav .rail-people .people-speak { top: 2px; right: 2px; }
-/* Música que você ouve: acesa enquanto toca; o menu abre à esquerda da barrinha */
-.rail-music { position: relative; display: flex; }
-.rail-music[hidden] { display: none; }
-#navMusic[data-playing="true"] { color: var(--accent); }
-.rail-music-menu { position: absolute; top: 0; right: calc(100% + 10px); z-index: 25; width: 240px; display: flex; flex-direction: column; gap: 2px; padding: 6px; box-sizing: border-box;
+/* Menu da música que você ouve: abre pela pílula do canal (openNavMusic põe left/top) */
+.rail-music-menu { position: fixed; left: 0; top: 0; z-index: 60; width: 240px; display: flex; flex-direction: column; gap: 2px; padding: 6px; box-sizing: border-box;
   border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); color: var(--surface-text); box-shadow: 0 12px 32px rgba(0, 0, 0, .45); }
 .rail-music-menu[hidden] { display: none; }
 .rail-music-head { display: flex; flex-direction: column; gap: 2px; padding: 6px 12px 8px; margin-bottom: 2px; border-bottom: 1px solid var(--line); }
@@ -1569,25 +1595,7 @@ button.sky-card-info:hover:not(:disabled) .sky-card-go { color: var(--accent); }
    um pouco da lista e o campo de escrever (--chat-min, o mesmo CHAT_MIN_PX de navegacao.js): a voz encolhe antes */
 .workspace-in-room.has-workspace-pane:not(.workspace-wide) .voice-sized:not(.map-focus) #chatTab:not([hidden]) ~ #voicePane.workspace-pane { flex: 0 1 calc(var(--voice-split) * 100%); max-height: none; }
 #workspacePanes { --chat-min: 220px; }
-.workspace-in-room.has-workspace-pane:not(.workspace-wide) .voice-sized:not(.fold-chat):not(.map-focus) #chatTab:not([hidden]):has(~ #voicePane:not([hidden])) { min-height: var(--chat-min); }
-/* Recolher (setPaneFold): a seta no título; recolhido, o painel vira só o título e o outro ocupa a coluna */
-.pane-fold { display: none; flex: none; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 5px; background: none; color: var(--muted); cursor: pointer; place-items: center; }
-.pane-fold:hover { background: var(--panel-2); color: var(--text); }
-.pane-fold:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-.pane-fold svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform .15s; }
-.pane-fold[aria-expanded=false] svg { transform: rotate(-90deg); }
-.pane-fold-unread { display: none; }
-.workspace-in-room.has-workspace-pane:not(.workspace-wide) #chatTab:not([hidden]) ~ #voicePane:not([hidden]) .pane-fold,
-.workspace-in-room.has-workspace-pane:not(.workspace-wide) #chatTab:not([hidden]):has(~ #voicePane:not([hidden])) .pane-fold { display: grid; }
-.workspace-in-room.has-workspace-pane:not(.workspace-wide) .fold-chat #chatTab:not([hidden]):has(~ #voicePane:not([hidden])) { flex: none; cursor: pointer; }
-.fold-chat #chatTab:has(~ #voicePane:not([hidden])) > :not(.chat-head) { display: none !important; }
-.fold-chat #chatTab .chat-head { margin: 0; }
-.fold-chat #chatTab .pane-fold-unread:not([hidden]) { display: inline; margin-left: auto; padding: 1px 8px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); font-size: 12px; }
-.workspace-in-room.has-workspace-pane:not(.workspace-wide) #workspacePanes.fold-chat #chatTab:not([hidden]) ~ #voicePane.workspace-pane { flex: 1 1 0; max-height: none; }
-.workspace-in-room.has-workspace-pane:not(.workspace-wide) #workspacePanes.fold-voice #chatTab:not([hidden]) ~ #voicePane.workspace-pane { flex: none; max-height: none; cursor: pointer; }
-.fold-voice #chatTab:not([hidden]) ~ #voicePane > :not(.pane-head) { display: none !important; }
-.fold-voice #voicePane .pane-head { margin: 0; }
-.fold-chat #chatTab:not([hidden]) + .pane-split, .fold-voice #chatTab:not([hidden]) + .pane-split { display: none !important; }
+.workspace-in-room.has-workspace-pane:not(.workspace-wide) .voice-sized:not(.map-focus) #chatTab:not([hidden]):has(~ #voicePane:not([hidden])) { min-height: var(--chat-min); }
 /* No Mapa, a voz divide o espaço com o chat meio a meio (o mapa cresce para preencher) */
 .workspace-in-room.has-workspace-pane:not(.workspace-wide) #chatTab:not([hidden]) ~ #voicePane.voice-map { flex: 1 1 0; max-height: none; }
 .profile-summary { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; overflow-wrap: anywhere; }
@@ -1962,6 +1970,8 @@ html[data-glass=liquid] .theme-swatches { border-radius: 10px; }
 .connection-name { fill: var(--surface-text); font-size: 14px; font-weight: 600; }
 .connection-detail { fill: var(--surface-muted); font-size: 12px; }
 .connection-map-details { margin: 0; padding-left: 20px; font-size: 13px; color: var(--surface-muted); }
+#connectionMapVozTitle { margin: 12px 0 4px; font-size: 13px; }
+.connection-map-details .lento { color: var(--warn); } /* acima do limite: o app vai refazer a conexão */
 #connectionMapStatus { flex: 1; }
 .nav-tight #navFriends > .nav-icon + span { display: none; }
 

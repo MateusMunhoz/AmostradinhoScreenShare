@@ -20,6 +20,7 @@ contextBridge.exposeInMainWorld('api', {
   noiseWasm: (simd) => ipcRenderer.invoke('noise-wasm', !!simd),
   chatCompose: (on, opening = false) => ipcRenderer.invoke('chat-compose', !!on, !!opening),
   openLink: (url) => ipcRenderer.invoke('open-link', url),
+  youtubePrevia: (id) => ipcRenderer.invoke('youtube-previa', String(id || '')),
   clipSave: (bytes, label) => ipcRenderer.invoke('clip-save', bytes, label),
   clipShow: (id) => ipcRenderer.invoke('clip-show', id),
   // Comando de voz (main/comando-voz.js): baixar e conferir o Whisper, transcrever o WAV do comando, a tecla de segurar

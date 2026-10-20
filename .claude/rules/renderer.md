@@ -29,7 +29,7 @@ paths:
 
 ## Layout (não há mais barra de cima)
 - `#workspaceNav` é a **barrinha da direita** (em pé, `--rail-w`), só com ícones. De cima
-  para baixo: perfil · linha · `peopleBtn` (pessoas), Chat, Voz, Transmissão, `navMusicWrap` (música que você ouve) ·
+  para baixo: perfil · linha · `peopleBtn` (pessoas), Chat, Voz, Transmissão ·
   espaço · `dockHome` (Início) ou `navBackToRoom` (no menu), `leaveBtn` (Sair) · linha · `navGamer` (modo gamer) · engrenagem. Início e Sair
   **não** estão mais na barra de baixo (`.dock`) nem em `DOCK_OVERFLOW`. Chat e voz abrem à esquerda dela
   (`#workspacePanes`, `right: 16px + --rail-w`), com a animação `pane-expand` só ao abrir.

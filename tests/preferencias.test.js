@@ -237,3 +237,10 @@ test('mensagens privadas: prazo do histórico e backup no celular, com padrão s
   assert.deepEqual(P.normalize({ mensagens: { retencao: '7', backup: 'sim' } }).mensagens, { retencao: 'sempre', backup: false });
   assert.deepEqual(P.applyTheme({ mensagens: { retencao: '30', backup: true } }, 'neon').mensagens, { retencao: '30', backup: true });
 });
+
+test('chat: prévia do YouTube ligada por padrão, só booleano, e mantida ao trocar de tema', () => {
+  assert.equal(P.normalize(null).chat.previaYoutube, true);
+  assert.equal(P.normalize({ chat: { previaYoutube: false } }).chat.previaYoutube, false);
+  assert.equal(P.normalize({ chat: { previaYoutube: 'não' } }).chat.previaYoutube, true);
+  assert.equal(P.applyTheme({ chat: { previaYoutube: false } }, 'neon').chat.previaYoutube, false);
+});

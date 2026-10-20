@@ -90,8 +90,24 @@ function renderConnectionGraph(server, networks) {
     list.append(row);
   }
 }
+// Na voz, uma linha por pessoa do seu canal: o atraso total (o buffer de recepção mais metade da ida e volta), as
+// partes, a perda e se passa pelo TURN. Acima do limite, o app refaz a conexão sozinho (voice.js › refazer)
+function renderConnectionMapVoz() {
+  const list = $('connectionMapVoz');
+  const linhas = voice.session ? [...voice.peers].map(([id, p]) => {
+    const li = document.createElement('li');
+    const a = p.atraso;
+    li.textContent = `${nameOf(id)} — ` + (!a ? (p.status === 'conectado' ? 'medindo…' : p.status)
+      : `${a.ms} ms (espera ${a.buffer} ms${a.rtt !== null ? `, rede ${a.rtt} ms ida e volta` : ''}${a.perda ? `, ${a.perda}% perdido` : ''}${a.relay ? ', pelo servidor TURN' : ''})`);
+    if (a && a.buffer > ATRASO_MAX_MS) li.classList.add('lento');
+    return li;
+  }) : [];
+  list.replaceChildren(...linhas);
+  list.hidden = $('connectionMapVozTitle').hidden = !linhas.length;
+}
 async function refreshConnectionMap() {
   if (connectionMapBusy || !connectionMapVisible()) return;
+  renderConnectionMapVoz();
   connectionMapBusy = true;
   $('refreshConnectionMap').disabled = true;
   $('connectionMapStatus').textContent = 'Verificando conexões…';

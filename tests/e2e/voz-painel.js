@@ -51,6 +51,17 @@ run('Voz e atalhos nas Configurações', 60000, async () => {
   await A.eval(`setPainelSala({ aba: 'chat', juntos: true, recolhido: false })`);
   await sleep(300);
   await A.waitFor(`!!document.querySelector('.pane-split') && getComputedStyle(document.querySelector('.pane-split')).display !== 'none'`, 5000);
+  // Arrastar com o mouse: a linha acompanha o mouse desde o clique (sem pular) e solta ao largar o botão
+  const barra = `(() => { const b = document.querySelector('.pane-split').getBoundingClientRect(); return { x: Math.round(b.left + b.width / 2), y: Math.round(b.top + b.height / 2) }; })()`;
+  const mouse = (type, x, y) => A.send('Input.dispatchMouseEvent', { type, x, y, button: 'left', buttons: type === 'mouseReleased' ? 0 : 1, clickCount: 1 });
+  const p0 = await A.eval(barra);
+  await mouse('mouseMoved', p0.x, p0.y); await mouse('mousePressed', p0.x, p0.y);
+  for (let i = 1; i <= 8; i++) await mouse('mouseMoved', p0.x, p0.y + i * 10);
+  await mouse('mouseReleased', p0.x, p0.y + 80);
+  await sleep(200);
+  const p1 = await A.eval(barra);
+  check('Arrastar a divisória 80 px para baixo leva a linha junto', Math.abs(p1.y - p0.y - 80) <= 8, JSON.stringify({ p0, p1 }));
+  check('Soltar o botão termina o arrasto', await A.eval(`!document.querySelector('.pane-split').classList.contains('dragging')`));
   await A.eval(`(() => { const bar = document.querySelector('.pane-split'); for (let i = 0; i < 30; i++) bar.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true })); })()`);
   await sleep(200);
   const campoInteiro = `(() => { const f = $('chatForm').getBoundingClientRect(), v = $('voicePane').getBoundingClientRect(), c = $('chatTab').getBoundingClientRect(); return { ok: f.bottom <= v.top + 1 && f.top >= c.top, chat: Math.round(c.height), form: Math.round(f.bottom), voz: Math.round(v.top) }; })()`;

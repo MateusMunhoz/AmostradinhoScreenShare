@@ -354,6 +354,11 @@ function setupAmbient() {
     appPreferences.appearance = { ...appPreferences.appearance, mirror: $('mirrorOn').checked };
     saveAppPreferences();
   };
+  // Privacidade › Chat da sala: a prévia dos links do YouTube (renderer/chat.js); vale para as próximas mensagens
+  $('chatPreviaYoutube').onchange = () => {
+    appPreferences.chat = { ...appPreferences.chat, previaYoutube: $('chatPreviaYoutube').checked };
+    saveAppPreferences();
+  };
 }
 // Céu da voz na visão Lista (o Mapa não depende disso), em Aparência
 function setVoiceSkyOn(on) {
@@ -375,6 +380,7 @@ function renderAppearance() {
   $('ambientLight').checked = appPreferences.appearance.ambient;
   $('voiceSkyOn').checked = appPreferences.appearance.voiceSky;
   $('mirrorOn').checked = appPreferences.appearance.mirror;
+  $('chatPreviaYoutube').checked = appPreferences.chat.previaYoutube;
   if (!$('fontFamily').options.length) renderFontOptions();
   renderFontPreview();
 }

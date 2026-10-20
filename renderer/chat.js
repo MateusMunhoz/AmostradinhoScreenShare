@@ -61,8 +61,6 @@ function renderUnread() {
   const n = chat.unread;
   $('navUnread').hidden = !n;
   $('navUnread').textContent = n > 99 ? '99+' : String(n);
-  $('chatFoldUnread').hidden = !n; // chat recolhido: as novas no título (setupPaneFold)
-  $('chatFoldUnread').textContent = n === 1 ? '1 nova' : `${n > 99 ? '99+' : n} novas`;
   $('mapChatUnread').hidden = !n;
   $('mapChatUnread').textContent = n === 1 ? '1 nova' : `${n > 99 ? '99+' : n} novas`;
   $('navChat').title = n ? `Chat · ${n} ${n === 1 ? 'mensagem nova' : 'mensagens novas'}` : 'Chat';
@@ -177,6 +175,69 @@ function appendMessage(m, live) {
   li.append(when, body);
   $('chatList').append(li);
   chat.lastMsg = { from: m.from, ts: m.ts };
+  if (m.text) void previaYoutubeNoChat(body, m.text);
+}
+
+// Link do YouTube na mensagem: embaixo dela, a capa, o título e o canal (o processo principal busca: main/youtube-previa.js).
+// Só o primeiro link de vídeo; sem prévia (vídeo privado, sem internet ou desligada em Privacidade), fica só o link.
+// O cartão grande ou a linha compacta depende do espaço do chat (container query em styles.css)
+async function previaYoutubeNoChat(body, text) {
+  if (!appPreferences.chat.previaYoutube) return;
+  const id = (text.match(/https?:\/\/[^\s]+/gi) || []).map(parseYouTube).find(Boolean);
+  if (!id) return;
+  const p = await window.api.youtubePrevia(id).catch(() => null);
+  if (!p || p.id !== id || !body.isConnected) return;
+  const wasBottom = chatAtBottom();
+  const card = document.createElement('div');
+  card.className = 'yt-previa';
+  const link = `https://www.youtube.com/watch?v=${id}`;
+  const capa = document.createElement('button');
+  capa.type = 'button';
+  capa.className = 'yt-capa';
+  capa.title = 'Abrir no YouTube';
+  capa.setAttribute('aria-label', `Abrir no YouTube: ${p.titulo}`);
+  if (/^data:image\/jpeg;base64,/.test(p.capa)) {
+    const img = document.createElement('img');
+    img.src = p.capa;
+    img.alt = '';
+    capa.append(img);
+  }
+  const play = document.createElement('span');
+  play.className = 'yt-play';
+  play.innerHTML = ICON.play;
+  capa.append(play);
+  capa.onclick = () => window.api.openLink(link);
+  const info = document.createElement('div');
+  info.className = 'yt-info';
+  const titulo = document.createElement('strong');
+  titulo.className = 'yt-titulo';
+  titulo.textContent = p.titulo;
+  titulo.title = p.titulo;
+  info.append(titulo);
+  if (p.canal) {
+    const canal = document.createElement('span');
+    canal.className = 'yt-canal';
+    canal.textContent = p.canal;
+    info.append(canal);
+  }
+  // Tocar como música do seu canal, o mesmo que o /musica faz (fora da voz, na Voz geral). Sempre à vista: o histórico
+  // chega antes de você entrar na voz, e a sala pode não ter música (servidor antigo), o que só se sabe na hora
+  const tocar = document.createElement('button');
+  tocar.type = 'button';
+  tocar.className = 'btn small yt-tocar';
+  tocar.innerHTML = ICON.music;
+  tocar.append('Tocar na voz');
+  tocar.onclick = () => {
+    if (!state.myId) return;
+    if (!state.musicaOn) return toast('Esta sala não tem música: quem criou precisa atualizar o app.', 'error');
+    const ch = myVoiceChannel(), playing = state.musicas.get(ch);
+    if (playing) musicCtl(playing, 'trocar', { videoId: id });
+    else { musica.wantOpen = ch; send({ type: 'musica-set', videoId: id }); }
+  };
+  info.append(tocar);
+  card.append(capa, info);
+  body.append(card);
+  if (wasBottom) scrollChatToEnd();
 }
 
 // Cartão de arquivo: ícone, nome, tamanho/estado, botão (Baixar, Cancelar, Salvar) e barra de progresso

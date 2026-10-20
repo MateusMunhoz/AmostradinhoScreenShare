@@ -104,9 +104,6 @@ run('Voz, volume e chat por cima do jogo', 150000, async () => {
   await B.eval(`$('voiceAvatars').querySelector('.voice-stack').click()`);
   await sleep(200);
   check('Clicar em "na voz" abre a lista para cima, com a Ana', await B.eval(`!!$('voiceStackPop') && $('voiceStackPop').querySelectorAll('.vs-row').length === 1`));
-  await B.eval(wheel(`$('voiceStackPop').querySelector('.vs-row')`, 100));
-  check('Roda para baixo na Ana da lista: voz 95%', await B.eval(`volOf('${anaId}').voice === 95`));
-  await B.eval(`setVol('${anaId}', { voice: 100 })`);
   await B.eval(`$('voiceStackPop').querySelector('.vs-row').click()`);
   await sleep(200);
   check('Clicar na Ana da lista abre o perfil dela na lista', await B.eval(`skyFocusId === '${anaId}' && skyFocusFrom === 'pilula' && !$('skyFocus').hidden`));

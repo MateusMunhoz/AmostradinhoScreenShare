@@ -222,11 +222,6 @@
          para a barrinha: seuSinalMini). Os botões são os de sempre, com os mesmos ids (renderer/voz.js, transmitir.js) -->
     <section id="seuSinal" class="seu-sinal" aria-label="Sua voz e sua transmissão" hidden>
       <div class="ss-linha ss-estado">
-        <!-- Música que você está ouvindo (renderer/musica.js): clicar abre Pausar/Continuar e Sair -->
-        <div class="rail-music" id="navMusicWrap" hidden>
-          <button id="navMusic" type="button" class="btn icon small ghost" aria-haspopup="menu" aria-expanded="false" aria-controls="navMusicMenu"></button>
-          <div class="rail-music-menu" id="navMusicMenu" role="menu" aria-label="Música" hidden></div>
-        </div>
       </div>
       <!-- Subsala Líder (docs/spec/modo-lider.md): ouvir quem fala para a sala toda e o volume dela (renderLiderLinha) -->
       <div class="ss-linha ss-lider" id="ssLider" hidden>
@@ -278,6 +273,8 @@
       </div>
     </section>
   </aside>
+  <!-- A música que você está ouvindo: a pílula do canal abre este menu (volume, Pausar ou Continuar, Sair; renderer/musica.js) -->
+  <div class="rail-music-menu" id="navMusicMenu" role="menu" aria-label="Música" hidden></div>
   <!-- Música junto: colar o link do YouTube para pôr (ou trocar) a música de um canal (renderer/musica.js) -->
   <div id="musicPop" class="music-pop" role="dialog" aria-labelledby="musicPopTitle" hidden>
     <form id="musicPopForm">
@@ -781,7 +778,7 @@
         <aside class="panel" id="sidePanel">
           <div class="chat" id="chatTab">
             <div class="chat-head">
-              <h2 class="chat-title">Chat</h2><span id="chatFoldUnread" class="pane-fold-unread" hidden></span>
+              <h2 class="chat-title">Chat</h2>
             </div>
             <p id="chatOff" class="warn" hidden>O chat está desligado nesta sala: quem criou precisa da versão 1.7.0 ou mais nova.</p>
             <ul id="chatList" class="chat-list" aria-live="polite"></ul>
@@ -1172,6 +1169,9 @@
             <svg id="connectionGraph" role="img" aria-label="Grafo de conexões do PC, servidor e redes"></svg>
             <p id="connectionMapEmpty" class="hint">Nenhuma conexão local ou sala ativa foi encontrada.</p>
             <ul id="connectionMapDetails" class="connection-map-details"></ul>
+            <!-- Na voz: o atraso da voz de cada pessoa até você (voice.js › medidaDaVoz) -->
+            <h4 id="connectionMapVozTitle" hidden>Voz: atraso de cada pessoa até você</h4>
+            <ul id="connectionMapVoz" class="connection-map-details" aria-labelledby="connectionMapVozTitle" hidden></ul>
             <div class="net-row"><p id="connectionMapStatus" class="hint" role="status" aria-live="polite"></p><button id="refreshConnectionMap" class="btn small" type="button">Atualizar</button></div>
           </section>
         </section>
@@ -1267,6 +1267,13 @@
             <div class="switch-linha">
               <span class="switch-linha-texto"><span id="atvSalaEntrarLabel">Deixar meus amigos entrarem</span><span class="hint" id="atvSalaEntrarHint">Nas salas pela internet, os amigos veem um Entrar e entram sem senha (se quem hospeda deixar). Desligado, eles continuam vendo em que sala você está, sem o Entrar.</span></span>
               <label class="switch"><input type="checkbox" id="atvSalaEntrar" role="switch" aria-labelledby="atvSalaEntrarLabel" aria-describedby="atvSalaEntrarHint"><span class="track" aria-hidden="true"></span></label>
+            </div>
+          </div>
+          <h3>Chat da sala</h3>
+          <div class="extra-card">
+            <div class="switch-linha">
+              <span class="switch-linha-texto"><span id="chatPreviaYoutubeLabel">Prévia dos vídeos do YouTube</span><span class="hint" id="chatPreviaYoutubeHint">A capa, o título e o canal embaixo do link. Para isso, o app pede ao YouTube só o vídeo do link.</span></span>
+              <label class="switch"><input type="checkbox" id="chatPreviaYoutube" role="switch" aria-labelledby="chatPreviaYoutubeLabel" aria-describedby="chatPreviaYoutubeHint"><span class="track" aria-hidden="true"></span></label>
             </div>
           </div>
           <h3>Mensagens privadas</h3>
