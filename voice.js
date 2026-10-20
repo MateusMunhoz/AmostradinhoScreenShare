@@ -11,16 +11,44 @@ function formatarTempoCall(ms) {
   return h ? `${h}:${dois(m)}:${dois(s)}` : `${dois(m)}:${dois(s)}`;
 }
 
+// Atraso da voz de uma pessoa para outra: a cada 2 s, de cada conexão, o buffer de recepção (jitter buffer: o áudio que
+// espera para tocar), a ida e volta da rede e a perda. Depois de um tranco na rede (Wi-Fi, TURN) o buffer pode crescer e
+// não voltar; acima de ATRASO_MAX_MS em ATRASO_VEZES medidas seguidas, a conexão com essa pessoa é refeita (o buffer
+// zera; a voz falha por ~1 s). Quem iniciou a chamada refaz; o outro pede com { refazer: true } no sinal (app antigo
+// ignora). No máximo uma vez por minuto por pessoa. O Mapa de conexões mostra a medida (renderer/mapa-conexoes.js).
+const ATRASO_MAX_MS = 300, ATRASO_VEZES = 3, REFAZER_INTERVALO_MS = 60000;
+// stats: o RTCStatsReport da conexão; antes: os contadores da medida anterior (ou nada). Os números do buffer são
+// acumulados desde o começo: a média das últimas 2 s sai da diferença entre duas medidas.
+function medidaDaVoz(stats, antes = null) {
+  const lista = [...(stats?.values ? stats.values() : stats || [])];
+  const entrada = lista.find((s) => s.type === 'inbound-rtp' && s.kind === 'audio');
+  if (!entrada) return { atraso: null, base: null };
+  const base = { delay: entrada.jitterBufferDelay || 0, emitted: entrada.jitterBufferEmittedCount || 0,
+    lost: entrada.packetsLost || 0, recv: entrada.packetsReceived || 0 };
+  const transporte = lista.find((s) => s.type === 'transport');
+  const par = lista.find((s) => s.type === 'candidate-pair' && (s.id === transporte?.selectedCandidatePairId || (!transporte?.selectedCandidatePairId && s.nominated && s.state === 'succeeded')));
+  const local = par && lista.find((s) => s.id === par.localCandidateId);
+  const saidas = antes ? base.emitted - antes.emitted : 0;
+  const buffer = antes && saidas > 0 ? Math.round((1000 * (base.delay - antes.delay)) / saidas) : null;
+  const pacotes = antes ? (base.recv - antes.recv) + (base.lost - antes.lost) : 0;
+  const perda = pacotes > 0 ? Math.max(0, Math.round((100 * (base.lost - antes.lost)) / pacotes)) : 0;
+  const rtt = Number.isFinite(par?.currentRoundTripTime) ? Math.round(par.currentRoundTripTime * 1000) : null;
+  if (buffer === null) return { atraso: null, base };
+  return { atraso: { ms: buffer + Math.round((rtt || 0) / 2), buffer, rtt, perda, relay: local?.candidateType === 'relay' }, base };
+}
+
 // Uma conexão bidirecional por par, independente das conexões das telas.
 // Canal: '' é a Voz geral; um número é uma subsala. Só quem está no mesmo canal se conecta (e se ouve).
 class VoiceChat {
   constructor({ send, changed, error, media = navigator.mediaDevices,
     makePeer = () => new RTCPeerConnection(typeof RTC_CONFIG !== 'undefined' ? RTC_CONFIG : { iceServers: [] }),
-    makeAudio = () => new Audio(), token = () => crypto.randomUUID(), mixer = null, activity = () => {} }) {
+    makeAudio = () => new Audio(), token = () => crypto.randomUUID(), mixer = null, activity = () => {}, medirMs = 2000 }) {
     // mixer (opcional): o app toca as vozes por ele, com volume por pessoa e medidor de quem fala.
     // Sem mixer, cada voz toca direto no seu <audio>.
-    Object.assign(this, { send, changed, error, media, makePeer, makeAudio, token, mixer, activity });
+    Object.assign(this, { send, changed, error, media, makePeer, makeAudio, token, mixer, activity, medirMs });
     this.peers = new Map();
+    this.refeitoEm = new Map(); // id -> quando a conexão foi refeita por atraso (uma vez por minuto)
+    this.medidor = null;
     this.members = new Map();
     this.epoch = 0;
     this.session = '';
@@ -56,6 +84,8 @@ class VoiceChat {
         this.error('O microfone foi desconectado. Conecte-o e entre na voz novamente.');
       };
       this.announce(); // Espera a confirmação do servidor antes de iniciar ofertas.
+      clearInterval(this.medidor);
+      if (this.medirMs) { this.medidor = setInterval(() => void this.medir(), this.medirMs); this.medidor.unref?.(); }
       this.activity('voiceJoin', this.id);
     } catch (err) {
       if (epoch === this.epoch) {
@@ -88,6 +118,8 @@ class VoiceChat {
     const wasActive = !!this.session;
     this.session = '';
     this.channel = '';
+    clearInterval(this.medidor);
+    this.medidor = null;
     if (this.stream) for (const track of this.stream.getTracks()) { track.onended = null; track.stop(); }
     this.stream = null;
     this.mixer?.local(null);
@@ -185,6 +217,8 @@ class VoiceChat {
       if (e.candidate && this.peers.get(id) === p) this.signal(id, p, { candidate: e.candidate });
     };
     pc.ontrack = e => {
+      // Buffer de recepção o menor possível: o navegador ainda aumenta o que a rede pedir, mas não guarda folga a mais
+      if (e.receiver && 'jitterBufferTarget' in e.receiver) try { e.receiver.jitterBufferTarget = 0; } catch {}
       audio.srcObject = e.streams[0] || new MediaStream([e.track]);
       this.mixer?.attach(id, audio.srcObject);
       audio.play().catch(() => {
@@ -235,6 +269,8 @@ class VoiceChat {
       p = this.connect(id, data.session, data.call);
     }
     if (p.call !== data.call || p.session !== data.session) return;
+    // O outro lado ouve você atrasado e pediu para refazer: só quem iniciou a chamada refaz
+    if (data.refazer === true) { if (Number(this.id) < Number(id)) this.refazer(id, p); return; }
     this.enqueue(p, async () => {
       if (data.sdp) {
         const expected = Number(id) < Number(this.id) ? 'offer' : 'answer';
@@ -250,6 +286,30 @@ class VoiceChat {
         else if (p.candidates.length < 128) p.candidates.push(data.candidate);
       }
     });
+  }
+  // Uma medida de cada conexão ligada (o intervalo começa no join). Exposto para os testes
+  async medir() {
+    if (!this.session) return;
+    for (const [id, p] of [...this.peers]) {
+      if (p.pc.connectionState !== 'connected' || typeof p.pc.getStats !== 'function') continue;
+      let stats;
+      try { stats = await p.pc.getStats(); } catch { continue; }
+      if (this.peers.get(id) !== p) continue;
+      const { atraso, base } = medidaDaVoz(stats, p.base);
+      p.base = base;
+      p.atraso = atraso;
+      p.lento = atraso && atraso.buffer > ATRASO_MAX_MS ? (p.lento || 0) + 1 : 0;
+      if (p.lento >= ATRASO_VEZES) this.refazer(id, p);
+    }
+  }
+  refazer(id, p) {
+    if (this.peers.get(id) !== p) return;
+    const agora = Date.now();
+    if (agora - (this.refeitoEm.get(id) || 0) < REFAZER_INTERVALO_MS) return;
+    this.refeitoEm.set(id, agora);
+    p.lento = 0;
+    if (Number(this.id) < Number(id)) { this.close(id); this.sync(); }
+    else this.signal(id, p, { refazer: true });
   }
   close(id) {
     const p = this.peers.get(id);
@@ -421,4 +481,4 @@ class LiderAudio {
   // Sem mixer (testes), o fone silenciado cala as vozes da Líder também
   deafen(on) { if (!this.mixer) for (const p of this.ouve.values()) p.audio.muted = !!on; }
 }
-if (typeof module !== 'undefined') module.exports = { VoiceChat, LiderAudio, formatarTempoCall };
+if (typeof module !== 'undefined') module.exports = { VoiceChat, LiderAudio, formatarTempoCall, medidaDaVoz, ATRASO_MAX_MS };

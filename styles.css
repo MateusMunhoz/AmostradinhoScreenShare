@@ -1970,6 +1970,8 @@ html[data-glass=liquid] .theme-swatches { border-radius: 10px; }
 .connection-name { fill: var(--surface-text); font-size: 14px; font-weight: 600; }
 .connection-detail { fill: var(--surface-muted); font-size: 12px; }
 .connection-map-details { margin: 0; padding-left: 20px; font-size: 13px; color: var(--surface-muted); }
+#connectionMapVozTitle { margin: 12px 0 4px; font-size: 13px; }
+.connection-map-details .lento { color: var(--warn); } /* acima do limite: o app vai refazer a conexão */
 #connectionMapStatus { flex: 1; }
 .nav-tight #navFriends > .nav-icon + span { display: none; }
 

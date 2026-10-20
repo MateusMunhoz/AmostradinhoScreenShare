@@ -1169,6 +1169,9 @@
             <svg id="connectionGraph" role="img" aria-label="Grafo de conexões do PC, servidor e redes"></svg>
             <p id="connectionMapEmpty" class="hint">Nenhuma conexão local ou sala ativa foi encontrada.</p>
             <ul id="connectionMapDetails" class="connection-map-details"></ul>
+            <!-- Na voz: o atraso da voz de cada pessoa até você (voice.js › medidaDaVoz) -->
+            <h4 id="connectionMapVozTitle" hidden>Voz: atraso de cada pessoa até você</h4>
+            <ul id="connectionMapVoz" class="connection-map-details" aria-labelledby="connectionMapVozTitle" hidden></ul>
             <div class="net-row"><p id="connectionMapStatus" class="hint" role="status" aria-live="polite"></p><button id="refreshConnectionMap" class="btn small" type="button">Atualizar</button></div>
           </section>
         </section>

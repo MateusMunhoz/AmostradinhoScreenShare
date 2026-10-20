@@ -124,6 +124,12 @@ rede, em verde (conectado), vermelho (sem conexão) ou cinza (indisponível). At
 enquanto a aba está aberta. Transmitindo, o app sai da sua transmissão enquanto a aba está aberta, para os
 endereços não aparecerem para quem assiste.
 
+Na voz, embaixo do mapa aparece **Voz: atraso de cada pessoa até você**: quanto a voz de cada um demora para chegar
+(a espera no seu PC mais metade da ida e volta pela rede), a perda e se passa pelo servidor TURN. Às vezes, depois de um
+tranco na rede, a voz de uma pessoa fica atrasada só para outra; quando a espera passa de 300 ms por uns 6 segundos, o app
+refaz sozinho a conexão entre as duas (a voz falha por cerca de 1 segundo e volta em dia), no máximo uma vez por minuto.
+A linha fica laranja enquanto está acima do limite.
+
 A conexão P2P WireGuard depende dos NATs dos dois lados permitirem hole punching. Redes com CGNAT restritivo
   podem não conectar nesta versão; um relay WireGuard ainda não está incluído. Com o app aberto, a lista de peers
   sincroniza a cada 30 segundos; depois de reabrir o Nebula, clique em **Atualizar peers** para sincronizar de novo.
