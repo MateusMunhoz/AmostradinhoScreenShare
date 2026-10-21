@@ -13,22 +13,49 @@ function show(id) {
   if (typeof setSessionWatch === 'function') setSessionWatch(sessionWatchWanted()); // procura sessões só no início
 }
 
-let toastTimer;
-// action (opcional): { label, run } vira um botão no aviso, que fica um pouco mais na tela
+// Dois lugares, no canto de baixo à esquerda: o aviso simples (#toast, some em 5 s) e o com botões (#toastAcao); um não
+// apaga o outro. action (opcional): { label, run } ou uma lista; secundario: true deixa o botão discreto ("Agora não").
+// O com botões fica 15 s, não some com o mouse ou o foco em cima (ao sair, mais 4 s) e tem o X
+let toastTimer, toastAcaoTimer;
 function toast(text, kind = 'info', action = null) {
+  if (action) return toastComAcao(text, kind, [].concat(action));
   const t = $('toast');
   t.textContent = text;
-  if (action) {
+  t.className = `toast show ${kind}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.className = 'toast'; }, 5000);
+}
+function toastAcaoFechar() { clearTimeout(toastAcaoTimer); $('toastAcao').className = 'toast'; }
+function toastAcaoArmar(ms) { clearTimeout(toastAcaoTimer); toastAcaoTimer = setTimeout(toastAcaoFechar, ms); }
+function toastComAcao(text, kind, acoes) {
+  const t = $('toastAcao');
+  if (!t.dataset.pronto) { // os ouvintes entram uma vez só
+    t.dataset.pronto = '1';
+    t.addEventListener('mouseenter', () => clearTimeout(toastAcaoTimer));
+    t.addEventListener('focusin', () => clearTimeout(toastAcaoTimer));
+    t.addEventListener('mouseleave', () => { if (t.classList.contains('show') && !t.contains(document.activeElement)) toastAcaoArmar(4000); });
+    t.addEventListener('focusout', (e) => { if (t.classList.contains('show') && !t.contains(e.relatedTarget) && !t.matches(':hover')) toastAcaoArmar(4000); });
+  }
+  const texto = document.createElement('span');
+  texto.className = 'toast-texto';
+  texto.textContent = text;
+  t.replaceChildren(texto);
+  for (const a of acoes) {
     const b = document.createElement('button');
     b.type = 'button';
-    b.className = 'btn small toast-action';
-    b.textContent = action.label;
-    b.onclick = () => { t.className = 'toast'; action.run(); };
+    b.className = 'btn small toast-action' + (a.secundario ? ' ghost' : '');
+    b.textContent = a.label;
+    b.onclick = () => { toastAcaoFechar(); a.run?.(); };
     t.append(b);
   }
-  t.className = `toast show ${kind}${action ? ' has-action' : ''}`;
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { t.className = 'toast'; }, action ? 9000 : 5000);
+  const x = document.createElement('button');
+  x.type = 'button';
+  x.className = 'btn icon small toast-fechar';
+  setIcon(x, 'close', 'Fechar aviso');
+  x.onclick = toastAcaoFechar;
+  t.append(x);
+  t.className = `toast show has-action ${kind}`;
+  toastAcaoArmar(15000);
 }
 
 function save(key, val) { try { localStorage.setItem(key, val); } catch {} }
@@ -67,6 +94,7 @@ const ICON = {
   more: svg('M5 12h.01M12 12h.01M19 12h.01'), // "⋯": três pontos (traço redondo)
   userCheck: svg('M15 20a6 6 0 0 0-12 0M9 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM16 11l2 2 4-4'),
   leave: svg('M9 21H5V3h4M16 17l5-5-5-5M21 12H9'),
+  link: svg('M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7'), // convidar: copiar o endereço
   splitRows: svg('M4 4h16v16H4zM4 12h16'),             // Voz e Chat lado a lado (um em cima do outro)
   panelOpen: svg('M3 4h18v16H3zM15 4v16M10 9l-3 3 3 3'),  // abrir o painel da sala (barrinha)
   panelClose: svg('M3 4h18v16H3zM15 4v16M7 9l3 3-3 3'),   // recolher o painel da sala
@@ -90,6 +118,7 @@ const ICON = {
   phoneOff: svg('M3 11a15 15 0 0 1 18 0l-2 3-3-1v-2a10 10 0 0 0-8 0v2l-3 1z'),
   overlay: svg('M3 4h18v14H3zM6 12h7M6 15h5'),
   captions: svg('M3 5h18v14H3zM10.5 10a2 2 0 0 0 0 4M16.5 10a2 2 0 0 0 0 4'), // CC: legendas        // tela com linhas de texto: chat por cima da tela
+  minimizar: svg('M5 12h14'), // tirar as telas da frente sem parar de assistir
   eye: svg('M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z'),
   eyeOff: svg('M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4M6.6 6.6C3.9 8.3 2 12 2 12s3.5 7 10 7a9.7 9.7 0 0 0 5.4-1.6M9.9 9.9a3 3 0 0 0 4.2 4.2'),
   lock: svg('M6 11h12v10H6zM8 11V7a4 4 0 0 1 8 0v4'),

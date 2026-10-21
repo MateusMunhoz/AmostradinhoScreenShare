@@ -87,7 +87,7 @@ Rode o `instalar.sh` de novo (o mesmo comando do começo). Ou, à mão:
 cd /opt/tela-p2p && git pull && cd servidor-internet && npm ci --omit=dev && systemctl restart tela-p2p-internet
 ```
 
-As salas abertas caem na reinicialização; os apps tentam voltar sozinhos por uns 18 s.
+As salas abertas caem na reinicialização; os apps tentam voltar sozinhos por uns 30 s.
 
 Servidor de antes do **passe de convite** (salas dos amigos, app 1.13.0): continua funcionando, mas os amigos que
 clicam em Entrar na lista precisam digitar a senha. Atualize para eles entrarem com um clique.
@@ -106,7 +106,7 @@ clicam em Entrar na lista precisam digitar a senha. Atualize para eles entrarem 
 | `MAX_ROOMS` | 200 | Salas abertas ao mesmo tempo |
 | `CREATE_PER_IP_PER_HOUR` | 20 | Salas criadas por IP por hora |
 | `FAIL_PER_IP` / `FAIL_WINDOW_MS` | 10 / 10 min | Tentativas erradas (código ou senha) antes de bloquear o IP |
-| `RECONNECT_GRACE_MS` | 20000 | Quanto tempo o lugar de quem caiu fica guardado |
+| `RECONNECT_GRACE_MS` | 30000 | Quanto tempo o lugar de quem caiu fica guardado |
 | `TRUST_PROXY` | 0 | 1 só atrás de Caddy/nginx (para o limite por IP usar o IP real) |
 
 ## Banda da VPS

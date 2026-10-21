@@ -124,7 +124,7 @@ function scrollStrip(dx) {
 // Barra de rolagem da faixa, logo abaixo dela: ‹, trilho com alça arrastável e ›
 function renderStripBar() {
   const bar = $('stageScroll'), tiles = $('tiles');
-  const on = palco.strip.length > 0 && palco.stripMax > 0 && !tiles.hidden && !tiles.classList.contains('column');
+  const on = palco.strip.length > 0 && palco.stripMax > 0 && !tiles.hidden && !state.minimizado && !tiles.classList.contains('column');
   bar.hidden = !on;
   if (!on) return;
   const area = $('streamArea').getBoundingClientRect(), t = tiles.getBoundingClientRect();
@@ -186,7 +186,7 @@ function placeSplitter() {
   const split = $('stageSplitter');
   const tiles = $('tiles');
   const main = state.in.get(state.main)?.tile.el;
-  split.hidden = !tiles.classList.contains('column') || !main || tiles.hidden;
+  split.hidden = !tiles.classList.contains('column') || !main || tiles.hidden || state.minimizado;
   if (split.hidden) return;
   tiles.style.setProperty('--stage-side', `${(palco.side * 100).toFixed(1)}%`);
   const area = $('streamArea').getBoundingClientRect(), t = tiles.getBoundingClientRect(), m = main.getBoundingClientRect();
@@ -199,7 +199,7 @@ function placeSplitter() {
 // Depois de renderFocus: arruma a grade (ou a divisa) e o seletor de layout
 function layoutStage() {
   const tiles = $('tiles');
-  const many = state.in.size > 1 && !state.focus;
+  const many = state.in.size > 1 && !state.focus && !state.minimizado;
   $('stageLayout').hidden = !many;
   for (const b of $('stageLayout').querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.layout === palco.layout));
   if (!tiles.classList.contains('column')) layoutGrid();
@@ -358,7 +358,7 @@ function setupStage() {
     setSide(palco.side + step, true);
   });
   // Só reage quando o tamanho muda de verdade (janela, painel lateral); nada roda parado
-  new ResizeObserver(() => { if (state.in.size) layoutStage(); }).observe($('tiles'));
+  new ResizeObserver(() => { if (state.in.size && !state.minimizado) layoutStage(); }).observe($('tiles'));
   setupStrip();
   setIcon($('stageScroll').querySelector('[data-dir="-1"]'), 'prev', 'Telas anteriores');
   setIcon($('stageScroll').querySelector('[data-dir="1"]'), 'next', 'Mais telas');

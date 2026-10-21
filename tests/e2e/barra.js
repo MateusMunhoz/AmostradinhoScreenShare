@@ -12,9 +12,14 @@ const dentro = (ids, box) => `${JSON.stringify([].concat(ids))}.every((id) => { 
 run('Sala: cabeçalho, abas e Seu sinal', 120000, async () => {
   const A = await openApp('barraA', 9551, { fake: true });
   await createRoom(A, { name: 'Ana', port: 18841 });
+  check('Sozinho na sala: o cartão de convite tem o QR, o endereço escrito e o botão Convidar', await A.eval(`(() => { const c = $('emptyConvite'); return !c.hidden && !!c.querySelector('svg.qr') && $('emptyConviteCodigo').textContent === state.roomAddr && $('emptyConvidar').textContent === 'Convidar' && c.getBoundingClientRect().width > 200; })()`));
+  check('O link do QR é um convite que o app entende (modo e endereço certos)', await A.eval(`(() => { const cv = lerConvite('telap2p://sala?d=' + b64url(JSON.stringify(conviteDaSala(true)))); return !!cv && cv.endereco === state.roomAddr && !cv.passe; })()`));
+  await sleep(300);
+  check('Sozinho na sala: o palco vazio tem o botão Convidar', await A.eval(`!$('emptyConvidar').hidden && $('emptyConvidar').textContent === 'Convidar' && $('emptyConvidar').getBoundingClientRect().width > 0`));
   const B = await openApp('barraB', 9552, { fake: true });
   await joinRoom(B, { name: 'Bia', addr: '127.0.0.1:18841' });
   await A.waitFor(`state.members.size === 1`, 10000);
+  check('Com mais gente na sala, o cartão de convite some', await A.eval(`$('emptyConvite').hidden`));
 
   // Cabeçalho
   check('Cabeçalho: "Sua sala" para quem criou, "Sala de Ana" para quem entrou, sem repetir quantas pessoas (está na aba)',
@@ -91,16 +96,28 @@ run('Sala: cabeçalho, abas e Seu sinal', 120000, async () => {
   await sleep(200);
   check('De volta à sala, o painel volta aberto', await B.eval(`!$('room').hidden && !$('workspacePanes').hidden && $('seuSinalMini').hidden`));
 
-  // Palco vazio: quem transmite, com o Assistir
+  // Palco vazio: um cartão por pessoa; o de quem transmite assiste
   await A.eval(`(() => { navigator.mediaDevices.getDisplayMedia = () => navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720, frameRate: 30 }, audio: false });
     $('soundOn').checked = false; setRadio('encodeMode', 'per'); state.selectedSource = 'teste'; return startSharing(); })()`);
   await A.waitFor(`state.sharing && !$('liveChip').hidden`, 15000);
   check('Transmitindo: o bloco Ao vivo fica no cartão, no lugar do Transmitir', await A.eval(`${dentro('liveChip', 'seuSinal')} && $('shareBtn').getClientRects().length === 0`));
-  await B.waitFor(`!$('emptyLive').hidden`, 10000);
-  check('Palco vazio mostra "Assistir Ana"', await B.eval(`[...$('emptyLive').children].some((b) => b.textContent === 'Assistir Ana')`));
-  await B.eval(`$('emptyLive').querySelector('button').click()`);
+  await B.waitFor(`!!$('emptyGente').querySelector('button.pg-cartao.ao-vivo')`, 10000);
+  check('Palco vazio mostra o cartão da Ana transmitindo (anel azul, sem selo)', await B.eval(`(() => { const c = $('emptyGente').querySelector('button.pg-cartao.ao-vivo');
+    return c.title === 'Assistir a tela de Ana' && c.classList.contains('transmitindo') && !c.querySelector('.pg-chip') && getComputedStyle(c.querySelector('.pg-info > .avatar')).boxShadow !== 'none'; })()`));
+  await B.eval(`$('emptyGente').querySelector('button.pg-cartao.ao-vivo').click()`);
   await B.waitFor(`state.in.size === 1`, 10000);
   check('O Assistir do palco abre a tela', true);
+  await B.waitFor(`!state.in.values().next().value.tile.vendo.hidden`, 10000);
+  check('Quem assiste vê quantos assistem (só ele: 1)', await B.eval(`state.in.values().next().value.tile.vendo.textContent === '1'`));
+  // Minimizar: as telas saem da frente sem fechar; o palco mostra os cartões e o de quem você assiste volta para a tela
+  await B.eval(`$('tiles').querySelector('.tile-min').click()`);
+  await sleep(300);
+  check('Minimizar: o palco mostra os cartões e a tela continua aberta e tocando (sem vídeo)', await B.eval(`state.in.size === 1 && $('tiles').classList.contains('minimizado') && !state.in.values().next().value.tile.el.getClientRects().length
+    && !state.in.values().next().value.tile.video.paused && !$('emptyStage').hidden && !$('pausedStrip').hidden
+    && $('emptyGente').querySelector('button.pg-cartao.ao-vivo .pg-chip').textContent === 'Assistindo' && state.in.values().next().value.videoOn === false`));
+  await B.eval(`$('emptyGente').querySelector('button.pg-cartao.ao-vivo').click()`);
+  await sleep(300);
+  check('O cartão de quem você assiste volta para a tela', await B.eval(`!state.minimizado && !$('tiles').classList.contains('minimizado') && $('emptyStage').hidden && $('pausedStrip').hidden && state.in.values().next().value.videoOn === true`));
 
   // Janela mínima e fontes largas: nada vaza do cabeçalho nem do cartão, e a barrinha cabe
   await A.send('Emulation.setDeviceMetricsOverride', { width: 820, height: 560, deviceScaleFactor: 1, mobile: false });

@@ -64,6 +64,7 @@ const state = {
   in: new Map(),           // id de quem transmite -> { pc, chain, tile, lastBytes, lastTs }
   rewatch: new Map(),      // id de quem eu assistia e caiu da sala -> quando caiu (volta a assistir sozinho)
   focus: null,             // id da transmissão em destaque (as outras ficam pausadas para mim)
+  minimizado: false,       // as telas abertas saem da frente (conexão e som continuam) e o palco mostra quem está na sala
   main: null,              // id da tela grande quando há 2 ou mais abertas (as outras ficam na coluna)
   pips: new Map(),         // id da transmissão -> a janela flutuante dela (pode haver várias)
   statsTimer: null,

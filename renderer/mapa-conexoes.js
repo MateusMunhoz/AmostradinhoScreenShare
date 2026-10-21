@@ -119,7 +119,9 @@ async function refreshConnectionMap() {
       prefs.activeNetworkId ? window.api.razzeWireGuardStatus(prefs.activeNetworkId) : Promise.resolve(null),
     ]);
     const account = stateResult.status === 'fulfilled' ? stateResult.value : null;
-    let server = { status: 'offline', detail: account?.configured ? 'Sem conexão' : account ? 'Servidor não configurado' : 'Não foi possível verificar' };
+    // Sem servidor configurado (ou sem poder verificar) não é queda: fica em cinza, não em alerta
+    let server = account?.configured ? { status: 'offline', detail: 'Sem conexão' }
+      : { status: 'unknown', detail: account ? 'Servidor não configurado' : 'Não foi possível verificar' };
     if (account?.configured) {
       try { await window.api.razzeHealth(); server = { status: 'online', detail: 'Conectado' }; }
       catch { server = { status: 'offline', detail: 'Sem conexão' }; }

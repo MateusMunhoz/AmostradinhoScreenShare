@@ -93,11 +93,11 @@ app.whenReady().then(async () => {
 
     // ---------- O Beto recebe ----------
     await beto.run("dm.account = 'beto'; friendsData.friends = [{ id: 'ana', displayName: 'Ana', online: true }]; dmPoll()");
-    check('Aviso "Ana está te ligando" com Atender', await beto.until(`$('toast').classList.contains('show') && /Ana está te ligando/.test($('toast').textContent) && !!$('toast').querySelector('.toast-action')`));
+    check('Aviso "Ana está te ligando" com Atender', await beto.until(`$('toastAcao').classList.contains('show') && /Ana está te ligando/.test($('toastAcao').textContent) && !!$('toastAcao').querySelector('.toast-action')`));
     const cartao = await beto.run(`(() => { const cv = lerConvite(${JSON.stringify(msg.text)}); const a = cartaoConvite(cv, false, 'Ana', Date.now()); const b = cartaoConvite(cv, false, 'Ana', Date.now() - 20 * 60000);
       return [a.querySelector('strong').textContent, a.querySelector('button').textContent, b.querySelector('strong').textContent, b.querySelector('button').textContent].join(' | '); })()`);
     check('Cartão: "está te ligando" com Atender; depois de um tempo, "Chamada de" com Entrar', cartao === 'Ana está te ligando | Atender | Chamada de Ana | Entrar', cartao);
-    await beto.run(`$('toast').querySelector('.toast-action').click()`);
+    await beto.run(`$('toastAcao').querySelector('.toast-action').click()`);
     check('Atender pergunta antes de trocar o modo', await beto.until(`!!document.querySelector('.app-confirm') && /modo Internet/.test(document.querySelector('.app-confirm').textContent)`));
     await beto.run(`document.querySelector('.app-confirm .btn.primary').click()`);
     check('O Beto entra na sala e na voz', await beto.until('!!state.myId && !!voice.session', 10000));

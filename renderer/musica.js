@@ -16,6 +16,7 @@ const musica = {
   volume: Math.max(0, Math.min(100, Number(load('musicaVolume', '60')))),
   legenda: load('musicaLegenda', '0') === '1', // legendas do YouTube: desligadas até você ligar (vale para todas as músicas)
   wantOpen: null, // canal em que você acabou de pôr uma música: abre a tela quando a sala confirmar
+  duracoes: new Map(), // videoId -> segundos, das músicas que este PC já tocou (o palco vazio mostra o total)
 };
 const musicKey = (ch) => `musica:${ch}`;
 const myVoiceChannel = () => (voice.session ? voice.channel : '');
@@ -43,7 +44,11 @@ function parseYouTube(text) {
 function setMusicas(list, serverNow, quiet = false) {
   if (typeof serverNow === 'number') musica.offset = serverNow - Date.now();
   const next = new Map();
-  for (const e of Array.isArray(list) ? list : []) if (e && /^[\w-]{11}$/.test(String(e.videoId))) next.set(String(e.ch || ''), { ...e, ch: String(e.ch || '') });
+  for (const e of Array.isArray(list) ? list : []) {
+    if (!e || !/^[\w-]{11}$/.test(String(e.videoId))) continue;
+    const dur = Number.isFinite(e.dur) && e.dur > 0 && e.dur <= 24 * 3600 ? e.dur : 0; // a duração que a sala guardou (0: não sabe)
+    next.set(String(e.ch || ''), { ...e, ch: String(e.ch || ''), dur });
+  }
   const before = state.musicas;
   state.musicas = next;
   for (const [ch, e] of next) {
@@ -62,7 +67,7 @@ function setMusicas(list, serverNow, quiet = false) {
 // Para a troca de host: o servidor novo continua com as músicas, do ponto em que estão agora
 function musicSeed() {
   return [...state.musicas.values()].filter((e) => !e.ch || state.subsalas?.some((s) => s.id === e.ch))
-    .map((e) => ({ ch: e.ch, videoId: e.videoId, title: e.title, by: e.by, playing: e.playing, pos: musicPos(e) }));
+    .map((e) => ({ ch: e.ch, videoId: e.videoId, title: e.title, by: e.by, playing: e.playing, pos: musicPos(e), dur: e.dur || 0 }));
 }
 function clearMusicas() {
   for (const ch of state.musicas.keys()) if (state.in.has(musicKey(ch))) stopWatching(musicKey(ch), false);
@@ -82,6 +87,7 @@ function listenMusic(ch) {
   // Entra no palco como "você se vendo" (assistir.js): sem conexão, sem sinal para ninguém
   state.in.set(key, { self: true, music: tile.music, pc: SELF_PC, tile, videoOn: true, tracks: [], once: null, lastBytes: 0, lastTs: 0 });
   send({ type: 'musica-ouvindo', ch, on: true }); // ouvindo conta como gente: a música não é tirada por falta de ouvinte
+  state.minimizado = false; // com as telas minimizadas, elas voltam (assistir.js: setMinimizado)
   renderNavMusic();
   renderFocus();
   renderMembers();
@@ -129,6 +135,11 @@ function createMusicTile(ch, entry) {
   close.className = 'btn icon';
   setIcon(close, 'close', 'Parar de ouvir (a música continua para os outros)');
   close.onclick = () => stopWatching(key, false);
+  // Minimizar: o palco volta a mostrar quem está na sala e a música fica num player pequeno no canto, tocando
+  const minBtn = document.createElement('button');
+  minBtn.className = 'btn icon tile-min';
+  setIcon(minBtn, 'minimizar', 'Minimizar (a música continua tocando num player pequeno)');
+  minBtn.onclick = () => setMinimizado(true);
   const pipBtn = document.createElement('button'); // o palco espera um; a música não vai para a janela flutuante
   pipBtn.hidden = true;
   // Legendas (só para você): desligadas por padrão
@@ -139,7 +150,7 @@ function createMusicTile(ch, entry) {
     save('musicaLegenda', musica.legenda ? '1' : '0');
     for (const link of state.in.values()) link.music?.captions();
   };
-  bar.append(barSpace, mute, vol, cc, focusBtn, fs, close);
+  bar.append(barSpace, mute, vol, cc, focusBtn, minBtn, fs, close);
   label.append(note, labelText, where, bar);
   // O player (visível, como pede o YouTube) e, embaixo dele, os controles que valem para todos
   const body = document.createElement('div');
@@ -187,7 +198,12 @@ function createMusicTile(ch, entry) {
   ambient.className = 'tile-ambient';
   ambient.width = 32; ambient.height = 18;
   ambient.hidden = true;
-  body.append(ambient, iframe, overlay, pipNote);
+  const voltar = document.createElement('button');
+  voltar.type = 'button';
+  voltar.className = 'music-mini-voltar';
+  setIcon(voltar, 'expand', 'Voltar para as telas');
+  voltar.onclick = () => setMinimizado(false, key);
+  body.append(ambient, iframe, overlay, pipNote, voltar);
   el.append(label, body, controls);
   $('tiles').append(el);
   setupTileDrag(key, el);
@@ -309,6 +325,12 @@ function createMusicTile(ch, entry) {
           correct();
         }
         mu.duration = i.duration;
+        if (!mu.live) musica.duracoes.set(mu.videoId, i.duration);
+        // A sala ainda não sabe quanto dura: conta uma vez (sala-protocolo.js tira a música quando ela acaba)
+        if (!mu.live && !mu.entry.dur && mu.durContada !== mu.videoId && mu.videoId === mu.entry.videoId) {
+          mu.durContada = mu.videoId;
+          musicCtl(mu.entry, 'duracao', { dur: i.duration, videoId: mu.videoId });
+        }
       } else if (!mu.live && i.videoData?.isLive === true) { mu.live = true; render(); }
       if (typeof i.volume === 'number') mu.volume = i.volume; // o que o player diz (para conferir o volume local)
       if (typeof i.muted === 'boolean') mu.muted = i.muted;

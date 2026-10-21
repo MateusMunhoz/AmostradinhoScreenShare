@@ -823,6 +823,11 @@ function renderWatchers() {
     : 'Ninguém está assistindo ainda. Só é enviado vídeo para quem clicar em Assistir.';
   const n = state.out.size;
   const who = [...state.out.keys()].map(nameOf);
+  // Quem assiste vê quantos assistem junto (renderer/sala.js: lado sharer); a sala não recebe esse número
+  if (n !== state.vendoEnviado) {
+    state.vendoEnviado = n;
+    for (const id of state.out.keys()) sendSignal(id, { side: 'sharer', vendo: n });
+  }
   // Na faixa, o olho e quantos assistem; os nomes ficam na dica
   const quem = n === 0 ? 'Ninguém assistindo' : n <= 2 ? `${joinNames(who)} assistindo` : `${who[0]} e mais ${n - 1} assistindo`;
   // O olho e o número só aparecem com alguém assistindo (o olho sozinho parecia o de mostrar senha)

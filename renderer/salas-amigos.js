@@ -222,11 +222,12 @@ const b64url = (t) => btoa(String.fromCharCode(...new TextEncoder().encode(t))).
 const deB64url = (t) => new TextDecoder().decode(Uint8Array.from(atob(t.replace(/-/g, '+').replace(/_/g, '/')), (ch) => ch.charCodeAt(0)));
 
 // O convite da sala em que estou agora (null se não estou numa sala)
-function conviteDaSala() {
+// semPasse: o convite do cartão do palco (QR) vai sem o passe, que só vai por mensagem direta; quem entra digita a senha
+function conviteDaSala(semPasse = false) {
   if (!state.myId) return null;
   const pessoas = state.members.size + 1;
   if (state.cloud) {
-    const passe = garantirPasse();
+    const passe = semPasse ? '' : garantirPasse();
     return { v: 1, modo: 'internet', servidor: state.cloud.url, codigo: state.cloud.code, ...(passe ? { passe } : {}), pessoas };
   }
   const endereco = state.roomAddr || (state.host && state.host !== '127.0.0.1' ? `${state.host}:${state.port}` : '');

@@ -212,7 +212,41 @@ function atvAgendar() {
 // atividadeSteam = { "<número do jogo>": true (mostrar) | false (não mostrar) }; jogo que não está ali é novo (ainda não
 // escolhido) e não aparece. Achou jogo novo: um aviso leva para a escolha (atvProcurarNovos).
 const STEAM_NOVOS_CADA_MS = 10 * 60 * 1000;
-const steamUi = { jogos: [], avisados: new Set(), timer: 0, novosMarcados: new Set() };
+const steamUi = { jogos: [], avisados: null, vistos: null, pendentes: [], timer: 0, novosMarcados: new Set() };
+// Os jogos já avisados (aviso ou bolinha) e os já vistos na aba Privacidade ficam neste PC, para avisar uma vez por jogo
+function steamIds(chave) {
+  try { const a = JSON.parse(load(chave, '[]')); return new Set(Array.isArray(a) ? a.filter((id) => typeof id === 'string' && /^\d{1,10}$/.test(id)) : []); }
+  catch { return new Set(); }
+}
+function steamMemoria() {
+  steamUi.avisados ??= steamIds('steamAvisados');
+  steamUi.vistos ??= steamIds('steamVistos');
+  return steamUi;
+}
+function steamGuardar(chave, ids) { save(chave, JSON.stringify([...ids].slice(-500))); }
+// Viu (abriu a Privacidade) ou disse Agora não: sai da bolinha
+function steamVistos(ids) {
+  const { vistos } = steamMemoria();
+  for (const id of ids) vistos.add(id);
+  steamGuardar('steamVistos', vistos);
+  steamUi.pendentes = steamUi.pendentes.filter((id) => !vistos.has(id));
+  steamRenderNovos();
+}
+// A bolinha com quantos jogos novos esperam escolha: na engrenagem da barrinha e na aba Privacidade
+function steamRenderNovos() {
+  const n = steamUi.pendentes.length, rot = n === 1 ? '1 jogo novo da Steam para escolher' : `${n} jogos novos da Steam para escolher`;
+  for (const id of ['navSettingsNovos', 'settingsActivityNovos']) {
+    const el = $(id);
+    el.hidden = !n;
+    el.textContent = String(n);
+    el.title = rot;
+    el.setAttribute('aria-label', rot);
+  }
+  // A engrenagem diz o que a bolinha conta (a dica da bolinha sozinha só aparece com o mouse exatamente nela)
+  const engrenagem = $('navSettings'), nome = n ? `Configurações · ${rot}` : 'Configurações';
+  engrenagem.title = nome;
+  engrenagem.setAttribute('aria-label', nome);
+}
 function steamEscolhas() {
   try {
     const o = JSON.parse(load('atividadeSteam', '{}'));
@@ -251,6 +285,7 @@ async function renderSteamJogos(recarregar = false) {
   const e = steamEscolhas();
   const novos = steamUi.jogos.filter((j) => !(j.id in e));
   const seus = steamUi.jogos.filter((j) => j.id in e);
+  steamVistos(novos.map((j) => j.id)); // estão na tela: a bolinha some
   for (const id of [...steamUi.novosMarcados]) if (!novos.some((j) => j.id === id)) steamUi.novosMarcados.delete(id);
   $('steamStatus').textContent = !steamUi.jogos.length ? 'Nenhum jogo da Steam encontrado neste PC.'
     : novos.length ? `${novos.length === 1 ? '1 jogo novo' : novos.length + ' jogos novos'} para escolher.` : '';
@@ -279,19 +314,28 @@ function steamMarcarSeus(on) {
   void atvTick(true);
 }
 
-// Com o jogo ligado, procura jogos novos na Steam (ao abrir e a cada 10 min) e avisa uma vez por jogo
+// Com o jogo ligado, procura jogos novos na Steam (ao abrir e a cada 10 min). A bolinha na engrenagem conta os que
+// esperam escolha; o aviso sai uma vez por jogo (fica lembrado neste PC), e só fora da sala, para não interromper a conversa
 async function atvProcurarNovos() {
   if (!atvLigada('Jogo') || !window.api?.atividadeSteamJogos) return;
   let jogos = [];
   try { jogos = await window.api.atividadeSteamJogos(false); } catch { return; }
-  const e = steamEscolhas();
-  const novos = jogos.filter((j) => !(j.id in e) && !steamUi.avisados.has(j.id));
-  if (!novos.length) return;
-  for (const j of novos) steamUi.avisados.add(j.id);
+  const e = steamEscolhas(), { avisados, vistos } = steamMemoria();
+  const semEscolha = jogos.filter((j) => !(j.id in e));
+  steamUi.pendentes = semEscolha.filter((j) => !vistos.has(j.id)).map((j) => j.id);
+  steamRenderNovos();
   if (!$('generalSettingsDialog').hidden && !$('settingsPanel-activity').hidden) return void renderSteamJogos(); // já está na tela
-  const texto = novos.length === 1 ? `Achamos ${novos[0].nome} na sua Steam. Quer mostrar no seu perfil quando jogar?`
-    : `Achamos ${novos.length} jogos novos na sua Steam. Escolha quais mostrar no seu perfil.`;
-  toast(texto, 'info', { label: 'Escolher', run: () => openGeneralSettings('activity') });
+  const novos = semEscolha.filter((j) => !avisados.has(j.id) && !vistos.has(j.id));
+  if (!novos.length) return;
+  for (const j of novos) avisados.add(j.id);
+  steamGuardar('steamAvisados', avisados);
+  if (state.myId) return; // na sala: só a bolinha
+  const n = novos.map((j) => j.nome);
+  const quais = n.length === 2 ? `${n[0]} e ${n[1]}` : `${n[0]}, ${n[1]} e mais ${n.length - 2}`;
+  const texto = n.length === 1 ? `Achamos ${n[0]} na sua Steam. Quer mostrar no seu perfil quando jogar?`
+    : `Achamos ${quais} na sua Steam. Escolha quais mostrar no seu perfil.`;
+  toast(texto, 'info', [{ label: 'Escolher', run: () => openGeneralSettings('activity') },
+    { label: 'Agora não', secundario: true, run: () => steamVistos(novos.map((j) => j.id)) }]);
 }
 function atvAgendarProcura() {
   clearInterval(steamUi.timer);

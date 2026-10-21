@@ -65,6 +65,11 @@ function cancelarEntrada() {
 // Erro de quando a própria pessoa cancelou: quem chamou não mostra aviso de erro
 function erroCancelada() { const e = new Error('Você cancelou a entrada.'); e.cancelada = true; return e; }
 
+// A conexão com a sala: ping a cada 5 s; 15 s sem nada do servidor, ela caiu. Quem caiu tem 30 s para voltar com o
+// mesmo número (é o tempo que os servidores guardam o lugar). SALA_CAIU: o código com que o app fecha uma conexão
+// morta, para o servidor saber que foi queda e não saída (signaling.js)
+const SALA_PING_MS = 5000, SALA_SEM_RESPOSTA_MS = 15000, SALA_VOLTA_MS = 30000, SALA_CAIU = 4000;
+
 async function connectRoom(url, hello, timeoutMs = 8000) {
   if (entradaSala.cancelada && entradaSala.ativa) throw erroCancelada();
   const addrs = await myAddrs();
@@ -98,35 +103,60 @@ async function connectRoom(url, hello, timeoutMs = 8000) {
       contaAnunciada = JSON.stringify(razze);
       ws.send(JSON.stringify({ type: 'hello', ...hello, client: clientId(), addrs, version: update.myVersion, avatar: fotos.mine?.hash || '', avatarFull: fotos.mineFull?.hash || '', nameFont: appPreferences.nameFont, razze, lider: true }));
     };
+    // Servidor que responde ao ping: sem notícia dele por um tempo, a conexão morreu (a internet caiu e o Windows
+    // ainda não avisou). O app larga ela e tenta voltar, em vez de ficar numa sala que já não o vê
+    let ultima = Date.now();
+    let pinger = 0;
+    const vigiar = () => {
+      pinger = setInterval(() => {
+        if (state.ws !== ws) return clearInterval(pinger);
+        if (Date.now() - ultima > SALA_SEM_RESPOSTA_MS) {
+          clearInterval(pinger);
+          ws.onclose = null;
+          ws.onmessage = null;
+          try { ws.close(SALA_CAIU); } catch {}
+          caiu('');
+          return;
+        }
+        if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'ping' }));
+      }, SALA_PING_MS);
+    };
+    const caiu = (reason) => {
+      if (state.ws !== ws) return;
+      // Sem quem roda o servidor, a sala passa para quem está nela há mais tempo.
+      // No modo Internet o servidor continua de pé: só a minha conexão caiu, então volto para ele.
+      if (reason !== 'room-closed' && (state.handoff || state.cloud)) migrateRoom(reason);
+      else leaveRoom(reason === 'room-closed' ? 'O host encerrou a sala.' : 'A conexão com a sala caiu.', 'error');
+    };
     ws.onmessage = (e) => {
+      ultima = Date.now();
       let m;
       try { m = JSON.parse(e.data); } catch { return; }
       if (!joined) {
         // "Pode entrar" depois de já ter desistido (tempo esgotado): fecha, senão fica um fantasma na sala
-        if (m.type === 'welcome' && (errMsg || desistiu)) { ws.close(); return; }
+        if (m.type === 'welcome' && (errMsg || desistiu)) { ws.close(1000); return; }
         if (m.type === 'welcome') {
           joined = true; clearTimeout(timer);
           // Conexão anterior ainda aberta (entrada que falhou no meio): fecha antes de usar a nova
-          if (state.ws && state.ws !== ws && state.ws.readyState <= WebSocket.OPEN) { const old = state.ws; state.ws = null; old.onclose = null; old.close(); }
-          state.ws = ws; resolve(m);
+          if (state.ws && state.ws !== ws && state.ws.readyState <= WebSocket.OPEN) { const old = state.ws; state.ws = null; old.onclose = null; old.close(1000); }
+          state.ws = ws;
+          if ((m.features || []).includes('ping')) vigiar();
+          resolve(m);
         }
         else if (m.type === 'error') errMsg = m.message;
         return;
       }
+      if (m.type === 'pong') return;
       onRoomMessage(m);
     };
     ws.onclose = (e) => {
       clearTimeout(timer);
+      clearInterval(pinger);
       if (!joined) {
         reject(new Error(errMsg || (state.cloud || selectedNetworkProvider() === 'internet'
           ? 'Não foi possível falar com o servidor. Confira o endereço na aba Rede e a sua internet.'
           : 'Não foi possível conectar. Confira o endereço e se a Radmin VPN está ligada nos dois PCs.')));
-      } else if (state.ws === ws) {
-        // Sem quem roda o servidor, a sala passa para quem está nela há mais tempo.
-        // No modo Internet o servidor continua de pé: só a minha conexão caiu, então volto para ele.
-        if (e.reason !== 'room-closed' && (state.handoff || state.cloud)) migrateRoom(e.reason);
-        else leaveRoom(e.reason === 'room-closed' ? 'O host encerrou a sala.' : 'A conexão com a sala caiu.', 'error');
-      }
+      } else caiu(e.reason);
     };
   });
 }
@@ -137,7 +167,7 @@ function dropHalfJoin() {
   const ws = state.ws;
   state.ws = null;
   state.myId = null;
-  if (ws) { ws.onclose = null; try { ws.close(); } catch {} }
+  if (ws) { ws.onclose = null; try { ws.close(1000); } catch {} }
 }
 
 async function createRoom() {
@@ -306,7 +336,7 @@ function leaveRoom(reason, kind = 'info', endRoom = false) {
     ws.onclose = null;
     // Modo Internet: avisa o servidor que saí de propósito (senão ele espera um pouco achando que a internet caiu)
     if (state.cloud && ws.readyState === WebSocket.OPEN) { try { ws.send(JSON.stringify({ type: 'leave' })); } catch {} }
-    ws.close();
+    ws.close(1000); // fechar direito: o servidor da sala tira na hora, sem o tempo de espera de quem caiu
   }
   stopSharing();
   for (const id of [...state.in.keys()]) stopWatching(id, false);
@@ -372,10 +402,16 @@ async function migrateRoom(reason) {
   if (state.cloud) return reconnectCloud(myId);
   const oldHost = state.hostId;
   const hostName = oldHost && oldHost !== myId ? nameOf(oldHost) : 'O host';
-  // Talvez só a minha conexão tenha caído: tenta voltar para o mesmo host antes de trocar
+  // Talvez só a minha conexão tenha caído: tenta voltar para o mesmo host antes de trocar, pelo tempo que ele guarda
+  // o meu lugar. Recusou rápido duas vezes (o PC do host responde, mas a sala não está mais lá): ele saiu, troca já
   if (reason !== 'host-left' && !state.isOwner) {
-    for (let i = 0; i < 2 && state.migrating; i++) {
+    toast('A conexão com a sala caiu. Tentando voltar…');
+    const until = Date.now() + SALA_VOLTA_MS;
+    let recusas = 0;
+    while (Date.now() < until && recusas < 2 && state.migrating && state.myId === myId) {
+      const t0 = Date.now();
       if (await rejoin(`${state.host}`, 2500)) return;
+      recusas = Date.now() - t0 < 1000 ? recusas + 1 : 0;
       await new Promise((r) => setTimeout(r, 800));
     }
   }
@@ -416,7 +452,7 @@ async function migrateRoom(reason) {
 // segundos; volto com o mesmo número e as conexões diretas (quem assiste quem) continuam de pé.
 async function reconnectCloud(myId) {
   toast('A conexão com o servidor caiu. Tentando voltar…');
-  const until = Date.now() + 18000;
+  const until = Date.now() + SALA_VOLTA_MS;
   while (Date.now() < until && state.migrating && state.myId === myId) {
     if (await rejoin(state.cloud.url, 3000)) return;
     await new Promise((r) => setTimeout(r, 1500));
@@ -451,7 +487,7 @@ async function rejoin(host, timeoutMs) {
       voiceSession: voice.session || '', voiceChannel: voice.channel, muted: voice.muted, deafened: voice.deafened,
     }, timeoutMs);
   } catch { return false; }
-  if (!state.migrating || state.myId !== myId) { state.ws?.close(); return false; }
+  if (!state.migrating || state.myId !== myId) { state.ws?.close(1000); return false; }
   if (welcome.id !== myId) { // o servidor não aceitou o número: melhor sair do que misturar as conexões
     state.migrating = false;
     leaveRoom('Não foi possível continuar a sala depois que o host saiu.', 'error');
@@ -671,6 +707,18 @@ function handleSignal(from, data) {
     // Mensagem de quem transmite uma tela que eu pedi para assistir
     const link = state.in.get(from);
     if (!link) return;
+    // Quantos assistem essa transmissão: um número pequeno, e só de quem eu estou assistindo
+    if (data.vendo !== undefined) {
+      if (Number.isInteger(data.vendo) && data.vendo >= 0 && data.vendo <= 99 && link.tile.vendo) {
+        const n = data.vendo, el = link.tile.vendo;
+        el.hidden = n < 1;
+        el.innerHTML = ICON.eye;
+        el.append(String(n));
+        el.title = n === 1 ? 'Só você está assistindo' : `${n} pessoas assistindo, com você`;
+        el.setAttribute('aria-label', el.title);
+      }
+      return;
+    }
     if (data.unavailable) {
       stopWatching(from, false);
       if (data.closed) return toast(closedShareText(from));

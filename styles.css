@@ -189,10 +189,10 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 .home-hello-text { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
 .home-title { margin: 0; font-size: 19px; font-weight: 700; letter-spacing: -.3px; line-height: 1.2; }
 .home-name { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font-size: 14px; color: var(--muted); }
-.home-name input { min-width: 0; width: min(240px, 100%); padding: 3px 2px; font: inherit; font-size: 15px; font-weight: 600; color: var(--text);
-  background: transparent; border: 0; border-bottom: 1px dashed var(--field-line); border-radius: 0; }
-.home-name input:hover { border-bottom-color: var(--muted); }
-.home-name input:focus { outline: none; border-bottom: 1px solid var(--accent); }
+.home-name input { min-width: 0; width: min(240px, 100%); padding: 5px 9px; font: inherit; font-size: 15px; font-weight: 600; color: var(--text);
+  background: var(--sunken); border: 1px solid var(--field-line); border-radius: 6px; }
+.home-name input:hover { border-color: var(--muted); }
+.home-name input:focus { outline: none; border-color: var(--accent); }
 .home-status { flex: none; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; padding-top: 14px; border-top: 1px solid var(--line); }
 .status-line { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 14px; }
 .status-line.version { color: var(--muted); }
@@ -252,9 +252,11 @@ h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 .last-room-info .hint { font-size: 12px; }
 .last-room code { font-family: Consolas, monospace; font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .link-btn {
-  font: inherit; color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer;
+  position: relative; font: inherit; color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer;
   text-decoration: underline; text-underline-offset: 2px;
 }
+/* A área de clique passa de 24 px de altura sem mexer no texto em volta */
+.link-btn::after { content: ""; position: absolute; inset: -4px -3px; }
 .link-btn:disabled { color: var(--muted); cursor: default; text-decoration: none; }
 .link-btn:hover:not(:disabled) { color: var(--text); }
 .home-friends-mais { align-self: flex-start; margin-top: 4px; font-size: 13px; }
@@ -1103,20 +1105,27 @@ fieldset.group > legend { margin-bottom: 6px; }
 .app-chip input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
 .actions { display: flex; gap: 8px; margin-left: auto; }
 
-/* Aviso */
-/* No topo: embaixo ele cobria o volume e a tela cheia do vídeo */
-.toast {
-  position: fixed; top: 20px; left: 50%; transform: translate(-50%, -20px); opacity: 0; pointer-events: none;
-  background: var(--panel); border: 1px solid var(--line); padding: 12px 18px; border-radius: 10px;
-  font-size: 14px; max-width: min(520px, 90vw); transition: opacity .2s, transform .2s; z-index: 10;
+/* Avisos: no canto de baixo à esquerda, acima da barra de baixo (no topo, cobriam as abas do painel e o palco; os
+   controles das telas ficam em cima delas). O com botões fica em cima do simples (util.js: toast) */
+.toasts {
+  position: fixed; left: 16px; bottom: 48px; z-index: 10; display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
+  max-width: min(460px, calc(100vw - 32px)); pointer-events: none;
 }
-.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.toast {
+  display: none; background: var(--panel); border: 1px solid var(--line); padding: 12px 18px; border-radius: 10px;
+  font-size: 14px; box-shadow: 0 12px 32px rgba(0, 0, 0, .45);
+}
+.toast.show { display: block; animation: toast-entra .2s ease-out; }
+@keyframes toast-entra { from { opacity: 0; transform: translateY(8px); } }
+@media (prefers-reduced-motion: reduce) { .toast.show { animation: none; } }
 /* Comando de voz: "Ouvindo…" enquanto você segura a tecla (amarelo: é você), "Entendendo…" depois. Parado, sem animação */
 .voice-cmd-badge { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 11; pointer-events: none; padding: 7px 16px; border-radius: 999px; background: var(--live-fill); color: var(--live-ink); font-size: 13px; font-weight: 700; }
 .voice-cmd-badge[hidden] { display: none; }
 .toast.error { border-color: var(--warn); }
-.toast.has-action { pointer-events: auto; display: flex; align-items: center; gap: 12px; } /* aviso com botão (clipe salvo) */
+.toast.has-action.show { pointer-events: auto; display: flex; align-items: center; gap: 10px; padding-right: 8px; } /* aviso com botões */
+.toast-texto { flex: 1; min-width: 0; }
 .toast-action { flex: none; }
+.toast-fechar { flex: none; margin-left: -2px; }
 
 @media (max-width: 700px) {
   .stat-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1159,6 +1168,7 @@ fieldset.group > legend { margin-bottom: 6px; }
 .vd-ambient { margin: 0; color: var(--muted); }
 .vd-slider { display: flex; align-items: center; gap: 12px; }
 .vd-slider input[type="range"] { flex: 1; accent-color: var(--accent); }
+#vozesVolume { background: linear-gradient(var(--muted), var(--muted)) 50% 50% / 1px 12px no-repeat; }
 .vd-slider input[type="range"]:disabled { opacity: .45; }
 .vd-value { min-width: 72px; text-align: right; font-size: 13px; color: var(--text-2); font-variant-numeric: tabular-nums; }
 .vd-select { font: inherit; font-size: 14px; color: var(--text); background: var(--sunken); border: 1px solid var(--field-line); border-radius: 8px; padding: 9px 10px; width: 100%; min-width: 0; }
@@ -1380,6 +1390,7 @@ body:not(.workspace-in-room) .nav-sep { display: none; }
 .workspace-tab .nav-icon { display: inline-flex; }
 .workspace-tab svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .workspace-tab .unread { position: absolute; top: -8px; right: -4px; }
+.settings-tab-novos { margin-left: 6px; vertical-align: 1px; } /* jogos novos da Steam esperando escolha (conta.js) */
 .settings-tab { min-width: 36px; }
 #workspacePanes { position: fixed; top: var(--workspace-top); right: calc(16px + var(--rail-w)); bottom: 16px; width: var(--workspace-width); display: flex; flex-direction: column; gap: 10px; z-index: 4; }
 .workspace-pane { --text: var(--surface-text); --text-2: var(--surface-text-2); --muted: var(--surface-muted); color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; flex: 1 1 0; min-width: 0; min-height: 0; overflow: auto; }
@@ -1405,7 +1416,7 @@ body:not(.workspace-in-room) .nav-sep { display: none; }
 .voice-view button:hover { color: var(--text); }
 .voice-view button[aria-pressed=true] { background: var(--panel-2); color: var(--text); }
 .voice-view button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-.voice-view button { display: grid; place-items: center; padding: 3px 7px; }
+.voice-view button { display: grid; place-items: center; padding: 3px 7px; min-width: 28px; min-height: 28px; }
 /* Fixar o mapa: logo depois de Lista | Mapa (o espaço que empurra o Sair para a direita passa para ele) */
 .voice-view:has(+ .map-pin:not([hidden])) { margin-right: 0; }
 /* Fixar o mapa: uma chavinha com a palavra, sem fundo nem borda (fora do .btn, que os temas pintam) */
@@ -1675,7 +1686,6 @@ button.sky-card-info:hover:not(:disabled) .sky-card-go { color: var(--accent); }
 @keyframes pane-expand { from { opacity: .3; clip-path: inset(0 0 0 100% round 10px); transform: translateX(10px); } }
 #workspacePanes > .workspace-pane:not([hidden]) { animation: pane-expand .22s cubic-bezier(.2, .8, .2, 1); }
 @media (prefers-reduced-motion: reduce) { #workspacePanes > .workspace-pane:not([hidden]) { animation: none; } }
-.toast { top: calc(var(--workspace-top) + 8px); }
 @media (max-width: 900px) {
   .workspace-tab { padding: 0 6px; font-size: 11px; }
 }
@@ -1702,6 +1712,10 @@ main { padding-top: 0; }
 /* Transmissão sem som: aviso na faixa do nome da tela, e o volume some (não tem o que mudar) */
 .tile-noaudio { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--text-2); white-space: nowrap; }
 .tile-noaudio svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+/* O olho e quantos assistem essa transmissão (quem transmite manda só para quem assiste) */
+.tile-vendo { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--text-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tile-vendo[hidden] { display: none; }
+.tile-vendo svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .tile.no-audio .tile-vol, .tile.no-audio .tile-mute { display: none; }
 
 /* ── Aparência (Configurações gerais) ──────────────────────────────────────────────────────────────── */
@@ -1831,7 +1845,7 @@ html[data-border=liquid] .select-pop { border-top-color: var(--edge-sheen); }
 /* Configurações em abas: uma seção por vez, sem a linha entre seções */
 /* Configurações: os grupos na barra da esquerda e as abas do grupo no topo (renderer/configuracoes.js) */
 .settings-layout { flex: 1 1 auto; min-height: 0; display: flex; gap: 18px; }
-.settings-nav { flex: none; width: 190px; display: flex; flex-direction: column; gap: 2px; padding-right: 14px; border-right: 1px solid var(--line); overflow-y: auto; }
+.settings-nav { flex: none; width: 190px; display: flex; flex-direction: column; gap: 2px; padding-right: 14px; padding-bottom: 12px; border-right: 1px solid var(--line); overflow-y: auto; }
 .settings-nav button { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 6px 10px; border: 0; border-radius: 8px; background: none; color: var(--text); font: inherit; font-size: 14px; text-align: left; cursor: pointer; }
 .settings-nav button small { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .settings-nav button:hover { background: color-mix(in srgb, var(--text) 7%, transparent); }
@@ -1879,6 +1893,25 @@ html[data-border=liquid] .select-pop { border-top-color: var(--edge-sheen); }
    com telas demais, as que sobram vão para a faixa de baixo, que rola para os lados */
 .tiles.flow { display: block; position: relative; overflow: hidden; }
 .tiles.flow .tile { position: absolute; min-height: 0; box-sizing: border-box; }
+/* Minimizado (assistir.js: setMinimizado): as telas continuam abertas e tocando, fora da frente; o palco mostra os
+   cartões. A música fica num player pequeno no canto (o YouTube pede o player à vista), com o Voltar em cima */
+#tiles.minimizado { position: absolute; inset: auto 0 0 auto; width: 0; height: 0; overflow: visible; }
+#tiles.minimizado > .tile:not(.music-tile) { display: none; }
+#tiles.minimizado > .music-tile {
+  position: absolute; left: auto !important; top: auto !important; right: 16px; bottom: 16px; z-index: 5;
+  width: 256px !important; height: 144px !important; display: block !important; border-radius: 8px; overflow: hidden;
+  box-shadow: 0 12px 30px -10px rgba(0, 0, 0, .7);
+}
+#tiles.minimizado > .music-tile > :not(.tile-body) { display: none; }
+#tiles.minimizado > .music-tile .tile-body { position: absolute; inset: 0; }
+#tiles.minimizado > .music-tile .music-frame { width: 100% !important; height: 100% !important; }
+.music-mini-voltar { display: none; }
+#tiles.minimizado .music-mini-voltar {
+  position: absolute; top: 6px; right: 6px; z-index: 2; display: grid; place-items: center; width: 28px; height: 28px; padding: 0;
+  border: 0; border-radius: 50%; background: rgba(0, 0, 0, .65); color: #fff; cursor: pointer;
+}
+#tiles.minimizado .music-mini-voltar svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+#tiles.minimizado .music-mini-voltar:hover { background: var(--accent); }
 /* Barra de rolagem da faixa de baixo: fina, nas cores do tema, com ‹ › nas pontas */
 .stage-scroll { position: absolute; z-index: 4; height: 16px; display: flex; align-items: center; gap: 6px; }
 .stage-scroll button {
@@ -1953,18 +1986,18 @@ html[data-glass=liquid] .theme-swatches { border-radius: 10px; }
 /* Mapa de conexões: as cores de estado são independentes do tema escolhido. */
 .connection-legend { display: flex; flex-wrap: wrap; gap: 18px; font-size: 13px; }
 .connection-legend .online { color: #15803d; }
-.connection-legend .offline { color: #dc2626; }
+.connection-legend .offline { color: #f59e0b; }
 .connection-legend .unknown { color: var(--surface-muted); }
 #connectionGraph { width: 100%; max-width: 340px; display: block; } /* desenhado em pé, para uma coluna estreita */
 .connection-edge { fill: none; stroke-width: 2.5; }
 .connection-edge.online { stroke: #22c55e; }
-.connection-edge.offline { stroke: #ef4444; stroke-dasharray: 8 6; }
+.connection-edge.offline { stroke: #f59e0b; stroke-dasharray: 8 6; }
 .connection-edge.unknown { stroke: #94a3b8; stroke-dasharray: 3 6; }
 .connection-node rect { fill: var(--panel); stroke: var(--line); stroke-width: 2; }
 .connection-node.online rect, .connection-node.online circle { stroke: #22c55e; }
-.connection-node.offline rect, .connection-node.offline circle { stroke: #ef4444; }
+.connection-node.offline rect, .connection-node.offline circle { stroke: #f59e0b; }
 .connection-node.online circle { fill: #22c55e; }
-.connection-node.offline circle { fill: #ef4444; }
+.connection-node.offline circle { fill: #f59e0b; }
 .connection-node.unknown circle { fill: #94a3b8; }
 .connection-node.local circle { fill: var(--accent); }
 .connection-name { fill: var(--surface-text); font-size: 14px; font-weight: 600; }
@@ -2097,35 +2130,10 @@ input[type="search"]::-webkit-search-cancel-button:hover { background: var(--tex
 #voicePaneMembers .member.in-voice { padding-right: 6px; }
 #voicePaneMembers .member .mic-off-icon { flex: none; width: 26px; height: 26px; }
 #voicePaneMembers .member .mic-off-icon + .mic-off-icon { margin-left: -8px; }
-/* Quem transmite: cartões com a miniatura da tela em cima da lista (navegacao.js: voiceLiveCards; assistir.js: miniaturas) */
-#voicePaneMembers .voz-telas-li { display: flex; flex-direction: column; gap: 8px; margin: 0 0 8px; padding: 2px 0 12px; border-bottom: 1px solid var(--line); list-style: none; }
-.voz-telas-tit { padding: 0 4px; font-size: 10px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
-.voz-telas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.voz-tela { position: relative; aspect-ratio: 16 / 9; overflow: hidden; padding: 0; border: 0; border-radius: 10px; color: #fff; font: inherit; cursor: pointer;
-  background: color-mix(in srgb, var(--person, var(--accent)) 28%, var(--panel-2)); transition: transform .2s cubic-bezier(.2, .8, .2, 1), box-shadow .2s; }
-.voz-tela:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 18px -8px rgba(0, 0, 0, .6); }
-.voz-tela:disabled { cursor: not-allowed; opacity: .55; }
-.voz-tela:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.voz-tela.assistindo { box-shadow: inset 0 0 0 2px var(--accent); }
-.voz-tela-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.voz-tela-img[hidden] { display: none; }
-.voz-tela > .avatar { position: absolute; left: 50%; top: 42%; translate: -50% -50%; width: 40px; height: 40px; font-size: 15px; }
-.voz-tela::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 45%, rgba(0, 0, 0, .78)); pointer-events: none; }
-.voz-tela-selo { position: absolute; z-index: 1; top: 6px; left: 6px; display: flex; align-items: center; height: 18px; padding: 0 6px; border-radius: 5px;
-  background: var(--accent); color: var(--accent-ink); font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
-.voz-tela-selo.vendo { background: rgba(0, 0, 0, .65); color: var(--accent); }
-.voz-tela-selo.pausa { background: rgba(0, 0, 0, .65); color: #ddd; }
-.voz-tela-rot { position: absolute; z-index: 1; left: 8px; right: 8px; bottom: 6px; display: flex; flex-direction: column; min-width: 0; text-align: left; }
-.voz-tela-rot strong { font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.voz-tela-rot span { font-size: 9.5px; color: rgba(255, 255, 255, .78); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.voz-tela-play { position: absolute; z-index: 1; inset: 0; display: grid; place-items: center; opacity: 0; transition: opacity .2s; }
-.voz-tela-play svg { width: 38px; height: 38px; padding: 10px; box-sizing: border-box; border-radius: 50%; background: color-mix(in srgb, var(--accent) 92%, transparent);
-  color: var(--accent-ink); fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.voz-tela:hover:not(:disabled) .voz-tela-play, .voz-tela:focus-visible .voz-tela-play { opacity: 1; }
 /* Lista enxuta: o volume só aparece com o mouse (ou o foco) na linha, a não ser que você tenha mudado ou silenciado */
 #voicePaneMembers .member .vol-btn:not(.muted):not(.changed):not([aria-expanded="true"]) { border-color: transparent; opacity: 0; transition: opacity .15s; }
 #voicePaneMembers .member:is(:hover, :focus-within) .vol-btn { opacity: 1; }
-@media (prefers-reduced-motion: reduce) { .voz-tela, .voz-tela-play, #voicePaneMembers .member .vol-btn { transition: none; } }
+@media (prefers-reduced-motion: reduce) { #voicePaneMembers .member .vol-btn { transition: none; } }
 /* Arrastar alguém para outro canal: a linha arrastada fica apagada e o canal de destino (cabeçalho e quem está nele)
    ganha o contorno do tema */
 .voice-draggable { cursor: grab; }
@@ -2531,7 +2539,7 @@ html[data-tips="off"] .tip { display: none !important; }
 .tile:not(.small) .tile-name { height: 64px; align-items: flex-start; padding: 8px 8px 0 12px; background: linear-gradient(var(--scrim), transparent); color: var(--on-video); }
 .tile:not(.small) .tile-name > :not(.tile-bar) { margin-top: 3px; }
 .tile:not(.small) .tile-name :is(.tile-chip.live, .tile-quality), .music-tile:not(.small) :is(.music-note, .music-where) { display: none; }
-.tile:not(.small) .tile-noaudio { color: var(--on-video); }
+.tile:not(.small) :is(.tile-noaudio, .tile-vendo) { color: var(--on-video); }
 .tile:not(.small) .tile-name-text { line-height: 24px; color: var(--on-video); text-shadow: 0 1px 3px var(--scrim); }
 .tile:not(.small) .tile-bar .btn.icon { color: var(--on-video); border-radius: 50%; }
 .tile:not(.small) .tile-bar .btn.icon:hover { background: color-mix(in srgb, var(--on-video) 16%, transparent); }
@@ -3043,7 +3051,7 @@ button.hist-bloco { cursor: pointer; }
 /* ---------- Início: topo, amigos e "Sua sala" (renderHomeTopo e renderHomeAmigos em renderer/primeira-entrada.js) ---------- */
 .home-hello-text { flex: 1; }
 .home-title-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
-.home-title-row .home-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.home-title-row .home-title { min-width: 0; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .home-resumo { margin: 0; font-size: 13px; color: var(--muted); }
 .home-resumo-vivo { color: var(--live); font-weight: 600; }
 .home-name[hidden] { display: none; }
@@ -3397,8 +3405,6 @@ button.home-chip:hover { color: var(--text); }
 /* O Entrar da voz fica só no cartão (o do painel continua no HTML para quem clica nele por código) */
 .pane-voice-actions :is(.pane-join, #paneVoiceSettings) { display: none; }
 .voice-in-call .pane-voice-actions:not(:has(> :not([hidden]):not(.pane-join):not(#paneVoiceSettings))) { display: none; }
-/* Os avisos descem um pouco, longe da barra de título */
-.workspace-in-room .toast { top: 64px; }
 /* Seu sinal: todos os botões redondos de 40 px e sem borda (como a pílula e o Entrar na voz), com o mesmo vão de 8 px
    nas duas linhas, para os de baixo ficarem embaixo dos de cima */
 .seu-sinal .btn.icon { width: 40px; height: 40px; border-radius: 999px; }
@@ -3478,13 +3484,121 @@ button.home-chip:hover { color: var(--text); }
 #workspaceNav #miniVoice.mini-sair { color: var(--warn); }
 #workspaceNav #miniShare.ao-vivo { color: var(--accent); background: var(--accent-soft); }
 
-/* Palco vazio: quem está transmitindo, com o Assistir de cada um, embaixo da constelação */
-#room .empty-stage:has(.empty-live:not([hidden])) { gap: 12px; }
-:root[data-skin] #room .empty-stage:has(.empty-live:not([hidden])) { align-content: center; }
-#emptyText.empty-rotulo { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
-.empty-live { position: relative; z-index: 1; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
-.empty-assistir { display: inline-flex; align-items: center; gap: 8px; }
-.empty-assistir svg { width: 13px; height: 13px; fill: currentColor; stroke: none; }
+/* Palco vazio com mais gente (renderer/membros.js: renderPalcoGente): a música do seu canal ou um cartão por pessoa.
+   A decoração do tema (a logo, a placa, o desenho do fundo) e o texto saem da frente; a linha de sistema fica */
+#room .empty-stage:is(.com-gente, .com-convite) { align-content: center; gap: 28px; }
+#room .empty-stage:is(.com-gente, .com-convite)::before, #room .empty-stage:is(.com-gente, .com-convite) .eva-plate, #room .empty-stage:is(.com-gente, .com-convite) #emptyText { display: none; }
+:root[data-skin="arasaka"] #room .empty-stage:is(.com-gente, .com-convite) { background: none; }
+/* Convidar: só com você sozinho na sala, em cima do texto do palco vazio */
+.palco-convite {
+  position: relative; z-index: 1; justify-self: center; display: flex; flex-wrap: wrap; justify-content: flex-start; align-items: center; gap: 24px 28px;
+  width: min(468px, 100%); box-sizing: border-box; padding: 24px; text-align: left;
+  border: 1px solid var(--line); border-radius: var(--radius-lg); background: color-mix(in srgb, var(--panel) 92%, transparent);
+  box-shadow: 0 20px 50px -24px rgba(0, 0, 0, .6);
+}
+.palco-convite[hidden] { display: none; }
+/* O QR é sempre escuro sobre claro, qualquer que seja o tema (os leitores pedem isso) */
+.pc-qr { flex: none; width: 168px; height: 168px; overflow: hidden; border-radius: var(--radius); box-shadow: 0 0 0 1px var(--line); }
+.pc-qr[hidden] { display: none; }
+.pc-qr .qr { display: block; width: 100%; height: 100%; }
+.pc-dados { display: grid; gap: 6px; min-width: 0; flex: 1 1 200px; }
+.pc-rotulo { font-size: 11px; font-weight: 700; line-height: 1; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.pc-codigo {
+  margin-bottom: 10px; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 28px; font-weight: 600; line-height: 1.2;
+  letter-spacing: .08em; color: var(--text); user-select: all; white-space: nowrap;
+}
+/* Endereço (26.x.x.x:8765) é mais comprido que o código de 6 letras: fonte menor, sem quebrar no meio do número */
+.pc-codigo.longo { font-size: 19px; letter-spacing: .03em; }
+.pc-dados .btn { justify-self: start; display: inline-flex; align-items: center; gap: 8px; }
+.pc-dados .btn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+/* A música em cima e os cartões embaixo; se não cabem na altura do palco, rolam */
+.palco-gente {
+  position: relative; z-index: 1; display: grid; justify-items: center; align-content: safe center; gap: 36px; width: 100%;
+  max-height: 100%; overflow-y: auto; text-align: left;
+}
+#room .empty-stage.com-gente { grid-template-rows: minmax(0, 1fr); }
+.palco-gente[hidden] { display: none; }
+.palco-gente svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Os cartões */
+.pg-agora { display: grid; gap: 22px; width: min(900px, 100%); }
+.pg-cartoes { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 260px)); gap: 14px; justify-content: center; }
+.pg-cartao {
+  display: block; padding: 0; overflow: hidden; text-align: left; font: inherit; color: var(--text);
+  border-radius: 8px; border: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 92%, transparent);
+}
+button.pg-cartao { cursor: pointer; transition: border-color .15s, translate .15s; }
+button.pg-cartao:is(:hover, :focus-visible) { border-color: var(--accent); translate: 0 -2px; }
+.pg-midia { position: relative; aspect-ratio: 16 / 9; display: grid; place-items: center; overflow: hidden; background: var(--sunken); }
+.pg-midia > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.pg-midia .rot {
+  position: relative; z-index: 1; display: flex; gap: 8px; align-items: center; padding: 0 12px; text-align: center;
+  font-size: 15px; font-weight: 700; line-height: 1.1; color: #fff; text-shadow: 0 2px 12px rgba(0, 0, 0, .6);
+}
+.pg-midia .rot svg { width: 16px; height: 16px; flex: none; }
+.pg-midia.jogo, .pg-midia.ouvindo { background: var(--arte); }
+.pg-midia.jogo::before { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(transparent 40%, rgba(0, 0, 0, .55)); }
+.pg-midia.ouvindo .rot { font-size: 13px; }
+.pg-midia.ouvindo > img { filter: brightness(.55); }
+.pg-midia.nada .avatar { width: 48px; height: 48px; font-size: 20px; opacity: .55; }
+.pg-midia.tela > svg { width: 30px; height: 30px; color: var(--muted); opacity: .7; }
+/* "Assistindo": a tela de quem você assiste, com as telas minimizadas */
+.pg-chip {
+  position: absolute; left: 8px; top: 8px; z-index: 2; padding: 4px 7px; border-radius: 4px; background: var(--ok-soft); color: var(--ok);
+  font-size: 10px; font-weight: 700; line-height: 1; letter-spacing: .12em; text-transform: uppercase;
+}
+.pg-assistir { position: absolute; inset: 0; z-index: 3; display: grid; place-items: center; background: rgba(5, 8, 14, .55); opacity: 0; transition: opacity .15s; }
+.pg-assistir span { display: inline-flex; gap: 8px; align-items: center; padding: 9px 16px; border-radius: 18px; background: var(--accent); color: #fff; font-size: 13px; font-weight: 700; line-height: 1; }
+.pg-assistir svg { width: 16px; height: 16px; }
+button.pg-cartao:is(:hover, :focus-visible) .pg-assistir { opacity: 1; }
+.pg-info { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; padding: 10px 12px; }
+.pg-info > .avatar { grid-row: 1 / 3; width: 30px; height: 30px; font-size: 13px; }
+/* Transmitindo: anel azul (a cor de destaque) em volta da foto; falando, o verde vem por fora dele */
+.pg-cartao.transmitindo .pg-info > .avatar { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--accent); }
+.pg-cartao.speaking .pg-info > .avatar { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--ok); }
+.pg-cartao.transmitindo.speaking .pg-info > .avatar { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--accent), 0 0 0 6px var(--ok); }
+.pg-nome { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pg-cartao.eu .pg-nome { color: var(--accent); }
+.pg-icones { grid-row: 1 / 3; grid-column: 3; display: flex; gap: 6px; color: var(--warn); }
+.pg-icones svg { width: 14px; height: 14px; display: block; }
+.pg-fazendo { grid-column: 2; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pg-fazendo b { color: var(--text-2); font-weight: 500; }
+
+/* A música do seu canal que você não está ouvindo; clicar ouve junto */
+.pg-musica {
+  display: grid; grid-template-columns: 220px minmax(0, 340px); gap: 28px; align-items: center; padding: 0;
+  border: 0; background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer;
+}
+.pg-capa {
+  position: relative; width: 220px; aspect-ratio: 1; border-radius: 8px; overflow: hidden;
+  background: radial-gradient(circle at 30% 30%, var(--logo-1), transparent 55%), radial-gradient(circle at 75% 70%, var(--logo-2), transparent 55%), #1A1030;
+  box-shadow: 0 20px 60px -20px color-mix(in srgb, var(--logo-2) 50%, transparent); transition: translate .15s;
+}
+.pg-capa::after { content: ""; position: absolute; inset: 0; background: var(--st-logo, none) center / 46% no-repeat; opacity: .5; mix-blend-mode: screen; }
+.pg-musica:is(:hover, :focus-visible) .pg-capa { translate: 0 -2px; }
+.pg-musica-info { display: block; min-width: 0; }
+.pg-musica-rot { display: flex; gap: 8px; align-items: center; font-size: 11px; line-height: 1; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); }
+.pg-musica-rot svg { width: 13px; height: 13px; flex: none; color: var(--accent); }
+.pg-musica-titulo { display: block; margin: 12px 0 4px; font-size: 26px; font-weight: 600; line-height: 1.15; overflow-wrap: anywhere; }
+.pg-musica-art { display: block; min-height: 1.4em; color: var(--text-2); }
+.pg-viz { display: flex; align-items: end; gap: 3px; height: 46px; margin: 22px 0 14px; }
+.pg-viz span {
+  flex: 1; height: 100%; border-radius: 2px; background: linear-gradient(var(--logo-3), var(--logo-2));
+  transform-origin: bottom; transform: scaleY(.2); animation: pg-viz 1s ease-in-out infinite alternate;
+}
+@keyframes pg-viz { to { transform: scaleY(1); } }
+.pg-viz.parada span { animation: none; transform: scaleY(var(--h)); opacity: .45; }
+.app-blurred .pg-viz span { animation-play-state: paused; }
+:root[data-gamer="on"] .pg-viz span { transform: scaleY(var(--h)); } /* modo gamer: paradas, em alturas diferentes */
+@media (prefers-reduced-motion: reduce) {
+  .pg-viz span { animation: none; transform: scaleY(var(--h)); }
+}
+.pg-barra { display: block; height: 4px; border-radius: 2px; background: var(--panel-3); overflow: hidden; }
+.pg-barra span { display: block; height: 100%; width: 0; border-radius: 2px; background: var(--text); }
+.pg-tempo { display: flex; justify-content: space-between; margin-top: 8px; font-size: 11px; line-height: 1; color: var(--muted); font-variant-numeric: tabular-nums; }
+.pg-musica-quem { display: flex; align-items: center; gap: 8px; margin-top: 18px; font-size: 12px; color: var(--muted); }
+.pg-musica-quem .avatar { width: 20px; height: 20px; font-size: 9px; margin-right: -6px; box-shadow: 0 0 0 2px var(--bg); }
+.pg-musica-quem .avatar + span { margin-left: 10px; }
 
 /* ---------- Modo Líder (docs/spec/modo-lider.md): o selo da subsala, o menu do modo e a linha no Seu sinal ---------- */
 .voice-channel-selo { flex: none; padding: 2px 7px; border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); border-radius: 999px;
@@ -3602,6 +3716,15 @@ button.home-chip:hover { color: var(--text); }
 .mutado-aviso[hidden] { display: none; }
 .callbar-on .mutado-aviso { bottom: 80px; }
 #mutadoIcone { display: flex; }
+/* A ação é o que mais chama atenção: cheia, na cor do aviso */
+#mutadoLigar { background: var(--warn); border-color: var(--warn); color: var(--bg); }
+#mutadoLigar:hover { background: color-mix(in srgb, var(--warn) 85%, var(--text)); }
+#mutadoFechar { width: 28px; height: 28px; margin-left: -4px; border-radius: 50%; background: transparent; border-color: transparent; box-shadow: none; color: var(--muted); }
+#mutadoFechar:hover { color: var(--text); background: color-mix(in srgb, var(--text) 10%, transparent); }
+#mutadoFechar svg { width: 14px; height: 14px; }
 #mutadoIcone svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 /* O palco vazio deixa o pé livre para a barra da chamada não cobrir os Assistir */
 .na-sala #room .empty-stage { padding-bottom: 84px; }
+/* Na voz (renderCallbar), as telas também: a barra fica numa faixa só dela, sem cobrir a barra de play nem a legenda.
+   A margem (e não o padding) encolhe o #tiles, e o palco (palco.js) refaz o layout com a altura que sobra */
+.callbar-reserva #room #tiles:not(.minimizado) { margin-bottom: 84px; }

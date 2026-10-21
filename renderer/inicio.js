@@ -18,6 +18,8 @@ setIcon($('voiceJoinMore'), 'chevronUp', 'Escolher o canal para entrar');
 $('voiceMute').onclick = () => voice.mute();
 $('mutadoIcone').innerHTML = ICON.micOff;
 $('mutadoLigar').onclick = () => { if (voice.muted) voice.mute(); mutadoFala.ate = 0; $('mutadoAviso').hidden = true; };
+$('mutadoFechar').innerHTML = ICON.close;
+$('mutadoFechar').onclick = () => { mutadoFala.calado = true; mutadoFala.ate = 0; $('mutadoAviso').hidden = true; };
 $('paneVoiceSubsala').onclick = () => subsalaButtonClick($('paneVoiceSubsala'));
 $('voiceDeafen').onclick = () => voice.deafen();
 // Captura antes de qualquer outro atalho da página
@@ -382,6 +384,13 @@ $('roomAmigosMembros').onchange = () => save('salaAmigosMembros', $('roomAmigosM
 $('roomPassword').addEventListener('keydown', (e) => { if (e.key === 'Enter') createRoom(); });
 $('joinBtn').onclick = joinRoom;
 $('roomAddr').addEventListener('keydown', (e) => { if (e.key === 'Enter') joinRoom(); });
+// Colar o link de convite (telap2p://sala?d=…, o do QR do palco vazio): entra como o cartão do convite das mensagens
+$('roomAddr').addEventListener('input', () => {
+  const cv = lerConvite($('roomAddr').value.trim());
+  if (!cv) return;
+  $('roomAddr').value = '';
+  void aceitarConvite(cv, 'quem te convidou');
+});
 $('joinPassword').addEventListener('keydown', (e) => { if (e.key === 'Enter') joinRoom(); });
 
 // O host, ao sair com mais gente na sala: passa a sala para o mais antigo ou encerra para todos

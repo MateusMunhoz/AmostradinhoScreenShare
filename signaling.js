@@ -14,6 +14,9 @@ const {
 } = require('./sala-protocolo');
 
 const LOCAL = ['127.0.0.1', '::1', '::ffff:127.0.0.1'];
+// Quanto tempo o lugar de quem caiu fica guardado (o app dela tenta voltar nesse tempo)
+const RECONNECT_GRACE_MS = 30000;
+const CAIU = 4000; // o código com que o app fecha a conexão que parou de responder (renderer/sala.js)
 
 // Avisa o anúncio das sessões quando entra ou sai alguém (o número de pessoas muda)
 function onRoomChange(cb) {
@@ -47,6 +50,8 @@ function startServer(port, password = '', seed = {}) { // a senha pode mudar dep
     const server = new WebSocketServer({ port, host: '0.0.0.0', maxPayload: 256 * 1024 });
     const onlyRazze = seed.onlyRazze === true;
     const members = new Map(); // id -> { ws, name, sharing, version, addrs }
+    const away = new Map(); // id -> timer: a conexão caiu e a pessoa tem um tempo para voltar (continua em members)
+    const graceMs = Number.isFinite(seed.graceMs) ? seed.graceMs : RECONNECT_GRACE_MS;
     let nextId = Math.max(1, Math.floor(Number(seed.nextId)) || 1);
     const chat = createChat(seed.chat);
     const subsalas = createSubsalas(seed.subsalas, seed.lider); // as subsalas de voz continuam depois da troca de host
@@ -62,7 +67,7 @@ function startServer(port, password = '', seed = {}) { // a senha pode mudar dep
 
     server.on('listening', () => {
       wss = server;
-      room = { sessao, port, password, members, hostId: () => hostId };
+      room = { sessao, port, password, members, away, hostId: () => hostId };
       pingTimer = setInterval(() => {
         for (const ws of server.clients) {
           if (ws.isAlive === false) { ws.terminate(); continue; }
@@ -120,25 +125,36 @@ function startServer(port, password = '', seed = {}) { // a senha pode mudar dep
             send(ws, { type: 'error', message: 'Senha incorreta.' });
             return ws.close();
           }
-          if (members.size >= MAX_MEMBERS) {
+          // Voltando depois da troca de host: fica com o mesmo número, e as conexões diretas continuam valendo
+          const resume = String(msg.resume || '');
+          const client = /^[a-f0-9]{32}$/.test(String(msg.client || '')) ? msg.client : '';
+          // Voltando depois de a conexão cair (no tempo de espera, ou antes de o servidor notar a queda): o mesmo PC
+          // retoma o mesmo lugar, e a conexão antiga cai sem tirar ninguém da sala
+          const old = /^\d{1,6}$/.test(resume) ? members.get(resume) : null;
+          const resuming = !!(old && client && old.client === client);
+          if (!resuming && members.size >= MAX_MEMBERS) {
             send(ws, { type: 'error', message: 'A sala está cheia.' });
             return ws.close();
           }
-          // Voltando depois da troca de host: fica com o mesmo número, e as conexões diretas continuam valendo
-          const resume = String(msg.resume || '');
+          if (resuming) {
+            clearTimeout(away.get(resume));
+            away.delete(resume);
+            old.ws.terminate();
+          }
           // O mesmo PC entrando de novo (tentou, deu erro, tentou de novo): a conexão antiga era um fantasma que
           // continuava respondendo e aparecia repetida na lista. Sai da lista e cai antes de a nova entrar.
-          const client = /^[a-f0-9]{32}$/.test(String(msg.client || '')) ? msg.client : '';
           if (client) {
             for (const [oldId, old] of members) {
               if (old.client !== client || oldId === resume) continue;
+              clearTimeout(away.get(oldId));
+              away.delete(oldId);
               members.delete(oldId);
               broadcast({ type: 'member-left', id: oldId });
               memberGone({ subsalas, broadcast }, oldId);
               old.ws.terminate();
             }
           }
-          if (/^\d{1,6}$/.test(resume) && !members.has(resume)) {
+          if (/^\d{1,6}$/.test(resume) && (resuming || !members.has(resume))) {
             id = resume;
             nextId = Math.max(nextId, Number(resume) + 1);
           } else {
@@ -152,8 +168,8 @@ function startServer(port, password = '', seed = {}) { // a senha pode mudar dep
             type: 'welcome',
             id,
             hostId,
-            members: [...members].map(([mid, m]) => memberInfo(mid, m)),
-            features: ['chat', 'voice', 'handoff', 'sessoes', 'subsalas', 'subsala-move', 'lider', 'musica', 'senha'],
+            members: [...members].filter(([mid]) => mid !== id).map(([mid, m]) => memberInfo(mid, m)),
+            features: ['chat', 'voice', 'handoff', 'sessoes', 'subsalas', 'subsala-move', 'lider', 'musica', 'senha', 'ping'],
             chat: chat.log,
             subsalas: subsalas.list,
             lider: subsalas.liderMsg(),
@@ -182,12 +198,22 @@ function startServer(port, password = '', seed = {}) { // a senha pode mudar dep
         handleMemberMessage({ members, broadcast, chat, subsalas, musicas }, id, me, msg);
       });
 
-      ws.on('close', () => {
+      ws.on('close', (code) => {
         if (!me || members.get(id) !== me) return; // já tinha saído (substituída pela conexão nova do mesmo PC)
-        members.delete(id);
-        broadcast({ type: 'member-left', id });
-        memberGone({ subsalas, broadcast }, id);
-        roomChanged();
+        const sai = () => {
+          clearTimeout(away.get(id));
+          away.delete(id);
+          if (members.get(id) !== me) return;
+          members.delete(id);
+          broadcast({ type: 'member-left', id });
+          memberGone({ subsalas, broadcast }, id);
+          roomChanged();
+        };
+        // Fechou de propósito (saiu da sala, fechou o app): sai na hora. Caiu (1006: a rede piscou, o servidor parou
+        // de ouvir a pessoa; 4000: o app notou que a conexão morreu): espera um pouco, o app volta com o mesmo número
+        if (code !== 1006 && code !== CAIU) return sai();
+        clearTimeout(away.get(id));
+        away.set(id, setTimeout(sai, graceMs));
       });
     });
   });
@@ -199,6 +225,7 @@ function stopServer({ endRoom = false } = {}) {
   pingTimer = null;
   clearInterval(musicTimer);
   musicTimer = null;
+  if (room) for (const t of room.away.values()) clearTimeout(t);
   room = null;
   if (wss) {
     for (const ws of wss.clients) {

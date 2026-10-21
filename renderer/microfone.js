@@ -137,11 +137,13 @@ function tickGate(mic) {
 }
 
 // Falando com o microfone desligado: o microfone continua aberto (só a faixa da chamada fica parada), então a porta de
-// voz ainda mede. Meio segundo de voz mostra o aviso, que fica até 3 s depois de parar de falar.
-const mutadoFala = { desde: 0, ate: 0 };
+// voz ainda mede. Meio segundo de voz mostra o aviso, que fica até 3 s depois de parar de falar. O × (calado) esconde
+// o aviso até o microfone ser ligado e desligado de novo: quem fica no mudo de propósito não vê ele a cada frase.
+const mutadoFala = { desde: 0, ate: 0, calado: false };
 function avisoMutado(now) {
   const mudo = !!voice.session && voice.muted;
-  if (mudo && micNow?.porta?.open) {
+  if (!mudo) mutadoFala.calado = false;
+  if (mudo && !mutadoFala.calado && micNow?.porta?.open) {
     mutadoFala.desde ||= now;
     if (now - mutadoFala.desde > 500) mutadoFala.ate = now + 3000;
   } else mutadoFala.desde = 0;

@@ -38,8 +38,8 @@ test('vídeo do YouTube: só ids de 11 caracteres; a semente (troca de host) lim
   assert.equal(cleanVideoId('curto'), '');
   assert.equal(cleanVideoId('<script>abc'), '');
   let t = 1000;
-  const m = createMusicas([{ ch: '', videoId: VID, pos: 42, playing: false, by: '3', title: 'x\u0001y' }, { ch: '', videoId: VID2 }, { ch: '2', videoId: 'ruim' }], () => t);
-  assert.deepEqual([...m.map.values()], [{ ch: '', videoId: VID, title: 'x y', by: '3', playing: false, pos: 42, at: 1000 }]);
+  const m = createMusicas([{ ch: '', videoId: VID, pos: 42, playing: false, by: '3', title: 'x\u0001y', dur: 212.34 }, { ch: '', videoId: VID2 }, { ch: '2', videoId: 'ruim' }], () => t);
+  assert.deepEqual([...m.map.values()], [{ ch: '', videoId: VID, title: 'x y', by: '3', playing: false, pos: 42, at: 1000, dur: 212.3 }]);
   t = 2000;
   assert.deepEqual(m.msg(), { type: 'musicas', list: [...m.map.values()], now: 2000 });
 });
@@ -62,7 +62,7 @@ test('uma música por canal: vai para o canal de quem pôs; quem é de fora não
   a.send({ type: 'musica-set', videoId: VID });
   const set = await b.wait(m => m.type === 'musicas');
   assert.equal(set.list.length, 1);
-  assert.deepEqual({ ...set.list[0], at: 0 }, { ch: '1', videoId: VID, title: '', by: a.welcome.id, playing: true, pos: 0, at: 0 });
+  assert.deepEqual({ ...set.list[0], at: 0 }, { ch: '1', videoId: VID, title: '', by: a.welcome.id, playing: true, pos: 0, at: 0, dur: 0 });
   // Outra música no mesmo canal: recusada, com o motivo
   a.send({ type: 'musica-set', videoId: VID2 });
   assert.match((await a.wait(m => m.type === 'musica-erro')).text, /Já tem uma música em Subsala_1/);
@@ -101,11 +101,11 @@ test('uma música por canal: vai para o canal de quem pôs; quem é de fora não
 
 test('troca de host: o servidor novo continua com a música, do ponto em que estava', async t => {
   const port = await freePort();
-  assert.equal((await startServer(port, '', { subsalas: [{ id: '2' }], musicas: [{ ch: '2', videoId: VID, pos: 95.5, playing: true, by: '5' }], hostId: '5', nextId: 6 })).ok, true);
+  assert.equal((await startServer(port, '', { subsalas: [{ id: '2' }], musicas: [{ ch: '2', videoId: VID, pos: 95.5, playing: true, by: '5', dur: 213 }], hostId: '5', nextId: 6 })).ok, true);
   t.after(stopServer);
   const a = await client(port, { resume: '5' }); t.after(() => a.ws.terminate());
   const m = a.welcome.musicas[0];
-  assert.deepEqual([m.ch, m.videoId, m.pos, m.playing, m.by], ['2', VID, 95.5, true, '5']);
+  assert.deepEqual([m.ch, m.videoId, m.pos, m.playing, m.by, m.dur], ['2', VID, 95.5, true, '5', 213]);
   assert.ok(Math.abs(m.at - a.welcome.now) < 1000);
 });
 
@@ -136,4 +136,47 @@ test('músicas esquecidas: pausada 4 min sai; sem ninguém no canal nem ouvindo,
   // Ouvindo só vale para música que existe
   msg('3', { type: 'musica-ouvindo', ch: '2', on: true });
   assert.equal(members.get('3').ouvindo.size, 0);
+});
+
+test('duração: vale a primeira que o player contar, só do vídeo do canal; inválida não entra; trocar zera', () => {
+  let t = 0;
+  const musicas = createMusicas([{ ch: '', videoId: VID, by: '1' }], () => t);
+  const members = new Map([['1', { ws: null, voiceSession: 's', voiceChannel: '' }], ['3', { ws: null, voiceSession: '' }]]);
+  let avisos = 0;
+  const msg = (id, m) => handleMemberMessage({ members, broadcast() { avisos++; }, chat: null, subsalas: null, musicas }, id, members.get(id), m);
+  const m = () => musicas.map.get('');
+  for (const dur of [0, -5, 0.5, 'abc', 24 * 3600 + 1, NaN, Infinity]) msg('3', { type: 'musica-ctl', ch: '', action: 'duracao', dur, videoId: VID });
+  assert.equal(m().dur, 0);
+  msg('3', { type: 'musica-ctl', ch: '', action: 'duracao', dur: 213, videoId: VID2 }); // de outro vídeo (atrasada, depois de trocar)
+  assert.equal(m().dur, 0);
+  assert.equal(avisos, 0);
+  msg('3', { type: 'musica-ctl', ch: '', action: 'duracao', dur: 212.987, videoId: VID }); // qualquer um que ouça conta, como o título
+  assert.equal(m().dur, 213);
+  assert.equal(avisos, 1);
+  msg('1', { type: 'musica-ctl', ch: '', action: 'duracao', dur: 99, videoId: VID });
+  assert.equal(m().dur, 213, 'vale a primeira');
+  assert.deepEqual(musicas.msg().list[0].dur, 213);
+  msg('1', { type: 'musica-ctl', ch: '', action: 'trocar', videoId: VID2 });
+  assert.equal(m().dur, 0);
+});
+
+test('música que acabou sai sozinha (com gente no canal e ninguém ouvindo); sem duração, não', () => {
+  let t = 0;
+  const musicas = createMusicas([{ ch: '', videoId: VID, by: '9', dur: 200 }, { ch: '2', videoId: VID2, by: '9' }], () => t);
+  const members = new Map([['1', { ws: null, voiceSession: 's', voiceChannel: '' }], ['2', { ws: null, voiceSession: 's', voiceChannel: '2' }]]);
+  // Tocando do começo: aos 204 s ainda fica (folga de 5 s para o player de quem ouve terminar), aos 205 s sai
+  t = 204000;
+  assert.equal(limparMusicas(musicas, members), false);
+  t = 205000;
+  assert.equal(limparMusicas(musicas, members), true);
+  assert.deepEqual([...musicas.map.keys()], ['2'], 'a sem duração continua (ninguém contou quanto dura)');
+  // Pausada depois do fim não sai pelo fim (só pela regra da pausa)
+  const p = createMusicas([{ ch: '', videoId: VID, by: '9', dur: 10, playing: false, pos: 10 }], () => t);
+  assert.equal(limparMusicas(p, members), false);
+  // Pulou para perto do fim: conta a partir do ponto novo
+  const s = createMusicas([{ ch: '', videoId: VID, by: '9', dur: 100, pos: 90 }], () => t);
+  t += 14000;
+  assert.equal(limparMusicas(s, members), false);
+  t += 1000;
+  assert.equal(limparMusicas(s, members), true);
 });

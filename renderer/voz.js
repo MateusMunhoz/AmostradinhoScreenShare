@@ -276,6 +276,7 @@ function syncMuteSound() {
 }
 function renderVoice() {
   if (typeof renderMusicTiles === 'function') renderMusicTiles(); // os controles da música dependem do seu canal (musica.js)
+  if (typeof renderPalcoGente === 'function') renderPalcoGente(); // palco vazio: microfone, fone e canal de cada um (membros.js)
   if (typeof syncShareOpen === 'function') syncShareOpen(); // transmissão só para o seu canal: quem saiu dele para de ver
   if (typeof syncComandoVozMic === 'function') void syncComandoVozMic(); // comando de voz: na voz, o microfone dele espera aberto
   const active = !!voice.session;
@@ -284,7 +285,7 @@ function renderVoice() {
   $('voiceDock').classList.toggle('active', active || voice.pending);
   if (active || voice.pending) {
     join.className = 'btn icon voice-leave';
-    setIcon(join, 'leave', voice.pending ? 'Cancelar entrada na voz' : 'Sair da voz');
+    setIcon(join, 'phoneOff', voice.pending ? 'Cancelar entrada na voz' : 'Sair da voz');
   } else renderVoiceJoin();
   $('voiceMute').hidden = $('voiceDeafen').hidden = $('voiceMe').hidden = !active;
   setIcon($('voiceMute'), voice.muted ? 'micOff' : 'mic', voice.muted ? 'Ligar o microfone' : 'Desligar o microfone');

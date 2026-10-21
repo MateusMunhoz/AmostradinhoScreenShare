@@ -239,7 +239,7 @@ test('pedir para falar: a fila, quem decide, aceitar, recusar, tirar, devolver e
   b.send({ type: 'voice-state', session: 'sb', channel: '' });
   b.send({ type: 'lider-pedir' });
   await c.wait(m => m.type === 'lider' && m.pedidos.length === 1);
-  b.ws.terminate();
+  b.ws.close(); // saiu (de propósito: a queda tem o tempo de espera)
   await c.wait(m => m.type === 'lider' && m.pedidos.length === 0);
   // Quem entra depois recebe o estado
   const d = await client(port); t.after(() => d.ws.terminate());

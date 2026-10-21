@@ -44,6 +44,9 @@ run('Música junto (YouTube)', 180000, async () => {
   check('A música entra na Subsala_1 e a tela dela abre para quem pôs', true);
   await A.waitFor(`${MU('1')}?.ready && ${MU('1')}.state === 1`, 30000);
   check('O player do YouTube toca dentro do app (sem erro de player)', await A.eval(`!${MU('1')}.error`));
+  // A duração: o player de Ana conta para a sala, e Bia (que ainda não ouve) recebe junto com a música
+  await B.waitFor(`state.musicas.get('1')?.dur > 0`, 15000);
+  check('A sala guarda quanto a música dura, e quem não ouve recebe (o vídeo tem 3 min e pouco)', await B.eval(`state.musicas.get('1').dur > 180 && state.musicas.get('1').dur < 240`));
   // Legendas: desligadas por padrão (o YouTube liga sozinho, até traduzida); o CC da faixa de cima liga e desliga
   // (só para quem clicou) e fica salvo. Confere dentro do player, pelo DevTools do iframe do YouTube
   const Y = await attach(9561, (t) => t.type === 'iframe' && t.url.includes('youtube'));

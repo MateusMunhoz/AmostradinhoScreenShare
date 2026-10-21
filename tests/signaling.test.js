@@ -285,3 +285,54 @@ test('idade da voz recomeça ao trocar de canal e some ao sair da voz', async t 
   a.send({ type: 'voice-state', session: 'sa', channel: '1' }); // chegou noutro canal: recomeça
   assert.ok((await a.wait(m => m.type === 'voice-state')).idade < 100);
 });
+
+test('ping: o servidor responde só a quem perguntou e anuncia no welcome', async t => {
+  const port = await freePort();
+  assert.equal((await startServer(port)).ok, true);
+  t.after(() => stopServer());
+  const a = await client(port); t.after(() => a.ws.terminate());
+  const b = await client(port); t.after(() => b.ws.terminate());
+  assert.ok(a.welcome.features.includes('ping'));
+  a.send({ type: 'ping' });
+  await a.wait(m => m.type === 'pong');
+  a.send({ type: 'chat', text: 'barreira' });
+  await b.wait(m => m.type === 'chat');
+  assert.equal(b.messages.some(m => m.type === 'pong'), false);
+});
+
+test('conexão que cai: o lugar fica guardado, e o mesmo PC volta com o mesmo número', async t => {
+  const port = await freePort();
+  assert.equal((await startServer(port, '', { graceMs: 300 })).ok, true);
+  t.after(() => stopServer());
+  const host = await client(port, { client: 'a'.repeat(32) }); t.after(() => host.ws.terminate());
+  const ana = await client(port, { client: 'b'.repeat(32) });
+  ana.ws.terminate(); // caiu (sem fechar direito)
+  await new Promise(r => setTimeout(r, 100));
+  assert.equal(host.messages.some(m => m.type === 'member-left'), false, 'ninguém vê sair enquanto ela pode voltar');
+  // Outro PC não pega o lugar dela
+  const intrusa = await client(port, { client: 'c'.repeat(32), resume: ana.welcome.id }); t.after(() => intrusa.ws.terminate());
+  assert.notEqual(intrusa.welcome.id, ana.welcome.id);
+  const volta = await client(port, { client: 'b'.repeat(32), resume: ana.welcome.id }); t.after(() => volta.ws.terminate());
+  assert.equal(volta.welcome.id, ana.welcome.id);
+  assert.equal(volta.welcome.members.some(m => m.id === ana.welcome.id), false, 'não vê a si mesma na lista');
+  await host.wait(m => m.type === 'member-joined' && m.id === ana.welcome.id && m.resumed === true);
+  await new Promise(r => setTimeout(r, 450));
+  assert.equal(host.messages.some(m => m.type === 'member-left' && m.id === ana.welcome.id), false, 'voltou: o tempo de espera não a tira');
+});
+
+test('conexão que cai e não volta sai depois da espera; quem sai de propósito sai na hora', async t => {
+  const port = await freePort();
+  assert.equal((await startServer(port, '', { graceMs: 300 })).ok, true);
+  t.after(() => stopServer());
+  const host = await client(port); t.after(() => host.ws.terminate());
+  const ana = await client(port, { client: 'b'.repeat(32) });
+  const beto = await client(port, { client: 'c'.repeat(32) });
+  const t0 = Date.now();
+  ana.ws.terminate();
+  beto.ws.close(1000);
+  assert.equal((await host.wait(m => m.type === 'member-left' && m.id === beto.welcome.id)).id, beto.welcome.id);
+  assert.ok(Date.now() - t0 < 250, 'saiu de propósito: sem espera');
+  await host.wait(m => m.type === 'member-left' && m.id === ana.welcome.id);
+  assert.ok(Date.now() - t0 >= 280, 'caiu: sai só depois da espera');
+  assert.equal(roomInfo()?.pessoas ?? 1, 1);
+});

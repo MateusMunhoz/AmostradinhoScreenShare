@@ -73,9 +73,18 @@ Tudo o que dá para fazer no Nebula, com os detalhes. Para começar do zero, vej
   - **Transmitir tela**. Transmitindo, a pílula **Transmitindo tela** aparece no lugar do botão, com a mesma forma, com o monitor aceso e, à direita, o olho com
     quantos assistem (o olho só aparece com alguém assistindo; parar o mouse em cima mostra os nomes; clicar em qualquer parte da pílula abre a sua tela no palco, e a dica dela diz qual tela é), e ao lado dela, redondos, **Quem pode assistir**, **Trocar** e **Parar** (cheio de laranja; o **Sair da voz**, em cima, é só o ícone laranja). Na voz, à esquerda dos botões aparece o canal em que você está (**Voz geral** ou o nome da subsala);
   - as janelas flutuantes abertas.
-- **Palco vazio:** com alguém transmitindo, aparece **Transmitindo agora** com um **Assistir** para cada pessoa.
-- **Barra da chamada:** na voz, mexer o mouse em cima das telas mostra uma barra no pé delas, no meio, só com ícones,
-  em blocos: **microfone** e **fone** num, **transmitir** (o monitor) no outro, e **Sair da voz** (a porta com seta, em
+- **Palco vazio, sozinho na sala:** um cartão de convite no lugar da logo: o **QR** (leva o convite da sala, sem o passe), o **código** (modo Internet) ou o **endereço** escrito e o botão **Convidar**, que copia o código ou endereço, como o da barrinha. Quem recebe o link do QR (`telap2p://sala?d=…`, lido do celular e mandado ao PC) cola no campo **Entrar** do Início e entra na sala; em sala com senha, digita a senha. O cartão some quando alguém entra.
+- **Palco vazio:** se tem música tocando no seu canal (fora da chamada, a da Voz geral) e você não está ouvindo (mesmo
+  sozinho na sala), aparece a música. Quando ela acaba, sai do palco e da sala. A música mostra: a capa, o canal e quem pôs, o título, o canal do YouTube (com a prévia de links ligada em
+  Privacidade), barrinhas que se mexem enquanto toca (param com a música pausada, o app fora de foco, no modo gamer e com
+  "reduzir movimento"), o ponto em que está e o total (aparece depois que alguém da sala começa a ouvir) e quem está no canal.
+  Clicar ouve junto. Embaixo da música (sem ela, quando há mais gente na sala; sozinho e sem música, fica a decoração do tema), aparece um cartão para cada pessoa da sala, todos juntos (na voz ou não): em cima, a tela de quem transmite (a foto dela ganha um anel azul), a imagem ou o nome do jogo, a música ou a
+  foto; embaixo, o nome, o microfone e o fone desligados e o que está fazendo agora (**Transmitindo**, **Jogando** há
+  quanto tempo, **Ouvindo** a banda, com a faixa na imagem de cima, **Na voz**). Quem fala ganha o anel verde. Clicar no cartão de quem transmite
+  (o mouse em cima mostra **Assistir**) abre a tela.
+- **Barra da chamada:** na voz, mexer o mouse em cima das telas mostra uma barra no pé delas, no meio, numa faixa só
+  dela (na voz as telas terminam um pouco acima, para a barra não cobrir a barra de play nem a legenda), só com ícones,
+  em blocos: **microfone** e **fone** num, **transmitir** (o monitor) no outro, e **Sair da voz** (o telefone desligando, em
   laranja) sozinho. Transmitindo, o monitor fica cheio na cor de ao vivo e, com o mouse em cima, fica laranja e cortado:
   clicar para a transmissão. Ao lado dele aparecem **trocar a tela** (sem parar) e **quem pode assistir** (o mesmo menu
   do cartão). O nome de cada botão aparece na dica. Ela some
@@ -83,8 +92,9 @@ Tudo o que dá para fazer no Nebula, com os detalhes. Para começar do zero, vej
   ela está à vista, os botões que ela repete (microfone, fone, sair, quem pode assistir, trocar e parar) somem do
   **Seu sinal** no painel, com uma transição curta; ficam só os **ajustes da voz**.
 - **Falando com o microfone desligado:** na voz, meio segundo falando com o microfone desligado mostra no pé das telas
-  o aviso laranja **Você está falando com o microfone desligado**, com **Ligar**. Ele some uns 3 s depois que você
-  para de falar.
+  o aviso laranja **Você está falando no mudo**, com **Ligar microfone**. Ele some uns 3 s depois que você
+  para de falar. O **×** esconde o aviso até você ligar e desligar o microfone de novo (para quem fica no mudo de
+  propósito).
 - **Perfil de alguém:** o mesmo cartão em todo lugar (Pessoas da sala, voz em lista e voz no mapa): fundo, foto, nome, onde a pessoa está, as ações (assistir, adicionar como amigo, mandar mensagem para amigos, silenciar e mudar de canal na voz) e o volume.
 - **Barrinha da direita:** em cima, o perfil; no pé, **Início** (vai para o saguão sem sair da sala), **Convidar** (copia o endereço ou o código da sala), o **chat por cima do jogo**, o **modo gamer** (o controle), **Apoiar** (o coração), **Feedback e bugs** (o balão com exclamação), a engrenagem e, por último, depois de uma linha, **Sair** em vermelho (para o host sozinho, **Encerrar**). Convidar e Sair só aparecem numa sala. No saguão, com a sala aberta, o pé mostra **Voltar para a sala** no lugar do Início, com o número de mensagens novas; sair por ali, sendo o host com gente na sala, volta para a sala para perguntar se passa a sala adiante.
 
@@ -185,6 +195,13 @@ Quando há uma sala aberta (de amigo ou, nos outros modos, na sua rede), ela sob
 - **Quem vê:** só os amigos aceitos no Razze. Nenhum IP vai junto, só o servidor, o código e quantas pessoas estão.
 - **Quem não tem conta Razze:** continua entrando pelo código e senha.
 
+### Quando a sua conexão cai
+
+Se a sua internet ou a VPN piscar, o app percebe em até 15 segundos e tenta voltar sozinho. A sala guarda o seu lugar
+por 30 segundos: os outros continuam vendo você, e, se você voltar nesse tempo, a voz e as transmissões seguem de onde
+estavam. Se não voltar, você sai da sala (com o som de saída) e os outros veem você sair. Sair pelo botão tira você na
+hora, sem essa espera.
+
 ### Troca de host
 
 Se o host sai, ou se o app dele fecha ou trava, a sala não acaba.
@@ -221,7 +238,7 @@ Qualidade, codificação e jogo em tela cheia estão em [Desempenho](desempenho.
 
 ## Assistir
 
-- **Assistir:** na lista de pessoas, quem está transmitindo aparece com **Assistir** (o monitor com um play; assistindo, o play vira um quadrado, que para). Na sua linha, o mesmo monitor mostra a sua própria transmissão. O vídeo só começa a ser baixado depois do clique.
+- **Assistir:** na lista de pessoas, quem está transmitindo aparece com **Assistir** (o monitor com um play; assistindo, o play vira um quadrado, que para). Na sua linha, o mesmo monitor mostra a sua própria transmissão. O vídeo só começa a ser baixado depois do clique. Na tela de quem você assiste, ao lado do nome, o olho mostra quantas pessoas estão assistindo aquela transmissão (você incluído). Só quem transmite e quem assiste veem esse número; o resto da sala não recebe. O botão **Minimizar** (o traço, na faixa da tela, também na da música) tira as telas da frente sem parar de assistir: o palco volta a mostrar os cartões de quem está na sala, o som das transmissões e da música continua e o vídeo das transmissões pausa até você voltar. A música fica num player pequeno no canto do palco (o YouTube pede o player à vista enquanto toca), com o botão de voltar em cima. Para voltar, clique no cartão de quem você assiste (com o selo **Assistindo**), na pílula **Minimizado** em cima do palco ou no cartão dela no painel da voz; abrir outra tela também traz todas de volta.
 - **Parar:** clique em **Parar** na lista ou no X da própria tela. A conexão fecha e o download para na hora.
 - **Cada tela** tem uma faixa em cima com o nome da pessoa. Quando ela fala na voz, a borda pisca em verde e aparecem 3 barrinhas ao lado do nome.
 - **Barra do vídeo:** fica por cima do vídeo, em cima. Aparece ao mexer o mouse na tela (ou ao navegar com Tab) e some com o mouse parado por uns 2 segundos ou fora da tela; com o mouse em cima dela, fica. Tem silenciar, volume, janela flutuante, destacar, tela cheia e o X. Clicar duas vezes no vídeo também põe em tela cheia. Resolução, quadros e Mbps de cada tela ficam em [Estatísticas](#estatísticas), na aba Transmissão.
@@ -318,10 +335,10 @@ Clique em **Entrar na voz**, na barra de baixo, para ligar o microfone padrão d
 
 - **Tempo da call:** ao lado do nome de cada canal com gente (**Voz geral** ou subsala) aparece há quanto tempo ele está ativo, como `12:34` ou `1:02:03`. Conta desde quem está há mais tempo no canal; quem sai e volta, ou muda de canal, entra de novo "agora". Precisa de uma sala (host ou servidor) na versão que manda a idade; com sala mais antiga o contador não aparece. Quando o host da sala troca (ou o servidor reinicia), a contagem recomeça do zero para quem continua na voz.
 
-No painel **Chat de voz**, a voz fica dividida em canais: a **Voz geral** e as subsalas.
+No painel **Voz**, a voz fica dividida em canais: a **Voz geral** e as subsalas.
 
 - **Canal vazio:** um canal sem ninguém mostra um espaço vazio com **Ninguém aqui**; clicar nele entra no canal.
-- **Criar:** fora da voz, clique em **+ Nova subsala**, ao lado de **Entrar na Voz geral**; na voz, em **+ Subsala**, na faixa de baixo do painel. Para sair da voz, use a porta com seta do cartão **Seu sinal**. O botão pergunta o modo: **Padrão** (só quem está nela se ouve) ou **Líder** (quem está nela fala para a sala toda; veja **Modo Líder**, logo abaixo). A subsala é criada e você já entra nela. Os nomes são sempre `Subsala_1`, `Subsala_2`, e assim por diante: a nova recebe o número seguinte ao da maior que existe.
+- **Criar:** fora da voz, clique em **+ Nova subsala**, ao lado de **Entrar na Voz geral**; na voz, o mesmo botão fica na faixa de baixo do painel. Para sair da voz, use o telefone desligando do cartão **Seu sinal** (a porta com seta é só para sair da sala). O botão pergunta o modo: **Padrão** (só quem está nela se ouve) ou **Líder** (quem está nela fala para a sala toda; veja **Modo Líder**, logo abaixo). A subsala é criada e você já entra nela. Os nomes são sempre `Subsala_1`, `Subsala_2`, e assim por diante: a nova recebe o número seguinte ao da maior que existe.
 - **Cada canal:** o nome com barrinhas de som na frente: azuis e altas no canal em que você está, cinza e baixas nos outros. Quem está no canal aparece logo embaixo.
 - **Quantas pessoas:** ao lado do nome de cada canal (Voz geral e subsalas), um número diz quantas pessoas estão nele (verde no seu); canal vazio fica sem número.
 - **Entrar:** clique no nome do canal. Fora da voz, isso liga o microfone já naquele canal; na voz, você muda de canal sem sair.
@@ -388,7 +405,7 @@ Uma música por canal (Voz geral ou subsala), que todo mundo ouve junto, no mesm
 - **Controles de todos:** tocar e pausar, o ponto da música, **Trocar** e **Parar a música** valem para todo mundo. Só quem está naquele canal (ou quem pôs a música) controla.
 - **Só seus:** o volume (fica salvo neste PC) e o **X**, que para de ouvir sem parar para os outros.
 - **Como funciona:** cada pessoa toca no player oficial do YouTube, no próprio PC; a sala só combina o que tocar e em que ponto. Cada um vê os próprios anúncios.
-- **Fim:** quando a música acaba, ela sai sozinha e o canal fica livre para outra.
+- **Fim:** quando a música acaba, ela sai sozinha e o canal fica livre para outra, mesmo com ninguém ouvindo: a sala guarda quanto ela dura (o player de quem ouve conta) e tira a música alguns segundos depois do fim. Com o host numa versão antiga, que não guarda a duração, ela sai quando alguém que está ouvindo chega ao fim.
 - **Live do YouTube:** o progresso e o contador dão lugar ao selo **Ao vivo** e cada um assiste na ponta da transmissão, sem pausas para acertar o ponto. Tocar, pausar, **Trocar** e **Parar** continuam valendo para todos; a live não sai sozinha.
 - **Vídeo que não toca:** quem publicou pode não deixar tocar fora do YouTube; a tela avisa para trocar por outro.
 - **Modo Internet:** o servidor da VPS precisa estar atualizado; sem isso, o **Pôr música** não aparece.
@@ -487,8 +504,10 @@ ou aqui a qualquer hora); os jogos da Steam só aparecem depois que você marca 
   na lista não aparece, e nenhum outro nome de programa sai do PC.
 - **Jogos da Steam:** o app lê os jogos instalados na sua Steam e mostra cada um com a imagem da sua biblioteca. Você marca quais
   podem aparecer, vários de uma vez (**Marcar todos**, **Mostrar os marcados**, **Não mostrar nenhum**), e muda quando quiser em
-  **Seus jogos**. Jogo que você não marcou não aparece. Quando o app acha um jogo novo, um aviso pergunta se você quer mostrar
-  (**Escolher** abre essa tela). Vale para jogo aberto pela Steam; no perfil, ele aparece com a imagem dele. Ferramentas da
+  **Seus jogos**. Jogo que você não marcou não aparece. Quando o app acha um jogo novo, a engrenagem da barrinha e a aba
+  **Privacidade** ganham uma bolinha com quantos esperam escolha (some ao abrir a aba). Fora da sala, um aviso diz quais são
+  (**Escolher** abre essa tela; **Agora não** fecha e tira da bolinha); na sala, fica só a bolinha, para não interromper.
+  Cada jogo é avisado uma vez só (fica lembrado neste PC). Com a bolinha na engrenagem, clicar nela abre direto a **Privacidade**. Vale para jogo aberto pela Steam; no perfil, ele aparece com a imagem dele. Ferramentas da
   Steam que não são jogos (redistribuíveis, Proton) ficam de fora.
 - **Mostrar a música que estou ouvindo (Spotify e outros players):** lê o que está tocando nos controles de mídia do Windows (os
   mesmos da tela de volume), com a capa do álbum, só quando está tocando. Vale para Spotify, Apple Music, Deezer, TIDAL, Amazon
@@ -657,7 +676,7 @@ Prefere tudo do outro lado? **Configurações › Aparência › Espelhar a inte
 
 O botão **Perfil** (no alto da barrinha) abre **Seu perfil**, com duas partes na barra da esquerda (como em Configurações; em janela estreita ficam em cima): **Perfil** (como os outros te veem) e **Conta** (a conta Razze: entrar ou criar, o identificador, e-mail, senha, Google, dois fatores e **Sair da conta**). Abre na última aba usada, ou na **Conta** quando falta algo nela (e-mail para confirmar, identificador para escolher), e aí a aba mostra uma bolinha e um aviso com o botão para resolver. Na aba Perfil, em cima, uma prévia de como os outros te veem na voz (o fundo, a foto, o nome na fonte escolhida, a conta e a frase, como no cartão da voz). Foto e fundo se trocam só por ela: clicar na foto troca a foto e **Trocar fundo** (ou **Escolher fundo**) fica no canto do fundo. O nome e a frase também se trocam no cartão: o lápis ao lado abre o campo ali mesmo (Enter ou Esc fecha); o nome só pode ser trocado fora da sala. O identificador aparece no cartão com **Copiar**. Embaixo, **Aparência** (as linhas Foto e Fundo só aparecem quando há **Ajustar** ou a lixeira, que tira a foto ou o fundo; e a fonte do nome) e **O que os amigos veem** (interruptores do jogo, da música e de em que sala estou, os mesmos de Configurações › Atividade). Nele também fica o **Fundo do perfil**: uma imagem (recortada em quadrado) ou um GIF de até 1 MB, que aparece atrás do seu perfil para quem clicar em você na voz; **Tirar fundo** volta ao normal. Ao escolher a foto ou uma imagem de fundo, abre o **editor de recorte**: arraste a imagem para enquadrar e use o zoom (roda do mouse, controle, setas e + / -); na foto a bolinha mostra o resultado, e no fundo a faixa tracejada é a parte que mais aparece no cartão. **Ajustar** abre de novo o editor com o enquadramento anterior, sem escolher a imagem outra vez (GIF não corta, então não tem Ajustar). O GIF só se mexe com o perfil aberto. Dentro da sala, Voz, Chat e Pessoas são as abas do painel (veja **Sala**).
 
-O painel **Voz** mostra os participantes, seus controles de volume e botões para entrar, sair, mutar e silenciar as vozes. Quem está transmitindo aparece em cima, em **Transmitindo**, num cartão com uma miniatura da tela (atualizada a cada 15 s, só para quem pode assistir; quem tem uma versão antiga do app aparece com a foto) e o selo **Ao vivo**, **Assistindo** ou **Em pausa**: clicar assiste, clicar de novo para, e em pausa volta para aquela tela. Na lista, a linha dessa pessoa fica sem o botão de assistir, e o volume de cada um aparece com o mouse em cima (ou sempre, se você mudou ou silenciou). Mostrar ou ocultar esse painel não liga nem desliga o microfone. Da mesma forma, ocultar **Transmissão** não encerra uma transmissão em andamento; use o botão **Parar** para encerrá-la.
+O painel **Voz** mostra os participantes, seus controles de volume e botões para entrar, sair, mutar e silenciar as vozes. Quem está transmitindo tem, na linha dele, o **Assistir** (o monitor com um play; assistindo, ele para); a tela dessa pessoa, com a miniatura, fica nos cartões do palco vazio. O volume de cada um aparece com o mouse em cima (ou sempre, se você mudou ou silenciou). Mostrar ou ocultar esse painel não liga nem desliga o microfone. Da mesma forma, ocultar **Transmissão** não encerra uma transmissão em andamento; use o botão **Parar** para encerrá-la.
 
 - **Principal:** fundo do aplicativo.
 - **Secundária:** painéis e cartões.

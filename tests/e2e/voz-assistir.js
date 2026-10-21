@@ -1,5 +1,6 @@
-// Painel Voz: quem está transmitindo aparece num cartão em cima da lista, com a miniatura da tela (pedida pela sala);
-// clicar no cartão começa a assistir e ele vira Parar. A linha da pessoa fica sem o botão (o cartão já faz).
+// Painel Voz: quem está transmitindo tem o Assistir na própria linha (os cartões com a tela ficam no palco vazio,
+// membros.js: renderPalcoGente). A miniatura da tela é pedida pela sala para o cartão do palco; clicar no Assistir da
+// linha assiste, e ele vira Parar.
 const { openApp, createRoom, joinRoom, check, sleep, run, FAKE } = require('./ajuda');
 FAKE.push('--disable-backgrounding-occluded-windows', '--disable-features=CalculateNativeWinOcclusion'); // para a foto
 
@@ -9,7 +10,8 @@ const SHARE = `(() => {
 })()`;
 const TONE = `(() => { window.tctx = new AudioContext(); const o = tctx.createOscillator(); const dst = tctx.createMediaStreamDestination(); o.connect(dst); o.start(); voice.media = { getUserMedia: async () => dst.stream }; })()`;
 const ROW = (id) => `document.querySelector('#voicePaneMembers .member[data-person="${id}"]')`;
-const CARD = (id) => `document.querySelector('#voicePaneMembers .voz-tela[data-person="${id}"]')`;
+const BTN = (id) => `${ROW(id)}?.querySelector('.watch-btn')`;
+const CARD = (id) => `document.querySelector('#emptyGente .pg-cartao[data-person="${id}"]')`;
 
 run('Assistir pelo painel Voz', 90000, async () => {
   const A = await openApp('vaA', 9541, { fake: true });
@@ -22,21 +24,20 @@ run('Assistir pelo painel Voz', 90000, async () => {
   await B.eval(`setPainelSala({ aba: 'voz', juntos: false, recolhido: false })`);
   await B.waitFor(`!!${ROW(anaId)}`, 5000);
   check('Ana transmite fora da voz: aparece em "Fora da voz"', await B.eval(`$('voicePaneMembers').querySelector('.members-sub')?.textContent === 'Fora da voz'`));
-  const btn = CARD(anaId);
-  check('Cartão "Transmitindo" com Assistir, e a linha da Ana sem o botão', await B.eval(`${btn}?.title === 'Assistir Ana' && !${ROW(anaId)}.querySelector('.watch-btn')`));
-  await B.waitFor(`${btn}?.querySelector('img.voz-tela-img')?.src.startsWith('blob:') && !${btn}.querySelector('img.voz-tela-img').hidden`, 10000);
-  check('A miniatura da tela da Ana chega pela sala e aparece no cartão', await B.eval(`${btn}.querySelector('img.voz-tela-img').naturalWidth === 320`));
-  await B.eval(`${btn}.click()`);
+  check('Sem os cartões "Transmitindo" no painel; a linha da Ana tem o Assistir', await B.eval(`!$('voicePaneMembers').querySelector('.voz-telas-li') && ${BTN(anaId)}?.getAttribute('aria-label') === 'Assistir Ana'`));
+  await B.waitFor(`${CARD(anaId)}?.querySelector('img.pg-tela')?.src.startsWith('blob:')`, 10000);
+  check('A miniatura da tela da Ana chega pela sala e aparece no cartão do palco', await B.eval(`${CARD(anaId)}.querySelector('img.pg-tela').naturalWidth === 320`));
+  await B.eval(`${BTN(anaId)}.click()`);
   await B.waitFor(`state.in.size === 1 && [...state.in.values()][0].tile.video.videoWidth > 0`, 20000);
-  check('Clicar começa a assistir, e o botão vira Parar', await B.eval(`${btn}?.title === 'Parar de assistir Ana'`));
+  check('Clicar começa a assistir, e o botão vira Parar', await B.eval(`${BTN(anaId)}?.getAttribute('aria-label') === 'Parar de assistir Ana'`));
 
   await A.eval(TONE);
   await A.eval(`$('voiceJoin').click()`);
   await B.waitFor(`voice.members.get('${anaId}')?.session`, 10000);
   await sleep(300);
-  check('Ana entra na voz: o cartão continua, agora com ela na lista da voz', await B.eval(`!$('voicePaneMembers').querySelector('.members-sub') && ${btn}?.title === 'Parar de assistir Ana'`));
-  await B.eval(`${btn}.click()`);
+  check('Ana entra na voz: ela vai para a lista da voz, ainda com o Parar', await B.eval(`!$('voicePaneMembers').querySelector('.members-sub') && ${BTN(anaId)}?.getAttribute('aria-label') === 'Parar de assistir Ana'`));
+  await B.eval(`${BTN(anaId)}.click()`);
   await sleep(500);
-  check('Parar tira a tela e volta o Assistir', await B.eval(`state.in.size === 0 && ${btn}?.title === 'Assistir Ana'`));
+  check('Parar tira a tela e volta o Assistir', await B.eval(`state.in.size === 0 && ${BTN(anaId)}?.getAttribute('aria-label') === 'Assistir Ana'`));
   await B.shot('voz-assistir.png');
 });

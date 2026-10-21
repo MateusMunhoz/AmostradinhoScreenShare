@@ -62,7 +62,7 @@
       <button id="navApoio" type="button" class="workspace-tab rail-apoio" aria-label="Apoiar o Nebula" title="Apoiar o Nebula" aria-haspopup="dialog" aria-expanded="false" aria-controls="apoioDialog" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21.2l7.8-7.7 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></svg></button>
       <!-- Feedback e bugs (renderer/feedback.js): abre a janela de perguntas, que vai para a RazzeAPI -->
       <button id="navFeedback" type="button" class="workspace-tab" aria-label="Feedback e bugs" title="Feedback e bugs" aria-haspopup="dialog" aria-expanded="false" aria-controls="feedbackDialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M12 7v4M12 14h.01"/></svg></button>
-      <button id="navSettings" type="button" class="workspace-tab settings-tab" aria-label="Configurações" title="Configurações" aria-haspopup="dialog" aria-expanded="false" aria-controls="generalSettingsDialog"><span class="nav-icon" aria-hidden="true"></span></button>
+      <button id="navSettings" type="button" class="workspace-tab settings-tab" aria-label="Configurações" title="Configurações" aria-haspopup="dialog" aria-expanded="false" aria-controls="generalSettingsDialog"><span class="nav-icon" aria-hidden="true"></span><span id="navSettingsNovos" class="unread" role="img" hidden></span></button>
       <!-- Sair da sala: por último, separado do resto, em vermelho -->
       <span class="nav-sep rail-leave-sep" aria-hidden="true"></span>
       <button id="leaveBtn" type="button" class="workspace-tab rail-leave" hidden></button>
@@ -200,7 +200,7 @@
     <!-- Mapa em foco (renderer/ceu-voz.js): o chat encolhe e fica só esta faixa; clicar traz o chat de volta -->
     <button id="mapChatStrip" class="map-chat-strip" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Chat escondido enquanto você olha o mapa</span><span id="mapChatUnread" class="map-chat-unread" hidden></span></button>
     <section id="voicePane" class="workspace-pane" aria-labelledby="voicePaneTitle" hidden>
-      <div class="pane-head"><h2 id="voicePaneTitle">Chat de voz</h2><button id="mapPin" class="map-pin" type="button" aria-pressed="false" hidden><span class="map-pin-chave" aria-hidden="true"><span></span></span>Fixar</button></div>
+      <div class="pane-head"><h2 id="voicePaneTitle">Voz</h2><button id="mapPin" class="map-pin" type="button" aria-pressed="false" hidden><span class="map-pin-chave" aria-hidden="true"><span></span></span>Fixar</button></div>
       <p id="voicePaneStatus" class="hint"></p>
       <!-- Céu da voz: cada canal é um sol e quem está nele orbita como planeta. Na visão Mapa, fica grande no lugar da lista (renderer/ceu-voz.js) -->
       <div id="voiceSkyBox" class="voice-sky-box" hidden>
@@ -281,7 +281,6 @@
       <strong id="musicPopTitle">Música</strong>
       <input id="musicUrl" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="Cole o link do YouTube" aria-label="Link do vídeo do YouTube">
       <p id="musicPopError" class="music-pop-error" role="status"></p>
-      <p class="hint">Quem clicar em Ouvir escuta junto, no mesmo ponto. Cada um toca no próprio player do YouTube.</p>
       <div class="music-pop-actions"><button id="musicPopCancel" type="button" class="btn small">Cancelar</button><button id="musicPopGo" type="submit" class="btn small primary">Tocar</button></div>
     </form>
   </div>
@@ -614,8 +613,18 @@
                   <span class="eva-plate-foot"><span>-PROJECT EVA-</span><span>TOKYO-3</span></span>
                 </span>
               </div>
+              <!-- Sozinho na sala: o convite (renderer/membros.js: renderConvitePalco) -->
+              <div id="emptyConvite" class="palco-convite" hidden>
+                <span id="emptyConviteQr" class="pc-qr"></span>
+                <div class="pc-dados">
+                  <span id="emptyConviteRotulo" class="pc-rotulo"></span>
+                  <span id="emptyConviteCodigo" class="pc-codigo"></span>
+                  <button id="emptyConvidar" class="btn primary" type="button"></button>
+                </div>
+              </div>
               <p id="emptyText"></p>
-              <div id="emptyLive" class="empty-live" hidden></div>
+              <!-- Com mais gente na sala: a música do seu canal ou um cartão por pessoa (renderer/membros.js: renderPalcoGente) -->
+              <div id="emptyGente" class="palco-gente" hidden></div>
             </div>
             <div id="tiles" class="tiles" hidden></div>
             <div id="stageSplitter" class="stage-splitter" role="separator" aria-orientation="vertical" aria-label="Largura da coluna de telas pequenas" aria-valuemin="15" aria-valuemax="50" tabindex="0" hidden></div>
@@ -638,8 +647,9 @@
             </div>
             <!-- Falando com o microfone desligado (avisoMutado em renderer/microfone.js) -->
             <div id="mutadoAviso" class="mutado-aviso" role="status" hidden>
-              <span id="mutadoIcone" aria-hidden="true"></span><span>Você está falando com o microfone desligado</span>
-              <button id="mutadoLigar" class="btn small" type="button">Ligar</button>
+              <span id="mutadoIcone" aria-hidden="true"></span><span>Você está falando no mudo</span>
+              <button id="mutadoLigar" class="btn small" type="button">Ligar microfone</button>
+              <button id="mutadoFechar" class="btn icon" type="button" title="Esconder até desligar o microfone de novo" aria-label="Esconder aviso"></button>
             </div>
             <div id="shareDialog" class="modal" hidden>
               <div class="dialog share" role="dialog" aria-modal="true" aria-labelledby="shareTitle">
@@ -888,7 +898,7 @@
           <button id="settingsTab-colors" type="button" role="tab" data-group="aparencia" data-tab="colors" aria-controls="settingsPanel-colors">Cores</button>
           <button id="settingsTab-transmissao" type="button" role="tab" data-group="transmissao" data-tab="transmissao" aria-controls="settingsPanel-transmissao">Transmissão</button>
           <button id="settingsTab-sounds" type="button" role="tab" data-group="sons" data-tab="sounds" aria-controls="settingsPanel-sounds">Sons</button>
-          <button id="settingsTab-activity" type="button" role="tab" data-group="privacidade" data-tab="activity" aria-controls="settingsPanel-activity">Privacidade</button>
+          <button id="settingsTab-activity" type="button" role="tab" data-group="privacidade" data-tab="activity" aria-controls="settingsPanel-activity">Privacidade<span id="settingsActivityNovos" class="unread settings-tab-novos" role="img" hidden></span></button>
           <button id="settingsTab-phone" type="button" role="tab" data-group="backup" data-tab="phone" aria-controls="settingsPanel-phone">Backup no celular</button>
           <button id="settingsTab-network" type="button" role="tab" data-group="rede" data-tab="network" aria-controls="settingsPanel-network">Rede</button>
           <button id="settingsTab-extras" type="button" role="tab" data-group="extras" data-tab="extras" aria-controls="settingsPanel-extras">Recursos extras</button>
@@ -1358,7 +1368,11 @@
     </div>
   </div>
 
-  <div id="toast" class="toast" role="status"></div>
+  <!-- Avisos no canto de baixo à esquerda: o com botões em cima, o simples embaixo; um não apaga o outro (util.js: toast) -->
+  <div class="toasts">
+    <div id="toastAcao" class="toast" role="status"></div>
+    <div id="toast" class="toast" role="status"></div>
+  </div>
   <!-- Comando de voz: "Ouvindo…" enquanto a tecla está apertada, "Entendendo…" depois (renderer/comando-voz.js) -->
   <div id="voiceCmdBadge" class="voice-cmd-badge" role="status" hidden></div>
   <!-- Lente do modo Líquido: o fundo atrás das barras e botões ondula de leve, como vidro grosso -->

@@ -121,25 +121,29 @@ function createSubsalas(seed, liderSeed) {
 
 // Música (YouTube) por canal: no máximo uma em cada um (Voz geral ou subsala). O servidor guarda só o que tocar e
 // de onde: o vídeo, se está tocando, e a posição num instante (pos, em segundos, no momento at do relógio do
-// servidor). Cada pessoa toca no próprio player oficial do YouTube; a sala só sincroniza os comandos (nenhum áudio
+// servidor), e a duração (dur, em segundos; 0 enquanto nenhum player contou). Cada pessoa toca no próprio player oficial do YouTube; a sala só sincroniza os comandos (nenhum áudio
 // passa por aqui).
 const MUSICA_MAX_POS = 24 * 3600;
 function cleanVideoId(v) { return /^[\w-]{11}$/.test(String(v || '')) ? String(v) : ''; }
 function cleanTitle(t) { return typeof t === 'string' ? t.replace(/[\x00-\x1f]/g, ' ').trim().slice(0, 200) : ''; }
 function cleanPos(p) { return Math.max(0, Math.min(MUSICA_MAX_POS, Number(p) || 0)); }
+// Duração que o player de quem ouve contou: de 1 s a 24 h, em décimos; fora disso, 0 (não sabe)
+function cleanDur(d) { const n = Number(d); return Number.isFinite(n) && n >= 1 && n <= MUSICA_MAX_POS ? Math.round(n * 10) / 10 : 0; }
 function createMusicas(seed, now = Date.now) {
   const map = new Map();
   for (const m of Array.isArray(seed) ? seed : []) {
     const ch = cleanChannel(m?.ch), videoId = cleanVideoId(m?.videoId);
     if (!videoId || map.has(ch)) continue;
-    map.set(ch, { ch, videoId, title: cleanTitle(m.title), by: /^\d{1,6}$/.test(String(m.by || '')) ? String(m.by) : '', playing: m.playing !== false, pos: cleanPos(m.pos), at: now() });
+    map.set(ch, { ch, videoId, title: cleanTitle(m.title), by: /^\d{1,6}$/.test(String(m.by || '')) ? String(m.by) : '', playing: m.playing !== false, pos: cleanPos(m.pos), at: now(), dur: cleanDur(m.dur) });
   }
   // sozinha: canal -> desde quando a música está sem ninguém no canal e sem ninguém ouvindo (limparMusicas)
   return { map, now, sozinha: new Map(), msg: () => ({ type: 'musicas', list: [...map.values()], now: now() }) };
 }
 // Tira sozinho as músicas esquecidas: pausada há mais de 4 min, ou 1 min sem ninguém no canal e sem ninguém ouvindo
-// (tocando ou não). Pausada, "at" é o instante da pausa. Os servidores chamam de tempos em tempos; true se tirou alguma.
-const MUSICA_PAUSADA_MS = 4 * 60 * 1000, MUSICA_SOZINHA_MS = 60 * 1000;
+// (tocando ou não). Pausada, "at" é o instante da pausa. E a que acabou: tocando e já passou da duração (com uma folga
+// para o player de quem ouve terminar), mesmo sem ninguém ouvindo. Os servidores chamam de tempos em tempos; true se
+// tirou alguma.
+const MUSICA_PAUSADA_MS = 4 * 60 * 1000, MUSICA_SOZINHA_MS = 60 * 1000, MUSICA_FIM_FOLGA_S = 5;
 function limparMusicas(musicas, members) {
   const t = musicas.now();
   let changed = false;
@@ -148,7 +152,8 @@ function limparMusicas(musicas, members) {
     for (const x of members.values()) if ((x.voiceSession && channelOf(x) === ch) || x.ouvindo?.has(ch)) { gente = true; break; }
     if (gente) musicas.sozinha.delete(ch);
     else if (!musicas.sozinha.has(ch)) musicas.sozinha.set(ch, t);
-    if ((!m.playing && t - m.at >= MUSICA_PAUSADA_MS) || (!gente && t - musicas.sozinha.get(ch) >= MUSICA_SOZINHA_MS)) {
+    const acabou = m.playing && m.dur > 0 && m.pos + (t - m.at) / 1000 >= m.dur + MUSICA_FIM_FOLGA_S;
+    if (acabou || (!m.playing && t - m.at >= MUSICA_PAUSADA_MS) || (!gente && t - musicas.sozinha.get(ch) >= MUSICA_SOZINHA_MS)) {
       musicas.map.delete(ch);
       musicas.sozinha.delete(ch);
       changed = true;
@@ -220,7 +225,10 @@ function memberGone({ subsalas, broadcast }, id) {
 // Mensagem de quem já está na sala. members: Map id -> pessoa; broadcast(msg, exceptId).
 // subsalas (opcional): sem ele, a sala não tem subsalas e todo mundo fica na Voz geral.
 function handleMemberMessage({ members, broadcast, chat, subsalas = null, musicas = null }, id, me, msg) {
-  if (msg.type === 'voice-state') {
+  // O app pergunta se a conexão está viva (sem resposta, ele sabe que caiu e tenta voltar). Responde só para ele
+  if (msg.type === 'ping') {
+    send(me.ws, { type: 'pong' });
+  } else if (msg.type === 'voice-state') {
     if (typeof msg.session !== 'string' || !/^[\w-]{0,64}$/.test(msg.session)) return;
     const antes = me.voiceSession ? me.voiceChannel || '' : null;
     me.voiceSession = msg.session;
@@ -296,7 +304,7 @@ function handleMemberMessage({ members, broadcast, chat, subsalas = null, musica
     const videoId = cleanVideoId(msg.videoId), ch = channelOf(me);
     if (!videoId) return;
     if (musicas.map.has(ch)) return send(me.ws, { type: 'musica-erro', text: `Já tem uma música em ${channelLabel(ch)}. Troque ou pare a que está tocando.` });
-    musicas.map.set(ch, { ch, videoId, title: cleanTitle(msg.title), by: id, playing: true, pos: 0, at: musicas.now() });
+    musicas.map.set(ch, { ch, videoId, title: cleanTitle(msg.title), by: id, playing: true, pos: 0, at: musicas.now(), dur: 0 });
     broadcast(musicas.msg());
   } else if (msg.type === 'musica-ouvindo' && musicas) {
     // Abriu ou fechou a tela da música (Ouvir): conta como gente para limparMusicas, mesmo fora do canal
@@ -313,6 +321,12 @@ function handleMemberMessage({ members, broadcast, chat, subsalas = null, musica
       if (!m.title && title) { m.title = title; broadcast(musicas.msg()); }
       return;
     }
+    // A duração, também do player de quem ouve: vale a primeira, e só para o vídeo que está no canal agora
+    if (msg.action === 'duracao') {
+      const dur = cleanDur(msg.dur);
+      if (!m.dur && dur && cleanVideoId(msg.videoId) === m.videoId) { m.dur = dur; broadcast(musicas.msg()); }
+      return;
+    }
     // Controla quem está no canal da música, ou quem pôs ela
     if (channelOf(me) !== ch && m.by !== id) return send(me.ws, { type: 'musica-erro', text: `Só quem está em ${channelLabel(ch)} controla a música de lá.` });
     const t = musicas.now();
@@ -324,7 +338,7 @@ function handleMemberMessage({ members, broadcast, chat, subsalas = null, musica
     } else if (msg.action === 'trocar') {
       const videoId = cleanVideoId(msg.videoId);
       if (!videoId) return;
-      Object.assign(m, { videoId, title: cleanTitle(msg.title), by: id, playing: true, pos: 0, at: t });
+      Object.assign(m, { videoId, title: cleanTitle(msg.title), by: id, playing: true, pos: 0, at: t, dur: 0 });
     } else return;
     broadcast(musicas.msg());
   } else if (msg.type === 'avatar') {

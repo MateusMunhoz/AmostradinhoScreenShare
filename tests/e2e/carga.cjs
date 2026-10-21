@@ -69,8 +69,11 @@ app.whenReady().then(async () => {
       avisoMutado(1000); const cedo = $('mutadoAviso').hidden;
       avisoMutado(1600); const viu = !$('mutadoAviso').hidden;
       voice.muted = false; avisoMutado(1700); const sumiu = $('mutadoAviso').hidden;
-      voice.session = sessao; voice.muted = mudo; micNow = mic; mutadoFala.desde = 0; mutadoFala.ate = 0;
-      return cedo && viu && sumiu;
+      voice.muted = true; $('mutadoFechar').click(); avisoMutado(2000); avisoMutado(2600); const calado = $('mutadoAviso').hidden;
+      voice.muted = false; avisoMutado(2700); voice.muted = true; avisoMutado(2800); avisoMutado(3400); const volta = !$('mutadoAviso').hidden;
+      voice.session = sessao; voice.muted = mudo; micNow = mic; mutadoFala.desde = 0; mutadoFala.ate = 0; mutadoFala.calado = false;
+      $('mutadoAviso').hidden = true;
+      return cedo && viu && sumiu && calado && volta;
     })()`));
     await run(`(() => { openStats(); $('statsTabStream').click(); })()`);
     check('Estatísticas abrem nas configurações, nas duas abas', await run(`!$('generalSettingsDialog').hidden && settingsOpenOn('stats') && !$('settingsPanel-stats').hidden && !$('statsStream').hidden && document.querySelectorAll('#streamRows .stream-card').length === 1`));

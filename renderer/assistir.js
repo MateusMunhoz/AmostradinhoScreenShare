@@ -41,7 +41,11 @@ function createTile(id, name) {
   noAudio.innerHTML = ICON.muted;
   noAudio.append('sem som');
   noAudio.title = `${name} está transmitindo sem o som do PC`;
-  label.append(face, labelText, speakBars(), live, quality, noAudio);
+  // Quantos assistem essa transmissão (você incluído): só quem transmite sabe e manda só para quem assiste (sala.js)
+  const vendo = document.createElement('span');
+  vendo.className = 'tile-vendo';
+  vendo.hidden = true;
+  label.append(face, labelText, speakBars(), live, quality, noAudio, vendo);
   const bar = document.createElement('div');
   bar.className = 'tile-bar';
   const barSpace = document.createElement('span');
@@ -93,11 +97,16 @@ function createTile(id, name) {
   fs.className = 'btn icon';
   setFsIcon(fs, false);
   fs.onclick = () => toggleFullscreen(el);
+  // Minimizar: as telas saem da frente e o palco volta a mostrar quem está na sala; o som e a conexão continuam
+  const minBtn = document.createElement('button');
+  minBtn.className = 'btn icon tile-min';
+  setIcon(minBtn, 'minimizar', 'Minimizar (volta para quem está na sala; o som continua)');
+  minBtn.onclick = () => setMinimizado(true);
   const close = document.createElement('button');
   close.className = 'btn icon';
   setIcon(close, 'close', 'Parar de assistir');
   close.onclick = () => stopWatching(id);
-  bar.append(barSpace, mute, vol, clipBtn, pipBtn, focusBtn, fs, close);
+  bar.append(barSpace, mute, vol, clipBtn, pipBtn, focusBtn, minBtn, fs, close);
   label.append(bar); // os controles ficam na faixa do nome, sempre à vista
   // Qualidade que está chegando: altura do vídeo e quadros por segundo (medidos a cada 2 s). Em pausa, só a altura.
   let lastFrames = null;
@@ -176,7 +185,7 @@ function createTile(id, name) {
   setupTileDrag(id, el);
   setupTileIdle(el);
   el.dataset.person = id;
-  const tile = { el, video, vol, overlay, pipNote, fs, focusBtn, pipBtn, syncMute, name, paused: false, mutedBefore: false, userMuted: false };
+  const tile = { el, video, vol, overlay, pipNote, fs, focusBtn, pipBtn, syncMute, name, vendo, paused: false, mutedBefore: false, userMuted: false };
   return tile;
 }
 
@@ -242,6 +251,7 @@ function watch(id) {
   sendSignal(id, { side: 'viewer', subscribe: true, once: onceSupportedForViewer() });
   if (document.hidden) onVisibility(); // começou a assistir com a janela já oculta: pausa o vídeo também
   if (state.focus) state.focus = id;   // pediu para assistir alguém durante o destaque: essa pessoa vira o destaque
+  state.minimizado = false;            // e com as telas minimizadas, elas voltam
   renderFocus();
   renderMembers();
   updateStage();
@@ -299,6 +309,7 @@ async function watchSelf() {
   state.in.set(id, link);
   syncCaptureExclude(); // antes do vídeo aparecer
   if (state.focus) state.focus = id;
+  state.minimizado = false;
   renderFocus();
   renderMembers();
   updateStage();
@@ -337,6 +348,7 @@ function stopWatching(id, notify = true) {
   state.in.delete(id);
   if (link.music) { renderNavMusic(); send({ type: 'musica-ouvindo', ch: id.slice('musica:'.length), on: false }); } // parou de ouvir: o botão de música da barrinha some
   if (state.focus === id) state.focus = null; // quem estava em destaque saiu: as outras voltam
+  if (!state.in.size) state.minimizado = false;
   renderFocus();
   renderMembers();
   updateStage();
@@ -349,6 +361,19 @@ function stopWatching(id, notify = true) {
 function setFocus(id) {
   state.focus = id && state.in.has(id) ? id : null;
   if (state.focus) state.main = state.focus; // ao sair do destaque, ela continua sendo a grande
+  renderFocus();
+  renderMembers();
+}
+
+// Minimizar: as telas saem da frente sem fechar (o som continua; o vídeo pausa, como com o app minimizado) e o palco
+// mostra os cartões de quem está na sala (membros.js). Voltar: a pílula em cima, o cartão de quem você assiste ou
+// abrir outra tela. id: a tela que fica grande ao voltar
+function setMinimizado(on, id = null) {
+  state.minimizado = !!on && state.in.size > 0;
+  if (state.minimizado && document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  if (!state.minimizado && id && state.in.has(id)) { if (state.focus) state.focus = id; else state.main = id; }
+  // Destaque: minimizado, nada fica pausado (o som de todas as telas continua); ao voltar, o destaque volta
+  updateStage();
   renderFocus();
   renderMembers();
 }
@@ -376,7 +401,7 @@ function renderFocus() {
   let row = 2;
   for (const id of stageIds()) {
     const t = state.in.get(id).tile;
-    const paused = !!focus && id !== focus;
+    const paused = !!focus && id !== focus && !state.minimizado;
     const small = column && id !== state.main;
     t.el.classList.toggle('focus', id === focus);
     t.el.classList.toggle('small', small);
@@ -411,7 +436,8 @@ function setTilePaused(t, paused) {
 function renderPausedStrip() {
   const strip = $('pausedStrip');
   strip.innerHTML = '';
-  strip.hidden = !state.focus;
+  strip.hidden = !state.focus && !state.minimizado;
+  if (state.minimizado) return renderMinimizadoStrip(strip);
   if (!state.focus) return;
   // Uma pílula só: "Em pausa", a bolinha de cada pessoa (a foto ou a inicial; o nome na dica), a música como YouTube
   // (sem o título do vídeo) e, depois de um risquinho, a grade de Mostrar todas
@@ -440,6 +466,35 @@ function renderPausedStrip() {
   setIcon(all, 'grid', 'Mostrar todas');
   all.onclick = () => setFocus(null);
   strip.append(sep, all);
+}
+
+// Minimizado: "Minimizado", a bolinha de cada tela aberta (clicar volta com ela grande) e, depois do risquinho, Voltar
+function renderMinimizadoStrip(strip) {
+  const label = document.createElement('span');
+  label.className = 'paused-label';
+  label.textContent = 'Minimizado';
+  strip.append(label);
+  for (const [id, link] of state.in) {
+    const btn = document.createElement('button');
+    btn.className = 'paused-item';
+    btn.type = 'button';
+    const nome = link.music ? 'YouTube' : link.tile.name;
+    if (link.music) { btn.classList.add('music'); btn.innerHTML = ICON.youtube; } else btn.append(avatar(link.tile.name, id));
+    btn.title = `Voltar para ${nome}`;
+    btn.setAttribute('aria-label', btn.title);
+    btn.onclick = () => setMinimizado(false, id);
+    strip.append(btn);
+  }
+  const sep = document.createElement('span');
+  sep.className = 'paused-sep';
+  sep.setAttribute('aria-hidden', 'true');
+  const voltar = document.createElement('button');
+  voltar.className = 'paused-item paused-all';
+  voltar.type = 'button';
+  voltar.id = 'minimizadoVoltar';
+  setIcon(voltar, 'expand', 'Voltar para as telas');
+  voltar.onclick = () => setMinimizado(false);
+  strip.append(sep, voltar);
 }
 
 function ensureStats() {
@@ -504,7 +559,7 @@ function syncIncomingVideo() {
     const inPip = state.pips.has(id);
     // Painel "Transmissão" desligado: as telas estão escondidas, então o vídeo pausa como com o app minimizado
     const streamsShown = typeof workspaceViews !== 'object' || workspaceViews.streams !== false;
-    const on = inPip || (appVisible && streamsShown && (!state.focus || state.focus === id));
+    const on = inPip || (appVisible && streamsShown && !state.minimizado && (!state.focus || state.focus === id));
     if (link.videoOn === on) continue;
     link.videoOn = on;
     if (!link.self) sendSignal(id, { side: 'viewer', video: on });
@@ -540,8 +595,8 @@ function onVisibility() {
   syncPreview();
 }
 
-// ---------- Miniaturas de quem transmite (cartões do painel da voz) ----------
-// Pede a cada 15 s, só com o painel da voz à vista, a quem está transmitindo; o que chega é conferido como a foto de
+// ---------- Miniaturas de quem transmite (cartões do palco vazio, membros.js: renderPalcoGente) ----------
+// Pede a cada 15 s, só com os cartões do palco vazio à vista, a quem está transmitindo; o que chega é conferido como a foto de
 // perfil (só o que eu pedi, JPEG pequeno, o hash bate, até 640x360) e vira um blob: na tela
 const minis = new Map(); // id -> { url, hash, pedidoEm }
 let minisTimer = 0;
@@ -557,7 +612,7 @@ function pedirMiniaturas(ids) {
     sendSignal(id, { side: 'mini', want: m.hash || true });
   }
   if (!minisTimer) minisTimer = setInterval(() => {
-    if ($('voicePane').hidden || document.hidden) return;
+    if (!$('emptyGente').offsetParent || document.hidden) return;
     pedirMiniaturas([...state.members].filter(([, x]) => x.sharing).map(([id]) => id));
   }, 15000);
 }
@@ -579,7 +634,5 @@ async function receberMiniatura(from, data) {
   if (m.url) URL.revokeObjectURL(m.url);
   m.url = URL.createObjectURL(blob);
   m.hash = data.hash;
-  // Troca só a imagem do cartão, sem redesenhar o painel
-  const img = $('voicePaneMembers').querySelector(`.voz-tela[data-person="${CSS.escape(from)}"] img.voz-tela-img`);
-  if (img) { img.src = m.url; img.hidden = false; img.nextElementSibling?.classList.contains('avatar') && img.nextElementSibling.remove(); }
+  palcoMiniatura(from, m.url); // troca só a imagem do cartão no palco vazio, sem redesenhar (membros.js)
 }
