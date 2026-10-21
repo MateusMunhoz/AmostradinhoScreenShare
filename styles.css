@@ -2959,3 +2959,133 @@ button.home-chip:hover { color: var(--text); }
 .lider-linha .btn { flex: none; }
 .pane-tab-pedidos { min-width: 16px; height: 16px; padding: 0 4px; box-sizing: border-box; border-radius: 999px; background: var(--accent); color: var(--accent-ink, #000);
   font-size: 10px; font-weight: 700; line-height: 16px; text-align: center; letter-spacing: 0; }
+
+/* ===== Início e sala repaginados =====
+   Estrutura (todos os temas): Amigos como peça principal, mensagens e salas ao lado, Início e Sair da sala no cabeçalho
+   da sala, controles da voz com texto, nada de arrastar. O visual novo vale no tema Padrão (docs/spec/inicio-simples.md). */
+.home-ceu { display: none; }
+#dockHome, #navBackToRoom { display: none !important; } /* o Início agora é do cabeçalho da sala */
+#roomMenuLeave { display: none; }                         /* um Sair só, no cabeçalho */
+.pane-split, .pane-resize, #paneJuntos { display: none !important; }
+.btn-texto { font-size: 13px; font-weight: 600; white-space: nowrap; }
+.home-busca[hidden] { display: none; }
+.home-aba-n { margin-left: 5px; font-weight: 500; opacity: .75; }
+
+/* ---------- Início (Padrão) ---------- */
+:root:not([data-skin]) {
+  --rp-sora: "Sora", var(--font-display);
+  --rp-fio: color-mix(in srgb, var(--line-strong) 50%, transparent);
+  --rp-vidro: color-mix(in srgb, var(--panel) 78%, transparent);
+  --rp-brilho: linear-gradient(135deg, color-mix(in srgb, var(--logo-2) 26%, var(--panel)), color-mix(in srgb, var(--logo-3) 16%, var(--panel)));
+}
+:root:not([data-skin]) .home-screen { padding: 22px clamp(20px, 4vw, 48px) 16px; }
+:root:not([data-skin]) .home-main { gap: 30px; padding-top: 14px; }
+@container inicio (min-width: 880px) {
+  :root:not([data-skin]) .home-colunas:has(> .home-lado > :not([hidden])) { grid-template-columns: minmax(0, 1fr) clamp(320px, 34%, 400px); column-gap: 44px; }
+}
+:root:not([data-skin]) .home-col { gap: 30px; }
+
+/* Quem é você: a foto com um anel nas cores da logo, o nome grande */
+:root:not([data-skin]) .home-hello { gap: 20px; }
+:root:not([data-skin]) .home-avatar { width: 68px; height: 68px; font-size: 28px;
+  box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px color-mix(in srgb, var(--logo-2) 80%, transparent), 0 0 28px color-mix(in srgb, var(--logo-3) 30%, transparent); }
+:root:not([data-skin]) .home-title { font-family: var(--rp-sora); font-size: clamp(24px, 3.2vw, 32px); font-weight: 700; letter-spacing: -.03em; }
+:root:not([data-skin]) .home-resumo { font-size: 14px; }
+
+/* Criar sala e Entrar: dois botões grandes, sem moldura de cartão */
+:root:not([data-skin]) .home-card { padding: 0; border: 0; background: none !important; background-image: none !important; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+:root:not([data-skin]) .home-acoes { gap: 12px; }
+@container inicio (min-width: 561px) {
+  :root:not([data-skin]) .home-acoes:not(:has(#goJoin[hidden])) { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
+}
+:root:not([data-skin]) .home-acao { border-radius: 16px; }
+:root:not([data-skin]) .home-acao-criar { border: 0; background: var(--primary); color: var(--bg); box-shadow: 0 10px 30px color-mix(in srgb, var(--primary) 22%, transparent); }
+:root:not([data-skin]) .home-acao-criar .home-acao-btn { padding: 16px 18px; align-items: center; }
+:root:not([data-skin]) .home-acao-criar .home-acao-btn:hover { background: color-mix(in srgb, var(--bg) 8%, transparent); }
+:root:not([data-skin]) .home-acao-criar .home-acao-icone { background: color-mix(in srgb, var(--bg) 16%, transparent); color: var(--bg); }
+:root:not([data-skin]) .home-acao-criar small { color: color-mix(in srgb, var(--bg) 78%, transparent); }
+:root:not([data-skin]) .home-acao-criar .home-acao-opcoes { position: absolute; top: 10px; right: 14px; font-size: 12px; color: var(--bg); }
+:root:not([data-skin]) button.home-acao { padding: 16px 18px; align-items: center; border: 1px solid var(--line-strong); background: transparent; }
+:root:not([data-skin]) button.home-acao:hover { border-color: var(--accent); background: var(--accent-soft); }
+:root:not([data-skin]) .home-acao-icone { width: 42px; height: 42px; border-radius: 12px; }
+:root:not([data-skin]) .home-acao-textos strong { font-size: 16px; }
+:root:not([data-skin]) .home-acao-textos small { display: block; margin-top: 2px; line-height: 1.35; }
+:root:not([data-skin]) .last-room { margin-top: 12px; }
+
+/* Amigos: lista limpa, uma linha por pessoa, abas de texto */
+:root:not([data-skin]) .home-friends { gap: 16px; padding: 0; background: none; border: 0; box-shadow: none; margin: 0; }
+:root:not([data-skin]) .home-friends .sessions-title { font: 700 20px/1.1 var(--rp-sora); letter-spacing: -.02em; color: var(--text); }
+:root:not([data-skin]) .home-abas { gap: 2px; border-bottom: 1px solid var(--rp-fio); }
+:root:not([data-skin]) .home-aba { min-height: 42px; padding: 0 16px; border: 0; border-radius: 0; background: none; color: var(--muted); font-size: 15px; }
+:root:not([data-skin]) .home-aba:hover { color: var(--text); background: none; }
+:root:not([data-skin]) .home-aba[aria-pressed="true"] { color: var(--text); background: none; box-shadow: inset 0 -2px 0 var(--accent); }
+:root:not([data-skin]) .home-busca { height: 42px; border-radius: 12px; background: var(--rp-vidro); }
+:root:not([data-skin]) .home-friends-list { gap: 0; }
+:root:not([data-skin]) .home-friend { gap: 14px; min-height: 72px; padding: 12px 8px; border-radius: 0; border-bottom: 1px solid var(--rp-fio); }
+:root:not([data-skin]) .home-friend:hover { background: var(--rp-vidro); }
+:root:not([data-skin]) .home-friend .hub-avatar .avatar { width: 46px; height: 46px; font-size: 19px; }
+:root:not([data-skin]) .home-friend .hub-avatar::after { width: 13px; height: 13px; right: -2px; bottom: -2px; box-shadow: 0 0 0 3px var(--bg); }
+:root:not([data-skin]) .home-friend .home-friend-name > strong { font-size: 16px; font-weight: 600; }
+:root:not([data-skin]) .home-friend.offline .home-friend-name > strong { color: var(--muted); font-weight: 500; }
+:root:not([data-skin]) .home-friend-sala { color: var(--live); }
+:root:not([data-skin]) .home-friend .btn.icon.small { width: 38px; height: 38px; border-radius: 12px; }
+:root:not([data-skin]) .home-friend-entrar, :root:not([data-skin]) .home-friend-pedir { height: 38px; padding: 0 16px; border-radius: 12px; }
+
+/* À direita: o que está acontecendo agora. As salas abertas são o único brilho da tela */
+:root:not([data-skin]) .home-lado { gap: 22px; }
+:root:not([data-skin]) .home-lado > .home-mensagens, :root:not([data-skin]) .home-lado > .home-salas { padding: 0; background: none; border: 0; box-shadow: none; }
+:root:not([data-skin]) .home-lado .sessions-title { margin: 0 0 12px; font: 700 15px/1 var(--rp-sora); color: var(--text); letter-spacing: -.01em; }
+:root:not([data-skin]) .home-lado .session { position: relative; padding: 16px; border: 1px solid color-mix(in srgb, var(--logo-3) 38%, var(--line)); border-radius: 18px;
+  background: var(--rp-brilho); box-shadow: 0 12px 34px color-mix(in srgb, var(--logo-2) 16%, transparent), var(--lift); }
+:root:not([data-skin]) .home-lado .session .avatar { width: 48px; height: 48px; font-size: 20px; }
+:root:not([data-skin]) .home-lado .session-info strong { font-size: 16px !important; }
+:root:not([data-skin]) .home-lado .session .btn { height: 40px; padding: 0 20px; border-radius: 12px; background: var(--primary); border-color: transparent; color: var(--bg); font-weight: 700; }
+:root:not([data-skin]) .session-live { background: var(--live-fill); }
+:root:not([data-skin]) .home-lado .sessions-empty { padding: 14px 16px; border: 1px dashed var(--rp-fio); border-radius: 14px; color: var(--muted); }
+:root:not([data-skin]) .home-lado > .home-mensagens .hub-list { max-height: 320px; overflow-y: auto; gap: 2px; display: flex; flex-direction: column; }
+:root:not([data-skin]) .home-lado .hub-conv { padding: 10px 8px; border: 0; border-radius: 0; background: none; border-bottom: 1px solid var(--rp-fio); }
+:root:not([data-skin]) .home-lado .hub-conv:hover { background: var(--rp-vidro); }
+:root:not([data-skin]) .home-lado .hub-conv .avatar { width: 40px; height: 40px; font-size: 16px; }
+:root:not([data-skin]) .home-news, :root:not([data-skin]) .home-novo { border-radius: 16px; background: var(--rp-vidro); }
+
+/* ---------- Sala (Padrão) ---------- */
+:root:not([data-skin]) .room-head { min-height: 56px; padding: 6px 4px 10px; gap: 12px; border-bottom: 1px solid var(--rp-fio); }
+:root:not([data-skin]) .room-head .room-home { width: 40px; padding: 0; justify-content: center; border-radius: 50%; }
+:root:not([data-skin]) .room-head .room-home .dock-label { display: none; }
+:root:not([data-skin]) .room-head .room-home svg { width: 18px; height: 18px; }
+:root:not([data-skin]) .room-name { font-family: var(--rp-sora); font-size: 18px; font-weight: 700; letter-spacing: -.02em; }
+:root:not([data-skin]) .room-head-meta { padding: 3px 10px; border-radius: 999px; background: var(--rp-vidro); font-size: 12px; letter-spacing: 0; text-transform: none; color: var(--text-2); }
+:root:not([data-skin]) .room-head .btn { height: 40px; padding: 0 16px; border-radius: 12px; font-weight: 600; }
+:root:not([data-skin]) .room-head .room-leave { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 50%, transparent); background: color-mix(in srgb, var(--warn) 8%, transparent); }
+:root:not([data-skin]) .room-head .room-leave:hover:not(:disabled) { color: var(--bg); background: var(--warn); border-color: var(--warn); }
+:root:not([data-skin]) .room-head.apertado-2 .room-leave { width: auto; padding: 0 14px; }
+:root:not([data-skin]) .room-head.apertado-2 .room-leave .dock-label { display: inline; }
+
+/* A tela vazia diz o que fazer: a logo, uma frase e três passos, na ordem em que acontecem */
+:root:not([data-skin]) .empty-stage { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 28px 28px 64px; }
+:root:not([data-skin]) #emptyStage::before { position: static; left: auto; top: auto; translate: none; flex: none; width: clamp(72px, 13vh, 104px); height: clamp(72px, 13vh, 104px); opacity: .9; }
+:root:not([data-skin]) .empty-stage p { text-align: center; }
+.empty-steps { list-style: none; margin: 0; padding: 0; display: none; }
+:root:not([data-skin]) .empty-steps { position: relative; z-index: 1; display: grid; gap: 10px; width: min(460px, 100%); margin: 6px 0 0; counter-reset: passo; text-align: left; }
+:root:not([data-skin]) .empty-steps li { counter-increment: passo; display: grid; grid-template-columns: 34px 1fr; column-gap: 14px; align-items: center; padding: 10px 14px; border-radius: 14px; background: var(--rp-vidro); border: 1px solid var(--rp-fio); }
+:root:not([data-skin]) .empty-steps li::before { content: counter(passo); grid-row: span 2; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; font: 700 15px/1 var(--rp-sora); color: var(--accent); background: var(--accent-soft); }
+:root:not([data-skin]) .empty-steps strong { font-size: 14px; }
+:root:not([data-skin]) .empty-steps span { font-size: 13px; color: var(--muted); }
+:root:not([data-skin]) .empty-stage:has(#emptyLive:not([hidden])) .empty-steps, :root:not([data-skin]) .empty-stage:has(#emptyText.empty-rotulo) .empty-steps { display: none; }
+
+/* A coluna da direita: abas de texto, cartão de controle embaixo */
+:root:not([data-skin]) .pane-tabs { gap: 2px; }
+:root:not([data-skin]) .pane-tab { border-radius: 0; font-weight: 600; letter-spacing: 0; text-transform: none; }
+:root:not([data-skin]) .pane-tab-star { display: none; }
+:root:not([data-skin]) .seu-sinal { border-radius: 18px; padding: 14px; gap: 12px; }
+:root:not([data-skin]) .seu-sinal .ss-voz { display: grid; grid-template-columns: minmax(0, 1fr) 46px; gap: 8px; align-items: start; }
+:root:not([data-skin]) .seu-sinal .voice-dock { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; flex: none; }
+:root:not([data-skin]) .seu-sinal #voiceMe { display: none; }
+:root:not([data-skin]) .seu-sinal .voice-dock .btn { min-height: 46px; border-radius: 14px; font-size: 14px; }
+:root:not([data-skin]) .seu-sinal .btn.icon.com-texto { width: auto; min-width: 0; padding: 0 12px; gap: 8px; display: inline-flex; align-items: center; justify-content: center; }
+:root:not([data-skin]) .seu-sinal .btn.icon.com-texto svg { width: 20px; height: 20px; }
+:root:not([data-skin]) .seu-sinal .btn-texto { font-size: 14px; }
+:root:not([data-skin]) .seu-sinal .voice-dock:not(.active) #voiceJoin { grid-column: 1 / -1; }
+:root:not([data-skin]) .seu-sinal #voiceJoin.voice-leave { grid-column: 1 / -1; margin-left: 0; }
+:root:not([data-skin]) .seu-sinal .ss-ajustes { width: 46px; height: 46px; border-radius: 14px; }
+:root:not([data-skin]) .seu-sinal #shareBtn, :root:not([data-skin]) .seu-sinal #stopShareBtn { min-height: 48px; border-radius: 14px; }

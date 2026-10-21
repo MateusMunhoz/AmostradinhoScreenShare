@@ -283,6 +283,7 @@ function renderHome() {
 
 function setJoinOpen(open) {
   $('joinPanel').hidden = !open;
+  if (!open) $('joinPedir').hidden = true;
   $('goJoin').hidden = open;
   $('goJoin').setAttribute('aria-expanded', String(open));
   $('homeCard').classList.toggle('joining', open);
@@ -382,6 +383,7 @@ function openCloseDialog() {
     ? `Você é o host. Se sair, ${nameOf(next)} vira o host e a sala continua para os outros, sem as transmissões caírem. Ou encerre a sala para todo mundo.`
     : 'Todo mundo sai da sala e as transmissões param. Para voltar, crie a sala de novo e passe o endereço.';
   $('handoffLeave').hidden = !handoff;
+  $('handoffLeave').textContent = handoff ? `Sair e passar para ${nameOf(next)}` : 'Sair';
   $('confirmClose').textContent = handoff ? 'Encerrar para todos' : 'Encerrar sala';
   $('closeDialog').hidden = false;
   (handoff ? $('handoffLeave') : $('cancelClose')).focus();

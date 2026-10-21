@@ -309,7 +309,7 @@ function renderHomeCall() {
   $('homeCallBack').textContent = n ? `Voltar para a sala · ${n > 99 ? '99+' : n} ${n === 1 ? 'nova' : 'novas'}` : 'Voltar para a sala';
 }
 function setupHomeCall() {
-  $('dockHome').onclick = goHomeKeepCall;
+  $('dockHome').onclick = $('roomHomeBtn').onclick = goHomeKeepCall;
   $('homeCallBack').onclick = $('navBackToRoom').onclick = backToRoom;
   $('homeCallMute').onclick = () => $('voiceMute').click();
   $('homeCallDeafen').onclick = () => $('voiceDeafen').click();

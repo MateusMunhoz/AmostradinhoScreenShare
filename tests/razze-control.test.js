@@ -202,6 +202,21 @@ test('pedido de amizade pela conta (userId): acha pela id, mesmo com nickname re
   assert.equal((await req('friends/requests', 'POST', { userId: a.user.id }, a.accessToken)).status, 400);
 });
 
+test('pedido de amizade: conta pendente avisa que aguarda aprovação; nickname ou e-mail inexistente tem mensagem própria', async t => {
+  const { req, register } = await fixture(t);
+  const a = await register('Ana');
+  await req('admin/settings', 'PATCH', { requireApproval: true }, ROOT);
+  const pendente = await register('Peixoto');
+  assert.equal(pendente.status, 202);
+  const porNick = await req('friends/requests', 'POST', { nickname: 'peixoto' }, a.accessToken);
+  assert.equal(porNick.status, 404);
+  assert.match(porNick.error?.message || porNick.message, /aguarda a aprovação/);
+  const porEmail = await req('friends/requests', 'POST', { email: 'peixoto@test.example' }, a.accessToken);
+  assert.match(porEmail.error?.message || porEmail.message, /aguarda a aprovação/);
+  const ninguem = await req('friends/requests', 'POST', { nickname: 'Fulano' }, a.accessToken);
+  assert.match(ninguem.error?.message || ninguem.message, /Não achei ninguém/);
+});
+
 test('mensagens criptografadas: chave pública por conta, entregue só aos amigos; texto cifrado longo aceito', async t => {
   const { req, register } = await fixture(t);
   const a = await register('Ana'), b = await register('Bia'), stranger = await register('Eve');

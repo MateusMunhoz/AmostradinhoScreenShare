@@ -284,12 +284,12 @@ function renderVoice() {
   $('voiceDock').classList.toggle('active', active || voice.pending);
   if (active || voice.pending) {
     join.className = 'btn icon voice-leave';
-    setIcon(join, 'phoneOff', voice.pending ? 'Cancelar entrada na voz' : 'Sair da voz');
+    setIconText(join, 'phoneOff', voice.pending ? 'Cancelar entrada na voz' : 'Sair da voz', voice.pending ? 'Cancelar' : 'Sair da voz');
   } else renderVoiceJoin();
   $('voiceMute').hidden = $('voiceDeafen').hidden = $('voiceMe').hidden = !active;
-  setIcon($('voiceMute'), voice.muted ? 'micOff' : 'mic', voice.muted ? 'Ligar o microfone' : 'Desligar o microfone');
+  setIconText($('voiceMute'), voice.muted ? 'micOff' : 'mic', voice.muted ? 'Ligar o microfone' : 'Desligar o microfone', voice.muted ? 'Mudo' : 'Microfone');
   $('voiceMute').setAttribute('aria-pressed', String(voice.muted));
-  setIcon($('voiceDeafen'), voice.deafened ? 'headphonesOff' : 'headphones', voice.deafened ? 'Ouvir as vozes' : 'Silenciar as vozes');
+  setIconText($('voiceDeafen'), voice.deafened ? 'headphonesOff' : 'headphones', voice.deafened ? 'Ouvir as vozes' : 'Silenciar as vozes', voice.deafened ? 'Sem som' : 'Fone');
   $('voiceDeafen').setAttribute('aria-pressed', String(voice.deafened));
   if (state.myId) $('voiceMe').dataset.person = state.myId;
   setIcon($('voiceSettingsBtn'), 'sliders', 'Voz e atalhos: supressão de ruído, eco, apertar para falar e teclas');
@@ -671,7 +671,8 @@ function friendButton(id, name) {
       toast(result.status === 'accepted' ? `Agora você e ${nome} são amigos.` : `Pedido de amizade enviado para ${nome}.`);
       await refreshRazzeLists();
     } catch (error) {
-      toast(`Não deu para adicionar ${nome}: ${error.message}`, 'error');
+      // O Electron põe "Error invoking remote method '…': Error:" na frente da mensagem do serviço
+      toast(`Não deu para adicionar ${nome}: ${String(error.message).replace(/^Error invoking remote method '[^']*': (?:\w*Error: )?/, '')}`, 'error');
     }
     renderPersonCard();
   };

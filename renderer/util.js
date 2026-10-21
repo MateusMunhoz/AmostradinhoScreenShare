@@ -125,6 +125,16 @@ function setIcon(btn, icon, label) {
   btn.setAttribute('aria-label', label);
 }
 
+// Botão com ícone e texto à vista (quem nunca usou o app não precisa passar o mouse para saber o que é)
+function setIconText(btn, icon, label, texto) {
+  setIcon(btn, icon, label);
+  const t = document.createElement('span');
+  t.className = 'btn-texto';
+  t.textContent = texto;
+  btn.append(t);
+  btn.classList.add('com-texto');
+}
+
 function setFsIcon(btn, full) {
   setIcon(btn, full ? 'shrink' : 'expand', full ? 'Sair da tela cheia' : 'Tela cheia');
 }

@@ -233,82 +233,146 @@ async function chamarParaMinhaSala(f) {
   await convidarPorMensagem(f, toast);
 }
 
+// Aba e busca da lista de amigos do Início: Ativos (quem está online), Todos e Pedidos (só aparece com pedido)
+const homeAmigos = { aba: 'ativos', busca: '' };
+
+// Uma linha de amigo: quem é, o que está fazendo e o que dá para fazer agora (Entrar, Mensagem, Ligar)
+function homeAmigoLinha(f) {
+  const li = document.createElement('li');
+  li.className = 'home-friend' + (f.online ? '' : ' offline');
+  const nome = document.createElement('span');
+  nome.className = 'home-friend-name';
+  const quem = document.createElement('strong');
+  quem.textContent = f.displayName;
+  const chips = document.createElement('span');
+  chips.className = 'home-friend-chips';
+  // Em que sala o amigo está, em qualquer modo (salas-amigos.js: textoSalaDoAmigo)
+  const naSala = f.online && typeof textoSalaDoAmigo === 'function' ? textoSalaDoAmigo(f) : '';
+  const atividade = f.online ? f.activity : null;
+  if (naSala) chips.append(homeChip('', naSala, 'home-friend-sala'));
+  if (atividade?.game) chips.append(homeChip('game', atividade.game));
+  if (atividade?.artist) {
+    // A música: clicar mostra a faixa
+    const musica = document.createElement('button');
+    musica.type = 'button';
+    musica.className = 'home-chip home-friend-music';
+    musica.innerHTML = ICON.music;
+    const texto = document.createTextNode(atividade.artist);
+    const completo = atividade.title ? atividade.title + ' — ' + atividade.artist : atividade.artist;
+    musica.append(texto);
+    musica.title = 'Clique para ver a música';
+    musica.onclick = () => { texto.textContent = texto.textContent === atividade.artist ? completo : atividade.artist; };
+    chips.append(musica);
+  }
+  if (!chips.childNodes.length) {
+    const estado = document.createElement('span');
+    estado.className = 'hint home-friend-bio';
+    estado.textContent = !f.online ? 'Offline' : f.bio || 'Online';
+    chips.append(estado);
+  }
+  nome.append(quem, chips);
+  const acoes = document.createElement('span');
+  acoes.className = 'home-friend-actions';
+  // A sala pela internet em que o amigo está e que ele deixa entrar: Entrar, sem código nem senha (salas-amigos.js)
+  const salaDele = f.online && typeof salaDoAmigo === 'function' ? salaDoAmigo(f) : null;
+  if (salaDele) {
+    const entrar = document.createElement('button');
+    entrar.type = 'button';
+    entrar.className = 'btn small primary home-friend-entrar';
+    entrar.textContent = 'Entrar na sala';
+    entrar.title = `Entrar na sala de ${salaDele.host}, onde ${f.displayName} está`;
+    entrar.onclick = () => void entrarPeloAmigo(f);
+    acoes.append(entrar);
+  } else if (naSala && !f.sala?.minha && !/^Na sua sala/.test(naSala)) {
+    // Está numa sala em que não dá para entrar com um clique: pede para ele deixar (mensagem com cartão, sem senha)
+    const pedir = document.createElement('button');
+    pedir.type = 'button';
+    pedir.className = 'btn small home-friend-pedir';
+    pedir.textContent = 'Pedir para entrar';
+    pedir.title = `Manda um pedido para ${f.displayName} deixar você entrar na sala`;
+    pedir.onclick = () => void pedirParaEntrar(f);
+    acoes.append(pedir);
+  }
+  acoes.append(homeIconBtn('chat', `Mensagem para ${f.displayName}`, () => openDm(f.id)));
+  if (f.online) {
+    acoes.append(
+      homeIconBtn('phone', `Ligar para ${f.displayName}: cria uma sala só para vocês e entra na voz`, () => void ligarPara(f.id), 'home-friend-ligar'),
+      homeIconBtn('userPlus', state.myId ? `Chamar ${f.displayName} para a sua sala (manda o convite)` : `Chamar ${f.displayName}: abre a sua sala e manda o convite`,
+        () => void chamarParaMinhaSala(f), 'home-friend-chamar'));
+  }
+  li.append(hubAvatar(f.displayName, f.online), nome, acoes);
+  return li;
+}
+
+// Pedido de amizade: recebido (Aceitar) ou enviado (Cancelar)
+function homePedidoLinha(r, recebido) {
+  const li = document.createElement('li');
+  li.className = 'home-friend';
+  const nome = document.createElement('span');
+  nome.className = 'home-friend-name';
+  const quem = document.createElement('strong');
+  quem.textContent = r.displayName;
+  const sub = document.createElement('span');
+  sub.className = 'hint home-friend-bio';
+  sub.textContent = recebido ? 'Quer ser seu amigo' : 'Aguardando resposta';
+  nome.append(quem, sub);
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'btn small' + (recebido ? ' primary' : '');
+  b.textContent = recebido ? 'Aceitar' : 'Cancelar';
+  b.title = recebido ? `Aceitar o pedido de ${r.displayName}` : `Cancelar o pedido para ${r.displayName}`;
+  b.onclick = () => void (recebido ? acceptFriend(r) : cancelFriendRequest(r));
+  const acoes = document.createElement('span');
+  acoes.className = 'home-friend-actions';
+  acoes.append(b);
+  li.append(hubAvatar(r.displayName), nome, acoes);
+  return li;
+}
+
 function renderHomeAmigos() {
   if (!$('homeFriends')) return;
   renderHomeTopo();
   const logado = !!razzeUser;
   $('homeSignin').hidden = logado || modoDeUso() !== 'amigos';
   $('homeFriends').hidden = !logado;
+  $('homeMensagens').hidden = !logado;
+  if (typeof fillDmList === 'function') fillDmList('homeDm');
   if (!logado) return;
-  const online = friendsData.friends.filter((f) => f.online);
-  const total = friendsData.friends.length;
-  $('homeFriendsTitle').textContent = online.length ? `Amigos online · ${online.length}` : 'Amigos';
+  const todos = friendsData.friends;
+  const ativos = todos.filter((f) => f.online);
+  const recebidos = friendsData.incoming, enviados = friendsData.outgoing;
+  const pedidos = recebidos.length + enviados.length;
+  if (homeAmigos.aba === 'pedidos' && !pedidos) homeAmigos.aba = 'ativos';
+  $('homeAbaPedidos').hidden = !pedidos;
+  $('homeAbaAtivosN').textContent = String(ativos.length);
+  $('homeAbaTodosN').textContent = String(todos.length);
+  $('homeAbaPedidosN').textContent = String(recebidos.length || pedidos);
+  for (const b of $('homeAbas').querySelectorAll('.home-aba')) b.setAttribute('aria-pressed', String(b.dataset.aba === homeAmigos.aba));
+  // Busca só quando a lista é grande; ela vale para Ativos e Todos
+  const busca = homeAmigos.aba !== 'pedidos' && todos.length > 6;
+  $('homeFriendsBusca').hidden = !busca;
+  const agulha = busca ? semAcento(homeAmigos.busca.trim()) : '';
   const lista = $('homeFriendsList');
   lista.textContent = '';
-  for (const f of online.slice(0, 5)) {
-    const li = document.createElement('li');
-    li.className = 'home-friend';
-    const nome = document.createElement('span');
-    nome.className = 'home-friend-name';
-    const quem = document.createElement('strong');
-    quem.textContent = f.displayName;
-    const chips = document.createElement('span');
-    chips.className = 'home-friend-chips';
-    // Em que sala o amigo está, em qualquer modo (salas-amigos.js: textoSalaDoAmigo)
-    const naSala = typeof textoSalaDoAmigo === 'function' ? textoSalaDoAmigo(f) : '';
-    if (naSala) chips.append(homeChip('', naSala, 'home-friend-sala'));
-    const atividade = f.activity;
-    if (atividade?.game) chips.append(homeChip('game', atividade.game));
-    if (atividade?.artist) {
-      // A música: clicar mostra a faixa
-      const musica = document.createElement('button');
-      musica.type = 'button';
-      musica.className = 'home-chip home-friend-music';
-      musica.innerHTML = ICON.music;
-      const texto = document.createTextNode(atividade.artist);
-      const completo = atividade.title ? atividade.title + ' — ' + atividade.artist : atividade.artist;
-      musica.append(texto);
-      musica.title = 'Clique para ver a música';
-      musica.onclick = () => { texto.textContent = texto.textContent === atividade.artist ? completo : atividade.artist; };
-      chips.append(musica);
+  const porNome = (a, b) => a.displayName.localeCompare(b.displayName, 'pt-BR');
+  // Quem está numa sala vem primeiro (dá para entrar), depois quem joga, depois o resto por nome
+  const peso = (f) => (typeof salaDoAmigo === 'function' && salaDoAmigo(f) ? 0 : f.online && f.activity?.game ? 1 : f.online ? 2 : 3);
+  let vazio = '';
+  if (homeAmigos.aba === 'pedidos') {
+    for (const r of recebidos) lista.append(homePedidoLinha(r, true));
+    for (const r of enviados) lista.append(homePedidoLinha(r, false));
+  } else {
+    const base = homeAmigos.aba === 'ativos' ? ativos : todos;
+    const itens = base.filter((f) => !agulha || semAcento(f.displayName).includes(agulha)).sort((a, b) => peso(a) - peso(b) || porNome(a, b));
+    for (const f of itens) lista.append(homeAmigoLinha(f));
+    if (!itens.length) {
+      vazio = !todos.length ? 'Você ainda não tem amigos aqui. Toque em Convidar para copiar o seu link ou adicionar pelo nickname.'
+        : agulha ? `Ninguém com “${homeAmigos.busca.trim()}”.`
+        : 'Ninguém online agora. Em Todos você vê seus amigos e pode mandar mensagem.';
     }
-    if (f.bio && !naSala && !atividade?.game && !atividade?.artist) {
-      const frase = document.createElement('span');
-      frase.className = 'hint home-friend-bio';
-      frase.textContent = f.bio;
-      chips.append(frase);
-    }
-    // A sala pela internet em que o amigo está e que ele deixa entrar: Entrar, sem código nem senha (salas-amigos.js).
-    // Fica na linha das etiquetas, logo depois de "Na sala de…": a etiqueta usa a largura toda e o botão desce de linha
-    // quando não cabe (coluna estreita), em vez de espremer o texto
-    const salaDele = typeof salaDoAmigo === 'function' ? salaDoAmigo(f) : null;
-    if (salaDele) {
-      const entrar = document.createElement('button');
-      entrar.type = 'button';
-      entrar.className = 'btn small primary home-friend-entrar';
-      entrar.textContent = 'Entrar';
-      entrar.title = `Entrar na sala de ${salaDele.host}, onde ${f.displayName} está`;
-      entrar.onclick = () => void entrarPeloAmigo(f);
-      const sala = chips.querySelector('.home-friend-sala');
-      if (sala) sala.after(entrar); else chips.prepend(entrar);
-    }
-    nome.append(quem);
-    if (chips.childNodes.length) nome.append(chips);
-    const acoes = document.createElement('span');
-    acoes.className = 'home-friend-actions';
-    // "Chamar para minha sala" é um ícone (a dica diz o resto): na coluna estreita, o nome e o que o amigo faz têm espaço
-    const chamar = homeIconBtn('userPlus', state.myId ? `Chamar ${f.displayName} para a sua sala (manda o convite)` : `Chamar ${f.displayName}: abre a sua sala e manda o convite`,
-      () => void chamarParaMinhaSala(f), 'home-friend-chamar');
-    acoes.append(chamar,
-      homeIconBtn('chat', `Mensagem para ${f.displayName}`, () => openDm(f.id)),
-      homeIconBtn('phone', `Ligar para ${f.displayName}: cria uma sala só para vocês e entra na voz`, () => void ligarPara(f.id), 'home-friend-ligar'));
-    li.append(hubAvatar(f.displayName, true), nome, acoes);
-    lista.append(li);
   }
-  $('homeFriendsEmpty').textContent = !total ? 'Você ainda não tem amigos aqui. Adicione o primeiro.'
-    : !online.length ? 'Ninguém online agora.'
-    : online.length > 5 ? `e mais ${online.length - 5} online` : '';
-  $('homeFriendsAll').hidden = !total;
+  $('homeFriendsEmpty').textContent = vazio;
+  $('homeFriendsAll').hidden = !todos.length;
 }
 
 // Menu "Convidar": copiar o seu link de amigo ou adicionar alguém
@@ -345,6 +409,8 @@ function setupPrimeiraEntrada() {
   $('goQuick').onclick = () => foraDaSala('criar outra sala', abrirMinhaSala);
   $('homeSigninBtn').onclick = () => abrirPrimeiraEntrada(3);
   $('homeFriendsAll').onclick = () => openFriendsDialog();
+  for (const b of $('homeAbas').querySelectorAll('.home-aba')) b.onclick = () => { homeAmigos.aba = b.dataset.aba; renderHomeAmigos(); };
+  $('homeFriendsBusca').addEventListener('input', () => { homeAmigos.busca = $('homeFriendsBusca').value; renderHomeAmigos(); });
   $('homeFriendsLink').onclick = () => { setHomeConvidarOpen(false); copiarMeuLink(); };
   $('friendsLinkCopy').onclick = copiarMeuLink;
   $('homeFriendsAdd').onclick = () => { setHomeConvidarOpen(false); openFriendsDialog(); if (typeof setFriendsAddOpen === 'function') setFriendsAddOpen(true); };

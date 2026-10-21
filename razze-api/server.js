@@ -786,7 +786,16 @@ function createApiServer(options = {}) {
           : nickname
             ? db.prepare('SELECT id FROM users WHERE display_name = ? COLLATE NOCASE AND status = \'active\'').all(targetName)
             : [db.prepare('SELECT id FROM users WHERE email = ? AND status = \'active\'').get(targetName)].filter(Boolean);
-        if (!matches.length) throw new ApiError(404, 'user_not_found', byId ? 'Essa conta não existe mais ou está desativada.' : `Não existe uma conta ativa com o nickname “${targetName}”.`);
+        if (!matches.length) {
+          // Conta nova fica pendente até o administrador aprovar: avisa isso, em vez de parecer que a pessoa não existe
+          const aguardando = !byId && (nickname
+            ? db.prepare("SELECT 1 AS yes FROM users WHERE display_name = ? COLLATE NOCASE AND status = 'pending'").get(targetName)
+            : db.prepare("SELECT 1 AS yes FROM users WHERE email = ? AND status = 'pending'").get(targetName));
+          throw new ApiError(404, 'user_not_found', byId ? 'Essa conta não existe mais ou está desativada.'
+            : aguardando ? `A conta “${targetName}” ainda aguarda a aprovação do administrador do servidor. Avise quem administra para aprová-la.`
+              : nickname ? `Não achei ninguém com o nickname “${targetName}”. Confira a escrita: vale o nickname do perfil, não o nome da conta Google.`
+                : `Não existe uma conta ativa com o e-mail “${targetName}”.`);
+        }
         if (matches.length > 1) throw new ApiError(409, 'nickname_ambiguous', 'Esse nickname pertence a mais de uma conta. Peça à pessoa para escolher um nickname único.');
         const target = matches[0];
         if (target.id === userId) throw new ApiError(400, 'invalid_friend', 'Você não pode adicionar a própria conta.');

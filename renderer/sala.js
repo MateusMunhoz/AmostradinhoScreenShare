@@ -346,7 +346,7 @@ function renderLeaveBtn() {
   const endsRoom = state.isOwner && !state.handoff;
   const tip = endsRoom ? 'Encerrar sala (sai todo mundo)' : 'Sair da sala';
   setIcon($('leaveBtn'), 'leave', tip);
-  $('leaveBtn').append(rotuloMenu(endsRoom ? 'Encerrar' : 'Sair'));
+  $('leaveBtn').append(rotuloMenu(endsRoom ? 'Encerrar a sala' : 'Sair da sala'));
   $('leaveBtn').lastChild.className = 'dock-label';
   setIcon($('roomMenuLeave'), 'leave', tip);
   $('roomMenuLeave').append(rotuloMenu(endsRoom ? 'Encerrar a sala' : 'Sair da sala'));

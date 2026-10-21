@@ -35,8 +35,10 @@ run('Sala: cabeçalho, abas e Seu sinal', 120000, async () => {
 
   // Barrinha só com coisas do app
   const rail = await B.eval(`[...$('workspaceNav').children].filter((e) => e.getClientRects().length).map((e) => e.id || e.className)`);
-  check('Barrinha: perfil, Início, chat por cima do jogo, modo gamer, feedback e engrenagem (nada da sala)',
-    rail.join(' ') === 'navProfile nav-sep nav-space dockHome nav-sep overlayToggle navGamer navFeedback navSettings', rail.join(' '));
+  // O Início fica no cabeçalho da sala (roomHomeBtn): a barrinha não repete
+  check('Barrinha: perfil, chat por cima do jogo, modo gamer, feedback e engrenagem (nada da sala, sem Início)',
+    rail.join(' ') === 'navProfile nav-sep nav-space nav-sep overlayToggle navGamer navFeedback navSettings', rail.join(' '));
+  check('Cabeçalho da sala: Início (fica na chamada) e Sair da sala, com texto', await B.eval(`${dentro(['roomHomeBtn', 'leaveBtn'], 'roomHead')} && $('roomHomeBtn').textContent.includes('Início') && $('leaveBtn').textContent.includes('Sair da sala')`));
 
   // Abas (quem já usava chat e voz juntos começa lado a lado: separa antes)
   await B.eval(`(() => { if ($('paneJuntos').getAttribute('aria-pressed') === 'true') $('paneJuntos').click(); $('navVoice').click(); })()`);
@@ -51,7 +53,8 @@ run('Sala: cabeçalho, abas e Seu sinal', 120000, async () => {
   check('Seu sinal fica embaixo em qualquer aba, com Entrar na voz e Transmitir', await B.eval(`${visivel('seuSinal')} && ${dentro(['voiceJoin', 'shareBtn'], 'seuSinal')}`));
   await B.eval(`$('paneJuntos').click()`);
   await sleep(300);
-  check('Lado a lado: Voz e Chat juntos, com a divisória', await B.eval(`!$('voicePane').hidden && !$('chatTab').hidden && getComputedStyle(document.querySelector('.pane-split')).display !== 'none'`));
+  // Sem divisória para arrastar (Início simples): Voz e Chat juntos, um em cima do outro
+  check('Lado a lado: Voz e Chat juntos, sem divisória de arrastar', await B.eval(`!$('voicePane').hidden && !$('chatTab').hidden && getComputedStyle(document.querySelector('.pane-split')).display === 'none'`));
   await B.eval(`(() => { $('navVoice').focus(); $('paneTabs').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true })); })()`);
   check('Setas trocam de aba', await B.eval(`document.activeElement === $('navChat')`));
   await B.eval(`$('paneJuntos').click()`);

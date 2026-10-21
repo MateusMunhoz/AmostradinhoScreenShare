@@ -202,11 +202,53 @@ async function entrarSalaAmigoAgora(s) {
 
 function pedirSenhaAmigo(s, motivo = '') {
   salasAmigos.alvo = { codigo: s.codigo, servidor: s.servidor };
+  // Sem a senha: em vez de procurar quem sabe, um clique manda o pedido para o dono da sala (pedirParaEntrar)
+  const dono = s.userId || '';
+  $('joinPedir').hidden = !dono || !dm.account;
+  $('joinPedir').onclick = () => void pedirParaEntrar({ id: dono, displayName: s.host });
   $('roomAddr').value = s.codigo;
   setJoinOpen(true);
   $('joinPassword').value = '';
   $('joinPassword').focus();
   toast(motivo || `A sala de ${s.host} pede a senha. Digite e clique em Entrar.`);
+}
+
+// ---------- Pedir para entrar ----------
+// Sem a senha da sala, ou sem o Entrar com um clique: manda uma mensagem comum ao dono ("Posso entrar na sua sala?" e
+// uma linha telap2p://pedido-sala). Na conversa dele vira um cartão com Deixar entrar, que manda o convite de volta.
+// Não mexe no protocolo da sala nem no servidor: app antigo mostra só o texto.
+const PEDIDO_RE = /\btelap2p:\/\/pedido-sala\s*$/;
+const lerPedidoSala = (text) => PEDIDO_RE.test(String(text || ''));
+async function pedirParaEntrar(f) {
+  if (!dm.account) return toast('Entre na sua conta para pedir para entrar.', 'error');
+  try {
+    const res = await window.api.razzeSendMessage(f.id, 'Posso entrar na sua sala?\ntelap2p://pedido-sala');
+    const c = dmConv(f.id);
+    await dmLoadConv(c);
+    if (res?.message && dmAdd(c, res.message)) dmSaveConv(c);
+    renderDm();
+    toast(`Pedido enviado para ${f.displayName}. Quando ele deixar, o convite chega nas suas mensagens.`);
+  } catch (error) {
+    toast('Não foi possível mandar o pedido: ' + String(error?.message || 'erro desconhecido').replace(/^.*RazzeApiError: /, ''), 'error');
+  }
+}
+// O cartão do pedido dentro da conversa: quem recebeu vê Deixar entrar (abre a sua sala, se precisar, e manda o convite)
+function cartaoPedidoSala(mine, quem, id) {
+  const box = document.createElement('div');
+  box.className = 'dm-invite';
+  const title = document.createElement('strong');
+  title.textContent = mine ? `Você pediu para entrar na sala de ${quem}` : `${quem} quer entrar na sua sala`;
+  box.append(title);
+  if (!mine) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn small primary';
+    btn.textContent = state.myId ? 'Deixar entrar' : 'Abrir minha sala e deixar entrar';
+    btn.title = `Manda o convite da sua sala para ${quem}`;
+    btn.onclick = () => void chamarParaMinhaSala({ id, displayName: quem });
+    box.append(btn);
+  }
+  return box;
 }
 
 // Entrar com código: se o código é o de uma sala de amigo que pediu senha, usa o servidor dela

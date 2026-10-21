@@ -58,7 +58,8 @@ Tudo o que dá para fazer no Nebula, com os detalhes. Para começar do zero, vej
     da música**).
 - **Palco vazio:** com alguém transmitindo, aparece **Transmitindo agora** com um **Assistir** para cada pessoa.
 - **Perfil de alguém:** o mesmo cartão em todo lugar (Pessoas da sala, voz em lista e voz no mapa): fundo, foto, nome, onde a pessoa está, as ações (assistir, adicionar como amigo, mandar mensagem para amigos, silenciar e mudar de canal na voz) e o volume.
-- **Barrinha da direita:** só o que é do app, igual dentro e fora da sala: em cima, o perfil; no pé, **Início** (vai para o saguão sem sair da sala), o **chat por cima do jogo**, o **modo gamer** (o controle), **Feedback e bugs** (o balão com exclamação) e a engrenagem. No saguão, com a sala aberta, o pé mostra **Voltar para a sala**, com o número de mensagens novas.
+- **Cabeçalho da sala:** **‹ Início** (vai para o saguão sem sair da sala nem da voz) e **Sair da sala** (**Encerrar a sala**, se foi você quem abriu e está sozinho). **Sair da voz** é outro botão, no cartão Seu sinal.
+- **Barrinha da direita:** só o que é do app, igual dentro e fora da sala: em cima, o perfil; no pé, o **chat por cima do jogo**, o **modo gamer** (o controle), **Feedback e bugs** (o balão com exclamação) e a engrenagem. No saguão, com a sala aberta, o pé mostra **Voltar para a sala**, com o número de mensagens novas.
 
 ### Como os PCs se conectam
 
@@ -354,7 +355,9 @@ Na primeira vez que o app abre, uma tela de cada vez (três no máximo):
 
 Quem já usava o app não vê essa tela. Quem escolheu *Com amigos* e ainda não entrou vê no Início uma faixa **Entrar na conta**.
 
-No **Início**, com conta, a coluna da direita mostra **Amigos online** (até 5, com **Mensagem** e **Ligar** em ícones), **Convidar** (um menu com **Copiar meu link** e **Adicionar amigo**) e **Ver todos** (abre **Adicionar amigo** no envelope).
+No **Início**, com conta, **Amigos** é a peça principal, com três abas: **Ativos** (quem está online; quem está numa sala aberta vem primeiro, com **Entrar na sala** ou **Pedir para entrar**), **Todos** (os offline aparecem apagados, só com Mensagem) e **Pedidos** (só aparece quando há pedido: Aceitar ou Cancelar). **Convidar** é um menu com **Copiar meu link** e **Adicionar amigo**; **Gerenciar** abre o envelope. À direita ficam **Mensagens** (as conversas que já têm mensagem), as **Salas abertas** e as novidades.
+
+**Pedir para entrar:** manda uma mensagem ao dono da sala ("Posso entrar na sua sala?"). Ele vê um cartão com **Deixar entrar**, que manda o convite da sala dele. Também aparece no painel de entrar, quando a sala pede senha e você não a tem.
 Cada amigo mostra em etiquetas onde está, o jogo e a música (clique na música para ver a faixa). Passando o mouse na linha
 aparece **Chamar para minha sala**: manda o convite da sala em que você está pelas mensagens; fora de sala, abre a sua antes.
 

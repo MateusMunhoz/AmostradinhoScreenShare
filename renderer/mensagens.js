@@ -347,12 +347,13 @@ function dmMessageEl(c, m, prev) {
   const text = document.createElement('span');
   text.className = 'msg-text';
   const convite = !m.locked && lerConvite(m.text); // convite para uma sala: vira um cartão com Entrar (salas-amigos.js)
+  const pedido = !m.locked && !convite && lerPedidoSala(m.text); // pedido para entrar: cartão com Deixar entrar
   if (m.locked) {
     text.classList.add('dm-locked');
     text.textContent = 'Mensagem criptografada para outro PC: não dá para abrir aqui.';
     text.title = 'Ela foi cifrada para a chave de outro PC desta conta (ou de antes de trocar de PC).';
-  } else if (!convite) textWithLinks(text, m.text);
-  if (convite || (m.file && !m.text)) line.append(who); else line.append(who, sep, text);
+  } else if (!convite && !pedido) textWithLinks(text, m.text);
+  if (convite || pedido || (m.file && !m.text)) line.append(who); else line.append(who, sep, text);
   if (m.plain) {
     const tag = document.createElement('span');
     tag.className = 'dm-plain';
@@ -370,6 +371,7 @@ function dmMessageEl(c, m, prev) {
   }
   body.append(line);
   if (convite) body.append(cartaoConvite(convite, mine, friendName(c.id), m.createdAt));
+  if (pedido) body.append(cartaoPedidoSala(mine, friendName(c.id), c.id));
   if (m.file) body.append(diretoCartao(c, m));
   li.append(when, body);
   return li;
@@ -564,16 +566,18 @@ function dmDraggable(slot, chip, id) {
 // ---------- Lista das conversas (no painel da barra) ----------
 // Uma linha sobre a última mensagem: o texto, ou o que ela é (imagem, arquivo, convite, chamada)
 function dmPreview(last) {
-  return `${last.from === dm.account ? 'você: ' : ''}${last.locked ? 'Mensagem criptografada' : last.file && !last.text ? (CHAT_IMAGE_TYPES.includes(last.file.mime) ? 'Imagem' : `Arquivo: ${last.file.name}`) : lerConvite(last.text) ? (lerConvite(last.text).chamada ? 'Chamada' : 'Convite para a sala') : last.text.replace(/\s+/g, ' ')}`;
+  return `${last.from === dm.account ? 'você: ' : ''}${last.locked ? 'Mensagem criptografada' : last.file && !last.text ? (CHAT_IMAGE_TYPES.includes(last.file.mime) ? 'Imagem' : `Arquivo: ${last.file.name}`) : lerConvite(last.text) ? (lerConvite(last.text).chamada ? 'Chamada' : 'Convite para a sala') : lerPedidoSala(last.text) ? 'Pedido para entrar na sala' : last.text.replace(/\s+/g, ' ')}`;
 }
 function fillDmList(prefix = 'dmPanel') {
   const box = $(prefix + 'ConvList');
   $(prefix + 'Unsupported').hidden = !dm.unsupported;
-  $(prefix + 'Error').textContent = !dm.unsupported && dm.error ? dm.error : '';
+  // O Electron põe "Error invoking remote method '…': Error:" na frente da mensagem do serviço
+  $(prefix + 'Error').textContent = !dm.unsupported && dm.error ? String(dm.error).replace(/^Error invoking remote method '[^']*': (?:w*Error: )?/, '') : '';
   const ids = new Set([...friendsData.friends.map((f) => f.id), ...[...dm.convs.values()].filter((c) => c.last).map((c) => c.id)]);
   const needle = semAcento(dm.filter.trim());
   const rows = [...ids].map((id) => ({ id, c: dm.convs.get(id), name: friendName(id) }))
     .filter((r) => !needle || semAcento(r.name).includes(needle))
+    .filter((r) => prefix !== 'homeDm' || r.c?.last) // no Início, só quem já tem conversa
     .sort((a, b) => (b.c?.last?.createdAt || 0) - (a.c?.last?.createdAt || 0) || a.name.localeCompare(b.name, 'pt-BR'));
   box.replaceChildren(...rows.map(({ id, c, name }) => {
     const li = document.createElement('li');
@@ -597,7 +601,8 @@ function fillDmList(prefix = 'dmPanel') {
     return li;
   }));
   $(prefix + 'ConvEmpty').hidden = rows.length > 0;
-  $(prefix + 'ConvEmpty').textContent = needle ? `Ninguém com “${dm.filter.trim()}”.` : 'Clique em Adicionar amigo, no alto, para conversar com alguém.';
+  $(prefix + 'ConvEmpty').textContent = needle ? `Ninguém com “${dm.filter.trim()}”.`
+    : prefix === 'homeDm' ? 'Nenhuma conversa ainda. Toque no balão de um amigo para começar.' : 'Clique em Adicionar amigo, no alto, para conversar com alguém.';
   if (prefix === 'dmPanel') fillDmOnline(needle);
 }
 // Online agora: uma fileira com os amigos online em cima das conversas; clicar abre a conversa. Some durante a busca
@@ -664,6 +669,7 @@ function renderDm() {
   renderDmBar();
   if (!dm.account) setDmPanel(false);
   renderDmPanel();
+  if ($('homeDmConvList') && !$('homeMensagens').hidden) fillDmList('homeDm'); // as conversas do Início
 }
 
 // ---------- Configurações › Mensagens privadas ----------
