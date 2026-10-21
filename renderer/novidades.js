@@ -3,6 +3,19 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.20.7",
+    "date": "2026-10-20",
+    "items": [
+      "fix(janela): ícone do tema volta a aparecer na barra de tarefas",
+      "feat(tema): Renascença sem moldura, com folhas douradas e a obra assinada",
+      "README: apresentação do app com imagens das telas",
+      "Voz: atraso de cada pessoa no Mapa de conexões; conexão lenta é refeita sozinha",
+      "Música: o menu (volume, Pausar, Sair) abre na pílula do canal",
+      "Painel: a divisória entre o chat e a voz acompanha o mouse; sem as setinhas de recolher",
+      "Chat: prévia dos vídeos do YouTube, com capa, título, canal e Tocar na voz"
+    ]
+  },
+  {
     "version": "1.20.4",
     "date": "2026-10-19",
     "items": [
@@ -82,13 +95,6 @@ const NOVIDADES = [
       "Sala nova: cabeçalho da sala, abas Voz/Chat/Pessoas e o cartão Seu sinal",
       "Spec da sala nova: cabeçalho da sala, abas no painel e o cartão Seu sinal",
       "Início novo: rede sempre à vista, criar e entrar lado a lado, amigos ao lado"
-    ]
-  },
-  {
-    "version": "1.18.10",
-    "date": "2026-10-09",
-    "items": [
-      "Salas dos amigos: entrar com um clique na sala de qualquer amigo (passe da sala)"
     ]
   }
 ];
