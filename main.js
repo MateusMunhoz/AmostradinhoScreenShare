@@ -186,6 +186,8 @@ function setWindowIcon(png) {
   const img = nativeImage.createFromDataURL(png);
   if (img.isEmpty()) return false;
   win.setIcon(img);
+  // Com a janela ativa (é quando se troca o tema) o Windows não redesenha o botão da barra de tarefas: recria o botão
+  if (process.platform === 'win32' && win.isVisible() && !win.isMinimized()) { win.setSkipTaskbar(true); win.setSkipTaskbar(false); }
   bandeja.setTrayIcon(img);
   return true;
 }
