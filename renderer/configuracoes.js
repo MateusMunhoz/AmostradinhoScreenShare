@@ -56,7 +56,7 @@ function applyAppIcon() {
 // A imagem de fundo saiu do app: apaga a que tenha ficado guardada
 try { localStorage.removeItem('appWallpaper.v1'); } catch {}
 // Tema Renascença: a pintura do fundo (styles-renascenca.css › data-obra). A cada vez que o app abre, a próxima da lista.
-const RENAISSANCE_WORKS = ['atenas', 'anunciacao', 'ceia', 'adao'];
+const RENAISSANCE_WORKS = ['atenas', 'anunciacao', 'ceia', 'adao', 'venus', 'primavera', 'jardim'];
 function nextRenaissanceWork() {
   const last = RENAISSANCE_WORKS.indexOf(load('obraRenascenca', ''));
   const work = RENAISSANCE_WORKS[(last + 1) % RENAISSANCE_WORKS.length];
