@@ -1,11 +1,10 @@
 /* Tema Renascença: só vale com o tema escolhido na aba Tema (html[data-skin="renascenca"]).
    O app vira uma galeria: o fundo é uma pintura da Renascença (domínio público; a cada vez que o app abre, a próxima
-   da lista, em data-obra, por renderer/configuracoes.js), com o tom amarelado de verniz antigo, e a etiqueta de museu
-   no canto diz qual é. A parte marcante é a moldura dourada entalhada (--rn-frame, desenhada aqui em SVG: bisel com
-   luz de cima e da esquerda, fileira de pérolas e um bloco com roseta em cada canto, como as molduras de tabernáculo
-   do século XV): em volta do cartão do saguão, do palco vazio e de cada transmissão, que vira um quadro pendurado.
-   O resto fica quieto: painéis de nogueira escura, letreiros em capitulares romanas (Cinzel) e a etiqueta em Garamond
-   itálico. As obras ficam em assets/temas/renascenca-*.webp (origem e licença em assets/temas/OBRAS.md).
+   da lista, em data-obra, por renderer/configuracoes.js), com o tom amarelado de verniz antigo. Sem molduras de quadro:
+   a obra é a protagonista e o ouro aparece só como adorno, uma gavinha de folhas em cada canto dos cartões, do palco
+   vazio e das transmissões (--rn-folha-*, SVG aqui mesmo). A obra em destaque é assinada no canto, em itálico dourado
+   (Garamond), como a assinatura do artista na tela. O resto fica quieto: painéis de nogueira escura e letreiros em
+   capitulares romanas (Cinzel). As obras ficam em assets/temas/renascenca-*.webp (origem em assets/temas/OBRAS.md).
    As cores vêm do tema (preferencias-modelo.js › skins); aqui fica só o desenho. Nada anima sozinho. */
 @font-face { font-family: "Cinzel Renascença"; font-weight: 600; font-display: swap; src: url(assets/fontes/cinzel-600.woff2) format("woff2"); }
 @font-face { font-family: "Cinzel Renascença"; font-weight: 700; font-display: swap; src: url(assets/fontes/cinzel-700.woff2) format("woff2"); }
@@ -20,9 +19,11 @@
   --rn-gold-lo: #7A5718;
   --rn-ultramar: #2F4F9E;
   --rn-leaf: linear-gradient(160deg, #8A6420 0%, #E8C873 28%, #F7E7AE 42%, #C79A3E 62%, #8A6420 100%);  /* folha de ouro */
-  /* A moldura (border-image, fatia de 14): de fora para dentro, a borda escura, o bisel dourado, a canaleta com
-     pérolas, o filete e a borda da vista; os quatro cantos com um bloco e uma roseta. Luz de cima e da esquerda. */
-  --rn-frame: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='42' height='42' viewBox='0 0 42 42'><g fill='none'><rect x='.5' y='.5' width='41' height='41' stroke='%232A1906'/><rect x='1.5' y='1.5' width='39' height='39' stroke='%236B4A14'/><rect x='2.5' y='2.5' width='37' height='37' stroke='%23A67C2E'/><rect x='3.5' y='3.5' width='35' height='35' stroke='%23E3C26A'/><rect x='4.5' y='4.5' width='33' height='33' stroke='%23F6E3A0'/><rect x='5.5' y='5.5' width='31' height='31' stroke='%23C9A24A'/><rect x='6.5' y='6.5' width='29' height='29' stroke='%238A6420'/><rect x='8' y='8' width='26' height='26' stroke='%233D2A0E' stroke-width='2'/><rect x='9.5' y='9.5' width='23' height='23' stroke='%233D2A0E'/><rect x='10.5' y='10.5' width='21' height='21' stroke='%23B8913F'/><rect x='11.5' y='11.5' width='19' height='19' stroke='%23D9B866'/><rect x='12.5' y='12.5' width='17' height='17' stroke='%231A0F05'/><rect x='13.5' y='13.5' width='15' height='15' stroke='%23E8C873' stroke-opacity='.7'/></g><g fill='%23D9B866'><circle cx='15.75' cy='8.6' r='1.35'/><circle cx='19.25' cy='8.6' r='1.35'/><circle cx='22.75' cy='8.6' r='1.35'/><circle cx='26.25' cy='8.6' r='1.35'/><circle cx='15.75' cy='33.4' r='1.35'/><circle cx='19.25' cy='33.4' r='1.35'/><circle cx='22.75' cy='33.4' r='1.35'/><circle cx='26.25' cy='33.4' r='1.35'/><circle cx='8.6' cy='15.75' r='1.35'/><circle cx='8.6' cy='19.25' r='1.35'/><circle cx='8.6' cy='22.75' r='1.35'/><circle cx='8.6' cy='26.25' r='1.35'/><circle cx='33.4' cy='15.75' r='1.35'/><circle cx='33.4' cy='19.25' r='1.35'/><circle cx='33.4' cy='22.75' r='1.35'/><circle cx='33.4' cy='26.25' r='1.35'/></g><g fill='%23FBF0C8' fill-opacity='.85'><circle cx='15.35' cy='8.2' r='.45'/><circle cx='18.85' cy='8.2' r='.45'/><circle cx='22.35' cy='8.2' r='.45'/><circle cx='25.85' cy='8.2' r='.45'/><circle cx='8.2' cy='15.35' r='.45'/><circle cx='8.2' cy='18.85' r='.45'/><circle cx='8.2' cy='22.35' r='.45'/><circle cx='8.2' cy='25.85' r='.45'/></g><path d='M0 0H42L28 14H14V28L0 42Z' fill='%23FFF6D8' fill-opacity='.10'/><path d='M42 42H0L14 28H28V14L42 0Z' fill='%23000' fill-opacity='.28'/><g id='c'><rect x='1' y='1' width='12' height='12' fill='%23B8913F' stroke='%235A3E10'/><rect x='2.5' y='2.5' width='9' height='9' fill='%23E3C26A' stroke='%238A6420' stroke-width='.6'/><circle cx='7' cy='7' r='3.2' fill='%23C9A24A' stroke='%237A5718' stroke-width='.6'/><g fill='%23F6E3A0'><circle cx='7' cy='4.6' r='.9'/><circle cx='9.4' cy='7' r='.9'/><circle cx='7' cy='9.4' r='.9'/><circle cx='4.6' cy='7' r='.9'/></g><circle cx='7' cy='7' r='1' fill='%237A5718'/></g><use href='%23c' x='28'/><use href='%23c' y='28'/><use href='%23c' x='28' y='28'/></svg>");
+  /* Adornos: uma gavinha de folhas de ouro em cada canto, sem moldura */
+  --rn-folha-tl: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'><g><path d='M3 44C3 20 20 3 44 3' fill='none' stroke='%23C9A24A' stroke-width='1.6' stroke-linecap='round'/><path d='M3 44C3 44 3 52 8 55' fill='none' stroke='%23C9A24A' stroke-width='1.2' stroke-linecap='round'/><circle cx='9.5' cy='56' r='2' fill='%23E8C873'/><path d='M44 3C44 3 52 3 55 8' fill='none' stroke='%23C9A24A' stroke-width='1.2' stroke-linecap='round'/><circle cx='56' cy='9.5' r='2' fill='%23E8C873'/><path transform='translate(4.3 33) rotate(330)' d='M0 0Q6.75 -5.7 15 0Q6.75 5.7 0 0Z' fill='%23D9B866'/><path transform='translate(4.3 33) rotate(330)' d='M1 0H12.75' stroke='%237A5718' stroke-width='.5' opacity='.7'/><path transform='translate(14 14) rotate(270)' d='M0 0Q5.8500000000000005 -4.94 13 0Q5.8500000000000005 4.94 0 0Z' fill='%23D9B866'/><path transform='translate(14 14) rotate(270)' d='M1 0H11.049999999999999' stroke='%237A5718' stroke-width='.5' opacity='.7'/><path transform='translate(33 4.3) rotate(30)' d='M0 0Q6.75 -5.7 15 0Q6.75 5.7 0 0Z' fill='%23D9B866'/><path transform='translate(33 4.3) rotate(30)' d='M1 0H12.75' stroke='%237A5718' stroke-width='.5' opacity='.7'/><path transform='translate(10 24) rotate(225)' d='M0 0Q4.5 -3.8 10 0Q4.5 3.8 0 0Z' fill='%23D9B866'/><path transform='translate(10 24) rotate(225)' d='M1 0H8.5' stroke='%237A5718' stroke-width='.5' opacity='.7'/><path transform='translate(24 10) rotate(315)' d='M0 0Q4.5 -3.8 10 0Q4.5 3.8 0 0Z' fill='%23D9B866'/><path transform='translate(24 10) rotate(315)' d='M1 0H8.5' stroke='%237A5718' stroke-width='.5' opacity='.7'/><circle cx='6' cy='6' r='2.4' fill='%23F3DE9A' stroke='%237A5718' stroke-width='.6'/></g></svg>");
+  --rn-folha-tr: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'><g transform='matrix(-1 0 0 1 64 0)'><path d='M3 44C3 20 20 3 44 3' fill='none' stroke='%23C9A24A' stroke-width='1.6' stroke-linecap='round'/><path d='M3 44C3 44 3 52 8 55' fill='none' stroke='%23C9A24A' stroke-width='1.2' stroke-linecap='round'/><circle cx='9.5' cy='56' r='2' fill='%23E8C873'/><path d='M44 3C44 3 52 3 55 8' fill='none' stroke='%23C9A24A' stroke-width='1.2' stroke-linecap='round'/><circle cx='56' cy='9.5' r='2' fill='%23E8C873'/><path transform='translate(4.3 33) rotate(330)' d='M0 0Q6.75 -5.7 15 0Q6.75 5.7 0 0Z' fill='%23D9B866'/><path transform='translate(4.3 33) rotate(330)' d='M1 0H12.75' stroke='%237A5718' stroke-width='.5' opacity='.7'/><path transform='translate(14 14) rotate(270)' d='M0 0Q5.8500000000000005 -4.94 13 0Q5.8500000000000005 4.94 0 0Z' fill='%23D9B866'/><path transform='translate(14 14) rotate(270)' d='M1 0H11.049999999999999' stroke='%237A5718' stroke-width='.5' opacity='.7'/><path transform='translate(33 4.3) rotate(30)' d='M0 0Q6.75 -5.7 15 0Q6.75 5.7 0 0Z' fill='%23D9B866'/><path transform='translate(33 4.3) rotate(30)' d='M1 0H12.75' stroke='%237A5718' stroke-width='.5' opacity='.7'/><path transform='translate(10 24) rotate(225)' d='M0 0Q4.5 -3.8 10 0Q4.5 3.8 0 0Z' fill='%23D9B866'/><path transform='translate(10 24) rotate(225)' d='M1 0H8.5' stroke='%237A5718' stroke-width='.5' opacity='.7'/><path transform='translate(24 10) rotate(315)' d='M0 0Q4.5 -3.8 10 0Q4.5 3.8 0 0Z' fill='%23D9B866'/><path transform='translate(24 10) rotate(315)' d='M1 0H8.5' stroke='%237A5718' stroke-width='.5' opacity='.7'/><circle cx='6' cy='6' r='2.4' fill='%23F3DE9A' stroke='%237A5718' stroke-width='.6'/></g></svg>");
+  --rn-folha-bl: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'><g transform='matrix(1 0 0 -1 0 64)'><path d='M3 44C3 20 20 3 44 3' fill='none' stroke='%23C9A24A' stroke-width='1.6' stroke-linecap='round'/><path d='M3 44C3 44 3 52 8 55' fill='none' stroke='%23C9A24A' stroke-width='1.2' stroke-linecap='round'/><circle cx='9.5' cy='56' r='2' fill='%23E8C873'/><path d='M44 3C44 3 52 3 55 8' fill='none' stroke='%23C9A24A' stroke-width='1.2' stroke-linecap='round'/><circle cx='56' cy='9.5' r='2' fill='%23E8C873'/><path transform='translate(4.3 33) rotate(330)' d='M0 0Q6.75 -5.7 15 0Q6.75 5.7 0 0Z' fill='%23D9B866'/><path transform='translate(4.3 33) rotate(330)' d='M1 0H12.75' stroke='%237A5718' stroke-width='.5' opacity='.7'/><path transform='translate(14 14) rotate(270)' d='M0 0Q5.8500000000000005 -4.94 13 0Q5.8500000000000005 4.94 0 0Z' fill='%23D9B866'/><path transform='translate(14 14) rotate(270)' d='M1 0H11.049999999999999' stroke='%237A5718' stroke-width='.5' opacity='.7'/><path transform='translate(33 4.3) rotate(30)' d='M0 0Q6.75 -5.7 15 0Q6.75 5.7 0 0Z' fill='%23D9B866'/><path transform='translate(33 4.3) rotate(30)' d='M1 0H12.75' stroke='%237A5718' stroke-width='.5' opacity='.7'/><path transform='translate(10 24) rotate(225)' d='M0 0Q4.5 -3.8 10 0Q4.5 3.8 0 0Z' fill='%23D9B866'/><path transform='translate(10 24) rotate(225)' d='M1 0H8.5' stroke='%237A5718' stroke-width='.5' opacity='.7'/><path transform='translate(24 10) rotate(315)' d='M0 0Q4.5 -3.8 10 0Q4.5 3.8 0 0Z' fill='%23D9B866'/><path transform='translate(24 10) rotate(315)' d='M1 0H8.5' stroke='%237A5718' stroke-width='.5' opacity='.7'/><circle cx='6' cy='6' r='2.4' fill='%23F3DE9A' stroke='%237A5718' stroke-width='.6'/></g></svg>");
+  --rn-folha-br: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'><g transform='matrix(-1 0 0 -1 64 64)'><path d='M3 44C3 20 20 3 44 3' fill='none' stroke='%23C9A24A' stroke-width='1.6' stroke-linecap='round'/><path d='M3 44C3 44 3 52 8 55' fill='none' stroke='%23C9A24A' stroke-width='1.2' stroke-linecap='round'/><circle cx='9.5' cy='56' r='2' fill='%23E8C873'/><path d='M44 3C44 3 52 3 55 8' fill='none' stroke='%23C9A24A' stroke-width='1.2' stroke-linecap='round'/><circle cx='56' cy='9.5' r='2' fill='%23E8C873'/><path transform='translate(4.3 33) rotate(330)' d='M0 0Q6.75 -5.7 15 0Q6.75 5.7 0 0Z' fill='%23D9B866'/><path transform='translate(4.3 33) rotate(330)' d='M1 0H12.75' stroke='%237A5718' stroke-width='.5' opacity='.7'/><path transform='translate(14 14) rotate(270)' d='M0 0Q5.8500000000000005 -4.94 13 0Q5.8500000000000005 4.94 0 0Z' fill='%23D9B866'/><path transform='translate(14 14) rotate(270)' d='M1 0H11.049999999999999' stroke='%237A5718' stroke-width='.5' opacity='.7'/><path transform='translate(33 4.3) rotate(30)' d='M0 0Q6.75 -5.7 15 0Q6.75 5.7 0 0Z' fill='%23D9B866'/><path transform='translate(33 4.3) rotate(30)' d='M1 0H12.75' stroke='%237A5718' stroke-width='.5' opacity='.7'/><path transform='translate(10 24) rotate(225)' d='M0 0Q4.5 -3.8 10 0Q4.5 3.8 0 0Z' fill='%23D9B866'/><path transform='translate(10 24) rotate(225)' d='M1 0H8.5' stroke='%237A5718' stroke-width='.5' opacity='.7'/><path transform='translate(24 10) rotate(315)' d='M0 0Q4.5 -3.8 10 0Q4.5 3.8 0 0Z' fill='%23D9B866'/><path transform='translate(24 10) rotate(315)' d='M1 0H8.5' stroke='%237A5718' stroke-width='.5' opacity='.7'/><circle cx='6' cy='6' r='2.4' fill='%23F3DE9A' stroke='%237A5718' stroke-width='.6'/></g></svg>");
   --radius: 4px;
   --radius-lg: 6px;
   /* A logo (três estrelas) e o "P2P" em ouro, como letras douradas numa moldura */
@@ -40,6 +41,9 @@
 :root[data-skin="renascenca"][data-obra="anunciacao"] body::before { --rn-obra: url(assets/temas/renascenca-anunciacao.webp); }
 :root[data-skin="renascenca"][data-obra="ceia"] body::before { --rn-obra: url(assets/temas/renascenca-ceia.webp); }
 :root[data-skin="renascenca"][data-obra="adao"] body::before { --rn-obra: url(assets/temas/renascenca-adao.webp); }
+:root[data-skin="renascenca"][data-obra="venus"] body::before { --rn-obra: url(assets/temas/renascenca-venus.webp); }
+:root[data-skin="renascenca"][data-obra="primavera"] body::before { --rn-obra: url(assets/temas/renascenca-primavera.webp); }
+:root[data-skin="renascenca"][data-obra="jardim"] body::before { --rn-obra: url(assets/temas/renascenca-jardim.webp); }
 :root[data-skin="renascenca"] body::after {
   background: radial-gradient(ellipse 75% 70% at 50% 45%, rgba(150, 105, 35, .10), rgba(28, 18, 8, .55) 72%, rgba(14, 9, 4, .82) 100%);
 }
@@ -74,35 +78,46 @@
 :root[data-skin="renascenca"] .home-title { text-shadow: 0 2px 14px rgba(10, 6, 2, .85), 0 0 2px #000; }
 :root[data-skin="renascenca"] :is(.brand-mark, .home-sub, .home-foot) { text-shadow: 0 0 10px #000, 0 0 3px #000; }
 
-/* ---------- A moldura: cartão do saguão, palco vazio e cada transmissão ---------- */
+/* ---------- Sem moldura: um fio de ouro apagado e folhas nos cantos (cartão do saguão, palco vazio e transmissões) ---------- */
 :root[data-skin="renascenca"] :is(.home-card, .empty-stage, .tile) {
-  border: 14px solid transparent; border-image: var(--rn-frame) 14 round; border-radius: 0;
-  box-shadow: 0 18px 40px rgba(8, 5, 2, .65), 0 4px 10px rgba(8, 5, 2, .5);
+  border: 1px solid rgba(212, 175, 90, .22); border-radius: 2px;
+  box-shadow: 0 18px 40px rgba(8, 5, 2, .6), 0 4px 10px rgba(8, 5, 2, .45);
 }
-:root[data-skin="renascenca"] .home-card { background: rgba(31, 22, 14, .94); }
-/* Transmissões: a moldura um pouco mais fina, para o vídeo perder pouco espaço */
-:root[data-skin="renascenca"] .tile { border-width: 10px; }
+:root[data-skin="renascenca"] :is(.home-card, .empty-stage, .tile)::before {
+  content: ""; position: absolute; inset: 4px; z-index: 2; pointer-events: none;
+  background:
+    var(--rn-folha-tl) top left / 64px 64px no-repeat, var(--rn-folha-tr) top right / 64px 64px no-repeat,
+    var(--rn-folha-bl) bottom left / 64px 64px no-repeat, var(--rn-folha-br) bottom right / 64px 64px no-repeat;
+  filter: drop-shadow(0 1px 1px rgba(10, 6, 2, .7));
+}
+:root[data-skin="renascenca"] :is(.home-card, .tile) { position: relative; }
+:root[data-skin="renascenca"] .home-card { background: rgba(31, 22, 14, .88); }
+/* Transmissões: folhas menores, para o vídeo perder pouco */
+:root[data-skin="renascenca"] .tile::before { background-size: 40px 40px; inset: 2px; }
+:root[data-skin="renascenca"] .tile.small::before { display: none; }
 :root[data-skin="renascenca"] .tile.speaking::after { border-color: var(--ok); border-radius: 0; }
-/* Palco vazio: a pintura do fundo vista pela moldura, com a etiqueta do museu no canto */
-:root[data-skin="renascenca"] .empty-stage { position: relative; background: rgba(20, 13, 6, .25); }
+/* Palco vazio: a pintura do fundo à vista, com a assinatura da obra no canto */
+:root[data-skin="renascenca"] .empty-stage { position: relative; background: rgba(20, 13, 6, .18); }
 :root[data-skin="renascenca"] .empty-stage p { position: relative; z-index: 1; color: var(--text); font-family: var(--rn-serif); font-style: italic; font-size: 18px; text-shadow: 0 0 8px #000, 0 0 2px #000; }
 
-/* ---------- A etiqueta de museu (cartellino): placa de latão com o autor e a obra do fundo ---------- */
+/* ---------- A assinatura: autor e obra do fundo, em dourado no canto, sem placa ---------- */
 :root[data-skin="renascenca"] { --rn-label: "Rafael\A A Escola de Atenas, 1509–1511\A Afresco, Palácio Apostólico, Vaticano"; }
 :root[data-skin="renascenca"][data-obra="anunciacao"] { --rn-label: "Leonardo da Vinci\A A Anunciação, c. 1472–1476\A Óleo e têmpera sobre madeira, Galeria Uffizi"; }
 :root[data-skin="renascenca"][data-obra="ceia"] { --rn-label: "Leonardo da Vinci\A A Última Ceia, 1495–1498\A Têmpera sobre gesso, Santa Maria delle Grazie, Milão"; }
 :root[data-skin="renascenca"][data-obra="adao"] { --rn-label: "Michelangelo\A A Criação de Adão, c. 1512\A Afresco, Capela Sistina, Vaticano"; }
+:root[data-skin="renascenca"][data-obra="venus"] { --rn-label: "Sandro Botticelli\A O Nascimento de Vênus, c. 1485\A Têmpera sobre tela, Galeria Uffizi, Florença"; }
+:root[data-skin="renascenca"][data-obra="primavera"] { --rn-label: "Sandro Botticelli\A A Primavera, c. 1480\A Têmpera sobre madeira, Galeria Uffizi, Florença"; }
+:root[data-skin="renascenca"][data-obra="jardim"] { --rn-label: "Hieronymus Bosch\A O Jardim das Delícias, c. 1503–1515\A Óleo sobre madeira, Museu do Prado, Madri"; }
 :root[data-skin="renascenca"] :is(.home-screen, .empty-stage)::after {
   content: var(--rn-label); white-space: pre; pointer-events: none; z-index: 1; text-align: left;
-  padding: 7px 12px 8px; border-radius: 2px; color: #2A1906;
-  font: italic 400 13px/1.35 var(--rn-serif);
-  background: linear-gradient(170deg, #E9CF86, #C9A24A 55%, #A88232);
-  box-shadow: inset 0 1px 0 rgba(255, 246, 216, .7), inset 0 -1px 0 rgba(60, 38, 8, .45), 0 0 0 1px #6B4A14, 0 4px 12px rgba(8, 5, 2, .6);
+  padding: 16px 2px 0; color: var(--rn-gold-hi);
+  font: italic 400 15px/1.4 var(--rn-serif); letter-spacing: .01em;
+  background: linear-gradient(90deg, var(--rn-gold), transparent) top left / 120px 1px no-repeat;
+  text-shadow: 0 0 10px #000, 0 1px 3px #000, 0 0 2px #000;
 }
-:root[data-skin="renascenca"] .home-screen::after { position: fixed; left: 22px; bottom: 64px; }
-:root[data-skin="renascenca"] .empty-stage::after { position: absolute; left: 18px; bottom: 16px; }
-/* A primeira linha (o autor) é o nome gravado: a etiqueta inteira fica em itálico, só o tamanho muda o peso */
-:root[data-skin="renascenca"][data-mirror="on"] .home-screen::after { left: auto; right: 22px; }
+:root[data-skin="renascenca"] .home-screen::after { position: fixed; left: 26px; bottom: 60px; }
+:root[data-skin="renascenca"] .empty-stage::after { position: absolute; left: 26px; bottom: 22px; }
+:root[data-skin="renascenca"][data-mirror="on"] .home-screen::after { left: auto; right: 26px; text-align: right; background-position: top right; }
 @media (max-height: 640px), (max-width: 980px) { :root[data-skin="renascenca"] .home-screen::after { display: none; } }
 
 /* Céu da voz: o mesmo desenho, sobre um fundo de sépia */
@@ -111,8 +126,7 @@
 /* ---------- Prévia na aba Tema (vale sempre, com as cores fixas do tema) ---------- */
 .skin-preview[data-preview=renascenca] {
   background: linear-gradient(rgba(28, 18, 8, .25), rgba(28, 18, 8, .45)), url(assets/temas/renascenca-atenas.webp) center 40% / cover;
-  border: 9px solid transparent; border-radius: 0;
-  border-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='42' height='42'><g fill='none'><rect x='.5' y='.5' width='41' height='41' stroke='%232A1906'/><rect x='2' y='2' width='38' height='38' stroke='%23A67C2E' stroke-width='2'/><rect x='4' y='4' width='34' height='34' stroke='%23F6E3A0' stroke-width='2'/><rect x='6' y='6' width='30' height='30' stroke='%23C9A24A' stroke-width='2'/><rect x='8.5' y='8.5' width='25' height='25' stroke='%233D2A0E' stroke-width='3'/><rect x='11.5' y='11.5' width='19' height='19' stroke='%23D9B866' stroke-width='2'/><rect x='13.5' y='13.5' width='15' height='15' stroke='%231A0F05'/></g></svg>") 14 round;
+  border: 1px solid rgba(212, 175, 90, .5); border-radius: 2px;
 }
 .skin-preview[data-preview=renascenca]::after {
   content: "Renascença"; position: absolute; right: 12px; bottom: 8px; font: 700 22px/1 "Cinzel Renascença", "Times New Roman", serif;

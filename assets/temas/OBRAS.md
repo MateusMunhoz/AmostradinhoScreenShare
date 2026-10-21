@@ -10,6 +10,9 @@ convertidas para WebP (qualidade 0,72) pelo Chromium. O tom de verniz e o escure
 | `renascenca-anunciacao.webp` | Leonardo da Vinci, *A Anunciação*, c. 1472–1476 | `Leonardo da Vinci - Annunciazione - Google Art Project.jpg` | Domínio público |
 | `renascenca-ceia.webp` | Leonardo da Vinci, *A Última Ceia*, 1495–1498 | `Última Cena - Da Vinci 5.jpg` | Domínio público |
 | `renascenca-adao.webp` | Michelangelo, *A Criação de Adão*, c. 1512 | `Michelangelo - Creation of Adam (cropped).jpg` | Domínio público |
+| `renascenca-venus.webp` | Botticelli, *O Nascimento de Vênus*, c. 1485 | `Sandro Botticelli - La nascita di Venere - Google Art Project - edited.jpg` | Domínio público |
+| `renascenca-primavera.webp` | Botticelli, *A Primavera*, c. 1480 | `Sandro Botticelli - La Primavera - Google Art Project.jpg` | Domínio público |
+| `renascenca-jardim.webp` | Bosch, *O Jardim das Delícias*, c. 1503–1515 | `The Garden of Earthly Delights by Bosch High Resolution.jpg` | Domínio público |
 
 Obra nova: só foto marcada como domínio público no Commons (fotos com a moldura do museu costumam ser CC BY-SA do
 fotógrafo; não servem). Entra aqui, em `RENAISSANCE_WORKS` (`renderer/configuracoes.js`), num `data-obra` com a etiqueta
