@@ -1,0 +1,77 @@
+name: iOS .ipa
+
+# Nebula no iPhone (docs/spec/nebula-ios-sideload.md). Só roda quando mexe em mobile/ (ou na mão): monta a interface do
+# desktop com a ponte do iPhone, compila SEM assinar e deixa o .ipa como artefato. Quem instala assina (SideStore,
+# AltStore ou Sideloadly). Não publica nada: anexar o .ipa numa Release é de um humano.
+on:
+  pull_request:
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/ios.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ponte:
+    name: Ponte e interface (Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - run: npm ci
+      - name: Testes da ponte e do montador
+        run: npm test
+      - name: Abrir a interface no WebKit (390x844)
+        run: npx playwright install --with-deps webkit && npm run test:webkit
+
+  ipa:
+    name: Gerar .ipa sem assinar (macOS)
+    needs: ponte
+    runs-on: macos-14
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - name: Montar a interface e sincronizar o projeto Xcode
+        working-directory: mobile
+        run: |
+          npm ci
+          node scripts/montar-www.mjs
+          npx cap sync ios
+      - name: Compilar sem assinar
+        working-directory: mobile/ios/App
+        run: |
+          xcodebuild archive \
+            -project App.xcodeproj -scheme App -configuration Release -sdk iphoneos \
+            -archivePath "$RUNNER_TEMP/Nebula.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
+      - name: Empacotar o .ipa
+        run: |
+          VERSAO=$(node -p "require('./package.json').version")
+          mkdir -p "$RUNNER_TEMP/ipa/Payload"
+          cp -R "$RUNNER_TEMP/Nebula.xcarchive/Products/Applications/App.app" "$RUNNER_TEMP/ipa/Payload/"
+          (cd "$RUNNER_TEMP/ipa" && zip -qry "$GITHUB_WORKSPACE/Nebula-$VERSAO.ipa" Payload)
+          ls -lh "Nebula-$VERSAO.ipa"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Nebula-ipa
+          path: Nebula-*.ipa
+          if-no-files-found: error

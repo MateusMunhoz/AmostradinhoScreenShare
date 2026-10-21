@@ -1,0 +1,26 @@
+{
+  "name": "nebula-ios",
+  "version": "1.20.5",
+  "private": true,
+  "description": "Nebula no iPhone (sideload): a interface do desktop numa WKWebView, com a ponte window.api em JavaScript",
+  "scripts": {
+    "montar": "node scripts/montar-www.mjs",
+    "sync": "node scripts/montar-www.mjs && cap sync ios",
+    "test": "node --test testes/*.test.mjs",
+    "test:webkit": "node testes/webkit.mjs"
+  },
+  "dependencies": {
+    "@capacitor/app": "8.1.2",
+    "@capacitor/browser": "8.0.5",
+    "@capacitor/clipboard": "8.0.1",
+    "@capacitor/core": "8.5.3",
+    "@capacitor/ios": "8.5.3",
+    "@capacitor/share": "8.0.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.3",
+    "esbuild": "0.28.2",
+    "playwright": "1.64.1",
+    "ws": "^8.22.0"
+  }
+}

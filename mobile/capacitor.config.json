@@ -1,0 +1,12 @@
+{
+  "appId": "com.telap2p.nebula",
+  "appName": "Nebula",
+  "webDir": "www",
+  "ios": {
+    "contentInset": "always",
+    "backgroundColor": "#0B0D10"
+  },
+  "plugins": {
+    "CapacitorHttp": { "enabled": true }
+  }
+}

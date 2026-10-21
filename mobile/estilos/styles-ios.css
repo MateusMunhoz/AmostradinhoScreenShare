@@ -1,0 +1,31 @@
+/* Nebula no iPhone: só vale com <html data-plataforma="ios"> (montar-www.mjs põe este arquivo só em mobile/www; o desktop
+   nunca carrega). A interface é a do desktop; aqui fica o que o iPhone não tem e o encaixe numa tela estreita em pé. */
+
+/* ---------- O que não existe no iPhone (v1): criar sala, transmitir, janelas, atalhos, modo gamer, rede que não é a Internet ---------- */
+:root[data-plataforma="ios"] :is(
+  .home-acao-criar, #goQuick, #goCreate,        /* criar sala (o iPhone só entra) */
+  #homeRede, #homeRedeAvancado,                 /* a rede é sempre a Internet */
+  #homeApoio, #navApoio,
+  #navGamer, #overlayToggle,                    /* modo gamer e chat por cima do jogo */
+  #miniShare, #shareBtn, #cbShare, #stageLayout, /* transmitir */
+  #openStatsRoom
+) { display: none !important; }
+
+/* ---------- Tela estreita em pé ---------- */
+/* O desktop reserva a largura do painel (360 a 480 px) ao lado do palco; no iPhone o painel fica embaixo, então a reserva é zero */
+:root[data-plataforma="ios"] { --workspace-width: 0px; }
+:root[data-plataforma="ios"] { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
+:root[data-plataforma="ios"] body { touch-action: manipulation; }
+/* O iOS dá zoom na página ao focar um campo com fonte menor que 16 px */
+:root[data-plataforma="ios"] :is(input, textarea, select) { font-size: 16px; }
+
+/* O painel da sala (Voz, Chat, Pessoas) ocupa a parte de baixo, ao lado da barrinha, em vez de ficar com a largura do PC
+   e passar da borda; o palco (as telas) fica numa faixa em cima */
+:root[data-plataforma="ios"] #workspacePanes {
+  left: 8px; right: calc(var(--rail-w) + 8px); width: auto; bottom: 8px;
+  top: calc(var(--workspace-top) + 4px);
+}
+:root[data-plataforma="ios"] .workspace-in-room.has-workspace-pane #workspacePanes { top: 42vh; }
+:root[data-plataforma="ios"] .workspace-in-room.has-workspace-pane #room:not([hidden]) { height: 42vh; }
+/* O mapa da voz e a troca lista/mapa ficam fora (o céu é pesado e a barra de abas não cabe); sobra o botão de recolher */
+:root[data-plataforma="ios"] :is(#voiceViewList, #voiceViewMap) { display: none; }
